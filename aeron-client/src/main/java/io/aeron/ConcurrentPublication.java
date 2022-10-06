@@ -15,11 +15,18 @@
  */
 package io.aeron;
 
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 
+import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.align;
 
 /**
  * Aeron publisher API for sending messages to subscribers of a given channel and streamId pair. {@link Publication}s
@@ -36,8 +43,6 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
  */
 public final class ConcurrentPublication extends Publication
 {
-    private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
-
     ConcurrentPublication(
         final ClientConductor clientConductor,
         final String channel,
@@ -62,7 +67,8 @@ public final class ConcurrentPublication extends Publication
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termAppenders[i] = new TermAppender(termBuffers[i], logMetaDataBuffer, i);
+            final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (i * SIZE_OF_LONG);
+            logMetaDataBuffer.boundsCheck(tailCounterOffset, SIZE_OF_LONG);
         }
     }
 
@@ -100,34 +106,33 @@ public final class ConcurrentPublication extends Publication
         {
             final long limit = positionLimit.getVolatile();
             final int termCount = activeTermCount(logMetaDataBuffer);
-            final TermAppender termAppender = termAppenders[indexByTermCount(termCount)];
-            final long rawTail = termAppender.rawTailVolatile();
-            final long termOffset = rawTail & 0xFFFF_FFFFL;
+            final int index = indexByTermCount(termCount);
+            final UnsafeBuffer termBuffer = termBuffers[index];
+            final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (index * SIZE_OF_LONG);
+            final long rawTail = logMetaDataBuffer.getLongVolatile(tailCounterOffset);
+            final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
             final int termId = termId(rawTail);
-            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
 
             if (termCount != (termId - initialTermId))
             {
                 return ADMIN_ACTION;
             }
 
+            final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
             if (position < limit)
             {
-                final int resultingOffset;
                 if (length <= maxPayloadLength)
                 {
                     checkPositiveLength(length);
-                    resultingOffset = termAppender.appendUnfragmentedMessage(
-                        headerWriter, buffer, offset, length, reservedValueSupplier, termId);
+                    newPosition = appendUnfragmentedMessage(
+                        termBuffer, tailCounterOffset, buffer, offset, length, reservedValueSupplier);
                 }
                 else
                 {
                     checkMaxMessageLength(length);
-                    resultingOffset = termAppender.appendFragmentedMessage(
-                        headerWriter, buffer, offset, length, maxPayloadLength, reservedValueSupplier, termId);
+                    newPosition = appendFragmentedMessage(
+                        termBuffer, tailCounterOffset, buffer, offset, length, reservedValueSupplier);
                 }
-
-                newPosition = newPosition(termCount, (int)termOffset, termId, position, resultingOffset);
             }
             else
             {
@@ -166,43 +171,50 @@ public final class ConcurrentPublication extends Publication
         {
             final long limit = positionLimit.getVolatile();
             final int termCount = activeTermCount(logMetaDataBuffer);
-            final TermAppender termAppender = termAppenders[indexByTermCount(termCount)];
-            final long rawTail = termAppender.rawTailVolatile();
-            final long termOffset = rawTail & 0xFFFF_FFFFL;
+            final int index = indexByTermCount(termCount);
+            final UnsafeBuffer termBuffer = termBuffers[index];
+            final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (index * SIZE_OF_LONG);
+            final long rawTail = logMetaDataBuffer.getLongVolatile(tailCounterOffset);
+            final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
             final int termId = termId(rawTail);
-            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
 
             if (termCount != (termId - initialTermId))
             {
                 return ADMIN_ACTION;
             }
 
+            final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
+
             final int length = validateAndComputeLength(lengthOne, lengthTwo);
             if (position < limit)
             {
-                final int resultingOffset;
                 if (length <= maxPayloadLength)
                 {
-                    resultingOffset = termAppender.appendUnfragmentedMessage(
-                        headerWriter,
-                        bufferOne, offsetOne, lengthOne,
-                        bufferTwo, offsetTwo, lengthTwo,
-                        reservedValueSupplier,
-                        termId);
+                    newPosition = appendUnfragmentedMessage(
+                        termBuffer,
+                        tailCounterOffset,
+                        bufferOne,
+                        offsetOne,
+                        lengthOne,
+                        bufferTwo,
+                        offsetTwo,
+                        lengthTwo,
+                        reservedValueSupplier);
                 }
                 else
                 {
                     checkMaxMessageLength(length);
-                    resultingOffset = termAppender.appendFragmentedMessage(
-                        headerWriter,
-                        bufferOne, offsetOne, lengthOne,
-                        bufferTwo, offsetTwo, lengthTwo,
-                        maxPayloadLength,
-                        reservedValueSupplier,
-                        termId);
+                    newPosition = appendFragmentedMessage(
+                        termBuffer,
+                        tailCounterOffset,
+                        bufferOne,
+                        offsetOne,
+                        lengthOne,
+                        bufferTwo,
+                        offsetTwo,
+                        lengthTwo,
+                        reservedValueSupplier);
                 }
-
-                newPosition = newPosition(termCount, (int)termOffset, termId, position, resultingOffset);
             }
             else
             {
@@ -230,33 +242,33 @@ public final class ConcurrentPublication extends Publication
         {
             final long limit = positionLimit.getVolatile();
             final int termCount = activeTermCount(logMetaDataBuffer);
-            final TermAppender termAppender = termAppenders[indexByTermCount(termCount)];
-            final long rawTail = termAppender.rawTailVolatile();
-            final long termOffset = rawTail & 0xFFFF_FFFFL;
+            final int index = indexByTermCount(termCount);
+            final UnsafeBuffer termBuffer = termBuffers[index];
+            final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (index * SIZE_OF_LONG);
+            final long rawTail = logMetaDataBuffer.getLongVolatile(tailCounterOffset);
+            final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
             final int termId = termId(rawTail);
-            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
 
             if (termCount != (termId - initialTermId))
             {
                 return ADMIN_ACTION;
             }
 
+            final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
+
             if (position < limit)
             {
-                final int resultingOffset;
                 if (length <= maxPayloadLength)
                 {
-                    resultingOffset = termAppender.appendUnfragmentedMessage(
-                        headerWriter, vectors, length, reservedValueSupplier, termId);
+                    newPosition = appendUnfragmentedMessage(
+                        termBuffer, tailCounterOffset, vectors, length, reservedValueSupplier);
                 }
                 else
                 {
                     checkMaxMessageLength(length);
-                    resultingOffset = termAppender.appendFragmentedMessage(
-                        headerWriter, vectors, length, maxPayloadLength, reservedValueSupplier, termId);
+                    newPosition = appendFragmentedMessage(
+                        termBuffer, tailCounterOffset, vectors, length, reservedValueSupplier);
                 }
-
-                newPosition = newPosition(termCount, (int)termOffset, termId, position, resultingOffset);
             }
             else
             {
@@ -311,21 +323,23 @@ public final class ConcurrentPublication extends Publication
         {
             final long limit = positionLimit.getVolatile();
             final int termCount = activeTermCount(logMetaDataBuffer);
-            final TermAppender termAppender = termAppenders[indexByTermCount(termCount)];
-            final long rawTail = termAppender.rawTailVolatile();
-            final long termOffset = rawTail & 0xFFFF_FFFFL;
+            final int index = indexByTermCount(termCount);
+            final UnsafeBuffer termBuffer = termBuffers[index];
+            final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (index * SIZE_OF_LONG);
+            final long rawTail = logMetaDataBuffer.getLongVolatile(tailCounterOffset);
+            final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
             final int termId = termId(rawTail);
-            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
 
             if (termCount != (termId - initialTermId))
             {
                 return ADMIN_ACTION;
             }
 
+            final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
+
             if (position < limit)
             {
-                final int resultingOffset = termAppender.claim(headerWriter, length, bufferClaim, termId);
-                newPosition = newPosition(termCount, (int)termOffset, termId, position, resultingOffset);
+                newPosition = claim(termBuffer, tailCounterOffset, length, bufferClaim);
             }
             else
             {
@@ -336,20 +350,431 @@ public final class ConcurrentPublication extends Publication
         return newPosition;
     }
 
-    private long newPosition(
-        final int termCount, final int termOffset, final int termId, final long position, final int resultingOffset)
+    private long appendUnfragmentedMessage(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final ReservedValueSupplier reservedValueSupplier)
     {
-        if (resultingOffset > 0)
+        final int frameLength = length + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int termLength = termBuffer.capacity();
+
+        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, alignedLength);
+        final int termId = termId(rawTail);
+        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+
+        final int resultingOffset = termOffset + alignedLength;
+        final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
+        if (resultingOffset > termLength)
         {
-            return (position - termOffset) + resultingOffset;
+            return handleEndOfLog(termBuffer, termLength, termId, termOffset, position);
+        }
+        else
+        {
+            headerWriter.write(termBuffer, termOffset, frameLength, termId);
+            termBuffer.putBytes(termOffset + HEADER_LENGTH, buffer, offset, length);
+
+            if (null != reservedValueSupplier)
+            {
+                final long reservedValue = reservedValueSupplier.get(termBuffer, termOffset, frameLength);
+                termBuffer.putLong(termOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+            }
+
+            frameLengthOrdered(termBuffer, termOffset, frameLength);
         }
 
-        if ((position + termOffset) > maxPossiblePosition)
+        return position;
+    }
+
+    private long appendFragmentedMessage(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int numMaxPayloads = length / maxPayloadLength;
+        final int remainingPayload = length % maxPayloadLength;
+        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
+        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final int termLength = termBuffer.capacity();
+
+        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, requiredLength);
+        final int termId = termId(rawTail);
+        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+
+        final int resultingOffset = termOffset + requiredLength;
+        final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
+        if (resultingOffset > termLength)
+        {
+            return handleEndOfLog(termBuffer, termLength, termId, termOffset, position);
+        }
+        else
+        {
+            int frameOffset = termOffset;
+            byte flags = BEGIN_FRAG_FLAG;
+            int remaining = length;
+
+            do
+            {
+                final int bytesToWrite = Math.min(remaining, maxPayloadLength);
+                final int frameLength = bytesToWrite + HEADER_LENGTH;
+                final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+
+                headerWriter.write(termBuffer, frameOffset, frameLength, termId);
+                termBuffer.putBytes(
+                    frameOffset + HEADER_LENGTH,
+                    buffer,
+                    offset + (length - remaining),
+                    bytesToWrite);
+
+                if (remaining <= maxPayloadLength)
+                {
+                    flags |= END_FRAG_FLAG;
+                }
+
+                frameFlags(termBuffer, frameOffset, flags);
+
+                if (null != reservedValueSupplier)
+                {
+                    final long reservedValue = reservedValueSupplier.get(termBuffer, frameOffset, frameLength);
+                    termBuffer.putLong(frameOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+                }
+
+                frameLengthOrdered(termBuffer, frameOffset, frameLength);
+
+                flags = 0;
+                frameOffset += alignedLength;
+                remaining -= bytesToWrite;
+            }
+            while (remaining > 0);
+        }
+
+        return position;
+    }
+
+    private long appendUnfragmentedMessage(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final DirectBuffer bufferOne,
+        final int offsetOne,
+        final int lengthOne,
+        final DirectBuffer bufferTwo,
+        final int offsetTwo,
+        final int lengthTwo,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int frameLength = lengthOne + lengthTwo + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int termLength = termBuffer.capacity();
+
+        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, alignedLength);
+        final int termId = termId(rawTail);
+        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+
+        final int resultingOffset = termOffset + alignedLength;
+        final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
+        if (resultingOffset > termLength)
+        {
+            return handleEndOfLog(termBuffer, termLength, termId, termOffset, position);
+        }
+        else
+        {
+            headerWriter.write(termBuffer, termOffset, frameLength, termId);
+            termBuffer.putBytes(termOffset + HEADER_LENGTH, bufferOne, offsetOne, lengthOne);
+            termBuffer.putBytes(termOffset + HEADER_LENGTH + lengthOne, bufferTwo, offsetTwo, lengthTwo);
+
+            if (null != reservedValueSupplier)
+            {
+                final long reservedValue = reservedValueSupplier.get(termBuffer, termOffset, frameLength);
+                termBuffer.putLong(termOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+            }
+
+            frameLengthOrdered(termBuffer, termOffset, frameLength);
+        }
+
+        return position;
+    }
+
+    private long appendFragmentedMessage(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final DirectBuffer bufferOne,
+        final int offsetOne,
+        final int lengthOne,
+        final DirectBuffer bufferTwo,
+        final int offsetTwo,
+        final int lengthTwo,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int length = lengthOne + lengthTwo;
+        final int numMaxPayloads = length / maxPayloadLength;
+        final int remainingPayload = length % maxPayloadLength;
+        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
+        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final int termLength = termBuffer.capacity();
+
+        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, requiredLength);
+        final int termId = termId(rawTail);
+        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+
+        final int resultingOffset = termOffset + requiredLength;
+        final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
+        if (resultingOffset > termLength)
+        {
+            return handleEndOfLog(termBuffer, termLength, termId, termOffset, position);
+        }
+        else
+        {
+            int frameOffset = termOffset;
+            byte flags = BEGIN_FRAG_FLAG;
+            int remaining = length;
+            int positionOne = 0;
+            int positionTwo = 0;
+
+            do
+            {
+                final int bytesToWrite = Math.min(remaining, maxPayloadLength);
+                final int frameLength = bytesToWrite + HEADER_LENGTH;
+                final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+
+                headerWriter.write(termBuffer, frameOffset, frameLength, termId);
+
+                int bytesWritten = 0;
+                int payloadOffset = frameOffset + HEADER_LENGTH;
+                do
+                {
+                    final int remainingOne = lengthOne - positionOne;
+                    if (remainingOne > 0)
+                    {
+                        final int numBytes = Math.min(bytesToWrite - bytesWritten, remainingOne);
+                        termBuffer.putBytes(payloadOffset, bufferOne, offsetOne + positionOne, numBytes);
+
+                        bytesWritten += numBytes;
+                        payloadOffset += numBytes;
+                        positionOne += numBytes;
+                    }
+                    else
+                    {
+                        final int numBytes = Math.min(bytesToWrite - bytesWritten, lengthTwo - positionTwo);
+                        termBuffer.putBytes(payloadOffset, bufferTwo, offsetTwo + positionTwo, numBytes);
+
+                        bytesWritten += numBytes;
+                        payloadOffset += numBytes;
+                        positionTwo += numBytes;
+                    }
+                }
+                while (bytesWritten < bytesToWrite);
+
+                if (remaining <= maxPayloadLength)
+                {
+                    flags |= END_FRAG_FLAG;
+                }
+
+                frameFlags(termBuffer, frameOffset, flags);
+
+                if (null != reservedValueSupplier)
+                {
+                    final long reservedValue = reservedValueSupplier.get(termBuffer, frameOffset, frameLength);
+                    termBuffer.putLong(frameOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+                }
+
+                frameLengthOrdered(termBuffer, frameOffset, frameLength);
+
+                flags = 0;
+                frameOffset += alignedLength;
+                remaining -= bytesToWrite;
+            }
+            while (remaining > 0);
+        }
+
+        return position;
+    }
+
+    private long appendUnfragmentedMessage(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final DirectBufferVector[] vectors,
+        final int length,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int frameLength = length + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int termLength = termBuffer.capacity();
+
+        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, alignedLength);
+        final int termId = termId(rawTail);
+        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+
+        final int resultingOffset = termOffset + alignedLength;
+        final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
+        if (resultingOffset > termLength)
+        {
+            return handleEndOfLog(termBuffer, termLength, termId, termOffset, position);
+        }
+        else
+        {
+            headerWriter.write(termBuffer, termOffset, frameLength, termId);
+
+            int offset = termOffset + HEADER_LENGTH;
+            for (final DirectBufferVector vector : vectors)
+            {
+                termBuffer.putBytes(offset, vector.buffer(), vector.offset(), vector.length());
+                offset += vector.length();
+            }
+
+            if (null != reservedValueSupplier)
+            {
+                final long reservedValue = reservedValueSupplier.get(termBuffer, termOffset, frameLength);
+                termBuffer.putLong(termOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+            }
+
+            frameLengthOrdered(termBuffer, termOffset, frameLength);
+        }
+
+        return position;
+    }
+
+    private long appendFragmentedMessage(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final DirectBufferVector[] vectors,
+        final int length,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int numMaxPayloads = length / maxPayloadLength;
+        final int remainingPayload = length % maxPayloadLength;
+        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
+        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final int termLength = termBuffer.capacity();
+
+        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, requiredLength);
+        final int termId = termId(rawTail);
+        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+
+        final int resultingOffset = termOffset + requiredLength;
+        final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
+        if (resultingOffset > termLength)
+        {
+            return handleEndOfLog(termBuffer, termLength, termId, termOffset, position);
+        }
+        else
+        {
+            int frameOffset = termOffset;
+            byte flags = BEGIN_FRAG_FLAG;
+            int remaining = length;
+            int vectorIndex = 0;
+            int vectorOffset = 0;
+
+            do
+            {
+                final int bytesToWrite = Math.min(remaining, maxPayloadLength);
+                final int frameLength = bytesToWrite + HEADER_LENGTH;
+                final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+
+                headerWriter.write(termBuffer, frameOffset, frameLength, termId);
+
+                int bytesWritten = 0;
+                int payloadOffset = frameOffset + HEADER_LENGTH;
+                do
+                {
+                    final DirectBufferVector vector = vectors[vectorIndex];
+                    final int vectorRemaining = vector.length() - vectorOffset;
+                    final int numBytes = Math.min(bytesToWrite - bytesWritten, vectorRemaining);
+
+                    termBuffer.putBytes(payloadOffset, vector.buffer(), vector.offset() + vectorOffset, numBytes);
+
+                    bytesWritten += numBytes;
+                    payloadOffset += numBytes;
+                    vectorOffset += numBytes;
+
+                    if (vectorRemaining <= numBytes)
+                    {
+                        vectorIndex++;
+                        vectorOffset = 0;
+                    }
+                }
+                while (bytesWritten < bytesToWrite);
+
+                if (remaining <= maxPayloadLength)
+                {
+                    flags |= END_FRAG_FLAG;
+                }
+
+                frameFlags(termBuffer, frameOffset, flags);
+
+                if (null != reservedValueSupplier)
+                {
+                    final long reservedValue = reservedValueSupplier.get(termBuffer, frameOffset, frameLength);
+                    termBuffer.putLong(frameOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+                }
+
+                frameLengthOrdered(termBuffer, frameOffset, frameLength);
+
+                flags = 0;
+                frameOffset += alignedLength;
+                remaining -= bytesToWrite;
+            }
+            while (remaining > 0);
+        }
+
+        return position;
+    }
+
+    private long claim(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final int length,
+        final BufferClaim bufferClaim)
+    {
+        final int frameLength = length + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int termLength = termBuffer.capacity();
+
+        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, alignedLength);
+        final int termId = termId(rawTail);
+        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+
+        final int resultingOffset = termOffset + alignedLength;
+        final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
+        if (resultingOffset > termLength)
+        {
+            return handleEndOfLog(termBuffer, termLength, termId, termOffset, position);
+        }
+        else
+        {
+            headerWriter.write(termBuffer, termOffset, frameLength, termId);
+            bufferClaim.wrap(termBuffer, termOffset, frameLength);
+        }
+
+        return position;
+    }
+
+    private long handleEndOfLog(
+        final UnsafeBuffer termBuffer,
+        final int termLength,
+        final int termId,
+        final int termOffset,
+        final long position)
+    {
+        if (termOffset < termLength)
+        {
+            final int paddingLength = termLength - termOffset;
+            headerWriter.write(termBuffer, termOffset, paddingLength, termId);
+            frameType(termBuffer, termOffset, PADDING_FRAME_TYPE);
+            frameLengthOrdered(termBuffer, termOffset, paddingLength);
+        }
+
+        if (position >= maxPossiblePosition)
         {
             return MAX_POSITION_EXCEEDED;
         }
 
-        rotateLog(logMetaDataBuffer, termCount, termId);
+        rotateLog(logMetaDataBuffer, termId - initialTermId, termId);
 
         return ADMIN_ACTION;
     }

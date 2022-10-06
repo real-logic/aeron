@@ -316,8 +316,8 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         assertNotEquals(0, numPendingMessages);
 
         final long expectedNextSessionId = mutableNextSessionId.get();
-        assertNotEquals(mutableLogServiceSessionId.get(), baseLogServiceSessionId);
-        assertNotEquals(mutableNextServiceSessionId.get(), baseNextServiceSessionId);
+        assertNotEquals(Long.toString(mutableLogServiceSessionId.get()), baseLogServiceSessionId);
+        assertNotEquals(Long.toString(mutableNextServiceSessionId.get()), baseNextServiceSessionId);
 
         modifySnapshot(
             leader,
@@ -474,8 +474,8 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
 
         final ArrayList<File> segmentFiles = listSegmentFiles(leader, leaderSnapshot.recordingId);
         assertEquals(1, segmentFiles.size());
-        final MappedByteBuffer mappedByteBuffer =
-            IoUtil.mapExistingFile(segmentFiles.get(0), "snapshot file");
+        final MappedByteBuffer mappedByteBuffer = IoUtil.mapExistingFile(
+            segmentFiles.get(0), "snapshot file");
         try
         {
             final UnsafeBuffer snapshotBuffer = new UnsafeBuffer(mappedByteBuffer);
@@ -563,8 +563,9 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         final TestNode leader, final long snapshotRecordingId, final TestNode follower)
     {
         final File clusterDir = follower.consensusModule().context().clusterDir();
-        final RecordingLog.Entry followerSnasphot = ClusterTool.findLatestValidSnapshot(clusterDir);
-        assertNotNull(followerSnasphot, "follower without a snapshot node");
+        final RecordingLog.Entry followerSnapshot = ClusterTool.findLatestValidSnapshot(clusterDir);
+        assertNotNull(followerSnapshot, "follower without a snapshot node");
+
         final String aeronDirectoryName = follower.mediaDriver().aeronDirectoryName();
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
             AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
@@ -577,11 +578,12 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
             final RecordingReplicator recordingReplicator = new RecordingReplicator(
                 aeronArchive,
                 snapshotRecordingId,
-                followerSnasphot.recordingId,
+                followerSnapshot.recordingId,
                 leaderArchiveContext.controlChannel(),
                 leaderArchiveContext.controlStreamId(),
                 null);
-            assertEquals(followerSnasphot.recordingId, recordingReplicator.replicate());
+
+            assertEquals(followerSnapshot.recordingId, recordingReplicator.replicate());
         }
     }
 

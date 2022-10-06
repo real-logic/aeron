@@ -46,7 +46,7 @@ Aeron is free and open source but if your team needs support, we are here to hel
 We provide a range of services including:
 * Training for development and operations with Aeron and Aeron Cluster.
 * Consulting, for example if you’re not sure how to design your system or need help tuning your system.
-* We also offer a number of proprietary enhancements on top of Aeron and Aeron Cluster such as kernel bypass (ef_vi, AWS DPDK, and VMA) for increased performance, and a blazing fast encryption with ATS.
+* We also offer a number of proprietary enhancements on top of Aeron and Aeron Cluster such as kernel bypass (ef_vi, AWS DPDK, and VMA) for increased performance, and blazing fast encryption with ATS.
 * If you’re building a new trading system, we have experienced Aeron developers who can help.
 
 Please get in touch at [sales@aeron.io](mailto:sales@aeron.io?subject=Aeron) if you would like to learn more about any of these.

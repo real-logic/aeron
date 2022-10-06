@@ -36,7 +36,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * Each {@link Image} identifies a source {@link Publication} by {@link #sessionId()}.
  * <p>
  * By default, fragmented messages are not reassembled before delivery. If an application must
- * receive whole messages, whether or not they were fragmented, then the Subscriber
+ * receive whole messages, whether they were fragmented or not, then the Subscriber
  * should be created with a {@link FragmentAssembler} or a custom implementation.
  * <p>
  * It is an application's responsibility to {@link #poll} the {@link Image} for new messages.
@@ -380,6 +380,7 @@ public final class Image
                 {
                     break;
                 }
+
                 if (COMMIT == action)
                 {
                     initialPosition += (offset - initialOffset);
@@ -541,6 +542,7 @@ public final class Image
                 {
                     break;
                 }
+
                 if (COMMIT == action)
                 {
                     initialPosition += (offset - initialOffset);

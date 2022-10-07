@@ -15,7 +15,6 @@
  */
 package io.aeron;
 
-import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.*;
 import io.aeron.logbuffer.ControlledFragmentHandler.Action;
 import org.agrona.*;

@@ -36,14 +36,13 @@ class ImageRangeTest
 {
     @SuppressWarnings("JUnitMalformedDeclaration")
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     void shouldHandleAllPossibleOffsets(final boolean useSpareFiles, final @TempDir File baseDir)
     {
         final int termBufferLength = 65536;
         final int filePageSize = 4096;
         final long subscriberPositionThatWillTriggerException = 3147497471L;
         final Position subscriberPosition = new AtomicLongPosition();
-
 
         try (
             FileStoreLogFactory fileStoreLogFactory = new FileStoreLogFactory(
@@ -65,8 +64,7 @@ class ImageRangeTest
 
                 image.boundedControlledPoll(
                     (buffer, offset, length, header) -> ControlledFragmentHandler.Action.COMMIT, 1024, 1);
-                image.boundedPoll(
-                    (buffer, offset, length, header) -> {}, 1024, 1);
+                image.boundedPoll((buffer, offset, length, header) -> {}, 1024, 1);
             }
         }
     }

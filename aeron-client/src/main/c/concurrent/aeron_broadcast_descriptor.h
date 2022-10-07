@@ -41,7 +41,7 @@ aeron_broadcast_record_descriptor_t;
 #define AERON_BROADCAST_BUFFER_TRAILER_LENGTH (sizeof(aeron_broadcast_descriptor_t))
 
 #define AERON_BROADCAST_IS_CAPACITY_VALID(capacity) AERON_IS_POWER_OF_TWO(capacity)
-#define AERON_BROADCAST_MAX_MESSAGE_LENGTH(capacity) (capacity / 8)
+#define AERON_BROADCAST_MAX_MESSAGE_LENGTH(capacity) ((capacity) / 8)
 #define AERON_BROADCAST_INVALID_MSG_TYPE_ID(id) (id < 1)
 #define AERON_BROADCAST_PADDING_MSG_TYPE_ID (-1)
 

@@ -42,7 +42,7 @@ aeron_driver_managed_resource_t;
 typedef struct aeron_position_stct
 {
     int32_t counter_id;
-    int64_t *value_addr;
+    volatile int64_t *value_addr;
 }
 aeron_position_t;
 
@@ -61,7 +61,7 @@ typedef struct aeron_tetherable_position_stct
     bool is_tether;
     aeron_subscription_tether_state_t state;
     int32_t counter_id;
-    int64_t *value_addr;
+    volatile int64_t *value_addr;
     int64_t subscription_registration_id;
     int64_t time_of_last_update_ns;
 }

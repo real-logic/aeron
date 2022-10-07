@@ -28,7 +28,7 @@
 #pragma pack(4)
 typedef struct aeron_cnc_metadata_stct
 {
-    int32_t cnc_version;
+    volatile int32_t cnc_version;
     int32_t to_driver_buffer_length;
     int32_t to_clients_buffer_length;
     int32_t counter_metadata_buffer_length;

@@ -31,8 +31,8 @@ typedef struct aeron_exclusive_publication_stct
     aeron_log_buffer_t *log_buffer;
     aeron_logbuffer_metadata_t *log_meta_data;
 
-    int64_t *position_limit;
-    int64_t *channel_status_indicator;
+    volatile int64_t *position_limit;
+    volatile int64_t *channel_status_indicator;
 
     int64_t registration_id;
     int64_t original_registration_id;

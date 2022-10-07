@@ -42,8 +42,8 @@ typedef struct rate_reporter_stct
     struct polling_elements_stct
     {
         uint8_t pre_pad[AERON_CACHE_LINE_LENGTH * 2];
-        uint64_t total_bytes;
-        uint64_t total_messages;
+        volatile uint64_t total_bytes;
+        volatile uint64_t total_messages;
         uint8_t post_pad[AERON_CACHE_LINE_LENGTH * 2];
     }
     polling_fields;

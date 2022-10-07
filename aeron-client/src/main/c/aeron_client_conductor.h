@@ -94,7 +94,7 @@ typedef struct aeron_client_registering_resource_stct
         int32_t type_id;
     }
     counter;
-    aeron_client_registration_status_t registration_status;
+    volatile aeron_client_registration_status_t registration_status;
     aeron_client_managed_resource_type_t type;
 }
 aeron_client_registering_resource_t;
@@ -146,7 +146,7 @@ typedef struct aeron_client_handler_cmd_stct
     handler;
     void *clientd;
     aeron_client_handler_cmd_type_t type;
-    bool processed;
+    volatile bool processed;
 }
 aeron_client_handler_cmd_t;
 

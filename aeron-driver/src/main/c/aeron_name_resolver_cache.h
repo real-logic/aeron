@@ -58,7 +58,7 @@ int aeron_name_resolver_cache_add_or_update(
     size_t name_length,
     aeron_name_resolver_cache_addr_t *cache_addr,
     int64_t time_of_last_activity_ms,
-    int64_t *cache_entries_counter);
+    volatile int64_t *cache_entries_counter);
 
 int aeron_name_resolver_cache_lookup_by_name(
     aeron_name_resolver_cache_t *cache,

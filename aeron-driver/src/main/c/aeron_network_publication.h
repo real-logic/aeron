@@ -167,7 +167,7 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
 void aeron_network_publication_check_for_blocked_publisher(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t producer_position, int64_t snd_pos);
 
-inline void aeron_network_publication_add_subscriber_hook(void *clientd, int64_t *value_addr)
+inline void aeron_network_publication_add_subscriber_hook(void *clientd, volatile int64_t *value_addr)
 {
     aeron_network_publication_t *publication = (aeron_network_publication_t *)clientd;
 
@@ -179,7 +179,7 @@ inline void aeron_network_publication_add_subscriber_hook(void *clientd, int64_t
     }
 }
 
-inline void aeron_network_publication_remove_subscriber_hook(void *clientd, int64_t *value_addr)
+inline void aeron_network_publication_remove_subscriber_hook(void *clientd, volatile int64_t *value_addr)
 {
     aeron_network_publication_t *publication = (aeron_network_publication_t *)clientd;
 

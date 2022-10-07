@@ -4670,7 +4670,7 @@ void aeron_driver_conductor_on_receive_endpoint_removed(void *clientd, void *ite
     aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, cmd);
 }
 
-extern void aeron_driver_subscribable_null_hook(void *clientd, int64_t *value_addr);
+extern void aeron_driver_subscribable_null_hook(void *clientd, volatile int64_t *value_addr);
 
 extern bool aeron_driver_conductor_is_subscribable_linked(
     aeron_subscription_link_t *link, aeron_subscribable_t *subscribable);

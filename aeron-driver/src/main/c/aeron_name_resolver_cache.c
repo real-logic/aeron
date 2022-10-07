@@ -67,7 +67,7 @@ int aeron_name_resolver_cache_add_or_update(
     size_t name_length,
     aeron_name_resolver_cache_addr_t *cache_addr,
     int64_t time_of_last_activity_ms,
-    int64_t *cache_entries_counter)
+    volatile int64_t *cache_entries_counter)
 {
     int index = aeron_name_resolver_cache_find_index_by_name_and_type(cache, name, name_length, cache_addr->res_type);
     aeron_name_resolver_cache_entry_t *entry;

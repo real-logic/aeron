@@ -1016,9 +1016,9 @@ void aeron_network_publication_on_time_event(
     }
 }
 
-extern void aeron_network_publication_add_subscriber_hook(void *clientd, int64_t *value_addr);
+extern void aeron_network_publication_add_subscriber_hook(void *clientd, volatile int64_t *value_addr);
 
-extern void aeron_network_publication_remove_subscriber_hook(void *clientd, int64_t *value_addr);
+extern void aeron_network_publication_remove_subscriber_hook(void *clientd, volatile int64_t *value_addr);
 
 extern bool aeron_network_publication_is_possibly_blocked(
     aeron_network_publication_t *publication, int64_t producer_position, int64_t consumer_position);

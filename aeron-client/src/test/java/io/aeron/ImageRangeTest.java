@@ -31,7 +31,6 @@ import static io.aeron.logbuffer.LogBufferDescriptor.isConnected;
 import static io.aeron.logbuffer.LogBufferDescriptor.mtuLength;
 import static io.aeron.logbuffer.LogBufferDescriptor.pageSize;
 import static io.aeron.logbuffer.LogBufferDescriptor.termLength;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ImageRangeTest
 {
@@ -42,11 +41,14 @@ class ImageRangeTest
     {
         final int termBufferLength = 65536;
         final int filePageSize = 4096;
-        final FileStoreLogFactory fileStoreLogFactory = new FileStoreLogFactory(
-            baseDir.getAbsolutePath(), filePageSize, false, 0, new RethrowingErrorHandler());
         final long subscriberPositionThatWillTriggerException = 3147497471L;
+        final Position subscriberPosition = new AtomicLongPosition();
 
-        try (RawLog rawLog = fileStoreLogFactory.newImage(0, termBufferLength, useSpareFiles))
+
+        try (
+            FileStoreLogFactory fileStoreLogFactory = new FileStoreLogFactory(
+                baseDir.getAbsolutePath(), filePageSize, false, 0, new RethrowingErrorHandler());
+            RawLog rawLog = fileStoreLogFactory.newImage(0, termBufferLength, useSpareFiles))
         {
             initialTermId(rawLog.metaData(), 0);
             mtuLength(rawLog.metaData(), 1408);
@@ -54,20 +56,18 @@ class ImageRangeTest
             pageSize(rawLog.metaData(), filePageSize);
             isConnected(rawLog.metaData(), true);
 
-            final LogBuffers logBuffers = new LogBuffers(rawLog.fileName());
+            try (LogBuffers logBuffers = new LogBuffers(rawLog.fileName()))
+            {
+                final Image image = new Image(
+                    null, 1, subscriberPosition, logBuffers, new RethrowingErrorHandler(), "127.0.0.1:123", 0);
 
-            assertEquals(termBufferLength, logBuffers.termLength());
-            final Position subscriberPosition = new AtomicLongPosition();
+                subscriberPosition.set(subscriberPositionThatWillTriggerException);
 
-            final Image image = new Image(
-                null, 1, subscriberPosition, logBuffers, new RethrowingErrorHandler(), "127.0.0.1:123", 0);
-
-            subscriberPosition.set(subscriberPositionThatWillTriggerException);
-
-            image.boundedControlledPoll(
-                (buffer, offset, length, header) -> ControlledFragmentHandler.Action.COMMIT, 1024, 1);
-            image.boundedPoll(
-                (buffer, offset, length, header) -> {}, 1024, 1);
+                image.boundedControlledPoll(
+                    (buffer, offset, length, header) -> ControlledFragmentHandler.Action.COMMIT, 1024, 1);
+                image.boundedPoll(
+                    (buffer, offset, length, header) -> {}, 1024, 1);
+            }
         }
     }
 }

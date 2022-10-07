@@ -176,7 +176,7 @@ class PublicationTest
 
     abstract class BaseTests
     {
-        abstract long invoke(int length);
+        abstract long invoke(int length, ReservedValueSupplier reservedValueSupplier);
 
         abstract void onError(UnsafeBuffer termBuffer, int termOffset, int length);
 
@@ -189,7 +189,7 @@ class PublicationTest
             final int termOffset = 0;
             publication.close();
 
-            assertEquals(CLOSED, invoke(length));
+            assertEquals(CLOSED, invoke(length, null));
 
             onError(termBuffers[PARTITION_INDEX], termOffset, length);
             assertFrameType(PARTITION_INDEX, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
@@ -205,7 +205,7 @@ class PublicationTest
             assertEquals(indexByTermCount(termCount), PARTITION_INDEX);
             initialiseTailWithTermId(logMetaDataBuffer, PARTITION_INDEX, TERM_ID_1 + 5);
 
-            assertEquals(ADMIN_ACTION, invoke(length));
+            assertEquals(ADMIN_ACTION, invoke(length, null));
 
             onError(termBuffers[PARTITION_INDEX], termOffset, length);
             assertFrameType(PARTITION_INDEX, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
@@ -223,7 +223,7 @@ class PublicationTest
             activeTermCount(logMetaDataBuffer, Integer.MAX_VALUE);
             isConnected(logMetaDataBuffer, true);
 
-            assertEquals(MAX_POSITION_EXCEEDED, invoke(length));
+            assertEquals(MAX_POSITION_EXCEEDED, invoke(length, null));
 
             onError(termBuffers[partitionIndex], termOffset, length);
             assertFrameType(partitionIndex, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
@@ -241,11 +241,13 @@ class PublicationTest
             activeTermCount(logMetaDataBuffer, 1);
             isConnected(logMetaDataBuffer, true);
 
-            assertEquals(BACK_PRESSURED, invoke(length));
+            assertEquals(BACK_PRESSURED, invoke(length, (termBuffer, termOffset1, frameLength) -> Long.MAX_VALUE));
 
-            onError(termBuffers[partitionIndex], termOffset, length);
+            final UnsafeBuffer termBuffer = termBuffers[partitionIndex];
+            onError(termBuffer, termOffset, length);
             assertFrameType(partitionIndex, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
             assertFrameLength(partitionIndex, termOffset, 0);
+            assertEquals(0, DataHeaderFlyweight.reservedValue(termBuffer, termOffset));
         }
 
         @Test
@@ -258,7 +260,7 @@ class PublicationTest
             initialiseTailWithTermId(logMetaDataBuffer, partitionIndex, TERM_ID_1 + 1);
             activeTermCount(logMetaDataBuffer, 1);
 
-            assertEquals(NOT_CONNECTED, invoke(length));
+            assertEquals(NOT_CONNECTED, invoke(length, null));
 
             onError(termBuffers[partitionIndex], termOffset, length);
             assertFrameType(partitionIndex, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
@@ -275,7 +277,7 @@ class PublicationTest
             rawTailVolatile(logMetaDataBuffer, 1, packTail(TERM_ID_1 + 1 - PARTITION_COUNT, 555));
             rawTailVolatile(logMetaDataBuffer, 2, packTail(STREAM_ID, 777));
 
-            assertEquals(ADMIN_ACTION, invoke(length));
+            assertEquals(ADMIN_ACTION, invoke(length, null));
 
             onError(termBuffers[0], termOffset, length);
             assertFrameType(0, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
@@ -298,7 +300,7 @@ class PublicationTest
             activeTermCount(logMetaDataBuffer, Integer.MAX_VALUE);
             isConnected(logMetaDataBuffer, true);
 
-            assertEquals(BACK_PRESSURED, invoke(length));
+            assertEquals(BACK_PRESSURED, invoke(length, null));
 
             onError(termBuffers[partitionIndex], termOffset, length);
             assertFrameType(partitionIndex, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
@@ -313,8 +315,7 @@ class PublicationTest
             final int termId,
             final int termCount,
             final long tailAfterUpdate,
-            final long expectedPosition,
-            final int expectedFrameLength)
+            final long expectedPosition)
         {
             when(publicationLimit.getVolatile()).thenReturn(Long.MAX_VALUE);
             isConnected(logMetaDataBuffer, true);
@@ -326,13 +327,12 @@ class PublicationTest
                 .when(logMetaDataBuffer)
                 .getAndAddLong(anyInt(), anyLong());
 
-            final long position = invoke(length);
+            final long position = invoke(length, ((termBuffer, termOffset, frameLength) -> termOffset ^ frameLength));
 
             assertEquals(expectedPosition, position);
             final UnsafeBuffer buffer = termBuffers[partitionIndex];
             final int termOffset = termOffset(tailAfterUpdate);
             assertFrameType(partitionIndex, termOffset, DEFAULT_FRAME_TYPE);
-            assertFrameLength(partitionIndex, termOffset, expectedFrameLength);
             assertEquals(SESSION_ID, FrameDescriptor.frameSessionId(buffer, termOffset));
             assertEquals(STREAM_ID, DataHeaderFlyweight.streamId(buffer, termOffset));
             assertEquals(termId(tailAfterUpdate), DataHeaderFlyweight.termId(buffer, termOffset));
@@ -345,7 +345,7 @@ class PublicationTest
     {
         private final BufferClaim bufferClaim = new BufferClaim();
 
-        long invoke(final int length)
+        long invoke(final int length, final ReservedValueSupplier reservedValueSupplier)
         {
             return publication.tryClaim(length, bufferClaim);
         }
@@ -358,6 +358,8 @@ class PublicationTest
 
         void onSuccess(final UnsafeBuffer termBuffer, final int termOffset, final int length)
         {
+            assertEquals(-(length + HEADER_LENGTH), DataHeaderFlyweight.fragmentLength(termBuffer, termOffset));
+            assertEquals(0, DataHeaderFlyweight.reservedValue(termBuffer, termOffset));
             assertEquals(length, bufferClaim.length());
         }
 
@@ -375,8 +377,8 @@ class PublicationTest
                 termId,
                 termCount,
                 tailAfterUpdate,
-                expectedPosition,
-                -(length + HEADER_LENGTH));
+                expectedPosition
+            );
         }
     }
 
@@ -415,6 +417,7 @@ class PublicationTest
                 {
                     assertEquals(FrameDescriptor.END_FRAG_FLAG, (frameFlags & FrameDescriptor.END_FRAG_FLAG));
                 }
+                assertEquals(offset ^ frameLength, DataHeaderFlyweight.reservedValue(termBuffer, offset));
                 offset += HEADER_LENGTH;
                 for (int i = 0; i < chunkLength; i++)
                 {
@@ -437,16 +440,14 @@ class PublicationTest
             final int termId,
             final int termCount,
             final long tailAfterUpdate,
-            final long expectedPosition,
-            final int expectedFrameLength)
+            final long expectedPosition)
         {
             testPositionUponSuccess(
                 length,
                 termId,
                 termCount,
                 tailAfterUpdate,
-                expectedPosition,
-                expectedFrameLength);
+                expectedPosition);
         }
     }
 
@@ -468,9 +469,9 @@ class PublicationTest
             return sendBuffer;
         }
 
-        long invoke(final int length)
+        long invoke(final int length, final ReservedValueSupplier reservedValueSupplier)
         {
-            return publication.offer(sendBuffer, 0, length);
+            return publication.offer(sendBuffer, 0, length, reservedValueSupplier);
         }
 
         @Test
@@ -486,10 +487,12 @@ class PublicationTest
             rawTail(logMetaDataBuffer, partitionIndex, packTail(termId, termOffset));
             activeTermCount(logMetaDataBuffer, 2);
 
-            final long position = publication.offer(sendBuffer, offset, length);
+            final long position = publication.offer(
+                sendBuffer, offset, length, (termBuffer, frameOffset, frameLength) -> Long.MIN_VALUE);
 
             assertEquals(525330, position);
             final UnsafeBuffer termBuffer = termBuffers[partitionIndex];
+            assertEquals(Long.MIN_VALUE, DataHeaderFlyweight.reservedValue(termBuffer, termOffset));
             for (int i = 0; i < length; i++)
             {
                 assertEquals(sendBuffer.getByte(offset + i), termBuffer.getByte(termOffset + HEADER_LENGTH + i));
@@ -513,7 +516,7 @@ class PublicationTest
             return processedBytes < buffer1.capacity() ? buffer1 : buffer2;
         }
 
-        long invoke(final int length)
+        long invoke(final int length, final ReservedValueSupplier reservedValueSupplier)
         {
             final byte[] bytes = new byte[length];
             ThreadLocalRandom.current().nextBytes(bytes);
@@ -522,7 +525,7 @@ class PublicationTest
             buffer1 = new UnsafeBuffer(bytes, 0, chunk1Length);
             buffer2 = new UnsafeBuffer(bytes, chunk1Length, chunk2Length);
 
-            return publication.offer(buffer1, 0, chunk1Length, buffer2, 0, chunk2Length);
+            return publication.offer(buffer1, 0, chunk1Length, buffer2, 0, chunk2Length, reservedValueSupplier);
         }
 
         @Test
@@ -545,10 +548,18 @@ class PublicationTest
             final int offsetOne = 2;
             final int lengthTwo = 3;
             final int offsetTwo = 4;
-            final long position = publication.offer(buffer1, offsetOne, lengthOne, buffer2, offsetTwo, lengthTwo);
+            final long position = publication.offer(
+                buffer1,
+                offsetOne,
+                lengthOne,
+                buffer2,
+                offsetTwo,
+                lengthTwo,
+                (termBuffer, frameOffset, frameLength) -> -1);
 
             assertEquals(262272, position);
             final UnsafeBuffer termBuffer = termBuffers[partitionIndex];
+            assertEquals(-1, DataHeaderFlyweight.reservedValue(termBuffer, termOffset));
             for (int i = 0; i < lengthOne; i++)
             {
                 assertEquals(buffer1.getByte(offsetOne + i), termBuffer.getByte(termOffset + HEADER_LENGTH + i));
@@ -571,7 +582,7 @@ class PublicationTest
             return (UnsafeBuffer)vectors[0].buffer();
         }
 
-        long invoke(final int length)
+        long invoke(final int length, final ReservedValueSupplier reservedValueSupplier)
         {
             final byte[] bytes = new byte[length];
             ThreadLocalRandom.current().nextBytes(bytes);
@@ -585,7 +596,7 @@ class PublicationTest
                 offset += size;
             }
 
-            return publication.offer(vectors);
+            return publication.offer(vectors, reservedValueSupplier);
         }
     }
 
@@ -624,14 +635,12 @@ class PublicationTest
                 5,
                 4,
                 packTail(11, 3072),
-                computePosition(11, 3072 + 160, POSITION_BITS_TO_SHIFT, TERM_ID_1),
-                124 + HEADER_LENGTH),
+                computePosition(11, 3072 + 160, POSITION_BITS_TO_SHIFT, TERM_ID_1)),
             Arguments.of(
                 MAX_MESSAGE_SIZE,
                 77,
                 76,
                 packTail(77, 1024),
-                computePosition(77, 1024 + TOTAL_ALIGNED_MAX_MESSAGE_SIZE, POSITION_BITS_TO_SHIFT, TERM_ID_1),
-                MAX_PAYLOAD_SIZE + HEADER_LENGTH));
+                computePosition(77, 1024 + TOTAL_ALIGNED_MAX_MESSAGE_SIZE, POSITION_BITS_TO_SHIFT, TERM_ID_1)));
     }
 }

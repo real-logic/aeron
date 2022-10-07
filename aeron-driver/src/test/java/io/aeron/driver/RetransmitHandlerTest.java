@@ -16,7 +16,11 @@
 package io.aeron.driver;
 
 import io.aeron.ReservedValueSupplier;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.ExclusiveTermAppender;
+import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.HeaderWriter;
+import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -58,7 +62,7 @@ public class RetransmitHandlerTest
     private final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirect(TERM_BUFFER_LENGTH));
     private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(
         allocateDirect(LogBufferDescriptor.LOG_META_DATA_LENGTH));
-    private final TermAppender termAppender = new TermAppender(termBuffer, metaDataBuffer, 0);
+    private final ExclusiveTermAppender termAppender = new ExclusiveTermAppender(termBuffer, metaDataBuffer, 0);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
@@ -254,7 +258,7 @@ public class RetransmitHandlerTest
     {
         rcvBuffer.putBytes(0, DATA);
         termAppender.appendUnfragmentedMessage(
-            headerWriter, rcvBuffer, 0, DATA.length, RESERVED_VALUE_SUPPLIER, TERM_ID);
+            TERM_ID, 0, headerWriter, rcvBuffer, 0, DATA.length, RESERVED_VALUE_SUPPLIER);
     }
 
     private void addReceivedDataFrame(final int msgNum)

@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.*;
 import io.aeron.logbuffer.ControlledFragmentHandler.Action;
 import org.agrona.*;
@@ -426,8 +427,13 @@ public final class Image
             return 0;
         }
 
-        int fragmentsRead = 0;
         final long initialPosition = subscriberPosition.get();
+        if (initialPosition >= limitPosition)
+        {
+            return 0;
+        }
+
+        int fragmentsRead = 0;
         final int initialOffset = (int)initialPosition & termLengthMask;
         int offset = initialOffset;
         final UnsafeBuffer termBuffer = activeTermBuffer(initialPosition);
@@ -497,8 +503,13 @@ public final class Image
             return 0;
         }
 
-        int fragmentsRead = 0;
         long initialPosition = subscriberPosition.get();
+        if (initialPosition >= limitPosition)
+        {
+            return 0;
+        }
+
+        int fragmentsRead = 0;
         int initialOffset = (int)initialPosition & termLengthMask;
         int offset = initialOffset;
         final UnsafeBuffer termBuffer = activeTermBuffer(initialPosition);

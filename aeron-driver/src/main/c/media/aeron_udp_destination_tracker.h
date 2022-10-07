@@ -50,7 +50,7 @@ typedef struct aeron_udp_destination_tracker_stct
     aeron_clock_cache_t *cached_clock;
     int64_t destination_timeout_ns;
     aeron_udp_channel_data_paths_t *data_paths;
-    int64_t *num_destinations_addr;
+    volatile int64_t *num_destinations_addr;
     int round_robin_index;
 }
 aeron_udp_destination_tracker_t;

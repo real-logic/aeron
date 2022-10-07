@@ -46,27 +46,28 @@ class ImageRangeTest
             baseDir.getAbsolutePath(), filePageSize, false, 0, new RethrowingErrorHandler());
         final long subscriberPositionThatWillTriggerException = 3147497471L;
 
-        final RawLog rawLog = fileStoreLogFactory.newImage(0, termBufferLength, useSpareFiles);
+        try (RawLog rawLog = fileStoreLogFactory.newImage(0, termBufferLength, useSpareFiles))
+        {
+            initialTermId(rawLog.metaData(), 0);
+            mtuLength(rawLog.metaData(), 1408);
+            termLength(rawLog.metaData(), termBufferLength);
+            pageSize(rawLog.metaData(), filePageSize);
+            isConnected(rawLog.metaData(), true);
 
-        initialTermId(rawLog.metaData(), 0);
-        mtuLength(rawLog.metaData(), 1408);
-        termLength(rawLog.metaData(), termBufferLength);
-        pageSize(rawLog.metaData(), filePageSize);
-        isConnected(rawLog.metaData(), true);
+            final LogBuffers logBuffers = new LogBuffers(rawLog.fileName());
 
-        final LogBuffers logBuffers = new LogBuffers(rawLog.fileName());
+            assertEquals(termBufferLength, logBuffers.termLength());
+            final Position subscriberPosition = new AtomicLongPosition();
 
-        assertEquals(termBufferLength, logBuffers.termLength());
-        final Position subscriberPosition = new AtomicLongPosition();
+            final Image image = new Image(
+                null, 1, subscriberPosition, logBuffers, new RethrowingErrorHandler(), "127.0.0.1:123", 0);
 
-        final Image image = new Image(
-            null, 1, subscriberPosition, logBuffers, new RethrowingErrorHandler(), "127.0.0.1:123", 0);
+            subscriberPosition.set(subscriberPositionThatWillTriggerException);
 
-        subscriberPosition.set(subscriberPositionThatWillTriggerException);
-
-        image.boundedControlledPoll(
-            (buffer, offset, length, header) -> ControlledFragmentHandler.Action.COMMIT, 1024, 1);
-        image.boundedPoll(
-            (buffer, offset, length, header) -> {}, 1024, 1);
+            image.boundedControlledPoll(
+                (buffer, offset, length, header) -> ControlledFragmentHandler.Action.COMMIT, 1024, 1);
+            image.boundedPoll(
+                (buffer, offset, length, header) -> {}, 1024, 1);
+        }
     }
 }

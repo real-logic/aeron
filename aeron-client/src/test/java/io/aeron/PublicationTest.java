@@ -308,7 +308,7 @@ class PublicationTest
             assertEquals(packTail(222, 222), rawTail(logMetaDataBuffer, 2));
         }
 
-        void testSuccessfulOperation(
+        void testPositionUponSuccess(
             final int length,
             final int termId,
             final int termCount,
@@ -370,7 +370,7 @@ class PublicationTest
             final long tailAfterUpdate,
             final long expectedPosition)
         {
-            testSuccessfulOperation(
+            testPositionUponSuccess(
                 length,
                 termId,
                 termCount,
@@ -440,7 +440,7 @@ class PublicationTest
             final long expectedPosition,
             final int expectedFrameLength)
         {
-            testSuccessfulOperation(
+            testPositionUponSuccess(
                 length,
                 termId,
                 termCount,
@@ -472,6 +472,29 @@ class PublicationTest
         {
             return publication.offer(sendBuffer, 0, length);
         }
+
+        @Test
+        void offerWithAnOffset()
+        {
+            final int partitionIndex = 2;
+            final int termId = TERM_ID_1 + 2;
+            final int termOffset = 978;
+            final int offset = 11;
+            final int length = 23;
+            when(publicationLimit.getVolatile()).thenReturn(Long.MAX_VALUE);
+            isConnected(logMetaDataBuffer, true);
+            rawTail(logMetaDataBuffer, partitionIndex, packTail(termId, termOffset));
+            activeTermCount(logMetaDataBuffer, 2);
+
+            final long position = publication.offer(sendBuffer, offset, length);
+
+            assertEquals(525330, position);
+            final UnsafeBuffer termBuffer = termBuffers[partitionIndex];
+            for (int i = 0; i < length; i++)
+            {
+                assertEquals(sendBuffer.getByte(offset + i), termBuffer.getByte(termOffset + HEADER_LENGTH + i));
+            }
+        }
     }
 
     @Nested
@@ -500,6 +523,41 @@ class PublicationTest
             buffer2 = new UnsafeBuffer(bytes, chunk1Length, chunk2Length);
 
             return publication.offer(buffer1, 0, chunk1Length, buffer2, 0, chunk2Length);
+        }
+
+        @Test
+        void offerWithOffsets()
+        {
+            final int partitionIndex = 1;
+            final int termId = TERM_ID_1 + 1;
+            final int termOffset = 64;
+            when(publicationLimit.getVolatile()).thenReturn(Long.MAX_VALUE);
+            isConnected(logMetaDataBuffer, true);
+            rawTail(logMetaDataBuffer, partitionIndex, packTail(termId, termOffset));
+            activeTermCount(logMetaDataBuffer, 1);
+
+            final byte[] bytes = new byte[16];
+            ThreadLocalRandom.current().nextBytes(bytes);
+            final UnsafeBuffer buffer1 = new UnsafeBuffer(bytes, 0, 8);
+            final UnsafeBuffer buffer2 = new UnsafeBuffer(bytes, 8, 8);
+
+            final int lengthOne = 5;
+            final int offsetOne = 2;
+            final int lengthTwo = 3;
+            final int offsetTwo = 4;
+            final long position = publication.offer(buffer1, offsetOne, lengthOne, buffer2, offsetTwo, lengthTwo);
+
+            assertEquals(262272, position);
+            final UnsafeBuffer termBuffer = termBuffers[partitionIndex];
+            for (int i = 0; i < lengthOne; i++)
+            {
+                assertEquals(buffer1.getByte(offsetOne + i), termBuffer.getByte(termOffset + HEADER_LENGTH + i));
+            }
+            for (int i = 0; i < lengthTwo; i++)
+            {
+                assertEquals(
+                    buffer2.getByte(offsetTwo + i), termBuffer.getByte(termOffset + HEADER_LENGTH + lengthOne + i));
+            }
         }
     }
 

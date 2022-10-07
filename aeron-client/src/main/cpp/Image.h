@@ -440,7 +440,7 @@ public:
         const std::int64_t initialPosition = m_subscriberPosition.get();
         if (initialPosition >= limitPosition)
         {
-            return initialPosition;
+            return 0;
         }
 
         int fragmentsRead = 0;
@@ -615,7 +615,7 @@ public:
         std::int64_t initialPosition = m_subscriberPosition.get();
         if (initialPosition >= limitPosition)
         {
-            return initialPosition;
+            return 0;
         }
 
         int fragmentsRead = 0;

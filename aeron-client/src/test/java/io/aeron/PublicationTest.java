@@ -20,27 +20,28 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
-import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.stubbing.Answer;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.Publication.*;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.align;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -56,13 +57,14 @@ class PublicationTest
     private static final int MTU_LENGTH = 4096;
     private static final int PAGE_SIZE = 4 * 1024;
     private static final int TERM_LENGTH = TERM_MIN_LENGTH * 4;
+    private static final int MAX_PAYLOAD_SIZE = MTU_LENGTH - HEADER_LENGTH;
+    private static final int MAX_MESSAGE_SIZE = FrameDescriptor.computeMaxMessageLength(TERM_LENGTH);
+    private static final int TOTAL_ALIGNED_MAX_MESSAGE_SIZE = (MAX_MESSAGE_SIZE / MAX_PAYLOAD_SIZE) * MTU_LENGTH +
+        align(MAX_MESSAGE_SIZE % MAX_PAYLOAD_SIZE + HEADER_LENGTH, FRAME_ALIGNMENT);
     private static final int POSITION_BITS_TO_SHIFT = LogBufferDescriptor.positionBitsToShift(TERM_LENGTH);
     private static final int DEFAULT_FRAME_TYPE = DataHeaderFlyweight.HDR_TYPE_RTTM;
     private static final int SESSION_ID = 42;
     private static final int STREAM_ID = 111;
-    private final BufferClaim bufferClaim = new BufferClaim();
-    private final ByteBuffer sendBuffer = allocate(SEND_BUFFER_CAPACITY);
-    private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(sendBuffer);
     private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(allocate(LOG_META_DATA_LENGTH)));
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
     private final ClientConductor conductor = mock(ClientConductor.class);
@@ -124,22 +126,6 @@ class PublicationTest
     }
 
     @Test
-    void shouldEnsureThePublicationIsOpenBeforeOffer()
-    {
-        publication.close();
-        assertTrue(publication.isClosed());
-        assertEquals(CLOSED, publication.offer(atomicSendBuffer));
-    }
-
-    @Test
-    void shouldEnsureThePublicationIsOpenBeforeClaim()
-    {
-        publication.close();
-        final BufferClaim bufferClaim = new BufferClaim();
-        assertEquals(CLOSED, publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim));
-    }
-
-    @Test
     void shouldReportThatPublicationHasNotBeenConnectedYet()
     {
         when(publicationLimit.getVolatile()).thenReturn(0L);
@@ -188,145 +174,374 @@ class PublicationTest
         assertEquals("UNKNOWN", errorString(Long.MIN_VALUE));
     }
 
-    @Test
-    void tryClaimReturnsClosedIfPublicationWasClosed()
+    abstract class BaseTests
     {
-        publication.close();
+        abstract long invoke(int length);
 
-        assertEquals(CLOSED, publication.tryClaim(1, bufferClaim));
+        abstract void onError(UnsafeBuffer termBuffer, int termOffset, int length);
 
-        assertSpaceNotClaimed();
+        abstract void onSuccess(UnsafeBuffer termBuffer, int termOffset, int length);
+
+        @Test
+        void returnsClosedIfPublicationWasClosed()
+        {
+            final int length = 6;
+            final int termOffset = 0;
+            publication.close();
+
+            assertEquals(CLOSED, invoke(length));
+
+            onError(termBuffers[PARTITION_INDEX], termOffset, length);
+            assertFrameType(PARTITION_INDEX, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
+            assertFrameLength(PARTITION_INDEX, termOffset, 0);
+        }
+
+        @Test
+        void returnsAdminActionIfTermCountAndTermIdDoNotMatch()
+        {
+            final int termCount = 9;
+            final int termOffset = 0;
+            final int length = 10;
+            assertEquals(indexByTermCount(termCount), PARTITION_INDEX);
+            initialiseTailWithTermId(logMetaDataBuffer, PARTITION_INDEX, TERM_ID_1 + 5);
+
+            assertEquals(ADMIN_ACTION, invoke(length));
+
+            onError(termBuffers[PARTITION_INDEX], termOffset, length);
+            assertFrameType(PARTITION_INDEX, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
+            assertFrameLength(PARTITION_INDEX, termOffset, 0);
+        }
+
+        @Test
+        void returnsMaxPositionExceededIfPublicationLimitReached()
+        {
+            final int partitionIndex = 1;
+            final int termOffset = TERM_LENGTH - 128;
+            final int length = 128;
+            when(publicationLimit.getVolatile()).thenReturn(16L);
+            rawTail(logMetaDataBuffer, partitionIndex, packTail(Integer.MIN_VALUE, termOffset));
+            activeTermCount(logMetaDataBuffer, Integer.MAX_VALUE);
+            isConnected(logMetaDataBuffer, true);
+
+            assertEquals(MAX_POSITION_EXCEEDED, invoke(length));
+
+            onError(termBuffers[partitionIndex], termOffset, length);
+            assertFrameType(partitionIndex, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
+            assertFrameLength(partitionIndex, termOffset, 0);
+        }
+
+        @Test
+        void returnsBackPressuredIfPublicationLimitReached()
+        {
+            final int partitionIndex = 1;
+            final int termOffset = 64;
+            final int length = 11;
+            when(publicationLimit.getVolatile()).thenReturn(16L);
+            rawTail(logMetaDataBuffer, partitionIndex, packTail(TERM_ID_1 + 1, termOffset));
+            activeTermCount(logMetaDataBuffer, 1);
+            isConnected(logMetaDataBuffer, true);
+
+            assertEquals(BACK_PRESSURED, invoke(length));
+
+            onError(termBuffers[partitionIndex], termOffset, length);
+            assertFrameType(partitionIndex, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
+            assertFrameLength(partitionIndex, termOffset, 0);
+        }
+
+        @Test
+        void returnsNotConnectedIfPublicationLimitReachedAndNotConnected()
+        {
+            final int partitionIndex = 1;
+            final int termOffset = 0;
+            final int length = 10;
+            when(publicationLimit.getVolatile()).thenReturn(16L);
+            initialiseTailWithTermId(logMetaDataBuffer, partitionIndex, TERM_ID_1 + 1);
+            activeTermCount(logMetaDataBuffer, 1);
+
+            assertEquals(NOT_CONNECTED, invoke(length));
+
+            onError(termBuffers[partitionIndex], termOffset, length);
+            assertFrameType(partitionIndex, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
+            assertFrameLength(partitionIndex, termOffset, 0);
+        }
+
+        @Test
+        void returnsAdminActionIfTermWasRotated()
+        {
+            final int termOffset = TERM_LENGTH - 64;
+            final int length = 60;
+            when(publicationLimit.getVolatile()).thenReturn(1L + Integer.MAX_VALUE);
+            rawTailVolatile(logMetaDataBuffer, 0, packTail(TERM_ID_1, termOffset));
+            rawTailVolatile(logMetaDataBuffer, 1, packTail(TERM_ID_1 + 1 - PARTITION_COUNT, 555));
+            rawTailVolatile(logMetaDataBuffer, 2, packTail(STREAM_ID, 777));
+
+            assertEquals(ADMIN_ACTION, invoke(length));
+
+            onError(termBuffers[0], termOffset, length);
+            assertFrameType(0, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
+            assertFrameLength(0, termOffset, 64);
+            assertEquals(packTail(TERM_ID_1, termOffset + 96), rawTail(logMetaDataBuffer, 0));
+            assertEquals(packTail(TERM_ID_1 + 1, 0), rawTail(logMetaDataBuffer, 1));
+            assertEquals(packTail(STREAM_ID, 777), rawTail(logMetaDataBuffer, 2));
+        }
+
+        @Test
+        void returnsMaxPositionExceededIfThereIsNotEnoughSpaceLeft()
+        {
+            final int partitionIndex = 1;
+            final int termOffset = TERM_LENGTH - 128;
+            final int length = 96;
+            when(publicationLimit.getVolatile()).thenReturn(1L + Integer.MAX_VALUE);
+            rawTail(logMetaDataBuffer, partitionIndex, packTail(Integer.MIN_VALUE, termOffset));
+            rawTail(logMetaDataBuffer, 0, packTail(55, 55));
+            rawTail(logMetaDataBuffer, 2, packTail(222, 222));
+            activeTermCount(logMetaDataBuffer, Integer.MAX_VALUE);
+            isConnected(logMetaDataBuffer, true);
+
+            assertEquals(BACK_PRESSURED, invoke(length));
+
+            onError(termBuffers[partitionIndex], termOffset, length);
+            assertFrameType(partitionIndex, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);
+            assertFrameLength(partitionIndex, termOffset, 0);
+            assertEquals(packTail(Integer.MIN_VALUE, termOffset), rawTail(logMetaDataBuffer, partitionIndex));
+            assertEquals(packTail(55, 55), rawTail(logMetaDataBuffer, 0));
+            assertEquals(packTail(222, 222), rawTail(logMetaDataBuffer, 2));
+        }
+
+        void testSuccessfulOperation(
+            final int length,
+            final int termId,
+            final int termCount,
+            final long tailAfterUpdate,
+            final long expectedPosition,
+            final int expectedFrameLength)
+        {
+            when(publicationLimit.getVolatile()).thenReturn(Long.MAX_VALUE);
+            isConnected(logMetaDataBuffer, true);
+            activeTermCount(logMetaDataBuffer, termCount);
+            final int partitionIndex = indexByTermCount(termCount);
+            final long rawTail = packTail(termId, 192);
+            rawTail(logMetaDataBuffer, partitionIndex, rawTail);
+            doAnswer((Answer<Long>)invocation -> tailAfterUpdate)
+                .when(logMetaDataBuffer)
+                .getAndAddLong(anyInt(), anyLong());
+
+            final long position = invoke(length);
+
+            assertEquals(expectedPosition, position);
+            final UnsafeBuffer buffer = termBuffers[partitionIndex];
+            final int termOffset = termOffset(tailAfterUpdate);
+            assertFrameType(partitionIndex, termOffset, DEFAULT_FRAME_TYPE);
+            assertFrameLength(partitionIndex, termOffset, expectedFrameLength);
+            assertEquals(SESSION_ID, FrameDescriptor.frameSessionId(buffer, termOffset));
+            assertEquals(STREAM_ID, DataHeaderFlyweight.streamId(buffer, termOffset));
+            assertEquals(termId(tailAfterUpdate), DataHeaderFlyweight.termId(buffer, termOffset));
+            onSuccess(buffer, termOffset, length);
+        }
     }
 
-    @Test
-    void tryClaimReturnsAdminActionIfTermCountAndTermIdDoNotMatch()
+    @Nested
+    class TryClaim extends BaseTests
     {
-        final int termCount = 9;
-        assertEquals(indexByTermCount(termCount), PARTITION_INDEX);
-        initialiseTailWithTermId(logMetaDataBuffer, PARTITION_INDEX, TERM_ID_1 + 5);
+        private final BufferClaim bufferClaim = new BufferClaim();
 
-        assertEquals(ADMIN_ACTION, publication.tryClaim(1, bufferClaim));
+        long invoke(final int length)
+        {
+            return publication.tryClaim(length, bufferClaim);
+        }
 
-        assertSpaceNotClaimed();
+        void onError(final UnsafeBuffer termBuffer, final int termOffset, final int length)
+        {
+            final MutableDirectBuffer buffer = bufferClaim.buffer();
+            assertEquals(0, buffer.capacity());
+        }
+
+        void onSuccess(final UnsafeBuffer termBuffer, final int termOffset, final int length)
+        {
+            assertEquals(length, bufferClaim.length());
+        }
+
+        @ParameterizedTest
+        @MethodSource("io.aeron.PublicationTest#tryClaimPositions")
+        void tryClaimShouldReturnPositionAtWhichTheClaimedSpaceEnds(
+            final int length,
+            final int termId,
+            final int termCount,
+            final long tailAfterUpdate,
+            final long expectedPosition)
+        {
+            testSuccessfulOperation(
+                length,
+                termId,
+                termCount,
+                tailAfterUpdate,
+                expectedPosition,
+                -(length + HEADER_LENGTH));
+        }
     }
 
-    @Test
-    void tryClaimReturnsMaxPositionExceededIfPublicationLimitReached()
+    abstract class OfferBase extends BaseTests
     {
-        when(publicationLimit.getVolatile()).thenReturn(16L);
-        rawTail(logMetaDataBuffer, 1, packTail(Integer.MIN_VALUE, TERM_LENGTH - 128));
-        activeTermCount(logMetaDataBuffer, Integer.MAX_VALUE);
-        isConnected(logMetaDataBuffer, true);
+        abstract UnsafeBuffer buffer(int processedBytes);
 
-        assertEquals(MAX_POSITION_EXCEEDED, publication.tryClaim(128, bufferClaim));
+        void onError(final UnsafeBuffer termBuffer, final int termOffset, final int length)
+        {
+            int offset = termOffset + HEADER_LENGTH;
+            for (int i = 0, capacity = termBuffer.capacity(); offset < capacity && i < length; i++, offset++)
+            {
+                assertEquals(0, termBuffer.getByte(offset));
+            }
+        }
 
-        assertSpaceNotClaimed();
+        void onSuccess(final UnsafeBuffer termBuffer, final int termOffset, final int length)
+        {
+            int index = 0, processedBytes = 0;
+            int offset = termOffset;
+            UnsafeBuffer dataBuffer = buffer(0);
+            while (processedBytes < length)
+            {
+                final int frameLength = FrameDescriptor.frameLength(termBuffer, offset);
+                if (frameLength <= 0)
+                {
+                    break;
+                }
+                final int chunkLength = frameLength - HEADER_LENGTH;
+                final byte frameFlags = FrameDescriptor.frameFlags(termBuffer, offset);
+                if (0 == processedBytes)
+                {
+                    assertEquals(FrameDescriptor.BEGIN_FRAG_FLAG, (frameFlags & FrameDescriptor.BEGIN_FRAG_FLAG));
+                }
+                if (length == processedBytes + chunkLength)
+                {
+                    assertEquals(FrameDescriptor.END_FRAG_FLAG, (frameFlags & FrameDescriptor.END_FRAG_FLAG));
+                }
+                offset += HEADER_LENGTH;
+                for (int i = 0; i < chunkLength; i++)
+                {
+                    assertEquals(dataBuffer.getByte(index++), termBuffer.getByte(offset++));
+                    final UnsafeBuffer nextBuffer = buffer(++processedBytes);
+                    if (nextBuffer != dataBuffer)
+                    {
+                        dataBuffer = nextBuffer;
+                        index = 0;
+                    }
+                }
+            }
+            assertEquals(length, processedBytes);
+        }
+
+        @ParameterizedTest
+        @MethodSource("io.aeron.PublicationTest#offerPositions")
+        void returnsPositionAfterDataIsCopied(
+            final int length,
+            final int termId,
+            final int termCount,
+            final long tailAfterUpdate,
+            final long expectedPosition,
+            final int expectedFrameLength)
+        {
+            testSuccessfulOperation(
+                length,
+                termId,
+                termCount,
+                tailAfterUpdate,
+                expectedPosition,
+                expectedFrameLength);
+        }
     }
 
-    @Test
-    void tryClaimReturnsBackPressuredIfPublicationLimitReached()
+    @Nested
+    class Offer extends OfferBase
     {
-        when(publicationLimit.getVolatile()).thenReturn(16L);
-        initialiseTailWithTermId(logMetaDataBuffer, 1, TERM_ID_1 + 1);
-        activeTermCount(logMetaDataBuffer, 1);
-        isConnected(logMetaDataBuffer, true);
+        private UnsafeBuffer sendBuffer;
 
-        assertEquals(BACK_PRESSURED, publication.tryClaim(1, bufferClaim));
+        @BeforeEach
+        void before()
+        {
+            final byte[] bytes = new byte[MAX_MESSAGE_SIZE];
+            ThreadLocalRandom.current().nextBytes(bytes);
+            sendBuffer = new UnsafeBuffer(bytes);
+        }
 
-        assertSpaceNotClaimed();
+        UnsafeBuffer buffer(final int length)
+        {
+            return sendBuffer;
+        }
+
+        long invoke(final int length)
+        {
+            return publication.offer(sendBuffer, 0, length);
+        }
     }
 
-    @Test
-    void tryClaimReturnsNotConnectedIfPublicationLimitReachedAndNotConnected()
+    @Nested
+    class OfferWithTwoBuffers extends OfferBase
     {
-        when(publicationLimit.getVolatile()).thenReturn(16L);
-        initialiseTailWithTermId(logMetaDataBuffer, 1, TERM_ID_1 + 1);
-        activeTermCount(logMetaDataBuffer, 1);
+        private UnsafeBuffer buffer1;
+        private UnsafeBuffer buffer2;
 
-        assertEquals(NOT_CONNECTED, publication.tryClaim(1, bufferClaim));
+        @BeforeEach
+        void before()
+        {
+        }
 
-        assertSpaceNotClaimed();
+        UnsafeBuffer buffer(final int processedBytes)
+        {
+            return processedBytes < buffer1.capacity() ? buffer1 : buffer2;
+        }
+
+        long invoke(final int length)
+        {
+            final byte[] bytes = new byte[length];
+            ThreadLocalRandom.current().nextBytes(bytes);
+            final int chunk1Length = (int)(length * 0.25);
+            final int chunk2Length = length - chunk1Length;
+            buffer1 = new UnsafeBuffer(bytes, 0, chunk1Length);
+            buffer2 = new UnsafeBuffer(bytes, chunk1Length, chunk2Length);
+
+            return publication.offer(buffer1, 0, chunk1Length, buffer2, 0, chunk2Length);
+        }
     }
 
-    @Test
-    void tryClaimReturnsAdminActionIfTermWasRotated()
+    @Nested
+    class VectorOffer extends OfferBase
     {
-        final int termOffset = TERM_LENGTH - 64;
-        when(publicationLimit.getVolatile()).thenReturn(1L + Integer.MAX_VALUE);
-        rawTailVolatile(logMetaDataBuffer, 0, packTail(TERM_ID_1, termOffset));
-        rawTailVolatile(logMetaDataBuffer, 1, packTail(TERM_ID_1 + 1 - PARTITION_COUNT, 555));
-        rawTailVolatile(logMetaDataBuffer, 2, packTail(STREAM_ID, 777));
+        private final DirectBufferVector[] vectors = new DirectBufferVector[3];
 
-        assertEquals(ADMIN_ACTION, publication.tryClaim(60, bufferClaim));
+        UnsafeBuffer buffer(final int processedBytes)
+        {
+            return (UnsafeBuffer)vectors[0].buffer();
+        }
 
-        assertSpaceNotClaimed();
-        assertEquals(FrameDescriptor.PADDING_FRAME_TYPE, FrameDescriptor.frameType(termBuffers[0], termOffset));
-        assertEquals(64, FrameDescriptor.frameLength(termBuffers[0], termOffset));
-        assertEquals(packTail(TERM_ID_1, termOffset + 96), rawTail(logMetaDataBuffer, 0));
-        assertEquals(packTail(TERM_ID_1 + 1, 0), rawTail(logMetaDataBuffer, 1));
-        assertEquals(packTail(STREAM_ID, 777), rawTail(logMetaDataBuffer, 2));
+        long invoke(final int length)
+        {
+            final byte[] bytes = new byte[length];
+            ThreadLocalRandom.current().nextBytes(bytes);
+            final int numVectors = vectors.length;
+            final int chunkSize = length / numVectors;
+            final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
+            for (int i = 0, offset = 0; i < numVectors; i++)
+            {
+                final int size = numVectors - 1 == i ? (length - offset) : chunkSize;
+                vectors[i] = new DirectBufferVector(buffer, offset, size);
+                offset += size;
+            }
+
+            return publication.offer(vectors);
+        }
     }
 
-    @Test
-    void tryClaimReturnsMaxPositionExceededIfThereIsNotEnoughSpaceLeft()
+    void assertFrameType(final int partitionIndex, final int termOffset, final int expectedFrameType)
     {
-        when(publicationLimit.getVolatile()).thenReturn(1L + Integer.MAX_VALUE);
-        final int termOffset = TERM_LENGTH - 128;
-        rawTail(logMetaDataBuffer, 1, packTail(Integer.MIN_VALUE, termOffset));
-        rawTail(logMetaDataBuffer, 0, packTail(55, 55));
-        rawTail(logMetaDataBuffer, 2, packTail(222, 222));
-        activeTermCount(logMetaDataBuffer, Integer.MAX_VALUE);
-        isConnected(logMetaDataBuffer, true);
-
-        assertEquals(BACK_PRESSURED, publication.tryClaim(96, bufferClaim));
-
-        assertSpaceNotClaimed();
-        assertEquals(0, FrameDescriptor.frameLength(termBuffers[1], termOffset));
-        assertEquals(packTail(Integer.MIN_VALUE, termOffset), rawTail(logMetaDataBuffer, 1));
-        assertEquals(packTail(55, 55), rawTail(logMetaDataBuffer, 0));
-        assertEquals(packTail(222, 222), rawTail(logMetaDataBuffer, 2));
+        assertEquals(expectedFrameType, FrameDescriptor.frameType(termBuffers[partitionIndex], termOffset));
     }
 
-    @ParameterizedTest
-    @MethodSource("positions")
-    void tryClaimShouldReturnPositionAtWhichTheClaimedSpaceEnds(
-        final int length,
-        final int termId,
-        final int termCount,
-        final long tailAfterUpdate,
-        final long expectedPosition)
+    private void assertFrameLength(final int partitionIndex, final int termOffset, final int expectedFrameLength)
     {
-        when(publicationLimit.getVolatile()).thenReturn(Long.MAX_VALUE);
-        isConnected(logMetaDataBuffer, true);
-        activeTermCount(logMetaDataBuffer, termCount);
-        final int index = indexByTermCount(termCount);
-        final long rawTail = packTail(termId, 192);
-        rawTail(logMetaDataBuffer, index, rawTail);
-        final int frameLength = length + HEADER_LENGTH;
-        final int totalLength = BitUtil.align(frameLength, FrameDescriptor.FRAME_ALIGNMENT);
-        doAnswer((Answer<Long>)invocation -> tailAfterUpdate)
-            .when(logMetaDataBuffer)
-            .getAndAddLong(TERM_TAIL_COUNTERS_OFFSET + (index * SIZE_OF_LONG), totalLength);
-
-        final long position = publication.tryClaim(length, bufferClaim);
-
-        assertEquals(expectedPosition, position);
-        assertEquals(length, bufferClaim.length());
-        final UnsafeBuffer buffer = termBuffers[index];
-        final int termOffset = termOffset(tailAfterUpdate);
-        assertEquals(DEFAULT_FRAME_TYPE, FrameDescriptor.frameType(buffer, termOffset));
-        assertEquals(-frameLength, FrameDescriptor.frameLength(buffer, termOffset));
-        assertEquals(SESSION_ID, FrameDescriptor.frameSessionId(buffer, termOffset));
-        assertEquals(STREAM_ID, DataHeaderFlyweight.streamId(buffer, termOffset));
+        assertEquals(expectedFrameLength, FrameDescriptor.frameLength(termBuffers[partitionIndex], termOffset));
     }
 
-    private void assertSpaceNotClaimed()
-    {
-        final MutableDirectBuffer buffer = bufferClaim.buffer();
-        assertEquals(0, buffer.capacity());
-    }
-
-    private static List<Arguments> positions()
+    private static List<Arguments> tryClaimPositions()
     {
         return Arrays.asList(
             Arguments.of(
@@ -339,7 +554,26 @@ class PublicationTest
                 999,
                 7,
                 6,
-                packTail(212, 0),
-                computePosition(212, 1056, POSITION_BITS_TO_SHIFT, TERM_ID_1)));
+                packTail(212, 8192),
+                computePosition(212, 8192 + 1056, POSITION_BITS_TO_SHIFT, TERM_ID_1)));
+    }
+
+    private static List<Arguments> offerPositions()
+    {
+        return Arrays.asList(
+            Arguments.of(
+                124,
+                5,
+                4,
+                packTail(11, 3072),
+                computePosition(11, 3072 + 160, POSITION_BITS_TO_SHIFT, TERM_ID_1),
+                124 + HEADER_LENGTH),
+            Arguments.of(
+                MAX_MESSAGE_SIZE,
+                77,
+                76,
+                packTail(77, 1024),
+                computePosition(77, 1024 + TOTAL_ALIGNED_MAX_MESSAGE_SIZE, POSITION_BITS_TO_SHIFT, TERM_ID_1),
+                MAX_PAYLOAD_SIZE + HEADER_LENGTH));
     }
 }

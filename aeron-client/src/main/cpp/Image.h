@@ -437,8 +437,13 @@ public:
             return 0;
         }
 
-        int fragmentsRead = 0;
         const std::int64_t initialPosition = m_subscriberPosition.get();
+        if (initialPosition >= limitPosition)
+        {
+            return initialPosition;
+        }
+
+        int fragmentsRead = 0;
         const auto initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
         const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
         assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
@@ -563,7 +568,8 @@ public:
                 {
                     break;
                 }
-                else if (ControlledPollAction::COMMIT == action)
+
+                if (ControlledPollAction::COMMIT == action)
                 {
                     initialPosition += (offset - initialOffset);
                     initialOffset = offset;
@@ -606,8 +612,13 @@ public:
             return 0;
         }
 
-        int fragmentsRead = 0;
         std::int64_t initialPosition = m_subscriberPosition.get();
+        if (initialPosition >= limitPosition)
+        {
+            return initialPosition;
+        }
+
+        int fragmentsRead = 0;
         auto initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
         const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
         assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
@@ -658,7 +669,8 @@ public:
                 {
                     break;
                 }
-                else if (ControlledPollAction::COMMIT == action)
+
+                if (ControlledPollAction::COMMIT == action)
                 {
                     initialPosition += (offset - initialOffset);
                     initialOffset = offset;

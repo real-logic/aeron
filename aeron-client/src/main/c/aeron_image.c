@@ -383,7 +383,8 @@ int aeron_image_controlled_poll(
         {
             break;
         }
-        else if (AERON_ACTION_COMMIT == action)
+
+        if (AERON_ACTION_COMMIT == action)
         {
             initial_position += (offset - initial_offset);
             initial_offset = offset;
@@ -424,8 +425,13 @@ int aeron_image_bounded_poll(
         return 0;
     }
 
-    size_t fragments_read = 0;
     const int64_t initial_position = *image->subscriber_position;
+    if (initial_position >= limit_position)
+    {
+        return 0;
+    }
+
+    size_t fragments_read = 0;
     const size_t index = aeron_logbuffer_index_by_position(initial_position, image->position_bits_to_shift);
     const uint8_t *term_buffer = image->log_buffer->mapped_raw_log.term_buffers[index].addr;
     const int32_t initial_offset = (int32_t)initial_position & image->term_length_mask;
@@ -500,8 +506,13 @@ int aeron_image_bounded_controlled_poll(
         return 0;
     }
 
-    size_t fragments_read = 0;
     int64_t initial_position = *image->subscriber_position;
+    if (initial_position >= limit_position)
+    {
+        return 0;
+    }
+
+    size_t fragments_read = 0;
     const size_t index = aeron_logbuffer_index_by_position(initial_position, image->position_bits_to_shift);
     const uint8_t *term_buffer = image->log_buffer->mapped_raw_log.term_buffers[index].addr;
     const int32_t capacity = (const int32_t)image->log_buffer->mapped_raw_log.term_length;
@@ -556,7 +567,8 @@ int aeron_image_bounded_controlled_poll(
         {
             break;
         }
-        else if (AERON_ACTION_COMMIT == action)
+
+        if (AERON_ACTION_COMMIT == action)
         {
             initial_position += (offset - initial_offset);
             initial_offset = offset;
@@ -700,7 +712,7 @@ int aeron_image_block_poll(
     const uint8_t *term_buffer = image->log_buffer->mapped_raw_log.term_buffers[index].addr;
     const int32_t offset = (int32_t)position & image->term_length_mask;
     const int32_t capacity = (const int32_t)image->log_buffer->mapped_raw_log.term_length;
-    const int64_t high_limit_offset = offset + block_length_limit;
+    const int64_t high_limit_offset = (int64_t)(offset + block_length_limit);
     const int32_t limit_offset = (int64_t)capacity < high_limit_offset ? capacity : (int32_t)high_limit_offset;
     int32_t scan_offset = offset;
 

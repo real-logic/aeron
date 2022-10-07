@@ -33,7 +33,7 @@ typedef struct aeron_image_stct
     aeron_log_buffer_t *log_buffer;
     aeron_logbuffer_metadata_t *metadata;
 
-    int64_t *subscriber_position;
+    volatile int64_t *subscriber_position;
 
     int64_t correlation_id;
     int64_t removal_change_number;
@@ -49,7 +49,7 @@ typedef struct aeron_image_stct
     size_t position_bits_to_shift;
 
     volatile bool is_closed;
-    bool is_eos;
+    volatile bool is_eos;
     bool is_lingering;
 }
 aeron_image_t;

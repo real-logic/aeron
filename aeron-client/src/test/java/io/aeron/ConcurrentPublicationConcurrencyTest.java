@@ -45,9 +45,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(InterruptingTestCallback.class)
 class ConcurrentPublicationTermRotationRaceTest
 {
-    private static final int NUM_PUBLISHERS = Math.max(Runtime.getRuntime().availableProcessors() / 2 - 1, 4);
-    private static final int NUM_MESSAGES = NUM_PUBLISHERS * 20_000;
-    private static final int ITERATIONS = 500;
+    private static final int NUM_PUBLISHERS = Math.max(Math.min(Runtime.getRuntime().availableProcessors() / 2, 8), 4);
+    private static final int NUM_MESSAGES = NUM_PUBLISHERS * 50_000;
+    private static final int ITERATIONS = 200;
     private MediaDriver mediaDriver;
     private Aeron aeron;
 

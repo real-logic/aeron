@@ -216,8 +216,8 @@ class PublicationTest
         void returnsMaxPositionExceededIfPublicationLimitReached()
         {
             final int partitionIndex = 1;
-            final int termOffset = TERM_LENGTH - 128;
-            final int length = 128;
+            final int termOffset = TERM_LENGTH - 140;
+            final int length = 100;
             when(publicationLimit.getVolatile()).thenReturn(16L);
             rawTail(logMetaDataBuffer, partitionIndex, packTail(Integer.MIN_VALUE, termOffset));
             activeTermCount(logMetaDataBuffer, Integer.MAX_VALUE);
@@ -300,7 +300,7 @@ class PublicationTest
             activeTermCount(logMetaDataBuffer, Integer.MAX_VALUE);
             isConnected(logMetaDataBuffer, true);
 
-            assertEquals(BACK_PRESSURED, invoke(length, null));
+            assertEquals(MAX_POSITION_EXCEEDED, invoke(length, null));
 
             onError(termBuffers[partitionIndex], termOffset, length);
             assertFrameType(partitionIndex, termOffset, FrameDescriptor.PADDING_FRAME_TYPE);

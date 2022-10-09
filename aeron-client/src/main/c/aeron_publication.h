@@ -98,7 +98,9 @@ inline int64_t aeron_publication_new_position(
 inline int64_t aeron_publication_back_pressure_status(
     aeron_publication_t *publication, int64_t current_position, int32_t message_length)
 {
-    if ((current_position + message_length) >= publication->max_possible_position)
+    if ((current_position +
+        (int32_t)AERON_ALIGN(message_length + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT)) >=
+        publication->max_possible_position)
     {
         return AERON_PUBLICATION_MAX_POSITION_EXCEEDED;
     }

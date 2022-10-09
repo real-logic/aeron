@@ -26,7 +26,7 @@
 extern "C"
 {
 #include "aeron_image.h"
-#include "concurrent/aeron_term_appender.h"
+#include "concurrent/aeron_exclusive_term_appender.h"
 }
 
 #define FILE_PAGE_SIZE (4 * 1024)
@@ -108,9 +108,10 @@ public:
 
         metadata->term_tail_counters[index] = static_cast<int64_t>(term_id) << 32 | tail_offset;
 
-        aeron_term_appender_append_unfragmented_message(
+        aeron_exclusive_term_appender_append_unfragmented_message(
             &m_image->log_buffer->mapped_raw_log.term_buffers[index],
             &metadata->term_tail_counters[index],
+            tail_offset,
             buffer,
             length,
             nullptr,

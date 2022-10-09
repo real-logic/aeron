@@ -132,7 +132,6 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_rb.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_concurrent_array_queue.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_rb.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_appender.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_filler.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_scanner.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_rebuilder.c
@@ -202,7 +201,6 @@ set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_rb.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_concurrent_array_queue.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_rb.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_appender.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_filler.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_scanner.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_rebuilder.h

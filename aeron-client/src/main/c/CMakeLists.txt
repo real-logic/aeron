@@ -58,7 +58,6 @@ set(SOURCE
     concurrent/aeron_mpsc_rb.c
     concurrent/aeron_spsc_concurrent_array_queue.c
     concurrent/aeron_spsc_rb.c
-    concurrent/aeron_term_appender.c
     concurrent/aeron_term_gap_filler.c
     concurrent/aeron_term_gap_scanner.c
     concurrent/aeron_term_rebuilder.c
@@ -129,7 +128,6 @@ set(HEADERS
     concurrent/aeron_rb.h
     concurrent/aeron_spsc_concurrent_array_queue.h
     concurrent/aeron_spsc_rb.h
-    concurrent/aeron_term_appender.h
     concurrent/aeron_term_gap_filler.h
     concurrent/aeron_term_gap_scanner.h
     concurrent/aeron_term_rebuilder.h

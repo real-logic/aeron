@@ -183,7 +183,7 @@ static int64_t aeron_publication_claim(
     aeron_buffer_claim_t *buffer_claim)
 {
     const size_t frame_length = length + AERON_DATA_HEADER_LENGTH;
-    const int64_t aligned_frame_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(
         term_tail_counter, (size_t)aligned_frame_length);
     const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
@@ -220,7 +220,7 @@ static int64_t aeron_publication_append_unfragmented_message(
     void *clientd)
 {
     const size_t frame_length = length + AERON_DATA_HEADER_LENGTH;
-    const int64_t aligned_frame_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(
         term_tail_counter, (size_t)aligned_frame_length);
     const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
@@ -338,7 +338,7 @@ static int64_t aeron_publication_append_unfragmented_messagev(
     void *clientd)
 {
     const size_t frame_length = length + AERON_DATA_HEADER_LENGTH;
-    const int64_t aligned_frame_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(
         term_tail_counter, (size_t)aligned_frame_length);
     const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);

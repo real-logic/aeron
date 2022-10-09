@@ -395,12 +395,12 @@ TEST_F(PublicationTest, vectorOfferFragmentedMessage)
         msgBuffer3 + (sizeof(msgBuffer3) - last_data_chunk_length), last_data_chunk_length));
 }
 
-TEST_F(PublicationTest, claimMaxPayloadSize)
+TEST_F(PublicationTest, tryClaimMaxPayloadSize)
 {
     aeron_buffer_claim_t buffer_claim = {};
     const int32_t term_count = 3;
     const size_t partition_index = aeron_logbuffer_index_by_term_count(term_count);
-    const int32_t term_offset = 32;
+    const int32_t term_offset = 96;
     const int32_t term_id = m_publication->initial_term_id + term_count;
     m_publication->log_meta_data->active_term_count = term_count;
     m_publication->log_meta_data->term_tail_counters[partition_index] = packTail(term_id, term_offset);
@@ -410,7 +410,7 @@ TEST_F(PublicationTest, claimMaxPayloadSize)
         MAX_PAYLOAD_SIZE,
         &buffer_claim);
 
-    ASSERT_EQ(3149824, position);
+    ASSERT_EQ(3149920, position);
     const aeron_mapped_buffer_t *term_buffer = &m_publication->log_buffer->mapped_raw_log.term_buffers[partition_index];
     const auto header = verifyHeader(
         term_buffer,
@@ -566,7 +566,7 @@ TEST_F(PublicationTest, offerMaxPositionExceededIfPublicationLimitReached)
     const size_t length = strlen(payload);
     const int32_t term_count = INT32_MAX;
     const size_t partition_index = aeron_logbuffer_index_by_term_count(term_count);
-    const int32_t term_offset = TERM_LENGTH - 8;
+    const int32_t term_offset = TERM_LENGTH - length;
     const int32_t term_id = INT32_MIN + (INITIAL_TERM_ID - 1);
     m_publication->log_meta_data->active_term_count = term_count;
     m_publication->log_meta_data->term_tail_counters[partition_index] = packTail(term_id, term_offset);
@@ -940,6 +940,241 @@ TEST_F(PublicationTest, vectorOfferMaxPositionExceededAfterSuccessfulSpaceClaim)
         1,
         reserved_value_supplier,
         nullptr);
+
+    ASSERT_EQ(AERON_PUBLICATION_MAX_POSITION_EXCEEDED, position);
+    EXPECT_EQ(
+        packTail(term_id, term_offset + frame_length),
+        m_publication->log_meta_data->term_tail_counters[partition_index]);
+    EXPECT_EQ(
+        packTail(term_id + 1 - AERON_LOGBUFFER_PARTITION_COUNT, 2846386),
+        m_publication->log_meta_data->term_tail_counters[next_partition_index]);
+    const aeron_mapped_buffer_t *term_buffer = &m_publication->log_buffer->mapped_raw_log.term_buffers[partition_index];
+    auto *header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
+    EXPECT_EQ(AERON_DATA_HEADER_LENGTH + 8, header->frame_header.frame_length);
+    EXPECT_EQ(AERON_HDR_TYPE_PAD, header->frame_header.type);
+}
+
+TEST_F(PublicationTest, tryClaimErrorIfPublicationIsNull)
+{
+    aeron_buffer_claim_t buffer_claim = {};
+
+    const int64_t position = aeron_publication_try_claim(
+        nullptr,
+        1,
+        &buffer_claim);
+
+    ASSERT_EQ(AERON_PUBLICATION_ERROR, position);
+    const aeron_mapped_buffer_t *term_buffer = &m_publication->log_buffer->mapped_raw_log.term_buffers[0];
+    auto *header = (aeron_data_header_t *)(term_buffer->addr);
+    EXPECT_EQ(0, header->frame_header.frame_length);
+    EXPECT_EQ(AERON_HDR_TYPE_PAD, header->frame_header.type);
+}
+
+TEST_F(PublicationTest, tryClaimErrorIfBufferIsNull)
+{
+    const int64_t position = aeron_publication_try_claim(
+        m_publication,
+        1,
+        nullptr);
+
+    ASSERT_EQ(AERON_PUBLICATION_ERROR, position);
+    const aeron_mapped_buffer_t *term_buffer = &m_publication->log_buffer->mapped_raw_log.term_buffers[0];
+    auto *header = (aeron_data_header_t *)(term_buffer->addr);
+    EXPECT_EQ(0, header->frame_header.frame_length);
+    EXPECT_EQ(AERON_HDR_TYPE_PAD, header->frame_header.type);
+}
+
+TEST_F(PublicationTest, tryClaimClosed)
+{
+    aeron_buffer_claim_t buffer_claim = {};
+    const size_t length = 5;
+    const int32_t term_count = 16;
+    const size_t partition_index = aeron_logbuffer_index_by_term_count(term_count);
+    const int32_t term_offset = 4096;
+    m_publication->is_closed = true;
+
+    const int64_t position = aeron_publication_try_claim(
+        m_publication,
+        length,
+        &buffer_claim);
+
+    ASSERT_EQ(AERON_PUBLICATION_CLOSED, position);
+    const aeron_mapped_buffer_t *term_buffer = &m_publication->log_buffer->mapped_raw_log.term_buffers[partition_index];
+    auto *header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
+    EXPECT_EQ(0, header->frame_header.frame_length);
+    EXPECT_EQ(AERON_HDR_TYPE_PAD, header->frame_header.type);
+}
+
+TEST_F(PublicationTest, tryClaimAdminActionIfTermCountDoesNotMatch)
+{
+    aeron_buffer_claim_t buffer_claim = {};
+    const size_t length = 13;
+    const int32_t term_offset = 4096;
+    m_publication->log_meta_data->active_term_count = 5;
+
+    const int64_t position = aeron_publication_try_claim(
+        m_publication,
+        length,
+        &buffer_claim);
+
+    ASSERT_EQ(AERON_PUBLICATION_ADMIN_ACTION, position);
+    const aeron_mapped_buffer_t *term_buffer = &m_publication->log_buffer->mapped_raw_log.term_buffers[0];
+    auto *header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
+    EXPECT_EQ(0, header->frame_header.frame_length);
+    EXPECT_EQ(AERON_HDR_TYPE_PAD, header->frame_header.type);
+}
+
+TEST_F(PublicationTest, tryClaimBackPressureIfPublicationLimitReached)
+{
+    aeron_buffer_claim_t buffer_claim = {};
+    const size_t length = 5;
+    const int32_t term_count = 16;
+    const size_t partition_index = aeron_logbuffer_index_by_term_count(term_count);
+    const int32_t term_offset = 4096;
+    const int32_t term_id = m_publication->initial_term_id + term_count;
+    m_publication->log_meta_data->active_term_count = term_count;
+    m_publication->log_meta_data->term_tail_counters[partition_index] = packTail(term_id, term_offset);
+    const int64_t limit_position = aeron_logbuffer_compute_position(
+        term_id, term_offset, m_publication->position_bits_to_shift, m_publication->initial_term_id);
+    aeron_counter_set_ordered(m_position_limit_addr, limit_position);
+
+    const int64_t position = aeron_publication_try_claim(
+        m_publication,
+        length,
+        &buffer_claim);
+
+    ASSERT_EQ(AERON_PUBLICATION_BACK_PRESSURED, position);
+    const aeron_mapped_buffer_t *term_buffer = &m_publication->log_buffer->mapped_raw_log.term_buffers[partition_index];
+    auto *header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
+    EXPECT_EQ(0, header->frame_header.frame_length);
+    EXPECT_EQ(AERON_HDR_TYPE_PAD, header->frame_header.type);
+}
+
+TEST_F(PublicationTest, tryClaimNotConnectedIfPublicationLimitReached)
+{
+    aeron_buffer_claim_t buffer_claim = {};
+    const size_t length = 5;
+    const int32_t term_count = 3;
+    const size_t partition_index = aeron_logbuffer_index_by_term_count(term_count);
+    const int32_t term_offset = 1024;
+    const int32_t term_id = m_publication->initial_term_id + term_count;
+    m_publication->log_meta_data->active_term_count = term_count;
+    m_publication->log_meta_data->term_tail_counters[partition_index] = packTail(term_id, term_offset);
+    m_publication->log_meta_data->is_connected = false;
+    const int64_t limit_position = aeron_logbuffer_compute_position(
+        term_id, term_offset - 32, m_publication->position_bits_to_shift, m_publication->initial_term_id);
+    aeron_counter_set_ordered(m_position_limit_addr, limit_position);
+
+    const int64_t position = aeron_publication_try_claim(
+        m_publication,
+        length,
+        &buffer_claim);
+
+    ASSERT_EQ(AERON_PUBLICATION_NOT_CONNECTED, position);
+    const aeron_mapped_buffer_t *term_buffer = &m_publication->log_buffer->mapped_raw_log.term_buffers[partition_index];
+    auto *header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
+    EXPECT_EQ(0, header->frame_header.frame_length);
+    EXPECT_EQ(AERON_HDR_TYPE_PAD, header->frame_header.type);
+}
+
+TEST_F(PublicationTest, tryClaimMaxPositionExceededIfPublicationLimitReached)
+{
+    aeron_buffer_claim_t buffer_claim = {};
+    const size_t length = 5;
+    const int32_t term_count = INT32_MAX;
+    const size_t partition_index = aeron_logbuffer_index_by_term_count(term_count);
+    const int32_t term_offset = TERM_LENGTH - 8;
+    const int32_t term_id = INT32_MIN + (INITIAL_TERM_ID - 1);
+    m_publication->log_meta_data->active_term_count = term_count;
+    m_publication->log_meta_data->term_tail_counters[partition_index] = packTail(term_id, term_offset);
+    aeron_counter_set_ordered(m_position_limit_addr, 64);
+
+    const int64_t position = aeron_publication_try_claim(
+        m_publication,
+        length,
+        &buffer_claim);
+
+    ASSERT_EQ(AERON_PUBLICATION_MAX_POSITION_EXCEEDED, position);
+    const aeron_mapped_buffer_t *term_buffer = &m_publication->log_buffer->mapped_raw_log.term_buffers[partition_index];
+    auto *header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
+    EXPECT_EQ(0, header->frame_header.frame_length);
+    EXPECT_EQ(AERON_HDR_TYPE_PAD, header->frame_header.type);
+}
+
+TEST_F(PublicationTest, tryClaimPublicationErrorIfMessageIsLargerThanMaxPayloadSize)
+{
+    aeron_buffer_claim_t buffer_claim = {};
+    const int32_t term_count = 5;
+    const size_t partition_index = aeron_logbuffer_index_by_term_count(term_count);
+    const int32_t term_offset = TERM_LENGTH;
+    const int32_t term_id = term_count + INITIAL_TERM_ID;
+    m_publication->log_meta_data->active_term_count = term_count;
+    m_publication->log_meta_data->term_tail_counters[partition_index] = packTail(term_id, term_offset);
+
+    const int64_t position = aeron_publication_try_claim(
+        m_publication,
+        MAX_PAYLOAD_SIZE + 1,
+        &buffer_claim);
+
+    ASSERT_EQ(AERON_PUBLICATION_ERROR, position);
+    const aeron_mapped_buffer_t *term_buffer = &m_publication->log_buffer->mapped_raw_log.term_buffers[partition_index];
+    auto *header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
+    EXPECT_EQ(0, header->frame_header.frame_length);
+    EXPECT_EQ(AERON_HDR_TYPE_PAD, header->frame_header.type);
+}
+
+TEST_F(PublicationTest, tryClaimAdminActionAfterRolloingOverToTheNextTerm)
+{
+    aeron_buffer_claim_t buffer_claim = {};
+    const size_t length = 55;
+    const size_t frame_length = AERON_ALIGN(length + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t term_count = 51;
+    const size_t partition_index = aeron_logbuffer_index_by_term_count(term_count);
+    const size_t next_partition_index = aeron_logbuffer_index_by_term_count(term_count + 1);
+    const int32_t term_offset = TERM_LENGTH - AERON_DATA_HEADER_LENGTH - 8;
+    const int32_t term_id = term_count + INITIAL_TERM_ID;
+    m_publication->log_meta_data->active_term_count = term_count;
+    m_publication->log_meta_data->term_tail_counters[partition_index] = packTail(term_id, term_offset);
+    m_publication->log_meta_data->term_tail_counters[next_partition_index] =
+        packTail(term_id + 1 - AERON_LOGBUFFER_PARTITION_COUNT, 999888);
+
+    const int64_t position = aeron_publication_try_claim(
+        m_publication,
+        length,
+        &buffer_claim);
+
+    ASSERT_EQ(AERON_PUBLICATION_ADMIN_ACTION, position);
+    EXPECT_EQ(
+        packTail(term_id, term_offset + frame_length),
+        m_publication->log_meta_data->term_tail_counters[partition_index]);
+    EXPECT_EQ(
+        packTail(term_id + 1, 0),
+        m_publication->log_meta_data->term_tail_counters[next_partition_index]);
+    const aeron_mapped_buffer_t *term_buffer = &m_publication->log_buffer->mapped_raw_log.term_buffers[partition_index];
+    auto *header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
+    EXPECT_EQ(AERON_DATA_HEADER_LENGTH + 8, header->frame_header.frame_length);
+    EXPECT_EQ(AERON_HDR_TYPE_PAD, header->frame_header.type);
+}
+
+TEST_F(PublicationTest, tryClaimMaxPositionExceededAfterSuccessfulSpaceClaim)
+{
+    aeron_buffer_claim_t buffer_claim = {};
+    const size_t length = 19;
+    const size_t frame_length = AERON_ALIGN(length + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t term_count = INT32_MAX;
+    const size_t partition_index = aeron_logbuffer_index_by_term_count(term_count);
+    const size_t next_partition_index = (partition_index + 1) % AERON_LOGBUFFER_PARTITION_COUNT;
+    const int32_t term_offset = TERM_LENGTH - AERON_DATA_HEADER_LENGTH - 8;
+    const int32_t term_id = INT32_MIN + (INITIAL_TERM_ID - 1);
+    m_publication->log_meta_data->active_term_count = term_count;
+    m_publication->log_meta_data->term_tail_counters[partition_index] = packTail(term_id, term_offset);
+    m_publication->log_meta_data->term_tail_counters[next_partition_index] =
+        packTail(term_id + 1 - AERON_LOGBUFFER_PARTITION_COUNT, 2846386);
+
+    const int64_t position = aeron_publication_try_claim(
+        m_publication,
+        length,
+        &buffer_claim);
 
     ASSERT_EQ(AERON_PUBLICATION_MAX_POSITION_EXCEEDED, position);
     EXPECT_EQ(

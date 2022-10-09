@@ -335,10 +335,10 @@ int64_t aeron_publication_try_claim(aeron_publication_t *publication, size_t len
         const size_t index = aeron_logbuffer_index_by_term_count(term_count);
         const int64_t raw_tail = aeron_term_appender_raw_tail_volatile(
             &publication->log_meta_data->term_tail_counters[index]);
-        const int64_t term_offset = raw_tail & 0xFFFFFFFF;
+        const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
         const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
-        const int64_t position = aeron_logbuffer_compute_term_begin_position(
-            term_id, publication->position_bits_to_shift, publication->initial_term_id);
+        const int64_t position = aeron_logbuffer_compute_position(
+            term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
 
         if (term_count != (term_id - publication->initial_term_id))
         {

@@ -3706,7 +3706,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 sessionExport.timeOfLastActivityNs,
                 sessionExport.closeReason,
                 sessionExport.responseStreamId,
-                createResponseChannel(sessionExport.responseChannel),
+                refineResponseChannel(sessionExport.responseChannel),
                 null, 0, 0);
         }
 

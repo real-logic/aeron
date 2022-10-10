@@ -40,9 +40,9 @@ static const std::int64_t CORRELATION_ID = 100;
 static const std::int64_t ORIGINAL_REGISTRATION_ID = 100;
 static const std::int32_t TERM_ID_1 = 1;
 
-inline std::int64_t rawTailValue(std::int32_t termId, std::int64_t position)
+inline std::int64_t rawTailValue(std::int32_t termId, std::int32_t termOffset)
 {
-    return (termId * ((INT64_C(1) << 32))) | position;
+    return ((std::int64_t)termId << 32) | termOffset;
 }
 
 inline util::index_t termTailCounterOffset(const int index)
@@ -177,6 +177,28 @@ TEST_F(PublicationTest, shouldFailToOfferAMessageWhenLimited)
     m_publicationLimit.set(0);
 
     EXPECT_EQ(m_publication->offer(m_srcBuffer), NOT_CONNECTED);
+}
+
+TEST_F(PublicationTest, shouldFailToOfferAMessageWithBackPressureWhenLimited)
+{
+    m_publicationLimit.set(0);
+    LogBufferDescriptor::isConnected(m_logMetaDataBuffer, true);
+
+    EXPECT_EQ(m_publication->offer(m_srcBuffer), BACK_PRESSURED);
+}
+
+TEST_F(PublicationTest, shouldFailToOfferAMessageWithMaxPositionExceededWhenLimited)
+{
+    const std::int32_t termCount = INT32_MAX;
+    const std::int32_t termOffset = TERM_LENGTH - SRC_BUFFER_LENGTH - 1;
+    const std::int32_t termId = INT32_MIN + (TERM_ID_1 - 1);
+    const int activeIndex = LogBufferDescriptor::indexByTermCount(termCount);
+    m_logMetaDataBuffer.putInt64(termTailCounterOffset(activeIndex), rawTailValue(termId, termOffset));
+    LogBufferDescriptor::activeTermCountOrdered(m_logMetaDataBuffer, termCount);
+    m_publicationLimit.set(1);
+    LogBufferDescriptor::isConnected(m_logMetaDataBuffer, true);
+
+    EXPECT_EQ(m_publication->offer(m_srcBuffer), MAX_POSITION_EXCEEDED);
 }
 
 TEST_F(PublicationTest, shouldFailToOfferWhenAppendFails)

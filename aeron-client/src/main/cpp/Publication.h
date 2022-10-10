@@ -671,7 +671,8 @@ private:
 
     inline std::int64_t backPressureStatus(std::int64_t currentPosition, std::int32_t messageLength)
     {
-        if ((currentPosition + messageLength) >= m_maxPossiblePosition)
+        if ((currentPosition + util::BitUtil::align(
+            messageLength + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT)) >= m_maxPossiblePosition)
         {
             return MAX_POSITION_EXCEEDED;
         }

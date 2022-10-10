@@ -572,7 +572,7 @@ TEST_F(PublicationTest, offerMaxPositionExceededIfPublicationLimitReached)
     const size_t length = strlen(payload);
     const int32_t term_count = INT32_MAX;
     const size_t partition_index = aeron_logbuffer_index_by_term_count(term_count);
-    const int32_t term_offset = (int32_t)(TERM_LENGTH - length);
+    const int32_t term_offset = (int32_t)(TERM_LENGTH - length - 1);
     const int32_t term_id = INT32_MIN + (INITIAL_TERM_ID - 1);
     m_publication->log_meta_data->active_term_count = term_count;
     m_publication->log_meta_data->term_tail_counters[partition_index] = packTail(term_id, term_offset);

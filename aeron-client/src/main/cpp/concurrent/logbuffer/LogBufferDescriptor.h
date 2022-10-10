@@ -117,7 +117,8 @@ struct LogMetaDataDefn
 {
     std::int64_t termTailCounters[PARTITION_COUNT];
     std::int32_t activeTermCount;
-    std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - ((PARTITION_COUNT * sizeof(std::int64_t)) + sizeof(std::int32_t))];
+    std::int8_t pad1[
+        (2 * util::BitUtil::CACHE_LINE_LENGTH) - ((PARTITION_COUNT * sizeof(std::int64_t)) + sizeof(std::int32_t))];
     std::int64_t endOfStreamPosition;
     std::int32_t isConnected;
     std::int32_t activeTransportCount;
@@ -346,7 +347,7 @@ inline bool casRawTail(
 inline AtomicBuffer defaultFrameHeader(AtomicBuffer &logMetaDataBuffer)
 {
     std::uint8_t *header = logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADER_OFFSET;
-    return {header, static_cast<std::size_t>(DataFrameHeader::LENGTH)};
+    return { header, static_cast<std::size_t>(DataFrameHeader::LENGTH) };
 }
 
 inline void rotateLog(AtomicBuffer &logMetaDataBuffer, std::int32_t currentTermCount, std::int32_t currentTermId)

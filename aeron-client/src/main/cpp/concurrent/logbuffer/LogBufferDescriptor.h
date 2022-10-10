@@ -307,6 +307,11 @@ inline std::int64_t rawTailVolatile(const AtomicBuffer &logMetaDataBuffer)
     return logMetaDataBuffer.getInt64Volatile(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
 }
 
+inline std::int64_t rawTailVolatile(const AtomicBuffer &logMetaDataBuffer, int partitionIndex)
+{
+    return logMetaDataBuffer.getInt64Volatile(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
+}
+
 inline std::int64_t rawTail(const AtomicBuffer &logMetaDataBuffer)
 {
     const std::int32_t partitionIndex = indexByTermCount(activeTermCount(logMetaDataBuffer));
@@ -353,7 +358,7 @@ inline void rotateLog(AtomicBuffer &logMetaDataBuffer, std::int32_t currentTermC
     std::int64_t rawTail;
     do
     {
-        rawTail = LogBufferDescriptor::rawTail(logMetaDataBuffer, nextIndex);
+        rawTail = LogBufferDescriptor::rawTailVolatile(logMetaDataBuffer, nextIndex);
         if (expectedTermId != LogBufferDescriptor::termId(rawTail))
         {
             break;

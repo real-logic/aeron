@@ -928,8 +928,7 @@ private:
             return MAX_POSITION_EXCEEDED;
         }
 
-        const auto termCount =
-            static_cast<std::int32_t>(static_cast<std::uint32_t>(termId) - static_cast<std::uint32_t>(m_initialTermId));
+        const auto termCount = LogBufferDescriptor::computeTermCount(termId, m_initialTermId);
         LogBufferDescriptor::rotateLog(m_logMetaDataBuffer, termCount, termId);
 
         return ADMIN_ACTION;

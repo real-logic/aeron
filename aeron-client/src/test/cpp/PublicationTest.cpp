@@ -22,7 +22,7 @@ using namespace aeron::concurrent;
 using namespace aeron;
 
 #define TERM_LENGTH (LogBufferDescriptor::TERM_MIN_LENGTH)
-#define MTU_LENGTH (3074)
+#define MTU_LENGTH (3072)
 #define MAX_MESSAGE_LENGTH (TERM_LENGTH >> 3)
 #define MAX_PAYLOAD_SIZE (MTU_LENGTH - DataFrameHeader::LENGTH)
 #define PAGE_SIZE (LogBufferDescriptor::AERON_PAGE_MIN_SIZE)
@@ -85,6 +85,18 @@ public:
             m_logMetaDataBuffer.putInt64(termTailCounterOffset(i), static_cast<std::int64_t>(expectedTermId) << 32);
         }
 
+        auto *defaultHeader = (struct DataFrameHeader::DataFrameHeaderDefn *)(
+            LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer).buffer());
+        defaultHeader->frameLength = -1;
+        defaultHeader->version = UINT8_MAX;
+        defaultHeader->flags = UINT8_MAX;
+        defaultHeader->type = UINT16_MAX;
+        defaultHeader->termOffset = -1;
+        defaultHeader->termId = -1;
+        defaultHeader->reservedValue = -1;
+        defaultHeader->sessionId = SESSION_ID;
+        defaultHeader->streamId = STREAM_ID;
+
         m_publication = std::unique_ptr<Publication>(
             new Publication(
                 m_conductor,
@@ -96,6 +108,33 @@ public:
                 m_publicationLimit,
                 ChannelEndpointStatus::NO_ID_ALLOCATED,
                 m_logBuffers));
+    }
+
+    void verifyHeader(
+        AtomicBuffer &termBuffer,
+        std::int32_t termOffset,
+        std::int32_t frameLength,
+        std::int32_t termId,
+        std::uint16_t type,
+        std::uint8_t flags,
+        std::int64_t reservedValue)
+    {
+        const auto *hdr = (struct DataFrameHeader::DataFrameHeaderDefn *)(termBuffer.buffer() + termOffset);
+        EXPECT_EQ(DataFrameHeader::CURRENT_VERSION, hdr->version);
+        EXPECT_EQ(frameLength, hdr->frameLength);
+        EXPECT_EQ(flags, hdr->flags);
+        EXPECT_EQ(type, hdr->type);
+        EXPECT_EQ(termOffset, hdr->termOffset);
+        EXPECT_EQ(termId, hdr->termId);
+        EXPECT_EQ(reservedValue, hdr->reservedValue);
+        EXPECT_EQ(m_publication->sessionId(), hdr->sessionId);
+        EXPECT_EQ(m_publication->streamId(), hdr->streamId);
+    }
+
+    static std::int64_t reserved_value_supplier(
+        AtomicBuffer &termBuffer, util::index_t frameOffset, util::index_t frameLength)
+    {
+        return static_cast<std::int64_t>(frameOffset) * static_cast<std::int64_t>(frameLength);
     }
 
 protected:
@@ -197,8 +236,8 @@ TEST_F(PublicationTest, shouldFailToOfferAMessageWithMaxPositionExceededWhenLimi
     const std::int32_t termCount = INT32_MAX;
     const std::int32_t termOffset = TERM_LENGTH - 1;
     const std::int32_t termId = INT32_MIN + (INITIAL_TERM_ID - 1);
-    ASSERT_EQ(140737488355327l,
-        LogBufferDescriptor::computePosition(termId, termOffset, m_publication->positionBitsToShift(), INITIAL_TERM_ID));
+    ASSERT_EQ(140737488355327l, LogBufferDescriptor::computePosition(
+        termId, termOffset, m_publication->positionBitsToShift(), INITIAL_TERM_ID));
     ASSERT_EQ(140737488289792l,
         LogBufferDescriptor::computeTermBeginPosition(termId, m_publication->positionBitsToShift(), INITIAL_TERM_ID));
     const int activeIndex = LogBufferDescriptor::indexByTermCount(termCount);
@@ -268,21 +307,97 @@ TEST_F(PublicationTest, shouldRotateWhenClaimTrips)
 
 TEST_F(PublicationTest, shouldOfferFragmentedMessage)
 {
+    m_srcBuffer.setMemory(0, MAX_MESSAGE_LENGTH / 2, 'a');
+    m_srcBuffer.setMemory(MAX_MESSAGE_LENGTH / 2, MAX_MESSAGE_LENGTH / 2, 'x');
     const std::int32_t termCount = 131;
     const std::int32_t termOffset = 4160;
     const std::int32_t termId = INITIAL_TERM_ID + termCount;
-    const std::int32_t last_frame_offset = termOffset + (MAX_MESSAGE_LENGTH / MAX_PAYLOAD_SIZE) * MTU_LENGTH;
-    const std::size_t last_frame_length = BitUtil::align(
-        (MAX_MESSAGE_LENGTH % MAX_PAYLOAD_SIZE) + DataFrameHeader::LENGTH,
-        FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t lastFrameOffset = termOffset + (MAX_MESSAGE_LENGTH / MAX_PAYLOAD_SIZE) * MTU_LENGTH;
+    const std::int32_t remainingPayload = (MAX_MESSAGE_LENGTH % MAX_PAYLOAD_SIZE);
+    const std::int32_t lastFrameLength = remainingPayload + DataFrameHeader::LENGTH;
     const int activeIndex = LogBufferDescriptor::indexByTermCount(termCount);
     m_logMetaDataBuffer.putInt64(termTailCounterOffset(activeIndex), rawTailValue(termId, termOffset));
     LogBufferDescriptor::activeTermCountOrdered(m_logMetaDataBuffer, termCount);
     m_publicationLimit.set(LONG_MAX);
     LogBufferDescriptor::isConnected(m_logMetaDataBuffer, true);
 
-    ASSERT_EQ(m_publication->offer(m_srcBuffer, 0, MAX_MESSAGE_LENGTH), 8597668);
+    ASSERT_EQ(m_publication->offer(m_srcBuffer, 0, MAX_MESSAGE_LENGTH, reserved_value_supplier), 8597664);
 
     EXPECT_EQ(m_logMetaDataBuffer.getInt64(termTailCounterOffset(activeIndex)),
-        rawTailValue(termId, last_frame_offset + last_frame_length));
+        rawTailValue(termId, lastFrameOffset + BitUtil::align(lastFrameLength, FrameDescriptor::FRAME_ALIGNMENT)));
+    AtomicBuffer &termBuffer = m_termBuffers[activeIndex];
+    verifyHeader(
+        termBuffer,
+        termOffset,
+        MTU_LENGTH,
+        termId,
+        DataFrameHeader::HDR_TYPE_DATA,
+        FrameDescriptor::BEGIN_FRAG,
+        static_cast<std::int64_t>(termOffset) * static_cast<std::int64_t>(MTU_LENGTH));
+    EXPECT_EQ(0,
+        memcmp(m_srcBuffer.buffer(), termBuffer.buffer() + termOffset + DataFrameHeader::LENGTH, MAX_PAYLOAD_SIZE));
+
+    verifyHeader(
+        termBuffer,
+        lastFrameOffset,
+        lastFrameLength,
+        termId,
+        DataFrameHeader::HDR_TYPE_DATA,
+        FrameDescriptor::END_FRAG,
+        static_cast<std::int64_t>(lastFrameOffset) * static_cast<std::int64_t>(lastFrameLength));
+    EXPECT_EQ(0, memcmp(
+        m_srcBuffer.buffer() + (MAX_MESSAGE_LENGTH - lastFrameLength - DataFrameHeader::LENGTH),
+        termBuffer.buffer() + lastFrameOffset + DataFrameHeader::LENGTH,
+        lastFrameLength - DataFrameHeader::LENGTH));
+}
+
+TEST_F(PublicationTest, shouldOfferFragmentedMessageViaSeveralBuffers)
+{
+    const std::int32_t length = 5000;
+    const AtomicBuffer msgBuffers[3] = {
+        AtomicBuffer(m_srcBuffer.buffer(), 100, 'a'),
+        AtomicBuffer(m_srcBuffer.buffer() + 100, 200, 'b'),
+        AtomicBuffer(m_srcBuffer.buffer() + 300, length - 300, 'z')};
+    const std::int32_t termCount = 35;
+    const std::int32_t termOffset = TERM_LENGTH / 4;
+    const std::int32_t termId = INITIAL_TERM_ID + termCount;
+    const std::int32_t lastFrameOffset = termOffset + (length / MAX_PAYLOAD_SIZE) * MTU_LENGTH;
+    const std::int32_t remainingPayload = (length % MAX_PAYLOAD_SIZE);
+    const std::int32_t lastFrameLength = remainingPayload + DataFrameHeader::LENGTH;
+    const int activeIndex = LogBufferDescriptor::indexByTermCount(termCount);
+    m_logMetaDataBuffer.putInt64(termTailCounterOffset(activeIndex), rawTailValue(termId, termOffset));
+    LogBufferDescriptor::activeTermCountOrdered(m_logMetaDataBuffer, termCount);
+    m_publicationLimit.set(LONG_MAX);
+    LogBufferDescriptor::isConnected(m_logMetaDataBuffer, true);
+
+    ASSERT_EQ(m_publication->offer(msgBuffers, 3, reserved_value_supplier), 2315232);
+
+    EXPECT_EQ(m_logMetaDataBuffer.getInt64(termTailCounterOffset(activeIndex)),
+        rawTailValue(termId, lastFrameOffset + BitUtil::align(lastFrameLength, FrameDescriptor::FRAME_ALIGNMENT)));
+    AtomicBuffer &termBuffer = m_termBuffers[activeIndex];
+    verifyHeader(
+        termBuffer,
+        termOffset,
+        MTU_LENGTH,
+        termId,
+        DataFrameHeader::HDR_TYPE_DATA,
+        FrameDescriptor::BEGIN_FRAG,
+        static_cast<std::int64_t>(termOffset) * static_cast<std::int64_t>(MTU_LENGTH));
+    EXPECT_EQ(0,
+        memcmp(m_srcBuffer.buffer(), termBuffer.buffer() + termOffset + DataFrameHeader::LENGTH, 100));
+    EXPECT_EQ(0,
+        memcmp(m_srcBuffer.buffer() + 100, termBuffer.buffer() + termOffset + DataFrameHeader::LENGTH + 100, 200));
+
+    verifyHeader(
+        termBuffer,
+        lastFrameOffset,
+        lastFrameLength,
+        termId,
+        DataFrameHeader::HDR_TYPE_DATA,
+        FrameDescriptor::END_FRAG,
+        static_cast<std::int64_t>(lastFrameOffset) * static_cast<std::int64_t>(lastFrameLength));
+    EXPECT_EQ(0, memcmp(
+        m_srcBuffer.buffer() + MAX_PAYLOAD_SIZE,
+        termBuffer.buffer() + lastFrameOffset + DataFrameHeader::LENGTH,
+        lastFrameLength - DataFrameHeader::LENGTH));
 }

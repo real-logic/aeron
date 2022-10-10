@@ -25,7 +25,6 @@
 
 #include "concurrent/AtomicBuffer.h"
 #include "concurrent/logbuffer/BufferClaim.h"
-#include "concurrent/logbuffer/TermAppender.h"
 #include "concurrent/status/UnsafeBufferPosition.h"
 #include "concurrent/status/StatusIndicatorReader.h"
 #include "util/Exceptions.h"
@@ -45,6 +44,28 @@ static const std::int64_t BACK_PRESSURED = -2;
 static const std::int64_t ADMIN_ACTION = -3;
 static const std::int64_t PUBLICATION_CLOSED = -4;
 static const std::int64_t MAX_POSITION_EXCEEDED = -5;
+
+/**
+ * Supplies the reserved value field for a data frame header. The returned value will be set in the header as
+ * Little Endian format.
+ *
+ * This will be called as the last action of encoding a data frame right before the length is set. All other fields
+ * in the header plus the body of the frame will have been written at the point of supply.
+ *
+ * @param termBuffer for the message
+ * @param termOffset of the start of the message
+ * @param length of the message in bytes
+ */
+typedef std::function<std::int64_t(
+    AtomicBuffer &termBuffer,
+    util::index_t termOffset,
+    util::index_t length)> on_reserved_value_supplier_t;
+
+static const on_reserved_value_supplier_t DEFAULT_RESERVED_VALUE_SUPPLIER =
+    [](AtomicBuffer &, util::index_t, util::index_t) -> std::int64_t
+    {
+        return 0;
+    };
 
 using AsyncDestination = aeron_async_destination_t;
 

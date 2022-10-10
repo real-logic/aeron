@@ -22,7 +22,6 @@
 #include "concurrent/logbuffer/LogBufferDescriptor.h"
 #include "concurrent/logbuffer/BufferClaim.h"
 #include "concurrent/logbuffer/DataFrameHeader.h"
-#include "concurrent/logbuffer/TermAppender.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
@@ -325,7 +324,7 @@ private:
             FrameDescriptor::frameLengthOrdered(termBuffer, termOffset, paddingLength);
         }
 
-        return TERM_APPENDER_FAILED;
+        return -2;
     }
 
     inline void putRawTailOrdered(const std::int64_t termId, const std::int32_t termOffset)

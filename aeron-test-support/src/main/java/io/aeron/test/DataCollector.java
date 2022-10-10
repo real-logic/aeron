@@ -54,6 +54,7 @@ public final class DataCollector
         BLANK_TEMPLATE_FILTER.negate();
     private final Path rootDir;
     private final Set<Path> locations = new LinkedHashSet<>();
+    private final Set<Path> cleanupLocations = new LinkedHashSet<>();
     private Predicate<Path> fileFilter = DATA_COLLECTED_DEFAULT_FILE_FILTER;
 
     public DataCollector()
@@ -97,6 +98,29 @@ public final class DataCollector
     }
 
     /**
+     * Add a location to be cleaned up.
+     *
+     * @param location to be added to the list of cleanup locations.
+     */
+    public void addForCleanup(final File location)
+    {
+        if (null != location)
+        {
+            addForCleanup(location.toPath());
+        }
+    }
+
+    /**
+     * Add a location to be cleaned up.
+     *
+     * @param location to be added to the list of cleanup locations.
+     */
+    public void addForCleanup(final Path location)
+    {
+        cleanupLocations.add(Objects.requireNonNull(location));
+    }
+
+    /**
      * Copy data from all the added locations to the directory {@code $rootDir/$destinationDir}, where:
      * <ul>
      *     <li>{@code $rootDir} is the root directory specified when {@link #DataCollector} was created.</li>
@@ -114,7 +138,7 @@ public final class DataCollector
      * @param destinationDir destination directory where the data should be copied into.
      * @return {@code null} if no data was copied or an actual destination directory used.
      */
-    public Path dumpData(final String destinationDir)
+    Path dumpData(final String destinationDir)
     {
         if (isEmpty(destinationDir))
         {
@@ -180,6 +204,20 @@ public final class DataCollector
     public Collection<Path> allLocations()
     {
         return locations;
+    }
+
+    /**
+     * Returns all the locations that need to be deleted. This method will use any locations added for collection
+     * as well as those added for clean up.
+     *
+     * @return collection of locations that need to be removed.
+     */
+    public Collection<Path> cleanupLocations()
+    {
+        final ArrayList<Path> cleanupLocations = new ArrayList<>();
+        cleanupLocations.addAll(this.cleanupLocations);
+        cleanupLocations.addAll(this.locations);
+        return Collections.unmodifiableList(cleanupLocations);
     }
 
     private static Stream<Path> find(final Path p, final BiPredicate<Path, BasicFileAttributes> matcher)

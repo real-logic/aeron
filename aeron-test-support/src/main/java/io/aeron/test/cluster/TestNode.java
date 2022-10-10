@@ -97,9 +97,11 @@ public final class TestNode implements AutoCloseable
                 .terminationHook(ClusterTests.terminationHook(
                 context.isTerminationExpected, context.hasMemberTerminated));
             consensusModule = ConsensusModule.launch(context.consensusModuleContext);
+            final File baseDir = context.consensusModuleContext.clusterDir().getParentFile();
+            dataCollector.addForCleanup(baseDir);
 
             containers = new ClusteredServiceContainer[services.length];
-            final File servicesDir = new File(context.consensusModuleContext.clusterDir().getParentFile(), "services");
+            final File servicesDir = new File(baseDir, "services");
             for (int i = 0; i < services.length; i++)
             {
                 final ClusteredServiceContainer.Context ctx = context.serviceContainerContext.clone();

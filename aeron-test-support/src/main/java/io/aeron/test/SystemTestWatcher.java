@@ -40,9 +40,11 @@ import java.net.UnknownHostException;
 import java.nio.MappedByteBuffer;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -67,13 +69,17 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     private Predicate<String> logFilter = TEST_CLUSTER_DEFAULT_LOG_FILTER;
     private DataCollector dataCollector = new DataCollector();
-    private AutoCloseable closeable = () -> {};
+    private ArrayList<AutoCloseable> closeables = new ArrayList<>();
 
     public SystemTestWatcher cluster(final TestCluster testCluster)
     {
         this.dataCollector = testCluster.dataCollector();
-        closeable = testCluster;
+        return addClosable(testCluster);
+    }
 
+    public SystemTestWatcher addClosable(final AutoCloseable closeable)
+    {
+        closeables.add(Objects.requireNonNull(closeable));
         return this;
     }
 
@@ -135,7 +141,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             }
             else
             {
-                CloseHelper.close(closeable);
+                CloseHelper.closeAll(closeables);
                 mediaDriverTestUtil.testSuccessful();
             }
         }
@@ -321,7 +327,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
             try
             {
-                CloseHelper.close(closeable);
+                CloseHelper.closeAll(closeables);
             }
             catch (final Exception t)
             {
@@ -412,7 +418,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     private void deleteAllLocations()
     {
-        for (final Path path : dataCollector.allLocations())
+        for (final Path path : dataCollector.cleanupLocations())
         {
             IoUtil.delete(path.toFile(), true);
         }

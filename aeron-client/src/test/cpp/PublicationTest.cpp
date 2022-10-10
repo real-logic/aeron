@@ -134,7 +134,7 @@ public:
     static std::int64_t reserved_value_supplier(
         AtomicBuffer &termBuffer, util::index_t frameOffset, util::index_t frameLength)
     {
-        return static_cast<std::int64_t>(frameOffset) * static_cast<std::int64_t>(frameLength);
+        return static_cast<std::int64_t>(frameOffset) * static_cast<std::int64_t>(frameLength) + frameLength;
     }
 
 protected:
@@ -212,8 +212,18 @@ TEST_F(PublicationTest, shouldOfferAMessageUponConstruction)
     const std::int64_t expectedPosition = 1056;
     m_publicationLimit.set(TERM_LENGTH);
 
-    EXPECT_EQ(m_publication->offer(m_srcBuffer, 0, length), expectedPosition);
+    EXPECT_EQ(m_publication->offer(m_srcBuffer, 0, length, reserved_value_supplier), expectedPosition);
     EXPECT_EQ(m_publication->position(), expectedPosition);
+
+    AtomicBuffer &termBuffer = m_termBuffers[0];
+    verifyHeader(
+        termBuffer,
+        0,
+        1032,
+        INITIAL_TERM_ID,
+        DataFrameHeader::HDR_TYPE_DATA,
+        FrameDescriptor::BEGIN_FRAG | FrameDescriptor::END_FRAG,
+        1032);
 }
 
 TEST_F(PublicationTest, shouldFailToOfferAMessageWhenLimited)
@@ -333,7 +343,7 @@ TEST_F(PublicationTest, shouldOfferFragmentedMessage)
         termId,
         DataFrameHeader::HDR_TYPE_DATA,
         FrameDescriptor::BEGIN_FRAG,
-        static_cast<std::int64_t>(termOffset) * static_cast<std::int64_t>(MTU_LENGTH));
+        static_cast<std::int64_t>(termOffset) * static_cast<std::int64_t>(MTU_LENGTH) + MTU_LENGTH);
     EXPECT_EQ(0,
         memcmp(m_srcBuffer.buffer(), termBuffer.buffer() + termOffset + DataFrameHeader::LENGTH, MAX_PAYLOAD_SIZE));
 
@@ -344,7 +354,7 @@ TEST_F(PublicationTest, shouldOfferFragmentedMessage)
         termId,
         DataFrameHeader::HDR_TYPE_DATA,
         FrameDescriptor::END_FRAG,
-        static_cast<std::int64_t>(lastFrameOffset) * static_cast<std::int64_t>(lastFrameLength));
+        static_cast<std::int64_t>(lastFrameOffset) * static_cast<std::int64_t>(lastFrameLength) + lastFrameLength);
     EXPECT_EQ(0, memcmp(
         m_srcBuffer.buffer() + (MAX_MESSAGE_LENGTH - lastFrameLength - DataFrameHeader::LENGTH),
         termBuffer.buffer() + lastFrameOffset + DataFrameHeader::LENGTH,
@@ -382,7 +392,7 @@ TEST_F(PublicationTest, shouldOfferFragmentedMessageViaSeveralBuffers)
         termId,
         DataFrameHeader::HDR_TYPE_DATA,
         FrameDescriptor::BEGIN_FRAG,
-        static_cast<std::int64_t>(termOffset) * static_cast<std::int64_t>(MTU_LENGTH));
+        static_cast<std::int64_t>(termOffset) * static_cast<std::int64_t>(MTU_LENGTH) + MTU_LENGTH);
     EXPECT_EQ(0,
         memcmp(m_srcBuffer.buffer(), termBuffer.buffer() + termOffset + DataFrameHeader::LENGTH, 100));
     EXPECT_EQ(0,
@@ -395,9 +405,36 @@ TEST_F(PublicationTest, shouldOfferFragmentedMessageViaSeveralBuffers)
         termId,
         DataFrameHeader::HDR_TYPE_DATA,
         FrameDescriptor::END_FRAG,
-        static_cast<std::int64_t>(lastFrameOffset) * static_cast<std::int64_t>(lastFrameLength));
+        static_cast<std::int64_t>(lastFrameOffset) * static_cast<std::int64_t>(lastFrameLength) + lastFrameLength);
     EXPECT_EQ(0, memcmp(
         m_srcBuffer.buffer() + MAX_PAYLOAD_SIZE,
         termBuffer.buffer() + lastFrameOffset + DataFrameHeader::LENGTH,
         lastFrameLength - DataFrameHeader::LENGTH));
+}
+
+TEST_F(PublicationTest, shouldTryClaimMaxMessage)
+{
+    BufferClaim bufferClaim;
+    const std::int32_t termCount = 81;
+    const std::int32_t termOffset = 1024;
+    const std::int32_t termId = INITIAL_TERM_ID + termCount;
+    const int activeIndex = LogBufferDescriptor::indexByTermCount(termCount);
+    m_logMetaDataBuffer.putInt64(termTailCounterOffset(activeIndex), rawTailValue(termId, termOffset));
+    LogBufferDescriptor::activeTermCountOrdered(m_logMetaDataBuffer, termCount);
+    m_publicationLimit.set(LONG_MAX);
+    LogBufferDescriptor::isConnected(m_logMetaDataBuffer, true);
+
+    ASSERT_EQ(m_publication->tryClaim(MAX_PAYLOAD_SIZE, bufferClaim), 5312512);
+
+    EXPECT_EQ(m_logMetaDataBuffer.getInt64(termTailCounterOffset(activeIndex)),
+        rawTailValue(termId, termOffset + MTU_LENGTH));
+    AtomicBuffer &termBuffer = m_termBuffers[activeIndex];
+    verifyHeader(
+        termBuffer,
+        termOffset,
+        -MTU_LENGTH,
+        termId,
+        DataFrameHeader::HDR_TYPE_DATA,
+        FrameDescriptor::BEGIN_FRAG | FrameDescriptor::END_FRAG,
+        0);
 }

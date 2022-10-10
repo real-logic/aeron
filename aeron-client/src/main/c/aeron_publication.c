@@ -170,7 +170,8 @@ static int64_t aeron_publication_handle_end_of_log_condition(
         return AERON_PUBLICATION_MAX_POSITION_EXCEEDED;
     }
 
-    aeron_logbuffer_rotate_log(publication->log_meta_data, term_id - publication->initial_term_id, term_id);
+    int32_t term_count = aeron_logbuffer_compute_term_count(term_id, publication->initial_term_id);
+    aeron_logbuffer_rotate_log(publication->log_meta_data, term_count, term_id);
 
     return AERON_PUBLICATION_ADMIN_ACTION;
 }

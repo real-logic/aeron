@@ -344,6 +344,11 @@ inline bool casRawTail(
         TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)), expectedRawTail, updateRawTail);
 }
 
+inline std::int32_t tailCounterOffset(int partitionIndex)
+{
+    return static_cast<std::int32_t>(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
+}
+
 inline AtomicBuffer defaultFrameHeader(AtomicBuffer &logMetaDataBuffer)
 {
     std::uint8_t *header = logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADER_OFFSET;

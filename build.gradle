@@ -491,7 +491,7 @@ project(':aeron-archive') {
     }
 
     task generateV6Codecs(type: JavaExec) {
-        def codecsFile = 'src/test/resources/archive/aeron-archive-codecs-v6.xml'
+        def codecsFile = 'src/main/resources/archive/aeron-archive-codecs.xml'
         def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
 
         inputs.files(codecsFile, sbeFile)
@@ -503,7 +503,9 @@ project(':aeron-archive') {
                 'sbe.output.dir': generatedTestDir,
                 'sbe.target.language': 'Java',
                 'sbe.validation.xsd': sbeFile,
-                'sbe.validation.stop.on.error': 'true')
+                'sbe.validation.stop.on.error': 'true',
+                'sbe.target.namespace': 'io.aeron.archive.codecs.v6',
+                'sbe.schema.transform.version': '*:6')
         args = [codecsFile]
     }
 

@@ -257,8 +257,8 @@ public final class TestCluster implements AutoCloseable
             CloseHelper.closeAll(
                 client,
                 clientMediaDriver,
-                () -> CloseHelper.closeAll(Stream.of(nodes).filter(Objects::nonNull).collect(toList())),
-                null != backupNode ? () -> backupNode.close() : null);
+                null != backupNode ? () -> backupNode.close() : null,
+                () -> CloseHelper.closeAll(Stream.of(nodes).filter(Objects::nonNull).collect(toList())));
         }
         finally
         {

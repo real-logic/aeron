@@ -272,9 +272,17 @@ inline void endOfStreamPosition(AtomicBuffer &logMetaDataBuffer, std::int64_t po
     logMetaDataBuffer.putInt64Ordered(LOG_END_OF_STREAM_POSITION_OFFSET, position);
 }
 
+inline std::int32_t computeTermCount(
+    std::int32_t termId,
+    std::int32_t initialTermId) noexcept
+{
+    const std::int64_t difference = static_cast<std::int64_t>(termId) - static_cast<std::int64_t>(initialTermId);
+    return static_cast<std::int32_t>(difference & 0xFFFFFFFF);
+}
+
 inline int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId) noexcept
 {
-    return static_cast<std::int32_t>(static_cast<std::uint32_t>(activeTermId) - static_cast<std::uint32_t>(initialTermId)) % PARTITION_COUNT;
+    return computeTermCount(activeTermId, initialTermId) % PARTITION_COUNT;
 }
 
 inline int indexByTermCount(std::int64_t termCount) noexcept
@@ -293,16 +301,14 @@ inline std::int64_t computePosition(
     std::int32_t positionBitsToShift,
     std::int32_t initialTermId) noexcept
 {
-    const std::int64_t termCount =
-        static_cast<std::int64_t>(static_cast<std::uint32_t>(activeTermId) - static_cast<std::uint32_t>(initialTermId));
+    const std::int64_t termCount = static_cast<std::int64_t>(computeTermCount(activeTermId, initialTermId));
     return (termCount << positionBitsToShift) + termOffset;
 }
 
 inline std::int64_t computeTermBeginPosition(
     std::int32_t activeTermId, std::int32_t positionBitsToShift, std::int32_t initialTermId) noexcept
 {
-    const std::int64_t termCount =
-        static_cast<std::int64_t>(static_cast<std::uint32_t>(activeTermId) - static_cast<std::uint32_t>(initialTermId));
+    const std::int64_t termCount = static_cast<std::int64_t>(computeTermCount(activeTermId, initialTermId));
     return termCount << positionBitsToShift;
 }
 
@@ -344,6 +350,11 @@ inline bool casRawTail(
 {
     return logMetaDataBuffer.compareAndSetInt64(
         TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)), expectedRawTail, updateRawTail);
+}
+
+inline std::int32_t tailCounterOffset(int partitionIndex)
+{
+    return static_cast<std::int32_t>(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
 }
 
 inline AtomicBuffer defaultFrameHeader(AtomicBuffer &logMetaDataBuffer)

@@ -506,7 +506,7 @@ int64_t aeron_publication_offer(
         const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
         const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
 
-        if (term_count != (term_id - publication->initial_term_id))
+        if (term_count != aeron_logbuffer_compute_term_count(term_id, publication->initial_term_id))
         {
             return AERON_PUBLICATION_ADMIN_ACTION;
         }
@@ -595,7 +595,7 @@ int64_t aeron_publication_offerv(
         const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
         const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
 
-        if (term_count != (term_id - publication->initial_term_id))
+        if (term_count != aeron_logbuffer_compute_term_count(term_id, publication->initial_term_id))
         {
             return AERON_PUBLICATION_ADMIN_ACTION;
         }
@@ -685,7 +685,7 @@ int64_t aeron_publication_try_claim(aeron_publication_t *publication, size_t len
         const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
         const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
 
-        if (term_count != (term_id - publication->initial_term_id))
+        if (term_count != aeron_logbuffer_compute_term_count(term_id, publication->initial_term_id))
         {
             return AERON_PUBLICATION_ADMIN_ACTION;
         }

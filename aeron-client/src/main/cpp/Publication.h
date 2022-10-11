@@ -369,7 +369,7 @@ public:
             const std::int32_t termOffset = static_cast<std::int32_t>(rawTail & 0xFFFFFFFF);
             const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
 
-            if (termCount != (termId - m_initialTermId))
+            if (termCount != LogBufferDescriptor::computeTermCount(termId, m_initialTermId))
             {
                 return ADMIN_ACTION;
             }
@@ -466,7 +466,7 @@ public:
             const std::int32_t termOffset = static_cast<std::int32_t>(rawTail & 0xFFFFFFFF);
             const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
 
-            if (termCount != (termId - m_initialTermId))
+            if (termCount != LogBufferDescriptor::computeTermCount(termId, m_initialTermId))
             {
                 return ADMIN_ACTION;
             }
@@ -577,7 +577,7 @@ public:
             const std::int32_t termOffset = static_cast<std::int32_t>(rawTail & 0xFFFFFFFF);
             const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
 
-            if (termCount != (termId - m_initialTermId))
+            if (termCount != LogBufferDescriptor::computeTermCount(termId, m_initialTermId))
             {
                 return ADMIN_ACTION;
             }

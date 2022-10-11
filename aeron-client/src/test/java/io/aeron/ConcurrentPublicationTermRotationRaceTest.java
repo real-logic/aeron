@@ -68,7 +68,7 @@ class ConcurrentPublicationTermRotationRaceTest
 
     @Test
     @InterruptAfter(300)
-    void test() throws InterruptedException
+    void handleTermIdMovingAheadBetweenPositionChecksAndTheTermOffsetIncrement() throws InterruptedException
     {
         for (int i = 0; i < ITERATIONS; i++)
         {

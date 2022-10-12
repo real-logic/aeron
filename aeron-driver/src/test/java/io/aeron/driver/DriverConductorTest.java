@@ -26,9 +26,9 @@ import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
 import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.driver.status.SystemCounters;
+import io.aeron.logbuffer.ExclusiveTermAppender;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.logbuffer.TermAppender;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -578,7 +578,8 @@ public class DriverConductorTest
         final int index = LogBufferDescriptor.indexByTerm(termId, termId);
         final RawLog rawLog = publication.rawLog();
         LogBufferDescriptor.rawTail(rawLog.metaData(), index, LogBufferDescriptor.packTail(termId, 0));
-        final TermAppender appender = new TermAppender(rawLog.termBuffers()[index], rawLog.metaData(), index);
+        final ExclusiveTermAppender appender =
+            new ExclusiveTermAppender(rawLog.termBuffers()[index], rawLog.metaData(), index);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[256]);
         final HeaderWriter headerWriter = HeaderWriter.newInstance(
             createDefaultHeader(SESSION_ID, STREAM_ID_1, termId));
@@ -589,7 +590,7 @@ public class DriverConductorTest
         when(msg.receiverWindowLength()).thenReturn(10);
 
         publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059));
-        appender.appendUnfragmentedMessage(headerWriter, srcBuffer, 0, 256, null, termId);
+        appender.appendUnfragmentedMessage(0, termId, headerWriter, srcBuffer, 0, 256, null);
 
         assertEquals(NetworkPublication.State.ACTIVE, publication.state());
 

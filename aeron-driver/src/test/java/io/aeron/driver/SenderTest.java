@@ -21,9 +21,9 @@ import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.SystemCounters;
+import io.aeron.logbuffer.ExclusiveTermAppender;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.logbuffer.TermAppender;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.SetupFlyweight;
@@ -71,7 +71,7 @@ public class SenderTest
 
     private final RawLog rawLog = TestLogFactory.newLogBuffers(TERM_BUFFER_LENGTH);
 
-    private TermAppender[] termAppenders;
+    private ExclusiveTermAppender[] termAppenders;
     private NetworkPublication publication;
     private Sender sender;
 
@@ -130,10 +130,10 @@ public class SenderTest
 
         LogBufferDescriptor.initialiseTailWithTermId(rawLog.metaData(), 0, INITIAL_TERM_ID);
 
-        termAppenders = new TermAppender[PARTITION_COUNT];
+        termAppenders = new ExclusiveTermAppender[PARTITION_COUNT];
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termAppenders[i] = new TermAppender(rawLog.termBuffers()[i], rawLog.metaData(), i);
+            termAppenders[i] = new ExclusiveTermAppender(rawLog.termBuffers()[i], rawLog.metaData(), i);
         }
 
         final PublicationParams params = new PublicationParams();
@@ -253,7 +253,7 @@ public class SenderTest
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
+        termAppenders[0].appendUnfragmentedMessage(INITIAL_TERM_ID, 0, headerWriter, buffer, 0, PAYLOAD.length, null);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1)); // data
@@ -317,7 +317,7 @@ public class SenderTest
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
+        termAppenders[0].appendUnfragmentedMessage(INITIAL_TERM_ID, 0, headerWriter, buffer, 0, PAYLOAD.length, null);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -346,9 +346,11 @@ public class SenderTest
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
+        final int offset = termAppenders[0].appendUnfragmentedMessage(
+            INITIAL_TERM_ID, 0, headerWriter, buffer, 0, PAYLOAD.length, null);
         sender.doWork();
-        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
+        termAppenders[0].appendUnfragmentedMessage(
+            INITIAL_TERM_ID, offset, headerWriter, buffer, 0, PAYLOAD.length, null);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(2));
@@ -379,7 +381,7 @@ public class SenderTest
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
-        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
+        termAppenders[0].appendUnfragmentedMessage(INITIAL_TERM_ID, 0, headerWriter, buffer, 0, PAYLOAD.length, null);
 
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
@@ -413,7 +415,7 @@ public class SenderTest
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
-        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
+        termAppenders[0].appendUnfragmentedMessage(INITIAL_TERM_ID, 0, headerWriter, buffer, 0, PAYLOAD.length, null);
 
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -436,7 +438,7 @@ public class SenderTest
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
 
-        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
+        termAppenders[0].appendUnfragmentedMessage(INITIAL_TERM_ID, 0, headerWriter, buffer, 0, PAYLOAD.length, null);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(0));
@@ -455,7 +457,7 @@ public class SenderTest
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
+        termAppenders[0].appendUnfragmentedMessage(INITIAL_TERM_ID, 0, headerWriter, buffer, 0, PAYLOAD.length, null);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should send ticks
@@ -488,7 +490,7 @@ public class SenderTest
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length, null, INITIAL_TERM_ID);
+        termAppenders[0].appendUnfragmentedMessage(INITIAL_TERM_ID, 0, headerWriter, buffer, 0, PAYLOAD.length, null);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should send ticks

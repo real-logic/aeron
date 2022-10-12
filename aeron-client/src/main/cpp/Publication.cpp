@@ -50,17 +50,6 @@ Publication::Publication(
     m_logBuffers(std::move(logBuffers)),
     m_headerWriter(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer))
 {
-    for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
-    {
-        /*
-         * perhaps allow copy-construction and be able to move appenders and AtomicBuffers directly into Publication
-         * for locality.
-         */
-        m_appenders[i] = std::unique_ptr<TermAppender>(new TermAppender(
-            m_logBuffers->atomicBuffer(i),
-            m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX),
-            i));
-    }
 }
 
 Publication::~Publication()

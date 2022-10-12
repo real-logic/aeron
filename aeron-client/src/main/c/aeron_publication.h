@@ -72,33 +72,12 @@ int aeron_publication_create(
 int aeron_publication_delete(aeron_publication_t *publication);
 void aeron_publication_force_close(aeron_publication_t *publication);
 
-inline int64_t aeron_publication_new_position(
-    aeron_publication_t *publication,
-    int32_t term_count,
-    int32_t term_offset,
-    int32_t term_id,
-    int64_t position,
-    int32_t resulting_offset)
-{
-    if (resulting_offset > 0)
-    {
-        return (position - term_offset) + resulting_offset;
-    }
-
-    if ((position + term_offset) > publication->max_possible_position)
-    {
-        return AERON_PUBLICATION_MAX_POSITION_EXCEEDED;
-    }
-
-    aeron_logbuffer_rotate_log(publication->log_meta_data, term_count, term_id);
-
-    return AERON_PUBLICATION_ADMIN_ACTION;
-}
-
 inline int64_t aeron_publication_back_pressure_status(
     aeron_publication_t *publication, int64_t current_position, int32_t message_length)
 {
-    if ((current_position + message_length) >= publication->max_possible_position)
+    if ((current_position +
+        (int32_t)AERON_ALIGN(message_length + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT)) >=
+        publication->max_possible_position)
     {
         return AERON_PUBLICATION_MAX_POSITION_EXCEEDED;
     }

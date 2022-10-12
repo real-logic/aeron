@@ -20,16 +20,18 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.status.ChannelEndpointStatus;
+import io.aeron.status.LocalSocketAddressStatus;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import java.util.List;
 
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static org.agrona.BitUtil.align;
 
 /**
  * Aeron publisher API for sending messages to subscribers of a given channel and streamId pair. {@link Publication}s
@@ -395,7 +397,7 @@ public abstract class Publication implements AutoCloseable
     /**
      * Available window for offering into a publication before the {@link #positionLimit()} is reached.
      *
-     * @return  window for offering into a publication before the {@link #positionLimit()} is reached. If
+     * @return window for offering into a publication before the {@link #positionLimit()} is reached. If
      * the publication is closed then {@link #CLOSED} will be returned.
      */
     public abstract long availableWindow();
@@ -624,7 +626,7 @@ public abstract class Publication implements AutoCloseable
 
     final long backPressureStatus(final long currentPosition, final int messageLength)
     {
-        if ((currentPosition + messageLength) >= maxPossiblePosition)
+        if ((currentPosition + align(messageLength + HEADER_LENGTH, FRAME_ALIGNMENT)) >= maxPossiblePosition)
         {
             return MAX_POSITION_EXCEEDED;
         }

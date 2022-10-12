@@ -20,7 +20,6 @@
 #include "aeronc.h"
 #include "aeron_common.h"
 #include "aeron_publication.h"
-#include "concurrent/aeron_term_appender.h"
 #include "aeron_log_buffer.h"
 #include "status/aeron_local_sockaddr.h"
 
@@ -113,6 +112,369 @@ int aeron_publication_close(
     return 0;
 }
 
+static int64_t aeron_publication_get_and_add_raw_tail(volatile int64_t *addr, size_t aligned_length)
+{
+    int64_t result;
+    AERON_GET_AND_ADD_INT64(result, *addr, (int64_t)aligned_length);
+    return result;
+}
+
+static int64_t aeron_publication_raw_tail_volatile(volatile int64_t *addr)
+{
+    int64_t raw_tail;
+    AERON_GET_VOLATILE(raw_tail, *addr);
+    return raw_tail;
+}
+
+static void aeron_publication_header_write(
+    aeron_publication_t *publication,
+    aeron_mapped_buffer_t *term_buffer,
+    int32_t offset,
+    size_t length,
+    int32_t term_id)
+{
+    aeron_data_header_t *header = (aeron_data_header_t *)(term_buffer->addr + offset);
+
+    AERON_PUT_ORDERED(header->frame_header.frame_length, (-(int32_t)length));
+    aeron_release();
+
+    header->frame_header.version = AERON_FRAME_HEADER_VERSION;
+    header->frame_header.flags = AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG;
+    header->frame_header.type = AERON_HDR_TYPE_DATA;
+    header->term_offset = offset;
+    header->session_id = publication->session_id;
+    header->stream_id = publication->stream_id;
+    header->term_id = term_id;
+}
+
+static int64_t aeron_publication_handle_end_of_log_condition(
+    aeron_publication_t *publication,
+    aeron_mapped_buffer_t *term_buffer,
+    int32_t term_offset,
+    int32_t term_length,
+    int32_t term_id,
+    int64_t position)
+{
+    if (term_offset < term_length)
+    {
+        const int32_t padding_length = term_length - term_offset;
+        aeron_data_header_t *header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
+
+        aeron_publication_header_write(publication, term_buffer, term_offset, (size_t)padding_length, term_id);
+        header->frame_header.type = AERON_HDR_TYPE_PAD;
+        AERON_PUT_ORDERED(header->frame_header.frame_length, padding_length);
+    }
+
+    if (position >= publication->max_possible_position)
+    {
+        return AERON_PUBLICATION_MAX_POSITION_EXCEEDED;
+    }
+
+    int32_t term_count = aeron_logbuffer_compute_term_count(term_id, publication->initial_term_id);
+    aeron_logbuffer_rotate_log(publication->log_meta_data, term_count, term_id);
+
+    return AERON_PUBLICATION_ADMIN_ACTION;
+}
+
+static int64_t aeron_publication_claim(
+    aeron_publication_t *publication,
+    aeron_mapped_buffer_t *term_buffer,
+    volatile int64_t *term_tail_counter,
+    size_t length,
+    aeron_buffer_claim_t *buffer_claim)
+{
+    const size_t frame_length = length + AERON_DATA_HEADER_LENGTH;
+    const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(
+        term_tail_counter, (size_t)aligned_frame_length);
+    const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
+    const int32_t term_length = (int32_t)term_buffer->length;
+
+    int32_t resulting_offset = term_offset + aligned_frame_length;
+    int64_t position = aeron_logbuffer_compute_position(
+        term_id, resulting_offset, publication->position_bits_to_shift, publication->initial_term_id);
+    if (resulting_offset > term_length)
+    {
+        return aeron_publication_handle_end_of_log_condition(
+            publication, term_buffer, (int32_t)term_offset, term_length, term_id, position);
+    }
+    else
+    {
+        aeron_publication_header_write(publication, term_buffer, term_offset, frame_length, term_id);
+        buffer_claim->frame_header = term_buffer->addr + term_offset;
+        buffer_claim->data = buffer_claim->frame_header + AERON_DATA_HEADER_LENGTH;
+        buffer_claim->length = length;
+    }
+
+    return position;
+}
+
+
+static int64_t aeron_publication_append_unfragmented_message(
+    aeron_publication_t *publication,
+    aeron_mapped_buffer_t *term_buffer,
+    volatile int64_t *term_tail_counter,
+    const uint8_t *buffer,
+    size_t length,
+    aeron_reserved_value_supplier_t reserved_value_supplier,
+    void *clientd)
+{
+    const size_t frame_length = length + AERON_DATA_HEADER_LENGTH;
+    const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(
+        term_tail_counter, (size_t)aligned_frame_length);
+    const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
+    const int32_t term_length = (int32_t)term_buffer->length;
+
+    int32_t resulting_offset = term_offset + aligned_frame_length;
+    int64_t position = aeron_logbuffer_compute_position(
+        term_id, resulting_offset, publication->position_bits_to_shift, publication->initial_term_id);
+    if (resulting_offset > term_length)
+    {
+        return aeron_publication_handle_end_of_log_condition(
+            publication, term_buffer, term_offset, term_length, term_id, position);
+    }
+    else
+    {
+        aeron_publication_header_write(publication, term_buffer, term_offset, frame_length, term_id);
+        memcpy(term_buffer->addr + term_offset + AERON_DATA_HEADER_LENGTH, buffer, length);
+
+        aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
+
+        if (NULL != reserved_value_supplier)
+        {
+            data_header->reserved_value = reserved_value_supplier(
+                clientd, term_buffer->addr + term_offset, frame_length);
+        }
+
+        AERON_PUT_ORDERED(data_header->frame_header.frame_length, (int32_t)frame_length);
+    }
+
+    return position;
+}
+
+static int64_t aeron_publication_append_fragmented_message(
+    aeron_publication_t *publication,
+    aeron_mapped_buffer_t *term_buffer,
+    volatile int64_t *term_tail_counter,
+    const uint8_t *buffer,
+    size_t length,
+    size_t max_payload_length,
+    aeron_reserved_value_supplier_t reserved_value_supplier,
+    void *clientd)
+{
+    const size_t num_max_payloads = length / max_payload_length;
+    const size_t remaining_payload = length % max_payload_length;
+    const size_t last_frame_length = (remaining_payload > 0) ?
+        AERON_ALIGN(remaining_payload + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT) : 0;
+    const size_t required_length =
+        (num_max_payloads * (max_payload_length + AERON_DATA_HEADER_LENGTH)) + last_frame_length;
+    const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(term_tail_counter, required_length);
+    const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
+    const int32_t term_length = (int32_t)term_buffer->length;
+
+    int32_t resulting_offset = term_offset + (int32_t)required_length;
+    int64_t position = aeron_logbuffer_compute_position(
+        term_id, resulting_offset, publication->position_bits_to_shift, publication->initial_term_id);
+    if (resulting_offset > term_length)
+    {
+        return aeron_publication_handle_end_of_log_condition(
+            publication, term_buffer, term_offset, term_length, term_id, position);
+    }
+    else
+    {
+        uint8_t flags = AERON_DATA_HEADER_BEGIN_FLAG;
+        size_t remaining = length;
+        int32_t frame_offset = (int32_t)term_offset;
+
+        do
+        {
+            size_t bytes_to_write = remaining < max_payload_length ? remaining : max_payload_length;
+            size_t frame_length = bytes_to_write + AERON_DATA_HEADER_LENGTH;
+            size_t aligned_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+
+            aeron_publication_header_write(publication, term_buffer, frame_offset, frame_length, term_id);
+            memcpy(
+                term_buffer->addr + frame_offset + AERON_DATA_HEADER_LENGTH,
+                buffer + (length - remaining),
+                bytes_to_write);
+
+            if (remaining <= max_payload_length)
+            {
+                flags |= AERON_DATA_HEADER_END_FLAG;
+            }
+
+            aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + frame_offset);
+            data_header->frame_header.flags = flags;
+
+            if (NULL != reserved_value_supplier)
+            {
+                data_header->reserved_value = reserved_value_supplier(
+                    clientd, term_buffer->addr + term_offset, frame_length);
+            }
+
+            AERON_PUT_ORDERED(data_header->frame_header.frame_length, (int32_t)frame_length);
+
+            flags = 0;
+            frame_offset += (int32_t)aligned_length;
+            remaining -= bytes_to_write;
+        }
+        while (remaining > 0);
+    }
+
+    return position;
+}
+
+static int64_t aeron_publication_append_unfragmented_messagev(
+    aeron_publication_t *publication,
+    aeron_mapped_buffer_t *term_buffer,
+    volatile int64_t *term_tail_counter,
+    aeron_iovec_t *iov,
+    size_t iovcnt,
+    size_t length,
+    aeron_reserved_value_supplier_t reserved_value_supplier,
+    void *clientd)
+{
+    const size_t frame_length = length + AERON_DATA_HEADER_LENGTH;
+    const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(
+        term_tail_counter, (size_t)aligned_frame_length);
+    const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
+    const int32_t term_length = (int32_t)term_buffer->length;
+
+    int32_t resulting_offset = term_offset + aligned_frame_length;
+    int64_t position = aeron_logbuffer_compute_position(
+        term_id, resulting_offset, publication->position_bits_to_shift, publication->initial_term_id);
+    if (resulting_offset > term_length)
+    {
+        return aeron_publication_handle_end_of_log_condition(
+            publication, term_buffer, term_offset, term_length, term_id, position);
+    }
+    else
+    {
+        aeron_publication_header_write(publication, term_buffer, term_offset, frame_length, term_id);
+
+        aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
+        int32_t offset = (int32_t)(term_offset + AERON_DATA_HEADER_LENGTH);
+        size_t i = 0;
+
+        for (int32_t ending_offset = offset + (int32_t)length;
+            offset < ending_offset;
+            offset += (int32_t)iov[i].iov_len, i++)
+        {
+            memcpy(term_buffer->addr + offset, iov[i].iov_base, iov[i].iov_len);
+        }
+
+        if (NULL != reserved_value_supplier)
+        {
+            data_header->reserved_value = reserved_value_supplier(
+                clientd, term_buffer->addr + term_offset, frame_length);
+        }
+
+        AERON_PUT_ORDERED(data_header->frame_header.frame_length, (int32_t)frame_length);
+    }
+
+    return position;
+}
+
+static int64_t aeron_publication_append_fragmented_messagev(
+    aeron_publication_t *publication,
+    aeron_mapped_buffer_t *term_buffer,
+    volatile int64_t *term_tail_counter,
+    aeron_iovec_t *iov,
+    size_t iovcnt,
+    size_t length,
+    size_t max_payload_length,
+    aeron_reserved_value_supplier_t reserved_value_supplier,
+    void *clientd)
+{
+    const size_t num_max_payloads = length / max_payload_length;
+    const size_t remaining_payload = length % max_payload_length;
+    const size_t last_frame_length = (remaining_payload > 0) ?
+        AERON_ALIGN(remaining_payload + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT) : 0;
+    const size_t required_length =
+        (num_max_payloads * (max_payload_length + AERON_DATA_HEADER_LENGTH)) + last_frame_length;
+    const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(term_tail_counter, required_length);
+    const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
+    const int32_t term_length = (int32_t)term_buffer->length;
+
+    int32_t resulting_offset = term_offset + (int32_t)required_length;
+    int64_t position = aeron_logbuffer_compute_position(
+        term_id, resulting_offset, publication->position_bits_to_shift, publication->initial_term_id);
+    if (resulting_offset > term_length)
+    {
+        return aeron_publication_handle_end_of_log_condition(
+            publication, term_buffer, term_offset, term_length, term_id, position);
+    }
+    else
+    {
+        uint8_t flags = AERON_DATA_HEADER_BEGIN_FLAG;
+        size_t remaining = length, i = 0;
+        int32_t frame_offset = (int32_t)term_offset;
+        int32_t current_buffer_offset = 0;
+
+        do
+        {
+            int32_t bytes_to_write = remaining < max_payload_length ?
+                (int32_t)remaining : (int32_t)max_payload_length;
+            size_t frame_length = bytes_to_write + AERON_DATA_HEADER_LENGTH;
+            size_t aligned_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+
+            aeron_publication_header_write(publication, term_buffer, frame_offset, frame_length, term_id);
+
+            int32_t bytes_written = 0;
+            int32_t payload_offset = (int32_t)(frame_offset + AERON_DATA_HEADER_LENGTH);
+
+            do
+            {
+                int32_t current_buffer_remaining = (int32_t)iov[i].iov_len - current_buffer_offset;
+                int32_t num_bytes = (bytes_to_write - bytes_written) < current_buffer_remaining ?
+                    (bytes_to_write - bytes_written) : current_buffer_remaining;
+                memcpy(term_buffer->addr + payload_offset, iov[i].iov_base + current_buffer_offset, (size_t)num_bytes);
+
+                bytes_written += num_bytes;
+                payload_offset += num_bytes;
+                current_buffer_offset += num_bytes;
+
+                if (current_buffer_remaining <= num_bytes)
+                {
+                    i++;
+                    current_buffer_offset = 0;
+                }
+            }
+            while (bytes_written < bytes_to_write);
+
+            if (remaining <= max_payload_length)
+            {
+                flags |= AERON_DATA_HEADER_END_FLAG;
+            }
+
+            aeron_data_header_t *data_header = (aeron_data_header_t *)(term_buffer->addr + frame_offset);
+            data_header->frame_header.flags = flags;
+
+            if (NULL != reserved_value_supplier)
+            {
+                data_header->reserved_value = reserved_value_supplier(
+                    clientd, term_buffer->addr + frame_offset, frame_length);
+            }
+
+            AERON_PUT_ORDERED(data_header->frame_header.frame_length, ((int32_t)frame_length));
+
+            flags = 0;
+            frame_offset += (int32_t)aligned_length;
+            remaining -= bytes_to_write;
+        }
+        while (remaining > 0);
+    }
+
+    return position;
+}
+
 int64_t aeron_publication_offer(
     aeron_publication_t *publication,
     const uint8_t *buffer,
@@ -139,33 +501,30 @@ int64_t aeron_publication_offer(
         const int64_t limit = aeron_counter_get_volatile(publication->position_limit);
         const int32_t term_count = aeron_logbuffer_active_term_count(publication->log_meta_data);
         const size_t index = aeron_logbuffer_index_by_term_count(term_count);
-        const int64_t raw_tail = aeron_term_appender_raw_tail_volatile(
+        const int64_t raw_tail = aeron_publication_raw_tail_volatile(
             &publication->log_meta_data->term_tail_counters[index]);
-        const int64_t term_offset = raw_tail & 0xFFFFFFFF;
+        const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
         const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
-        const int64_t position = aeron_logbuffer_compute_term_begin_position(
-            term_id, publication->position_bits_to_shift, publication->initial_term_id);
 
-        if (term_count != (term_id - publication->initial_term_id))
+        if (term_count != aeron_logbuffer_compute_term_count(term_id, publication->initial_term_id))
         {
             return AERON_PUBLICATION_ADMIN_ACTION;
         }
 
+        const int64_t position = aeron_logbuffer_compute_position(
+            term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
         if (position < limit)
         {
-            int32_t resulting_offset;
             if (length <= publication->max_payload_length)
             {
-                resulting_offset = aeron_term_appender_append_unfragmented_message(
+                new_position = aeron_publication_append_unfragmented_message(
+                    publication,
                     &publication->log_buffer->mapped_raw_log.term_buffers[index],
                     &publication->log_meta_data->term_tail_counters[index],
                     buffer,
                     length,
                     reserved_value_supplier,
-                    clientd,
-                    term_id,
-                    publication->session_id,
-                    publication->stream_id);
+                    clientd);
             }
             else
             {
@@ -179,21 +538,16 @@ int64_t aeron_publication_offer(
                     return AERON_PUBLICATION_ERROR;
                 }
 
-                resulting_offset = aeron_term_appender_append_fragmented_message(
+                new_position = aeron_publication_append_fragmented_message(
+                    publication,
                     &publication->log_buffer->mapped_raw_log.term_buffers[index],
                     &publication->log_meta_data->term_tail_counters[index],
                     buffer,
                     length,
                     publication->max_payload_length,
                     reserved_value_supplier,
-                    clientd,
-                    term_id,
-                    publication->session_id,
-                    publication->stream_id);
+                    clientd);
             }
-
-            new_position = aeron_publication_new_position(
-                publication, term_count, (int32_t)term_offset, term_id, position, resulting_offset);
         }
         else
         {
@@ -236,34 +590,32 @@ int64_t aeron_publication_offerv(
         const int64_t limit = aeron_counter_get_volatile(publication->position_limit);
         const int32_t term_count = aeron_logbuffer_active_term_count(publication->log_meta_data);
         const size_t index = aeron_logbuffer_index_by_term_count(term_count);
-        const int64_t raw_tail = aeron_term_appender_raw_tail_volatile(
+        const int64_t raw_tail = aeron_publication_raw_tail_volatile(
             &publication->log_meta_data->term_tail_counters[index]);
-        const int64_t term_offset = raw_tail & 0xFFFFFFFF;
+        const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
         const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
-        const int64_t position = aeron_logbuffer_compute_term_begin_position(
-            term_id, publication->position_bits_to_shift, publication->initial_term_id);
 
-        if (term_count != (term_id - publication->initial_term_id))
+        if (term_count != aeron_logbuffer_compute_term_count(term_id, publication->initial_term_id))
         {
             return AERON_PUBLICATION_ADMIN_ACTION;
         }
 
+        const int64_t position = aeron_logbuffer_compute_position(
+            term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
+
         if (position < limit)
         {
-            int32_t resulting_offset;
             if (length <= publication->max_payload_length)
             {
-                resulting_offset = aeron_term_appender_append_unfragmented_messagev(
+                new_position = aeron_publication_append_unfragmented_messagev(
+                    publication,
                     &publication->log_buffer->mapped_raw_log.term_buffers[index],
                     &publication->log_meta_data->term_tail_counters[index],
                     iov,
                     iovcnt,
                     length,
                     reserved_value_supplier,
-                    clientd,
-                    term_id,
-                    publication->session_id,
-                    publication->stream_id);
+                    clientd);
             }
             else
             {
@@ -277,7 +629,8 @@ int64_t aeron_publication_offerv(
                     return AERON_PUBLICATION_ERROR;
                 }
 
-                resulting_offset = aeron_term_appender_append_fragmented_messagev(
+                new_position = aeron_publication_append_fragmented_messagev(
+                    publication,
                     &publication->log_buffer->mapped_raw_log.term_buffers[index],
                     &publication->log_meta_data->term_tail_counters[index],
                     iov,
@@ -285,14 +638,8 @@ int64_t aeron_publication_offerv(
                     length,
                     publication->max_payload_length,
                     reserved_value_supplier,
-                    clientd,
-                    term_id,
-                    publication->session_id,
-                    publication->stream_id);
+                    clientd);
             }
-
-            new_position = aeron_publication_new_position(
-            publication, term_count, (int32_t)term_offset, term_id, position, resulting_offset);
         }
         else
         {
@@ -333,31 +680,26 @@ int64_t aeron_publication_try_claim(aeron_publication_t *publication, size_t len
         const int64_t limit = aeron_counter_get_volatile(publication->position_limit);
         const int32_t term_count = aeron_logbuffer_active_term_count(publication->log_meta_data);
         const size_t index = aeron_logbuffer_index_by_term_count(term_count);
-        const int64_t raw_tail = aeron_term_appender_raw_tail_volatile(
+        const int64_t raw_tail = aeron_publication_raw_tail_volatile(
             &publication->log_meta_data->term_tail_counters[index]);
-        const int64_t term_offset = raw_tail & 0xFFFFFFFF;
+        const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
         const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
-        const int64_t position = aeron_logbuffer_compute_term_begin_position(
-            term_id, publication->position_bits_to_shift, publication->initial_term_id);
 
-        if (term_count != (term_id - publication->initial_term_id))
+        if (term_count != aeron_logbuffer_compute_term_count(term_id, publication->initial_term_id))
         {
             return AERON_PUBLICATION_ADMIN_ACTION;
         }
 
+        const int64_t position = aeron_logbuffer_compute_position(
+            term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
         if (position < limit)
         {
-            int32_t resulting_offset = aeron_term_appender_claim(
+            new_position = aeron_publication_claim(
+                publication,
                 &publication->log_buffer->mapped_raw_log.term_buffers[index],
                 &publication->log_meta_data->term_tail_counters[index],
                 length,
-                buffer_claim,
-                term_id,
-                publication->session_id,
-                publication->stream_id);
-
-            new_position = aeron_publication_new_position(
-                publication, term_count, (int32_t)term_offset, term_id, position, resulting_offset);
+                buffer_claim);
         }
         else
         {
@@ -452,7 +794,7 @@ int64_t aeron_publication_position(aeron_publication_t *publication)
 
     const int32_t term_count = aeron_logbuffer_active_term_count(publication->log_meta_data);
     const size_t index = aeron_logbuffer_index_by_term_count(term_count);
-    const int64_t raw_tail = aeron_term_appender_raw_tail_volatile(
+    const int64_t raw_tail = aeron_publication_raw_tail_volatile(
         &publication->log_meta_data->term_tail_counters[index]);
     const int64_t term_length = publication->log_meta_data->term_length;
     const int64_t term_offset = term_length < (raw_tail & 0xFFFFFFFF) ? term_length : (raw_tail & 0xFFFFFFFF);
@@ -531,4 +873,31 @@ int aeron_publication_local_sockaddrs(
         publication->channel_status_indicator_id,
         address_vec,
         address_vec_len);
+}
+
+int aeron_buffer_claim_commit(aeron_buffer_claim_t *buffer_claim)
+{
+    if (NULL != buffer_claim && NULL != buffer_claim->frame_header)
+    {
+        aeron_data_header_t *data_header = (aeron_data_header_t *)buffer_claim->frame_header;
+
+        AERON_PUT_ORDERED(
+            data_header->frame_header.frame_length, (int32_t)buffer_claim->length + AERON_DATA_HEADER_LENGTH);
+    }
+
+    return 0;
+}
+
+int aeron_buffer_claim_abort(aeron_buffer_claim_t *buffer_claim)
+{
+    if (NULL != buffer_claim)
+    {
+        aeron_data_header_t *data_header = (aeron_data_header_t *)buffer_claim->frame_header;
+
+        data_header->frame_header.type = AERON_HDR_TYPE_PAD;
+        AERON_PUT_ORDERED(
+            data_header->frame_header.frame_length, (int32_t)buffer_claim->length + AERON_DATA_HEADER_LENGTH);
+    }
+
+    return 0;
 }

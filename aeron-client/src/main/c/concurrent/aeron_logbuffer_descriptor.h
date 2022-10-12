@@ -172,7 +172,7 @@ inline bool aeron_logbuffer_rotate_log(
     int64_t raw_tail;
     do
     {
-        raw_tail = log_meta_data->term_tail_counters[next_index];
+        AERON_GET_VOLATILE(raw_tail, log_meta_data->term_tail_counters[next_index]);
         if (expected_term_id != aeron_logbuffer_term_id(raw_tail))
         {
             break;

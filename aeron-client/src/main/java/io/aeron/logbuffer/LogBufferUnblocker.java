@@ -25,13 +25,13 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 public class LogBufferUnblocker
 {
     /**
-     * Attempt to unblock a log buffer at given position
+     * Attempt to unblock a log buffer at given position.
      *
-     * @param termBuffers       for current blockedOffset
-     * @param logMetaDataBuffer for log buffer
-     * @param blockedPosition   to attempt to unblock
-     * @param termLength        of the buffer for each term in the log
-     * @return whether unblocked or not
+     * @param termBuffers       for current blockedOffset.
+     * @param logMetaDataBuffer for log buffer.
+     * @param blockedPosition   to attempt to unblock.
+     * @param termLength        of the buffer for each term in the log.
+     * @return whether attempt was made to unblock.
      */
     public static boolean unblock(
         final UnsafeBuffer[] termBuffers,
@@ -47,7 +47,8 @@ public class LogBufferUnblocker
         if (activeTermCount == (blockedTermCount - 1) && blockedOffset == 0)
         {
             final int currentTermId = termId(rawTailVolatile(logMetaDataBuffer, indexByTermCount(activeTermCount)));
-            return rotateLog(logMetaDataBuffer, activeTermCount, currentTermId);
+            rotateLog(logMetaDataBuffer, activeTermCount, currentTermId);
+            return true;
         }
 
         final int blockedIndex = indexByTermCount(blockedTermCount);

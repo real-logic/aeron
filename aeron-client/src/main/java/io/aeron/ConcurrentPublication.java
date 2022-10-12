@@ -110,7 +110,7 @@ public final class ConcurrentPublication extends Publication
             final UnsafeBuffer termBuffer = termBuffers[index];
             final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (index * SIZE_OF_LONG);
             final long rawTail = logMetaDataBuffer.getLongVolatile(tailCounterOffset);
-            final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+            final int termOffset = termOffset(rawTail, termBuffer.capacity());
             final int termId = termId(rawTail);
 
             if (termCount != (termId - initialTermId))
@@ -175,7 +175,7 @@ public final class ConcurrentPublication extends Publication
             final UnsafeBuffer termBuffer = termBuffers[index];
             final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (index * SIZE_OF_LONG);
             final long rawTail = logMetaDataBuffer.getLongVolatile(tailCounterOffset);
-            final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+            final int termOffset = termOffset(rawTail, termBuffer.capacity());
             final int termId = termId(rawTail);
 
             if (termCount != (termId - initialTermId))
@@ -246,7 +246,7 @@ public final class ConcurrentPublication extends Publication
             final UnsafeBuffer termBuffer = termBuffers[index];
             final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (index * SIZE_OF_LONG);
             final long rawTail = logMetaDataBuffer.getLongVolatile(tailCounterOffset);
-            final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+            final int termOffset = termOffset(rawTail, termBuffer.capacity());
             final int termId = termId(rawTail);
 
             if (termCount != (termId - initialTermId))
@@ -327,7 +327,7 @@ public final class ConcurrentPublication extends Publication
             final UnsafeBuffer termBuffer = termBuffers[index];
             final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (index * SIZE_OF_LONG);
             final long rawTail = logMetaDataBuffer.getLongVolatile(tailCounterOffset);
-            final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+            final int termOffset = termOffset(rawTail, termBuffer.capacity());
             final int termId = termId(rawTail);
 
             if (termCount != (termId - initialTermId))
@@ -364,7 +364,7 @@ public final class ConcurrentPublication extends Publication
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, alignedLength);
         final int termId = termId(rawTail);
-        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+        final int termOffset = termOffset(rawTail, termLength);
 
         final int resultingOffset = termOffset + alignedLength;
         final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
@@ -405,7 +405,7 @@ public final class ConcurrentPublication extends Publication
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, requiredLength);
         final int termId = termId(rawTail);
-        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+        final int termOffset = termOffset(rawTail, termLength);
 
         final int resultingOffset = termOffset + requiredLength;
         final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
@@ -474,7 +474,7 @@ public final class ConcurrentPublication extends Publication
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, alignedLength);
         final int termId = termId(rawTail);
-        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+        final int termOffset = termOffset(rawTail, termLength);
 
         final int resultingOffset = termOffset + alignedLength;
         final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
@@ -520,7 +520,7 @@ public final class ConcurrentPublication extends Publication
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, requiredLength);
         final int termId = termId(rawTail);
-        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+        final int termOffset = termOffset(rawTail, termLength);
 
         final int resultingOffset = termOffset + requiredLength;
         final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
@@ -608,7 +608,7 @@ public final class ConcurrentPublication extends Publication
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, alignedLength);
         final int termId = termId(rawTail);
-        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+        final int termOffset = termOffset(rawTail, termLength);
 
         final int resultingOffset = termOffset + alignedLength;
         final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
@@ -654,7 +654,7 @@ public final class ConcurrentPublication extends Publication
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, requiredLength);
         final int termId = termId(rawTail);
-        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+        final int termOffset = termOffset(rawTail, termLength);
 
         final int resultingOffset = termOffset + requiredLength;
         final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
@@ -737,7 +737,7 @@ public final class ConcurrentPublication extends Publication
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, alignedLength);
         final int termId = termId(rawTail);
-        final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+        final int termOffset = termOffset(rawTail, termLength);
 
         final int resultingOffset = termOffset + alignedLength;
         final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);

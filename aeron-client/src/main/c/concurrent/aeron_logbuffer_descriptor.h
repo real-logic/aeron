@@ -17,6 +17,8 @@
 #ifndef AERON_LOGBUFFER_DESCRIPTOR_H
 #define AERON_LOGBUFFER_DESCRIPTOR_H
 
+#include <string.h>
+
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_math.h"

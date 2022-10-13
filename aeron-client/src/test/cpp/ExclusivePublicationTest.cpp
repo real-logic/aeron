@@ -46,7 +46,7 @@ inline std::int64_t rawTailValue(std::int32_t termId, std::int64_t position)
 
 inline util::index_t termTailCounterOffset(const int index)
 {
-    return LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET + (index * sizeof(std::int64_t));
+    return static_cast<util::index_t>(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET + (index * sizeof(std::int64_t)));
 }
 
 class ExclusivePublicationTest : public testing::Test, public ClientConductorFixture
@@ -81,9 +81,16 @@ public:
 
     void createPub()
     {
-        m_publication = std::unique_ptr<ExclusivePublication>(new ExclusivePublication(
-            m_conductor, CHANNEL, CORRELATION_ID, STREAM_ID, SESSION_ID,
-            m_publicationLimit, ChannelEndpointStatus::NO_ID_ALLOCATED, m_logBuffers));
+        m_publication = std::unique_ptr<ExclusivePublication>(
+            new ExclusivePublication(
+                m_conductor,
+                CHANNEL,
+                CORRELATION_ID,
+                STREAM_ID,
+                SESSION_ID,
+                m_publicationLimit,
+                ChannelEndpointStatus::NO_ID_ALLOCATED,
+                m_logBuffers));
     }
 
 protected:

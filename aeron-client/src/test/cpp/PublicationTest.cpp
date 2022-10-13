@@ -50,7 +50,7 @@ inline std::int64_t rawTailValue(std::int32_t termId, std::int32_t termOffset)
 
 inline util::index_t termTailCounterOffset(const int index)
 {
-    return LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET + (index * sizeof(std::int64_t));
+    return static_cast<util::index_t>(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET + (index * sizeof(std::int64_t)));
 }
 
 class PublicationTest : public testing::Test, public ClientConductorFixture
@@ -158,7 +158,7 @@ TEST_F(PublicationTest, shouldReportInitialPosition)
 
 TEST_F(PublicationTest, shouldReportMaxPossiblePosition)
 {
-    auto expectedPosition = (int64_t)(TERM_LENGTH * (UINT64_C(1) << 31u));
+    auto expectedPosition = static_cast<int64_t>(TERM_LENGTH * (UINT64_C(1) << 31u));
     EXPECT_EQ(m_publication->maxPossiblePosition(), expectedPosition);
 }
 

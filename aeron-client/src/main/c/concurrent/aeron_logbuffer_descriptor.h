@@ -17,8 +17,6 @@
 #ifndef AERON_LOGBUFFER_DESCRIPTOR_H
 #define AERON_LOGBUFFER_DESCRIPTOR_H
 
-#include <assert.h>
-#include <string.h>
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_math.h"
@@ -80,9 +78,8 @@ inline uint64_t aeron_logbuffer_compute_log_length(uint64_t term_length, uint64_
 
 inline int32_t aeron_logbuffer_term_offset(int64_t raw_tail, int32_t term_length)
 {
-    int32_t offset = (int32_t)(raw_tail & 0xFFFFFFFFL);
-
-    return offset < term_length ? offset : term_length;
+    int64_t offset = raw_tail & 0xFFFFFFFFL;
+    return offset < term_length ? (int32_t)offset : term_length;
 }
 
 inline int32_t aeron_logbuffer_term_id(int64_t raw_tail)
@@ -188,7 +185,8 @@ inline void aeron_logbuffer_fill_default_header(
     uint8_t *log_meta_data_buffer, int32_t session_id, int32_t stream_id, int32_t initial_term_id)
 {
     aeron_logbuffer_metadata_t *log_meta_data = (aeron_logbuffer_metadata_t *)log_meta_data_buffer;
-    aeron_data_header_t *data_header = (aeron_data_header_t *)(log_meta_data_buffer + sizeof(aeron_logbuffer_metadata_t));
+    aeron_data_header_t *data_header =
+        (aeron_data_header_t *)(log_meta_data_buffer + sizeof(aeron_logbuffer_metadata_t));
 
     log_meta_data->default_frame_header_length = AERON_DATA_HEADER_LENGTH;
     data_header->frame_header.frame_length = 0;

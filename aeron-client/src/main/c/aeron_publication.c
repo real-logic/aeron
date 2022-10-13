@@ -187,9 +187,9 @@ static int64_t aeron_publication_claim(
     const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(
         term_tail_counter, (size_t)aligned_frame_length);
-    const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
-    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
     const int32_t term_length = (int32_t)term_buffer->length;
+    const int32_t term_offset = aeron_logbuffer_term_offset(raw_tail, term_length);
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
 
     int32_t resulting_offset = term_offset + aligned_frame_length;
     int64_t position = aeron_logbuffer_compute_position(
@@ -197,7 +197,7 @@ static int64_t aeron_publication_claim(
     if (resulting_offset > term_length)
     {
         return aeron_publication_handle_end_of_log_condition(
-            publication, term_buffer, (int32_t)term_offset, term_length, term_id, position);
+            publication, term_buffer, term_offset, term_length, term_id, position);
     }
     else
     {
@@ -209,7 +209,6 @@ static int64_t aeron_publication_claim(
 
     return position;
 }
-
 
 static int64_t aeron_publication_append_unfragmented_message(
     aeron_publication_t *publication,
@@ -224,9 +223,9 @@ static int64_t aeron_publication_append_unfragmented_message(
     const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(
         term_tail_counter, (size_t)aligned_frame_length);
-    const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
-    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
     const int32_t term_length = (int32_t)term_buffer->length;
+    const int32_t term_offset = aeron_logbuffer_term_offset(raw_tail, term_length);
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
 
     int32_t resulting_offset = term_offset + aligned_frame_length;
     int64_t position = aeron_logbuffer_compute_position(
@@ -272,9 +271,9 @@ static int64_t aeron_publication_append_fragmented_message(
     const size_t required_length =
         (num_max_payloads * (max_payload_length + AERON_DATA_HEADER_LENGTH)) + last_frame_length;
     const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(term_tail_counter, required_length);
-    const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
-    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
     const int32_t term_length = (int32_t)term_buffer->length;
+    const int32_t term_offset = aeron_logbuffer_term_offset(raw_tail, term_length);
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
 
     int32_t resulting_offset = term_offset + (int32_t)required_length;
     int64_t position = aeron_logbuffer_compute_position(
@@ -288,7 +287,7 @@ static int64_t aeron_publication_append_fragmented_message(
     {
         uint8_t flags = AERON_DATA_HEADER_BEGIN_FLAG;
         size_t remaining = length;
-        int32_t frame_offset = (int32_t)term_offset;
+        int32_t frame_offset = term_offset;
 
         do
         {
@@ -342,9 +341,9 @@ static int64_t aeron_publication_append_unfragmented_messagev(
     const int32_t aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(
         term_tail_counter, (size_t)aligned_frame_length);
-    const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
-    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
     const int32_t term_length = (int32_t)term_buffer->length;
+    const int32_t term_offset = aeron_logbuffer_term_offset(raw_tail, term_length);
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
 
     int32_t resulting_offset = term_offset + aligned_frame_length;
     int64_t position = aeron_logbuffer_compute_position(
@@ -399,9 +398,9 @@ static int64_t aeron_publication_append_fragmented_messagev(
     const size_t required_length =
         (num_max_payloads * (max_payload_length + AERON_DATA_HEADER_LENGTH)) + last_frame_length;
     const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(term_tail_counter, required_length);
-    const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
-    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
     const int32_t term_length = (int32_t)term_buffer->length;
+    const int32_t term_offset = aeron_logbuffer_term_offset(raw_tail, term_length);
+    const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
 
     int32_t resulting_offset = term_offset + (int32_t)required_length;
     int64_t position = aeron_logbuffer_compute_position(
@@ -415,7 +414,7 @@ static int64_t aeron_publication_append_fragmented_messagev(
     {
         uint8_t flags = AERON_DATA_HEADER_BEGIN_FLAG;
         size_t remaining = length, i = 0;
-        int32_t frame_offset = (int32_t)term_offset;
+        int32_t frame_offset = term_offset;
         int32_t current_buffer_offset = 0;
 
         do
@@ -503,7 +502,8 @@ int64_t aeron_publication_offer(
         const size_t index = aeron_logbuffer_index_by_term_count(term_count);
         const int64_t raw_tail = aeron_publication_raw_tail_volatile(
             &publication->log_meta_data->term_tail_counters[index]);
-        const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
+        const int32_t term_length = publication->log_meta_data->term_length;
+        const int32_t term_offset = aeron_logbuffer_term_offset(raw_tail, term_length);
         const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
 
         if (term_count != aeron_logbuffer_compute_term_count(term_id, publication->initial_term_id))
@@ -592,7 +592,8 @@ int64_t aeron_publication_offerv(
         const size_t index = aeron_logbuffer_index_by_term_count(term_count);
         const int64_t raw_tail = aeron_publication_raw_tail_volatile(
             &publication->log_meta_data->term_tail_counters[index]);
-        const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
+        const int32_t term_length = publication->log_meta_data->term_length;
+        const int32_t term_offset = aeron_logbuffer_term_offset(raw_tail, term_length);
         const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
 
         if (term_count != aeron_logbuffer_compute_term_count(term_id, publication->initial_term_id))
@@ -682,7 +683,8 @@ int64_t aeron_publication_try_claim(aeron_publication_t *publication, size_t len
         const size_t index = aeron_logbuffer_index_by_term_count(term_count);
         const int64_t raw_tail = aeron_publication_raw_tail_volatile(
             &publication->log_meta_data->term_tail_counters[index]);
-        const int32_t term_offset = (int32_t)(raw_tail & 0xFFFFFFFF);
+        const int32_t term_length = publication->log_meta_data->term_length;
+        const int32_t term_offset = aeron_logbuffer_term_offset(raw_tail, term_length);
         const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
 
         if (term_count != aeron_logbuffer_compute_term_count(term_id, publication->initial_term_id))
@@ -796,11 +798,11 @@ int64_t aeron_publication_position(aeron_publication_t *publication)
     const size_t index = aeron_logbuffer_index_by_term_count(term_count);
     const int64_t raw_tail = aeron_publication_raw_tail_volatile(
         &publication->log_meta_data->term_tail_counters[index]);
-    const int64_t term_length = publication->log_meta_data->term_length;
-    const int64_t term_offset = term_length < (raw_tail & 0xFFFFFFFF) ? term_length : (raw_tail & 0xFFFFFFFF);
+    const int32_t term_length = publication->log_meta_data->term_length;
+    const int32_t term_offset = aeron_logbuffer_term_offset(raw_tail, term_length);
     const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
     const int64_t position = aeron_logbuffer_compute_position(
-        term_id, (int32_t)term_offset, publication->position_bits_to_shift, publication->initial_term_id);
+        term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
 
     return position;
 }

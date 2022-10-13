@@ -24,7 +24,7 @@
 #pragma pack(4)
 typedef struct aeron_frame_header_stct
 {
-    int32_t frame_length;
+    volatile int32_t frame_length;
     int8_t version;
     uint8_t flags;
     int16_t type;

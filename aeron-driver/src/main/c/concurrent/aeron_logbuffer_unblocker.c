@@ -43,8 +43,9 @@ bool aeron_logbuffer_unblocker_unblock(
             log_meta_data->term_tail_counters[aeron_logbuffer_index_by_term_count(active_term_count)]);
 
         const int32_t current_term_id = aeron_logbuffer_term_id(current_raw_tail);
+        aeron_logbuffer_rotate_log(log_meta_data, active_term_count, current_term_id);
 
-        return aeron_logbuffer_rotate_log(log_meta_data, active_term_count, current_term_id);
+        return true;
     }
 
     switch (aeron_term_unblocker_unblock(

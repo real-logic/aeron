@@ -53,7 +53,7 @@ def hamcrestVersion = '2.2'
 def junitVersion = '5.9.1'
 def junitPlatformVersion = '1.9.1'
 def mockitoVersion = '4.8.0'
-def byteBuddyVersion = '1.12.16'
+def byteBuddyVersion = '1.12.18'
 def findbugsAnnotationsVersion = '3.0.1'
 def hdrHistogramVersion = '2.1.12'
 

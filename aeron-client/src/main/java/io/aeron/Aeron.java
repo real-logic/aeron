@@ -776,6 +776,11 @@ public class Aeron implements AutoCloseable
             {
                 clientLock = new ReentrantLock();
             }
+            else if (!useConductorAgentInvoker)
+            {
+                throw new AeronException(
+                    "Must use Aeron.Context.useConductorAgentInvoker(true) when Aeron.Context.clientLock(...) is set");
+            }
 
             if (null == epochClock)
             {

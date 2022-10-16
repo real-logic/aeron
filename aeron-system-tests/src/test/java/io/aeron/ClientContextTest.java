@@ -16,7 +16,9 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
+import org.agrona.concurrent.NoOpLock;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,6 +42,24 @@ class ClientContextTest
             {
                 assertThrows(ConcurrentConcludeException.class, () -> Aeron.connect(ctx));
             }
+        }
+    }
+
+    @Test
+    @SuppressWarnings("try")
+    void shouldRequireInvokerModeIfClientLockIsSet()
+    {
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true);
+
+        try (MediaDriver mediaDriver = MediaDriver.launch(driverCtx))
+        {
+            final Aeron.Context ctx = new Aeron.Context()
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .clientLock(NoOpLock.INSTANCE);
+
+            assertThrows(AeronException.class, () -> Aeron.connect(ctx));
         }
     }
 }

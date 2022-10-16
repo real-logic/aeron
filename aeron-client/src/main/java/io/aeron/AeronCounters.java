@@ -280,6 +280,11 @@ public final class AeronCounters
     public static final int CLUSTER_STANDBY_CONTROL_TOGGLE_TYPE_ID = 223;
 
     /**
+     * Counter type id for the transition module error count.
+     */
+    public static final int TRANSITION_MODULE_ERROR_COUNT_TYPE_ID = 226;
+
+    /**
      * The type if of the {@link Counter} used for transition module state
      */
     public static final int TRANSITION_MODULE_STATE_TYPE_ID = 224;

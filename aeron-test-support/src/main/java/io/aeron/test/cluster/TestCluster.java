@@ -608,6 +608,11 @@ public final class TestCluster implements AutoCloseable
         CloseHelper.closeAll(nodes);
     }
 
+    public void stopClient()
+    {
+        CloseHelper.closeAll(client, clientMediaDriver);
+    }
+
     public void restartAllNodes(final boolean cleanStart)
     {
         for (int i = 0; i < staticMemberCount; i++)

@@ -21,6 +21,8 @@ import io.aeron.exceptions.ConcurrentConcludeException;
 import org.agrona.concurrent.NoOpLock;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ClientContextTest
@@ -60,6 +62,27 @@ class ClientContextTest
                 .clientLock(NoOpLock.INSTANCE);
 
             assertThrows(AeronException.class, () -> Aeron.connect(ctx));
+        }
+    }
+
+    @Test
+    @SuppressWarnings("try")
+    void shouldAllowCustomLockInAgentRunnerModeIfNotInstanceOfNoOpLock()
+    {
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true);
+
+        try (MediaDriver mediaDriver = MediaDriver.launch(driverCtx))
+        {
+            final Aeron.Context ctx = new Aeron.Context()
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .clientLock(new ReentrantLock());
+
+            try (Aeron aeron = Aeron.connect(ctx))
+            {
+                aeron.clientId();
+            }
         }
     }
 }

@@ -1150,6 +1150,11 @@ public final class TestCluster implements AutoCloseable
         return snapshotCounter.get();
     }
 
+    public long logPosition()
+    {
+        final TestNode leader = findLeader();
+        return leader.consensusModule().context().commitPositionCounter().get();
+    }
 
     public void awaitNodeTermination(final TestNode node)
     {

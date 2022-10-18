@@ -57,7 +57,7 @@ public final class ReceiveDestinationTransport extends ReceiveDestinationTranspo
     private final AtomicCounter localSocketAddressIndicator;
 
     /**
-     * Construct a new transport for a receive destination.
+     * Construct transport for a receiving destination.
      *
      * @param udpChannel                  for the destination.
      * @param context                     for configuration.

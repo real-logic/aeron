@@ -21,7 +21,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
 /**
- * The receive end of a local socket address, i.e. the destination or endpoint for a subscription.
+ * The receiving end of a local socket address, i.e. the destination or endpoint for a subscription.
  */
 public class ReceiveLocalSocketAddress
 {
@@ -31,7 +31,7 @@ public class ReceiveLocalSocketAddress
     public static final String NAME = "rcv-local-sockaddr";
 
     /**
-     * Allocate a counter to represent a local socket address associated with a receive channel.
+     * Allocate a counter to represent a local socket address associated with a receiving channel.
      *
      * @param tempBuffer      for building up the key and label.
      * @param countersManager which will allocate the counter.

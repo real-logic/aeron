@@ -30,7 +30,7 @@ This tutorial assumes that the user already has a basic working knowledge of Aer
 
 == Introduction
 
-Aeron Cluster is a framework for high-performance in-memory fault tolerant services. It implements the
+Aeron Cluster is a framework for high-performance in-memory fault-tolerant services. It implements the
 https://raft.github.io/[Raft Consensus Algorithm] to provide log replication, to allow multiple nodes to maintain the
 same state and automated leader election to ensure that there is a single leader within the cluster. Systems built using
 Aeron Cluster have a linearizable consistency model and can cope with partial system failure, including failure of the

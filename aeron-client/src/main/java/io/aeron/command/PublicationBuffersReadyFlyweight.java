@@ -21,7 +21,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Message to denote that new buffers have been setup for a publication.
+ * Message to denote that new buffers have been created for a publication.
  *
  * @see ControlProtocolEvents
  * <pre>

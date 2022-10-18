@@ -261,7 +261,7 @@ public final class DriverProxy
     }
 
     /**
-     * Add a destination to the receive channel of an existing MDS Subscription.
+     * Add a destination to the receive channel endpoint of an existing MDS Subscription.
      *
      * @param registrationId  of the Subscription.
      * @param endpointChannel for the destination.
@@ -290,7 +290,7 @@ public final class DriverProxy
     }
 
     /**
-     * Remove a destination from the receive channel of an existing MDS Subscription.
+     * Remove a destination from the receive channel endpoint of an existing MDS Subscription.
      *
      * @param registrationId  of the Subscription.
      * @param endpointChannel used for the {@link #addRcvDestination(long, String)} command.

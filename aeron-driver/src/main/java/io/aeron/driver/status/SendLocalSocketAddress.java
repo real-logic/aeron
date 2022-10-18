@@ -21,7 +21,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
 /**
- * The send end of a local socket address, i.e. control endpoint of a publication.
+ * The sending end of a local socket address, i.e. control endpoint of a publication.
  */
 public class SendLocalSocketAddress
 {
@@ -31,7 +31,7 @@ public class SendLocalSocketAddress
     public static final String NAME = "snd-local-sockaddr";
 
     /**
-     * Allocate a counter to represent a local socket address associated with a send channel.
+     * Allocate a counter to represent a local socket address associated with a sending channel endpoint.
      *
      * @param tempBuffer      for building up the key and label.
      * @param countersManager which will allocate the counter.

@@ -22,12 +22,12 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
 /**
- * The status of a send channel endpoint represented as a counter value.
+ * The status of a sending channel endpoint represented as a counter value.
  */
 public class SendChannelStatus
 {
     /**
-     * Type id of a send channel status indicator.
+     * Type id of a sending channel status indicator.
      */
     public static final int SEND_CHANNEL_STATUS_TYPE_ID = AeronCounters.DRIVER_SEND_CHANNEL_STATUS_TYPE_ID;
 

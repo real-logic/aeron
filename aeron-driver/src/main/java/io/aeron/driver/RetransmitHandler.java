@@ -40,7 +40,7 @@ public final class RetransmitHandler
     private final AtomicCounter invalidPackets;
 
     /**
-     * Create a retransmit handler.
+     * Create a handler for the dealing with the reception of frame request a frame to be retransmitted.
      *
      * @param nanoClock              used to determine time
      * @param invalidPackets         for recording invalid packets

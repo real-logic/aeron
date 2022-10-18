@@ -2281,7 +2281,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Supplier of dynamically created {@link ReceiveChannelEndpoint} subclasses for specialising interactions
-         * with the receive side of a network channel.
+         * with the receiving side of a network channel.
          *
          * @return the supplier of dynamically created {@link ReceiveChannelEndpoint} subclasses.
          * @see Configuration#RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME
@@ -2293,7 +2293,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Supplier of dynamically created {@link ReceiveChannelEndpoint} subclasses for specialising interactions
-         * with the receive side of a network channel.
+         * with the receiving side of a network channel.
          *
          * @param supplier of dynamically created {@link ReceiveChannelEndpoint} subclasses.
          * @return this for a fluent API.
@@ -2710,7 +2710,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Set the {@link FeedbackDelayGenerator} for controlling the linger after a retransmit frame.
+         * Set the {@link FeedbackDelayGenerator} for controlling the time to linger after a retransmit frame is sent.
          *
          * @param feedbackDelayGenerator for controlling the linger after a retransmit.
          * @return this for a fluent API

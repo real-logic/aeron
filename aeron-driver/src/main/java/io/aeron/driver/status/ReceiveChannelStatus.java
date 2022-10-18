@@ -22,7 +22,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
 /**
- * The status of a receive channel endpoint represented as a counter value.
+ * The status of a receiving channel endpoint represented as a counter value.
  */
 public class ReceiveChannelStatus
 {

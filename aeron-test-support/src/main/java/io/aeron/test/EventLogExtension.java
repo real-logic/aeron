@@ -33,6 +33,7 @@ public class EventLogExtension implements BeforeEachCallback, AfterEachCallback
     {
         final String className = context.getTestClass().map(Class::getSimpleName).orElse("<UNKNOWN>");
         final String methodName = context.getTestMethod().map(Method::getName).orElse(context.getDisplayName());
+
         Tests.startLogCollecting("TEST: " + className + "." + methodName);
     }
 

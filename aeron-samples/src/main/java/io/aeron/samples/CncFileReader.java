@@ -107,7 +107,7 @@ public final class CncFileReader implements AutoCloseable
     /**
      * Get the counters reader for querying counter values.
      *
-     * @return the counters reader.
+     * @return the counters' reader.
      */
     public CountersReader countersReader()
     {

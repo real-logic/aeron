@@ -67,9 +67,9 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     private final MediaDriverTestUtil mediaDriverTestUtil = new MediaDriverTestUtil();
 
+    private final ArrayList<AutoCloseable> closeables = new ArrayList<>();
     private Predicate<String> logFilter = TEST_CLUSTER_DEFAULT_LOG_FILTER;
     private DataCollector dataCollector = new DataCollector();
-    private ArrayList<AutoCloseable> closeables = new ArrayList<>();
 
     public SystemTestWatcher cluster(final TestCluster testCluster)
     {

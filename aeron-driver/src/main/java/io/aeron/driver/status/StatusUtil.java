@@ -94,8 +94,8 @@ public class StatusUtil
      * Return the read-only status indicator for the given receive channel URI.
      *
      * @param countersReader that holds the status indicator.
-     * @param channel        for the receive channel.
-     * @return read-only status indicator that can be used to query the status of the receive channel or null.
+     * @param channel        for the receiving endpoint
+     * @return read-only status indicator that can be used to query the status of the receive channel endpoint or null.
      * @see ChannelEndpointStatus for status values and indications.
      */
     public static StatusIndicatorReader receiveChannelStatus(final CountersReader countersReader, final String channel)

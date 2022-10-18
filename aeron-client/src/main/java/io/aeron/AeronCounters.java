@@ -305,7 +305,7 @@ public final class AeronCounters
     /**
      * Convenience overload for {@link AeronCounters#validateCounterTypeId(CountersReader, int, int)}
      *
-     * @param aeron to resolve a counters reader.
+     * @param aeron to resolve a counters' reader.
      * @param counter to be checked for the appropriate counterTypeId.
      * @param expectedCounterTypeId the expected type id for the counter.
      * @throws io.aeron.exceptions.ConfigurationException if the type id does not match.

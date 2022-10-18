@@ -102,9 +102,9 @@ public class DebugChannelEndpointConfiguration
     }
 
     /**
-     * The supplier of {@link LossGenerator}s for the receive end of a data stream.
+     * The supplier of {@link LossGenerator}s for the receiving end of a data stream.
      *
-     * @return the supplier of {@link LossGenerator}s for the receive end of a data stream.
+     * @return the supplier of {@link LossGenerator}s for the receiving end of a data stream.
      */
     public static LossGenerator receiveDataLossGeneratorSupplier()
     {
@@ -112,9 +112,9 @@ public class DebugChannelEndpointConfiguration
     }
 
     /**
-     * The supplier of {@link LossGenerator}s for the receive end of a control stream.
+     * The supplier of {@link LossGenerator}s for the receiving end of a control stream.
      *
-     * @return the supplier of {@link LossGenerator}s for the receive end of a control stream.
+     * @return the supplier of {@link LossGenerator}s for the receiving end of a control stream.
      */
     public static LossGenerator receiveControlLossGeneratorSupplier()
     {

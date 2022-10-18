@@ -1210,6 +1210,7 @@ public final class Archive implements AutoCloseable
                 final ChannelUri controlChannelUri = ChannelUri.parse(controlChannel);
                 final String endpoint = controlChannelUri.get(ENDPOINT_PARAM_NAME);
                 int separatorIndex = -1;
+
                 if (null == endpoint || -1 == (separatorIndex = endpoint.lastIndexOf(':')))
                 {
                     throw new ConfigurationException(
@@ -1218,6 +1219,7 @@ public final class Archive implements AutoCloseable
                         " and is not in the <host>:<port> format");
 
                 }
+
                 final String responseEndpoint = endpoint.substring(0, separatorIndex) + ":0";
                 final String responseChannel = new ChannelUriStringBuilder()
                     .media("udp")

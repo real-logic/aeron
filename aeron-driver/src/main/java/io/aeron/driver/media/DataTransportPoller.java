@@ -123,7 +123,7 @@ public final class DataTransportPoller extends UdpTransportPoller
     }
 
     /**
-     * Register a new transport to be read.
+     * Register transport for reading with the poller.
      *
      * @param channelEndpoint to which the transport belongs.
      * @param transport       new transport to be registered.

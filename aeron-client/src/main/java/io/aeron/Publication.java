@@ -31,6 +31,7 @@ import java.util.List;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.align;
 
 /**
@@ -131,6 +132,12 @@ public abstract class Publication implements AutoCloseable
         this.channelStatusId = channelStatusId;
         this.positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termBufferLength);
         this.headerWriter = HeaderWriter.newInstance(defaultFrameHeader(logMetaDataBuffer));
+
+        for (int i = 0; i < PARTITION_COUNT; i++)
+        {
+            final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (i * SIZE_OF_LONG);
+            logMetaDataBuffer.boundsCheck(tailCounterOffset, SIZE_OF_LONG);
+        }
     }
 
     /**

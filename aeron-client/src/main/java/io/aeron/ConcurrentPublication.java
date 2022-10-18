@@ -64,12 +64,6 @@ public final class ConcurrentPublication extends Publication
             logBuffers,
             originalRegistrationId,
             registrationId);
-
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (i * SIZE_OF_LONG);
-            logMetaDataBuffer.boundsCheck(tailCounterOffset, SIZE_OF_LONG);
-        }
     }
 
     /**

@@ -16,16 +16,22 @@
 package io.aeron;
 
 import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.ExclusiveTermAppender;
+import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 
-import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
+import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
+import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
+import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTERS_OFFSET;
+import static io.aeron.logbuffer.LogBufferDescriptor.packTail;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.align;
 
 @SuppressWarnings("unused")
 abstract class ExclusivePublicationLhsPadding extends Publication
@@ -114,8 +120,6 @@ public final class ExclusivePublication extends ExclusivePublicationValues
     byte p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
     byte p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
 
-    private final ExclusiveTermAppender[] termAppenders = new ExclusiveTermAppender[PARTITION_COUNT];
-
     ExclusivePublication(
         final ClientConductor clientConductor,
         final String channel,
@@ -139,12 +143,6 @@ public final class ExclusivePublication extends ExclusivePublicationValues
             registrationId);
 
         final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();
-
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            termAppenders[i] = new ExclusiveTermAppender(termBuffers[i], logMetaDataBuffer, i);
-        }
-
         final int termCount = LogBufferDescriptor.activeTermCount(logMetaDataBuffer);
         final int index = LogBufferDescriptor.indexByTermCount(termCount);
         activePartitionIndex = index;
@@ -221,30 +219,25 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         if (!isClosed)
         {
             final long limit = positionLimit.getVolatile();
-            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
             final long position = termBeginPosition + termOffset;
 
             if (position < limit)
             {
+                final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (activePartitionIndex * SIZE_OF_LONG);
+                final UnsafeBuffer termBuffer = termBuffers[activePartitionIndex];
                 final int result;
+
                 if (length <= maxPayloadLength)
                 {
                     checkPositiveLength(length);
-                    result = termAppender.appendUnfragmentedMessage(
-                        termId, termOffset, headerWriter, buffer, offset, length, reservedValueSupplier);
+                    result = appendUnfragmentedMessage(
+                        tailCounterOffset, termBuffer, buffer, offset, length, reservedValueSupplier);
                 }
                 else
                 {
                     checkMaxMessageLength(length);
-                    result = termAppender.appendFragmentedMessage(
-                        termId,
-                        termOffset,
-                        headerWriter,
-                        buffer,
-                        offset,
-                        length,
-                        maxPayloadLength,
-                        reservedValueSupplier);
+                    result = appendFragmentedMessage(
+                        termBuffer, tailCounterOffset, buffer, offset, length, reservedValueSupplier);
                 }
 
                 newPosition = newPosition(result);
@@ -284,20 +277,21 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         if (!isClosed)
         {
             final long limit = positionLimit.getVolatile();
-            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
             final long position = termBeginPosition + termOffset;
             final int length = validateAndComputeLength(lengthOne, lengthTwo);
 
             if (position < limit)
             {
+                final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (activePartitionIndex * SIZE_OF_LONG);
+                final UnsafeBuffer termBuffer = termBuffers[activePartitionIndex];
                 final int result;
+
                 if (length <= maxPayloadLength)
                 {
                     checkPositiveLength(length);
-                    result = termAppender.appendUnfragmentedMessage(
-                        termId,
-                        termOffset,
-                        headerWriter,
+                    result = appendUnfragmentedMessage(
+                        termBuffer,
+                        tailCounterOffset,
                         bufferOne, offsetOne, lengthOne,
                         bufferTwo, offsetTwo, lengthTwo,
                         reservedValueSupplier);
@@ -305,10 +299,9 @@ public final class ExclusivePublication extends ExclusivePublicationValues
                 else
                 {
                     checkMaxMessageLength(length);
-                    result = termAppender.appendFragmentedMessage(
-                        termId,
-                        termOffset,
-                        headerWriter,
+                    result = appendFragmentedMessage(
+                        termBuffer,
+                        tailCounterOffset,
                         bufferOne, offsetOne, lengthOne,
                         bufferTwo, offsetTwo, lengthTwo,
                         maxPayloadLength,
@@ -342,28 +335,24 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         if (!isClosed)
         {
             final long limit = positionLimit.getVolatile();
-            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
             final long position = termBeginPosition + termOffset;
 
             if (position < limit)
             {
+                final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (activePartitionIndex * SIZE_OF_LONG);
+                final UnsafeBuffer termBuffer = termBuffers[activePartitionIndex];
                 final int result;
+
                 if (length <= maxPayloadLength)
                 {
-                    result = termAppender.appendUnfragmentedMessage(
-                        termId, termOffset, headerWriter, vectors, length, reservedValueSupplier);
+                    result = appendUnfragmentedMessage(
+                        termBuffer, tailCounterOffset, vectors, length, reservedValueSupplier);
                 }
                 else
                 {
                     checkMaxMessageLength(length);
-                    result = termAppender.appendFragmentedMessage(
-                        termId,
-                        termOffset,
-                        headerWriter,
-                        vectors,
-                        length,
-                        maxPayloadLength,
-                        reservedValueSupplier);
+                    result = appendFragmentedMessage(
+                        termBuffer, tailCounterOffset, vectors, length, reservedValueSupplier);
                 }
 
                 newPosition = newPosition(result);
@@ -420,12 +409,14 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         if (!isClosed)
         {
             final long limit = positionLimit.getVolatile();
-            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
             final long position = termBeginPosition + termOffset;
 
             if (position < limit)
             {
-                final int result = termAppender.claim(termId, termOffset, headerWriter, length, bufferClaim);
+                final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (activePartitionIndex * SIZE_OF_LONG);
+                final UnsafeBuffer termBuffer = termBuffers[activePartitionIndex];
+                final int result = claim(termBuffer, tailCounterOffset, length, bufferClaim);
+
                 newPosition = newPosition(result);
             }
             else
@@ -453,13 +444,15 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         if (!isClosed)
         {
             final long limit = positionLimit.getVolatile();
-            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
             final long position = termBeginPosition + termOffset;
 
             if (position < limit)
             {
                 checkPositiveLength(length);
-                final int result = termAppender.appendPadding(termId, termOffset, headerWriter, length);
+                final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (activePartitionIndex * SIZE_OF_LONG);
+                final UnsafeBuffer termBuffer = termBuffers[activePartitionIndex];
+                final int result = appendPadding(termBuffer, tailCounterOffset, length);
+
                 newPosition = newPosition(result);
             }
             else
@@ -506,8 +499,9 @@ public final class ExclusivePublication extends ExclusivePublicationValues
             checkBlockLength(length);
             checkFirstFrame(buffer, offset);
 
-            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
-            final int result = termAppender.appendBlock(termId, termOffset, buffer, offset, length);
+            final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (activePartitionIndex * SIZE_OF_LONG);
+            final UnsafeBuffer termBuffer = termBuffers[activePartitionIndex];
+            final int result = appendBlock(termBuffer, tailCounterOffset, buffer, offset, length);
 
             return newPosition(result);
         }
@@ -583,5 +577,451 @@ public final class ExclusivePublication extends ExclusivePublicationValues
 
         LogBufferDescriptor.initialiseTailWithTermId(logMetaDataBuffer, nextIndex, nextTermId);
         LogBufferDescriptor.activeTermCountOrdered(logMetaDataBuffer, termCount);
+    }
+
+    private static int handleEndOfLogCondition(
+        final UnsafeBuffer termBuffer,
+        final long termOffset,
+        final HeaderWriter header,
+        final int termLength,
+        final int termId)
+    {
+        if (termOffset < termLength)
+        {
+            final int offset = (int)termOffset;
+            final int paddingLength = termLength - offset;
+            header.write(termBuffer, offset, paddingLength, termId);
+            frameType(termBuffer, offset, PADDING_FRAME_TYPE);
+            frameLengthOrdered(termBuffer, offset, paddingLength);
+        }
+
+        return -1;
+    }
+
+    private int appendUnfragmentedMessage(
+        final int tailCounterOffset,
+        final UnsafeBuffer termBuffer,
+        final DirectBuffer srcBuffer,
+        final int srcOffset,
+        final int length,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int frameLength = length + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int termLength = termBuffer.capacity();
+
+        int resultingOffset = termOffset + alignedLength;
+        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+        }
+        else
+        {
+            headerWriter.write(termBuffer, termOffset, frameLength, termId);
+            termBuffer.putBytes(termOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
+
+            if (null != reservedValueSupplier)
+            {
+                final long reservedValue = reservedValueSupplier.get(termBuffer, termOffset, frameLength);
+                termBuffer.putLong(termOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+            }
+
+            frameLengthOrdered(termBuffer, termOffset, frameLength);
+        }
+
+        return resultingOffset;
+    }
+
+    private int appendFragmentedMessage(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final DirectBuffer srcBuffer,
+        final int srcOffset,
+        final int length,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int numMaxPayloads = length / maxPayloadLength;
+        final int remainingPayload = length % maxPayloadLength;
+        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
+        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final int termLength = termBuffer.capacity();
+
+        int resultingOffset = termOffset + requiredLength;
+        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+        }
+        else
+        {
+            int frameOffset = termOffset;
+            byte flags = BEGIN_FRAG_FLAG;
+            int remaining = length;
+            do
+            {
+                final int bytesToWrite = Math.min(remaining, maxPayloadLength);
+                final int frameLength = bytesToWrite + HEADER_LENGTH;
+                final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+
+                headerWriter.write(termBuffer, frameOffset, frameLength, termId);
+                termBuffer.putBytes(
+                    frameOffset + HEADER_LENGTH,
+                    srcBuffer,
+                    srcOffset + (length - remaining),
+                    bytesToWrite);
+
+                if (remaining <= maxPayloadLength)
+                {
+                    flags |= END_FRAG_FLAG;
+                }
+
+                frameFlags(termBuffer, frameOffset, flags);
+
+                if (null != reservedValueSupplier)
+                {
+                    final long reservedValue = reservedValueSupplier.get(termBuffer, frameOffset, frameLength);
+                    termBuffer.putLong(frameOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+                }
+
+                frameLengthOrdered(termBuffer, frameOffset, frameLength);
+
+                flags = 0;
+                frameOffset += alignedLength;
+                remaining -= bytesToWrite;
+            }
+            while (remaining > 0);
+        }
+
+        return resultingOffset;
+    }
+
+    private int appendUnfragmentedMessage(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final DirectBuffer bufferOne,
+        final int offsetOne,
+        final int lengthOne,
+        final DirectBuffer bufferTwo,
+        final int offsetTwo,
+        final int lengthTwo,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int frameLength = lengthOne + lengthTwo + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int termLength = termBuffer.capacity();
+
+        int resultingOffset = termOffset + alignedLength;
+        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+        }
+        else
+        {
+            headerWriter.write(termBuffer, termOffset, frameLength, termId);
+            termBuffer.putBytes(termOffset + HEADER_LENGTH, bufferOne, offsetOne, lengthOne);
+            termBuffer.putBytes(termOffset + HEADER_LENGTH + lengthOne, bufferTwo, offsetTwo, lengthTwo);
+
+            if (null != reservedValueSupplier)
+            {
+                final long reservedValue = reservedValueSupplier.get(termBuffer, termOffset, frameLength);
+                termBuffer.putLong(termOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+            }
+
+            frameLengthOrdered(termBuffer, termOffset, frameLength);
+        }
+
+        return resultingOffset;
+    }
+
+    private int appendFragmentedMessage(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final DirectBuffer bufferOne,
+        final int offsetOne,
+        final int lengthOne,
+        final DirectBuffer bufferTwo,
+        final int offsetTwo,
+        final int lengthTwo,
+        final int maxPayloadLength,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int length = lengthOne + lengthTwo;
+        final int numMaxPayloads = length / maxPayloadLength;
+        final int remainingPayload = length % maxPayloadLength;
+        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
+        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final int termLength = termBuffer.capacity();
+
+        int resultingOffset = termOffset + requiredLength;
+        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+        }
+        else
+        {
+            int frameOffset = termOffset;
+            byte flags = BEGIN_FRAG_FLAG;
+            int remaining = length;
+            int positionOne = 0;
+            int positionTwo = 0;
+
+            do
+            {
+                final int bytesToWrite = Math.min(remaining, maxPayloadLength);
+                final int frameLength = bytesToWrite + HEADER_LENGTH;
+                final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+
+                headerWriter.write(termBuffer, frameOffset, frameLength, termId);
+
+                int bytesWritten = 0;
+                int payloadOffset = frameOffset + HEADER_LENGTH;
+                do
+                {
+                    final int remainingOne = lengthOne - positionOne;
+                    if (remainingOne > 0)
+                    {
+                        final int numBytes = Math.min(bytesToWrite - bytesWritten, remainingOne);
+                        termBuffer.putBytes(payloadOffset, bufferOne, offsetOne + positionOne, numBytes);
+
+                        bytesWritten += numBytes;
+                        payloadOffset += numBytes;
+                        positionOne += numBytes;
+                    }
+                    else
+                    {
+                        final int numBytes = Math.min(bytesToWrite - bytesWritten, lengthTwo - positionTwo);
+                        termBuffer.putBytes(payloadOffset, bufferTwo, offsetTwo + positionTwo, numBytes);
+
+                        bytesWritten += numBytes;
+                        payloadOffset += numBytes;
+                        positionTwo += numBytes;
+                    }
+                }
+                while (bytesWritten < bytesToWrite);
+
+                if (remaining <= maxPayloadLength)
+                {
+                    flags |= END_FRAG_FLAG;
+                }
+
+                frameFlags(termBuffer, frameOffset, flags);
+
+                if (null != reservedValueSupplier)
+                {
+                    final long reservedValue = reservedValueSupplier.get(termBuffer, frameOffset, frameLength);
+                    termBuffer.putLong(frameOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+                }
+
+                frameLengthOrdered(termBuffer, frameOffset, frameLength);
+
+                flags = 0;
+                frameOffset += alignedLength;
+                remaining -= bytesToWrite;
+            }
+            while (remaining > 0);
+        }
+
+        return resultingOffset;
+    }
+
+    private int appendUnfragmentedMessage(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final DirectBufferVector[] vectors,
+        final int length,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int frameLength = length + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int termLength = termBuffer.capacity();
+
+        int resultingOffset = termOffset + alignedLength;
+        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+        }
+        else
+        {
+            headerWriter.write(termBuffer, termOffset, frameLength, termId);
+
+            int offset = termOffset + HEADER_LENGTH;
+            for (final DirectBufferVector vector : vectors)
+            {
+                termBuffer.putBytes(offset, vector.buffer(), vector.offset(), vector.length());
+                offset += vector.length();
+            }
+
+            if (null != reservedValueSupplier)
+            {
+                final long reservedValue = reservedValueSupplier.get(termBuffer, termOffset, frameLength);
+                termBuffer.putLong(termOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+            }
+
+            frameLengthOrdered(termBuffer, termOffset, frameLength);
+        }
+
+        return resultingOffset;
+    }
+
+    private int appendFragmentedMessage(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final DirectBufferVector[] vectors,
+        final int length,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int numMaxPayloads = length / maxPayloadLength;
+        final int remainingPayload = length % maxPayloadLength;
+        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
+        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final int termLength = termBuffer.capacity();
+
+        int resultingOffset = termOffset + requiredLength;
+        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+        }
+        else
+        {
+            int frameOffset = termOffset;
+            byte flags = BEGIN_FRAG_FLAG;
+            int remaining = length;
+            int vectorIndex = 0;
+            int vectorOffset = 0;
+
+            do
+            {
+                final int bytesToWrite = Math.min(remaining, maxPayloadLength);
+                final int frameLength = bytesToWrite + HEADER_LENGTH;
+                final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+
+                headerWriter.write(termBuffer, frameOffset, frameLength, termId);
+
+                int bytesWritten = 0;
+                int payloadOffset = frameOffset + HEADER_LENGTH;
+                do
+                {
+                    final DirectBufferVector vector = vectors[vectorIndex];
+                    final int vectorRemaining = vector.length() - vectorOffset;
+                    final int numBytes = Math.min(bytesToWrite - bytesWritten, vectorRemaining);
+
+                    termBuffer.putBytes(payloadOffset, vector.buffer(), vector.offset() + vectorOffset, numBytes);
+
+                    bytesWritten += numBytes;
+                    payloadOffset += numBytes;
+                    vectorOffset += numBytes;
+
+                    if (vectorRemaining <= numBytes)
+                    {
+                        vectorIndex++;
+                        vectorOffset = 0;
+                    }
+                }
+                while (bytesWritten < bytesToWrite);
+
+                if (remaining <= maxPayloadLength)
+                {
+                    flags |= END_FRAG_FLAG;
+                }
+
+                frameFlags(termBuffer, frameOffset, flags);
+
+                if (null != reservedValueSupplier)
+                {
+                    final long reservedValue = reservedValueSupplier.get(termBuffer, frameOffset, frameLength);
+                    termBuffer.putLong(frameOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+                }
+
+                frameLengthOrdered(termBuffer, frameOffset, frameLength);
+
+                flags = 0;
+                frameOffset += alignedLength;
+                remaining -= bytesToWrite;
+            }
+            while (remaining > 0);
+        }
+
+        return resultingOffset;
+    }
+
+    int claim(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final int length,
+        final BufferClaim bufferClaim)
+    {
+        final int frameLength = length + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int termLength = termBuffer.capacity();
+
+        int resultingOffset = termOffset + alignedLength;
+        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+        }
+        else
+        {
+            headerWriter.write(termBuffer, termOffset, frameLength, termId);
+            bufferClaim.wrap(termBuffer, termOffset, frameLength);
+        }
+
+        return resultingOffset;
+    }
+
+    private int appendPadding(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final int length)
+    {
+        final int frameLength = length + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int termLength = termBuffer.capacity();
+
+        int resultingOffset = termOffset + alignedLength;
+        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+        }
+        else
+        {
+            headerWriter.write(termBuffer, termOffset, frameLength, termId);
+            frameType(termBuffer, termOffset, PADDING_FRAME_TYPE);
+            frameLengthOrdered(termBuffer, termOffset, frameLength);
+        }
+
+        return resultingOffset;
+    }
+
+    private int appendBlock(
+        final UnsafeBuffer termBuffer,
+        final int tailCounterOffset,
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final int length)
+    {
+        final int resultingOffset = termOffset + length;
+        final int lengthOfFirstFrame = buffer.getInt(offset, LITTLE_ENDIAN);
+
+        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+        buffer.putInt(offset, 0, LITTLE_ENDIAN);
+        termBuffer.putBytes(termOffset, buffer, offset, length);
+        frameLengthOrdered(termBuffer, termOffset, lengthOfFirstFrame);
+
+        return resultingOffset;
     }
 }

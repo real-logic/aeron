@@ -15,8 +15,6 @@
  */
 package io.aeron.driver;
 
-import io.aeron.ReservedValueSupplier;
-import io.aeron.logbuffer.ExclusiveTermAppender;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -35,7 +33,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
-import static java.nio.ByteBuffer.allocateDirect;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.util.Arrays.asList;
 import static org.agrona.BitUtil.align;
 import static org.mockito.Mockito.*;
@@ -57,12 +57,9 @@ public class RetransmitHandlerTest
         new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(0), false);
     private static final FeedbackDelayGenerator LINGER_GENERATOR =
         new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(40), false);
-    private static final ReservedValueSupplier RESERVED_VALUE_SUPPLIER = null;
 
-    private final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirect(TERM_BUFFER_LENGTH));
-    private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(
-        allocateDirect(LogBufferDescriptor.LOG_META_DATA_LENGTH));
-    private final ExclusiveTermAppender termAppender = new ExclusiveTermAppender(termBuffer, metaDataBuffer, 0);
+    private final UnsafeBuffer termBuffer = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
+    private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(new byte[LogBufferDescriptor.LOG_META_DATA_LENGTH]);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
@@ -257,8 +254,17 @@ public class RetransmitHandlerTest
     private void addSentDataFrame()
     {
         rcvBuffer.putBytes(0, DATA);
-        termAppender.appendUnfragmentedMessage(
-            TERM_ID, 0, headerWriter, rcvBuffer, 0, DATA.length, RESERVED_VALUE_SUPPLIER);
+
+        final int frameLength = DATA.length + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final long rawTail = LogBufferDescriptor.packTail(TERM_ID, alignedLength);
+
+        LogBufferDescriptor.rawTail(metaDataBuffer, 0, rawTail);
+
+        headerWriter.write(termBuffer, 0, frameLength, TERM_ID);
+        termBuffer.putBytes(HEADER_LENGTH, rcvBuffer, 0, DATA.length);
+
+        frameLengthOrdered(termBuffer, 0, frameLength);
     }
 
     private void addReceivedDataFrame(final int msgNum)

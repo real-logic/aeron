@@ -26,11 +26,11 @@ import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
 import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.driver.status.SystemCounters;
-import io.aeron.logbuffer.ExclusiveTermAppender;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CachedNanoClock;
@@ -61,9 +61,13 @@ import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.ClientHeartbeatTimestamp.HEARTBEAT_TYPE_ID;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_MAX_CYCLE_TIME;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.agrona.BitUtil.align;
 import static org.agrona.concurrent.status.CountersReader.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -578,8 +582,6 @@ public class DriverConductorTest
         final int index = LogBufferDescriptor.indexByTerm(termId, termId);
         final RawLog rawLog = publication.rawLog();
         LogBufferDescriptor.rawTail(rawLog.metaData(), index, LogBufferDescriptor.packTail(termId, 0));
-        final ExclusiveTermAppender appender =
-            new ExclusiveTermAppender(rawLog.termBuffers()[index], rawLog.metaData(), index);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[256]);
         final HeaderWriter headerWriter = HeaderWriter.newInstance(
             createDefaultHeader(SESSION_ID, STREAM_ID_1, termId));
@@ -590,7 +592,8 @@ public class DriverConductorTest
         when(msg.receiverWindowLength()).thenReturn(10);
 
         publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059));
-        appender.appendUnfragmentedMessage(0, termId, headerWriter, srcBuffer, 0, 256, null);
+        appendUnfragmentedMessage(
+            rawLog, index, 0, termId, headerWriter, srcBuffer, 0, 256);
 
         assertEquals(NetworkPublication.State.ACTIVE, publication.state());
 
@@ -1890,5 +1893,29 @@ public class DriverConductorTest
         }
 
         throw new IllegalStateException("could not find client heartbeat counter");
+    }
+
+    private void appendUnfragmentedMessage(
+        final RawLog rawLog,
+        final int partitionIndex,
+        final int termId,
+        final int termOffset,
+        final HeaderWriter header,
+        final DirectBuffer srcBuffer,
+        final int srcOffset,
+        final int length)
+    {
+        final UnsafeBuffer termBuffer = rawLog.termBuffers()[partitionIndex];
+        final int frameLength = length + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int resultingOffset = termOffset + alignedLength;
+        final long rawTail = LogBufferDescriptor.packTail(termId, resultingOffset);
+
+        LogBufferDescriptor.rawTail(rawLog.metaData(), partitionIndex, rawTail);
+
+        header.write(termBuffer, termOffset, frameLength, termId);
+        termBuffer.putBytes(termOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
+
+        frameLengthOrdered(termBuffer, termOffset, frameLength);
     }
 }

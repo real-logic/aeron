@@ -42,6 +42,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.align;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -92,7 +93,7 @@ class PublicationTest
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termBuffers[i] = new UnsafeBuffer(allocate(TERM_LENGTH));
+            termBuffers[i] = new UnsafeBuffer(allocateDirectAligned(TERM_LENGTH, FRAME_ALIGNMENT));
         }
 
         publication = new ConcurrentPublication(

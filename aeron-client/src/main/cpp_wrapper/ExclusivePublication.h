@@ -46,7 +46,7 @@ using namespace aeron::concurrent::status;
  *
  * {@link ExclusivePublication}s have the potential to provide greater throughput than {@link Publication}s.
  *
- * The APIs used try claim and offer are non-blocking.
+ * The APIs tryClaim and offer are non-blocking.
  *
  * <b>Note:</b> ExclusivePublication instances are NOT threadsafe for offer and try claim methods but are for others.
  *
@@ -401,8 +401,7 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template<class BufferIterator>
-    std::int64_t offer(
+    template<class BufferIterator> std::int64_t offer(
         BufferIterator startBuffer,
         BufferIterator lastBuffer,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
@@ -461,8 +460,7 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template<std::size_t N>
-    std::int64_t offer(
+    template<std::size_t N> std::int64_t offer(
         const std::array<concurrent::AtomicBuffer, N> &buffers,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
     {
@@ -560,7 +558,7 @@ public:
      */
     AsyncDestination *removeDestinationAsync(const std::string &endpointChannel)
     {
-        AsyncDestination *async;
+        AsyncDestination *async = nullptr;
         if (aeron_exclusive_publication_async_remove_destination(
             &async, m_aeron, m_publication, endpointChannel.c_str()) < 0)
         {

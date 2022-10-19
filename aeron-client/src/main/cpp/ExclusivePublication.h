@@ -425,8 +425,7 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template<class BufferIterator>
-    std::int64_t offer(
+    template<class BufferIterator> std::int64_t offer(
         BufferIterator startBuffer,
         BufferIterator lastBuffer,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
@@ -515,8 +514,7 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template<std::size_t N>
-    std::int64_t offer(
+    template<std::size_t N> std::int64_t offer(
         const std::array<concurrent::AtomicBuffer, N> &buffers,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
     {

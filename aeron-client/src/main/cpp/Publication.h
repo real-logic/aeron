@@ -68,7 +68,7 @@ static const on_reserved_value_supplier_t DEFAULT_RESERVED_VALUE_SUPPLIER =
  * are created via an {@link Aeron} object, and messages are sent via an offer method or a claim and commit
  * method combination.
  * <p>
- * The APIs for tryClaim and offer are non-blocking.
+ * The APIs for tryClaim and offer are non-blocking and threadsafe.
  * <p>
  * Note: Publication instances are threadsafe and can be shared between publisher threads.
  * @see Aeron#addPublication

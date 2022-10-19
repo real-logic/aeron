@@ -77,7 +77,7 @@ using AsyncDestination = aeron_async_destination_t;
  * are created via an {@link Aeron} object, and messages are sent via an offer method or a claim and commit
  * method combination.
  * <p>
- * The APIs used to send are all non-blocking.
+ * The APIs for tryClaim and offer are non-blocking and threadsafe.
  * <p>
  * Note: Publication instances are threadsafe and can be shared between publisher threads.
  * @see Aeron#addPublication
@@ -426,8 +426,7 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template<class BufferIterator>
-    std::int64_t offer(
+    template<class BufferIterator> std::int64_t offer(
         BufferIterator startBuffer,
         BufferIterator lastBuffer,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
@@ -486,8 +485,7 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template<std::size_t N>
-    std::int64_t offer(
+    template<std::size_t N> std::int64_t offer(
         const std::array<concurrent::AtomicBuffer, N> &buffers,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
     {
@@ -585,7 +583,7 @@ public:
      */
     AsyncDestination *removeDestinationAsync(const std::string &endpointChannel)
     {
-        AsyncDestination *async;
+        AsyncDestination *async = nullptr;
         if (aeron_publication_async_remove_destination(&async, m_aeron, m_publication, endpointChannel.c_str()) < 0)
         {
             AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;

@@ -18,7 +18,6 @@
 #include <inttypes.h>
 
 #include "aeronc.h"
-#include "aeron_common.h"
 #include "aeron_publication.h"
 #include "aeron_log_buffer.h"
 #include "status/aeron_local_sockaddr.h"
@@ -332,7 +331,6 @@ static int64_t aeron_publication_append_unfragmented_messagev(
     aeron_mapped_buffer_t *term_buffer,
     volatile int64_t *term_tail_counter,
     aeron_iovec_t *iov,
-    size_t iovcnt,
     size_t length,
     aeron_reserved_value_supplier_t reserved_value_supplier,
     void *clientd)
@@ -385,7 +383,6 @@ static int64_t aeron_publication_append_fragmented_messagev(
     aeron_mapped_buffer_t *term_buffer,
     volatile int64_t *term_tail_counter,
     aeron_iovec_t *iov,
-    size_t iovcnt,
     size_t length,
     size_t max_payload_length,
     aeron_reserved_value_supplier_t reserved_value_supplier,
@@ -613,7 +610,6 @@ int64_t aeron_publication_offerv(
                     &publication->log_buffer->mapped_raw_log.term_buffers[index],
                     &publication->log_meta_data->term_tail_counters[index],
                     iov,
-                    iovcnt,
                     length,
                     reserved_value_supplier,
                     clientd);
@@ -635,7 +631,6 @@ int64_t aeron_publication_offerv(
                     &publication->log_buffer->mapped_raw_log.term_buffers[index],
                     &publication->log_meta_data->term_tail_counters[index],
                     iov,
-                    iovcnt,
                     length,
                     publication->max_payload_length,
                     reserved_value_supplier,

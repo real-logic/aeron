@@ -18,7 +18,6 @@
 #include <inttypes.h>
 
 #include "aeronc.h"
-#include "aeron_common.h"
 #include "aeron_exclusive_publication.h"
 #include "concurrent/aeron_exclusive_term_appender.h"
 #include "aeron_log_buffer.h"
@@ -249,7 +248,6 @@ int64_t aeron_exclusive_publication_offerv(
                     &publication->log_meta_data->term_tail_counters[index],
                     term_offset,
                     iov,
-                    iovcnt,
                     length,
                     reserved_value_supplier,
                     clientd,
@@ -274,7 +272,6 @@ int64_t aeron_exclusive_publication_offerv(
                     &publication->log_meta_data->term_tail_counters[index],
                     term_offset,
                     iov,
-                    iovcnt,
                     length,
                     publication->max_payload_length,
                     reserved_value_supplier,

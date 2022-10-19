@@ -26,7 +26,6 @@
 extern "C"
 {
 #include "aeron_image.h"
-#include "concurrent/aeron_exclusive_term_appender.h"
 }
 
 #define FILE_PAGE_SIZE (4 * 1024)
@@ -101,6 +100,7 @@ public:
     {
         auto *metadata = (aeron_logbuffer_metadata_t *)m_image->log_buffer->mapped_raw_log.log_meta_data.addr;
         const size_t index = aeron_logbuffer_index_by_position(position, m_position_bits_to_shift);
+        aeron_mapped_buffer_t *term_buffer = &m_image->log_buffer->mapped_raw_log.term_buffers[index];
         uint8_t buffer[1024] = { 0 };
         int32_t term_id = aeron_logbuffer_compute_term_id_from_position(
             position, m_position_bits_to_shift, m_initial_term_id);
@@ -108,17 +108,46 @@ public:
 
         metadata->term_tail_counters[index] = static_cast<int64_t>(term_id) << 32 | tail_offset;
 
-        aeron_exclusive_term_appender_append_unfragmented_message(
-            &m_image->log_buffer->mapped_raw_log.term_buffers[index],
-            &metadata->term_tail_counters[index],
-            tail_offset,
-            buffer,
-            length,
-            nullptr,
-            nullptr,
-            aeron_logbuffer_compute_term_id_from_position(position, m_position_bits_to_shift, m_initial_term_id),
-            SESSION_ID,
-            STREAM_ID);
+        const size_t frame_length = length + AERON_DATA_HEADER_LENGTH;
+        const auto aligned_frame_length = (int32_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+
+        int32_t resulting_offset = tail_offset + aligned_frame_length;
+        metadata->term_tail_counters[index] = static_cast<int64_t>(term_id) << 32 | resulting_offset;
+
+        size_t term_length = term_buffer->length;
+        auto *header = (aeron_data_header_t *)(term_buffer->addr + tail_offset);
+
+        if (resulting_offset > term_length)
+        {
+            if (tail_offset < term_length)
+            {
+                const int32_t padding_length = (int32_t)term_length - tail_offset;
+
+                header->frame_header.version = AERON_FRAME_HEADER_VERSION;
+                header->frame_header.flags = AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG;
+                header->frame_header.type = AERON_HDR_TYPE_PAD;
+                header->term_offset = tail_offset;
+                header->session_id = SESSION_ID;
+                header->stream_id = STREAM_ID;
+                header->term_id = term_id;
+
+                AERON_PUT_ORDERED(header->frame_header.frame_length, padding_length);
+            }
+        }
+        else
+        {
+            header->frame_header.version = AERON_FRAME_HEADER_VERSION;
+            header->frame_header.flags = AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG;
+            header->frame_header.type = AERON_HDR_TYPE_DATA;
+            header->term_offset = tail_offset;
+            header->session_id = SESSION_ID;
+            header->stream_id = STREAM_ID;
+            header->term_id = term_id;
+
+            memcpy(term_buffer->addr + tail_offset + AERON_DATA_HEADER_LENGTH, buffer, length);
+
+            AERON_PUT_ORDERED(header->frame_header.frame_length, (int32_t)frame_length);
+        }
     }
 
     static void fragment_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
@@ -642,11 +671,11 @@ TEST_F(ImageTest, shouldPollNoFragmentsToBoundedControlledFragmentHandlerWithMax
     createImage();
 
     const size_t messageLength = 120;
-    const int64_t alignedMessageLength =
+    const int32_t alignedMessageLength =
         AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int64_t initialPosition = aeron_logbuffer_compute_position(
         INITIAL_TERM_ID, 0, m_position_bits_to_shift, INITIAL_TERM_ID);
-    const int64_t maxPosition = initialPosition - AERON_DATA_HEADER_LENGTH;
+    const int64_t maxPosition = initialPosition - (int64_t)AERON_DATA_HEADER_LENGTH;
     bool called = false;
 
     m_sub_pos = initialPosition;
@@ -745,7 +774,7 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPo
     createImage();
 
     const size_t messageLength = 120;
-    const int64_t alignedMessageLength =
+    const int32_t alignedMessageLength =
         AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int32_t initialOffset = m_term_length - (2 * alignedMessageLength);
     const int64_t initialPosition = aeron_logbuffer_compute_position(
@@ -774,7 +803,7 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPo
     createImage();
 
     const size_t messageLength = 120;
-    const int64_t alignedMessageLength =
+    const int32_t alignedMessageLength =
         AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int32_t initialOffset = m_term_length - (2 * alignedMessageLength);
     const int64_t initialPosition = aeron_logbuffer_compute_position(
@@ -803,7 +832,7 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionAbov
     createImage();
 
     const size_t messageLength = 120;
-    const int64_t alignedMessageLength =
+    const int32_t alignedMessageLength =
         AERON_ALIGN(messageLength + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     const int32_t initialOffset = m_term_length - (2 * alignedMessageLength);
     const int64_t initialPosition = aeron_logbuffer_compute_position(

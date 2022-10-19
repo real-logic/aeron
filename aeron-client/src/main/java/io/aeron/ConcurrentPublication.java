@@ -34,7 +34,7 @@ import static org.agrona.BitUtil.align;
  * {@link #offer(DirectBuffer)} methods, or a {@link #tryClaim(int, BufferClaim)} and {@link BufferClaim#commit()}
  * method combination.
  * <p>
- * The APIs used for try claim and offer are non-blocking and thread safe.
+ * The APIs for tryClaim and offer are non-blocking and thread safe.
  * <p>
  * <b>Note:</b> Instances are threadsafe and can be shared between publishing threads.
  *

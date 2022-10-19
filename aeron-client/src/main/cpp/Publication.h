@@ -68,7 +68,7 @@ static const on_reserved_value_supplier_t DEFAULT_RESERVED_VALUE_SUPPLIER =
  * are created via an {@link Aeron} object, and messages are sent via an offer method or a claim and commit
  * method combination.
  * <p>
- * The APIs used to send are all non-blocking.
+ * The APIs for tryClaim and offer are non-blocking.
  * <p>
  * Note: Publication instances are threadsafe and can be shared between publisher threads.
  * @see Aeron#addPublication
@@ -433,8 +433,7 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template<class BufferIterator>
-    std::int64_t offer(
+    template<class BufferIterator> std::int64_t offer(
         BufferIterator startBuffer,
         BufferIterator lastBuffer,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
@@ -521,8 +520,7 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template<std::size_t N>
-    std::int64_t offer(
+    template<std::size_t N> std::int64_t offer(
         const std::array<concurrent::AtomicBuffer, N> &buffers,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
     {
@@ -662,7 +660,7 @@ private:
     HeaderWriter m_headerWriter;
 
     inline std::int64_t claim(
-        AtomicBuffer &m_termBuffer,
+        AtomicBuffer &termBuffer,
         const util::index_t tailCounterOffset,
         const util::index_t length,
         BufferClaim &bufferClaim)
@@ -670,29 +668,28 @@ private:
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
         const std::int64_t rawTail = m_logMetaDataBuffer.getAndAddInt64(tailCounterOffset, alignedLength);
-        const std::int32_t termLength = m_termBuffer.capacity();
+        const std::int32_t termLength = termBuffer.capacity();
         const std::int32_t termOffset = LogBufferDescriptor::termOffset(rawTail, termLength);
         const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
-
 
         const std::int32_t resultingOffset = termOffset + alignedLength;
         const std::int64_t position = LogBufferDescriptor::computePosition(
             termId, resultingOffset, m_positionBitsToShift, m_initialTermId);
         if (resultingOffset > termLength)
         {
-            return handleEndOfLogCondition(m_termBuffer, termOffset, termLength, termId, position);
+            return handleEndOfLogCondition(termBuffer, termOffset, termLength, termId, position);
         }
         else
         {
-            m_headerWriter.write(m_termBuffer, termOffset, frameLength, termId);
-            bufferClaim.wrap(m_termBuffer, termOffset, frameLength);
+            m_headerWriter.write(termBuffer, termOffset, frameLength, termId);
+            bufferClaim.wrap(termBuffer, termOffset, frameLength);
         }
 
         return position;
     }
 
     inline std::int64_t appendUnfragmentedMessage(
-        AtomicBuffer &m_termBuffer,
+        AtomicBuffer &termBuffer,
         const util::index_t tailCounterOffset,
         const AtomicBuffer &srcBuffer,
         util::index_t srcOffset,
@@ -702,7 +699,7 @@ private:
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
         const std::int64_t rawTail = m_logMetaDataBuffer.getAndAddInt64(tailCounterOffset, alignedLength);
-        const std::int32_t termLength = m_termBuffer.capacity();
+        const std::int32_t termLength = termBuffer.capacity();
         const std::int32_t termOffset = LogBufferDescriptor::termOffset(rawTail, termLength);
         const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
 
@@ -711,25 +708,25 @@ private:
             termId, resultingOffset, m_positionBitsToShift, m_initialTermId);
         if (resultingOffset > termLength)
         {
-            return handleEndOfLogCondition(m_termBuffer, termOffset, termLength, termId, position);
+            return handleEndOfLogCondition(termBuffer, termOffset, termLength, termId, position);
         }
         else
         {
             util::index_t frameOffset = termOffset;
-            m_headerWriter.write(m_termBuffer, frameOffset, frameLength, termId);
-            m_termBuffer.putBytes(frameOffset + DataFrameHeader::LENGTH, srcBuffer, srcOffset, length);
+            m_headerWriter.write(termBuffer, frameOffset, frameLength, termId);
+            termBuffer.putBytes(frameOffset + DataFrameHeader::LENGTH, srcBuffer, srcOffset, length);
 
-            const std::int64_t reservedValue = reservedValueSupplier(m_termBuffer, frameOffset, frameLength);
-            m_termBuffer.putInt64(frameOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
+            const std::int64_t reservedValue = reservedValueSupplier(termBuffer, frameOffset, frameLength);
+            termBuffer.putInt64(frameOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
 
-            FrameDescriptor::frameLengthOrdered(m_termBuffer, frameOffset, frameLength);
+            FrameDescriptor::frameLengthOrdered(termBuffer, frameOffset, frameLength);
         }
 
         return position;
     }
 
     template <class BufferIterator> std::int64_t appendUnfragmentedMessage(
-        AtomicBuffer &m_termBuffer,
+        AtomicBuffer &termBuffer,
         const util::index_t tailCounterOffset,
         BufferIterator bufferIt,
         util::index_t length,
@@ -738,7 +735,7 @@ private:
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
         const std::int64_t rawTail = m_logMetaDataBuffer.getAndAddInt64(tailCounterOffset, alignedLength);
-        const std::int32_t termLength = m_termBuffer.capacity();
+        const std::int32_t termLength = termBuffer.capacity();
         const std::int32_t termOffset = LogBufferDescriptor::termOffset(rawTail, termLength);
         const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
 
@@ -747,12 +744,12 @@ private:
             termId, resultingOffset, m_positionBitsToShift, m_initialTermId);
         if (resultingOffset > termLength)
         {
-            return handleEndOfLogCondition(m_termBuffer, termOffset, termLength, termId, position);
+            return handleEndOfLogCondition(termBuffer, termOffset, termLength, termId, position);
         }
         else
         {
             util::index_t frameOffset = termOffset;
-            m_headerWriter.write(m_termBuffer, frameOffset, frameLength, termId);
+            m_headerWriter.write(termBuffer, frameOffset, frameLength, termId);
 
             std::int32_t offset = frameOffset + DataFrameHeader::LENGTH;
             for (
@@ -760,20 +757,20 @@ private:
                 offset < endingOffset;
                 offset += bufferIt->capacity(), ++bufferIt)
             {
-                m_termBuffer.putBytes(offset, *bufferIt, 0, bufferIt->capacity());
+                termBuffer.putBytes(offset, *bufferIt, 0, bufferIt->capacity());
             }
 
-            const std::int64_t reservedValue = reservedValueSupplier(m_termBuffer, frameOffset, frameLength);
-            m_termBuffer.putInt64(frameOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
+            const std::int64_t reservedValue = reservedValueSupplier(termBuffer, frameOffset, frameLength);
+            termBuffer.putInt64(frameOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
 
-            FrameDescriptor::frameLengthOrdered(m_termBuffer, frameOffset, frameLength);
+            FrameDescriptor::frameLengthOrdered(termBuffer, frameOffset, frameLength);
         }
 
         return position;
     }
 
     std::int64_t appendFragmentedMessage(
-        AtomicBuffer &m_termBuffer,
+        AtomicBuffer &termBuffer,
         const util::index_t tailCounterOffset,
         const AtomicBuffer &srcBuffer,
         util::index_t srcOffset,
@@ -787,7 +784,7 @@ private:
         const util::index_t requiredLength =
             (numMaxPayloads * (m_maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
         const std::int64_t rawTail = m_logMetaDataBuffer.getAndAddInt64(tailCounterOffset, requiredLength);
-        const std::int32_t termLength = m_termBuffer.capacity();
+        const std::int32_t termLength = termBuffer.capacity();
         const std::int32_t termOffset = LogBufferDescriptor::termOffset(rawTail, termLength);
         const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
 
@@ -796,7 +793,7 @@ private:
             termId, resultingOffset, m_positionBitsToShift, m_initialTermId);
         if (resultingOffset > termLength)
         {
-            return handleEndOfLogCondition(m_termBuffer, termOffset, termLength, termId, position);
+            return handleEndOfLogCondition(termBuffer, termOffset, termLength, termId, position);
         }
         else
         {
@@ -811,8 +808,8 @@ private:
                 const util::index_t alignedLength =
                     util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
 
-                m_headerWriter.write(m_termBuffer, frameOffset, frameLength, termId);
-                m_termBuffer.putBytes(
+                m_headerWriter.write(termBuffer, frameOffset, frameLength, termId);
+                termBuffer.putBytes(
                     frameOffset + DataFrameHeader::LENGTH,
                     srcBuffer,
                     srcOffset + (length - remaining),
@@ -823,12 +820,12 @@ private:
                     flags |= FrameDescriptor::END_FRAG;
                 }
 
-                FrameDescriptor::frameFlags(m_termBuffer, frameOffset, flags);
+                FrameDescriptor::frameFlags(termBuffer, frameOffset, flags);
 
-                const std::int64_t reservedValue = reservedValueSupplier(m_termBuffer, frameOffset, frameLength);
-                m_termBuffer.putInt64(frameOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
+                const std::int64_t reservedValue = reservedValueSupplier(termBuffer, frameOffset, frameLength);
+                termBuffer.putInt64(frameOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
 
-                FrameDescriptor::frameLengthOrdered(m_termBuffer, frameOffset, frameLength);
+                FrameDescriptor::frameLengthOrdered(termBuffer, frameOffset, frameLength);
 
                 flags = 0;
                 frameOffset += alignedLength;
@@ -841,7 +838,7 @@ private:
     }
 
     template <class BufferIterator> std::int64_t appendFragmentedMessage(
-        AtomicBuffer &m_termBuffer,
+        AtomicBuffer &termBuffer,
         const util::index_t tailCounterOffset,
         BufferIterator bufferIt,
         util::index_t length,
@@ -854,7 +851,7 @@ private:
         const util::index_t requiredLength =
             (numMaxPayloads * (m_maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
         const std::int64_t rawTail = m_logMetaDataBuffer.getAndAddInt64(tailCounterOffset, requiredLength);
-        const std::int32_t termLength = m_termBuffer.capacity();
+        const std::int32_t termLength = termBuffer.capacity();
         const std::int32_t termOffset = LogBufferDescriptor::termOffset(rawTail, termLength);
         const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
 
@@ -863,7 +860,7 @@ private:
             termId, resultingOffset, m_positionBitsToShift, m_initialTermId);
         if (resultingOffset > termLength)
         {
-            return handleEndOfLogCondition(m_termBuffer, termOffset, termLength, termId, position);
+            return handleEndOfLogCondition(termBuffer, termOffset, termLength, termId, position);
         }
         else
         {
@@ -878,7 +875,7 @@ private:
                 const util::index_t frameLength = bytesToWrite + DataFrameHeader::LENGTH;
                 const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
 
-                m_headerWriter.write(m_termBuffer, frameOffset, frameLength, termId);
+                m_headerWriter.write(termBuffer, frameOffset, frameLength, termId);
 
                 util::index_t bytesWritten = 0;
                 util::index_t payloadOffset = frameOffset + DataFrameHeader::LENGTH;
@@ -887,7 +884,7 @@ private:
                     const util::index_t currentBufferRemaining = bufferIt->capacity() - currentBufferOffset;
                     const util::index_t numBytes = std::min(bytesToWrite - bytesWritten, currentBufferRemaining);
 
-                    m_termBuffer.putBytes(payloadOffset, *bufferIt, currentBufferOffset, numBytes);
+                    termBuffer.putBytes(payloadOffset, *bufferIt, currentBufferOffset, numBytes);
 
                     bytesWritten += numBytes;
                     payloadOffset += numBytes;
@@ -906,12 +903,12 @@ private:
                     flags |= FrameDescriptor::END_FRAG;
                 }
 
-                FrameDescriptor::frameFlags(m_termBuffer, frameOffset, flags);
+                FrameDescriptor::frameFlags(termBuffer, frameOffset, flags);
 
-                const std::int64_t reservedValue = reservedValueSupplier(m_termBuffer, frameOffset, frameLength);
-                m_termBuffer.putInt64(frameOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
+                const std::int64_t reservedValue = reservedValueSupplier(termBuffer, frameOffset, frameLength);
+                termBuffer.putInt64(frameOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
 
-                FrameDescriptor::frameLengthOrdered(m_termBuffer, frameOffset, frameLength);
+                FrameDescriptor::frameLengthOrdered(termBuffer, frameOffset, frameLength);
 
                 flags = 0;
                 frameOffset += alignedLength;

@@ -39,7 +39,7 @@ using namespace aeron::concurrent::status;
  *
  * {@link ExclusivePublication}s have the potential to provide greater throughput than {@link Publication}s.
  *
- * The APIs used try claim and offer are non-blocking.
+ * The APIs for tryClaim and offer are non-blocking.
  *
  * <b>Note:</b> ExclusivePublication instances are NOT threadsafe for offer and try claim methods but are for others.
  *

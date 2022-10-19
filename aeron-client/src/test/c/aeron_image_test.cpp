@@ -114,14 +114,14 @@ public:
         int32_t resulting_offset = tail_offset + aligned_frame_length;
         metadata->term_tail_counters[index] = static_cast<int64_t>(term_id) << 32 | resulting_offset;
 
-        size_t term_length = term_buffer->length;
+        auto term_length = static_cast<int32_t>(term_buffer->length);
         auto *header = (aeron_data_header_t *)(term_buffer->addr + tail_offset);
 
         if (resulting_offset > term_length)
         {
             if (tail_offset < term_length)
             {
-                const int32_t padding_length = (int32_t)term_length - tail_offset;
+                const int32_t padding_length = term_length - tail_offset;
 
                 header->frame_header.version = AERON_FRAME_HEADER_VERSION;
                 header->frame_header.flags = AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG;

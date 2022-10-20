@@ -16,7 +16,6 @@
 package io.aeron;
 
 import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -579,18 +578,13 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         LogBufferDescriptor.activeTermCountOrdered(logMetaDataBuffer, termCount);
     }
 
-    private static int handleEndOfLogCondition(
-        final UnsafeBuffer termBuffer,
-        final long termOffset,
-        final HeaderWriter header,
-        final int termLength,
-        final int termId)
+    private int handleEndOfLog(final UnsafeBuffer termBuffer, final int termLength)
     {
         if (termOffset < termLength)
         {
-            final int offset = (int)termOffset;
+            final int offset = termOffset;
             final int paddingLength = termLength - offset;
-            header.write(termBuffer, offset, paddingLength, termId);
+            headerWriter.write(termBuffer, offset, paddingLength, termId);
             frameType(termBuffer, offset, PADDING_FRAME_TYPE);
             frameLengthOrdered(termBuffer, offset, paddingLength);
         }
@@ -615,7 +609,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
 
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+            resultingOffset = handleEndOfLog(termBuffer, termLength);
         }
         else
         {
@@ -653,7 +647,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
 
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+            resultingOffset = handleEndOfLog(termBuffer, termLength);
         }
         else
         {
@@ -718,7 +712,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
 
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+            resultingOffset = handleEndOfLog(termBuffer, termLength);
         }
         else
         {
@@ -762,7 +756,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
 
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+            resultingOffset = handleEndOfLog(termBuffer, termLength);
         }
         else
         {
@@ -847,7 +841,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
 
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+            resultingOffset = handleEndOfLog(termBuffer, termLength);
         }
         else
         {
@@ -890,7 +884,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
 
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+            resultingOffset = handleEndOfLog(termBuffer, termLength);
         }
         else
         {
@@ -970,7 +964,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
 
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+            resultingOffset = handleEndOfLog(termBuffer, termLength);
         }
         else
         {
@@ -995,7 +989,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
 
         if (resultingOffset > termLength)
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, headerWriter, termLength, termId);
+            resultingOffset = handleEndOfLog(termBuffer, termLength);
         }
         else
         {

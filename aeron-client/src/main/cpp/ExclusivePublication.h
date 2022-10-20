@@ -22,7 +22,6 @@
 #include <string>
 
 #include "Publication.h"
-#include "concurrent/logbuffer/ExclusiveTermAppender.h"
 
 namespace aeron
 {
@@ -184,7 +183,7 @@ public:
      */
     inline std::int32_t termBufferLength() const
     {
-        return m_appenders[0]->termBuffer().capacity();
+        return m_logBuffers->atomicBuffer(0).capacity();
     }
 
     /**
@@ -349,18 +348,19 @@ public:
         if (!isClosed())
         {
             const std::int64_t limit = m_publicationLimit.getVolatile();
-            ExclusiveTermAppender *termAppender = m_appenders[m_activePartitionIndex].get();
             const std::int64_t position = m_termBeginPosition + m_termOffset;
 
             if (position < limit)
             {
+                AtomicBuffer &termBuffer = m_logBuffers->atomicBuffer(m_activePartitionIndex);
+                util::index_t tailCounterOffset = LogBufferDescriptor::tailCounterOffset(m_activePartitionIndex);
                 std::int32_t result;
+
                 if (length <= m_maxPayloadLength)
                 {
-                    result = termAppender->appendUnfragmentedMessage(
-                        m_termId,
-                        m_termOffset,
-                        m_headerWriter,
+                    result = ExclusivePublication::appendUnfragmentedMessage(
+                        termBuffer,
+                        tailCounterOffset,
                         buffer,
                         offset,
                         length,
@@ -369,10 +369,9 @@ public:
                 else
                 {
                     checkMaxMessageLength(length);
-                    result = termAppender->appendFragmentedMessage(
-                        m_termId,
-                        m_termOffset,
-                        m_headerWriter,
+                    result = ExclusivePublication::appendFragmentedMessage(
+                        termBuffer,
+                        tailCounterOffset,
                         buffer,
                         offset,
                         length,
@@ -449,18 +448,19 @@ public:
         if (!isClosed())
         {
             const std::int64_t limit = m_publicationLimit.getVolatile();
-            ExclusiveTermAppender *termAppender = m_appenders[m_activePartitionIndex].get();
             const std::int64_t position = m_termBeginPosition + m_termOffset;
 
             if (position < limit)
             {
+                AtomicBuffer &termBuffer = m_logBuffers->atomicBuffer(m_activePartitionIndex);
+                util::index_t tailCounterOffset = LogBufferDescriptor::tailCounterOffset(m_activePartitionIndex);
                 std::int32_t result;
+
                 if (length <= m_maxPayloadLength)
                 {
-                    result = termAppender->appendUnfragmentedMessage(
-                        m_termId,
-                        m_termOffset,
-                        m_headerWriter,
+                    result = ExclusivePublication::appendUnfragmentedMessage(
+                        termBuffer,
+                        tailCounterOffset,
                         startBuffer,
                         length,
                         reservedValueSupplier);
@@ -468,10 +468,9 @@ public:
                 else
                 {
                     checkMaxMessageLength(length);
-                    result = termAppender->appendFragmentedMessage(
-                        m_termId,
-                        m_termOffset,
-                        m_headerWriter,
+                    result = ExclusivePublication::appendFragmentedMessage(
+                        termBuffer,
+                        tailCounterOffset,
                         startBuffer,
                         length,
                         m_maxPayloadLength,
@@ -562,13 +561,15 @@ public:
         if (AERON_COND_EXPECT((!isClosed()), true))
         {
             const std::int64_t limit = m_publicationLimit.getVolatile();
-            ExclusiveTermAppender *termAppender = m_appenders[m_activePartitionIndex].get();
             const std::int64_t position = m_termBeginPosition + m_termOffset;
 
             if (AERON_COND_EXPECT((position < limit), true))
             {
-                const std::int32_t result = termAppender->claim(
-                    m_termId, m_termOffset, m_headerWriter, length, bufferClaim);
+                AtomicBuffer &termBuffer = m_logBuffers->atomicBuffer(m_activePartitionIndex);
+                util::index_t tailCounterOffset = LogBufferDescriptor::tailCounterOffset(m_activePartitionIndex);
+                const std::int32_t result = ExclusivePublication::claim(
+                    termBuffer, tailCounterOffset, length, bufferClaim);
+
                 newPosition = ExclusivePublication::newPosition(result);
             }
             else
@@ -648,7 +649,6 @@ private:
     std::atomic<bool> m_isClosed = { false };
 
     std::shared_ptr<LogBuffers> m_logBuffers;
-    std::unique_ptr<ExclusiveTermAppender> m_appenders[3];
     HeaderWriter m_headerWriter;
 
     inline std::int64_t newPosition(const std::int32_t resultingOffset)
@@ -715,6 +715,273 @@ private:
                 "message exceeds maxPayloadLength=" + std::to_string(m_maxPayloadLength) +
                 ", length=" + std::to_string(length), SOURCEINFO);
         }
+    }
+
+    inline static std::int64_t packTail(std::int32_t termId, std::int32_t termOffset)
+    {
+        return (termId * ((INT64_C(1) << 32))) | uint32_t(termOffset);
+    }
+
+    inline std::int32_t handleEndOfLogCondition(AtomicBuffer &termBuffer, util::index_t termLength)
+    {
+        if (m_termOffset < termLength)
+        {
+            const std::int32_t paddingLength = termLength - m_termOffset;
+            m_headerWriter.write(termBuffer, m_termOffset, paddingLength, m_termId);
+            FrameDescriptor::frameType(termBuffer, m_termOffset, DataFrameHeader::HDR_TYPE_PAD);
+            FrameDescriptor::frameLengthOrdered(termBuffer, m_termOffset, paddingLength);
+        }
+
+        return -2;
+    }
+
+    inline std::int32_t appendUnfragmentedMessage(
+        AtomicBuffer &termBuffer,
+        std::int32_t tailCounterOffset,
+        const AtomicBuffer &srcBuffer,
+        util::index_t srcOffset,
+        util::index_t length,
+        const on_reserved_value_supplier_t &reservedValueSupplier)
+    {
+        const util::index_t frameLength = length + DataFrameHeader::LENGTH;
+        const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+
+        const std::int32_t termLength = termBuffer.capacity();
+
+        std::int32_t resultingOffset = m_termOffset + alignedLength;
+        m_logMetaDataBuffer.putInt64Ordered(tailCounterOffset, packTail(m_termId, resultingOffset));
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termLength);
+        }
+        else
+        {
+            m_headerWriter.write(termBuffer, m_termOffset, frameLength, m_termId);
+            termBuffer.putBytes(m_termOffset + DataFrameHeader::LENGTH, srcBuffer, srcOffset, length);
+
+            const std::int64_t reservedValue = reservedValueSupplier(termBuffer, m_termOffset, frameLength);
+            termBuffer.putInt64(m_termOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
+
+            FrameDescriptor::frameLengthOrdered(termBuffer, m_termOffset, frameLength);
+        }
+
+        return resultingOffset;
+    }
+
+    std::int32_t appendFragmentedMessage(
+        AtomicBuffer &termBuffer,
+        std::int32_t tailCounterOffset,
+        const AtomicBuffer &srcBuffer,
+        util::index_t srcOffset,
+        util::index_t length,
+        util::index_t maxPayloadLength,
+        const on_reserved_value_supplier_t &reservedValueSupplier)
+    {
+        const int numMaxPayloads = length / maxPayloadLength;
+        const util::index_t remainingPayload = length % maxPayloadLength;
+        const util::index_t lastFrameLength = remainingPayload > 0 ?
+            util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
+        const util::index_t requiredLength =
+            (numMaxPayloads * (maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
+
+        const std::int32_t termLength = termBuffer.capacity();
+
+        std::int32_t resultingOffset = m_termOffset + requiredLength;
+        m_logMetaDataBuffer.putInt64Ordered(tailCounterOffset, packTail(m_termId, resultingOffset));
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termLength);
+        }
+        else
+        {
+            std::uint8_t flags = FrameDescriptor::BEGIN_FRAG;
+            util::index_t remaining = length;
+            auto offset = static_cast<std::int32_t>(m_termOffset);
+
+            do
+            {
+                const util::index_t bytesToWrite = std::min(remaining, maxPayloadLength);
+                const util::index_t frameLength = bytesToWrite + DataFrameHeader::LENGTH;
+                const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+
+                m_headerWriter.write(termBuffer, offset, frameLength, m_termId);
+                termBuffer.putBytes(
+                    offset + DataFrameHeader::LENGTH,
+                    srcBuffer,
+                    srcOffset + (length - remaining),
+                    bytesToWrite);
+
+                if (remaining <= maxPayloadLength)
+                {
+                    flags |= FrameDescriptor::END_FRAG;
+                }
+
+                FrameDescriptor::frameFlags(termBuffer, offset, flags);
+
+                const std::int64_t reservedValue = reservedValueSupplier(termBuffer, offset, frameLength);
+                termBuffer.putInt64(offset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
+
+                FrameDescriptor::frameLengthOrdered(termBuffer, offset, frameLength);
+
+                flags = 0;
+                offset += alignedLength;
+                remaining -= bytesToWrite;
+            }
+            while (remaining > 0);
+        }
+
+        return resultingOffset;
+    }
+
+    template <class BufferIterator> inline std::int32_t appendUnfragmentedMessage(
+        AtomicBuffer &termBuffer,
+        std::int32_t tailCounterOffset,
+        BufferIterator bufferIt,
+        util::index_t length,
+        const on_reserved_value_supplier_t &reservedValueSupplier)
+    {
+        const util::index_t frameLength = length + DataFrameHeader::LENGTH;
+        const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+
+        const std::int32_t termLength = termBuffer.capacity();
+
+        std::int32_t resultingOffset = m_termOffset + alignedLength;
+        m_logMetaDataBuffer.putInt64Ordered(tailCounterOffset, packTail(m_termId, resultingOffset));
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termLength);
+        }
+        else
+        {
+            m_headerWriter.write(termBuffer, m_termOffset, frameLength, m_termId);
+
+            std::int32_t offset = m_termOffset + DataFrameHeader::LENGTH;
+            for (
+                std::int32_t endingOffset = offset + length;
+                offset < endingOffset;
+                offset += bufferIt->capacity(), ++bufferIt)
+            {
+                termBuffer.putBytes(offset, *bufferIt, 0, bufferIt->capacity());
+            }
+
+            const std::int64_t reservedValue = reservedValueSupplier(termBuffer, m_termOffset, frameLength);
+            termBuffer.putInt64(m_termOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
+
+            FrameDescriptor::frameLengthOrdered(termBuffer, m_termOffset, frameLength);
+        }
+
+        return resultingOffset;
+    }
+
+    template <class BufferIterator> std::int32_t appendFragmentedMessage(
+        AtomicBuffer &termBuffer,
+        std::int32_t tailCounterOffset,
+        BufferIterator bufferIt,
+        util::index_t length,
+        util::index_t maxPayloadLength,
+        const on_reserved_value_supplier_t &reservedValueSupplier)
+    {
+        const int numMaxPayloads = length / maxPayloadLength;
+        const util::index_t remainingPayload = length % maxPayloadLength;
+        const util::index_t lastFrameLength = (remainingPayload > 0) ?
+            util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
+        const util::index_t requiredLength =
+            (numMaxPayloads * (maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
+
+        const std::int32_t termLength = termBuffer.capacity();
+
+        std::int32_t resultingOffset = m_termOffset + requiredLength;
+        m_logMetaDataBuffer.putInt64Ordered(tailCounterOffset, packTail(m_termId, resultingOffset));
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termLength);
+        }
+        else
+        {
+            std::uint8_t flags = FrameDescriptor::BEGIN_FRAG;
+            util::index_t remaining = length;
+            auto offset = static_cast<std::int32_t>(m_termOffset);
+            util::index_t currentBufferOffset = 0;
+
+            do
+            {
+                const util::index_t bytesToWrite = std::min(remaining, maxPayloadLength);
+                const util::index_t frameLength = bytesToWrite + DataFrameHeader::LENGTH;
+                const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+
+                m_headerWriter.write(termBuffer, offset, frameLength, m_termId);
+
+                util::index_t bytesWritten = 0;
+                util::index_t payloadOffset = offset + DataFrameHeader::LENGTH;
+                do
+                {
+                    const util::index_t currentBufferRemaining = bufferIt->capacity() - currentBufferOffset;
+                    const util::index_t numBytes = std::min(bytesToWrite - bytesWritten, currentBufferRemaining);
+
+                    termBuffer.putBytes(payloadOffset, *bufferIt, currentBufferOffset, numBytes);
+
+                    bytesWritten += numBytes;
+                    payloadOffset += numBytes;
+                    currentBufferOffset += numBytes;
+
+                    if (currentBufferRemaining <= numBytes)
+                    {
+                        ++bufferIt;
+                        currentBufferOffset = 0;
+                    }
+                }
+                while (bytesWritten < bytesToWrite);
+
+                if (remaining <= maxPayloadLength)
+                {
+                    flags |= FrameDescriptor::END_FRAG;
+                }
+
+                FrameDescriptor::frameFlags(termBuffer, offset, flags);
+
+                const std::int64_t reservedValue = reservedValueSupplier(termBuffer, offset, frameLength);
+                termBuffer.putInt64(offset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
+
+                FrameDescriptor::frameLengthOrdered(termBuffer, offset, frameLength);
+
+                flags = 0;
+                offset += alignedLength;
+                remaining -= bytesToWrite;
+            }
+            while (remaining > 0);
+        }
+
+        return resultingOffset;
+    }
+
+    inline std::int32_t claim(
+        AtomicBuffer &termBuffer,
+        std::int32_t tailCounterOffset,
+        util::index_t length,
+        BufferClaim &bufferClaim)
+    {
+        const util::index_t frameLength = length + DataFrameHeader::LENGTH;
+        const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+
+        const std::int32_t termLength = termBuffer.capacity();
+        std::int32_t resultingOffset = m_termOffset + alignedLength;
+        m_logMetaDataBuffer.putInt64Ordered(tailCounterOffset, packTail(m_termId, resultingOffset));
+
+        if (AERON_COND_EXPECT((resultingOffset > termLength), false))
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termLength);
+        }
+        else
+        {
+            m_headerWriter.write(termBuffer, m_termOffset, frameLength, m_termId);
+            bufferClaim.wrap(termBuffer, m_termOffset, frameLength);
+        }
+
+        return resultingOffset;
     }
 };
 

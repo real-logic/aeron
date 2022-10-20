@@ -50,19 +50,9 @@ ExclusivePublication::ExclusivePublication(
     m_logBuffers(std::move(logBuffers)),
     m_headerWriter(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer))
 {
-    for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
-    {
-        /*
-         * Perhaps allow copy-construction and be able to move appenders and AtomicBuffers directly into Publication
-         * for locality.
-         */
-        m_appenders[i] = std::unique_ptr<ExclusiveTermAppender>(new ExclusiveTermAppender(
-            m_logBuffers->atomicBuffer(i),
-            m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX),
-            i));
-    }
+    const util::index_t tailCounterOffset = LogBufferDescriptor::tailCounterOffset(m_activePartitionIndex);
+    const std::int64_t rawTail = m_logMetaDataBuffer.getInt64Volatile(tailCounterOffset);
 
-    const std::int64_t rawTail = m_appenders[m_activePartitionIndex]->rawTail();
     m_termId = LogBufferDescriptor::termId(rawTail);
     m_termOffset = LogBufferDescriptor::termOffset(rawTail, m_logBuffers->atomicBuffer(0).capacity());
     m_termBeginPosition = LogBufferDescriptor::computeTermBeginPosition(
@@ -112,7 +102,7 @@ std::int64_t ExclusivePublication::channelStatus() const
 
 std::vector<std::string> ExclusivePublication::localSocketAddresses() const
 {
-    return LocalSocketAddressStatus::findAddresses(m_conductor.countersReader(), channelStatus(), channelStatusId());
+    return LocalSocketAddressStatus::findAddresses(m_conductor.countersReader(), channelStatus(), m_channelStatusId);
 }
 
 }

@@ -332,14 +332,14 @@ class ServiceIpcIngressMessageTest
         assertEquals(
             messageCount,
             clientMessages.size(),
-            () -> "Invalid client message count: " + leader);
+            () -> "Invalid client message count on leader: " + leader);
         assertEquals(
             messageCount * 3 * numberOfTrackingServices,
             serviceMessages.size(),
-            () -> "Invalid service message count: " + leader);
+            () -> "Invalid service message count on leader: " + leader);
         assertEquals(messageCount * 2 * numberOfTrackingServices,
             timers.size(),
-            () -> "Invalid timer event count: " + leader);
+            () -> "Invalid timer event count on leader: " + leader);
 
         for (int i = 0; i < 3; i++)
         {
@@ -364,22 +364,22 @@ class ServiceIpcIngressMessageTest
             final IntArrayList actualClientMessages = trackingService.clientMessages();
             if (!expectedClientMessages.equals(actualClientMessages))
             {
-                fail("memberId=" + node.index() + ", role=" + node.role() + ": Client messages diverged:\n expected=" +
-                    expectedClientMessages + "\n   actual=" + actualClientMessages);
+                fail("memberId=" + node.index() + ", role=" + node.role() + ": Client messages diverged: expected=" +
+                    expectedClientMessages.size() + ", actual=" + actualClientMessages.size());
             }
 
             final IntArrayList actualServiceMessages = trackingService.serviceMessages();
             if (!expectedServiceMessages.equals(actualServiceMessages))
             {
-                fail("memberId=" + node.index() + ", role=" + node.role() + ": Service messages diverged:\n expected=" +
-                    expectedServiceMessages + "\n   actual=" + actualServiceMessages);
+                fail("memberId=" + node.index() + ", role=" + node.role() + ": Service messages diverged: expected=" +
+                    expectedServiceMessages.size() + ", actual=" + actualServiceMessages.size());
             }
 
             final LongArrayList actualTimers = trackingService.timers();
             if (!expectedTimers.equals(actualTimers))
             {
-                fail("memberId=" + node.index() + ", role=" + node.role() + ": Timers diverged:\n expected=" +
-                    expectedTimers + "\n   actual=" + actualTimers);
+                fail("memberId=" + node.index() + ", role=" + node.role() + ": Timers diverged: expected=" +
+                    expectedTimers.size() + ", actual=" + actualTimers.size());
             }
         }
     }

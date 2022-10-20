@@ -272,9 +272,7 @@ inline void endOfStreamPosition(AtomicBuffer &logMetaDataBuffer, std::int64_t po
     logMetaDataBuffer.putInt64Ordered(LOG_END_OF_STREAM_POSITION_OFFSET, position);
 }
 
-inline std::int32_t computeTermCount(
-    std::int32_t termId,
-    std::int32_t initialTermId) noexcept
+inline std::int32_t computeTermCount(std::int32_t termId, std::int32_t initialTermId) noexcept
 {
     const std::int64_t difference = static_cast<std::int64_t>(termId) - static_cast<std::int64_t>(initialTermId);
     return static_cast<std::int32_t>(difference & 0xFFFFFFFF);
@@ -353,8 +351,7 @@ inline bool casRawTail(
     AtomicBuffer &logMetaDataBuffer, int partitionIndex, std::int64_t expectedRawTail, std::int64_t updateRawTail)
 {
     util::index_t index = TERM_TAIL_COUNTER_OFFSET + static_cast<util::index_t>(partitionIndex * sizeof(std::int64_t));
-    return logMetaDataBuffer.compareAndSetInt64(
-        index, expectedRawTail, updateRawTail);
+    return logMetaDataBuffer.compareAndSetInt64(index, expectedRawTail, updateRawTail);
 }
 
 inline std::int32_t tailCounterOffset(int partitionIndex)

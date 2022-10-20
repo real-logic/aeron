@@ -270,9 +270,7 @@ inline void endOfStreamPosition(AtomicBuffer &logMetaDataBuffer, std::int64_t po
     logMetaDataBuffer.putInt64Ordered(LOG_END_OF_STREAM_POSITION_OFFSET, position);
 }
 
-inline std::int32_t computeTermCount(
-    std::int32_t termId,
-    std::int32_t initialTermId) noexcept
+inline std::int32_t computeTermCount(std::int32_t termId, std::int32_t initialTermId) noexcept
 {
     const std::int64_t difference = static_cast<std::int64_t>(termId) - static_cast<std::int64_t>(initialTermId);
     return static_cast<std::int32_t>(difference & 0xFFFFFFFF);
@@ -299,37 +297,41 @@ inline std::int64_t computePosition(
     std::int32_t positionBitsToShift,
     std::int32_t initialTermId) noexcept
 {
-    const std::int64_t termCount = static_cast<std::int64_t>(computeTermCount(activeTermId, initialTermId));
+    auto termCount = static_cast<std::int64_t>(computeTermCount(activeTermId, initialTermId));
     return (termCount << positionBitsToShift) + termOffset;
 }
 
 inline std::int64_t computeTermBeginPosition(
     std::int32_t activeTermId, std::int32_t positionBitsToShift, std::int32_t initialTermId) noexcept
 {
-    const std::int64_t termCount = static_cast<std::int64_t>(computeTermCount(activeTermId, initialTermId));
+    auto termCount = static_cast<std::int64_t>(computeTermCount(activeTermId, initialTermId));
     return termCount << positionBitsToShift;
 }
 
 inline std::int64_t rawTailVolatile(const AtomicBuffer &logMetaDataBuffer)
 {
     const std::int32_t partitionIndex = indexByTermCount(activeTermCount(logMetaDataBuffer));
-    return logMetaDataBuffer.getInt64Volatile(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
+    util::index_t index = TERM_TAIL_COUNTER_OFFSET + static_cast<util::index_t>(partitionIndex * sizeof(std::int64_t));
+    return logMetaDataBuffer.getInt64Volatile(index);
 }
 
 inline std::int64_t rawTailVolatile(const AtomicBuffer &logMetaDataBuffer, int partitionIndex)
 {
-    return logMetaDataBuffer.getInt64Volatile(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
+    util::index_t index = TERM_TAIL_COUNTER_OFFSET + static_cast<util::index_t>(partitionIndex * sizeof(std::int64_t));
+    return logMetaDataBuffer.getInt64Volatile(index);
 }
 
 inline std::int64_t rawTail(const AtomicBuffer &logMetaDataBuffer)
 {
     const std::int32_t partitionIndex = indexByTermCount(activeTermCount(logMetaDataBuffer));
-    return logMetaDataBuffer.getInt64(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
+    util::index_t index = TERM_TAIL_COUNTER_OFFSET + static_cast<util::index_t>(partitionIndex * sizeof(std::int64_t));
+    return logMetaDataBuffer.getInt64(index);
 }
 
 inline std::int64_t rawTail(const AtomicBuffer &logMetaDataBuffer, int partitionIndex)
 {
-    return logMetaDataBuffer.getInt64(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
+    util::index_t index = TERM_TAIL_COUNTER_OFFSET + static_cast<util::index_t>(partitionIndex * sizeof(std::int64_t));
+    return logMetaDataBuffer.getInt64(index);
 }
 
 inline std::int32_t termId(const std::int64_t rawTail)
@@ -346,8 +348,8 @@ inline std::int32_t termOffset(const std::int64_t rawTail, const std::int64_t te
 inline bool casRawTail(
     AtomicBuffer &logMetaDataBuffer, int partitionIndex, std::int64_t expectedRawTail, std::int64_t updateRawTail)
 {
-    return logMetaDataBuffer.compareAndSetInt64(
-        TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)), expectedRawTail, updateRawTail);
+    util::index_t index = TERM_TAIL_COUNTER_OFFSET + static_cast<util::index_t>(partitionIndex * sizeof(std::int64_t));
+    return logMetaDataBuffer.compareAndSetInt64(index, expectedRawTail, updateRawTail);
 }
 
 inline std::int32_t tailCounterOffset(int partitionIndex)
@@ -386,7 +388,8 @@ inline void rotateLog(AtomicBuffer &logMetaDataBuffer, std::int32_t currentTermC
 inline void initializeTailWithTermId(AtomicBuffer &logMetaDataBuffer, int partitionIndex, std::int32_t termId)
 {
     const std::int64_t rawTail = static_cast<std::int64_t>(termId) << 32;
-    logMetaDataBuffer.putInt64(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)), rawTail);
+    util::index_t index = TERM_TAIL_COUNTER_OFFSET + static_cast<util::index_t>(partitionIndex * sizeof(std::int64_t));
+    logMetaDataBuffer.putInt64(index, rawTail);
 }
 
 }

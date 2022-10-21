@@ -17,13 +17,13 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 import io.aeron.ConcurrentPublication;
-import io.aeron.Counter;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.UnavailableCounterHandler;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.driver.DutyCycleTracker;
 import io.aeron.logbuffer.BufferClaim;
+import io.aeron.test.CountersAnswer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
@@ -88,19 +88,8 @@ class ClusteredServiceAgentTest
         final CountersManager countersManager = new CountersManager(
             new UnsafeBuffer(new byte[64 * 1024]), new UnsafeBuffer(new byte[16 * 1024]));
 
-        when(aeron.addCounter(anyInt(), any(), anyInt(), anyInt(), any(), anyInt(), anyInt())).then(
-            (invocation) ->
-            {
-                final int counterId = countersManager.allocate(
-                    invocation.getArgument(0, Integer.class),
-                    invocation.getArgument(1, DirectBuffer.class),
-                    invocation.getArgument(2, Integer.class),
-                    invocation.getArgument(3, Integer.class),
-                    invocation.getArgument(4, DirectBuffer.class),
-                    invocation.getArgument(5, Integer.class),
-                    invocation.getArgument(6, Integer.class));
-                return new Counter(countersManager, 0, counterId);
-            });
+        when(aeron.addCounter(anyInt(), any(), anyInt(), anyInt(), any(), anyInt(), anyInt()))
+            .then(CountersAnswer.mapTo(countersManager));
 
         RecoveryState.allocate(aeron, NULL_VALUE, 0, 0, 0, 0);
 

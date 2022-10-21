@@ -3244,9 +3244,9 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @param aeron client for communicating with the local Media Driver.
          * @return this for a fluent API.
-         * @see Aeron#connect()
-         * @see Aeron.Context#useConductorAgentInvoker(boolean)
-         * @see Context#aeronDirectoryName(String)
+         * @see io.aeron.Aeron#connect()
+         * @see io.aeron.Aeron.Context#useConductorAgentInvoker(boolean)
+         * @see #aeronDirectoryName(String)
          */
         public Context aeron(final Aeron aeron)
         {

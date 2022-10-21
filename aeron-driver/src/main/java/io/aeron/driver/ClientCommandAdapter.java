@@ -18,6 +18,7 @@ package io.aeron.driver;
 import io.aeron.ErrorCode;
 import io.aeron.command.*;
 import io.aeron.exceptions.ControlProtocolException;
+import io.aeron.exceptions.InsufficientUsableStorageException;
 import org.agrona.ErrorHandler;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.ControlledMessageHandler;
@@ -27,6 +28,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.ErrorCode.GENERIC_ERROR;
+import static io.aeron.ErrorCode.INSUFFICIENT_USABLE_STORAGE;
 import static io.aeron.command.ControlProtocolEvents.*;
 
 /**
@@ -275,6 +277,11 @@ final class ClientCommandAdapter implements ControlledMessageHandler
         {
             recordError(ex);
             clientProxy.onError(correlationId, ex.errorCode(), ex.getMessage());
+        }
+        catch (final InsufficientUsableStorageException ex)
+        {
+            recordError(ex);
+            clientProxy.onError(correlationId, INSUFFICIENT_USABLE_STORAGE, ex.getMessage());
         }
         catch (final Exception ex)
         {

@@ -16,7 +16,11 @@
 package io.aeron.driver.buffer;
 
 import io.aeron.exceptions.AeronException;
-import org.agrona.*;
+import io.aeron.exceptions.InsufficientUsableStorageException;
+import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -159,7 +163,7 @@ public class FileStoreLogFactory implements LogFactory
 
             if (usableSpace < logLength)
             {
-                throw new AeronException(
+                throw new InsufficientUsableStorageException(
                     "insufficient usable storage for new log of length=" + logLength + " in " + fileStore);
             }
 

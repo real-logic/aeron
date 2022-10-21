@@ -158,7 +158,8 @@ class RecordingReplicatorTest
     {
         createRecording(srcAeronArchive, IPC_CHANNEL, 555, 1);
         createRecording(srcAeronArchive, "aeron:udp?endpoint=localhost:8108", 666, 1);
-        final long srcRecordingId = createRecording(srcAeronArchive, IPC_CHANNEL + "?alias=third", 1010101010, 5);
+        final long srcRecordingId = createRecording(
+            srcAeronArchive, IPC_CHANNEL + "?alias=third", 1010101010, srcMessageCount);
 
         createRecording(dstAeronArchive, IPC_CHANNEL + "?alias=one", 111, 3);
         final long dstRecordingId = createRecording(

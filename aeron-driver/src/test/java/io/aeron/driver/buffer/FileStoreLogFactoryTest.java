@@ -40,8 +40,7 @@ import java.util.List;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeLogLength;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -174,8 +173,14 @@ class FileStoreLogFactoryTest
             try (FileStoreLogFactory logFactory = new FileStoreLogFactory(
                 DATA_DIR.getAbsolutePath(), PAGE_SIZE, true, lowStorageWarningThreshold, errorHandler))
             {
-                logFactory.newPublication(11, termLength, true);
-                logFactory.newImage(2222, termLength, false);
+                try (RawLog rawLog = logFactory.newPublication(11, termLength, true))
+                {
+                    assertNotNull(rawLog);
+                }
+                try (RawLog rawLog = logFactory.newImage(2222, termLength, false))
+                {
+                    assertNotNull(rawLog);
+                }
             }
         }
 

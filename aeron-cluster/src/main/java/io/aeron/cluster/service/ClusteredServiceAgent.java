@@ -26,6 +26,7 @@ import io.aeron.driver.Configuration;
 import io.aeron.driver.DutyCycleTracker;
 import io.aeron.exceptions.AeronEvent;
 import io.aeron.exceptions.AeronException;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
@@ -194,31 +195,52 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
 
         try
         {
-            if (checkForClockTick(nowNs))
-            {
-                pollServiceAdapter();
-                workCount += 1;
-            }
-
-            if (null != logAdapter.image())
-            {
-                final int polled = logAdapter.poll(commitPosition.get());
-                workCount += polled;
-
-                if (0 == polled && logAdapter.isDone())
-                {
-                    closeLog();
-                }
-            }
-
             try
             {
-                isBackgroundInvocation = true;
-                workCount += service.doBackgroundWork(nowNs);
+                if (checkForClockTick(nowNs))
+                {
+                    pollServiceAdapter();
+                    workCount += 1;
+                }
+
+                if (null != logAdapter.image())
+                {
+                    final int polled = logAdapter.poll(commitPosition.get());
+                    workCount += polled;
+
+                    if (0 == polled && logAdapter.isDone())
+                    {
+                        closeLog();
+                    }
+                }
+
+                try
+                {
+                    isBackgroundInvocation = true;
+                    workCount += service.doBackgroundWork(nowNs);
+                }
+                finally
+                {
+                    isBackgroundInvocation = false;
+                }
             }
-            finally
+            catch (final RegistrationException ex)
             {
-                isBackgroundInvocation = false;
+                if (ex.errorCode() == ErrorCode.INSUFFICIENT_USABLE_STORAGE)
+                {
+                    throw new AgentTerminationException(ex);
+                }
+
+                throw ex;
+            }
+            catch (final ArchiveException ex)
+            {
+                if (ex.errorCode() == ArchiveException.STORAGE_SPACE)
+                {
+                    throw new AgentTerminationException(ex);
+                }
+
+                throw ex;
             }
         }
         catch (final AgentTerminationException ex)
@@ -923,6 +945,15 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
             awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
 
             return recordingId;
+        }
+        catch (final RegistrationException ex)
+        {
+            if (ex.errorCode() == ErrorCode.INSUFFICIENT_USABLE_STORAGE)
+            {
+                throw new AgentTerminationException(ex);
+            }
+
+            throw ex;
         }
         catch (final ArchiveException ex)
         {

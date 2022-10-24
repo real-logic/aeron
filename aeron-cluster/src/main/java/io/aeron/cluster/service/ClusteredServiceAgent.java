@@ -226,7 +226,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
             }
             catch (final RegistrationException ex)
             {
-                if (ex.errorCode() == ErrorCode.INSUFFICIENT_USABLE_STORAGE)
+                if (ex.errorCode() == ErrorCode.STORAGE_SPACE)
                 {
                     throw new AgentTerminationException(ex);
                 }
@@ -948,7 +948,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
         }
         catch (final RegistrationException ex)
         {
-            if (ex.errorCode() == ErrorCode.INSUFFICIENT_USABLE_STORAGE)
+            if (ex.errorCode() == ErrorCode.STORAGE_SPACE)
             {
                 throw new AgentTerminationException(ex);
             }

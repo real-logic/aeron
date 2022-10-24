@@ -17,7 +17,7 @@ package io.aeron.driver.buffer;
 
 import io.aeron.driver.Configuration;
 import io.aeron.exceptions.AeronException;
-import io.aeron.exceptions.InsufficientUsableStorageException;
+import io.aeron.exceptions.StorageSpaceException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -138,13 +138,13 @@ class FileStoreLogFactoryTest
                 DATA_DIR.getAbsolutePath(), PAGE_SIZE, true, LOW_STORAGE_THRESHOLD, errorHandler))
             {
                 final int imageTermBufferLength = 64 * 1024;
-                assertThrowsInsufficientUsableStorageException(
+                assertThrowsStorageSpaceException(
                     fileStore,
                     imageTermBufferLength,
                     () -> logFactory.newImage(1, imageTermBufferLength, true));
 
                 final int publicationTermBufferLength = 1024 * 1024;
-                assertThrowsInsufficientUsableStorageException(
+                assertThrowsStorageSpaceException(
                     fileStore,
                     publicationTermBufferLength,
                     () -> logFactory.newPublication(2, publicationTermBufferLength, false));
@@ -198,11 +198,10 @@ class FileStoreLogFactoryTest
         verifyNoMoreInteractions(errorHandler);
     }
 
-    private static void assertThrowsInsufficientUsableStorageException(
+    private static void assertThrowsStorageSpaceException(
         final FileStore fileStore, final int termBufferLength, final Executable executable)
     {
-        final InsufficientUsableStorageException exception = assertThrowsExactly(
-            InsufficientUsableStorageException.class, executable);
+        final StorageSpaceException exception = assertThrowsExactly(StorageSpaceException.class, executable);
         assertEquals(
             "ERROR - insufficient usable storage for new log of length=" +
             computeLogLength(termBufferLength, PAGE_SIZE) + " in " + fileStore,

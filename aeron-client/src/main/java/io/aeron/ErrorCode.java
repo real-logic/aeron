@@ -85,7 +85,7 @@ public enum ErrorCode
     /**
      * Aeron encountered insufficient storage space while adding a resource.
      */
-    INSUFFICIENT_USABLE_STORAGE(12),
+    STORAGE_SPACE(12),
 
     // *** Insert new codes above here.
 

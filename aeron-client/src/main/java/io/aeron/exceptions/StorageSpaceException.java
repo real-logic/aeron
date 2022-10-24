@@ -18,7 +18,7 @@ package io.aeron.exceptions;
 /**
  * A request to allocate a resource (e.g. log buffer) failed due to insufficient storage space available.
  */
-public class InsufficientUsableStorageException extends AeronException
+public class StorageSpaceException extends AeronException
 {
     private static final long serialVersionUID = -552384561600482276L;
 
@@ -27,7 +27,7 @@ public class InsufficientUsableStorageException extends AeronException
      *
      * @param message detail for the exception.
      */
-    public InsufficientUsableStorageException(final String message)
+    public StorageSpaceException(final String message)
     {
         super(message);
     }

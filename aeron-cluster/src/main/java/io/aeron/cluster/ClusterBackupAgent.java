@@ -298,7 +298,7 @@ public final class ClusterBackupAgent implements Agent
             }
             catch (final RegistrationException ex)
             {
-                if (ex.errorCode() == ErrorCode.INSUFFICIENT_USABLE_STORAGE)
+                if (ex.errorCode() == ErrorCode.STORAGE_SPACE)
                 {
                     ctx.countedErrorHandler().onError(ex);
                     throw new AgentTerminationException();

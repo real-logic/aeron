@@ -20,7 +20,7 @@ import io.aeron.command.ControlProtocolEvents;
 import io.aeron.command.PublicationMessageFlyweight;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ControlProtocolException;
-import io.aeron.exceptions.InsufficientUsableStorageException;
+import io.aeron.exceptions.StorageSpaceException;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
@@ -109,14 +109,14 @@ class ClientCommandAdapterTest
     }
 
     @Test
-    void shouldHandleInsufficientUsableSpaceException()
+    void shouldHandleStorageSpaceException()
     {
         final long clientId = 109;
         final long correlationId = 42;
         final int streamId = 100;
         final String channel = "aeron:ipc";
-        final InsufficientUsableStorageException exception = new InsufficientUsableStorageException("storage error");
-        final ErrorCode expectedErrorCode = ErrorCode.INSUFFICIENT_USABLE_STORAGE;
+        final StorageSpaceException exception = new StorageSpaceException("storage error");
+        final ErrorCode expectedErrorCode = ErrorCode.STORAGE_SPACE;
         final String expectedErrorMessage = exception.getMessage();
         doThrow(exception)
             .when(driverConductor)

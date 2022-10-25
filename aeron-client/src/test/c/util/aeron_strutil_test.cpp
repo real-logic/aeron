@@ -74,12 +74,26 @@ TEST_F(StrUtilTest, shouldFormatNumericStrings)
 
     EXPECT_STREQ("999", aeron_format_number_to_locale(999, buffer, sizeof(buffer)));
     EXPECT_STREQ("-999", aeron_format_number_to_locale(-999, buffer, sizeof(buffer)));
-    EXPECT_STREQ("999,999", aeron_format_number_to_locale(999999, buffer, sizeof(buffer)));
-    EXPECT_STREQ("-999,999", aeron_format_number_to_locale(-999999, buffer, sizeof(buffer)));
-    EXPECT_STREQ("999,999,999", aeron_format_number_to_locale(999999999, buffer, sizeof(buffer)));
-    EXPECT_STREQ("-999,999,999", aeron_format_number_to_locale(-999999999, buffer, sizeof(buffer)));
-    EXPECT_STREQ("10,000,000,000", aeron_format_number_to_locale(10000000000, buffer, sizeof(buffer)));
-    EXPECT_STREQ("-999,9", aeron_format_number_to_locale(-999999999, buffer, 7));
+
+    if (strcmp(localeconv()->thousands_sep, ".") == 0)
+    {
+        EXPECT_STREQ("999.999", aeron_format_number_to_locale(999999, buffer, sizeof(buffer)));
+        EXPECT_STREQ("-999.999", aeron_format_number_to_locale(-999999, buffer, sizeof(buffer)));
+        EXPECT_STREQ("999.999.999", aeron_format_number_to_locale(999999999, buffer, sizeof(buffer)));
+        EXPECT_STREQ("-999.999.999", aeron_format_number_to_locale(-999999999, buffer, sizeof(buffer)));
+        EXPECT_STREQ("10.000.000.000", aeron_format_number_to_locale(10000000000, buffer, sizeof(buffer)));
+        EXPECT_STREQ("-999.9", aeron_format_number_to_locale(-999999999, buffer, 7));
+    }
+    else
+    {
+        EXPECT_STREQ("999,999", aeron_format_number_to_locale(999999, buffer, sizeof(buffer)));
+        EXPECT_STREQ("-999,999", aeron_format_number_to_locale(-999999, buffer, sizeof(buffer)));
+        EXPECT_STREQ("999,999,999", aeron_format_number_to_locale(999999999, buffer, sizeof(buffer)));
+        EXPECT_STREQ("-999,999,999", aeron_format_number_to_locale(-999999999, buffer, sizeof(buffer)));
+        EXPECT_STREQ("10,000,000,000", aeron_format_number_to_locale(10000000000, buffer, sizeof(buffer)));
+        EXPECT_STREQ("-999,9", aeron_format_number_to_locale(-999999999, buffer, 7));
+    }
+
     EXPECT_LT(
         strlen(aeron_format_number_to_locale(INT64_MIN, buffer, sizeof(buffer))),
         (size_t)AERON_FORMAT_NUMBER_TO_LOCALE_STR_LEN);

@@ -35,7 +35,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
-import java.nio.ByteOrder;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -67,10 +66,6 @@ class TaggedFlowControlSystemTest
     private Subscription subscriptionA;
     private Subscription subscriptionB;
 
-    @SuppressWarnings("deprecation")
-    private static final long DEFAULT_GROUP_TAG = new UnsafeBuffer(BitUtil.fromHex(
-        PreferredMulticastFlowControl.PREFERRED_ASF_DEFAULT)).getLong(0, ByteOrder.LITTLE_ENDIAN);
-
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private final FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
     private final FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
@@ -87,20 +82,20 @@ class TaggedFlowControlSystemTest
 
         driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
-            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
             .flowControlReceiverTimeoutNs(TimeUnit.MILLISECONDS.toNanos(1000))
             .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
-            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
             .flowControlReceiverTimeoutNs(TimeUnit.MILLISECONDS.toNanos(1000))
             .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 
         driverA = TestMediaDriver.launch(driverAContext, testWatcher);
+
         driverB = TestMediaDriver.launch(driverBContext, testWatcher);
+
         clientA = Aeron.connect(
             new Aeron.Context()
                 .aeronDirectoryName(driverAContext.aeronDirectoryName()));
@@ -120,10 +115,8 @@ class TaggedFlowControlSystemTest
     private static Stream<Arguments> strategyConfigurations()
     {
         return Stream.of(
-            Arguments.of(new TaggedMulticastFlowControlSupplier(), DEFAULT_GROUP_TAG, null, "", ""),
             Arguments.of(new TaggedMulticastFlowControlSupplier(), null, null, "", "|gtag=-1"),
             Arguments.of(new TaggedMulticastFlowControlSupplier(), null, 2004L, "", "|gtag=2004"),
-            Arguments.of(null, DEFAULT_GROUP_TAG, null, "|fc=tagged", ""),
             Arguments.of(null, 2020L, 2020L, "|fc=tagged", ""),
             Arguments.of(null, null, null, "|fc=tagged,g:123", "|gtag=123"));
     }

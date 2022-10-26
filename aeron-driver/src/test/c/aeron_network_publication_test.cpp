@@ -176,6 +176,7 @@ protected:
             false,
             &m_system_counters) < 0)
         {
+            aeron_free(flow_control);
             return nullptr;
         }
 
@@ -184,10 +185,15 @@ protected:
         return publication;
     }
 
+    static uint64_t noSpaceAvailable(const char* path)
+    {
+        return 0;
+    }
+
+    aeron_driver_context_t *m_context = nullptr;
 private:
     aeron_clock_cache_t m_cached_clock = {};
     aeron_udp_channel_transport_bindings_t m_transport_bindings = {};
-    aeron_driver_context_t *m_context = nullptr;
     aeron_counters_manager_t m_counters_manager = {};
     aeron_system_counters_t m_system_counters = {};
     AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16) = {};
@@ -243,4 +249,12 @@ TEST_F(NetworkPublicationTest, shouldSendHeartbeatWhileSendingPeriodicSetups)
     aeron_network_publication_send(publication, time_ns);
     ASSERT_EQ(1, test_bindings_state->setup_count);
     ASSERT_EQ(3, test_bindings_state->heartbeat_count);
+}
+
+TEST_F(NetworkPublicationTest, shouldReturnStorageSpaceErrorIfNotEnoughStorageSpaceAvailable)
+{
+    m_context->usable_fs_space_func = noSpaceAvailable;
+    aeron_network_publication_t *publication = createPublication("aeron:udp?endpoint=localhost:23245");
+    ASSERT_EQ(nullptr, publication) << aeron_errmsg();
+    EXPECT_EQ(-AERON_ERROR_CODE_STORAGE_SPACE, aeron_errcode());
 }

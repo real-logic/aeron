@@ -36,6 +36,11 @@ static bool always_measure_rtt(void *state, int64_t now_ns)
     return true;
 }
 
+static uint64_t no_space_available(const char* path)
+{
+    return 0;
+}
+
 class PublicationImageTest : public ReceiverTestBase
 {
 };
@@ -374,7 +379,6 @@ TEST_F(PublicationImageTest, shouldTrackActiveTransportAccountBasedOnFrames)
     ASSERT_EQ(2, image->log_meta_data->active_transport_count);
 }
 
-
 TEST_F(PublicationImageTest, shouldTrackUnderRunningTransportsWithLastSmAndReceiverWindowLength)
 {
     struct sockaddr_storage addr = {}; // Don't really care what value this is.
@@ -457,4 +461,34 @@ TEST_F(PublicationImageTest, shouldTrackUnderRunningTransportsWithLastSmAndRecei
 
     ASSERT_EQ(2, bindings_state_dest1->sm_count);
     ASSERT_EQ(2, bindings_state_dest2->sm_count);
+}
+
+TEST_F(PublicationImageTest, shouldReturnStorageSpaceErrorIfNotEnoughStorageSpaceAvailable)
+{
+    const char *uri = "aeron:udp?endpoint=localhost:9090";
+    aeron_receive_channel_endpoint_t *endpoint = createMdsEndpoint();
+    int32_t stream_id = 1001;
+    int32_t session_id = 1000001;
+    int64_t registration_id = 0;
+
+    aeron_udp_channel_t *channel;
+    aeron_receive_destination_t *dest;
+
+    aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel, false);
+
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest,
+        channel,
+        channel,
+        m_context,
+        &m_counters_manager,
+        registration_id,
+        endpoint->channel_status.counter_id));
+    ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest));
+
+    m_context->usable_fs_space_func = no_space_available;
+    aeron_publication_image_t *image = createImage(endpoint, dest, stream_id, session_id);
+
+    ASSERT_EQ(nullptr, image) << aeron_errmsg();
+    EXPECT_EQ(-AERON_ERROR_CODE_STORAGE_SPACE, aeron_errcode());
 }

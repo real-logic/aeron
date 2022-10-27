@@ -220,8 +220,7 @@ subprojects {
             'aeron.use.windows.high.res.timer': 'true',
             'aeron.timer.interval': '100ms',
             'aeron.dir.delete.on.start': 'true',
-            'aeron.term.buffer.sparse.file': 'true',
-            'aeron.perform.storage.checks': 'false')
+            'aeron.term.buffer.sparse.file': 'true')
 
         javaLauncher.set(toolchainLauncher)
     }

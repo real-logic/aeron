@@ -20,10 +20,11 @@ import io.aeron.ErrorCode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,8 +42,9 @@ public class DriverSpaceTest
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
-    @Test
-    void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace()
+    @ParameterizedTest
+    @ValueSource(booleans = { true, false })
+    void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace(final boolean performStorageChecks)
     {
         final Path tempfsDir = new File("/mnt/tmp_aeron_dir").toPath();
         try
@@ -62,7 +64,8 @@ public class DriverSpaceTest
             .aeronDirectoryName(tempfsDir.resolve("aeron-no-space").toString())
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true)
-            .performStorageChecks(true);
+            .performStorageChecks(performStorageChecks)
+            .termBufferSparseFile(false);
 
         try (TestMediaDriver driver = TestMediaDriver.launch(context, systemTestWatcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))

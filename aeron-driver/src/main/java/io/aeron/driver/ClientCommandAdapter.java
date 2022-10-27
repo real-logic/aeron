@@ -25,6 +25,8 @@ import org.agrona.concurrent.ControlledMessageHandler;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
+import java.io.IOException;
+
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.ErrorCode.GENERIC_ERROR;
@@ -286,8 +288,21 @@ final class ClientCommandAdapter implements ControlledMessageHandler
         catch (final Exception ex)
         {
             recordError(ex);
-            final String errorMessage = ex.getClass().getName() + " : " + ex.getMessage();
-            clientProxy.onError(correlationId, GENERIC_ERROR, errorMessage);
+            boolean isLowStorage = false;
+            final Throwable cause = null != ex.getCause() ? ex.getCause() : ex;
+            if (cause instanceof IOException)
+            {
+                isLowStorage = "No space left on device".equals(cause.getMessage());
+            }
+            if (isLowStorage)
+            {
+                clientProxy.onError(correlationId, STORAGE_SPACE, ex.getMessage());
+            }
+            else
+            {
+                final String errorMessage = ex.getClass().getName() + " : " + ex.getMessage();
+                clientProxy.onError(correlationId, GENERIC_ERROR, errorMessage);
+            }
         }
 
         return Action.CONTINUE;

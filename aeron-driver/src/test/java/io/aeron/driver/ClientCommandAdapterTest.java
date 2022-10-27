@@ -22,13 +22,21 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.exceptions.StorageSpaceException;
 import org.agrona.ErrorHandler;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -83,7 +91,7 @@ class ClientCommandAdapterTest
         final long correlationId = 4213;
         final int streamId = -19;
         final String channel = "aeron:udp?alias=test|endpoint=localhost:8080";
-        final IllegalArgumentException exception = new IllegalArgumentException("dummy error");
+        final IllegalArgumentException exception = new IllegalArgumentException(new IOException("dummy error"));
         final ErrorCode expectedErrorCode = ErrorCode.GENERIC_ERROR;
         final String expectedErrorMessage = exception.getClass().getName() + " : " + exception.getMessage();
         doThrow(exception)
@@ -138,5 +146,48 @@ class ClientCommandAdapterTest
         inOrder.verify(errorHandler).onError(exception);
         inOrder.verify(clientProxy).onError(correlationId, expectedErrorCode, expectedErrorMessage);
         inOrder.verifyNoMoreInteractions();
+    }
+
+    @ParameterizedTest
+    @MethodSource("noSpaceLeftExceptions")
+    void shouldHandleNoSpaceLeftOnTheDeviceIOException(final Exception exception)
+    {
+        final long clientId = 109;
+        final long correlationId = 42;
+        final int streamId = 100;
+        final String channel = "aeron:ipc";
+        final ErrorCode expectedErrorCode = ErrorCode.STORAGE_SPACE;
+        final String expectedErrorMessage = exception.getMessage();
+        doAnswer(invocation ->
+        {
+            LangUtil.rethrowUnchecked(exception);
+            return null;
+        }).when(driverConductor)
+            .onAddIpcPublication(channel, streamId, correlationId, clientId, false);
+        publicationMsgFlyweight.wrap(buffer, 0)
+            .clientId(clientId)
+            .correlationId(correlationId);
+        publicationMsgFlyweight
+            .streamId(streamId)
+            .channel(channel);
+
+        clientCommandAdapter.onMessage(
+            ControlProtocolEvents.ADD_PUBLICATION, buffer, 0, publicationMsgFlyweight.length());
+
+        final InOrder inOrder = inOrder(driverConductor, errors, errorHandler, clientProxy);
+        inOrder.verify(driverConductor).onAddIpcPublication(channel, streamId, correlationId, clientId, false);
+        inOrder.verify(errors).isClosed();
+        inOrder.verify(errors).increment();
+        inOrder.verify(errorHandler).onError(exception);
+        inOrder.verify(clientProxy).onError(correlationId, expectedErrorCode, expectedErrorMessage);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    private static List<Throwable> noSpaceLeftExceptions()
+    {
+        return Arrays.asList(
+            new IOException("No space left on device"),
+            new UncheckedIOException(new IOException("No space left on device")),
+            new RuntimeException(new IOException("No space left on device")));
     }
 }

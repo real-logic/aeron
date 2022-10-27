@@ -21,6 +21,8 @@ import io.aeron.exceptions.RegistrationException;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
@@ -32,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+@EnabledOnOs(OS.LINUX)
 public class DriverSpaceTest
 {
     @RegisterExtension
@@ -61,7 +64,7 @@ public class DriverSpaceTest
             try
             {
                 aeron.addPublication("aeron:ipc?term-length=16m", 10001);
-                fail("Exception should be thrown");
+                fail("RegistrationException was not thrown");
             }
             catch (final RegistrationException ex)
             {

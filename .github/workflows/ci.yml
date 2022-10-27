@@ -71,13 +71,15 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: 8
-      - name: Setup small temp file system
+      - name: Setup small temp file system (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo mkdir -p /mnt/tmp_aeron_dir
           sudo mount -t tmpfs -o size=10M,mode=777 tmpfs /mnt/tmp_aeron_dir
       - name: Build with Gradle
         run: ./gradlew -x javadoc
-      - name: Remove small temp file system
+      - name: Remove small temp file system (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo umount /mnt/tmp_aeron_dir
           sudo rm -rf /mnt/tmp_aeron_dir

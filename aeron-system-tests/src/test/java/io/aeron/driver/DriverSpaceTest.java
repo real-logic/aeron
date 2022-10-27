@@ -51,9 +51,6 @@ public class DriverSpaceTest
             assumeTrue(Files.isDirectory(tempfsDir));
             assumeTrue(Files.isWritable(tempfsDir));
             final FileStore fileStore = Files.getFileStore(tempfsDir);
-            System.out.println("UsableSpace: " + fileStore.getUsableSpace());
-            System.out.println("TotalSpace: " + fileStore.getTotalSpace());
-            System.out.println("UnallocatedSpace: " + fileStore.getUnallocatedSpace());
             assumeTrue(fileStore.getUsableSpace() < (32 * 1024 * 1024), "Skipping as file system is too large");
         }
         catch (final IOException e)
@@ -64,7 +61,8 @@ public class DriverSpaceTest
         final MediaDriver.Context context = new MediaDriver.Context()
             .aeronDirectoryName(tempfsDir.resolve("aeron-no-space").toString())
             .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true);
+            .dirDeleteOnShutdown(true)
+            .performStorageChecks(true);
 
         try (TestMediaDriver driver = TestMediaDriver.launch(context, systemTestWatcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))

@@ -79,7 +79,7 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew -x javadoc
       - name: Remove small temp file system (Linux)
-        if: runner.os == 'Linux'
+        if: always() && runner.os == 'Linux'
         run: |
           sudo umount /mnt/tmp_aeron_dir
           sudo rm -rf /mnt/tmp_aeron_dir
@@ -264,6 +264,7 @@ jobs:
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Remove small temp file system
+        if: always()
         run: |
           sudo umount /mnt/tmp_aeron_dir
           sudo rm -rf /mnt/tmp_aeron_dir
@@ -466,6 +467,7 @@ jobs:
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Remove small temp file system
+        if: always()
         run: |
           sudo umount /mnt/tmp_aeron_dir
           sudo rm -rf /mnt/tmp_aeron_dir

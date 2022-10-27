@@ -71,8 +71,16 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: 8
+      - name: Setup small temp file system
+        run: |
+          sudo mkdir -p /mnt/tmp_aeron_dir
+          sudo mount -t tmpfs -o size=10M,mode=777 tmpfs /mnt/tmp_aeron_dir
       - name: Build with Gradle
         run: ./gradlew -x javadoc
+      - name: Remove small temp file system
+        run: |
+          sudo umount /mnt/tmp_aeron_dir
+          sudo rm -rf /mnt/tmp_aeron_dir
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -247,8 +255,16 @@ jobs:
           curl --retry ${INSTALL_COMPILER_RETRIES} -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
+      - name: Setup small temp file system
+        run: |
+          sudo mkdir -p /mnt/tmp_aeron_dir
+          sudo mount -t tmpfs -o size=10M,mode=777 tmpfs /mnt/tmp_aeron_dir
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+      - name: Remove small temp file system
+        run: |
+          sudo umount /mnt/tmp_aeron_dir
+          sudo rm -rf /mnt/tmp_aeron_dir
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -441,8 +457,16 @@ jobs:
           curl --retry ${INSTALL_COMPILER_RETRIES} -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
+      - name: Setup small temp file system
+        run: |
+          sudo mkdir -p /mnt/tmp_aeron_dir
+          sudo mount -t tmpfs -o size=10M,mode=777 tmpfs /mnt/tmp_aeron_dir
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+      - name: Remove small temp file system
+        run: |
+          sudo umount /mnt/tmp_aeron_dir
+          sudo rm -rf /mnt/tmp_aeron_dir
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

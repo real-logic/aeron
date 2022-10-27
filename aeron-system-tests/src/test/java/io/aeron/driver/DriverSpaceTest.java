@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -43,10 +44,17 @@ public class DriverSpaceTest
     @Test
     void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace()
     {
+        final Path tempfsDir = new File("/mnt/tmp_aeron_dir").toPath();
         try
         {
-            final FileStore fileStore = Files.getFileStore(new File("/mnt/tmp_aeron_dir").toPath());
-            assumeTrue(fileStore.getUnallocatedSpace() < (32 * 1024 * 1024), "Skipping as file system is too large");
+            assumeTrue(Files.exists(tempfsDir), () -> tempfsDir + " does not exist");
+            assumeTrue(Files.isDirectory(tempfsDir));
+            assumeTrue(Files.isWritable(tempfsDir));
+            final FileStore fileStore = Files.getFileStore(tempfsDir);
+            System.out.println("UsableSpace: " + fileStore.getUsableSpace());
+            System.out.println("TotalSpace: " + fileStore.getTotalSpace());
+            System.out.println("UnallocatedSpace: " + fileStore.getUnallocatedSpace());
+            assumeTrue(fileStore.getUsableSpace() < (32 * 1024 * 1024), "Skipping as file system is too large");
         }
         catch (final IOException e)
         {
@@ -54,7 +62,7 @@ public class DriverSpaceTest
         }
 
         final MediaDriver.Context context = new MediaDriver.Context()
-            .aeronDirectoryName("/mnt/tmp_aeron_dir/aeron")
+            .aeronDirectoryName(tempfsDir.resolve("aeron-no-space").toString())
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true);
 

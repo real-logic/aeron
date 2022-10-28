@@ -268,7 +268,8 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         final int lineFeedIndex = encodedException.indexOf('\n');
         if (lineFeedIndex > 0)
         {
-            final int endOfMessageIndex = '\r' != encodedException.charAt(lineFeedIndex - 1) ? lineFeedIndex : lineFeedIndex - 1;
+            final int endOfMessageIndex =
+                '\r' != encodedException.charAt(lineFeedIndex - 1) ? lineFeedIndex : lineFeedIndex - 1;
             errorMessage = encodedException.substring(0, endOfMessageIndex);
         }
         else

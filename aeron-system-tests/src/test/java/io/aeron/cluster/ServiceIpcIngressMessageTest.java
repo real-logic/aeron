@@ -28,7 +28,6 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.LongArrayList;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -44,13 +43,6 @@ class ServiceIpcIngressMessageTest
 {
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
-
-    @BeforeEach
-    void setUp()
-    {
-        systemTestWatcher.ignoreErrorsMatching(
-            (s) -> s.contains("ats_gcm_decrypt final_ex: error:00000000:lib(0):func(0):reason(0)"));
-    }
 
     @AfterEach
     void tearDown()

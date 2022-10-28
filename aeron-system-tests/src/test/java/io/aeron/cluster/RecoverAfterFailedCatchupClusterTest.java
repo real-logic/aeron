@@ -25,7 +25,6 @@ import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import net.bytebuddy.asm.Advice;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -49,13 +48,6 @@ class RecoverAfterFailedCatchupClusterTest
     {
         clusterInstrumentor = new ClusterInstrumentor(
             FailFirstFollowerCatchup.class, "Election", "state");
-    }
-
-    @BeforeEach
-    void setUp()
-    {
-        systemTestWatcher.ignoreErrorsMatching(
-            (s) -> s.contains("ats_gcm_decrypt final_ex: error:00000000:lib(0):func(0):reason(0)"));
     }
 
     public static class FailFirstFollowerCatchup

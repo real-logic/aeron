@@ -15,10 +15,13 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.test.*;
+import io.aeron.test.EventLogExtension;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SlowTest;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -37,13 +40,6 @@ class DynamicMembershipTest
 
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
-
-    @BeforeEach
-    void setUp()
-    {
-        systemTestWatcher.ignoreErrorsMatching(
-            (s) -> s.contains("ats_gcm_decrypt final_ex: error:00000000:lib(0):func(0):reason(0)"));
-    }
 
     @Test
     @InterruptAfter(30)

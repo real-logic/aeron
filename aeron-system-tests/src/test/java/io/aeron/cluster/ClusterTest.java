@@ -27,14 +27,18 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.security.AuthorisationService;
-import io.aeron.test.*;
+import io.aeron.test.EventLogExtension;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SlowTest;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,13 +70,6 @@ class ClusterTest
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private TestCluster cluster = null;
-
-    @BeforeEach
-    void setUp()
-    {
-        systemTestWatcher.ignoreErrorsMatching(
-            (s) -> s.contains("ats_gcm_decrypt final_ex: error:00000000:lib(0):func(0):reason(0)"));
-    }
 
     @Test
     @InterruptAfter(30)

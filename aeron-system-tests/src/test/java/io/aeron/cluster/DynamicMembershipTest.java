@@ -48,7 +48,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldQueryClusterMembers(final TestInfo testInfo)
+    void shouldQueryClusterMembers()
     {
         cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -63,7 +63,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldDynamicallyJoinClusterOfThreeNoSnapshots(final TestInfo testInfo)
+    void shouldDynamicallyJoinClusterOfThreeNoSnapshots()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);
@@ -82,7 +82,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldDynamicallyJoinClusterOfThreeNoSnapshotsThenSend(final TestInfo testInfo)
+    void shouldDynamicallyJoinClusterOfThreeNoSnapshotsThenSend()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);
@@ -103,7 +103,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithCatchup(final TestInfo testInfo)
+    void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithCatchup()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);
@@ -123,7 +123,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldDynamicallyJoinClusterOfThreeWithEmptySnapshot(final TestInfo testInfo)
+    void shouldDynamicallyJoinClusterOfThreeWithEmptySnapshot()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);
@@ -143,7 +143,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldDynamicallyJoinClusterOfThreeWithSnapshot(final TestInfo testInfo)
+    void shouldDynamicallyJoinClusterOfThreeWithSnapshot()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);
@@ -169,7 +169,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldDynamicallyJoinClusterOfThreeWithSnapshotThenSend(final TestInfo testInfo)
+    void shouldDynamicallyJoinClusterOfThreeWithSnapshotThenSend()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);
@@ -203,7 +203,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(15)
-    void shouldRemoveFollower(final TestInfo testInfo)
+    void shouldRemoveFollower()
     {
         cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -230,7 +230,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldRemoveLeader(final TestInfo testInfo)
+    void shouldRemoveLeader()
     {
         cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -252,7 +252,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldRemoveLeaderAfterDynamicNodeJoined(final TestInfo testInfo)
+    void shouldRemoveLeaderAfterDynamicNodeJoined()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);
@@ -278,7 +278,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldRemoveLeaderAfterDynamicNodeJoinedThenRestartCluster(final TestInfo testInfo)
+    void shouldRemoveLeaderAfterDynamicNodeJoinedThenRestartCluster()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);
@@ -319,7 +319,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldJoinDynamicNodeToSingleStaticLeader(final TestInfo testInfo)
+    void shouldJoinDynamicNodeToSingleStaticLeader()
     {
         cluster = aCluster().withStaticNodes(1).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);
@@ -333,7 +333,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldDynamicallyJoinClusterOfThreeNoSnapshotsAndRestartDynamicNode(final TestInfo testInfo)
+    void shouldDynamicallyJoinClusterOfThreeNoSnapshotsAndRestartDynamicNode()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);
@@ -405,12 +405,10 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(60)
-    void shouldDynamicallyJoinClusterOfThreeWithSnapshotWithDynamicLeader(final TestInfo testInfo)
+    void shouldDynamicallyJoinClusterOfThreeWithSnapshotWithDynamicLeader()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(3).start();
         systemTestWatcher.cluster(cluster);
-        systemTestWatcher.showAllErrors();
-        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("expected termination"));
 
         final TestNode staticLeader = cluster.awaitLeader();
         final List<TestNode> staticFollowers = cluster.followers();
@@ -492,12 +490,10 @@ class DynamicMembershipTest
     @Test
     @InterruptAfter(30)
     @SuppressWarnings("checkstyle:methodlength")
-    void shouldDynamicallyJoinMemberAfterRecyclingAllStaticNodes(final TestInfo testInfo)
+    void shouldDynamicallyJoinMemberAfterRecyclingAllStaticNodes()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(4).start();
         systemTestWatcher.cluster(cluster);
-        systemTestWatcher.showAllErrors();
-        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("expected termination"));
 
         final TestNode staticLeader = cluster.awaitLeader();
         final List<TestNode> staticFollowers = cluster.followers();
@@ -598,7 +594,7 @@ class DynamicMembershipTest
 
     @Test
     @InterruptAfter(30)
-    void shouldDynamicallyJoinMemberAfterSnapshotOnNonZeroTerm(final TestInfo testInfo)
+    void shouldDynamicallyJoinMemberAfterSnapshotOnNonZeroTerm()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);

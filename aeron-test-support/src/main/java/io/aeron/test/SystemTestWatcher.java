@@ -122,7 +122,13 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     public void afterTestExecution(final ExtensionContext context)
     {
         mediaDriverTestUtil.afterTestExecution(context);
-        assertEquals(0, errorCount(), "Errors observed in " + context.getDisplayName());
+        if (null != dataCollector)
+        {
+            final MutableInteger count = new MutableInteger();
+            final StringBuilder errors = new StringBuilder();
+            filterErrors(count, errors);
+            assertEquals(0, count.get(), () -> "Errors observed in " + context.getDisplayName() + ":\n" + errors);
+        }
     }
 
     public void afterEach(final ExtensionContext context)
@@ -155,35 +161,15 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
     }
 
-    public int errorCount()
-    {
-        if (null != dataCollector)
-        {
-            return countErrors(
-                dataCollector.cncFiles(),
-                dataCollector.archiveMarkFiles(),
-                dataCollector.consensusModuleMarkFiles(),
-                dataCollector.clusterServiceMarkFiles(),
-                logFilter);
-        }
-
-        return 0;
-    }
-
-    private int countErrors(
-        final List<Path> cncPaths,
-        final List<Path> archiveMarkFiles,
-        final List<Path> consensusModuleMarkFiles,
-        final List<Path> clusterServiceMarkFiles,
-        final Predicate<String> filter)
+    private void filterErrors(final MutableInteger count, final StringBuilder errors)
     {
         final boolean isInterrupted = Thread.interrupted();
         try
         {
-            return countErrors(cncPaths, filter, CommonContext::errorLogBuffer) +
-                countArchiveMarkFileErrors(archiveMarkFiles, filter) +
-                countClusterMarkFileErrors(consensusModuleMarkFiles, filter) +
-                countClusterMarkFileErrors(clusterServiceMarkFiles, filter);
+            filterCncFileErrors(dataCollector.cncFiles(), logFilter, CommonContext::errorLogBuffer, count, errors);
+            filterArchiveMarkFileErrors(dataCollector.archiveMarkFiles(), logFilter, count, errors);
+            filterClusterMarkFileErrors(dataCollector.consensusModuleMarkFiles(), logFilter, count, errors);
+            filterClusterMarkFileErrors(dataCollector.clusterServiceMarkFiles(), logFilter, count, errors);
         }
         finally
         {
@@ -194,13 +180,13 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
     }
 
-    private int countErrors(
+    private static void filterCncFileErrors(
         final List<Path> paths,
         final Predicate<String> filter,
-        final Function<MappedByteBuffer, AtomicBuffer> toErrorBuffer)
+        final Function<MappedByteBuffer, AtomicBuffer> toErrorBuffer,
+        final MutableInteger count,
+        final StringBuilder errors)
     {
-        final MutableInteger errorCount = new MutableInteger();
-
         for (final Path path : paths)
         {
             final File file = path.toFile();
@@ -214,7 +200,8 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                     {
                         if (filter.test(encodedException))
                         {
-                            errorCount.set(errorCount.get() + observationCount);
+                            count.set(count.get() + observationCount);
+                            appendError(errors, path, encodedException);
                         }
                     });
             }
@@ -223,16 +210,14 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 IoUtil.unmap(mmap);
             }
         }
-
-        return errorCount.get();
     }
 
-    private int countClusterMarkFileErrors(
+    private static void filterClusterMarkFileErrors(
         final List<Path> paths,
-        final Predicate<String> filter)
+        final Predicate<String> filter,
+        final MutableInteger count,
+        final StringBuilder errors)
     {
-        final MutableInteger errorCount = new MutableInteger();
-
         for (final Path path : paths)
         {
             try (ClusterMarkFile clusterMarkFile = openClusterMarkFile(path))
@@ -244,21 +229,20 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                     {
                         if (filter.test(encodedException))
                         {
-                            errorCount.set(errorCount.get() + observationCount);
+                            count.set(count.get() + observationCount);
+                            appendError(errors, path, encodedException);
                         }
                     });
             }
         }
-
-        return errorCount.get();
     }
 
-    private int countArchiveMarkFileErrors(
+    private static void filterArchiveMarkFileErrors(
         final List<Path> paths,
-        final Predicate<String> filter)
+        final Predicate<String> filter,
+        final MutableInteger count,
+        final StringBuilder errors)
     {
-        final MutableInteger errorCount = new MutableInteger();
-
         for (final Path path : paths)
         {
             try (ArchiveMarkFile archive = openArchiveMarkFile(path))
@@ -270,13 +254,28 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                     {
                         if (filter.test(encodedException))
                         {
-                            errorCount.set(errorCount.get() + observationCount);
+                            count.set(count.get() + observationCount);
+                            appendError(errors, path, encodedException);
                         }
                     });
             }
         }
+    }
 
-        return errorCount.get();
+    private static void appendError(final StringBuilder errors, final Path path, final String encodedException)
+    {
+        final String errorMessage;
+        final int lineFeedIndex = encodedException.indexOf('\n');
+        if (lineFeedIndex > 0)
+        {
+            final int endOfMessageIndex = '\r' != encodedException.charAt(lineFeedIndex - 1) ? lineFeedIndex : lineFeedIndex - 1;
+            errorMessage = encodedException.substring(0, endOfMessageIndex);
+        }
+        else
+        {
+            errorMessage = encodedException;
+        }
+        errors.append(path).append(": ").append(errorMessage).append('\n');
     }
 
     private static ClusterMarkFile openClusterMarkFile(final Path path)

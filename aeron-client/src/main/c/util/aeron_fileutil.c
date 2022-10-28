@@ -66,7 +66,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
 
     if (!hmap)
     {
-        AERON_SET_ERR(errno, "%s", "CreateFileMapping");
+        AERON_SET_ERR_WIN(GetLastError(), "%s", "CreateFileMapping");
         close(fd);
         return -1;
     }
@@ -93,7 +93,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
 
         if (!PrefetchVirtualMemory(GetCurrentProcess(), 1, &entry, 0))
         {
-            fprintf(stderr, "Unable to prefetch memory");
+            AERON_SET_ERR_WIN(GetLastError(), "%s", "PrefetchVirtualMemory failed");
             aeron_unmap(mapping);
             mapping->addr = MAP_FAILED;
         }

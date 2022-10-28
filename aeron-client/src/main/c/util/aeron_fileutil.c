@@ -335,11 +335,13 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
             else
             {
                 AERON_SET_ERR(errno, "Failed to mmap file: %s", path);
+                close(fd);
             }
         }
         else
         {
             AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
+            close(fd);
         }
     }
     else
@@ -369,11 +371,13 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
             else
             {
                 AERON_SET_ERR(errno, "Failed to mmap file: %s", path);
+                close(fd);
             }
         }
         else
         {
             AERON_SET_ERR(errno, "Failed to determine the size of the file: %s", path);
+            close(fd);
         }
     }
     else
@@ -462,6 +466,7 @@ int aeron_raw_log_map(
             if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, !use_sparse_files))
             {
                 AERON_SET_ERR(errno, "Failed to map raw log, filename: %s", path);
+                close(fd);
                 return -1;
             }
 
@@ -514,6 +519,7 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
             if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, pre_touch))
             {
                 AERON_SET_ERR(errno, "Failed to mmap existing raw log, filename: %s", path);
+                close(fd);
                 return -1;
             }
         }

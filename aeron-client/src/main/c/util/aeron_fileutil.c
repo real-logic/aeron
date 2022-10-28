@@ -177,6 +177,19 @@ int aeron_create_file(const char *path)
     return fd;
 }
 
+int aeron_open_file_rw(const char *path)
+{
+    int fd;
+    int error = _sopen_s(&fd, path, _O_RDWR, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+
+    if (NO_ERROR != error)
+    {
+        return -1;
+    }
+
+    return fd;
+}
+
 int aeron_delete_directory(const char *dir)
 {
     char dir_buffer[(AERON_MAX_PATH * 2) + 2] = { 0 };
@@ -295,6 +308,11 @@ int aeron_create_file(const char *path)
 {
     return open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 }
+
+int aeron_open_file_rw(const char *path)
+{
+    return open(path, O_RDWR);
+}
 #endif
 
 #include <inttypes.h>
@@ -356,7 +374,7 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
 {
     int result = -1;
 
-    int fd = open(path, O_RDWR);
+    int fd = aeron_open_file_rw(path);
     if (fd >= 0)
     {
         const int64_t file_length = aeron_file_length(path);
@@ -508,7 +526,7 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
 {
     int result = -1;
 
-    int fd = open(path, O_RDWR);
+    int fd = aeron_open_file_rw(path);
     if (fd >= 0)
     {
         const int64_t file_length = aeron_file_length(path);

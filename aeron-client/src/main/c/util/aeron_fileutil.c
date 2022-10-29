@@ -591,7 +591,7 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
 #ifndef AERON_NATIVE_PRETOUCH
     if (pre_touch)
     {
-        Use (mapped_raw_log->mapped_file.addr, (size_t)file_length, (size_t)page_size);
+        aeron_touch_pages(mapped_raw_log->mapped_file.addr, (size_t)file_length, (size_t)page_size);
     }
 #endif
 

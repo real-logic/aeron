@@ -564,13 +564,6 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
     }
     close(fd);
 
-#ifndef AERON_NATIVE_PRETOUCH
-    if (pre_touch)
-    {
-        aeron_touch_pages(mapped_raw_log->mapped_file.addr, (size_t)file_length, (size_t)page_size);
-    }
-#endif
-
     mapped_raw_log->log_meta_data.addr =
         (uint8_t *)mapped_raw_log->mapped_file.addr +
         (mapped_raw_log->mapped_file.length - AERON_LOGBUFFER_META_DATA_LENGTH);
@@ -594,6 +587,13 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
         mapped_raw_log->term_buffers[i].addr = (uint8_t *)mapped_raw_log->mapped_file.addr + (i * term_length);
         mapped_raw_log->term_buffers[i].length = term_length;
     }
+
+#ifndef AERON_NATIVE_PRETOUCH
+    if (pre_touch)
+    {
+        Use (mapped_raw_log->mapped_file.addr, (size_t)file_length, (size_t)page_size);
+    }
+#endif
 
     return 0;
 }

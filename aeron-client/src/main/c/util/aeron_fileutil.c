@@ -320,7 +320,7 @@ int aeron_open_file_rw(const char *path)
 
 int aeron_write_zero_as_last_byte(const int fd, const size_t length)
 {
-    if (1 != pwrite64(fd, single_zero, 1, (off64_t)(length - 1)))
+    if (1 != pwrite(fd, single_zero, 1, (off_t)(length - 1)))
     {
         return -1;
     }

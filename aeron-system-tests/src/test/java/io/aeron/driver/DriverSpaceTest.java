@@ -20,7 +20,6 @@ import io.aeron.ErrorCode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@EnabledOnOs(OS.LINUX)
 public class DriverSpaceTest
 {
     @RegisterExtension
@@ -46,7 +44,19 @@ public class DriverSpaceTest
     @ValueSource(booleans = { true, false })
     void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace(final boolean performStorageChecks)
     {
-        final Path tempfsDir = new File("/mnt/tmp_aeron_dir").toPath();
+        final Path tempfsDir;
+        switch (OS.current())
+        {
+            case WINDOWS:
+                tempfsDir = new File("T:/tmp_aeron_dir").toPath();
+                break;
+            case MAC:
+                tempfsDir = new File("/Volumes/tmp_aeron_dir").toPath();
+                break;
+            default:
+                tempfsDir = new File("/mnt/tmp_aeron_dir").toPath();
+                break;
+        }
         try
         {
             assumeTrue(Files.exists(tempfsDir), () -> tempfsDir + " does not exist");

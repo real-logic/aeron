@@ -75,7 +75,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo mkdir -p /mnt/tmp_aeron_dir
-          sudo mount -t tmpfs -o size=10M,mode=777 tmpfs /mnt/tmp_aeron_dir
+          sudo mount -t tmpfs -o size=20M,mode=777 tmpfs /mnt/tmp_aeron_dir
       - name: Build with Gradle
         run: ./gradlew -x javadoc
       - name: Remove small temp file system (Linux)
@@ -260,7 +260,7 @@ jobs:
       - name: Setup small temp file system
         run: |
           sudo mkdir -p /mnt/tmp_aeron_dir
-          sudo mount -t tmpfs -o size=10M,mode=777 tmpfs /mnt/tmp_aeron_dir
+          sudo mount -t tmpfs -o size=20M,mode=777 tmpfs /mnt/tmp_aeron_dir
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Remove small temp file system
@@ -463,7 +463,7 @@ jobs:
       - name: Setup small temp file system
         run: |
           sudo mkdir -p /mnt/tmp_aeron_dir
-          sudo mount -t tmpfs -o size=10M,mode=777 tmpfs /mnt/tmp_aeron_dir
+          sudo mount -t tmpfs -o size=20M,mode=777 tmpfs /mnt/tmp_aeron_dir
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Remove small temp file system
@@ -579,7 +579,7 @@ jobs:
           echo "cmake-${CMAKE_VERSION}-Darwin-x86_64/CMake.app/Contents/bin" >> $GITHUB_PATH
       - name: Setup small temp file system
         run: |
-          sudo diskutil eraseVolume HFS+ tmp_aeron_dir $(hdiutil attach -nomount ram://$((2 * 1024 * 10)))
+          sudo diskutil eraseVolume HFS+ tmp_aeron_dir $(hdiutil attach -nomount ram://$((2 * 1024 * 20)))
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Copy test logs

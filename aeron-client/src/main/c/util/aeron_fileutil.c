@@ -60,7 +60,7 @@
 #define S_IROTH 0
 #define S_IWOTH 0
 
-static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch, const char* path)
+static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch, const char *path)
 {
     HANDLE hmap = CreateFileMapping((HANDLE)_get_osfhandle(fd), 0, PAGE_READWRITE, 0, 0, 0);
 
@@ -232,7 +232,7 @@ int aeron_is_directory(const char *path)
 #include <stdio.h>
 #include <pwd.h>
 
-static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch, const char* path)
+static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch, const char *path)
 {
     int flags = MAP_SHARED;
 

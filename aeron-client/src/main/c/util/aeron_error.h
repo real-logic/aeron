@@ -49,10 +49,8 @@ void aeron_err_set_windows(
     int errcode, const char *function, const char *filename, int line_number, const char *format, ...);
 #define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
 #define AERON_SET_ERR_WIN(errcode, fmt, ...) aeron_err_set_windows(errcode, __func__, __FILENAME__, __LINE__, fmt, __VA_ARGS__)
-#define AERON_ENOSPC ERROR_DISK_FULL
 #else
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#define AERON_ENOSPC ENOSPC
 #endif
 
 #define AERON_SET_ERR(errcode, fmt, ...) aeron_err_set(errcode, __func__, __FILENAME__, __LINE__, fmt, __VA_ARGS__)

@@ -2748,7 +2748,7 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
         {
             code = -os_errno;
         }
-        else if (AERON_ENOSPC == os_errno)
+        else if (AERON_FILEUTIL_ERROR_ENOSPC == os_errno)
         {
             code = AERON_ERROR_CODE_STORAGE_SPACE;
         }

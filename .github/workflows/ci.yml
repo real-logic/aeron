@@ -643,7 +643,9 @@ jobs:
           echo "cmake-$Env:CMAKE_VERSION-win64-x64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
       - name: Setup small temp file system
         run: |
-          Get-Partition
+          $current_size = Get-PartitionSupportedSize -DiskNumber 1 -PartitionNumber 1
+          $new_size = $size.SizeMax - 100 * 1024 * 1024
+          Resize-Partition -DiskNumber 1 -PartitionNumber 1 -Size ($new_size)
           New-Partition -DiskNumber 1 -Size 30MB -DriveLetter T | Format-Volume -FileSystem NTFS -Confirm:$false
           mkdir T:/tmp_aeron_dir
       - name: Build

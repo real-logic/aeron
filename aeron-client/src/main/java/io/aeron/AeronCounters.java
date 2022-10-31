@@ -274,6 +274,11 @@ public final class AeronCounters
      */
     public static final int CLUSTER_STANDBY_HEARTBEAT_RESPONSE_COUNT_TYPE_ID = 222;
 
+    /**
+     * Standby control toggle type id
+     */
+    public static final int CLUSTER_STANDBY_CONTROL_TOGGLE_TYPE_ID = 223;
+
     private AeronCounters()
     {
     }

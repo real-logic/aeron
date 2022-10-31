@@ -160,7 +160,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                 final byte[] credentials = new byte[challengeResponseDecoder.encodedCredentialsLength()];
                 challengeResponseDecoder.getEncodedCredentials(credentials, 0, credentials.length);
 
-                consensusModuleAgent.onChallengeResponse(
+                consensusModuleAgent.onIngressChallengeResponse(
                     challengeResponseDecoder.correlationId(),
                     challengeResponseDecoder.clusterSessionId(),
                     credentials);

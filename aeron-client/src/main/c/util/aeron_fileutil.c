@@ -74,15 +74,17 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch, cons
 
     mapping->addr = MapViewOfFileEx(hmap, FILE_MAP_WRITE, 0, 0, mapping->length, NULL);
 
+    if (!mapping->addr)
+    {
+        mapping->addr = MAP_FAILED;
+        AERON_SET_ERR_WIN(GetLastError(), "MapViewOfFileEx failed for: %s", path);
+    }
+
     if (!CloseHandle(hmap))
     {
         fprintf(stderr, "unable to close file mapping handle\n");
     }
-
-    if (!mapping->addr)
-    {
-        mapping->addr = MAP_FAILED;
-    }
+    close(fd);
 
     if (pre_touch && MAP_FAILED != mapping->addr)
     {
@@ -187,12 +189,6 @@ int aeron_open_file_rw(const char *path)
     return fd;
 }
 
-int aeron_write_zero_as_last_byte(const int fd, const size_t length)
-{
-    // FIXME: Implement
-    return -1;
-}
-
 int aeron_delete_directory(const char *dir)
 {
     char dir_buffer[(AERON_MAX_PATH * 2) + 2] = { 0 };
@@ -256,9 +252,11 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch, cons
     if (MAP_FAILED == mapping->addr)
     {
         AERON_SET_ERR(errno, "Failed to mmap file: %s", path);
+        close(fd);
         return -1;
     }
 
+    close(fd);
     return 0;
 }
 
@@ -338,16 +336,6 @@ int aeron_open_file_rw(const char *path)
 {
     return open(path, O_RDWR);
 }
-
-int aeron_write_zero_as_last_byte(const int fd, const size_t length)
-{
-    if (1 != pwrite(fd, single_zero, 1, (off_t)(length - 1)))
-    {
-        return -1;
-    }
-
-    return 0;
-}
 #endif
 
 #include <inttypes.h>
@@ -375,26 +363,12 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
 
     if (0 != aeron_mmap(mapped_file, fd, fill_with_zeroes, path))
     {
-        close(fd);
         if (-1 == remove(path))
         {
             AERON_APPEND_ERR("Failed to remove file: %s", path);
         }
         return -1;
     }
-
-    if (0 != aeron_write_zero_as_last_byte(fd, mapped_file->length))
-    {
-        AERON_SET_ERR(errno, "Failed to initialize file: %s", path);
-        aeron_unmap(mapped_file);
-        close(fd);
-        if (-1 == remove(path))
-        {
-            AERON_APPEND_ERR("Failed to remove file: %s", path);
-        }
-        return -1;
-    }
-    close(fd);
 
 #ifndef AERON_NATIVE_PRETOUCH
     if (fill_with_zeroes)
@@ -427,10 +401,8 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
 
     if (0 != aeron_mmap(mapped_file, fd, false, path))
     {
-        close(fd);
         return -1;
     }
-    close(fd);
 
     return 0;
 }
@@ -512,26 +484,12 @@ int aeron_raw_log_map(
 
     if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, !use_sparse_files, path))
     {
-        close(fd);
         if (-1 == remove(path))
         {
             AERON_APPEND_ERR("Failed to remove raw log, filename: %s", path);
         }
         return -1;
     }
-
-    if (0 != aeron_write_zero_as_last_byte(fd, log_length))
-    {
-        AERON_SET_ERR(errno, "Failed to initialize raw log, filename: %s", path);
-        aeron_unmap(&mapped_raw_log->mapped_file);
-        close(fd);
-        if (-1 == remove(path))
-        {
-            AERON_APPEND_ERR("Failed to remove raw log, filename: %s", path);
-        }
-        return -1;
-    }
-    close(fd);
 
 #ifndef AERON_NATIVE_PRETOUCH
     if (!use_sparse_files)
@@ -576,10 +534,8 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
 
     if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, pre_touch, path))
     {
-        close(fd);
         return -1;
     }
-    close(fd);
 
     mapped_raw_log->log_meta_data.addr =
         (uint8_t *)mapped_raw_log->mapped_file.addr +

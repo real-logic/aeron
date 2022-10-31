@@ -427,11 +427,6 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
     return 0;
 }
 
-uint64_t aeron_usable_fs_space_disabled(const char *path)
-{
-    return UINT64_MAX;
-}
-
 int aeron_ipc_publication_location(char *dst, size_t length, const char *aeron_dir, int64_t correlation_id)
 {
     return snprintf(

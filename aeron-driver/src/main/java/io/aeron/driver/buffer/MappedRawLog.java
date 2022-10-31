@@ -18,6 +18,7 @@ package io.aeron.driver.buffer;
 import io.aeron.exceptions.AeronException;
 import org.agrona.BufferUtil;
 import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -65,61 +66,64 @@ class MappedRawLog implements RawLog
         this.logFile = location;
 
         final EnumSet<StandardOpenOption> options = useSparseFiles ? SPARSE_FILE_OPTIONS : FILE_OPTIONS;
-
-        try (FileChannel logChannel = FileChannel.open(logFile.toPath(), options))
+        try
         {
-            if (!useSparseFiles)
+            try (FileChannel logChannel = FileChannel.open(logFile.toPath(), options))
             {
-                allocatePages(blankChannel, logChannel, logLength);
-            }
-
-            if (logLength <= Integer.MAX_VALUE)
-            {
-                final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
-                mappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
-                mappedBuffers = new MappedByteBuffer[]{ mappedBuffer };
-
-                for (int i = 0; i < PARTITION_COUNT; i++)
+                if (!useSparseFiles)
                 {
-                    termBuffers[i] = new UnsafeBuffer(mappedBuffer, i * termLength, termLength);
+                    allocatePages(blankChannel, logChannel, logLength);
                 }
 
-                logMetaDataBuffer = new UnsafeBuffer(
-                    mappedBuffer, (int)(logLength - LOG_META_DATA_LENGTH), LOG_META_DATA_LENGTH);
-            }
-            else
-            {
-                mappedBuffers = new MappedByteBuffer[PARTITION_COUNT + 1];
-
-                for (int i = 0; i < PARTITION_COUNT; i++)
+                if (logLength <= Integer.MAX_VALUE)
                 {
-                    final MappedByteBuffer buffer = logChannel.map(READ_WRITE, termLength * (long)i, termLength);
-                    buffer.order(ByteOrder.LITTLE_ENDIAN);
-                    mappedBuffers[i] = buffer;
-                    termBuffers[i] = new UnsafeBuffer(buffer, 0, termLength);
+                    final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
+                    mappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
+                    mappedBuffers = new MappedByteBuffer[]{ mappedBuffer };
+
+                    for (int i = 0; i < PARTITION_COUNT; i++)
+                    {
+                        termBuffers[i] = new UnsafeBuffer(mappedBuffer, i * termLength, termLength);
+                    }
+
+                    logMetaDataBuffer = new UnsafeBuffer(
+                        mappedBuffer, (int)(logLength - LOG_META_DATA_LENGTH), LOG_META_DATA_LENGTH);
+                }
+                else
+                {
+                    mappedBuffers = new MappedByteBuffer[PARTITION_COUNT + 1];
+
+                    for (int i = 0; i < PARTITION_COUNT; i++)
+                    {
+                        final MappedByteBuffer buffer = logChannel.map(READ_WRITE, termLength * (long)i, termLength);
+                        buffer.order(ByteOrder.LITTLE_ENDIAN);
+                        mappedBuffers[i] = buffer;
+                        termBuffers[i] = new UnsafeBuffer(buffer, 0, termLength);
+                    }
+
+                    final int metaDataMappingLength = align(LOG_META_DATA_LENGTH, filePageSize);
+                    final long metaDataSectionOffset = termLength * (long)PARTITION_COUNT;
+
+                    final MappedByteBuffer metaDataMappedBuffer = logChannel.map(
+                        READ_WRITE, metaDataSectionOffset, metaDataMappingLength);
+                    metaDataMappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+                    mappedBuffers[LOG_META_DATA_SECTION_INDEX] = metaDataMappedBuffer;
+                    logMetaDataBuffer = new UnsafeBuffer(
+                        metaDataMappedBuffer,
+                        metaDataMappingLength - LOG_META_DATA_LENGTH,
+                        LOG_META_DATA_LENGTH);
                 }
 
-                final int metaDataMappingLength = align(LOG_META_DATA_LENGTH, filePageSize);
-                final long metaDataSectionOffset = termLength * (long)PARTITION_COUNT;
-
-                final MappedByteBuffer metaDataMappedBuffer = logChannel.map(
-                    READ_WRITE, metaDataSectionOffset, metaDataMappingLength);
-                metaDataMappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
-
-                mappedBuffers[LOG_META_DATA_SECTION_INDEX] = metaDataMappedBuffer;
-                logMetaDataBuffer = new UnsafeBuffer(
-                    metaDataMappedBuffer,
-                    metaDataMappingLength - LOG_META_DATA_LENGTH,
-                    LOG_META_DATA_LENGTH);
-            }
-
-            if (!useSparseFiles)
-            {
-                preTouchPages(termBuffers, termLength, filePageSize);
+                if (!useSparseFiles)
+                {
+                    preTouchPages(termBuffers, termLength, filePageSize);
+                }
             }
         }
         catch (final IOException ex)
         {
+            IoUtil.delete(logFile, true);
             throw new UncheckedIOException(ex);
         }
     }

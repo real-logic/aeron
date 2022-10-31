@@ -30,9 +30,11 @@ import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class DriverSpaceTest
@@ -42,7 +44,7 @@ public class DriverSpaceTest
 
     @ParameterizedTest
     @ValueSource(booleans = { true, false })
-    void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace(final boolean performStorageChecks)
+    void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace(final boolean performStorageChecks) throws IOException
     {
         final Path tempfsDir;
         switch (OS.current())
@@ -70,8 +72,9 @@ public class DriverSpaceTest
             assumeTrue(false);
         }
 
+        final Path aeronDir = tempfsDir.resolve("aeron-no-space");
         final MediaDriver.Context context = new MediaDriver.Context()
-            .aeronDirectoryName(tempfsDir.resolve("aeron-no-space").toString())
+            .aeronDirectoryName(aeronDir.toString())
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true)
             .performStorageChecks(performStorageChecks)
@@ -88,6 +91,13 @@ public class DriverSpaceTest
             catch (final RegistrationException ex)
             {
                 assertEquals(ErrorCode.STORAGE_SPACE, ex.errorCode());
+                final Path publicationsDir = aeronDir.resolve("publications");
+                assertTrue(Files.exists(publicationsDir));
+                try (Stream<Path> files = Files.list(publicationsDir))
+                {
+                    assertEquals(
+                        Collections.emptyList(), files.collect(Collectors.toList()), "Log file was not deleted");
+                }
             }
         }
     }

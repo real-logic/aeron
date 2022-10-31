@@ -39,8 +39,6 @@
 #define AERON_FILE_SEP '/'
 #endif
 
-static uint8_t single_zero[1] = { 0x0 };
-
 #if defined(AERON_COMPILER_MSVC)
 
 #include <windows.h>

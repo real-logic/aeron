@@ -54,7 +54,6 @@ class MappedRawLog implements RawLog
 
     MappedRawLog(
         final File location,
-        final FileChannel blankChannel,
         final boolean useSparseFiles,
         final long logLength,
         final int termLength,
@@ -70,11 +69,6 @@ class MappedRawLog implements RawLog
         {
             try (FileChannel logChannel = FileChannel.open(logFile.toPath(), options))
             {
-                if (!useSparseFiles)
-                {
-                    allocatePages(blankChannel, logChannel, logLength);
-                }
-
                 if (logLength <= Integer.MAX_VALUE)
                 {
                     final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
@@ -209,17 +203,6 @@ class MappedRawLog implements RawLog
     public String fileName()
     {
         return logFile.getAbsolutePath();
-    }
-
-    private static void allocatePages(final FileChannel blankChannel, final FileChannel logChannel, final long length)
-        throws IOException
-    {
-        long remaining = length;
-        do
-        {
-            remaining -= blankChannel.transferTo(length - remaining, remaining, logChannel);
-        }
-        while (remaining > 0);
     }
 
     private static void preTouchPages(final UnsafeBuffer[] buffers, final int length, final int pageSize)

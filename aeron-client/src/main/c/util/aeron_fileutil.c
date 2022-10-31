@@ -254,6 +254,27 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch, cons
         return -1;
     }
 
+#ifdef __linux__
+    if (pre_touch)
+    {
+        static uint8_t single_zero[1] = { 0x0 };
+        if (1 != pwrite(fd, single_zero, 1, (off_t)(mapping->length - 1)))
+        {
+            AERON_SET_ERR(errno, "Failed to pre-touch file: %s", path);
+            if (0 != aeron_unmap(mapping))
+            {
+                AERON_APPEND_ERR("Failed to unmap file: %s", path);
+            }
+            close(fd);
+            if (-1 == remove(path))
+            {
+                AERON_APPEND_ERR("Failed to remove file: %s", path);
+            }
+            return -1;
+        }
+    }
+#endif
+
     close(fd);
     return 0;
 }

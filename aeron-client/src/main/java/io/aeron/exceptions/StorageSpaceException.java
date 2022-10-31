@@ -15,6 +15,8 @@
  */
 package io.aeron.exceptions;
 
+import java.io.IOException;
+
 /**
  * A request to allocate a resource (e.g. log buffer) failed due to insufficient storage space available.
  */
@@ -30,5 +32,30 @@ public class StorageSpaceException extends AeronException
     public StorageSpaceException(final String message)
     {
         super(message);
+    }
+
+    /**
+     * Check if given exception denotes an out of disc space error, i.e. which on Linux is represented by error code
+     * {@code ENOSPC(28)} and on Windows by error code  {@code ERROR_DISK_FULL(112)}.
+     *
+     * @param error to check.
+     * @return {@code true} if cause is {@link java.io.IOException} with a specific error.
+     */
+    public static boolean isOutOfDiscError(final Throwable error)
+    {
+        Throwable cause = error;
+        while (null != cause)
+        {
+            if (cause instanceof IOException)
+            {
+                final String msg = cause.getMessage();
+                if ("No space left on device".equals(msg) || "There is not enough space on the disk".equals(msg))
+                {
+                    return true;
+                }
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 }

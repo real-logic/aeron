@@ -23,14 +23,17 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,9 +46,12 @@ public class DriverSpaceTest
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @ParameterizedTest
-    @ValueSource(booleans = { true, false })
-    void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace(final boolean performStorageChecks) throws IOException
+    @MethodSource("storageCheckOptions")
+    void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace(
+        final boolean performStorageChecks, final boolean termBufferSparseFile) throws IOException
     {
+        assumeTrue(performStorageChecks || !termBufferSparseFile || TestMediaDriver.shouldRunCMediaDriver());
+
         final Path tempfsDir;
         switch (OS.current())
         {
@@ -78,7 +84,7 @@ public class DriverSpaceTest
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true)
             .performStorageChecks(performStorageChecks)
-            .termBufferSparseFile(false);
+            .termBufferSparseFile(termBufferSparseFile);
 
         try (TestMediaDriver driver = TestMediaDriver.launch(context, systemTestWatcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
@@ -100,5 +106,13 @@ public class DriverSpaceTest
                 }
             }
         }
+    }
+
+    private static List<Arguments> storageCheckOptions()
+    {
+        return Arrays.asList(
+            Arguments.of(true /* performStorageChecks */, false /* termBufferSparseFile */),
+            Arguments.of(false /* performStorageChecks */, false /* termBufferSparseFile */),
+            Arguments.of(false /* performStorageChecks */, true /* termBufferSparseFile */));
     }
 }

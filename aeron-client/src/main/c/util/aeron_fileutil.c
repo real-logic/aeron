@@ -305,7 +305,7 @@ uint64_t aeron_usable_fs_space(const char *path)
 
     if (statvfs(path, &vfs) == 0)
     {
-        result = vfs.f_bsize * vfs.f_bavail;
+        result = vfs.f_frsize * vfs.f_bavail;
     }
 
     return result;

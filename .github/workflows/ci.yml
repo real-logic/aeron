@@ -76,6 +76,11 @@ jobs:
         run: |
           sudo mkdir -p /mnt/tmp_aeron_dir
           sudo mount -t tmpfs -o size=20M,mode=777 tmpfs /mnt/tmp_aeron_dir
+      - name: Setup small temp file system (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          New-Partition -DiskNumber 0 -Size 30MB -DriveLetter T | Format-Volume -FileSystem NTFS -Confirm:$false
+          mkdir T:/tmp_aeron_dir
       - name: Build with Gradle
         run: ./gradlew -x javadoc
       - name: Remove small temp file system (Linux)
@@ -83,6 +88,10 @@ jobs:
         run: |
           sudo umount /mnt/tmp_aeron_dir
           sudo rm -rf /mnt/tmp_aeron_dir
+      - name: Remove small temp file system (Windows)
+        if: always() && runner.os == 'Windows'
+        run: |
+          Remove-Partition -DriveLetter T -Confirm:$false
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -632,8 +641,15 @@ jobs:
           $client.DownloadFile("https://github.com/Kitware/CMake/releases/download/v$Env:CMAKE_VERSION/cmake-$Env:CMAKE_VERSION-win64-x64.zip","cmake-$Env:CMAKE_VERSION-win64-x64.zip")
           7z x cmake-$Env:CMAKE_VERSION-win64-x64.zip
           echo "cmake-$Env:CMAKE_VERSION-win64-x64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
+      - name: Setup small temp file system
+        run: |
+          New-Partition -DiskNumber 0 -Size 30MB -DriveLetter T | Format-Volume -FileSystem NTFS -Confirm:$false
+          mkdir T:/tmp_aeron_dir
       - name: Build
         run: cppbuild/cppbuild
+      - name: Remove small temp file system
+        run: |
+          Remove-Partition -DriveLetter T -Confirm:$false
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

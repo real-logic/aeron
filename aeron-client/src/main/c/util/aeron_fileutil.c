@@ -357,6 +357,10 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
     {
         AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
         close(fd);
+        if (-1 == remove(path))
+        {
+            AERON_APPEND_ERR("Failed to remove file: %s", path);
+        }
         return -1;
     }
 
@@ -364,6 +368,10 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
     {
         AERON_SET_ERR(errno, "Failed to mmap file: %s", path);
         close(fd);
+        if (-1 == remove(path))
+        {
+            AERON_APPEND_ERR("Failed to remove file: %s", path);
+        }
         return -1;
     }
 
@@ -372,6 +380,10 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
         AERON_SET_ERR(errno, "Failed to initialize file: %s", path);
         aeron_unmap(mapped_file);
         close(fd);
+        if (-1 == remove(path))
+        {
+            AERON_APPEND_ERR("Failed to remove file: %s", path);
+        }
         return -1;
     }
     close(fd);
@@ -493,6 +505,10 @@ int aeron_raw_log_map(
     {
         AERON_SET_ERR(errno, "Failed to truncate raw log, filename: %s", path);
         close(fd);
+        if (-1 == remove(path))
+        {
+            AERON_APPEND_ERR("Failed to remove raw log, filename: %s", path);
+        }
         return -1;
     }
 
@@ -503,6 +519,10 @@ int aeron_raw_log_map(
     {
         AERON_SET_ERR(errno, "Failed to map raw log, filename: %s", path);
         close(fd);
+        if (-1 == remove(path))
+        {
+            AERON_APPEND_ERR("Failed to remove raw log, filename: %s", path);
+        }
         return -1;
     }
 
@@ -511,6 +531,10 @@ int aeron_raw_log_map(
         AERON_SET_ERR(errno, "Failed to initialize raw log, filename: %s", path);
         aeron_unmap(&mapped_raw_log->mapped_file);
         close(fd);
+        if (-1 == remove(path))
+        {
+            AERON_APPEND_ERR("Failed to remove raw log, filename: %s", path);
+        }
         return -1;
     }
     close(fd);

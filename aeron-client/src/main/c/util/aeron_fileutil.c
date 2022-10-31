@@ -62,13 +62,13 @@ static uint8_t single_zero[1] = { 0x0 };
 #define S_IROTH 0
 #define S_IWOTH 0
 
-static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
+static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch, const char* path)
 {
     HANDLE hmap = CreateFileMapping((HANDLE)_get_osfhandle(fd), 0, PAGE_READWRITE, 0, 0, 0);
 
     if (!hmap)
     {
-        AERON_SET_ERR_WIN(GetLastError(), "%s", "CreateFileMapping");
+        AERON_SET_ERR_WIN(GetLastError(), "CreateFileMapping failed for: %s", path);
         return -1;
     }
 
@@ -92,7 +92,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
 
         if (!PrefetchVirtualMemory(GetCurrentProcess(), 1, &entry, 0))
         {
-            AERON_SET_ERR_WIN(GetLastError(), "%s", "PrefetchVirtualMemory failed");
+            AERON_SET_ERR_WIN(GetLastError(), "PrefetchVirtualMemory failed for: %s", path);
             aeron_unmap(mapping);
             mapping->addr = MAP_FAILED;
         }
@@ -240,7 +240,7 @@ int aeron_is_directory(const char *path)
 #include <stdio.h>
 #include <pwd.h>
 
-static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
+static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch, const char* path)
 {
     int flags = MAP_SHARED;
 
@@ -255,7 +255,13 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
 
     mapping->addr = mmap(NULL, mapping->length, PROT_READ | PROT_WRITE, flags, fd, 0);
 
-    return MAP_FAILED == mapping->addr ? -1 : 0;
+    if (MAP_FAILED == mapping->addr)
+    {
+        AERON_SET_ERR(errno, "Failed to mmap file: %s", path);
+        return -1;
+    }
+
+    return 0;
 }
 
 int aeron_unmap(aeron_mapped_file_t *mapped_file)
@@ -364,9 +370,8 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
         return -1;
     }
 
-    if (0 != aeron_mmap(mapped_file, fd, fill_with_zeroes))
+    if (0 != aeron_mmap(mapped_file, fd, fill_with_zeroes, path))
     {
-        AERON_SET_ERR(errno, "Failed to mmap file: %s", path);
         close(fd);
         if (-1 == remove(path))
         {
@@ -417,9 +422,8 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
 
     mapped_file->length = (size_t)file_length;
 
-    if (0 != aeron_mmap(mapped_file, fd, false))
+    if (0 != aeron_mmap(mapped_file, fd, false, path))
     {
-        AERON_SET_ERR(errno, "Failed to mmap file: %s", path);
         close(fd);
         return -1;
     }
@@ -515,9 +519,8 @@ int aeron_raw_log_map(
     mapped_raw_log->mapped_file.length = (size_t)log_length;
     mapped_raw_log->mapped_file.addr = NULL;
 
-    if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, !use_sparse_files))
+    if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, !use_sparse_files, path))
     {
-        AERON_SET_ERR(errno, "Failed to map raw log, filename: %s", path);
         close(fd);
         if (-1 == remove(path))
         {
@@ -580,9 +583,8 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
     mapped_raw_log->mapped_file.length = file_length;
     mapped_raw_log->mapped_file.addr = NULL;
 
-    if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, pre_touch))
+    if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, pre_touch, path))
     {
-        AERON_SET_ERR(errno, "Failed to mmap existing raw log, filename: %s", path);
         close(fd);
         return -1;
     }

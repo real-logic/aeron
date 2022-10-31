@@ -52,7 +52,6 @@ class FileStoreLogFactoryTest
     private static final long LOW_STORAGE_THRESHOLD = Configuration.LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT;
     private static final int PAGE_SIZE = 4 * 1024;
     private static final boolean PRE_ZERO_LOG = true;
-    private static final boolean PERFORM_STORAGE_CHECKS = true;
     private FileStoreLogFactory fileStoreLogFactory;
     private RawLog rawLog;
 
@@ -62,7 +61,7 @@ class FileStoreLogFactoryTest
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
         final String absolutePath = DATA_DIR.getAbsolutePath();
         fileStoreLogFactory = new FileStoreLogFactory(
-            absolutePath, PAGE_SIZE, PERFORM_STORAGE_CHECKS, LOW_STORAGE_THRESHOLD, mock(ErrorHandler.class));
+            absolutePath, PAGE_SIZE, LOW_STORAGE_THRESHOLD, mock(ErrorHandler.class));
     }
 
     @AfterEach
@@ -135,7 +134,7 @@ class FileStoreLogFactoryTest
             files.when(() -> Files.getFileStore(any())).thenReturn(fileStore);
 
             try (FileStoreLogFactory logFactory = new FileStoreLogFactory(
-                DATA_DIR.getAbsolutePath(), PAGE_SIZE, true, LOW_STORAGE_THRESHOLD, errorHandler))
+                DATA_DIR.getAbsolutePath(), PAGE_SIZE, LOW_STORAGE_THRESHOLD, errorHandler))
             {
                 final int imageTermBufferLength = 64 * 1024;
                 assertThrowsStorageSpaceException(
@@ -171,7 +170,7 @@ class FileStoreLogFactoryTest
             files.when(() -> Files.getFileStore(any())).thenReturn(fileStore);
 
             try (FileStoreLogFactory logFactory = new FileStoreLogFactory(
-                DATA_DIR.getAbsolutePath(), PAGE_SIZE, true, lowStorageWarningThreshold, errorHandler))
+                DATA_DIR.getAbsolutePath(), PAGE_SIZE, lowStorageWarningThreshold, errorHandler))
             {
                 try (RawLog rawLog = logFactory.newPublication(11, termLength, true))
                 {

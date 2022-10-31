@@ -46,7 +46,7 @@ class ImageRangeTest
 
         try (
             FileStoreLogFactory fileStoreLogFactory = new FileStoreLogFactory(
-                baseDir.getAbsolutePath(), filePageSize, false, 0, new RethrowingErrorHandler());
+                baseDir.getAbsolutePath(), filePageSize, 0, new RethrowingErrorHandler());
             RawLog rawLog = fileStoreLogFactory.newImage(0, termBufferLength, useSpareFiles))
         {
             initialTermId(rawLog.metaData(), 0);

@@ -427,7 +427,6 @@ public final class MediaDriver implements AutoCloseable
         private boolean dirDeleteOnStart = Configuration.dirDeleteOnStart();
         private boolean dirDeleteOnShutdown = Configuration.dirDeleteOnShutdown();
         private boolean termBufferSparseFile = Configuration.termBufferSparseFile();
-        private boolean performStorageChecks = Configuration.performStorageChecks();
         private boolean spiesSimulateConnection = Configuration.spiesSimulateConnection();
         private boolean reliableStream = Configuration.reliableStream();
         private boolean tetherSubscriptions = Configuration.tetherSubscriptions();
@@ -950,12 +949,13 @@ public final class MediaDriver implements AutoCloseable
         /**
          * Should the driver perform storage checks when allocating files.
          *
-         * @return true if the driver should perform storage checks when allocating files.
-         * @see Configuration#PERFORM_STORAGE_CHECKS_PROP_NAME
+         * @return {@code true}.
+         * @deprecated Always returns {@code true}.
          */
+        @Deprecated
         public boolean performStorageChecks()
         {
-            return performStorageChecks;
+            return true;
         }
 
         /**
@@ -963,11 +963,12 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param performStorageChecks true if the driver should perform storage checks when allocating files.
          * @return this for a fluent API.
-         * @see Configuration#PERFORM_STORAGE_CHECKS_PROP_NAME
+         * @see #performStorageChecks()
+         * @deprecated Is a no op.
          */
+        @Deprecated
         public Context performStorageChecks(final boolean performStorageChecks)
         {
-            this.performStorageChecks = performStorageChecks;
             return this;
         }
 
@@ -3595,7 +3596,7 @@ public final class MediaDriver implements AutoCloseable
             if (null == logFactory)
             {
                 logFactory = new FileStoreLogFactory(
-                    aeronDirectoryName(), filePageSize, performStorageChecks, lowStorageWarningThreshold, errorHandler);
+                    aeronDirectoryName(), filePageSize, lowStorageWarningThreshold, errorHandler);
             }
 
             if (null == lossReport)
@@ -3751,7 +3752,6 @@ public final class MediaDriver implements AutoCloseable
                 "\n    dirDeleteOnStart=" + dirDeleteOnStart +
                 "\n    dirDeleteOnShutdown=" + dirDeleteOnShutdown +
                 "\n    termBufferSparseFile=" + termBufferSparseFile +
-                "\n    performStorageChecks=" + performStorageChecks +
                 "\n    spiesSimulateConnection=" + spiesSimulateConnection +
                 "\n    reliableStream=" + reliableStream +
                 "\n    tetherSubscriptions=" + tetherSubscriptions +

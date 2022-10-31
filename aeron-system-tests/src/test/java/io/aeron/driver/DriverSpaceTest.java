@@ -50,8 +50,6 @@ public class DriverSpaceTest
     void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace(
         final boolean performStorageChecks, final boolean termBufferSparseFile) throws IOException
     {
-        assumeTrue(performStorageChecks || !termBufferSparseFile || TestMediaDriver.shouldRunCMediaDriver());
-
         final Path tempfsDir;
         switch (OS.current())
         {
@@ -112,6 +110,7 @@ public class DriverSpaceTest
     {
         return Arrays.asList(
             Arguments.of(true /* performStorageChecks */, false /* termBufferSparseFile */),
+            Arguments.of(true /* performStorageChecks */, true /* termBufferSparseFile */),
             Arguments.of(false /* performStorageChecks */, false /* termBufferSparseFile */),
             Arguments.of(false /* performStorageChecks */, true /* termBufferSparseFile */));
     }

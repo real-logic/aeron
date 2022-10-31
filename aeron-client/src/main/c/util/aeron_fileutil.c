@@ -111,25 +111,6 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file)
     return 0;
 }
 
-int aeron_ftruncate(int fd, size_t length)
-{
-    HANDLE hfile = (HANDLE)_get_osfhandle(fd);
-    LARGE_INTEGER file_size;
-    file_size.QuadPart = (LONGLONG)length;
-
-    if (!SetFilePointerEx(hfile, file_size, NULL, FILE_BEGIN))
-    {
-        return -1;
-    }
-
-    if (!SetEndOfFile(hfile))
-    {
-        return -1;
-    }
-
-    return 0;
-}
-
 int aeron_mkdir(const char *path, int permission)
 {
     return _mkdir(path);
@@ -163,13 +144,30 @@ uint64_t aeron_usable_fs_space(const char *path)
     return (uint64_t)lpAvailableToCaller.QuadPart;
 }
 
-int aeron_create_file(const char *path)
+int aeron_create_file(const char *path, size_t length)
 {
     int fd;
     int error = _sopen_s(&fd, path, _O_RDWR | _O_CREAT | _O_EXCL, _SH_DENYNO, _S_IREAD | _S_IWRITE);
 
     if (NO_ERROR != error)
     {
+        AERON_SET_ERR_WIN(GetLastError(), "Failed to create file: %s", path);
+        return -1;
+    }
+
+    HANDLE hfile = (HANDLE)_get_osfhandle(fd);
+    LARGE_INTEGER file_size;
+    file_size.QuadPart = (LONGLONG)length;
+
+    if (!SetFilePointerEx(hfile, file_size, NULL, FILE_BEGIN) ||
+        !SetEndOfFile(hfile))
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "Failed to truncate file: %s", path);
+        close(fd);
+        if (-1 == remove(path))
+        {
+            AERON_APPEND_ERR("Failed to remove file: %s", path);
+        }
         return -1;
     }
 
@@ -314,9 +312,26 @@ uint64_t aeron_usable_fs_space(const char *path)
     return result;
 }
 
-int aeron_create_file(const char *path)
+int aeron_create_file(const char *path, size_t length)
 {
-    return open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    int fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    if (fd < 0)
+    {
+        AERON_SET_ERR(errno, "Failed to create file: %s", path);
+        return -1;
+    }
+
+    if (0 != ftruncate(fd, length))
+    {
+        AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
+        close(fd);
+        if (-1 == remove(path))
+        {
+            AERON_APPEND_ERR("Failed to remove file: %s", path);
+        }
+        return -1;
+    }
+    return fd;
 }
 
 int aeron_open_file_rw(const char *path)
@@ -352,21 +367,9 @@ static void aeron_touch_pages(volatile uint8_t *base, size_t length, size_t page
 
 int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool fill_with_zeroes)
 {
-    int fd = aeron_create_file(path);
-    if (fd < 0)
+    int fd = aeron_create_file(path, mapped_file->length);
+    if (-1 == fd)
     {
-        AERON_SET_ERR(errno, "Failed to create file: %s", path);
-        return -1;
-    }
-
-    if (0 != aeron_ftruncate(fd, mapped_file->length))
-    {
-        AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
-        close(fd);
-        if (-1 == remove(path))
-        {
-            AERON_APPEND_ERR("Failed to remove file: %s", path);
-        }
         return -1;
     }
 
@@ -498,21 +501,9 @@ int aeron_raw_log_map(
 {
     const uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, page_size);
 
-    int fd = aeron_create_file(path);
-    if (fd < 0)
+    int fd = aeron_create_file(path, (size_t)log_length);
+    if (-1 == fd)
     {
-        AERON_SET_ERR(errno, "Failed to create raw log, filename: %s", path);
-        return -1;
-    }
-
-    if (0 != aeron_ftruncate(fd, (size_t)log_length))
-    {
-        AERON_SET_ERR(errno, "Failed to truncate raw log, filename: %s", path);
-        close(fd);
-        if (-1 == remove(path))
-        {
-            AERON_APPEND_ERR("Failed to remove raw log, filename: %s", path);
-        }
         return -1;
     }
 

@@ -81,7 +81,6 @@ jobs:
         run: |
           Get-Disk
           Get-Partition
-          Get-Volume
           New-Partition -DiskNumber 0 -Size 30MB -DriveLetter T | Format-Volume -FileSystem NTFS -Confirm:$false
           mkdir T:/tmp_aeron_dir
       - name: Build with Gradle

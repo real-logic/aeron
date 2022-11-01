@@ -260,6 +260,7 @@ class ConcurrentPublicationTermRotationRaceTest
                 buffer.putLong(offset, payload, LITTLE_ENDIAN);
                 bufferClaim.commit();
             }
+
             return result;
         }
     }

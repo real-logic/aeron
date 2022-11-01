@@ -54,7 +54,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.*;
 
-public class SenderTest
+class SenderTest
 {
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int MAX_FRAME_LENGTH = 1024;
@@ -107,7 +107,7 @@ public class SenderTest
     private final ErrorHandler errorHandler = mock(ErrorHandler.class);
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         final SendChannelEndpoint mockSendChannelEndpoint = mock(SendChannelEndpoint.class);
         when(mockSendChannelEndpoint.udpChannel()).thenReturn(udpChannel);
@@ -159,13 +159,13 @@ public class SenderTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         sender.onClose();
     }
 
     @Test
-    public void shouldSendSetupFrameOnChannelWhenTimeoutWithoutStatusMessage()
+    void shouldSendSetupFrameOnChannelWhenTimeoutWithoutStatusMessage()
     {
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
@@ -189,7 +189,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSendMultipleSetupFramesOnChannelWhenTimeoutWithoutStatusMessage()
+    void shouldSendMultipleSetupFramesOnChannelWhenTimeoutWithoutStatusMessage()
     {
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
@@ -204,7 +204,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldNotSendSetupFrameOnlyOnceAfterReceivingStatusMessage()
+    void shouldNotSendSetupFrameOnlyOnceAfterReceivingStatusMessage()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -229,7 +229,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSendSetupFrameAfterReceivingStatusMessageWithSetupBit()
+    void shouldSendSetupFrameAfterReceivingStatusMessageWithSetupBit()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -270,7 +270,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSendHeartbeatsEvenIfSendingPeriodicSetupFrames()
+    void shouldSendHeartbeatsEvenIfSendingPeriodicSetupFrames()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -298,7 +298,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldBeAbleToSendOnChannel()
+    void shouldBeAbleToSendOnChannel()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -327,7 +327,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldBeAbleToSendOnChannelTwice()
+    void shouldBeAbleToSendOnChannelTwice()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -372,7 +372,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldNotSendUntilStatusMessageReceived()
+    void shouldNotSendUntilStatusMessageReceived()
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -406,7 +406,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldNotBeAbleToSendAfterUsingUpYourWindow()
+    void shouldNotBeAbleToSendAfterUsingUpYourWindow()
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -441,7 +441,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSendLastDataFrameAsHeartbeatWhenIdle()
+    void shouldSendLastDataFrameAsHeartbeatWhenIdle()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -475,7 +475,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSendMultipleDataFramesAsHeartbeatsWhenIdle()
+    void shouldSendMultipleDataFramesAsHeartbeatsWhenIdle()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);

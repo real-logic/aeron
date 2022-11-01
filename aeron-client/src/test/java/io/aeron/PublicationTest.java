@@ -40,9 +40,9 @@ import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.ByteBuffer.allocate;
+import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.align;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -93,7 +93,7 @@ class PublicationTest
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termBuffers[i] = new UnsafeBuffer(allocateDirectAligned(TERM_LENGTH, FRAME_ALIGNMENT));
+            termBuffers[i] = new UnsafeBuffer(allocateDirect(TERM_LENGTH));
         }
 
         publication = new ConcurrentPublication(
@@ -408,18 +408,23 @@ class PublicationTest
                 {
                     break;
                 }
+
                 final int chunkLength = frameLength - HEADER_LENGTH;
                 final byte frameFlags = FrameDescriptor.frameFlags(termBuffer, offset);
+
                 if (0 == processedBytes)
                 {
                     assertEquals(FrameDescriptor.BEGIN_FRAG_FLAG, (frameFlags & FrameDescriptor.BEGIN_FRAG_FLAG));
                 }
+
                 if (length == processedBytes + chunkLength)
                 {
                     assertEquals(FrameDescriptor.END_FRAG_FLAG, (frameFlags & FrameDescriptor.END_FRAG_FLAG));
                 }
+
                 assertEquals(offset ^ frameLength, DataHeaderFlyweight.reservedValue(termBuffer, offset));
                 offset += HEADER_LENGTH;
+
                 for (int i = 0; i < chunkLength; i++)
                 {
                     assertEquals(dataBuffer.getByte(index++), termBuffer.getByte(offset++));

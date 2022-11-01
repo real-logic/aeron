@@ -47,10 +47,8 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.fill;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.align;
 import static org.agrona.BufferUtil.address;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.*;
@@ -128,7 +126,7 @@ class ReplaySessionTest
 
         writer.init();
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
 
         final DataHeaderFlyweight headerFwt = new DataHeaderFlyweight();
         final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));
@@ -240,7 +238,7 @@ class ReplaySessionTest
 
             when(mockReplayPub.isConnected()).thenReturn(true);
 
-            final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
+            final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(4096));
             mockPublication(mockReplayPub, termBuffer);
             assertNotEquals(0, replaySession.doWork());
             assertThat(messageCounter, is(1));
@@ -294,7 +292,7 @@ class ReplaySessionTest
 
             when(mockReplayPub.isConnected()).thenReturn(true);
 
-            final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
+            final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(4096));
             mockPublication(mockReplayPub, termBuffer);
 
             assertNotEquals(0, replaySession.doWork());
@@ -337,7 +335,7 @@ class ReplaySessionTest
     @Test
     void shouldReplayFromActiveRecording() throws IOException
     {
-        final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(4096));
 
         final int recordingId = RECORDING_ID + 1;
         recordingSummary.recordingId = recordingId;
@@ -352,7 +350,7 @@ class ReplaySessionTest
 
         writer.init();
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
 
         final DataHeaderFlyweight headerFwt = new DataHeaderFlyweight();
         final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));
@@ -457,7 +455,7 @@ class ReplaySessionTest
 
         writer.init();
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
         final DataHeaderFlyweight headerFwt = new DataHeaderFlyweight();
         final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));
         header.buffer(buffer);
@@ -497,7 +495,7 @@ class ReplaySessionTest
 
             when(mockReplayPub.isConnected()).thenReturn(true);
 
-            final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
+            final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(4096));
             mockPublication(mockReplayPub, termBuffer);
 
             assertNotEquals(0, replaySession.doWork());
@@ -548,7 +546,7 @@ class ReplaySessionTest
             null))
         {
             when(mockReplayPub.isConnected()).thenReturn(true);
-            final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
+            final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(4096));
             mockPublication(mockReplayPub, termBuffer);
 
             assertEquals(2, replaySession.doWork());
@@ -571,7 +569,7 @@ class ReplaySessionTest
 
         writer.init();
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
         final DataHeaderFlyweight headerFwt = new DataHeaderFlyweight();
         final Header header = new Header(INITIAL_TERM_ID, Integer.numberOfLeadingZeros(TERM_BUFFER_LENGTH));
         header.buffer(buffer);
@@ -607,7 +605,7 @@ class ReplaySessionTest
 
             when(mockReplayPub.isConnected()).thenReturn(true);
 
-            final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
+            final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(4096));
             mockPublication(mockReplayPub, termBuffer);
 
             assertEquals(2, replaySession.doWork());
@@ -732,7 +730,7 @@ class ReplaySessionTest
     {
         final byte[] data = new byte[frameLength - HEADER_LENGTH];
         fill(data, (byte)message);
-        final ByteBuffer buffer = allocateDirectAligned(data.length, CACHE_LINE_LENGTH);
+        final ByteBuffer buffer = ByteBuffer.allocateDirect(data.length);
         final long address = address(buffer);
         buffer.put(data).flip();
 

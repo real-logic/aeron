@@ -32,7 +32,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 import static org.agrona.BitUtil.align;
 
-public class LossDetectorTest
+class LossDetectorTest
 {
     private static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
     private static final int POSITION_BITS_TO_SHIFT = LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH);
@@ -66,17 +66,15 @@ public class LossDetectorTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private final LossHandler lossHandler = mock(LossHandler.class);
-    private LossDetector lossDetector;
+    private LossDetector lossDetector = new LossDetector(DELAY_GENERATOR, lossHandler);;
     private long currentTime = 0;
 
-    public LossDetectorTest()
     {
-        lossDetector = new LossDetector(DELAY_GENERATOR, lossHandler);
         dataHeader.wrap(rcvBuffer);
     }
 
     @Test
-    public void shouldNotSendNakWhenBufferIsEmpty()
+    void shouldNotSendNakWhenBufferIsEmpty()
     {
         final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION;
@@ -89,7 +87,7 @@ public class LossDetectorTest
     }
 
     @Test
-    public void shouldNotNakIfNoMissingData()
+    void shouldNotNakIfNoMissingData()
     {
         final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
@@ -106,7 +104,7 @@ public class LossDetectorTest
     }
 
     @Test
-    public void shouldNakMissingData()
+    void shouldNakMissingData()
     {
         final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
@@ -122,7 +120,7 @@ public class LossDetectorTest
     }
 
     @Test
-    public void shouldRetransmitNakForMissingData()
+    void shouldRetransmitNakForMissingData()
     {
         final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
@@ -140,7 +138,7 @@ public class LossDetectorTest
     }
 
     @Test
-    public void shouldStopNakOnReceivingData()
+    void shouldStopNakOnReceivingData()
     {
         long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
@@ -160,7 +158,7 @@ public class LossDetectorTest
     }
 
     @Test
-    public void shouldHandleMoreThan2Gaps()
+    void shouldHandleMoreThan2Gaps()
     {
         long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 7L);
@@ -186,7 +184,7 @@ public class LossDetectorTest
     }
 
     @Test
-    public void shouldReplaceOldNakWithNewNak()
+    void shouldReplaceOldNakWithNewNak()
     {
         long rebuildPosition = ACTIVE_TERM_POSITION;
         long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
@@ -211,7 +209,7 @@ public class LossDetectorTest
     }
 
     @Test
-    public void shouldHandleImmediateNak()
+    void shouldHandleImmediateNak()
     {
         lossDetector = getLossHandlerWithImmediate();
 
@@ -227,7 +225,7 @@ public class LossDetectorTest
     }
 
     @Test
-    public void shouldNotNakImmediatelyByDefault()
+    void shouldNotNakImmediatelyByDefault()
     {
         final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
@@ -241,7 +239,7 @@ public class LossDetectorTest
     }
 
     @Test
-    public void shouldOnlySendNaksOnceOnMultipleScans()
+    void shouldOnlySendNaksOnceOnMultipleScans()
     {
         lossDetector = getLossHandlerWithImmediate();
 
@@ -258,7 +256,7 @@ public class LossDetectorTest
     }
 
     @Test
-    public void shouldHandleHwmGreaterThanCompletedBuffer()
+    void shouldHandleHwmGreaterThanCompletedBuffer()
     {
         lossDetector = getLossHandlerWithImmediate();
 
@@ -274,7 +272,7 @@ public class LossDetectorTest
     }
 
     @Test
-    public void shouldHandleNonZeroInitialTermOffset()
+    void shouldHandleNonZeroInitialTermOffset()
     {
         lossDetector = getLossHandlerWithImmediate();
 

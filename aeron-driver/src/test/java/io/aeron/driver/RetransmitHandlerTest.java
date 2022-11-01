@@ -40,7 +40,7 @@ import static java.util.Arrays.asList;
 import static org.agrona.BitUtil.align;
 import static org.mockito.Mockito.*;
 
-public class RetransmitHandlerTest
+class RetransmitHandlerTest
 {
     private static final int MTU_LENGTH = 1024;
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
@@ -76,7 +76,7 @@ public class RetransmitHandlerTest
         () -> currentTime, invalidPackets, DELAY_GENERATOR, LINGER_GENERATOR);
 
     @BeforeEach
-    public void before()
+    void before()
     {
         LogBufferDescriptor.rawTail(metaDataBuffer, 0, LogBufferDescriptor.packTail(TERM_ID, 0));
     }
@@ -90,7 +90,7 @@ public class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void shouldRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    void shouldRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, TERM_BUFFER_LENGTH, retransmitSender);
@@ -102,7 +102,7 @@ public class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void shouldNotRetransmitOnNakWhileInLinger(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    void shouldNotRetransmitOnNakWhileInLinger(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, TERM_BUFFER_LENGTH, retransmitSender);
@@ -117,7 +117,7 @@ public class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void shouldRetransmitOnNakAfterLinger(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    void shouldRetransmitOnNakAfterLinger(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, TERM_BUFFER_LENGTH, retransmitSender);
@@ -134,7 +134,7 @@ public class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void shouldRetransmitOnMultipleNaks(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    void shouldRetransmitOnMultipleNaks(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, TERM_BUFFER_LENGTH, retransmitSender);
@@ -149,7 +149,7 @@ public class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void shouldRetransmitOnNakOverMessageLength(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    void shouldRetransmitOnNakOverMessageLength(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 10);
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH * 5, TERM_BUFFER_LENGTH, retransmitSender);
@@ -161,7 +161,7 @@ public class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void shouldRetransmitOnNakOverMtuLength(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    void shouldRetransmitOnNakOverMtuLength(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         final int numFramesPerMtu = MTU_LENGTH / ALIGNED_FRAME_LENGTH;
         createTermBuffer(creator, numFramesPerMtu * 5);
@@ -174,7 +174,7 @@ public class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void shouldStopRetransmitOnRetransmitReception(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    void shouldStopRetransmitOnRetransmitReception(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, TERM_BUFFER_LENGTH, retransmitSender);
@@ -187,7 +187,7 @@ public class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void shouldStopOneRetransmitOnRetransmitReception(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    void shouldStopOneRetransmitOnRetransmitReception(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, TERM_BUFFER_LENGTH, retransmitSender);
@@ -201,7 +201,7 @@ public class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void shouldImmediateRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    void shouldImmediateRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
         handler = newZeroDelayRetransmitHandler();
@@ -213,7 +213,7 @@ public class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void shouldGoIntoLingerOnImmediateRetransmit(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    void shouldGoIntoLingerOnImmediateRetransmit(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
         handler = newZeroDelayRetransmitHandler();
@@ -228,7 +228,7 @@ public class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void shouldOnlyRetransmitOnNakWhenConfiguredTo(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    void shouldOnlyRetransmitOnNakWhenConfiguredTo(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, TERM_BUFFER_LENGTH, retransmitSender);

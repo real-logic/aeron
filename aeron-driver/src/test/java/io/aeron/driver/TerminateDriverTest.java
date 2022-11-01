@@ -26,11 +26,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
-public class TerminateDriverTest
+@Timeout(10)
+class TerminateDriverTest
 {
     @Test
-    @Timeout(10)
-    public void shouldCallTerminationHookUponValidRequest()
+    void shouldCallTerminationHookUponValidRequest()
     {
         final TerminationValidator mockTerminationValidator = mock(TerminationValidator.class);
         final AtomicBoolean hasTerminated = new AtomicBoolean(false);
@@ -57,8 +57,7 @@ public class TerminateDriverTest
     }
 
     @Test
-    @Timeout(10)
-    public void shouldNotCallTerminationHookUponInvalidRequest()
+    void shouldNotCallTerminationHookUponInvalidRequest()
     {
         final AtomicBoolean hasTerminatedByHook = new AtomicBoolean(false);
         final AtomicBoolean hasCalledTerminationValidator = new AtomicBoolean(false);

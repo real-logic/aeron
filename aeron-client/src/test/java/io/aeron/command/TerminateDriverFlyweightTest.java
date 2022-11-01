@@ -19,9 +19,10 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
+import java.nio.ByteBuffer;
+
 import static io.aeron.command.TerminateDriverFlyweight.TOKEN_BUFFER_OFFSET;
 import static java.util.Arrays.fill;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TerminateDriverFlyweightTest
@@ -30,7 +31,7 @@ class TerminateDriverFlyweightTest
     void tokenBuffer()
     {
         final int offset = 24;
-        final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(128, 8));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(128));
         buffer.setMemory(0, offset, (byte)15);
         final TerminateDriverFlyweight flyweight = new TerminateDriverFlyweight();
         flyweight.wrap(buffer, offset);
@@ -46,7 +47,7 @@ class TerminateDriverFlyweightTest
     {
         final byte[] bytes = new byte[length];
         fill(bytes, (byte)1);
-        final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(4 + length, 4));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(4 + length));
         buffer.putBytes(4, bytes);
         return buffer;
     }

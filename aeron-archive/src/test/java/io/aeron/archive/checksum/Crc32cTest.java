@@ -27,9 +27,7 @@ import java.util.Random;
 import java.util.zip.Checksum;
 
 import static io.aeron.archive.checksum.Crc32c.INSTANCE;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.address;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @EnabledForJreRange(min = JRE.JAVA_9)
@@ -51,7 +49,7 @@ class Crc32cTest
     {
         final Random random = new Random(54893045794L);
         final int offset = 7;
-        final ByteBuffer buffer = allocateDirectAligned(1024 + offset, CACHE_LINE_LENGTH);
+        final ByteBuffer buffer = ByteBuffer.allocateDirect(1024 + offset);
         final long address = address(buffer);
 
         for (int i = 1; i <= 1024; i++)

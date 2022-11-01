@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class LossReportReaderTest
+class LossReportReaderTest
 {
     private static final int CAPACITY = 1024;
     private final AtomicBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(CAPACITY));
@@ -33,7 +33,7 @@ public class LossReportReaderTest
     private final LossReportReader.EntryConsumer entryConsumer = mock(LossReportReader.EntryConsumer.class);
 
     @Test
-    public void shouldReadNoEntriesInEmptyReport()
+    void shouldReadNoEntriesInEmptyReport()
     {
         assertEquals(0, LossReportReader.read(buffer, entryConsumer));
 
@@ -41,7 +41,7 @@ public class LossReportReaderTest
     }
 
     @Test
-    public void shouldReadOneEntry()
+    void shouldReadOneEntry()
     {
         final long initialBytesLost = 32;
         final int timestampMs = 7;
@@ -61,7 +61,7 @@ public class LossReportReaderTest
     }
 
     @Test
-    public void shouldReadTwoEntries()
+    void shouldReadTwoEntries()
     {
         final long initialBytesLostOne = 32;
         final int timestampMsOne = 7;

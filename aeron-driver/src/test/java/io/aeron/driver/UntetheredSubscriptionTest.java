@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class UntetheredSubscriptionTest
+class UntetheredSubscriptionTest
 {
     private static final long REGISTRATION_ID = 1;
     private static final int TAG_ID = 0;
@@ -51,7 +51,7 @@ public class UntetheredSubscriptionTest
     private IpcPublication ipcPublication;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         ctx.cachedNanoClock().update(TIME_NS);
 
@@ -71,14 +71,14 @@ public class UntetheredSubscriptionTest
     }
 
     @Test
-    public void shouldLifeCycleTimeoutsAndRelink()
+    void shouldLifeCycleTimeoutsAndRelink()
     {
         final Position tetheredPosition = new AtomicLongPosition();
         tetheredPosition.set(TERM_WINDOW_LENGTH - 1);
         final Position untetheredPosition = new AtomicLongPosition();
 
-        final SubscriptionLink tetheredLink = newLink(1, true);
-        final SubscriptionLink untetheredLink = newLink(1, false);
+        final SubscriptionLink tetheredLink = newLink(true);
+        final SubscriptionLink untetheredLink = newLink(false);
 
         ipcPublication.addSubscriber(tetheredLink, tetheredPosition, ctx.cachedNanoClock().nanoTime());
         ipcPublication.addSubscriber(untetheredLink, untetheredPosition, ctx.cachedNanoClock().nanoTime());
@@ -115,11 +115,11 @@ public class UntetheredSubscriptionTest
             eq(CommonContext.IPC_CHANNEL));
     }
 
-    IpcSubscriptionLink newLink(final long registrationId, final boolean isTether)
+    IpcSubscriptionLink newLink(final boolean isTether)
     {
         final SubscriptionParams params = new SubscriptionParams();
         params.isTether = isTether;
 
-        return new IpcSubscriptionLink(registrationId, STREAM_ID, CHANNEL, null, params);
+        return new IpcSubscriptionLink(1, STREAM_ID, CHANNEL, null, params);
     }
 }

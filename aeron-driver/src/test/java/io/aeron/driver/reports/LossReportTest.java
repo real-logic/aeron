@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
-public class LossReportTest
+class LossReportTest
 {
     private static final int CAPACITY = 1024;
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(CAPACITY));
@@ -37,7 +37,7 @@ public class LossReportTest
     private final LossReport lossReport = new LossReport(buffer);
 
     @Test
-    public void shouldCreateEntry()
+    void shouldCreateEntry()
     {
         final long initialBytesLost = 32;
         final int timestampMs = 7;
@@ -61,7 +61,7 @@ public class LossReportTest
     }
 
     @Test
-    public void shouldUpdateEntry()
+    void shouldUpdateEntry()
     {
         final long initialBytesLost = 32;
         final int timestampMs = 7;

@@ -32,7 +32,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
-public class FileStoreLogFactoryTest
+class FileStoreLogFactoryTest
 {
     private static final int CREATION_ID = 102;
     private static final File DATA_DIR = new File(SystemUtil.tmpDirName(), "dataDirName");
@@ -45,7 +45,7 @@ public class FileStoreLogFactoryTest
     private RawLog rawLog;
 
     @BeforeEach
-    public void createDataDir()
+    void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
         final String absolutePath = DATA_DIR.getAbsolutePath();
@@ -54,7 +54,7 @@ public class FileStoreLogFactoryTest
     }
 
     @AfterEach
-    public void cleanupFiles()
+    void cleanupFiles()
     {
         CloseHelper.close(rawLog);
         CloseHelper.close(fileStoreLogFactory);
@@ -62,7 +62,7 @@ public class FileStoreLogFactoryTest
     }
 
     @Test
-    public void shouldCreateCorrectLengthAndZeroedFilesForPublication()
+    void shouldCreateCorrectLengthAndZeroedFilesForPublication()
     {
         rawLog = fileStoreLogFactory.newPublication(CREATION_ID, TERM_BUFFER_LENGTH, PRE_ZERO_LOG);
 
@@ -86,7 +86,7 @@ public class FileStoreLogFactoryTest
     }
 
     @Test
-    public void shouldCreateCorrectLengthAndZeroedFilesForImage()
+    void shouldCreateCorrectLengthAndZeroedFilesForImage()
     {
         final int imageTermBufferLength = TERM_BUFFER_LENGTH / 2;
         rawLog = fileStoreLogFactory.newImage(CREATION_ID, imageTermBufferLength, PRE_ZERO_LOG);

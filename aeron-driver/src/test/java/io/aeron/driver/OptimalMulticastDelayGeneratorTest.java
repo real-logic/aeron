@@ -22,13 +22,13 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
-public class OptimalMulticastDelayGeneratorTest
+class OptimalMulticastDelayGeneratorTest
 {
     private static final long MAX_BACKOFF = TimeUnit.MILLISECONDS.toNanos(60);
     private static final long GROUP_SIZE = 10;
 
     @Test
-    public void shouldNotExceedTmaxBackoff()
+    void shouldNotExceedTmaxBackoff()
     {
         final OptimalMulticastDelayGenerator generator = new OptimalMulticastDelayGenerator(MAX_BACKOFF, GROUP_SIZE);
 

@@ -21,6 +21,7 @@ import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -34,7 +35,6 @@ import static io.aeron.agent.EventConfiguration.BUFFER_LENGTH_DEFAULT;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.concurrent.TimeUnit.*;
 import static org.agrona.BitUtil.*;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.ALIGNMENT;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.encodedMsgOffset;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TAIL_POSITION_OFFSET;
@@ -46,7 +46,7 @@ class ClusterEventLoggerTest
 {
     private static final int CAPACITY = align(BUFFER_LENGTH_DEFAULT, CACHE_LINE_LENGTH);
     private final UnsafeBuffer logBuffer = new UnsafeBuffer(
-        allocateDirectAligned(BUFFER_LENGTH_DEFAULT + TRAILER_LENGTH, CACHE_LINE_LENGTH));
+        ByteBuffer.allocateDirect(BUFFER_LENGTH_DEFAULT + TRAILER_LENGTH));
     private final ClusterEventLogger logger = new ClusterEventLogger(new ManyToOneRingBuffer(logBuffer));
 
     @Test

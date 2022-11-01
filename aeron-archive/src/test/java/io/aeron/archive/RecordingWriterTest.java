@@ -36,10 +36,10 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static java.nio.ByteBuffer.allocate;
+import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.readAllBytes;
 import static java.util.Arrays.fill;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -279,14 +279,14 @@ class RecordingWriterTest
         final Image image = mockImage(0L);
         final Context ctx = new Context()
             .archiveDir(archiveDir)
-            .recordChecksumBuffer(new UnsafeBuffer(allocateDirectAligned(512, 64)))
+            .recordChecksumBuffer(new UnsafeBuffer(allocateDirect(512)))
             .recordChecksum(crc32());
 
         final RecordingWriter recordingWriter = new RecordingWriter(1, 0, SEGMENT_LENGTH, image, ctx);
 
         recordingWriter.init();
 
-        final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(512, 64));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirect(512));
         frameType(termBuffer, 96, HDR_TYPE_DATA);
         frameTermId(termBuffer, 96, 96);
         frameLengthOrdered(termBuffer, 96, 64);
@@ -330,7 +330,7 @@ class RecordingWriterTest
         final Image image = mockImage(0L);
         final Context ctx = new Context()
             .archiveDir(archiveDir)
-            .recordChecksumBuffer(new UnsafeBuffer(allocateDirectAligned(512, 64)))
+            .recordChecksumBuffer(new UnsafeBuffer(allocateDirect(512)))
             .recordChecksum(crc32());
         final RecordingWriter recordingWriter = new RecordingWriter(1, 0, SEGMENT_LENGTH, image, ctx);
 

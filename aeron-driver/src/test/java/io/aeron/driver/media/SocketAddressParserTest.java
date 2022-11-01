@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class SocketAddressParserTest
+class SocketAddressParserTest
 {
     static final DefaultNameResolver DEFAULT_RESOLVER = DefaultNameResolver.INSTANCE;
 
@@ -56,68 +56,68 @@ public class SocketAddressParserTest
     };
 
     @Test
-    public void shouldParseIpV4AddressAndPort() throws Exception
+    void shouldParseIpV4AddressAndPort() throws Exception
     {
         assertCorrectParse("192.168.1.20", 55);
     }
 
     @Test
-    public void shouldParseHostAddressAndPort() throws Exception
+    void shouldParseHostAddressAndPort() throws Exception
     {
         assertCorrectParse("localhost", 55);
     }
 
     @Test
-    public void shouldRejectOnInvalidPort()
+    void shouldRejectOnInvalidPort()
     {
         assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse(
             "192.168.1.20:aa", ENDPOINT_PARAM_NAME, false, DEFAULT_RESOLVER));
     }
 
     @Test
-    public void shouldRejectOnInvalidPort2()
+    void shouldRejectOnInvalidPort2()
     {
         assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse(
             "192.168.1.20::123", ENDPOINT_PARAM_NAME, false, DEFAULT_RESOLVER));
     }
 
     @Test
-    public void shouldRejectOnMissingPort()
+    void shouldRejectOnMissingPort()
     {
         assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse(
             "192.168.1.20", ENDPOINT_PARAM_NAME, false, DEFAULT_RESOLVER));
     }
 
     @Test
-    public void shouldRejectOnEmptyPort()
+    void shouldRejectOnEmptyPort()
     {
         assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse(
             "192.168.1.20:", ENDPOINT_PARAM_NAME, false, DEFAULT_RESOLVER));
     }
 
     @Test
-    public void shouldRejectOnEmptyIpV6Port()
+    void shouldRejectOnEmptyIpV6Port()
     {
         assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse(
             "[::1]:", ENDPOINT_PARAM_NAME, false, DEFAULT_RESOLVER));
     }
 
     @Test
-    public void shouldRejectOnInvalidIpV6()
+    void shouldRejectOnInvalidIpV6()
     {
         assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse(
             "[FG07::789:1:0:0:3]:111", ENDPOINT_PARAM_NAME, false, DEFAULT_RESOLVER));
     }
 
     @Test
-    public void shouldRejectOnInvalidIpV6Scope()
+    void shouldRejectOnInvalidIpV6Scope()
     {
         assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse(
             "[FC07::789:1:0:0:3%^]:111", ENDPOINT_PARAM_NAME, false, DEFAULT_RESOLVER));
     }
 
     @Test
-    public void shouldParseIpV6() throws Exception
+    void shouldParseIpV6() throws Exception
     {
         assertCorrectParseIpV6("::1", 54321);
         assertCorrectParseIpV6("FC07::789:1:0:0:3", 54321);
@@ -125,7 +125,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldParseWithScope()
+    void shouldParseWithScope()
     {
         final InetSocketAddress address = SocketAddressParser.parse(
             "[::1%12~_.-34]:1234", ENDPOINT_PARAM_NAME, false, DEFAULT_RESOLVER);
@@ -133,7 +133,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldParseAndLookupResolverForName() throws UnknownHostException
+    void shouldParseAndLookupResolverForName() throws UnknownHostException
     {
         final InetSocketAddress socketAddress = SocketAddressParser.parse(
             LOOKUP_RESOLVER_NAME, ENDPOINT_PARAM_NAME, false, LOOKUP_RESOLVER);
@@ -142,7 +142,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldParseAndPassThroughLookupForUnknownName() throws UnknownHostException
+    void shouldParseAndPassThroughLookupForUnknownName() throws UnknownHostException
     {
         final InetSocketAddress socketAddress = SocketAddressParser.parse(
             LOOKUP_RESOLVER_HOSTNAME + ":" + LOOKUP_RESOLVER_PORT, ENDPOINT_PARAM_NAME, false, LOOKUP_RESOLVER);

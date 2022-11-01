@@ -43,7 +43,7 @@ class TermRebuilderTest
     @Test
     void shouldInsertIntoEmptyBuffer()
     {
-        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(256));
+        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(256));
         final int termOffset = 0;
         final int srcOffset = 0;
         final int length = 256;
@@ -67,7 +67,7 @@ class TermRebuilderTest
         final int srcOffset = 0;
         final int tail = TERM_BUFFER_CAPACITY - frameLength;
         final int termOffset = tail;
-        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(frameLength));
+        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(frameLength));
         packet.putShort(typeOffset(srcOffset), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
         packet.putInt(srcOffset, frameLength, LITTLE_ENDIAN);
 
@@ -85,7 +85,7 @@ class TermRebuilderTest
         final int srcOffset = 0;
         final int tail = alignedFrameLength;
         final int termOffset = tail;
-        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(alignedFrameLength));
+        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
 
         TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
@@ -99,7 +99,7 @@ class TermRebuilderTest
         final int frameLength = 50;
         final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
         final int srcOffset = 0;
-        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(alignedFrameLength));
+        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
         final int termOffset = alignedFrameLength * 2;
 
         TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
@@ -117,7 +117,7 @@ class TermRebuilderTest
         final int frameLength = 50;
         final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
         final int srcOffset = 0;
-        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(alignedFrameLength));
+        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
         final int termOffset = alignedFrameLength * 2;
 
         TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);

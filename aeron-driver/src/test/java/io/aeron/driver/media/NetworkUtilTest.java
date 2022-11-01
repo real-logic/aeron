@@ -30,10 +30,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class NetworkUtilTest
+class NetworkUtilTest
 {
     @Test
-    public void shouldNotMatchIfLengthsAreDifferent()
+    void shouldNotMatchIfLengthsAreDifferent()
     {
         assertFalse(isMatchWithPrefix(new byte[0], new byte[3], 0));
         assertFalse(isMatchWithPrefix(new byte[1], new byte[2], 0));
@@ -41,7 +41,7 @@ public class NetworkUtilTest
     }
 
     @Test
-    public void shouldMatchIfAllBytesMatch()
+    void shouldMatchIfAllBytesMatch()
     {
         final byte[] a = { 'a', 'b', 'c', 'd' };
         final byte[] b = { 'a', 'b', 'c', 'd' };
@@ -49,7 +49,7 @@ public class NetworkUtilTest
     }
 
     @Test
-    public void shouldMatchIfAllBytesWithPrefixMatch()
+    void shouldMatchIfAllBytesWithPrefixMatch()
     {
         final byte[] a = { 'a', 'b', 'c', 'd' };
         final byte[] b = { 'a', 'b', 'c', 'e' };
@@ -57,7 +57,7 @@ public class NetworkUtilTest
     }
 
     @Test
-    public void shouldNotMatchIfNotAllBytesWithPrefixMatch()
+    void shouldNotMatchIfNotAllBytesWithPrefixMatch()
     {
         final byte[] a = { 'a', 'b', 'c', 'd' };
         final byte[] b = { 'a', 'b', 'd', 'd' };
@@ -65,7 +65,7 @@ public class NetworkUtilTest
     }
 
     @Test
-    public void shouldMatchIfAllBytesWithPrefixUnalignedMatch()
+    void shouldMatchIfAllBytesWithPrefixUnalignedMatch()
     {
         assertTrue(isMatchWithPrefix(
             asBytes(0b10101010_11111111_00000000_00000000),
@@ -74,7 +74,7 @@ public class NetworkUtilTest
     }
 
     @Test
-    public void shouldNotMatchIfNotAllBytesWithUnalignedPrefixMatch()
+    void shouldNotMatchIfNotAllBytesWithUnalignedPrefixMatch()
     {
         assertFalse(isMatchWithPrefix(
             asBytes(0b10101010_11111111_00000000_00000000),
@@ -83,7 +83,7 @@ public class NetworkUtilTest
     }
 
     @Test
-    public void shouldFilterBySubnetAndFindOneResult() throws Exception
+    void shouldFilterBySubnetAndFindOneResult() throws Exception
     {
         final NetworkInterfaceStub stub = new NetworkInterfaceStub();
 
@@ -97,7 +97,7 @@ public class NetworkUtilTest
     }
 
     @Test
-    public void shouldFilterBySubnetAndFindNoResults() throws Exception
+    void shouldFilterBySubnetAndFindNoResults() throws Exception
     {
         final NetworkInterfaceStub stub = new NetworkInterfaceStub();
 
@@ -110,7 +110,7 @@ public class NetworkUtilTest
     }
 
     @Test
-    public void shouldFilterBySubnetAndFindMultipleResultsOrderedByMatchLength() throws Exception
+    void shouldFilterBySubnetAndFindMultipleResultsOrderedByMatchLength() throws Exception
     {
         final NetworkInterfaceStub stub = new NetworkInterfaceStub();
 
@@ -128,7 +128,7 @@ public class NetworkUtilTest
     }
 
     @Test
-    public void shouldFilterBySubnetAndFindOneIpV6Result() throws Exception
+    void shouldFilterBySubnetAndFindOneIpV6Result() throws Exception
     {
         final NetworkInterfaceStub stub = new NetworkInterfaceStub();
 
@@ -142,7 +142,7 @@ public class NetworkUtilTest
     }
 
     @Test
-    public void shouldFilterBySubnetAndFindNoIpV6Results() throws Exception
+    void shouldFilterBySubnetAndFindNoIpV6Results() throws Exception
     {
         final NetworkInterfaceStub stub = new NetworkInterfaceStub();
 
@@ -155,7 +155,7 @@ public class NetworkUtilTest
     }
 
     @Test
-    public void shouldFilterBySubnetAndFindMultipleIpV6ResultsOrderedByMatchLength() throws Exception
+    void shouldFilterBySubnetAndFindMultipleIpV6ResultsOrderedByMatchLength() throws Exception
     {
         final NetworkInterfaceStub stub = new NetworkInterfaceStub();
 

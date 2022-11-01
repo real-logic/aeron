@@ -22,17 +22,17 @@ import static io.aeron.driver.Configuration.NAK_MAX_BACKOFF_DEFAULT_NS;
 import static io.aeron.driver.Configuration.NAK_MULTICAST_MAX_BACKOFF_PROP_NAME;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class MediaDriverContextTest
+class MediaDriverContextTest
 {
     @Test
-    public void nakMulticastMaxBackoffNsDefaultValue()
+    void nakMulticastMaxBackoffNsDefaultValue()
     {
         final Context context = new Context();
         assertEquals(NAK_MAX_BACKOFF_DEFAULT_NS, context.nakMulticastMaxBackoffNs());
     }
 
     @Test
-    public void nakMulticastMaxBackoffNsValueFromSystemProperty()
+    void nakMulticastMaxBackoffNsValueFromSystemProperty()
     {
         System.setProperty(NAK_MULTICAST_MAX_BACKOFF_PROP_NAME, "333");
         try
@@ -47,7 +47,7 @@ public class MediaDriverContextTest
     }
 
     @Test
-    public void nakMulticastMaxBackoffNsExplicitValue()
+    void nakMulticastMaxBackoffNsExplicitValue()
     {
         final Context context = new Context();
         context.nakMulticastMaxBackoffNs(Long.MIN_VALUE);

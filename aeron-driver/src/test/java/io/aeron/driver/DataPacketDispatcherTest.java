@@ -28,7 +28,7 @@ import java.net.InetSocketAddress;
 
 import static org.mockito.Mockito.*;
 
-public class DataPacketDispatcherTest
+class DataPacketDispatcherTest
 {
     private static final long CORRELATION_ID_1 = 101;
     private static final long CORRELATION_ID_2 = 102;
@@ -52,7 +52,7 @@ public class DataPacketDispatcherTest
     private final ReceiveChannelEndpoint mockChannelEndpoint = mock(ReceiveChannelEndpoint.class);
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         when(mockHeader.sessionId()).thenReturn(SESSION_ID);
         when(mockHeader.streamId()).thenReturn(STREAM_ID);
@@ -72,7 +72,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldElicitSetupMessageWhenDataArrivesForSubscriptionWithoutImage()
+    void shouldElicitSetupMessageWhenDataArrivesForSubscriptionWithoutImage()
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
@@ -83,7 +83,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldOnlyElicitSetupMessageOnceWhenDataArrivesForSubscriptionWithoutImage()
+    void shouldOnlyElicitSetupMessageOnceWhenDataArrivesForSubscriptionWithoutImage()
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
@@ -96,7 +96,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldElicitSetupMessageAgainWhenDataArrivesForSubscriptionWithoutImageAfterRemovePendingSetup()
+    void shouldElicitSetupMessageAgainWhenDataArrivesForSubscriptionWithoutImageAfterRemovePendingSetup()
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
@@ -112,7 +112,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldRequestCreateImageUponReceivingSetup()
+    void shouldRequestCreateImageUponReceivingSetup()
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, SRC_ADDRESS, 0);
@@ -123,7 +123,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldOnlyRequestCreateImageOnceUponReceivingSetup()
+    void shouldOnlyRequestCreateImageOnceUponReceivingSetup()
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, SRC_ADDRESS, 0);
@@ -136,7 +136,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldNotRequestCreateImageOnceUponReceivingSetupAfterImageAdded()
+    void shouldNotRequestCreateImageOnceUponReceivingSetupAfterImageAdded()
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addPublicationImage(mockImage);
@@ -146,7 +146,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldSetImageInactiveOnRemoveSubscription()
+    void shouldSetImageInactiveOnRemoveSubscription()
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addPublicationImage(mockImage);
@@ -156,7 +156,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldSetImageInactiveOnRemoveImage()
+    void shouldSetImageInactiveOnRemoveImage()
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addPublicationImage(mockImage);
@@ -166,7 +166,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldIgnoreDataAndSetupAfterImageRemoved()
+    void shouldIgnoreDataAndSetupAfterImageRemoved()
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addPublicationImage(mockImage);
@@ -179,7 +179,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldNotIgnoreDataAndSetupAfterImageRemovedAndCoolDownRemoved()
+    void shouldNotIgnoreDataAndSetupAfterImageRemovedAndCoolDownRemoved()
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addPublicationImage(mockImage);
@@ -200,7 +200,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldDispatchDataToCorrectImage()
+    void shouldDispatchDataToCorrectImage()
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addPublicationImage(mockImage);
@@ -211,7 +211,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldNotRemoveNewPublicationImageFromOldRemovePublicationImageAfterRemoveSubscription()
+    void shouldNotRemoveNewPublicationImageFromOldRemovePublicationImageAfterRemoveSubscription()
     {
         final PublicationImage mockImage1 = mock(PublicationImage.class);
         final PublicationImage mockImage2 = mock(PublicationImage.class);
@@ -237,14 +237,14 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldRemoveSessionSpecificSubscriptionWithoutAny()
+    void shouldRemoveSessionSpecificSubscriptionWithoutAny()
     {
         dispatcher.addSubscription(STREAM_ID, SESSION_ID);
         dispatcher.removeSubscription(STREAM_ID, SESSION_ID);
     }
 
     @Test
-    public void shouldRemoveSessionSpecificSubscriptionAndStillReceiveIntoImage()
+    void shouldRemoveSessionSpecificSubscriptionAndStillReceiveIntoImage()
     {
         final PublicationImage mockImage = mock(PublicationImage.class);
 

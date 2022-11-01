@@ -19,14 +19,15 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
+import java.nio.ByteBuffer;
+
 import static io.aeron.command.CounterMessageFlyweight.KEY_BUFFER_OFFSET;
 import static java.util.Arrays.fill;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CounterMessageFlyweightTest
 {
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(128, 8));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(128));
     private final CounterMessageFlyweight flyweight = new CounterMessageFlyweight();
 
     @Test
@@ -61,8 +62,9 @@ class CounterMessageFlyweightTest
     {
         final byte[] bytes = new byte[length];
         fill(bytes, (byte)1);
-        final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(4 + length, 4));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(4 + length));
         buffer.putBytes(4, bytes);
+
         return buffer;
     }
 }

@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ReceiverTest
+class ReceiverTest
 {
     private static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
     private static final int POSITION_BITS_TO_SHIFT = LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH);
@@ -84,10 +84,8 @@ public class ReceiverTest
     private final Position mockHighestReceivedPosition = spy(new AtomicLongPosition());
     private final Position mockRebuildPosition = spy(new AtomicLongPosition());
     private final Position mockSubscriberPosition = mock(Position.class);
-    private final ByteBuffer dataFrameBuffer = ByteBuffer.allocateDirect(2 * 1024);
-    private final UnsafeBuffer dataBuffer = new UnsafeBuffer(dataFrameBuffer);
-    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
-    private final UnsafeBuffer setupBuffer = new UnsafeBuffer(setupFrameBuffer);
+    private final UnsafeBuffer dataBuffer = new UnsafeBuffer(new byte[2 * 1024]);
+    private final UnsafeBuffer setupBuffer = new UnsafeBuffer(new byte[SetupFlyweight.HEADER_LENGTH]);
 
     private final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
 
@@ -125,7 +123,7 @@ public class ReceiverTest
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         final SubscriptionLink subscriptionLink = mock(SubscriptionLink.class);
         when(subscriptionLink.isTether()).thenReturn(Boolean.TRUE);
@@ -185,14 +183,14 @@ public class ReceiverTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         CloseHelper.closeAll(receiveChannelEndpoint, senderChannel, receiver::onClose);
     }
 
     @Test
     @InterruptAfter(10)
-    public void shouldCreateRcvTermAndSendSmOnSetup() throws IOException
+    void shouldCreateRcvTermAndSendSmOnSetup() throws IOException
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
@@ -255,7 +253,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldInsertDataIntoLogAfterInitialExchange()
+    void shouldInsertDataIntoLogAfterInitialExchange()
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
@@ -319,7 +317,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldNotOverwriteDataFrameWithHeartbeat()
+    void shouldNotOverwriteDataFrameWithHeartbeat()
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
@@ -386,7 +384,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldOverwriteHeartbeatWithDataFrame()
+    void shouldOverwriteHeartbeatWithDataFrame()
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
@@ -453,7 +451,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldHandleNonZeroTermOffsetCorrectly()
+    void shouldHandleNonZeroTermOffsetCorrectly()
     {
         final int initialTermOffset = align(TERM_BUFFER_LENGTH / 16, FrameDescriptor.FRAME_ALIGNMENT);
         final int alignedDataFrameLength =
@@ -525,7 +523,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldRemoveImageFromDispatcherWithNoActivity()
+    void shouldRemoveImageFromDispatcherWithNoActivity()
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
@@ -547,7 +545,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldNotRemoveImageFromDispatcherOnRemoveSubscription()
+    void shouldNotRemoveImageFromDispatcherOnRemoveSubscription()
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);

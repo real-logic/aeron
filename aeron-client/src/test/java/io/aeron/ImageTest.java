@@ -61,7 +61,7 @@ class ImageTest
     private static final int MESSAGE_LENGTH = HEADER_LENGTH + DATA.length;
     private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
 
-    private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(allocateDirect(ALIGNED_FRAME_LENGTH));
+    private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[ALIGNED_FRAME_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
     private final ControlledFragmentHandler mockControlledFragmentHandler = mock(ControlledFragmentHandler.class);

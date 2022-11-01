@@ -24,10 +24,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class MediaDriverTest
+class MediaDriverTest
 {
     @Test
-    public void shouldPrintConfigOnStart()
+    void shouldPrintConfigOnStart()
     {
         final MediaDriver.Context context = new MediaDriver.Context()
             .threadingMode(ThreadingMode.SHARED)
@@ -43,8 +43,7 @@ public class MediaDriverTest
         try (MediaDriver mediaDriver = MediaDriver.launch(context))
         {
             assertTrue(mediaDriver.context().printConfigurationOnStart());
-            final String result = os.toString();
-            assertThat(result, containsString("printConfigurationOnStart=true"));
+            assertThat(os.toString(), containsString("printConfigurationOnStart=true"));
         }
         finally
         {

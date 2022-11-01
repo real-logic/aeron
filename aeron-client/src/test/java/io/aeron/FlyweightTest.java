@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class FlyweightTest
 {
-    private final ByteBuffer buffer = ByteBuffer.allocateDirect(512);
+    private final ByteBuffer buffer = ByteBuffer.allocate(512);
 
     private final UnsafeBuffer aBuff = new UnsafeBuffer(buffer);
     private final HeaderFlyweight encodeHeader = new HeaderFlyweight();

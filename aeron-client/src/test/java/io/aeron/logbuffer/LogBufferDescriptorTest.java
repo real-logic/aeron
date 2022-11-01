@@ -18,12 +18,14 @@ package io.aeron.logbuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
+import java.nio.ByteBuffer;
+
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LogBufferDescriptorTest
 {
-    private final UnsafeBuffer metadataBuffer = new UnsafeBuffer(new byte[LOG_META_DATA_LENGTH]);
+    private final UnsafeBuffer metadataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_META_DATA_LENGTH));
 
     @Test
     void rotateLogIsAShouldCasActiveTermCountEvenWhenTermIdDoesNotMatch()

@@ -31,9 +31,7 @@ import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.fill;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
@@ -129,7 +127,7 @@ class CommonEventEncoderTest
     @Test
     void encodeBufferSmallerThanMaxCaptureSize()
     {
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(allocateDirectAligned(256, CACHE_LINE_LENGTH));
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[256]);
         final int offset = 24;
         final int srcOffset = 20;
         final int length = 128;
@@ -150,7 +148,7 @@ class CommonEventEncoderTest
     @Test
     void encodeBufferBuggerThanMaxCaptureSize()
     {
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH * 2, CACHE_LINE_LENGTH));
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[MAX_EVENT_LENGTH * 2]);
         final int offset = 256;
         final int srcOffset = 20;
         final int length = MAX_EVENT_LENGTH + 1000;

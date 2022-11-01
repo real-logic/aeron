@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class SelectorAndTransportTest
+class SelectorAndTransportTest
 {
     private static final int RCV_PORT = 40123;
     private static final int SRC_PORT = 40124;
@@ -91,7 +91,7 @@ public class SelectorAndTransportTest
         .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals());
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         when(mockSystemCounters.get(any())).thenReturn(mockStatusMessagesReceivedCounter);
         when(mockPublication.streamId()).thenReturn(STREAM_ID);
@@ -99,7 +99,7 @@ public class SelectorAndTransportTest
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         try
         {
@@ -126,7 +126,7 @@ public class SelectorAndTransportTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldHandleBasicSetupAndTearDown()
+    void shouldHandleBasicSetupAndTearDown()
     {
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
@@ -179,7 +179,7 @@ public class SelectorAndTransportTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSendEmptyDataFrameUnicastFromSourceToReceiver()
+    void shouldSendEmptyDataFrameUnicastFromSourceToReceiver()
     {
         final MutableInteger dataHeadersReceived = new MutableInteger(0);
 
@@ -230,7 +230,7 @@ public class SelectorAndTransportTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSendMultipleDataFramesPerDatagramUnicastFromSourceToReceiver()
+    void shouldSendMultipleDataFramesPerDatagramUnicastFromSourceToReceiver()
     {
         final MutableInteger dataHeadersReceived = new MutableInteger(0);
 
@@ -294,7 +294,7 @@ public class SelectorAndTransportTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldHandleSmFrameFromReceiverToSender()
+    void shouldHandleSmFrameFromReceiverToSender()
     {
         final MutableInteger controlMessagesReceived = new MutableInteger(0);
 

@@ -32,7 +32,7 @@
 #include "aeron_cnc_file_descriptor.h"
 #include "aeron_duty_cycle_tracker.h"
 
-#define AERON_COMMAND_QUEUE_CAPACITY (128)
+#define AERON_COMMAND_QUEUE_CAPACITY (512)
 #define AERON_COMMAND_DRAIN_LIMIT (2)
 
 #define AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX (16)

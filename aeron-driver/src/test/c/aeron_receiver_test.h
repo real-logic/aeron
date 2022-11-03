@@ -42,11 +42,10 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);
 typedef std::array<std::uint8_t, CAPACITY> buffer_t;
 typedef std::array<std::uint8_t, 4 * CAPACITY> buffer_4x_t;
 
-void verify_conductor_cmd_function(void *clientd, void *item)
+void verify_conductor_cmd_function(int32_t msg_type_id, const void *item, size_t length, void *clientd)
 {
     auto *cmd = (aeron_command_base_t *)item;
     ASSERT_EQ(clientd, (void *)cmd->func);
-    aeron_free((void *)item);
 }
 
 class ReceiverTestBase : public testing::Test
@@ -71,7 +70,11 @@ protected:
 
         aeron_driver_ensure_dir_is_recreated(m_context);
 
-        aeron_mpsc_concurrent_array_queue_init(&m_conductor_command_queue, 1024);
+        void *command_buffer;
+        int command_buffer_capacity = (512 * 1024) + AERON_RB_TRAILER_LENGTH;
+        aeron_alloc(&command_buffer, command_buffer_capacity);
+        aeron_mpsc_rb_init(&m_conductor_command_queue, command_buffer, command_buffer_capacity);
+
         m_conductor_proxy.command_queue = &m_conductor_command_queue;
         m_conductor_proxy.threading_mode = AERON_THREADING_MODE_DEDICATED;
         m_conductor_proxy.fail_counter = &m_conductor_fail_counter;
@@ -119,7 +122,7 @@ protected:
         }
 
         aeron_driver_receiver_on_close(&m_receiver);
-        aeron_mpsc_concurrent_array_queue_close(&m_conductor_command_queue);
+        free(m_conductor_proxy.command_queue->buffer);
         aeron_distinct_error_log_close(&m_error_log);
         aeron_system_counters_close(&m_system_counters);
         aeron_counters_manager_close(&m_counters_manager);
@@ -266,7 +269,7 @@ protected:
     aeron_name_resolver_t m_resolver = {};
     aeron_driver_conductor_proxy_t m_conductor_proxy = {};
     aeron_driver_receiver_proxy_t m_receiver_proxy = {};
-    aeron_mpsc_concurrent_array_queue_t m_conductor_command_queue = {};
+    aeron_mpsc_rb_t m_conductor_command_queue = {};
     int64_t m_conductor_fail_counter = 0;
     aeron_driver_receiver_t m_receiver = {};
     aeron_distinct_error_log_t m_error_log = {};

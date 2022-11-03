@@ -128,6 +128,7 @@ int aeron_reallocf(void **ptr, size_t size)
     return 0;
 }
 
+#include <stdio.h>
 void aeron_free(void *ptr)
 {
     free(ptr);

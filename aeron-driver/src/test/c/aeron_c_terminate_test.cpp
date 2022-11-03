@@ -15,7 +15,7 @@
  */
 
 #include <functional>
-
+#include <cmath>
 #include <gtest/gtest.h>
 
 #include "EmbeddedMediaDriver.h"
@@ -24,6 +24,7 @@ extern "C"
 {
 #include "aeron_client.h"
 #include "aeron_cnc_file_descriptor.h"
+#include "aeron_driver_conductor_proxy.h"
 }
 
 using namespace aeron;
@@ -46,4 +47,12 @@ TEST_F(TerminateTest, shouldShutdownDriver)
         driver.directory(), (uint8_t *)TERMINATION_KEY, strlen(TERMINATION_KEY))) << aeron_errmsg();
 
     driver.joinAndClose();
+}
+
+TEST_F(TerminateTest, foo)
+{
+    size_t i = sizeof(aeron_command_create_publication_image_t) * 256;
+    int k = (int)(log2(i));
+    int j = (int)(pow(2, k));
+    std::cout << (j << 1) << std::endl;
 }

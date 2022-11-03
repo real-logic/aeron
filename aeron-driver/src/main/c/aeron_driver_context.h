@@ -32,7 +32,7 @@
 #include "aeron_cnc_file_descriptor.h"
 #include "aeron_duty_cycle_tracker.h"
 
-#define AERON_COMMAND_QUEUE_CAPACITY (512)
+#define AERON_COMMAND_QUEUE_CAPACITY (128)
 #define AERON_COMMAND_DRAIN_LIMIT (2)
 
 #define AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX (16)
@@ -167,9 +167,9 @@ typedef struct aeron_driver_context_stct
     aeron_clock_cache_t *sender_cached_clock;
     aeron_clock_cache_t *receiver_cached_clock;
 
-    aeron_spsc_concurrent_array_queue_t sender_command_queue;
-    aeron_spsc_concurrent_array_queue_t receiver_command_queue;
-    aeron_mpsc_concurrent_array_queue_t conductor_command_queue;
+    aeron_mpsc_rb_t sender_command_queue;
+    aeron_mpsc_rb_t receiver_command_queue;
+    aeron_mpsc_rb_t conductor_command_queue;
 
     aeron_agent_on_start_func_t agent_on_start_func;
     void *agent_on_start_state;

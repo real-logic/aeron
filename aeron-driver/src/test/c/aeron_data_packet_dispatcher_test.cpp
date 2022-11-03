@@ -60,6 +60,11 @@ protected:
         return ReceiverTestBase::createImage(m_receive_endpoint, m_destination, stream_id, session_id, correlation_id);
     }
 
+    bool isEmpty(aeron_mpsc_rb_t *ring_buffer)
+    {
+        return aeron_mpsc_rb_consumer_position(ring_buffer) == aeron_mpsc_rb_producer_position(ring_buffer);
+    }
+
     aeron_receive_channel_endpoint_t *m_receive_endpoint = nullptr;
     aeron_receive_destination_t *m_destination = nullptr;
     aeron_data_packet_dispatcher_t *m_dispatcher = nullptr;
@@ -219,7 +224,7 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponReceivingSetupOnceF
         sizeof(*setup_header),
         &m_receive_endpoint->conductor_fields.udp_channel->local_data);
 
-    ASSERT_EQ(UINT64_C(1), aeron_mpsc_concurrent_array_queue_drain(
+    ASSERT_EQ(UINT64_C(1), aeron_mpsc_rb_read(
         m_conductor_proxy.command_queue,
         verify_conductor_cmd_function,
         get_on_publication_image_fptr(),
@@ -264,7 +269,7 @@ TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponReceivingSetupMulti
         sizeof(*setup_header_1),
         &m_receive_endpoint->conductor_fields.udp_channel->local_data);
 
-    ASSERT_EQ(UINT64_C(3), aeron_mpsc_concurrent_array_queue_drain(
+    ASSERT_EQ(UINT64_C(3), aeron_mpsc_rb_read(
         m_conductor_proxy.command_queue,
         verify_conductor_cmd_function,
         get_on_publication_image_fptr(),
@@ -328,7 +333,7 @@ TEST_F(DataPacketDispatcherTest, shouldIgnoreDataAndSetupAfterImageRemoved)
         data_buffer.data(),
         len,
         &m_receive_endpoint->conductor_fields.udp_channel->local_data);
-    ASSERT_EQ(UINT64_C(0), aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));
+    ASSERT_TRUE(isEmpty(m_conductor_proxy.command_queue));
     aeron_data_packet_dispatcher_on_setup(
         m_dispatcher,
         m_receive_endpoint,
@@ -339,7 +344,7 @@ TEST_F(DataPacketDispatcherTest, shouldIgnoreDataAndSetupAfterImageRemoved)
         &m_receive_endpoint->conductor_fields.udp_channel->local_data);
 
     ASSERT_EQ(0, m_test_bindings_state->msg_count + m_test_bindings_state->mmsg_count);
-    ASSERT_EQ(UINT64_C(0), aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));
+    ASSERT_TRUE(isEmpty(m_conductor_proxy.command_queue));
 }
 
 TEST_F(DataPacketDispatcherTest, shouldNotIgnoreDataAndSetupAfterImageRemovedAndCoolDownRemoved)
@@ -379,7 +384,7 @@ TEST_F(DataPacketDispatcherTest, shouldNotIgnoreDataAndSetupAfterImageRemovedAnd
         &m_receive_endpoint->conductor_fields.udp_channel->local_data);
 
     EXPECT_EQ(1, m_test_bindings_state->sm_count);
-    ASSERT_EQ(UINT64_C(1), aeron_mpsc_concurrent_array_queue_drain(
+    ASSERT_EQ(UINT64_C(1), aeron_mpsc_rb_read(
         m_conductor_proxy.command_queue,
         verify_conductor_cmd_function,
         get_on_publication_image_fptr(),
@@ -440,13 +445,13 @@ TEST_F(DataPacketDispatcherTest, shouldAddSessionSpecificSubscriptionAndIgnoreOt
         sizeof(*setup_session1),
         &m_receive_endpoint->conductor_fields.udp_channel->local_data);
 
-    ASSERT_EQ((size_t)1, aeron_mpsc_concurrent_array_queue_drain(
+    ASSERT_EQ((size_t)1, aeron_mpsc_rb_read(
         m_conductor_proxy.command_queue,
         verify_conductor_cmd_function,
         get_on_publication_image_fptr(),
         1));
 
-    ASSERT_EQ((size_t)0, aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));
+    ASSERT_TRUE(isEmpty(m_conductor_proxy.command_queue));
 
     aeron_setup_header_t *setup_session2_ignored = setupPacket(data_buffer, stream_id, session_id2);
     aeron_data_packet_dispatcher_on_setup(
@@ -458,7 +463,7 @@ TEST_F(DataPacketDispatcherTest, shouldAddSessionSpecificSubscriptionAndIgnoreOt
         sizeof(*setup_session2_ignored),
         &m_receive_endpoint->conductor_fields.udp_channel->local_data);
 
-    ASSERT_EQ((size_t)0, aeron_mpsc_concurrent_array_queue_size(m_conductor_proxy.command_queue));
+    ASSERT_TRUE(isEmpty(m_conductor_proxy.command_queue));
 }
 
 TEST_F(DataPacketDispatcherTest, shouldRemoveSessionSpecificSubscriptionAndStillReceiveIntoImage)

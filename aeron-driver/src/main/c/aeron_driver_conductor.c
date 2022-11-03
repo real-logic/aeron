@@ -2784,6 +2784,16 @@ void aeron_driver_conductor_track_time(aeron_driver_conductor_t *conductor, int6
     }
 }
 
+static void aeron_driver_conductor_on_rb_command_queue(
+    int32_t msg_type_id,
+    const void *message,
+    size_t size,
+    void *clientd)
+{
+    aeron_command_base_t *cmd = (aeron_command_base_t *)message;
+    cmd->func(clientd, cmd);
+}
+
 int aeron_driver_conductor_do_work(void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
@@ -2794,9 +2804,9 @@ int aeron_driver_conductor_do_work(void *clientd)
 
     work_count += (int)aeron_mpsc_rb_read(
         &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, AERON_COMMAND_DRAIN_LIMIT);
-    work_count += (int)aeron_mpsc_concurrent_array_queue_drain(
+    work_count += (int)aeron_mpsc_rb_read(
         conductor->conductor_proxy.command_queue,
-        aeron_driver_conductor_on_command_queue,
+        aeron_driver_conductor_on_rb_command_queue,
         conductor,
         AERON_COMMAND_DRAIN_LIMIT);
     work_count += conductor->name_resolver.do_work_func(&conductor->name_resolver, now_ms);

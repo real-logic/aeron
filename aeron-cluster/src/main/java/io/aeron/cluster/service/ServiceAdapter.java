@@ -33,6 +33,7 @@ final class ServiceAdapter implements AutoCloseable
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final JoinLogDecoder joinLogDecoder = new JoinLogDecoder();
+    private final RequestServiceAckDecoder requestServiceAckDecoder = new RequestServiceAckDecoder();
     private final ServiceTerminationPositionDecoder serviceTerminationPositionDecoder =
         new ServiceTerminationPositionDecoder();
 
@@ -90,6 +91,16 @@ final class ServiceAdapter implements AutoCloseable
                     messageHeaderDecoder.version());
 
                 clusteredServiceAgent.onServiceTerminationPosition(serviceTerminationPositionDecoder.logPosition());
+                break;
+
+            case RequestServiceAckDecoder.TEMPLATE_ID:
+                requestServiceAckDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                clusteredServiceAgent.onRequestServiceAck(requestServiceAckDecoder.logPosition());
                 break;
         }
     }

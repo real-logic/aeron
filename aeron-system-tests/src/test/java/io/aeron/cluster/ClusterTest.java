@@ -23,7 +23,12 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.client.ControlledEgressListener;
 import io.aeron.cluster.client.EgressListener;
-import io.aeron.cluster.codecs.*;
+import io.aeron.cluster.codecs.AdminRequestEncoder;
+import io.aeron.cluster.codecs.AdminRequestType;
+import io.aeron.cluster.codecs.AdminResponseCode;
+import io.aeron.cluster.codecs.AdminResponseEncoder;
+import io.aeron.cluster.codecs.MessageHeaderDecoder;
+import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.security.AuthorisationService;
@@ -55,12 +60,22 @@ import static io.aeron.cluster.service.Cluster.Role.LEADER;
 import static io.aeron.logbuffer.FrameDescriptor.computeMaxMessageLength;
 import static io.aeron.test.SystemTestWatcher.UNKNOWN_HOST_FILTER;
 import static io.aeron.test.Tests.awaitAvailableWindow;
-import static io.aeron.test.cluster.ClusterTests.*;
-import static io.aeron.test.cluster.TestCluster.*;
+import static io.aeron.test.cluster.ClusterTests.NO_OP_MSG;
+import static io.aeron.test.cluster.ClusterTests.REGISTER_TIMER_MSG;
+import static io.aeron.test.cluster.ClusterTests.startPublisherThread;
+import static io.aeron.test.cluster.TestCluster.aCluster;
+import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
+import static io.aeron.test.cluster.TestCluster.awaitElectionState;
+import static io.aeron.test.cluster.TestCluster.awaitLossOfLeadership;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SlowTest
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
@@ -1969,6 +1984,27 @@ class ClusterTest
 
         cluster.restartAllNodes(false);
         cluster.awaitServicesMessageCount(1024);
+    }
+
+    @Test
+    void shouldHandleReusingCorrelationIdsAcrossASnapshot()
+    {
+        cluster = aCluster().withSegmentFileLength(512 * 1024).start();
+        systemTestWatcher.cluster(cluster);
+
+        cluster.awaitLeader();
+        cluster.connectClient();
+        final int messageLength1 = cluster.msgBuffer().putStringWithoutLengthAscii(0, REGISTER_TIMER_MSG);
+        cluster.pollUntilMessageSent(messageLength1);
+        cluster.awaitResponseMessageCount(1);
+
+        cluster.awaitTimerEventCount(1);
+
+        final int messageLength2 = cluster.msgBuffer().putStringWithoutLengthAscii(0, REGISTER_TIMER_MSG);
+        cluster.pollUntilMessageSent(messageLength2);
+        cluster.awaitResponseMessageCount(2);
+
+        cluster.awaitTimerEventCount(1);
     }
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)

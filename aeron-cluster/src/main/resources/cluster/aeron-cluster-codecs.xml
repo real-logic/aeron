@@ -408,6 +408,12 @@
         </group>
     </sbe:message>
 
+    <sbe:message name="requestServiceAck"
+                 id="108"
+                 description="request an ack from all service container on the same node">
+        <field name="logPosition" id="1" type="int64"/>
+    </sbe:message>
+
 <!--
     Cluster Consensus Protocol
     ==========================

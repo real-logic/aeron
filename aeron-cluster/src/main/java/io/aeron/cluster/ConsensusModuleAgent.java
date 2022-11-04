@@ -265,7 +265,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings("try")
     public void onStart()
     {
         archive = AeronArchive.connect(ctx.archiveContext().clone());
@@ -280,26 +279,13 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 archive.tryStopRecordingByIdentity(lastTermRecordingId);
             }
 
-            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
-            if (null != recoveryPlan.log)
+            if (null == ctx.boostrapState())
             {
-                logRecordingId(recoveryPlan.log.recordingId);
+                recoveryPlan = recoverFromSnapshotAndLog();
             }
-
-            try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
+            else
             {
-                if (!recoveryPlan.snapshots.isEmpty())
-                {
-                    loadSnapshot(recoveryPlan.snapshots.get(0), archive);
-                }
-
-                while (!ServiceAck.hasReached(expectedAckPosition, serviceAckId, serviceAckQueues))
-                {
-                    idle(consensusModuleAdapter.poll());
-                }
-
-                captureServiceClientIds();
-                ++serviceAckId;
+                recoveryPlan = recoverFromBootstrapState();
             }
 
             ClusterMember.addConsensusPublications(
@@ -3663,6 +3649,104 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 break;
             }
         }
+    }
+
+    @SuppressWarnings("try")
+    private RecordingLog.RecoveryPlan recoverFromSnapshotAndLog()
+    {
+        final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(
+            archive, ctx.serviceCount(), logRecordingId);
+        if (null != recoveryPlan.log)
+        {
+            logRecordingId(recoveryPlan.log.recordingId);
+        }
+
+        try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
+        {
+            if (!recoveryPlan.snapshots.isEmpty())
+            {
+                loadSnapshot(recoveryPlan.snapshots.get(0), archive);
+            }
+
+            while (!ServiceAck.hasReached(expectedAckPosition, serviceAckId, serviceAckQueues))
+            {
+                idle(consensusModuleAdapter.poll());
+            }
+
+            captureServiceClientIds();
+            ++serviceAckId;
+        }
+        return recoveryPlan;
+    }
+
+    private RecordingLog.RecoveryPlan recoverFromBootstrapState()
+    {
+        final ConsensusModuleStateExport boostrapState = ctx.boostrapState();
+
+        logRecordingId(boostrapState.logRecordingId);
+        final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(
+            archive, ctx.serviceCount(), logRecordingId);
+
+        expectedAckPosition = boostrapState.expectedAckPosition;
+        serviceAckId = boostrapState.serviceAckId;
+        leadershipTermId = boostrapState.leadershipTermId;
+        nextSessionId = boostrapState.nextSessionId;
+
+        for (final ConsensusModuleStateExport.TimerStateExport timer : boostrapState.timers)
+        {
+            onLoadTimer(timer.correlationId, timer.deadline, null, 0, 0);
+        }
+
+        for (final ConsensusModuleStateExport.ClusterSessionStateExport sessionExport : boostrapState.sessions)
+        {
+            onLoadClusterSession(
+                sessionExport.id,
+                sessionExport.correlationId,
+                sessionExport.openedLogPosition,
+                sessionExport.timeOfLastActivityNs,
+                sessionExport.closeReason,
+                sessionExport.responseStreamId,
+                refineResponseChannel(sessionExport.responseChannel),
+                null, 0, 0);
+        }
+
+        final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+        final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
+        for (final ConsensusModuleStateExport.PendingServiceMessageTrackerStateExport tracker :
+            boostrapState.pendingMessageTrackers)
+        {
+            onLoadPendingMessageTracker(
+                tracker.nextServiceSessionId,
+                tracker.logServiceSessionId,
+                tracker.capacity,
+                tracker.serviceId,
+                null, 0, 0);
+
+            tracker.pendingMessages.forEach(
+                (buffer, offset, length, headOffset) ->
+                {
+                    sessionMessageHeaderDecoder.wrap(
+                        buffer,
+                        offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                        messageHeaderDecoder.blockLength(),
+                        messageHeaderDecoder.version());
+                    onLoadPendingMessage(
+                        sessionMessageHeaderDecoder.clusterSessionId(), buffer, offset, length);
+                    return true;
+                },
+                Integer.MAX_VALUE);
+        }
+
+        serviceProxy.requestServiceAck(expectedAckPosition);
+
+        while (!ServiceAck.hasReached(expectedAckPosition, serviceAckId, serviceAckQueues))
+        {
+            idle(consensusModuleAdapter.poll());
+        }
+
+        captureServiceClientIds();
+        ++serviceAckId;
+        return recoveryPlan;
     }
 
     public String toString()

@@ -71,9 +71,10 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     private final MediaDriverTestUtil mediaDriverTestUtil = new MediaDriverTestUtil();
 
-    private final ArrayList<AutoCloseable> closeables = new ArrayList<>();
     private Predicate<String> logFilter = TEST_CLUSTER_DEFAULT_LOG_FILTER;
     private DataCollector dataCollector = new DataCollector();
+    private ArrayList<AutoCloseable> closeables = new ArrayList<>();
+    private boolean skipDeleteOnFailure = false;
 
     public SystemTestWatcher cluster(final TestCluster testCluster)
     {
@@ -123,6 +124,11 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         this.logFilter = (s) -> true;
     }
 
+    public void skipDeleteOnFailure(final boolean skipDeleteOnFailure)
+    {
+        this.skipDeleteOnFailure = skipDeleteOnFailure;
+    }
+
     public void afterTestExecution(final ExtensionContext context)
     {
         mediaDriverTestUtil.afterTestExecution(context);
@@ -138,14 +144,15 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     public void afterEach(final ExtensionContext context)
     {
         final boolean interrupted = Thread.interrupted();
+        Optional<Throwable> failureCause = Optional.empty();
         try
         {
-            final Optional<Throwable> executionException = context.getExecutionException();
-            if (executionException.filter(t -> !(t instanceof TestAbortedException)).isPresent())
+            failureCause = getFailureExceptionIgnoringAbort(context);
+            if (failureCause.isPresent())
             {
                 final String test = context.getTestClass().map(Class::getName).orElse("unknown") + "-" +
                     context.getTestMethod().map(Method::getName).orElse("unknown");
-                System.out.println("*** " + test + " failed, cause: " + executionException.get());
+                System.out.println("*** " + test + " failed, cause: " + failureCause.get());
                 reportAndTerminate(test);
                 mediaDriverTestUtil.testFailed();
             }
@@ -157,12 +164,18 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
         finally
         {
-            deleteAllLocations();
+            deleteAllLocations(failureCause);
             if (interrupted)
             {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    private Optional<Throwable> getFailureExceptionIgnoringAbort(final ExtensionContext context)
+    {
+        final Optional<Throwable> executionException = context.getExecutionException();
+        return executionException.filter(t -> !(t instanceof TestAbortedException));
     }
 
     private void filterErrors(final MutableInteger count, final StringBuilder errors)
@@ -420,8 +433,13 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
     }
 
-    private void deleteAllLocations()
+    private void deleteAllLocations(final Optional<Throwable> failureCause)
     {
+        if (failureCause.isPresent() && skipDeleteOnFailure)
+        {
+            return;
+        }
+
         for (final Path path : dataCollector.cleanupLocations())
         {
             IoUtil.delete(path.toFile(), true);

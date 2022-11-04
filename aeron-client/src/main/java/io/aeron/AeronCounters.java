@@ -260,7 +260,7 @@ public final class AeronCounters
     public static final int CLUSTER_CLUSTERED_SERVICE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID = 219;
 
     /**
-     * The type id of the {@link Counter} used for the warm standby state.
+     * The type id of the {@link Counter} used for the cluster standby state.
      */
     public static final int CLUSTER_STANDBY_STATE_TYPE_ID = 220;
 
@@ -278,6 +278,49 @@ public final class AeronCounters
      * Standby control toggle type id
      */
     public static final int CLUSTER_STANDBY_CONTROL_TOGGLE_TYPE_ID = 223;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the max duty cycle time of the cluster standby.
+     */
+    public static final int CLUSTER_STANDBY_MAX_CYCLE_TIME_TYPE_ID = 227;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the count of cycle time threshold exceeded of
+     * the cluster standby.
+     */
+    public static final int CLUSTER_STANDBY_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID = 228;
+
+    /**
+     * The type id of the {@link Counter} to make visible the memberId that the cluster standby is currently using to
+     * as a source for the cluster log.
+     */
+    public static final int CLUSTER_STANDBY_SOURCE_MEMBER_ID_TYPE_ID = 231;
+
+    /**
+     * Counter type id for the transition module error count.
+     */
+    public static final int TRANSITION_MODULE_ERROR_COUNT_TYPE_ID = 226;
+
+    /**
+     * The type if of the {@link Counter} used for transition module state
+     */
+    public static final int TRANSITION_MODULE_STATE_TYPE_ID = 224;
+
+    /**
+     * Transition module control toggle type id
+     */
+    public static final int TRANSITION_MODULE_CONTROL_TOGGLE_TYPE_ID = 225;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the max duty cycle time of the transition module.
+     */
+    public static final int TRANSITION_MODULE_MAX_CYCLE_TIME_TYPE_ID = 229;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the count of cycle time threshold exceeded of
+     * the transition module.
+     */
+    public static final int TRANSITION_MODULE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID = 230;
 
     private AeronCounters()
     {

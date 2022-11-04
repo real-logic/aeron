@@ -93,49 +93,8 @@ public final class TestCluster implements AutoCloseable
 
     private final DataCollector dataCollector = new DataCollector();
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-    private final MutableLong responseCount = new MutableLong();
-    private final MutableInteger newLeaderEvent = new MutableInteger();
-    private EgressListener egressListener = new EgressListener()
-    {
-        public void onMessage(
-            final long clusterSessionId,
-            final long timestamp,
-            final DirectBuffer buffer,
-            final int offset,
-            final int length,
-            final Header header)
-        {
-            responseCount.increment();
-        }
-
-        public void onSessionEvent(
-            final long correlationId,
-            final long clusterSessionId,
-            final long leadershipTermId,
-            final int leaderMemberId,
-            final EventCode code,
-            final String detail)
-        {
-            if (EventCode.ERROR == code)
-            {
-                throw new ClusterException(detail);
-            }
-            else if (EventCode.CLOSED == code && shouldErrorOnClientClose)
-            {
-                final String msg = "[" + System.nanoTime() / 1_000_000_000.0 + "] session closed due to " + detail;
-                throw new ClusterException(msg);
-            }
-        }
-
-        public void onNewLeader(
-            final long clusterSessionId,
-            final long leadershipTermId,
-            final int leaderMemberId,
-            final String ingressEndpoints)
-        {
-            newLeaderEvent.increment();
-        }
-    };
+    private final DefaultEgressListener defaultEgressListener = new DefaultEgressListener();
+    private EgressListener egressListener = defaultEgressListener;
     private ControlledEgressListener controlledEgressListener;
 
     private final TestNode[] nodes;
@@ -149,7 +108,6 @@ public final class TestCluster implements AutoCloseable
     private final int backupNodeIndex;
     private final IntHashSet invalidInitialResolutions;
     private final IntFunction<TestNode.TestService[]> serviceSupplier;
-    private boolean shouldErrorOnClientClose = true;
     private String logChannel;
     private String ingressChannel;
     private String egressChannel;
@@ -650,6 +608,11 @@ public final class TestCluster implements AutoCloseable
         CloseHelper.closeAll(nodes);
     }
 
+    public void stopClient()
+    {
+        CloseHelper.closeAll(client, clientMediaDriver);
+    }
+
     public void restartAllNodes(final boolean cleanStart)
     {
         for (int i = 0; i < staticMemberCount; i++)
@@ -660,7 +623,7 @@ public final class TestCluster implements AutoCloseable
 
     public void shouldErrorOnClientClose(final boolean shouldErrorOnClose)
     {
-        this.shouldErrorOnClientClose = shouldErrorOnClose;
+        defaultEgressListener.shouldErrorOnClientClose = shouldErrorOnClose;
     }
 
     public void logChannel(final String logChannel)
@@ -926,9 +889,10 @@ public final class TestCluster implements AutoCloseable
     {
         clientKeepAlive.init();
         long count;
-        final Supplier<String> msg = () -> "expected=" + messageCount + " responseCount=" + responseCount.get();
+        final Supplier<String> msg =
+            () -> "expected=" + messageCount + " responseCount=" + defaultEgressListener.responseCount();
 
-        while ((count = responseCount.get()) < messageCount)
+        while ((count = defaultEgressListener.responseCount()) < messageCount)
         {
             client.pollEgress();
 
@@ -947,7 +911,7 @@ public final class TestCluster implements AutoCloseable
 
     public void awaitNewLeadershipEvent(final int count)
     {
-        while (newLeaderEvent.get() < count || !client.ingressPublication().isConnected())
+        while (defaultEgressListener.newLeaderEvent() < count || !client.ingressPublication().isConnected())
         {
             await(1);
             client.pollEgress();
@@ -1186,6 +1150,11 @@ public final class TestCluster implements AutoCloseable
         return snapshotCounter.get();
     }
 
+    public long logPosition()
+    {
+        final TestNode leader = findLeader();
+        return leader.consensusModule().context().commitPositionCounter().get();
+    }
 
     public void awaitNodeTermination(final TestNode node)
     {
@@ -1382,12 +1351,18 @@ public final class TestCluster implements AutoCloseable
 
     public static String ingressEndpoints(final int clusterId, final int memberCount)
     {
+        return ingressEndpoints(clusterId, 0, memberCount);
+    }
+
+    public static String ingressEndpoints(final int clusterId, final int initialMemberId, final int memberCount)
+    {
         final StringBuilder builder = new StringBuilder();
 
         for (int i = 0; i < memberCount; i++)
         {
-            builder.append(i).append('=').append(hostname(i)).append(":2").append(clusterId).append("11")
-                .append(i).append(',');
+            final int memberId = initialMemberId + i;
+            builder.append(memberId).append('=').append(hostname(memberId)).append(":2").append(clusterId).append("11")
+                .append(memberId).append(',');
         }
 
         builder.setLength(builder.length() - 1);
@@ -1936,6 +1911,62 @@ public final class TestCluster implements AutoCloseable
                 client.sendKeepAlive();
                 keepAliveDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
             }
+        }
+    }
+
+    static class DefaultEgressListener implements EgressListener
+    {
+        private final MutableLong responseCount = new MutableLong();
+        private final MutableInteger newLeaderEvent = new MutableInteger();
+        private boolean shouldErrorOnClientClose = true;
+
+        public void onMessage(
+            final long clusterSessionId,
+            final long timestamp,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
+        {
+            responseCount.increment();
+        }
+
+        public void onSessionEvent(
+            final long correlationId,
+            final long clusterSessionId,
+            final long leadershipTermId,
+            final int leaderMemberId,
+            final EventCode code,
+            final String detail)
+        {
+            if (EventCode.ERROR == code)
+            {
+                throw new ClusterException(detail);
+            }
+            else if (EventCode.CLOSED == code && shouldErrorOnClientClose)
+            {
+                final String msg = "[" + System.nanoTime() / 1_000_000_000.0 + "] session closed due to " + detail;
+                throw new ClusterException(msg);
+            }
+        }
+
+        public void onNewLeader(
+            final long clusterSessionId,
+            final long leadershipTermId,
+            final int leaderMemberId,
+            final String ingressEndpoints)
+        {
+            newLeaderEvent.increment();
+        }
+
+        long responseCount()
+        {
+            return responseCount.get();
+        }
+
+        int newLeaderEvent()
+        {
+            return newLeaderEvent.get();
         }
     }
 }

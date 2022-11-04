@@ -291,6 +291,12 @@ public final class AeronCounters
     public static final int CLUSTER_STANDBY_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID = 228;
 
     /**
+     * The type id of the {@link Counter} to make visible the memberId that the cluster standby is currently using to
+     * as a source for the cluster log.
+     */
+    public static final int CLUSTER_STANDBY_SOURCE_MEMBER_ID_TYPE_ID = 231;
+
+    /**
      * Counter type id for the transition module error count.
      */
     public static final int TRANSITION_MODULE_ERROR_COUNT_TYPE_ID = 226;

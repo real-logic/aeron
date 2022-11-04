@@ -35,9 +35,6 @@ typedef struct aeron_driver_receiver_proxy_stct
 }
 aeron_driver_receiver_proxy_t;
 
-void aeron_driver_receiver_proxy_on_delete_cmd(
-    aeron_driver_receiver_proxy_t *receiver_proxy, aeron_command_base_t *cmd);
-
 void aeron_driver_receiver_proxy_on_add_endpoint(
     aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint);
 void aeron_driver_receiver_proxy_on_remove_endpoint(

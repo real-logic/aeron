@@ -21,10 +21,17 @@
 
 void aeron_driver_conductor_proxy_offer(aeron_driver_conductor_proxy_t *conductor_proxy, void *cmd, size_t length)
 {
-    while (aeron_mpsc_rb_write(conductor_proxy->command_queue, 1, cmd, length) < 0)
+    aeron_rb_write_result_t result;
+    while (AERON_RB_FULL == (result = aeron_mpsc_rb_write(conductor_proxy->command_queue, 1, cmd, length)))
     {
         aeron_counter_ordered_increment(conductor_proxy->fail_counter, 1);
         sched_yield();
+    }
+
+    if (AERON_RB_ERROR == result)
+    {
+        aeron_distinct_error_log_record(
+            &conductor_proxy->conductor->error_log, EINVAL, "Error writing to receiver proxy ring buffer");
     }
 }
 

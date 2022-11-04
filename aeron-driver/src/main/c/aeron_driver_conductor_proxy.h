@@ -79,8 +79,6 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     void *endpoint,
     void *destination);
 
-void aeron_driver_conductor_proxy_on_linger_buffer(aeron_driver_conductor_proxy_t *conductor_proxy, uint8_t *buffer);
-
 void aeron_driver_conductor_proxy_on_re_resolve_endpoint(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     const char *endpoint_name,

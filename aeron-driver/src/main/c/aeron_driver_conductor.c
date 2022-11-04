@@ -4289,8 +4289,6 @@ void aeron_driver_conductor_on_delete_receive_destination(void *clientd, void *i
 
     aeron_udp_channel_delete((aeron_udp_channel_t *)command->channel);
     aeron_receive_destination_delete((aeron_receive_destination_t *)command->destination, &conductor->counters_manager);
-
-    aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, (aeron_command_base_t *)command);
 }
 
 void aeron_driver_conductor_on_delete_send_destination(void *clientd, void *cmd)
@@ -4580,7 +4578,6 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     }
 
     aeron_driver_receiver_proxy_on_add_publication_image(conductor->context->receiver_proxy, endpoint, image);
-    aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, item);
 }
 
 void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
@@ -4645,7 +4642,7 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
     {
         AERON_APPEND_ERR("%s", "");
         aeron_driver_conductor_log_error(conductor);
-        goto cleanup;
+        return;
     }
 
     if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
@@ -4653,9 +4650,6 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
         aeron_driver_receiver_proxy_on_resolution_change(
             conductor->context->receiver_proxy, cmd->endpoint_name, cmd->endpoint, cmd->destination, &resolved_addr);
     }
-
-cleanup:
-    aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, item);
 }
 
 void aeron_driver_conductor_on_receive_endpoint_removed(void *clientd, void *item)
@@ -4676,8 +4670,6 @@ void aeron_driver_conductor_on_receive_endpoint_removed(void *clientd, void *ite
         aeron_receive_channel_endpoint_close(endpoint);
         aeron_receive_channel_endpoint_receiver_release(endpoint);
     }
-
-    aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, cmd);
 }
 
 extern void aeron_driver_subscribable_null_hook(void *clientd, volatile int64_t *value_addr);

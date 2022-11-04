@@ -148,7 +148,6 @@ class DriverConductorTest
         final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(
             ByteBuffer.allocate(Configuration.countersMetadataBufferLength(BUFFER_LENGTH)));
         spyCountersManager = spy(new CountersManager(metaDataBuffer, counterBuffer, StandardCharsets.US_ASCII));
-
         spySystemCounters = spy(new SystemCounters(spyCountersManager));
 
         when(spySystemCounters.get(SystemCounterDescriptor.ERRORS)).thenReturn(mockErrorCounter);

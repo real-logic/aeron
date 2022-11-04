@@ -213,12 +213,17 @@ public final class DriverConductor implements Agent
 
         int workCount = 0;
         workCount += processTimers(nowNs);
-        workCount += clientCommandAdapter.receive();
         workCount += driverCmdQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
+        workCount += clientCommandAdapter.receive();
         workCount += trackStreamPositions(workCount, nowNs);
         workCount += nameResolver.doWork(cachedEpochClock.time());
 
         return workCount;
+    }
+
+    boolean notAcceptingClientCommands()
+    {
+        return senderProxy.isApplyingBackpressure() || receiverProxy.isApplyingBackpressure();
     }
 
     void onCreatePublicationImage(

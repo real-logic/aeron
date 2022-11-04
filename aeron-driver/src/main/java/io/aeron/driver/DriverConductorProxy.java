@@ -20,10 +20,10 @@ import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.AgentTerminationException;
+import org.agrona.concurrent.QueuedPipe;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
-import java.util.Queue;
 
 import static io.aeron.driver.ThreadingMode.INVOKER;
 import static io.aeron.driver.ThreadingMode.SHARED;
@@ -34,13 +34,13 @@ import static io.aeron.driver.ThreadingMode.SHARED;
 public final class DriverConductorProxy
 {
     private final ThreadingMode threadingMode;
-    private final Queue<Runnable> commandQueue;
+    private final QueuedPipe<Runnable> commandQueue;
     private final AtomicCounter failCount;
 
     private DriverConductor driverConductor;
 
     DriverConductorProxy(
-        final ThreadingMode threadingMode, final Queue<Runnable> commandQueue, final AtomicCounter failCount)
+        final ThreadingMode threadingMode, final QueuedPipe<Runnable> commandQueue, final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;

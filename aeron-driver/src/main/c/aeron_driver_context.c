@@ -393,7 +393,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
-    const size_t command_rb_capacity = (AERON_COMMAND_QUEUE_CAPACITY * 1024) + AERON_RB_TRAILER_LENGTH;
+    const size_t command_rb_capacity = (AERON_COMMAND_RB_CAPACITY * 1024) + AERON_RB_TRAILER_LENGTH;
 
     void *sender_buffer;
     if (aeron_alloc(&sender_buffer, command_rb_capacity))

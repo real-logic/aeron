@@ -25,13 +25,10 @@ typedef struct aeron_driver_conductor_proxy_stct
 {
     aeron_driver_conductor_t *conductor;
     aeron_threading_mode_t threading_mode;
-    aeron_mpsc_concurrent_array_queue_t *command_queue;
+    aeron_mpsc_rb_t *command_queue;
     int64_t *fail_counter;
 }
 aeron_driver_conductor_proxy_t;
-
-void aeron_driver_conductor_proxy_on_delete_cmd(
-    aeron_driver_conductor_proxy_t *conductor_proxy, aeron_command_base_t *cmd);
 
 typedef struct aeron_command_create_publication_image_stct
 {
@@ -81,8 +78,6 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     struct sockaddr_storage *src_address,
     void *endpoint,
     void *destination);
-
-void aeron_driver_conductor_proxy_on_linger_buffer(aeron_driver_conductor_proxy_t *conductor_proxy, uint8_t *buffer);
 
 void aeron_driver_conductor_proxy_on_re_resolve_endpoint(
     aeron_driver_conductor_proxy_t *conductor_proxy,

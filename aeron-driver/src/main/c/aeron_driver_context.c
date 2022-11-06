@@ -393,18 +393,44 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
-    if (aeron_spsc_concurrent_array_queue_init(&_context->sender_command_queue, AERON_COMMAND_QUEUE_CAPACITY) < 0)
+    const size_t command_rb_capacity = (AERON_COMMAND_RB_CAPACITY * 1024) + AERON_RB_TRAILER_LENGTH;
+
+    void *sender_buffer;
+    if (aeron_alloc(&sender_buffer, command_rb_capacity))
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
-    if (aeron_spsc_concurrent_array_queue_init(&_context->receiver_command_queue, AERON_COMMAND_QUEUE_CAPACITY) < 0)
+    if (aeron_mpsc_rb_init(&_context->sender_command_queue, sender_buffer, command_rb_capacity))
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
-    if (aeron_mpsc_concurrent_array_queue_init(&_context->conductor_command_queue, AERON_COMMAND_QUEUE_CAPACITY) < 0)
+    void *receiver_buffer;
+    if (aeron_alloc(&receiver_buffer, command_rb_capacity))
     {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (aeron_mpsc_rb_init(&_context->receiver_command_queue, receiver_buffer, command_rb_capacity))
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    void *conductor_buffer;
+    if (aeron_alloc(&conductor_buffer, command_rb_capacity))
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (aeron_mpsc_rb_init(&_context->conductor_command_queue, conductor_buffer, command_rb_capacity))
+    {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -1223,16 +1249,9 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
         return -1;
     }
 
-    aeron_mpsc_concurrent_array_queue_drain_all(
-        &context->conductor_command_queue, aeron_driver_context_drain_all_free, context);
-    aeron_spsc_concurrent_array_queue_drain_all(
-        &context->sender_command_queue, aeron_driver_context_drain_all_free, context);
-    aeron_spsc_concurrent_array_queue_drain_all(
-        &context->receiver_command_queue, aeron_driver_context_drain_all_free, context);
-
-    aeron_mpsc_concurrent_array_queue_close(&context->conductor_command_queue);
-    aeron_spsc_concurrent_array_queue_close(&context->sender_command_queue);
-    aeron_spsc_concurrent_array_queue_close(&context->receiver_command_queue);
+    aeron_free(context->conductor_command_queue.buffer);
+    aeron_free(context->sender_command_queue.buffer);
+    aeron_free(context->receiver_command_queue.buffer);
 
     aeron_driver_context_free_bindings(context->udp_channel_outgoing_interceptor_bindings);
     aeron_driver_context_free_bindings(context->udp_channel_incoming_interceptor_bindings);

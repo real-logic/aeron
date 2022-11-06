@@ -2784,6 +2784,16 @@ void aeron_driver_conductor_track_time(aeron_driver_conductor_t *conductor, int6
     }
 }
 
+static void aeron_driver_conductor_on_rb_command_queue(
+    int32_t msg_type_id,
+    const void *message,
+    size_t size,
+    void *clientd)
+{
+    aeron_command_base_t *cmd = (aeron_command_base_t *)message;
+    cmd->func(clientd, cmd);
+}
+
 int aeron_driver_conductor_do_work(void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
@@ -2794,9 +2804,9 @@ int aeron_driver_conductor_do_work(void *clientd)
 
     work_count += (int)aeron_mpsc_rb_read(
         &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, AERON_COMMAND_DRAIN_LIMIT);
-    work_count += (int)aeron_mpsc_concurrent_array_queue_drain(
+    work_count += (int)aeron_mpsc_rb_read(
         conductor->conductor_proxy.command_queue,
-        aeron_driver_conductor_on_command_queue,
+        aeron_driver_conductor_on_rb_command_queue,
         conductor,
         AERON_COMMAND_DRAIN_LIMIT);
     work_count += conductor->name_resolver.do_work_func(&conductor->name_resolver, now_ms);
@@ -4279,8 +4289,6 @@ void aeron_driver_conductor_on_delete_receive_destination(void *clientd, void *i
 
     aeron_udp_channel_delete((aeron_udp_channel_t *)command->channel);
     aeron_receive_destination_delete((aeron_receive_destination_t *)command->destination, &conductor->counters_manager);
-
-    aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, (aeron_command_base_t *)command);
 }
 
 void aeron_driver_conductor_on_delete_send_destination(void *clientd, void *cmd)
@@ -4570,7 +4578,6 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     }
 
     aeron_driver_receiver_proxy_on_add_publication_image(conductor->context->receiver_proxy, endpoint, image);
-    aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, item);
 }
 
 void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
@@ -4635,7 +4642,7 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
     {
         AERON_APPEND_ERR("%s", "");
         aeron_driver_conductor_log_error(conductor);
-        goto cleanup;
+        return;
     }
 
     if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
@@ -4643,9 +4650,6 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
         aeron_driver_receiver_proxy_on_resolution_change(
             conductor->context->receiver_proxy, cmd->endpoint_name, cmd->endpoint, cmd->destination, &resolved_addr);
     }
-
-cleanup:
-    aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, item);
 }
 
 void aeron_driver_conductor_on_receive_endpoint_removed(void *clientd, void *item)
@@ -4666,8 +4670,6 @@ void aeron_driver_conductor_on_receive_endpoint_removed(void *clientd, void *ite
         aeron_receive_channel_endpoint_close(endpoint);
         aeron_receive_channel_endpoint_receiver_release(endpoint);
     }
-
-    aeron_driver_receiver_proxy_on_delete_cmd(conductor->context->receiver_proxy, cmd);
 }
 
 extern void aeron_driver_subscribable_null_hook(void *clientd, volatile int64_t *value_addr);

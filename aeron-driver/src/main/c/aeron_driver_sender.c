@@ -115,18 +115,14 @@ int aeron_driver_sender_init(
     return 0;
 }
 
-void aeron_driver_sender_on_command(void *clientd, void *item)
+static void aeron_driver_sender_on_rb_command_queue(
+    int32_t msg_type_id,
+    const void *message,
+    size_t size,
+    void *clientd)
 {
-    aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
-    aeron_command_base_t *cmd = (aeron_command_base_t *)item;
-    bool is_delete_cmd = cmd->func == aeron_command_on_delete_cmd;
-
+    aeron_command_base_t *cmd = (aeron_command_base_t *)message;
     cmd->func(clientd, cmd);
-
-    if (!is_delete_cmd)
-    {
-        aeron_driver_conductor_proxy_on_delete_cmd(sender->context->conductor_proxy, cmd);
-    }
 }
 
 int aeron_driver_sender_do_work(void *clientd)
@@ -141,8 +137,8 @@ int aeron_driver_sender_do_work(void *clientd)
     aeron_duty_cycle_tracker_t *tracker = sender->context->sender_duty_cycle_tracker;
     tracker->measure_and_update(tracker->state, now_ns);
 
-    int work_count = (int)aeron_spsc_concurrent_array_queue_drain(
-        sender->sender_proxy.command_queue, aeron_driver_sender_on_command, sender, AERON_COMMAND_DRAIN_LIMIT);
+    int work_count = (int)aeron_mpsc_rb_read(
+        sender->sender_proxy.command_queue, aeron_driver_sender_on_rb_command_queue, sender, AERON_COMMAND_DRAIN_LIMIT);
 
     int64_t bytes_received = 0;
     int bytes_sent = aeron_driver_sender_do_send(sender, now_ns);

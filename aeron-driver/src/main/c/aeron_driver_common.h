@@ -131,8 +131,6 @@ inline void aeron_driver_subscribable_null_hook(void *clientd, volatile int64_t 
 {
 }
 
-void aeron_command_on_delete_cmd(void *clientd, void *cmd);
-
 typedef void (*aeron_on_remove_publication_cleanup_func_t)(
     int32_t session_id,
     int32_t stream_id,

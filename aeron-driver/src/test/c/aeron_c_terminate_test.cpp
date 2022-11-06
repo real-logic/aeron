@@ -15,7 +15,7 @@
  */
 
 #include <functional>
-
+#include <cmath>
 #include <gtest/gtest.h>
 
 #include "EmbeddedMediaDriver.h"

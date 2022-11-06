@@ -19,28 +19,19 @@
 #include "aeron_driver_receiver.h"
 #include "aeron_alloc.h"
 
-void aeron_driver_receiver_proxy_offer(aeron_driver_receiver_proxy_t *receiver_proxy, void *cmd)
+void aeron_driver_receiver_proxy_offer(aeron_driver_receiver_proxy_t *receiver_proxy, void *cmd, size_t length)
 {
-    while (aeron_spsc_concurrent_array_queue_offer(receiver_proxy->command_queue, cmd) != AERON_OFFER_SUCCESS)
+    aeron_rb_write_result_t result;
+    while (AERON_RB_FULL == (result = aeron_mpsc_rb_write(receiver_proxy->command_queue, 1, cmd, length)))
     {
         aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
         sched_yield();
     }
-}
 
-void aeron_driver_receiver_proxy_on_delete_cmd(
-    aeron_driver_receiver_proxy_t *receiver_proxy, aeron_command_base_t *cmd)
-{
-    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
+    if (AERON_RB_ERROR == result)
     {
-        return;
-    }
-    else
-    {
-        cmd->func = aeron_command_on_delete_cmd;
-        cmd->item = NULL;
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_distinct_error_log_record(
+            receiver_proxy->receiver->error_log, EINVAL, "Error writing to receiver proxy ring buffer");
     }
 }
 
@@ -49,30 +40,19 @@ void aeron_driver_receiver_proxy_on_add_endpoint(
 {
     receiver_proxy->on_add_endpoint_func(endpoint->conductor_fields.udp_channel);
 
+    aeron_command_base_t cmd =
+        {
+            .func = aeron_driver_receiver_on_add_endpoint,
+            .item = endpoint
+        };
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_command_base_t cmd =
-            {
-                .func = aeron_driver_receiver_on_add_endpoint,
-                .item = endpoint
-            };
-
         aeron_driver_receiver_on_add_endpoint(receiver_proxy->receiver, &cmd);
     }
     else
     {
-        aeron_command_base_t *cmd = NULL;
-
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
-        {
-            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
-            return;
-        }
-
-        cmd->func = aeron_driver_receiver_on_add_endpoint;
-        cmd->item = endpoint;
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }
 
@@ -81,100 +61,61 @@ void aeron_driver_receiver_proxy_on_remove_endpoint(
 {
     receiver_proxy->on_remove_endpoint_func(endpoint->conductor_fields.udp_channel);
 
+    aeron_command_base_t cmd =
+        {
+            .func = aeron_driver_receiver_on_remove_endpoint,
+            .item = endpoint
+        };
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_command_base_t cmd =
-            {
-                .func = aeron_driver_receiver_on_remove_endpoint,
-                .item = endpoint
-            };
-
         aeron_driver_receiver_on_remove_endpoint(receiver_proxy->receiver, &cmd);
     }
     else
     {
-        aeron_command_base_t *cmd = NULL;
-
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_base_t)) < 0)
-        {
-            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
-            return;
-        }
-
-        cmd->func = aeron_driver_receiver_on_remove_endpoint;
-        cmd->item = endpoint;
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }
 
 void aeron_driver_receiver_proxy_on_add_subscription(
     aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
 {
+    aeron_command_subscription_t cmd =
+        {
+            .base = { .func = aeron_driver_receiver_on_add_subscription, .item = NULL },
+            .endpoint = endpoint,
+            .stream_id = stream_id,
+            .session_id = 0 // ignored
+        };
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_command_subscription_t cmd =
-            {
-                .base = { .func = aeron_driver_receiver_on_add_subscription, .item = NULL },
-                .endpoint = endpoint,
-                .stream_id = stream_id,
-                .session_id = 0 // ignored
-            };
-
         aeron_driver_receiver_on_add_subscription(receiver_proxy->receiver, &cmd);
     }
     else
     {
-        aeron_command_subscription_t *cmd = NULL;
-
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
-        {
-            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
-            return;
-        }
-
-        cmd->base.func = aeron_driver_receiver_on_add_subscription;
-        cmd->base.item = NULL;
-        cmd->endpoint = endpoint;
-        cmd->stream_id = stream_id;
-        cmd->session_id = 0; // ignored
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }
 
 void aeron_driver_receiver_proxy_on_remove_subscription(
     aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
 {
+    aeron_command_subscription_t cmd =
+        {
+            .base = { .func = aeron_driver_receiver_on_remove_subscription, .item = NULL },
+            .endpoint = endpoint,
+            .stream_id = stream_id,
+            .session_id = 0 // ignored.
+        };
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_command_subscription_t cmd =
-            {
-                .base = { .func = aeron_driver_receiver_on_remove_subscription, .item = NULL },
-                .endpoint = endpoint,
-                .stream_id = stream_id,
-                .session_id = 0 // ignored.
-            };
-
         aeron_driver_receiver_on_remove_subscription(receiver_proxy->receiver, &cmd);
     }
     else
     {
-        aeron_command_subscription_t *cmd = NULL;
-
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
-        {
-            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
-            return;
-        }
-
-        cmd->base.func = aeron_driver_receiver_on_remove_subscription;
-        cmd->base.item = NULL;
-        cmd->endpoint = endpoint;
-        cmd->stream_id = stream_id;
-        cmd->session_id = 0; // ignored.
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }
 
@@ -184,35 +125,21 @@ void aeron_driver_receiver_proxy_on_add_subscription_by_session(
     int32_t stream_id,
     int32_t session_id)
 {
+    aeron_command_subscription_t cmd =
+        {
+            .base = { .func = aeron_driver_receiver_on_add_subscription_by_session, .item = NULL },
+            .endpoint = endpoint,
+            .stream_id = stream_id,
+            .session_id = session_id
+        };
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_command_subscription_t cmd =
-            {
-                .base = { .func = aeron_driver_receiver_on_add_subscription_by_session, .item = NULL },
-                .endpoint = endpoint,
-                .stream_id = stream_id,
-                .session_id = session_id
-            };
-
         aeron_driver_receiver_on_add_subscription_by_session(receiver_proxy->receiver, &cmd);
     }
     else
     {
-        aeron_command_subscription_t *cmd = NULL;
-
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
-        {
-            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
-            return;
-        }
-
-        cmd->base.func = aeron_driver_receiver_on_add_subscription_by_session;
-        cmd->base.item = NULL;
-        cmd->endpoint = endpoint;
-        cmd->stream_id = stream_id;
-        cmd->session_id = session_id;
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }
 
@@ -222,35 +149,21 @@ void aeron_driver_receiver_proxy_on_remove_subscription_by_session(
     int32_t stream_id,
     int32_t session_id)
 {
+    aeron_command_subscription_t cmd =
+        {
+            .base = { .func = aeron_driver_receiver_on_remove_subscription_by_session, .item = NULL },
+            .endpoint = endpoint,
+            .stream_id = stream_id,
+            .session_id = session_id
+        };
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_command_subscription_t cmd =
-            {
-                .base = { .func = aeron_driver_receiver_on_remove_subscription_by_session, .item = NULL },
-                .endpoint = endpoint,
-                .stream_id = stream_id,
-                .session_id = session_id
-            };
-
         aeron_driver_receiver_on_remove_subscription_by_session(receiver_proxy->receiver, &cmd);
     }
     else
     {
-        aeron_command_subscription_t *cmd = NULL;
-
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
-        {
-            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
-            return;
-        }
-
-        cmd->base.func = aeron_driver_receiver_on_remove_subscription_by_session;
-        cmd->base.item = NULL;
-        cmd->endpoint = endpoint;
-        cmd->stream_id = stream_id;
-        cmd->session_id = session_id;
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }
 
@@ -259,33 +172,20 @@ void aeron_driver_receiver_proxy_on_add_destination(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_receive_destination_t *destination)
 {
+    aeron_command_add_rcv_destination_t cmd =
+        {
+            .base = { .func = aeron_driver_receiver_on_add_destination, .item = NULL },
+            .endpoint = endpoint,
+            .destination = destination
+        };
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_command_add_rcv_destination_t cmd =
-            {
-                .base = { .func = aeron_driver_receiver_on_add_destination, .item = NULL },
-                .endpoint = endpoint,
-                .destination = destination
-            };
-
         aeron_driver_receiver_on_add_destination(receiver_proxy->receiver, &cmd);
     }
     else
     {
-        aeron_command_add_rcv_destination_t *cmd = NULL;
-
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
-        {
-            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
-            return;
-        }
-
-        cmd->base.func = aeron_driver_receiver_on_add_destination;
-        cmd->base.item = NULL;
-        cmd->endpoint = endpoint;
-        cmd->destination = destination;
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }
 
@@ -294,33 +194,20 @@ void aeron_driver_receiver_proxy_on_remove_destination(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_udp_channel_t *channel)
 {
+    aeron_command_remove_rcv_destination_t cmd =
+        {
+            .base = { .func = aeron_driver_receiver_on_remove_destination, .item = NULL },
+            .endpoint = endpoint,
+            .channel = channel
+        };
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_command_remove_rcv_destination_t cmd =
-            {
-                .base = { .func = aeron_driver_receiver_on_remove_destination, .item = NULL },
-                .endpoint = endpoint,
-                .channel = channel
-            };
-
         aeron_driver_receiver_on_remove_destination(receiver_proxy->receiver, &cmd);
     }
     else
     {
-        aeron_command_remove_rcv_destination_t *cmd = NULL;
-
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_subscription_t)) < 0)
-        {
-            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
-            return;
-        }
-
-        cmd->base.func = aeron_driver_receiver_on_remove_destination;
-        cmd->base.item = NULL;
-        cmd->endpoint = endpoint;
-        cmd->channel = channel;
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }
 
@@ -329,31 +216,19 @@ void aeron_driver_receiver_proxy_on_add_publication_image(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_publication_image_t *image)
 {
+    aeron_command_publication_image_t cmd =
+        {
+            .base = { .func = aeron_driver_receiver_on_add_publication_image, .item = NULL },
+            .image = image
+        };
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_command_publication_image_t cmd =
-            {
-                .base = { .func = aeron_driver_receiver_on_add_publication_image, .item = NULL },
-                .image = image
-            };
-
         aeron_driver_receiver_on_add_publication_image(receiver_proxy->receiver, &cmd);
     }
     else
     {
-        aeron_command_publication_image_t *cmd = NULL;
-
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_publication_image_t)) < 0)
-        {
-            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
-            return;
-        }
-
-        cmd->base.func = aeron_driver_receiver_on_add_publication_image;
-        cmd->base.item = NULL;
-        cmd->image = image;
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }
 
@@ -361,31 +236,19 @@ void aeron_driver_receiver_proxy_on_remove_publication_image(
     aeron_driver_receiver_proxy_t *receiver_proxy,
     aeron_publication_image_t *image)
 {
+    aeron_command_publication_image_t cmd =
+        {
+            .base = { .func = aeron_driver_receiver_on_remove_publication_image, .item = NULL },
+            .image = image
+        };
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_command_publication_image_t cmd =
-            {
-                .base = { .func = aeron_driver_receiver_on_remove_publication_image, .item = NULL },
-                .image = image
-            };
-
         aeron_driver_receiver_on_remove_publication_image(receiver_proxy->receiver, &cmd);
     }
     else
     {
-        aeron_command_publication_image_t *cmd = NULL;
-
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_publication_image_t)) < 0)
-        {
-            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
-            return;
-        }
-
-        cmd->base.func = aeron_driver_receiver_on_remove_publication_image;
-        cmd->base.item = NULL;
-        cmd->image = image;
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }
 
@@ -395,35 +258,21 @@ void aeron_driver_receiver_proxy_on_remove_cool_down(
     int32_t session_id,
     int32_t stream_id)
 {
+    aeron_command_remove_cool_down_t cmd =
+        {
+            .base = { .func = aeron_driver_receiver_on_remove_cool_down, .item = NULL },
+            .endpoint = endpoint,
+            .session_id = session_id,
+            .stream_id = stream_id
+        };
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_command_remove_cool_down_t cmd =
-            {
-                .base = { .func = aeron_driver_receiver_on_remove_cool_down, .item = NULL },
-                .endpoint = endpoint,
-                .session_id = session_id,
-                .stream_id = stream_id
-            };
-
         aeron_driver_receiver_on_remove_cool_down(receiver_proxy->receiver, &cmd);
     }
     else
     {
-        aeron_command_remove_cool_down_t *cmd = NULL;
-
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_remove_cool_down_t)) < 0)
-        {
-            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
-            return;
-        }
-
-        cmd->base.func = aeron_driver_receiver_on_remove_cool_down;
-        cmd->base.item = NULL;
-        cmd->endpoint = endpoint;
-        cmd->session_id = session_id;
-        cmd->stream_id = stream_id;
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }
 
@@ -434,36 +283,21 @@ void aeron_driver_receiver_proxy_on_resolution_change(
     void *destination,
     struct sockaddr_storage *new_addr)
 {
+    aeron_command_receiver_resolution_change_t cmd =
+        {
+            .base = { .func = aeron_driver_receiver_on_resolution_change, .item = NULL },
+            .endpoint_name = endpoint_name,
+            .endpoint = endpoint,
+            .destination = destination
+        };
+    memcpy(&cmd.new_addr, new_addr, sizeof(cmd.new_addr));
+
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_command_receiver_resolution_change_t cmd =
-            {
-                .base = { .func = aeron_driver_receiver_on_resolution_change, .item = NULL },
-                .endpoint_name = endpoint_name,
-                .endpoint = endpoint,
-                .destination = destination
-            };
-        memcpy(&cmd.new_addr, new_addr, sizeof(cmd.new_addr));
-
         aeron_driver_receiver_on_resolution_change(receiver_proxy->receiver, &cmd);
     }
     else
     {
-        aeron_command_receiver_resolution_change_t *cmd = NULL;
-
-        if (aeron_alloc((void **)&cmd, sizeof(aeron_command_receiver_resolution_change_t)) < 0)
-        {
-            aeron_counter_ordered_increment(receiver_proxy->fail_counter, 1);
-            return;
-        }
-
-        cmd->base.func = aeron_driver_receiver_on_resolution_change;
-        cmd->base.item = NULL;
-        cmd->endpoint_name = endpoint_name;
-        cmd->endpoint = endpoint;
-        cmd->destination = destination;
-        memcpy(&cmd->new_addr, new_addr, sizeof(cmd->new_addr));
-
-        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd);
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }

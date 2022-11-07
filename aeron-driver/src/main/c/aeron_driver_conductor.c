@@ -4728,9 +4728,6 @@ extern aeron_network_publication_t *aeron_driver_conductor_find_network_publicat
 extern aeron_network_publication_t *aeron_driver_conductor_find_network_publication_by_tag(
     aeron_driver_conductor_t *conductor, int64_t tag_id);
 
-extern aeron_publication_image_t *aeron_driver_conductor_find_publication_image(
-    aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
-
 extern void aeron_driver_init_subscription_channel(size_t uri_length, const char *uri, aeron_subscription_link_t *link);
 
 extern void aeron_duty_cycle_stall_tracker_update(void *state, int64_t now_ns);

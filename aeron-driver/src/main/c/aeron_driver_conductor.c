@@ -2447,13 +2447,11 @@ void aeron_driver_conductor_on_unavailable_image(
 
 static bool aeron_driver_conductor_not_accepting_client_commands(aeron_driver_conductor_t *conductor)
 {
-    const int64_t sender_consumer_position = aeron_mpsc_rb_consumer_position(
-        conductor->context->sender_proxy->command_queue);
-    const int64_t receiver_consumer_position = aeron_mpsc_rb_consumer_position(
-        conductor->context->sender_proxy->command_queue);
-
-
-    return false;
+    aeron_mpsc_rb_t *sender_rb = conductor->context->sender_proxy->command_queue;
+    aeron_mpsc_rb_t *receiver_rb = conductor->context->receiver_proxy->command_queue;
+    return
+        ((sender_rb->capacity - aeron_mpsc_rb_size(sender_rb)) <= AERON_COMMAND_RB_RESERVE) ||
+        ((receiver_rb->capacity - aeron_mpsc_rb_size(receiver_rb)) <= AERON_COMMAND_RB_RESERVE);
 }
 
 aeron_rb_read_action_t aeron_driver_conductor_on_command(
@@ -2463,7 +2461,7 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
     int64_t correlation_id = 0;
     int result = 0;
 
-    if (!aeron_driver_conductor_not_accepting_client_commands(conductor))
+    if (aeron_driver_conductor_not_accepting_client_commands(conductor))
     {
         return AERON_RB_ABORT;
     }

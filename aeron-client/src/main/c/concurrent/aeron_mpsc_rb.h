@@ -77,4 +77,32 @@ inline int64_t aeron_mpsc_rb_producer_position(aeron_mpsc_rb_t *ring_buffer)
     return position;
 }
 
+inline int64_t aeron_mpsc_rb_size(aeron_mpsc_rb_t *ring_buffer)
+{
+    int64_t consumer_position_before;
+    int64_t producer_position;
+    int64_t consumer_position_after;
+
+    do
+    {
+        consumer_position_before = aeron_mpsc_rb_consumer_position(ring_buffer);
+        producer_position = aeron_mpsc_rb_producer_position(ring_buffer);
+        consumer_position_after = aeron_mpsc_rb_consumer_position(ring_buffer);
+    }
+    while (consumer_position_before != consumer_position_after);
+
+    const int64_t size = producer_position - consumer_position_after;
+
+    if (size < 0)
+    {
+        return 0;
+    }
+    else if (size > (int64_t)ring_buffer->capacity)
+    {
+        return (int64_t)ring_buffer->capacity;
+    }
+
+    return size;
+}
+
 #endif //AERON_MPSC_RB_H

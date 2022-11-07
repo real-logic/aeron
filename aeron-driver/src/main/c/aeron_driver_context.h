@@ -33,6 +33,7 @@
 #include "aeron_duty_cycle_tracker.h"
 
 #define AERON_COMMAND_RB_CAPACITY (128 * 1024)
+#define AERON_COMMAND_RB_RESERVE (1024)
 #define AERON_COMMAND_DRAIN_LIMIT (2)
 
 #define AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX (16)

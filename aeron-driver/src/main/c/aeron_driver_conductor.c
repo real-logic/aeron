@@ -2445,11 +2445,28 @@ void aeron_driver_conductor_on_unavailable_image(
     }
 }
 
-void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message, size_t length, void *clientd)
+static bool aeron_driver_conductor_not_accepting_client_commands(aeron_driver_conductor_t *conductor)
+{
+    const int64_t sender_consumer_position = aeron_mpsc_rb_consumer_position(
+        conductor->context->sender_proxy->command_queue);
+    const int64_t receiver_consumer_position = aeron_mpsc_rb_consumer_position(
+        conductor->context->sender_proxy->command_queue);
+
+
+    return false;
+}
+
+aeron_rb_read_action_t aeron_driver_conductor_on_command(
+    int32_t msg_type_id, const void *message, size_t length, void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     int64_t correlation_id = 0;
     int result = 0;
+
+    if (!aeron_driver_conductor_not_accepting_client_commands(conductor))
+    {
+        return AERON_RB_ABORT;
+    }
 
     conductor->context->to_driver_interceptor_func(msg_type_id, message, length, clientd);
 
@@ -2733,12 +2750,14 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
         aeron_driver_conductor_log_error(conductor);
     }
 
-    return;
+    return AERON_RB_CONTINUE;
 
 malformed_command:
     AERON_SET_ERR(
         -AERON_ERROR_CODE_MALFORMED_COMMAND, "command=%d too short: length=%" PRIu64, msg_type_id, (uint64_t)length);
     aeron_driver_conductor_log_error(conductor);
+
+    return AERON_RB_CONTINUE;
 }
 
 void aeron_driver_conductor_on_command_queue(void *clientd, void *item)
@@ -2802,7 +2821,7 @@ int aeron_driver_conductor_do_work(void *clientd)
     const int64_t now_ms = aeron_clock_cached_epoch_time(conductor->context->cached_clock);
     int work_count = 0;
 
-    work_count += (int)aeron_mpsc_rb_read(
+    work_count += (int)aeron_mpsc_rb_controlled_read(
         &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, AERON_COMMAND_DRAIN_LIMIT);
     work_count += (int)aeron_mpsc_rb_read(
         conductor->conductor_proxy.command_queue,

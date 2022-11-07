@@ -761,6 +761,37 @@ TEST_F(SpscRbTest, shouldCommitControlledRead)
     EXPECT_EQ(5, aeron_spsc_rb_controlled_read(&rb, controlled_read_with_commit, &rb, 5));
 }
 
+TEST_F(SpscRbTest, shouldGetSize)
+{
+    const int spsc_padding = 16;
+    AERON_DECL_ALIGNED(buffer_t spsc_buffer, 16) = {};
+    spsc_buffer.fill(0);
+
+    aeron_spsc_rb_t rb;
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, spsc_buffer.data(), spsc_buffer.size()), 0);
+
+    int64_t data = 1;
+    size_t total_messages = CAPACITY / (AERON_RB_RECORD_HEADER_LENGTH + sizeof(data));
+    ASSERT_EQ(0, aeron_spsc_rb_size(&rb));
+
+    for (size_t i = 0; i < (total_messages / 2); i++)
+    {
+        ASSERT_EQ(AERON_RB_SUCCESS, aeron_spsc_rb_write(&rb, 1, &data, sizeof(data)));
+        data++;
+    }
+
+    ASSERT_EQ(CAPACITY / 2, aeron_spsc_rb_size(&rb));
+
+    aeron_rb_write_result_t result;
+    do
+    {
+        result = aeron_spsc_rb_write(&rb, 1, &data, sizeof(data));
+    }
+    while (AERON_RB_SUCCESS == result);
+
+    ASSERT_EQ(CAPACITY - spsc_padding, aeron_spsc_rb_size(&rb));
+}
+
 #define NUM_MESSAGES (10 * 1000 * 1000)
 #define NUM_IDS_PER_THREAD (10 * 1000 * 1000)
 

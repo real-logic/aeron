@@ -164,7 +164,7 @@ int32_t aeron_mpsc_rb_try_claim(aeron_mpsc_rb_t *ring_buffer, int32_t msg_type_i
 
 int aeron_mpsc_rb_commit(aeron_mpsc_rb_t *ring_buffer, int32_t offset)
 {
-    const int32_t record_index = offset - AERON_RB_RECORD_HEADER_LENGTH;
+    const int32_t record_index = offset - (int32_t)AERON_RB_RECORD_HEADER_LENGTH;
     if (record_index < 0 || record_index > (int32_t)(ring_buffer->capacity - AERON_RB_RECORD_HEADER_LENGTH))
     {
         return -1;
@@ -183,7 +183,7 @@ int aeron_mpsc_rb_commit(aeron_mpsc_rb_t *ring_buffer, int32_t offset)
 
 int aeron_mpsc_rb_abort(aeron_mpsc_rb_t *ring_buffer, int32_t offset)
 {
-    const int32_t record_index = offset - AERON_RB_RECORD_HEADER_LENGTH;
+    const int32_t record_index = offset - (int32_t)AERON_RB_RECORD_HEADER_LENGTH;
     if (record_index < 0 || record_index > (int32_t)(ring_buffer->capacity - AERON_RB_RECORD_HEADER_LENGTH))
     {
         return -1;
@@ -305,7 +305,7 @@ size_t aeron_mpsc_rb_controlled_read(
             memset(ring_buffer->buffer + head_index, 0, bytes_read);
             AERON_PUT_ORDERED(ring_buffer->descriptor->head_position, head + bytes_read);
             head_index += bytes_read;
-            head += bytes_read;
+            head += (int64_t)bytes_read;
             bytes_read = 0;
         }
     }

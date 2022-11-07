@@ -31,14 +31,14 @@ struct iovec
 
 #define AERON_SPSC_RB_MIN_CAPACITY (2 * AERON_RB_RECORD_HEADER_LENGTH)
 
-typedef struct aeron_spsc_rb_stct
+struct aeron_spsc_rb_stct
 {
     uint8_t *buffer;
     aeron_rb_descriptor_t *descriptor;
     size_t capacity;
     size_t max_message_length;
-}
-aeron_spsc_rb_t;
+};
+typedef struct aeron_spsc_rb_stct aeron_spsc_rb_t;
 
 int aeron_spsc_rb_init(aeron_spsc_rb_t *ring_buffer, void *buffer, size_t length);
 

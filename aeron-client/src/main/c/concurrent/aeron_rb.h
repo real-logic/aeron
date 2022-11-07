@@ -23,7 +23,7 @@
 
 #pragma pack(push)
 #pragma pack(4)
-typedef struct aeron_rb_descriptor_stct
+struct aeron_rb_descriptor_stct
 {
     uint8_t begin_pad[(2 * AERON_CACHE_LINE_LENGTH)];
     volatile int64_t tail_position;
@@ -36,15 +36,15 @@ typedef struct aeron_rb_descriptor_stct
     uint8_t correlation_counter_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(int64_t)];
     int64_t consumer_heartbeat;
     uint8_t consumer_heartbeat_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(int64_t)];
-}
-aeron_rb_descriptor_t;
+};
+typedef struct aeron_rb_descriptor_stct aeron_rb_descriptor_t;
 
-typedef struct aeron_rb_record_descriptor_stct
+struct aeron_rb_record_descriptor_stct
 {
     volatile int32_t length;
     int32_t msg_type_id;
-}
-aeron_rb_record_descriptor_t;
+};
+typedef struct aeron_rb_record_descriptor_stct aeron_rb_record_descriptor_t;
 #pragma pack(pop)
 
 #define AERON_RB_TRAILER_LENGTH (sizeof(aeron_rb_descriptor_t))

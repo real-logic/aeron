@@ -21,14 +21,14 @@
 
 #define AERON_MPSC_RB_MIN_CAPACITY (AERON_RB_RECORD_HEADER_LENGTH)
 
-typedef struct aeron_mpsc_rb_stct
+struct aeron_mpsc_rb_stct
 {
     uint8_t *buffer;
     aeron_rb_descriptor_t *descriptor;
     size_t capacity;
     size_t max_message_length;
-}
-aeron_mpsc_rb_t;
+};
+typedef struct aeron_mpsc_rb_stct aeron_mpsc_rb_t;
 
 int aeron_mpsc_rb_init(aeron_mpsc_rb_t *ring_buffer, void *buffer, size_t length);
 

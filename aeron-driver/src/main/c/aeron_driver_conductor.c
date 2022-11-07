@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include "util/aeron_platform.h"
-
 #if defined(__linux__)
 #define _BSD_SOURCE
 #define _GNU_SOURCE
@@ -4734,26 +4732,6 @@ extern aeron_publication_image_t *aeron_driver_conductor_find_publication_image(
     aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 
 extern void aeron_driver_init_subscription_channel(size_t uri_length, const char *uri, aeron_subscription_link_t *link);
-
-extern void aeron_driver_conductor_on_available_image(
-    aeron_driver_conductor_t *conductor,
-    int64_t correlation_id,
-    int32_t stream_id,
-    int32_t session_id,
-    const char *log_file_name,
-    size_t log_file_name_length,
-    int32_t subscriber_position_id,
-    int64_t subscriber_registration_id,
-    const char *source_identity,
-    size_t source_identity_length);
-
-extern void aeron_driver_conductor_on_unavailable_image(
-    aeron_driver_conductor_t *conductor,
-    int64_t correlation_id,
-    int64_t subscription_registration_id,
-    int32_t stream_id,
-    const char *channel,
-    size_t channel_length);
 
 extern void aeron_duty_cycle_stall_tracker_update(void *state, int64_t now_ns);
 extern void aeron_duty_cycle_stall_tracker_measure_and_update(void *state, int64_t now_ns);

@@ -248,6 +248,77 @@ size_t aeron_mpsc_rb_read(
     return messages_read;
 }
 
+size_t aeron_mpsc_rb_controlled_read(
+    aeron_mpsc_rb_t *ring_buffer,
+    aeron_rb_controlled_handler_t handler,
+    void *clientd,
+    size_t message_count_limit)
+{
+    int64_t head = ring_buffer->descriptor->head_position;
+    size_t head_index = (size_t)(head & (ring_buffer->capacity - 1));
+    const size_t contiguous_block_length = ring_buffer->capacity - head_index;
+    size_t messages_read = 0;
+    size_t bytes_read = 0;
+
+    while ((bytes_read < contiguous_block_length) && (messages_read < message_count_limit))
+    {
+        const size_t record_index = head_index + bytes_read;
+        aeron_rb_record_descriptor_t *header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
+
+        int32_t record_length;
+        AERON_GET_VOLATILE(record_length, header->length);
+
+        if (record_length <= 0)
+        {
+            break;
+        }
+
+        const size_t aligned_length = AERON_ALIGN(record_length, AERON_RB_ALIGNMENT);
+        bytes_read += aligned_length;
+        int32_t msg_type_id = header->msg_type_id;
+
+        if (AERON_RB_PADDING_MSG_TYPE_ID == msg_type_id)
+        {
+            continue;
+        }
+
+        aeron_rb_read_action_t action = handler(
+            msg_type_id,
+            ring_buffer->buffer + AERON_RB_MESSAGE_OFFSET(record_index),
+            record_length - AERON_RB_RECORD_HEADER_LENGTH,
+            clientd);
+
+        if (AERON_RB_ABORT == action)
+        {
+            bytes_read -= aligned_length;
+            break;
+        }
+
+        ++messages_read;
+
+        if (AERON_RB_BREAK == action)
+        {
+            break;
+        }
+        if (AERON_RB_COMMIT == action)
+        {
+            memset(ring_buffer->buffer + head_index, 0, bytes_read);
+            AERON_PUT_ORDERED(ring_buffer->descriptor->head_position, head + bytes_read);
+            head_index += bytes_read;
+            head += bytes_read;
+            bytes_read = 0;
+        }
+    }
+
+    if (0 != bytes_read)
+    {
+        memset(ring_buffer->buffer + head_index, 0, bytes_read);
+        AERON_PUT_ORDERED(ring_buffer->descriptor->head_position, head + bytes_read);
+    }
+
+    return messages_read;
+}
+
 int64_t aeron_mpsc_rb_next_correlation_id(aeron_mpsc_rb_t *ring_buffer)
 {
     int64_t result;

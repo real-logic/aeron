@@ -50,6 +50,12 @@ size_t aeron_mpsc_rb_read(
     void *clientd,
     size_t message_count_limit);
 
+size_t aeron_mpsc_rb_controlled_read(
+    aeron_mpsc_rb_t *ring_buffer,
+    aeron_rb_controlled_handler_t handler,
+    void *clientd,
+    size_t message_count_limit);
+
 int64_t aeron_mpsc_rb_next_correlation_id(aeron_mpsc_rb_t *ring_buffer);
 
 void aeron_mpsc_rb_consumer_heartbeat_time(aeron_mpsc_rb_t *ring_buffer, int64_t now_ms);

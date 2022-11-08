@@ -57,15 +57,19 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     private static final String UNKNOWN_HOST_EXCEPTION = UnknownHostException.class.getName();
     private static final String ATS_GCM_DECRYPT_ERROR =
         "ats_gcm_decrypt final_ex: error:00000000:lib(0):func(0):reason(0)";
+    private static final String ATS_GCM_DECRYPT_ERROR_OTHER =
+        "ats_gcm_decrypt final_ex: error:00000000:lib(0)::reason(0)";
     public static final Predicate<String> UNKNOWN_HOST_FILTER =
         (s) -> s.contains(UNKNOWN_HOST_EXCEPTION) || s.contains("unknown host");
     public static final Predicate<String> WARNING_FILTER = (s) -> s.contains("WARN");
     public static final Predicate<String> CLUSTER_TERMINATION_FILTER =
         (s) -> s.contains(CLUSTER_TERMINATION_EXCEPTION);
     public static final Predicate<String> ATS_GCM_DECRYPT_ERROR_FILTER =
-        (s) -> s.contains(ATS_GCM_DECRYPT_ERROR);
+        (s) -> s.contains(ATS_GCM_DECRYPT_ERROR) || s.contains(ATS_GCM_DECRYPT_ERROR_OTHER);
     public static final Predicate<String> TEST_CLUSTER_DEFAULT_LOG_FILTER =
-        WARNING_FILTER.negate().and(CLUSTER_TERMINATION_FILTER.negate()).and(ATS_GCM_DECRYPT_ERROR_FILTER.negate());
+        WARNING_FILTER.negate()
+        .and(CLUSTER_TERMINATION_FILTER.negate())
+        .and(ATS_GCM_DECRYPT_ERROR_FILTER.negate());
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
 

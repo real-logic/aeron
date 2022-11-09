@@ -69,6 +69,7 @@ class MappedRawLog implements RawLog
         {
             try (FileChannel logChannel = FileChannel.open(logFile.toPath(), options))
             {
+                logChannel.truncate(logLength); // set file size like the C driver does
                 if (logLength <= Integer.MAX_VALUE)
                 {
                     final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);

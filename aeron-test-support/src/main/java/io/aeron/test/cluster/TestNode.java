@@ -133,6 +133,7 @@ public final class TestNode implements AutoCloseable
             {
                 ex.addSuppressed(e);
             }
+
             throw ex;
         }
     }
@@ -208,6 +209,14 @@ public final class TestNode implements AutoCloseable
             return Cluster.Role.get(roleCounter);
         }
         return Cluster.Role.FOLLOWER;
+    }
+
+    public void awaitElectionState(final ElectionState electionState)
+    {
+        while (electionState() != electionState)
+        {
+            Tests.sleep(1);
+        }
     }
 
     ElectionState electionState()

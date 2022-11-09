@@ -678,11 +678,10 @@ class Election
             return workCount;
         }
 
-        final long canvassDeadlineNs =
-            timeOfLastStateChangeNs + (isExtendedCanvass ? ctx.startupCanvassTimeoutNs() : ctx.electionTimeoutNs());
+        final long deadlineNs = timeOfLastStateChangeNs + (isExtendedCanvass ? ctx.startupCanvassTimeoutNs() : 0);
 
         if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember) ||
-            (ClusterMember.isQuorumCandidate(clusterMembers, thisMember) && nowNs >= canvassDeadlineNs))
+            (ClusterMember.isQuorumCandidate(clusterMembers, thisMember) && nowNs >= deadlineNs))
         {
             final long delayNs = (long)(ctx.random().nextDouble() * (ctx.electionTimeoutNs() >> 1));
             nominationDeadlineNs = nowNs + delayNs;

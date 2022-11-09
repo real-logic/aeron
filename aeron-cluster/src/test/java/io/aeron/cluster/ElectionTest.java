@@ -591,8 +591,6 @@ public class ElectionTest
 
         election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 0, VERSION);
 
-        election.doWork(clock.increment(1));
-
         clock.increment(ctx.electionTimeoutNs());
         election.doWork(clock.nanoTime());
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.NOMINATE.code());
@@ -600,8 +598,6 @@ public class ElectionTest
         clock.increment(ctx.electionTimeoutNs());
         election.doWork(clock.nanoTime());
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.CANDIDATE_BALLOT.code());
-
-        election.doWork(clock.increment(1));
 
         final long candidateTermId = leadershipTermId + 2;
         election.onVote(

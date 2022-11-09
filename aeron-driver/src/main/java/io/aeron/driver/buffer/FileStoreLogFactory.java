@@ -39,6 +39,7 @@ public class FileStoreLogFactory implements LogFactory
 
     private final long lowStorageWarningThreshold;
     private final int filePageSize;
+    private final boolean checkStorage;
     private final ErrorHandler errorHandler;
     private final File publicationsDir;
     private final File imagesDir;
@@ -49,17 +50,20 @@ public class FileStoreLogFactory implements LogFactory
      *
      * @param dataDirectoryName          where the log buffers will be created.
      * @param filePageSize               of the filesystem.
+     * @param checkStorage               for sufficient space before allocating files.
      * @param lowStorageWarningThreshold when warnings about remaining space will begin.
      * @param errorHandler               to call when an error is encountered.
      */
     public FileStoreLogFactory(
         final String dataDirectoryName,
         final int filePageSize,
+        final boolean checkStorage,
         final long lowStorageWarningThreshold,
         final ErrorHandler errorHandler)
     {
         this.filePageSize = filePageSize;
         this.lowStorageWarningThreshold = lowStorageWarningThreshold;
+        this.checkStorage = checkStorage;
         this.errorHandler = errorHandler;
 
         final File dataDir = new File(dataDirectoryName);
@@ -72,7 +76,7 @@ public class FileStoreLogFactory implements LogFactory
 
         try
         {
-            fileStore = Files.getFileStore(dataDir.toPath());
+            fileStore = checkStorage ? Files.getFileStore(dataDir.toPath()) : null;
         }
         catch (final IOException ex)
         {
@@ -130,21 +134,24 @@ public class FileStoreLogFactory implements LogFactory
 
     private void checkStorage(final long logLength)
     {
-        final long usableSpace = getUsableSpace();
-
-        if (usableSpace < logLength)
+        if (checkStorage)
         {
-            throw new StorageSpaceException(
-                "insufficient usable storage for new log of length=" + logLength + " in " + fileStore);
-        }
+            final long usableSpace = getUsableSpace();
 
-        if (usableSpace <= lowStorageWarningThreshold)
-        {
-            final String msg =
-                "space is running low: threshold=" + lowStorageWarningThreshold + " usable=" + usableSpace + " in " +
-                fileStore;
+            if (usableSpace < logLength)
+            {
+                throw new StorageSpaceException(
+                    "insufficient usable storage for new log of length=" + logLength + " in " + fileStore);
+            }
 
-            errorHandler.onError(new AeronException(msg, AeronException.Category.WARN));
+            if (usableSpace <= lowStorageWarningThreshold)
+            {
+                final String msg =
+                    "space is running low: threshold=" + lowStorageWarningThreshold +
+                    " usable=" + usableSpace + " in " + fileStore;
+
+                errorHandler.onError(new AeronException(msg, AeronException.Category.WARN));
+            }
         }
     }
 

@@ -111,10 +111,7 @@ public final class Configuration
 
     /**
      * Property name for boolean value for if storage checks should be performed when allocating files.
-     * <p>
-     * This property is ignored as the checks are always applied.
      */
-    @Deprecated
     public static final String PERFORM_STORAGE_CHECKS_PROP_NAME = "aeron.perform.storage.checks";
 
     /**
@@ -685,7 +682,6 @@ public final class Configuration
 
     /**
      * Property name for resolver interface to which network connections are made.
-     *
      * @see #RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME
      */
     public static final String RESOLVER_INTERFACE_PROP_NAME = "aeron.driver.resolver.interface";
@@ -693,7 +689,6 @@ public final class Configuration
     /**
      * Property name for resolver bootstrap neighbors for which it can bootstrap naming, format is comma separated list
      * of {@code hostname:port} pairs.
-     *
      * @see #RESOLVER_INTERFACE_PROP_NAME
      */
     public static final String RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME = "aeron.driver.resolver.bootstrap.neighbor";
@@ -830,20 +825,18 @@ public final class Configuration
     /**
      * Should storage checks should be performed before allocating files.
      *
-     * @return always {@code true}
-     * @deprecated Always returns {@code true}.
+     * @return true of storage checks should be performed before allocating files.
+     * @see #PERFORM_STORAGE_CHECKS_PROP_NAME
      */
-    @Deprecated
     public static boolean performStorageChecks()
     {
-        return true;
+        return "true".equals(getProperty(PERFORM_STORAGE_CHECKS_PROP_NAME, "true"));
     }
 
     /**
      * Should spy subscriptions simulate a connection to a network publication.
      * <p>
      * If true then this will override the min group size of the min and tagged flow control strategies.
-     *
      * @return true if spy subscriptions should simulate a connection to a network publication.
      * @see #SPIES_SIMULATE_CONNECTION_PROP_NAME
      */
@@ -957,6 +950,7 @@ public final class Configuration
      *
      * @return Low file storage warning threshold for when performing storage checks.
      * @see #LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME
+     * @see #PERFORM_STORAGE_CHECKS_PROP_NAME
      */
     public static long lowStorageWarningThreshold()
     {

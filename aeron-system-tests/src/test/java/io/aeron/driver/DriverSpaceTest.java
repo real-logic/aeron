@@ -57,7 +57,7 @@ public class DriverSpaceTest
         switch (OS.current())
         {
             case WINDOWS:
-                assumeTrue(performStorageChecks || !useSparseFiles || TestMediaDriver.shouldRunCMediaDriver());
+                assumeTrue(performStorageChecks || !useSparseFiles);
                 tempfsDir = new File("T:/tmp_aeron_dir").toPath();
                 break;
             case MAC:

@@ -67,6 +67,7 @@ typedef uint64_t (*aeron_usable_fs_space_func_t)(const char *path);
 
 int64_t aeron_file_length(const char *path);
 uint64_t aeron_usable_fs_space(const char *path);
+uint64_t aeron_usable_fs_space_disabled(const char *path);
 
 typedef struct aeron_mapped_raw_log_stct
 {

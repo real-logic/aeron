@@ -147,7 +147,6 @@ bool aeron_driver_context_get_term_buffer_sparse_file(aeron_driver_context_t *co
 
 /**
  * Should storage checks should be performed when allocating files.
- * @deprecated Always assumed true.
  */
 #define AERON_PERFORM_STORAGE_CHECKS_ENV_VAR "AERON_PERFORM_STORAGE_CHECKS"
 

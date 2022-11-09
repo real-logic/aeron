@@ -82,7 +82,7 @@ int aeron_publication_image_create(
 
     *image = NULL;
 
-    if (context->usable_fs_space_func(context->aeron_dir) < log_length)
+    if (context->perform_storage_checks && context->usable_fs_space_func(context->aeron_dir) < log_length)
     {
         AERON_SET_ERR(
             -AERON_ERROR_CODE_STORAGE_SPACE,

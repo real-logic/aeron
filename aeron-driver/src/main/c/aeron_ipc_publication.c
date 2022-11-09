@@ -45,7 +45,7 @@ int aeron_ipc_publication_create(
 
     *publication = NULL;
 
-    if (context->usable_fs_space_func(context->aeron_dir) < log_length)
+    if (context->perform_storage_checks && context->usable_fs_space_func(context->aeron_dir) < log_length)
     {
         AERON_SET_ERR(
             -AERON_ERROR_CODE_STORAGE_SPACE,

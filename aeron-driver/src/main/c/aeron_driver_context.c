@@ -471,6 +471,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->dirs_delete_on_shutdown = AERON_DIR_DELETE_ON_SHUTDOWN_DEFAULT;
     _context->warn_if_dirs_exist = AERON_DIR_WARN_IF_EXISTS_DEFAULT;
     _context->term_buffer_sparse_file = AERON_TERM_BUFFER_SPARSE_FILE_DEFAULT;
+    _context->perform_storage_checks = AERON_PERFORM_STORAGE_CHECKS_DEFAULT;
     _context->spies_simulate_connection = AERON_SPIES_SIMULATE_CONNECTION_DEFAULT;
     _context->print_configuration_on_start = AERON_PRINT_CONFIGURATION_DEFAULT;
     _context->reliable_stream = AERON_RELIABLE_STREAM_DEFAULT;
@@ -605,6 +606,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->term_buffer_sparse_file = aeron_parse_bool(
         getenv(AERON_TERM_BUFFER_SPARSE_FILE_ENV_VAR), _context->term_buffer_sparse_file);
+
+    _context->perform_storage_checks = aeron_parse_bool(
+        getenv(AERON_PERFORM_STORAGE_CHECKS_ENV_VAR), _context->perform_storage_checks);
 
     _context->spies_simulate_connection = aeron_parse_bool(
         getenv(AERON_SPIES_SIMULATE_CONNECTION_ENV_VAR), _context->spies_simulate_connection);
@@ -1051,7 +1055,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
-    _context->usable_fs_space_func = aeron_usable_fs_space;
+    _context->usable_fs_space_func = _context->perform_storage_checks ?
+        aeron_usable_fs_space : aeron_usable_fs_space_disabled;
     _context->raw_log_map_func = aeron_raw_log_map;
     _context->raw_log_close_func = aeron_raw_log_close;
     _context->raw_log_free_func = aeron_raw_log_free;
@@ -1664,17 +1669,17 @@ bool aeron_driver_context_get_term_buffer_sparse_file(aeron_driver_context_t *co
     return NULL != context ? context->term_buffer_sparse_file : AERON_TERM_BUFFER_SPARSE_FILE_DEFAULT;
 }
 
-// @deprecated Always assumes true.
 int aeron_driver_context_set_perform_storage_checks(aeron_driver_context_t *context, bool value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->perform_storage_checks = value;
     return 0;
 }
 
-// @deprecated Always returns true.
 bool aeron_driver_context_get_perform_storage_checks(aeron_driver_context_t *context)
 {
-    return AERON_PERFORM_STORAGE_CHECKS_DEFAULT;
+    return NULL != context ? context->perform_storage_checks : AERON_PERFORM_STORAGE_CHECKS_DEFAULT;
 }
 
 int aeron_driver_context_set_spies_simulate_connection(aeron_driver_context_t *context, bool value)

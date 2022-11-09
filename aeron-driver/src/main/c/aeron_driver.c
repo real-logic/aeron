@@ -517,6 +517,7 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    dirs_delete_on_shutdown=%d", context->dirs_delete_on_shutdown);
     fprintf(fpout, "\n    warn_if_dirs_exists=%d", context->warn_if_dirs_exist);
     fprintf(fpout, "\n    term_buffer_sparse_file=%d", context->term_buffer_sparse_file);
+    fprintf(fpout, "\n    perform_storage_checks=%d", context->perform_storage_checks);
     fprintf(fpout, "\n    spies_simulate_connection=%d", context->spies_simulate_connection);
     fprintf(fpout, "\n    reliable_stream=%d", context->reliable_stream);
     fprintf(fpout, "\n    tether_subscriptions=%d", context->tether_subscriptions);

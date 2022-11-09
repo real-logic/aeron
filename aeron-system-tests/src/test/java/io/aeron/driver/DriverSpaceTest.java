@@ -49,10 +49,12 @@ public class DriverSpaceTest
     @ParameterizedTest
     @MethodSource("storageCheckOptions")
     void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace(
-        final boolean performStorageChecks, final boolean termBufferSparseFile) throws IOException
+        final boolean performStorageChecks, final boolean useSparseFiles) throws IOException
     {
-        assumeTrue(performStorageChecks || OS.LINUX != OS.current(),
-            "Storage checks are disabled and the file-system operations on Linux do not fail with an error");
+        assumeTrue(performStorageChecks || OS.LINUX != OS.current() ||
+            !useSparseFiles && TestMediaDriver.shouldRunCMediaDriver(),
+            "With storage checks disabled the file-system operations on Linux do not fail with an error unless" +
+            " useSparseFiles=false and the C media driver is used");
 
         final Path tempfsDir;
         switch (OS.current())
@@ -87,7 +89,7 @@ public class DriverSpaceTest
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true)
             .performStorageChecks(performStorageChecks)
-            .termBufferSparseFile(termBufferSparseFile);
+            .termBufferSparseFile(useSparseFiles);
 
         try (TestMediaDriver driver = TestMediaDriver.launch(context, systemTestWatcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
@@ -114,9 +116,9 @@ public class DriverSpaceTest
     private static List<Arguments> storageCheckOptions()
     {
         return Arrays.asList(
-            Arguments.of(true /* performStorageChecks */, false /* termBufferSparseFile */),
-            Arguments.of(true /* performStorageChecks */, true /* termBufferSparseFile */),
-            Arguments.of(false /* performStorageChecks */, false /* termBufferSparseFile */),
-            Arguments.of(false /* performStorageChecks */, true /* termBufferSparseFile */));
+            Arguments.of(true /* performStorageChecks */, false /* useSparseFiles */),
+            Arguments.of(true /* performStorageChecks */, true /* useSparseFiles */),
+            Arguments.of(false /* performStorageChecks */, false /* useSparseFiles */),
+            Arguments.of(false /* performStorageChecks */, true /* useSparseFiles */));
     }
 }

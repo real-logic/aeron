@@ -260,6 +260,8 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
 #ifdef __linux__
     if (pre_touch)
     {
+        // Write a single zero at the end of the file to force the ENOSPC error when storage is out of space.
+        // This is only needed on Linux, because on MacOS and Windows the pre-sizing of the file will fail earlier.
         static uint8_t single_zero[1] = { 0x0 };
         if (1 != pwrite(fd, single_zero, 1, (off_t)(mapping->length - 1)))
         {

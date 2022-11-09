@@ -162,7 +162,7 @@ TEST_F(FileUtilTest, mapExistingFileShouldHandleFilesBiggerThan2GB)
     const char *file = "test_map_existing_file_big_size.log";
     const size_t file_length = 2500000000;
     mapped_file.length = file_length;
-    ASSERT_EQ(0, aeron_map_new_file(&mapped_file, file, false)) << aeron_errmsg();
+    ASSERT_EQ(0, aeron_map_new_file(&mapped_file, file, true)) << aeron_errmsg();
     ASSERT_EQ(0, aeron_unmap(&mapped_file)) << aeron_errmsg();
 
     ASSERT_EQ(0, aeron_map_existing_file(&mapped_file, file)) << aeron_errmsg();
@@ -212,7 +212,7 @@ TEST_F(FileUtilTest, rawLogMapExistingShouldHandleMaxTermBufferLength)
     const size_t file_length = 3223322624;
     const size_t term_length = AERON_LOGBUFFER_TERM_MAX_LENGTH;
     const size_t page_size = 2 * 1024 * 1024;
-    ASSERT_EQ(0, aeron_raw_log_map(&mapped_raw_log, file, true, term_length, page_size)) << aeron_errmsg();
+    ASSERT_EQ(0, aeron_raw_log_map(&mapped_raw_log, file, false, term_length, page_size)) << aeron_errmsg();
     auto logbuffer_metadata = (aeron_logbuffer_metadata_t *)(mapped_raw_log.log_meta_data.addr);
     logbuffer_metadata->term_length = (int32_t)term_length;
     logbuffer_metadata->page_size = (int32_t)page_size;

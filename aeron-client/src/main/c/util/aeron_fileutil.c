@@ -82,7 +82,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
     {
         fprintf(stderr, "unable to close file mapping handle\n");
     }
-    close(fd);
+    _close(fd);
 
     if (pre_touch && MAP_FAILED != mapping->addr)
     {
@@ -147,7 +147,7 @@ uint64_t aeron_usable_fs_space(const char *path)
     return (uint64_t)lpAvailableToCaller.QuadPart;
 }
 
-int aeron_create_file(const char *path, size_t length)
+int aeron_create_file(const char *path, size_t length, bool sparse_file)
 {
     int fd;
     int error = _sopen_s(&fd, path, _O_RDWR | _O_CREAT | _O_EXCL, _SH_DENYNO, _S_IREAD | _S_IWRITE);
@@ -159,6 +159,22 @@ int aeron_create_file(const char *path, size_t length)
     }
 
     HANDLE hfile = (HANDLE)_get_osfhandle(fd);
+    if (INVALID_HANDLE_VALUE == hfile)
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "Failed to obtain operating-system file handle: %s", path);
+        goto handle_error;
+    }
+
+    if (sparse_file)
+    {
+        DWORD bytesReturned;
+        if (!DeviceIoControl(hfile, FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &bytesReturned, NULL))
+        {
+            AERON_SET_ERR_WIN(GetLastError(), "Failed to mark file as sparse: %s", path);
+            goto handle_error;
+        }
+    }
+
     LARGE_INTEGER file_size;
     file_size.QuadPart = (LONGLONG)length;
 
@@ -166,15 +182,21 @@ int aeron_create_file(const char *path, size_t length)
         !SetEndOfFile(hfile))
     {
         AERON_SET_ERR_WIN(GetLastError(), "Failed to truncate file: %s", path);
-        close(fd);
-        if (-1 == remove(path))
-        {
-            AERON_APPEND_ERR("(%d) Failed to remove file: %s", GetLastError(), path);
-        }
-        return -1;
+        goto handle_error;
     }
 
     return fd;
+
+handle_error:
+    if (-1 == _close(fd))
+    {
+        AERON_APPEND_ERR("(%d) Failed to close file descriptor", GetLastError());
+    }
+    if (-1 == remove(path))
+    {
+        AERON_APPEND_ERR("(%d) Failed to remove file", GetLastError());
+    }
+    return -1;
 }
 
 int aeron_open_file_rw(const char *path)
@@ -331,7 +353,7 @@ uint64_t aeron_usable_fs_space(const char *path)
     return result;
 }
 
-int aeron_create_file(const char *path, size_t length)
+int aeron_create_file(const char *path, size_t length, bool sparse_file)
 {
     int fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
     if (fd < 0)
@@ -382,7 +404,7 @@ static void aeron_touch_pages(volatile uint8_t *base, size_t length, size_t page
 
 int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool fill_with_zeroes)
 {
-    int fd = aeron_create_file(path, mapped_file->length);
+    int fd = aeron_create_file(path, mapped_file->length, !fill_with_zeroes);
     if (-1 == fd)
     {
         return -1;
@@ -501,7 +523,7 @@ int aeron_raw_log_map(
 {
     const uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, page_size);
 
-    int fd = aeron_create_file(path, (size_t)log_length);
+    int fd = aeron_create_file(path, (size_t)log_length, use_sparse_files);
     if (-1 == fd)
     {
         return -1;

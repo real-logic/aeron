@@ -169,7 +169,7 @@ int aeron_create_file(const char *path, size_t length)
         close(fd);
         if (-1 == remove(path))
         {
-            AERON_APPEND_ERR("Failed to remove file: %s", path);
+            AERON_APPEND_ERR("(%d) Failed to remove file: %s", GetLastError(), path);
         }
         return -1;
     }
@@ -184,6 +184,7 @@ int aeron_open_file_rw(const char *path)
 
     if (NO_ERROR != error)
     {
+        AERON_SET_ERR_WIN(GetLastError(), "Failed to open file: %s", path);
         return -1;
     }
 
@@ -354,7 +355,13 @@ int aeron_create_file(const char *path, size_t length)
 
 int aeron_open_file_rw(const char *path)
 {
-    return open(path, O_RDWR);
+    int fd = open(path, O_RDWR);
+    if (-1 == fd)
+    {
+        AERON_SET_ERR(errno, "Failed to open file: %s", path);
+        return -1;
+    }
+    return fd;
 }
 #endif
 
@@ -406,7 +413,6 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
     int fd = aeron_open_file_rw(path);
     if (fd < 0)
     {
-        AERON_SET_ERR(errno, "Failed to open file: %s", path);
         return -1;
     }
 
@@ -540,7 +546,6 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
     int fd = aeron_open_file_rw(path);
     if (fd < 0)
     {
-        AERON_SET_ERR(errno, "Failed to open existing raw log, filename: %s", path);
         return -1;
     }
 

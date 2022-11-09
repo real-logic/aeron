@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.abort;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class DriverSpaceTest
@@ -50,6 +51,9 @@ public class DriverSpaceTest
     void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace(
         final boolean performStorageChecks, final boolean termBufferSparseFile) throws IOException
     {
+        assumeTrue(performStorageChecks || OS.LINUX != OS.current(),
+            "Storage checks are disabled and the file-system operations on Linux do not fail with an error");
+
         final Path tempfsDir;
         switch (OS.current())
         {
@@ -63,17 +67,18 @@ public class DriverSpaceTest
                 tempfsDir = new File("/mnt/tmp_aeron_dir").toPath();
                 break;
         }
+        assumeTrue(Files.exists(tempfsDir), () -> tempfsDir + " does not exist");
+        assumeTrue(Files.isDirectory(tempfsDir), () -> tempfsDir + " is not a directory");
+        assumeTrue(Files.isWritable(tempfsDir), () -> tempfsDir + " is not writable");
+
         try
         {
-            assumeTrue(Files.exists(tempfsDir), () -> tempfsDir + " does not exist");
-            assumeTrue(Files.isDirectory(tempfsDir));
-            assumeTrue(Files.isWritable(tempfsDir));
             final FileStore fileStore = Files.getFileStore(tempfsDir);
             assumeTrue(fileStore.getUsableSpace() < (32 * 1024 * 1024), "Skipping as file system is too large");
         }
         catch (final IOException e)
         {
-            assumeTrue(false);
+            abort("File store not accessible");
         }
 
         final Path aeronDir = tempfsDir.resolve("aeron-no-space");

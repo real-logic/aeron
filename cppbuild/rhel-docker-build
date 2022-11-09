@@ -7,7 +7,7 @@ docker build --tag rhel-aeron \
   --build-arg GROUP_ID="$(id -g)" \
   "${SOURCE_DIR}/cppbuild/rhel"
 
-docker run --rm --shm-size=4G --network host \
+docker run --rm --shm-size=1G --network host \
   --volume="${SOURCE_DIR}":/opt/aeron \
   --volume="$(realpath ~/.gradle)":/home/athena/.gradle \
   rhel-aeron

@@ -23,17 +23,14 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,25 +44,27 @@ public class DriverSpaceTest
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @ParameterizedTest
-    @MethodSource("storageCheckOptions")
+    @CsvSource({
+        "true, false, 16m",
+        "true, true, 1g",
+        "false, false, 16m",
+        "false, true, 1g"
+    })
     void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace(
-        final boolean performStorageChecks, final boolean useSparseFiles) throws IOException
+        final boolean performStorageChecks, final boolean useSparseFiles, final String termLength) throws IOException
     {
-        assumeTrue(performStorageChecks || OS.LINUX != OS.current() ||
-            !useSparseFiles && TestMediaDriver.shouldRunCMediaDriver(),
-            "With storage checks disabled the file-system operations on Linux do not fail with an error unless" +
-            " useSparseFiles=false and the C media driver is used");
-
         final Path tempfsDir;
         switch (OS.current())
         {
             case WINDOWS:
+                assumeTrue(performStorageChecks || !useSparseFiles || TestMediaDriver.shouldRunCMediaDriver());
                 tempfsDir = new File("T:/tmp_aeron_dir").toPath();
                 break;
             case MAC:
                 tempfsDir = new File("/Volumes/tmp_aeron_dir").toPath();
                 break;
             default:
+                assumeTrue(performStorageChecks || !useSparseFiles);
                 tempfsDir = new File("/mnt/tmp_aeron_dir").toPath();
                 break;
         }
@@ -96,7 +95,7 @@ public class DriverSpaceTest
         {
             try
             {
-                aeron.addPublication("aeron:ipc?term-length=16m", 10001);
+                aeron.addPublication("aeron:ipc?term-length=" + termLength, 10001);
                 fail("RegistrationException was not thrown");
             }
             catch (final RegistrationException ex)
@@ -111,14 +110,5 @@ public class DriverSpaceTest
                 }
             }
         }
-    }
-
-    private static List<Arguments> storageCheckOptions()
-    {
-        return Arrays.asList(
-            Arguments.of(true /* performStorageChecks */, false /* useSparseFiles */),
-            Arguments.of(true /* performStorageChecks */, true /* useSparseFiles */),
-            Arguments.of(false /* performStorageChecks */, false /* useSparseFiles */),
-            Arguments.of(false /* performStorageChecks */, true /* useSparseFiles */));
     }
 }

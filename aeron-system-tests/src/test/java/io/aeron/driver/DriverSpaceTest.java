@@ -64,7 +64,7 @@ public class DriverSpaceTest
                 tempfsDir = new File("/Volumes/tmp_aeron_dir").toPath();
                 break;
             default:
-                assumeTrue(performStorageChecks || !useSparseFiles);
+                assumeTrue(performStorageChecks || !useSparseFiles && TestMediaDriver.shouldRunCMediaDriver());
                 tempfsDir = new File("/mnt/tmp_aeron_dir").toPath();
                 break;
         }

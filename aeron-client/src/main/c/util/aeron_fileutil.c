@@ -81,10 +81,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
         {
             AERON_APPEND_ERR("(%d) Failed to close file mapping handle", GetLastError());
         }
-        if (-1 == _close(fd))
-        {
-            AERON_APPEND_ERR("(%d) Failed to close file descriptor", GetLastError());
-        }
+        _close(fd);
         return -1;
     }
 
@@ -95,22 +92,11 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
         {
             AERON_APPEND_ERR("(%d) Failed to unmap", GetLastError());
         }
-        if (-1 == _close(fd))
-        {
-            AERON_APPEND_ERR("(%d) Failed to close file descriptor", GetLastError());
-        }
+        _close(fd);
         return -1;
     }
 
-    if (-1 == _close(fd))
-    {
-        AERON_SET_ERR_WIN(GetLastError(), "Failed to close file descriptor");
-        if (0 != aeron_unmap(mapping))
-        {
-            AERON_APPEND_ERR("(%d) Failed to unmap", GetLastError());
-        }
-        return -1;
-    }
+    _close(fd);
 
     if (pre_touch && MAP_FAILED != mapping->addr)
     {
@@ -216,10 +202,7 @@ int aeron_create_file(const char *path, size_t length, bool sparse_file)
     return fd;
 
 handle_error:
-    if (-1 == _close(fd))
-    {
-        AERON_APPEND_ERR("(%d) Failed to close file descriptor", GetLastError());
-    }
+    _close(fd);
     if (-1 == remove(path))
     {
         AERON_APPEND_ERR("(%d) Failed to remove file", GetLastError());
@@ -312,7 +295,6 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
     if (pre_touch)
     {
         // Write a single zero at the end of the file to force the ENOSPC error when storage is out of space.
-        // This is only needed on Linux, because on MacOS and Windows the pre-sizing of the file will fail earlier.
         static uint8_t single_zero[1] = { 0x0 };
         if (1 != pwrite(fd, single_zero, 1, (off_t)(mapping->length - 1)))
         {
@@ -471,16 +453,10 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
     {
 #if !defined(_MSC_VER)
         AERON_SET_ERR(errno, "Failed to determine the size of the file: %s", path);
-        if (-1 == close(fd))
-        {
-            AERON_APPEND_ERR("(%d) Failed to close file descriptor", errno);
-        }
+        close(fd);
 #else
         AERON_SET_ERR_WIN(GetLastError(), "Failed to determine the size of the file: %s", path);
-        if (-1 == _close(fd))
-        {
-            AERON_APPEND_ERR("(%d) Failed to close file descriptor", GetLastError());
-        }
+        _close(fd);
 #endif
         return -1;
     }
@@ -615,16 +591,10 @@ int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const cha
     {
 #if !defined(_MSC_VER)
         AERON_SET_ERR(errno, "Failed to determine the size of the existing raw log, filename: %s", path);
-        if (-1 == close(fd))
-        {
-            AERON_APPEND_ERR("(%d) Failed to close file descriptor", errno);
-        }
+        close(fd);
 #else
         AERON_SET_ERR_WIN(GetLastError(), "Failed to determine the size of the existing raw log, filename: %s", path);
-        if (-1 == _close(fd))
-        {
-            AERON_APPEND_ERR("(%d) Failed to close file descriptor", GetLastError());
-        }
+        _close(fd);
 #endif
         return -1;
     }

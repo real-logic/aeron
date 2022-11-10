@@ -16,10 +16,13 @@
 package io.aeron.driver;
 
 import io.aeron.Aeron;
+import io.aeron.ConcurrentPublication;
 import io.aeron.ErrorCode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,9 +33,6 @@ import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.abort;
@@ -40,32 +40,24 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class DriverSpaceTest
 {
+    private static Path aeronDir;
+    private static Path publicationsDir;
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
-    @ParameterizedTest
-    @CsvSource({
-        "true, false, 16m",
-        "true, true, 1g",
-        "false, false, 16m",
-        "false, true, 1g"
-    })
-    void shouldThrowExceptionWithCorrectErrorCodeForLackOfSpace(
-        final boolean performStorageChecks, final boolean useSparseFiles, final String termLength) throws IOException
+    @BeforeAll
+    static void verifyFileSystemSetup()
     {
         final Path tempfsDir;
         switch (OS.current())
         {
             case WINDOWS:
-                assumeTrue(performStorageChecks || !useSparseFiles);
                 tempfsDir = new File("T:/tmp_aeron_dir").toPath();
                 break;
             case MAC:
-                assumeTrue(performStorageChecks || !useSparseFiles && TestMediaDriver.shouldRunCMediaDriver());
                 tempfsDir = new File("/Volumes/tmp_aeron_dir").toPath();
                 break;
             default:
-                assumeTrue(performStorageChecks || !useSparseFiles && TestMediaDriver.shouldRunCMediaDriver());
                 tempfsDir = new File("/mnt/tmp_aeron_dir").toPath();
                 break;
         }
@@ -83,32 +75,63 @@ public class DriverSpaceTest
             abort("File store not accessible");
         }
 
-        final Path aeronDir = tempfsDir.resolve("aeron-no-space");
+        aeronDir = tempfsDir.resolve("aeron-no-space");
+        publicationsDir = aeronDir.resolve("publications");
+    }
+
+    @Test
+    void shouldCreatePublicationUsingSparseFiles()
+    {
         final MediaDriver.Context context = new MediaDriver.Context()
             .aeronDirectoryName(aeronDir.toString())
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true)
-            .performStorageChecks(performStorageChecks)
-            .termBufferSparseFile(useSparseFiles);
+            .performStorageChecks(false);
+
+        try (TestMediaDriver driver = TestMediaDriver.launch(context, systemTestWatcher);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            final ConcurrentPublication publication =
+                aeron.addPublication("aeron:ipc?term-length=1g|sparse=true", 20002);
+            assertNotNull(publication);
+
+            final File[] files = publicationsDir.toFile().listFiles();
+            assertNotNull(files);
+            assertEquals(1, files.length);
+            final File file = files[0];
+            assertEquals(3221229568L, file.length());
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "true, 16m",
+        "true, 1g",
+        "false, 64m"
+    })
+    void shouldThrowExceptionIfOutOfDiscSpace(final boolean performStorageChecks, final String termLength)
+    {
+        assumeTrue(performStorageChecks || OS.WINDOWS == OS.current() || TestMediaDriver.shouldRunCMediaDriver());
+
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .aeronDirectoryName(aeronDir.toString())
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
+            .performStorageChecks(performStorageChecks);
 
         try (TestMediaDriver driver = TestMediaDriver.launch(context, systemTestWatcher);
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             try
             {
-                aeron.addPublication("aeron:ipc?term-length=" + termLength, 10001);
+                aeron.addPublication("aeron:ipc?term-length=" + termLength + "|sparse=false", 10001);
                 fail("RegistrationException was not thrown");
             }
             catch (final RegistrationException ex)
             {
                 assertEquals(ErrorCode.STORAGE_SPACE, ex.errorCode());
-                final Path publicationsDir = aeronDir.resolve("publications");
                 assertTrue(Files.exists(publicationsDir));
-                try (Stream<Path> files = Files.list(publicationsDir))
-                {
-                    assertEquals(
-                        Collections.emptyList(), files.collect(Collectors.toList()), "Log file was not deleted");
-                }
+                assertArrayEquals(new String[0], publicationsDir.toFile().list(), "Log file was not deleted");
             }
         }
     }

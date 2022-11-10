@@ -68,6 +68,7 @@ check_symbol_exists(recvmmsg "sys/socket.h" RECVMMSG_PROTOTYPE_EXISTS)
 check_symbol_exists(sendmmsg "sys/socket.h" SENDMMSG_PROTOTYPE_EXISTS)
 check_symbol_exists(fallocate "fcntl.h" FALLOCATE_PROTOTYPE_EXISTS)
 check_symbol_exists(posix_fallocate "fcntl.h" POSIX_FALLOCATE_PROTOTYPE_EXISTS)
+check_symbol_exists(F_PREALLOCATE "fcntl.h" F_PREALLOCATE_PROTOTYPE_EXISTS)
 
 if (FALLOCATE_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_FALLOCATE)
@@ -75,6 +76,10 @@ endif ()
 
 if (POSIX_FALLOCATE_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_POSIX_FALLOCATE)
+endif ()
+
+if (F_PREALLOCATE_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_F_PREALLOCATE)
 endif ()
 
 if (ARC4RANDOM_PROTOTYPE_EXISTS)

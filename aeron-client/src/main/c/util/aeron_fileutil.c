@@ -376,7 +376,7 @@ int aeron_create_file(const char *path, size_t length, bool sparse_file)
             AERON_SET_ERR(errno, "Failed to allocate file space: %s", path);
             goto error;
         }
-#elif defined(__APPLE__)
+#elif HAVE_F_PREALLOCATE
         fstore_t flags = {
             F_ALLOCATEALL | F_ALLOCATECONTIG,
             F_PEOFPOSMODE,

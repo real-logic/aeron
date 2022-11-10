@@ -37,6 +37,7 @@ endif ()
 
 check_symbol_exists(fallocate "fcntl.h" FALLOCATE_PROTOTYPE_EXISTS)
 check_symbol_exists(posix_fallocate "fcntl.h" POSIX_FALLOCATE_PROTOTYPE_EXISTS)
+check_symbol_exists(F_PREALLOCATE "fcntl.h" F_PREALLOCATE_PROTOTYPE_EXISTS)
 
 if (FALLOCATE_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_FALLOCATE)
@@ -44,6 +45,10 @@ endif ()
 
 if (POSIX_FALLOCATE_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_POSIX_FALLOCATE)
+endif ()
+
+if (F_PREALLOCATE_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_F_PREALLOCATE)
 endif ()
 
 if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")

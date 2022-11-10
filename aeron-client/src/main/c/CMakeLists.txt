@@ -14,22 +14,6 @@
 
 include(CheckSymbolExists)
 
-check_symbol_exists(fallocate "fcntl.h" FALLOCATE_PROTOTYPE_EXISTS)
-check_symbol_exists(posix_fallocate "fcntl.h" POSIX_FALLOCATE_PROTOTYPE_EXISTS)
-
-if (FALLOCATE_PROTOTYPE_EXISTS)
-    add_definitions(-DHAVE_FALLOCATE)
-endif ()
-
-if (POSIX_FALLOCATE_PROTOTYPE_EXISTS)
-    add_definitions(-DHAVE_POSIX_FALLOCATE)
-endif ()
-
-if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-    set(BUILD_SHARED_LIBS ON)
-endif ()
-
 if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
     set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)
     set(WSAPOLL_PROTOTYPE_EXISTS True)
@@ -49,6 +33,22 @@ endif ()
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
     add_definitions(-D_DEFAULT_SOURCE)
+endif ()
+
+check_symbol_exists(fallocate "fcntl.h" FALLOCATE_PROTOTYPE_EXISTS)
+check_symbol_exists(posix_fallocate "fcntl.h" POSIX_FALLOCATE_PROTOTYPE_EXISTS)
+
+if (FALLOCATE_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_FALLOCATE)
+endif ()
+
+if (POSIX_FALLOCATE_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_POSIX_FALLOCATE)
+endif ()
+
+if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set(BUILD_SHARED_LIBS ON)
 endif ()
 
 set(SOURCE

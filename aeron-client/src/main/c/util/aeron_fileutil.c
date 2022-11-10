@@ -370,6 +370,30 @@ int aeron_create_file(const char *path, size_t length, bool sparse_file)
             AERON_SET_ERR(errno, "Failed to allocate file space: %s", path);
             goto error;
         }
+#elif HAVE_POSIX_FALLOCATE
+        if (0 != posix_fallocate(fd, 0, (off_t)length))
+        {
+            AERON_SET_ERR(errno, "Failed to allocate file space: %s", path);
+            goto error;
+        }
+#elif defined(__APPLE__)
+        fstore_t flags = {
+            F_ALLOCATEALL | F_ALLOCATECONTIG,
+            F_PEOFPOSMODE,
+            0,
+            (off_t)length,
+            0};
+        if (-1 == fcntl(fd, F_PREALLOCATE, &flags)) // changes physical file size
+        {
+            AERON_SET_ERR(errno, "Failed to allocate file space: %s", path);
+            goto error;
+        }
+
+        if (0 != ftruncate(fd, (off_t)length)) // changes logical file size
+        {
+            AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
+            goto error;
+        }
 #else
         if (0 != ftruncate(fd, (off_t)length))
         {

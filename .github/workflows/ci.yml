@@ -591,6 +591,7 @@ jobs:
           echo "cmake-${CMAKE_VERSION}-Darwin-x86_64/CMake.app/Contents/bin" >> $GITHUB_PATH
       - name: Setup small temp file system
         run: |
+          df
           sudo diskutil eraseVolume APFS tmp_aeron_dir $(hdiutil attach -nomount ram://$((2 * 1024 * 20)))
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors

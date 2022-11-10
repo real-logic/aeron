@@ -592,7 +592,6 @@ jobs:
       - name: Setup small temp file system
         run: |
           sudo diskutil eraseDisk APFS tmp_aeron_dir $(hdiutil attach -nomount ram://$((2 * 1024 * 20)))
-          diskutil list
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Copy test logs

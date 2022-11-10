@@ -176,7 +176,7 @@ int aeron_create_file(const char *path, size_t length, bool sparse_file)
     if (INVALID_HANDLE_VALUE == hfile)
     {
         AERON_SET_ERR_WIN(GetLastError(), "Failed to obtain operating-system file handle: %s", path);
-        goto handle_error;
+        goto error;
     }
 
     if (sparse_file)
@@ -185,7 +185,7 @@ int aeron_create_file(const char *path, size_t length, bool sparse_file)
         if (!DeviceIoControl(hfile, FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &bytesReturned, NULL))
         {
             AERON_SET_ERR_WIN(GetLastError(), "Failed to mark file as sparse: %s", path);
-            goto handle_error;
+            goto error;
         }
     }
 
@@ -196,12 +196,12 @@ int aeron_create_file(const char *path, size_t length, bool sparse_file)
         !SetEndOfFile(hfile))
     {
         AERON_SET_ERR_WIN(GetLastError(), "Failed to truncate file: %s", path);
-        goto handle_error;
+        goto error;
     }
 
     return fd;
 
-handle_error:
+error:
     _close(fd);
     if (-1 == remove(path))
     {
@@ -291,24 +291,6 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
         return -1;
     }
 
-#ifdef __linux__
-    if (pre_touch)
-    {
-        // Write a single zero at the end of the file to force the ENOSPC error when storage is out of space.
-        static uint8_t single_zero[1] = { 0x0 };
-        if (1 != pwrite(fd, single_zero, 1, (off_t)(mapping->length - 1)))
-        {
-            AERON_SET_ERR(errno, "%s", "Failed to pre-touch");
-            if (0 != aeron_unmap(mapping))
-            {
-                AERON_APPEND_ERR("(%d) Failed to unmap", errno);
-            }
-            close(fd);
-            return -1;
-        }
-    }
-#endif
-
     close(fd);
     return 0;
 }
@@ -372,17 +354,40 @@ int aeron_create_file(const char *path, size_t length, bool sparse_file)
         return -1;
     }
 
-    if (0 != ftruncate(fd, length))
+    if (sparse_file)
     {
-        AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
-        close(fd);
-        if (-1 == remove(path))
+        if (0 != ftruncate(fd, (off_t)length))
         {
-            AERON_APPEND_ERR("Failed to remove file: %s", path);
+            AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
+            goto error;
         }
-        return -1;
     }
+    else
+    {
+#if HAVE_FALLOCATE
+        if (0 != fallocate(fd, 0, 0, (off_t)length))
+        {
+            AERON_SET_ERR(errno, "Failed to allocate file space: %s", path);
+            goto error;
+        }
+#else
+        if (0 != ftruncate(fd, (off_t)length))
+        {
+            AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
+            goto error;
+        }
+#endif
+    }
+
     return fd;
+
+error:
+    close(fd);
+    if (-1 == remove(path))
+    {
+        AERON_APPEND_ERR("(%d) Failed to remove file", errno);
+    }
+    return -1;
 }
 
 int aeron_open_file_rw(const char *path)

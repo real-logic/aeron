@@ -245,76 +245,53 @@ public final class ClusterBackupAgent implements Agent
 
         try
         {
-            try
+            if (nowMs > slowTickDeadlineMs)
             {
-                if (nowMs > slowTickDeadlineMs)
-                {
-                    slowTickDeadlineMs = nowMs + SLOW_TICK_INTERVAL_MS;
-                    workCount += slowTick(nowMs);
-                }
-
-                workCount += consensusSubscription.poll(fragmentAssembler, ConsensusAdapter.FRAGMENT_LIMIT);
-
-                switch (state)
-                {
-                    case BACKUP_QUERY:
-                        workCount += backupQuery(nowMs);
-                        break;
-
-                    case SNAPSHOT_RETRIEVE:
-                        workCount += snapshotRetrieve(nowMs);
-                        break;
-
-                    case LIVE_LOG_RECORD:
-                        workCount += liveLogRecord(nowMs);
-                        break;
-
-                    case LIVE_LOG_REPLAY:
-                        workCount += liveLogReplay(nowMs);
-                        break;
-
-                    case UPDATE_RECORDING_LOG:
-                        workCount += updateRecordingLog(nowMs);
-                        break;
-
-                    case BACKING_UP:
-                        workCount += backingUp(nowMs);
-                        break;
-
-                    case RESET_BACKUP:
-                        workCount += resetBackup(nowMs);
-                        break;
-                }
-
-                if (hasProgressStalled(nowMs))
-                {
-                    if (null != eventsListener)
-                    {
-                        eventsListener.onPossibleFailure(new TimeoutException("progress has stalled", Category.WARN));
-                    }
-
-                    state(RESET_BACKUP, nowMs);
-                }
+                slowTickDeadlineMs = nowMs + SLOW_TICK_INTERVAL_MS;
+                workCount += slowTick(nowMs);
             }
-            catch (final RegistrationException ex)
-            {
-                if (ex.errorCode() == ErrorCode.STORAGE_SPACE)
-                {
-                    ctx.countedErrorHandler().onError(ex);
-                    throw new AgentTerminationException();
-                }
 
-                throw ex;
+            workCount += consensusSubscription.poll(fragmentAssembler, ConsensusAdapter.FRAGMENT_LIMIT);
+
+            switch (state)
+            {
+                case BACKUP_QUERY:
+                    workCount += backupQuery(nowMs);
+                    break;
+
+                case SNAPSHOT_RETRIEVE:
+                    workCount += snapshotRetrieve(nowMs);
+                    break;
+
+                case LIVE_LOG_RECORD:
+                    workCount += liveLogRecord(nowMs);
+                    break;
+
+                case LIVE_LOG_REPLAY:
+                    workCount += liveLogReplay(nowMs);
+                    break;
+
+                case UPDATE_RECORDING_LOG:
+                    workCount += updateRecordingLog(nowMs);
+                    break;
+
+                case BACKING_UP:
+                    workCount += backingUp(nowMs);
+                    break;
+
+                case RESET_BACKUP:
+                    workCount += resetBackup(nowMs);
+                    break;
             }
-            catch (final ArchiveException ex)
+
+            if (hasProgressStalled(nowMs))
             {
-                if (ex.errorCode() == ArchiveException.STORAGE_SPACE)
+                if (null != eventsListener)
                 {
-                    ctx.countedErrorHandler().onError(ex);
-                    throw new AgentTerminationException();
+                    eventsListener.onPossibleFailure(new TimeoutException("progress has stalled", Category.WARN));
                 }
 
-                throw ex;
+                state(RESET_BACKUP, nowMs);
             }
         }
         catch (final AgentTerminationException ex)

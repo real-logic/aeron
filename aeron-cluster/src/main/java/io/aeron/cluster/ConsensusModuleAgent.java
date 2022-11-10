@@ -31,7 +31,6 @@ import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.DutyCycleTracker;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.exceptions.AeronException;
-import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthorisationService;
@@ -332,48 +331,25 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
         try
         {
-            try
+            if (nowNs >= slowTickDeadlineNs)
             {
-                if (nowNs >= slowTickDeadlineNs)
-                {
-                    slowTickDeadlineNs = nowNs + SLOW_TICK_INTERVAL_NS;
-                    workCount += slowTickWork(nowNs);
-                }
-
-                workCount += consensusAdapter.poll();
-
-                if (null != dynamicJoin)
-                {
-                    workCount += dynamicJoin.doWork(nowNs);
-                }
-                else if (null != election)
-                {
-                    workCount += election.doWork(nowNs);
-                }
-                else
-                {
-                    workCount += consensusWork(timestamp, nowNs);
-                }
+                slowTickDeadlineNs = nowNs + SLOW_TICK_INTERVAL_NS;
+                workCount += slowTickWork(nowNs);
             }
-            catch (final RegistrationException ex)
-            {
-                if (ex.errorCode() == ErrorCode.STORAGE_SPACE)
-                {
-                    ctx.countedErrorHandler().onError(ex);
-                    unexpectedTermination();
-                }
 
-                throw ex;
+            workCount += consensusAdapter.poll();
+
+            if (null != dynamicJoin)
+            {
+                workCount += dynamicJoin.doWork(nowNs);
             }
-            catch (final ArchiveException ex)
+            else if (null != election)
             {
-                if (ex.errorCode() == ArchiveException.STORAGE_SPACE)
-                {
-                    ctx.countedErrorHandler().onError(ex);
-                    unexpectedTermination();
-                }
-
-                throw ex;
+                workCount += election.doWork(nowNs);
+            }
+            else
+            {
+                workCount += consensusWork(timestamp, nowNs);
             }
         }
         catch (final AgentTerminationException ex)
@@ -2264,16 +2240,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 archive.startRecording(channel, streamId, sourceLocation, true) :
                 archive.extendRecording(logRecordingId, channel, streamId, sourceLocation, true);
         }
-        catch (final RegistrationException ex)
-        {
-            if (ex.errorCode() == ErrorCode.STORAGE_SPACE)
-            {
-                ctx.countedErrorHandler().onError(ex);
-                unexpectedTermination();
-            }
-
-            throw ex;
-        }
         catch (final ArchiveException ex)
         {
             if (ex.errorCode() == ArchiveException.STORAGE_SPACE)
@@ -3316,16 +3282,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
             snapshotState(publication, logPosition, leadershipTermId);
             awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
-        }
-        catch (final RegistrationException ex)
-        {
-            if (ex.errorCode() == ErrorCode.STORAGE_SPACE)
-            {
-                ctx.countedErrorHandler().onError(ex);
-                unexpectedTermination();
-            }
-
-            throw ex;
         }
         catch (final ArchiveException ex)
         {

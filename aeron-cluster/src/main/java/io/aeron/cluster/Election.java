@@ -468,14 +468,14 @@ class Election
                     {
                         throw new ClusterException(
                             "invalid newLeadershipTerm - this.appendPosition=" + appendPosition +
-                            " < termBaseLogPosition = " + termBaseLogPosition +
-                            " and nextLeadershipTermId = " + nextLeadershipTermId +
-                            ", logLeadershipTermId = " + logLeadershipTermId +
-                            ", nextTermBaseLogPosition = " + nextTermBaseLogPosition +
-                            ", nextLogPosition = " + nextLogPosition + ", leadershipTermId = " + leadershipTermId +
-                            ", termBaseLogPosition = " + termBaseLogPosition + ", logPosition = " + logPosition +
-                            ", leaderRecordingId = " + leaderRecordingId + ", leaderMemberId = " + leaderMemberId +
-                            ", logSessionId = " + logSessionId + ", isStartup = " + isStartup);
+                            " < termBaseLogPosition=" + termBaseLogPosition +
+                            " and nextLeadershipTermId=" + nextLeadershipTermId +
+                            ", logLeadershipTermId=" + logLeadershipTermId +
+                            ", nextTermBaseLogPosition=" + nextTermBaseLogPosition +
+                            ", nextLogPosition=" + nextLogPosition + ", leadershipTermId=" + leadershipTermId +
+                            ", termBaseLogPosition=" + termBaseLogPosition + ", logPosition=" + logPosition +
+                            ", leaderRecordingId=" + leaderRecordingId + ", leaderMemberId=" + leaderMemberId +
+                            ", logSessionId=" + logSessionId + ", isStartup=" + isStartup);
                     }
                 }
                 else

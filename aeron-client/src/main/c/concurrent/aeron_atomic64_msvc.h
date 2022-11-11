@@ -85,12 +85,12 @@ inline bool aeron_cas_int32(volatile int32_t *dst, int32_t expected, int32_t des
     return original == expected;
 }
 
-inline void aeron_acquire()
+inline void aeron_acquire(void)
 {
     _ReadWriteBarrier();
 }
 
-inline void aeron_release()
+inline void aeron_release(void)
 {
     _ReadWriteBarrier();
 }

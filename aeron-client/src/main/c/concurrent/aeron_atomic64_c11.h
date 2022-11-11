@@ -80,12 +80,12 @@ inline bool aeron_cas_int32(volatile int32_t *dst, int32_t expected, int32_t des
     return atomic_compare_exchange_strong((_Atomic(int32_t) *)dst, &expected, desired);
 }
 
-inline void aeron_acquire()
+inline void aeron_acquire(void)
 {
     atomic_thread_fence(memory_order_acquire);
 }
 
-inline void aeron_release()
+inline void aeron_release(void)
 {
     atomic_thread_fence(memory_order_release);
 }

@@ -48,6 +48,9 @@ public final class ClusterConfig
     public static final String ARCHIVE_SUB_DIR = "archive";
     public static final String CLUSTER_SUB_DIR = "cluster";
 
+    private final int memberId;
+    private final String ingressHostname;
+    private final String clusterHostname;
     private final MediaDriver.Context mediaDriverContext;
     private final Archive.Context archiveContext;
     private final AeronArchive.Context aeronArchiveContext;
@@ -55,12 +58,18 @@ public final class ClusterConfig
     private final List<ClusteredServiceContainer.Context> clusteredServiceContexts;
 
     ClusterConfig(
+        final int memberId,
+        final String ingressHostname,
+        final String clusterHostname,
         final MediaDriver.Context mediaDriverContext,
         final Archive.Context archiveContext,
         final AeronArchive.Context aeronArchiveContext,
         final ConsensusModule.Context consensusModuleContext,
         final List<ClusteredServiceContainer.Context> clusteredServiceContexts)
     {
+        this.memberId = memberId;
+        this.ingressHostname = ingressHostname;
+        this.clusterHostname = clusterHostname;
         this.mediaDriverContext = mediaDriverContext;
         this.archiveContext = archiveContext;
         this.aeronArchiveContext = aeronArchiveContext;
@@ -73,34 +82,40 @@ public final class ClusterConfig
      * addresses for ingress requests and 'internal' addresses that will handle all the cluster replication and
      * control traffic.
      *
-     * @param nodeId                id for this node.
+     * @param startingMemberId      id for the first member in the list of entries.
+     * @param memberId                id for this node.
      * @param ingressHostnames      list of hostnames that will receive ingress request traffic.
      * @param clusterHostnames      list of hostnames that will receive cluster traffic.
      * @param portBase              base port to derive remaining ports from.
+     * @param parentDir             directory under which the persistent directories will be created.
      * @param clusteredService      instance of the clustered service that will run with this configuration.
      * @param additionalServices    instances of additional clustered services that will run with this configuration.
      * @return                      configuration that wraps all aeron service configuration.
      */
     public static ClusterConfig create(
-        final int nodeId,
+        final int startingMemberId,
+        final int memberId,
         final List<String> ingressHostnames,
         final List<String> clusterHostnames,
         final int portBase,
+        final File parentDir,
         final ClusteredService clusteredService,
         final ClusteredService... additionalServices)
     {
-        if (nodeId >= ingressHostnames.size())
+        if (memberId < startingMemberId || (startingMemberId + ingressHostnames.size()) <= memberId)
         {
             throw new IllegalArgumentException(
-                "nodeId=" + nodeId + " >= ingressHostnames.size()=" + ingressHostnames.size());
+                "memberId=" + memberId + " is invalid, should be " + startingMemberId +
+                " <= memberId < " + startingMemberId + ingressHostnames.size());
         }
 
-        final String clusterMembers = clusterMembers(ingressHostnames, clusterHostnames, portBase);
+        final String clusterMembers = clusterMembers(startingMemberId, ingressHostnames, clusterHostnames, portBase);
 
-        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + nodeId + "-driver";
-        final File baseDir = new File(System.getProperty("user.dir"), "aeron-cluster-" + nodeId);
+        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + memberId + "-driver";
+        final File baseDir = new File(parentDir, "aeron-cluster-" + memberId);
 
-        final String hostname = clusterHostnames.get(nodeId);
+        final String ingressHostname = clusterHostnames.get(memberId - startingMemberId);
+        final String hostname = clusterHostnames.get(memberId - startingMemberId);
 
         final MediaDriver.Context mediaDriverContext = new MediaDriver.Context()
             .aeronDirectoryName(aeronDirName)
@@ -114,7 +129,7 @@ public final class ClusterConfig
         final Archive.Context archiveContext = new Archive.Context()
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDir, ARCHIVE_SUB_DIR))
-            .controlChannel(udpChannel(nodeId, hostname, portBase, ARCHIVE_CONTROL_PORT_OFFSET))
+            .controlChannel(udpChannel(memberId, hostname, portBase, ARCHIVE_CONTROL_PORT_OFFSET))
             .archiveClientContext(replicationArchiveContext)
             .localControlChannel("aeron:ipc?term-length=64k")
             .replicationChannel("aeron:udp?endpoint=" + hostname + ":0")
@@ -129,7 +144,7 @@ public final class ClusterConfig
             .aeronDirectoryName(aeronDirName);
 
         final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context()
-            .clusterMemberId(nodeId)
+            .clusterMemberId(memberId)
             .clusterMembers(clusterMembers)
             .clusterDir(new File(baseDir, CLUSTER_SUB_DIR))
             .archiveContext(aeronArchiveContext.clone())
@@ -158,7 +173,46 @@ public final class ClusterConfig
         }
 
         return new ClusterConfig(
-            mediaDriverContext, archiveContext, aeronArchiveContext, consensusModuleContext, serviceContexts);
+            memberId,
+            ingressHostname,
+            hostname,
+            mediaDriverContext,
+            archiveContext,
+            aeronArchiveContext,
+            consensusModuleContext,
+            serviceContexts);
+    }
+
+    /**
+     * Create a new ClusterConfig. This call allows for 2 separate lists of hostnames, so that there can be 'external'
+     * addresses for ingress requests and 'internal' addresses that will handle all the cluster replication and
+     * control traffic.
+     *
+     * @param nodeId                id for this node.
+     * @param ingressHostnames      list of hostnames that will receive ingress request traffic.
+     * @param clusterHostnames      list of hostnames that will receive cluster traffic.
+     * @param portBase              base port to derive remaining ports from.
+     * @param clusteredService      instance of the clustered service that will run with this configuration.
+     * @param additionalServices    instances of additional clustered services that will run with this configuration.
+     * @return                      configuration that wraps all aeron service configuration.
+     */
+    public static ClusterConfig create(
+        final int nodeId,
+        final List<String> ingressHostnames,
+        final List<String> clusterHostnames,
+        final int portBase,
+        final ClusteredService clusteredService,
+        final ClusteredService... additionalServices)
+    {
+        return create(
+            0,
+            nodeId,
+            ingressHostnames,
+            clusterHostnames,
+            portBase,
+            new File(System.getProperty("user.dir")),
+            clusteredService,
+            additionalServices);
     }
 
     /**
@@ -286,6 +340,36 @@ public final class ClusterConfig
     }
 
     /**
+     * memberId of this node.
+     *
+     * @return memberId.
+     */
+    public int memberId()
+    {
+        return memberId;
+    }
+
+    /**
+     * Hostname of this node that will receive ingress traffic.
+     *
+     * @return ingress hostname.
+     */
+    public String ingressHostname()
+    {
+        return ingressHostname;
+    }
+
+    /**
+     * Hostname of this node that will receive cluster traffic.
+     *
+     * @return cluster hostname
+     */
+    public String clusterHostname()
+    {
+        return clusterHostname;
+    }
+
+    /**
      * String representing the cluster members configuration which can be used for
      * {@link io.aeron.cluster.ClusterMember#parse(String)}.
      *
@@ -297,6 +381,26 @@ public final class ClusterConfig
     public static String clusterMembers(
         final List<String> ingressHostnames, final List<String> clusterHostnames, final int portBase)
     {
+        return clusterMembers(0, ingressHostnames, clusterHostnames, portBase);
+    }
+
+    /**
+     * String representing the cluster members configuration which can be used for
+     * {@link io.aeron.cluster.ClusterMember#parse(String)}.
+     *
+     * @param startingMemberId first memberId to be used in the list of clusterMembers. The memberId will increment by 1
+     *                         from that value for each entry.
+     * @param ingressHostnames of the cluster members.
+     * @param clusterHostnames of the cluster members internal address (can be the same as 'hostnames').
+     * @param portBase         initial port to derive other port from via appropriate node id and offset.
+     * @return the String which can be used for {@link io.aeron.cluster.ClusterMember#parse(String)}.
+     */
+    public static String clusterMembers(
+        final int startingMemberId,
+        final List<String> ingressHostnames,
+        final List<String> clusterHostnames,
+        final int portBase)
+    {
         if (ingressHostnames.size() != clusterHostnames.size())
         {
             throw new IllegalArgumentException("ingressHostnames and clusterHostnames must be the same size");
@@ -305,12 +409,13 @@ public final class ClusterConfig
         final StringBuilder sb = new StringBuilder();
         for (int i = 0; i < ingressHostnames.size(); i++)
         {
-            sb.append(i);
-            sb.append(',').append(endpoint(i, ingressHostnames.get(i), portBase, CLIENT_FACING_PORT_OFFSET));
-            sb.append(',').append(endpoint(i, clusterHostnames.get(i), portBase, MEMBER_FACING_PORT_OFFSET));
-            sb.append(',').append(endpoint(i, clusterHostnames.get(i), portBase, LOG_PORT_OFFSET));
-            sb.append(',').append(endpoint(i, clusterHostnames.get(i), portBase, TRANSFER_PORT_OFFSET));
-            sb.append(',').append(endpoint(i, clusterHostnames.get(i), portBase, ARCHIVE_CONTROL_PORT_OFFSET));
+            final int memberId = i + startingMemberId;
+            sb.append(memberId);
+            sb.append(',').append(endpoint(memberId, ingressHostnames.get(i), portBase, CLIENT_FACING_PORT_OFFSET));
+            sb.append(',').append(endpoint(memberId, clusterHostnames.get(i), portBase, MEMBER_FACING_PORT_OFFSET));
+            sb.append(',').append(endpoint(memberId, clusterHostnames.get(i), portBase, LOG_PORT_OFFSET));
+            sb.append(',').append(endpoint(memberId, clusterHostnames.get(i), portBase, TRANSFER_PORT_OFFSET));
+            sb.append(',').append(endpoint(memberId, clusterHostnames.get(i), portBase, ARCHIVE_CONTROL_PORT_OFFSET));
             sb.append('|');
         }
 

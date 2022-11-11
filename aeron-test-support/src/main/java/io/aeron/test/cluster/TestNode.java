@@ -51,6 +51,7 @@ import org.agrona.collections.LongArrayList;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
@@ -300,7 +301,24 @@ public final class TestNode implements AutoCloseable
 
     public long errors()
     {
-        return countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id());
+        final CountersReader countersReader = countersReader();
+        long errors = countersReader.getCounterValue(SystemCounterDescriptor.ERRORS.id());
+
+        final AtomicCounter consensusModuleCounter = consensusModule.context().errorCounter();
+        if (null != consensusModuleCounter)
+        {
+            errors += countersReader.getCounterValue(consensusModuleCounter.id());
+        }
+
+        for (final ClusteredServiceContainer serviceContainer : containers)
+        {
+            final AtomicCounter serviceErrorCounter = serviceContainer.context().errorCounter();
+            if (null != serviceErrorCounter)
+            {
+                errors += countersReader.getCounterValue(serviceErrorCounter.id());
+            }
+        }
+        return errors;
     }
 
     public ClusterMembership clusterMembership()

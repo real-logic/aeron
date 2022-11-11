@@ -517,7 +517,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentHotFields impleme
     {
         if (!ctx.appVersionValidator().isVersionCompatible(ctx.appVersion(), appVersion))
         {
-            ctx.errorHandler().onError(new ClusterException(
+            ctx.countedErrorHandler().onError(new ClusterException(
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
                 " log=" + SemanticVersion.toString(appVersion)));
             throw new AgentTerminationException();

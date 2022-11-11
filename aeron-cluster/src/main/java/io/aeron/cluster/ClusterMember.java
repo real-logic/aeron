@@ -963,56 +963,6 @@ public final class ClusterMember
     }
 
     /**
-     * Has the candidate got unanimous support of the cluster?
-     *
-     * @param members         to check for votes.
-     * @param candidateTermId for the vote.
-     * @return false if any member has not voted for the candidate.
-     */
-    public static boolean hasWonVoteOnFullCount(final ClusterMember[] members, final long candidateTermId)
-    {
-        int votes = 0;
-
-        for (final ClusterMember member : members)
-        {
-            if (null == member.vote || member.candidateTermId != candidateTermId)
-            {
-                return false;
-            }
-
-            votes += member.vote ? 1 : 0;
-        }
-
-        return votes >= ClusterMember.quorumThreshold(members.length);
-    }
-
-    /**
-     * Has sufficient votes being counted for a majority for all members observed during {@link ElectionState#CANVASS}?
-     *
-     * @param members         to check for votes.
-     * @param candidateTermId for the vote.
-     * @return false if any member has not voted for the candidate.
-     */
-    public static boolean hasMajorityVoteWithCanvassMembers(final ClusterMember[] members, final long candidateTermId)
-    {
-        int votes = 0;
-        for (final ClusterMember member : members)
-        {
-            if (NULL_POSITION != member.logPosition && null == member.vote)
-            {
-                return false;
-            }
-
-            if (Boolean.TRUE.equals(member.vote) && member.candidateTermId == candidateTermId)
-            {
-                ++votes;
-            }
-        }
-
-        return votes >= ClusterMember.quorumThreshold(members.length);
-    }
-
-    /**
      * Has sufficient votes being counted for a majority?
      *
      * @param clusterMembers  to check for votes.

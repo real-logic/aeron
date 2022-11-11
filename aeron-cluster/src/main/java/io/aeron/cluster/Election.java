@@ -710,8 +710,7 @@ class Election
     {
         int workCount = 0;
 
-        if (ClusterMember.hasWonVoteOnFullCount(clusterMembers, candidateTermId) ||
-            ClusterMember.hasMajorityVoteWithCanvassMembers(clusterMembers, candidateTermId))
+        if (ClusterMember.hasMajorityVote(clusterMembers, candidateTermId))
         {
             leaderMember = thisMember;
             leadershipTermId = candidateTermId;
@@ -720,17 +719,7 @@ class Election
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.electionTimeoutNs()))
         {
-            if (ClusterMember.hasMajorityVote(clusterMembers, candidateTermId))
-            {
-                leaderMember = thisMember;
-                leadershipTermId = candidateTermId;
-                state(LEADER_LOG_REPLICATION, nowNs);
-            }
-            else
-            {
-                state(CANVASS, nowNs);
-            }
-
+            state(CANVASS, nowNs);
             workCount++;
         }
         else
@@ -1442,7 +1431,7 @@ class Election
             " logLeadershipTermId=" + logLeadershipTermId +
             " appendPosition=" + appendPosition +
             " catchupPosition=" + catchupPosition);
-        */
+         */
     }
 
     int thisMemberId()

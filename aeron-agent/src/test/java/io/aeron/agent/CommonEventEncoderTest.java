@@ -193,13 +193,13 @@ class CommonEventEncoderTest
     void stateNameReturnsNameOfTheEnumConstant()
     {
         final ChronoUnit state = ChronoUnit.CENTURIES;
-        assertEquals(state.name(), stateName(state));
+        assertEquals(state.name(), enumName(state));
     }
 
     @Test
     void stateNameReturnsNullIfNull()
     {
-        assertEquals("null", stateName(null));
+        assertEquals("null", enumName(null));
     }
 
     private static List<Arguments> captureLengthArgs()

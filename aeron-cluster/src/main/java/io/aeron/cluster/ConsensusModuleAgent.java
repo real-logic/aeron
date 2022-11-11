@@ -739,6 +739,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final int followerMemberId,
         final int protocolVersion)
     {
+        logOnCanvassPosition(
+            memberId, logLeadershipTermId, logPosition, leadershipTermId, followerMemberId, protocolVersion);
         checkFollowerForConsensusPublication(followerMemberId);
 
         if (null != election)
@@ -794,7 +796,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final int candidateId,
         final int protocolVersion)
     {
-        logRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId, protocolVersion, memberId);
+        logOnRequestVote(memberId, logLeadershipTermId, logPosition, candidateTermId, candidateId, protocolVersion);
         if (null != election)
         {
             election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId, protocolVersion);
@@ -836,7 +838,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final int appVersion,
         final boolean isStartup)
     {
-        logNewLeadershipTerm(
+        logOnNewLeadershipTerm(
+            memberId,
             logLeadershipTermId,
             nextLeadershipTermId,
             nextTermBaseLogPosition,
@@ -846,7 +849,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             logPosition,
             leaderRecordingId,
             timestamp,
-            memberId,
             leaderId,
             logSessionId,
             appVersion,
@@ -896,6 +898,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final int followerMemberId,
         final short flags)
     {
+        logOnAppendPosition(memberId, leadershipTermId, logPosition, followerMemberId, flags);
         if (null != election)
         {
             election.onAppendPosition(leadershipTermId, logPosition, followerMemberId, flags);
@@ -915,7 +918,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
     void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
-        logCommitPosition(leadershipTermId, logPosition, leaderMemberId, memberId);
+        logOnCommitPosition(memberId, leadershipTermId, logPosition, leaderMemberId);
 
         if (null != election)
         {
@@ -938,6 +941,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     void onCatchupPosition(
         final long leadershipTermId, final long logPosition, final int followerMemberId, final String catchupEndpoint)
     {
+        logOnCatchupPosition(memberId, leadershipTermId, logPosition, followerMemberId, catchupEndpoint);
         if (leadershipTermId <= this.leadershipTermId && Cluster.Role.LEADER == role)
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
@@ -958,6 +962,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
     void onStopCatchup(final long leadershipTermId, final int followerMemberId)
     {
+        logOnStopCatchup(memberId, leadershipTermId, followerMemberId);
         if (leadershipTermId == this.leadershipTermId && followerMemberId == memberId)
         {
             if (null != catchupLogDestination)
@@ -970,7 +975,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
     void onAddPassiveMember(final long correlationId, final String memberEndpoints)
     {
-        logAddPassiveMember(correlationId, memberEndpoints, memberId);
+        logOnAddPassiveMember(memberId, correlationId, memberEndpoints);
 
         if (null == election && null == dynamicJoin)
         {
@@ -1206,7 +1211,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
         if (newState != state)
         {
-            logStateChange(state, newState, memberId);
+            logStateChange(memberId, state, newState);
             state = newState;
             if (!moduleState.isClosed())
             {
@@ -1221,7 +1226,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     }
 
     private void logStateChange(
-        final ConsensusModule.State oldState, final ConsensusModule.State newState, final int memberId)
+        final int memberId, final ConsensusModule.State oldState, final ConsensusModule.State newState)
     {
         //System.out.println("CM State memberId=" + memberId + " " + oldState + " -> " + newState);
     }
@@ -1230,7 +1235,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
         if (newRole != role)
         {
-            logRoleChange(role, newRole, memberId);
+            logRoleChange(memberId, role, newRole);
             role = newRole;
             if (!clusterRoleCounter.isClosed())
             {
@@ -1239,7 +1244,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    private void logRoleChange(final Cluster.Role oldRole, final Cluster.Role newRole, final int memberId)
+    private void logRoleChange(final int memberId, final Cluster.Role oldRole, final Cluster.Role newRole)
     {
         //System.out.println("CM Role memberId=" + memberId + " " + oldRole + " -> " + newRole);
     }
@@ -1477,7 +1482,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final TimeUnit timeUnit,
         final int appVersion)
     {
-        logReplayNewLeadershipTermEvent(
+        logOnReplayNewLeadershipTermEvent(
             memberId,
             null != election,
             leadershipTermId,
@@ -2119,7 +2124,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    private void logNewLeadershipTerm(
+    private static void logOnNewLeadershipTerm(
+        final int memberId,
         final long logLeadershipTermId,
         final long nextLeadershipTermId,
         final long nextTermBaseLogPosition,
@@ -2129,7 +2135,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final long logPosition,
         final long leaderRecordingId,
         final long timestamp,
-        final int memberId,
         final int leaderId,
         final int logSessionId,
         final int appVersion,
@@ -2137,22 +2142,22 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
     }
 
-    private void logCommitPosition(
+    private static void logOnCommitPosition(
+        final int memberId,
         final long leadershipTermId,
         final long logPosition,
-        final int leaderMemberId,
-        final int memberId)
+        final int leaderMemberId)
     {
     }
 
-    private void logAddPassiveMember(
+    private static void logOnAddPassiveMember(
+        final int memberId,
         final long correlationId,
-        final String memberEndpoints,
-        final int memberId)
+        final String memberEndpoints)
     {
     }
 
-    private void logReplayNewLeadershipTermEvent(
+    private static void logOnReplayNewLeadershipTermEvent(
         final int memberId,
         final boolean isInElection,
         final long leadershipTermId,
@@ -2164,12 +2169,45 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
     }
 
-    private void logRequestVote(
+    private static void logOnRequestVote(
+        final int memberId,
         final long logLeadershipTermId,
         final long logPosition,
         final long candidateTermId,
         final int candidateId,
-        final int protocolVersion, final int memberId)
+        final int protocolVersion)
+    {
+    }
+
+    private static void logOnAppendPosition(
+        final int memberId,
+        final long leadershipTermId,
+        final long logPosition,
+        final int followerMemberId,
+        final short flags)
+    {
+    }
+
+    private static void logOnCanvassPosition(
+        final int memberId,
+        final long logLeadershipTermId,
+        final long logPosition,
+        final long leadershipTermId,
+        final int followerMemberId,
+        final int protocolVersion)
+    {
+    }
+
+    private static void logOnStopCatchup(final int memberId, final long leadershipTermId, final int followerMemberId)
+    {
+    }
+
+    private static void logOnCatchupPosition(
+        final int memberId,
+        final long leadershipTermId,
+        final long logPosition,
+        final int followerMemberId,
+        final String catchupEndpoint)
     {
     }
 

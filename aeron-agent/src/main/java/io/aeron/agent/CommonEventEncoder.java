@@ -176,8 +176,8 @@ final class CommonEventEncoder
             LITTLE_ENDIAN);
         encodedLength += SIZE_OF_INT;
 
-        final String fromName = stateName(from);
-        final String toName = stateName(to);
+        final String fromName = enumName(from);
+        final String toName = enumName(to);
         encodedLength += encodingBuffer.putStringWithoutLengthAscii(offset + encodedLength, fromName);
         encodedLength += encodingBuffer.putStringWithoutLengthAscii(offset + encodedLength, STATE_SEPARATOR);
         encodedLength += encodingBuffer.putStringWithoutLengthAscii(offset + encodedLength, toName);
@@ -212,12 +212,11 @@ final class CommonEventEncoder
 
     static <E extends Enum<E>> int stateTransitionStringLength(final E from, final E to)
     {
-        return SIZE_OF_INT + stateName(from).length() + STATE_SEPARATOR.length() + stateName(to).length();
+        return SIZE_OF_INT + enumName(from).length() + STATE_SEPARATOR.length() + enumName(to).length();
     }
 
-    static <E extends Enum<E>> String stateName(final E state)
+    static <E extends Enum<E>> String enumName(final E state)
     {
         return null == state ? "null" : state.name();
     }
-
 }

@@ -459,7 +459,7 @@ public final class EventLogAgent
             ClusterEventCode.REPLAY_NEW_LEADERSHIP_TERM,
             "ConsensusModuleAgent",
             ClusterInterceptor.ReplayNewLeadershipTerm.class,
-            "logReplayNewLeadershipTermEvent");
+            "logOnReplayNewLeadershipTermEvent");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
@@ -467,7 +467,7 @@ public final class EventLogAgent
             ClusterEventCode.APPEND_POSITION,
             "ConsensusModuleAgent",
             ClusterInterceptor.AppendPosition.class,
-            "onAppendPosition");
+            "logOnAppendPosition");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
@@ -475,7 +475,7 @@ public final class EventLogAgent
             ClusterEventCode.COMMIT_POSITION,
             "ConsensusModuleAgent",
             ClusterInterceptor.CommitPosition.class,
-            "logCommitPosition");
+            "logOnCommitPosition");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
@@ -483,7 +483,7 @@ public final class EventLogAgent
             ClusterEventCode.ADD_PASSIVE_MEMBER,
             "ConsensusModuleAgent",
             ClusterInterceptor.AddPassiveMember.class,
-            "logAddPassiveMember");
+            "logOnAddPassiveMember");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
@@ -522,14 +522,6 @@ public final class EventLogAgent
         tempBuilder = addEventInstrumentation(
             tempBuilder,
             CLUSTER_EVENT_CODES,
-            ClusterEventCode.NEW_LEADERSHIP_TERM,
-            "ConsensusModuleAgent",
-            ClusterInterceptor.NewLeadershipTerm.class,
-            "logNewLeadershipTerm");
-
-        tempBuilder = addEventInstrumentation(
-            tempBuilder,
-            CLUSTER_EVENT_CODES,
             ClusterEventCode.STATE_CHANGE,
             "ConsensusModuleAgent",
             ClusterInterceptor.ConsensusModuleStateChange.class,
@@ -546,10 +538,18 @@ public final class EventLogAgent
         tempBuilder = addEventInstrumentation(
             tempBuilder,
             CLUSTER_EVENT_CODES,
+            ClusterEventCode.NEW_LEADERSHIP_TERM,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.NewLeadershipTerm.class,
+            "logOnNewLeadershipTerm");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
             ClusterEventCode.CANVASS_POSITION,
             "ConsensusModuleAgent",
             ClusterInterceptor.CanvassPosition.class,
-            "onCanvassPosition");
+            "logOnCanvassPosition");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
@@ -557,7 +557,7 @@ public final class EventLogAgent
             ClusterEventCode.REQUEST_VOTE,
             "ConsensusModuleAgent",
             ClusterInterceptor.RequestVote.class,
-            "logRequestVote");
+            "logOnRequestVote");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
@@ -565,7 +565,7 @@ public final class EventLogAgent
             ClusterEventCode.CATCHUP_POSITION,
             "ConsensusModuleAgent",
             ClusterInterceptor.CatchupPosition.class,
-            "onCatchupPosition");
+            "logOnCatchupPosition");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
@@ -573,7 +573,7 @@ public final class EventLogAgent
             ClusterEventCode.STOP_CATCHUP,
             "ConsensusModuleAgent",
             ClusterInterceptor.StopCatchup.class,
-            "onStopCatchup");
+            "logOnStopCatchup");
 
         return tempBuilder;
     }

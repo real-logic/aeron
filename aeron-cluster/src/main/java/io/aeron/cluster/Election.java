@@ -1235,9 +1235,9 @@ class Election
         if (newState != state)
         {
             logStateChange(
+                thisMember.id(),
                 state,
                 newState,
-                thisMember.id(),
                 null != leaderMember ? leaderMember.id() : -1,
                 candidateTermId,
                 leadershipTermId,
@@ -1410,9 +1410,9 @@ class Election
     }
 
     private void logStateChange(
+        final int memberId,
         final ElectionState oldState,
         final ElectionState newState,
-        final int memberId,
         final int leaderId,
         final long candidateTermId,
         final long leadershipTermId,

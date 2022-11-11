@@ -127,9 +127,15 @@ class ClusterInterceptor
     {
         @Advice.OnMethodEnter
         static void onRequestVote(
-            final long logLeadershipTermId, final long logPosition, final long candidateTermId, final int candidateId)
+            final long logLeadershipTermId,
+            final long logPosition,
+            final long candidateTermId,
+            final int candidateId,
+            final int protocolVersion,
+            final int memberId)
         {
-            LOGGER.logRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
+            LOGGER.logRequestVote(
+                logLeadershipTermId, logPosition, candidateTermId, candidateId, protocolVersion, memberId);
         }
     }
 

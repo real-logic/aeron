@@ -17,6 +17,7 @@ package io.aeron.agent;
 
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.SemanticVersion;
 
 import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;
 import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
@@ -188,11 +189,22 @@ final class ClusterEventDissector
         final long candidateTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
         final int candidateId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+        final int protocolVersion = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+        final int memberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
 
-        builder.append(": logLeadershipTermId=").append(logLeadershipTermId);
+        builder.append(": memberId=").append(memberId);
+        builder.append(" logLeadershipTermId=").append(logLeadershipTermId);
         builder.append(" logPosition=").append(logPosition);
         builder.append(" candidateTermId=").append(candidateTermId);
         builder.append(" candidateId=").append(candidateId);
+        builder.append(" protocolVersion=")
+            .append(SemanticVersion.major(protocolVersion))
+            .append('.')
+            .append(SemanticVersion.minor(protocolVersion))
+            .append('.')
+            .append(SemanticVersion.patch(protocolVersion));
     }
 
     static void dissectCatchupPosition(

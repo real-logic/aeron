@@ -16,6 +16,7 @@
 package io.aeron.agent;
 
 import io.aeron.cluster.codecs.CloseReason;
+import org.agrona.SemanticVersion;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.hamcrest.Matchers;
@@ -564,6 +565,40 @@ class ClusterEventLoggerTest
             "\\[26/26]: memberId=42 MINUTES -> SECONDS";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
 
+    @Test
+    void logRequestVote()
+    {
+        final long logLeadershipTermId = 12;
+        final long logPosition = 4723489263846823L;
+        final long candidateTermId = -19;
+        final int candidateId = 89;
+        final int protocolVersion = SemanticVersion.compose(2, 5, 17);
+        final int memberId = 3;
+        final int offset = 8;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+
+        logger.logRequestVote(
+            logLeadershipTermId, logPosition, candidateTermId, candidateId, protocolVersion, memberId);
+
+        verifyLogHeader(logBuffer, offset, REQUEST_VOTE.toEventCodeId(), 36, 36);
+        final int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+        assertEquals(logLeadershipTermId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        assertEquals(logPosition, logBuffer.getLong(index + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(candidateTermId, logBuffer.getLong(index + 2 * SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(candidateId, logBuffer.getInt(index + 3 * SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(protocolVersion, logBuffer.getInt(index + 3 * SIZE_OF_LONG + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(memberId, logBuffer.getInt(index + 3 * SIZE_OF_LONG + 2 * SIZE_OF_INT, LITTLE_ENDIAN));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectRequestVote(
+            REQUEST_VOTE, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: REQUEST_VOTE " +
+            "\\[36/36]: memberId=3 logLeadershipTermId=12 logPosition=4723489263846823 candidateTermId=-19 " +
+            "candidateId=89 protocolVersion=2.5.17";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
 }

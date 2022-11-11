@@ -557,7 +557,7 @@ public final class EventLogAgent
             ClusterEventCode.REQUEST_VOTE,
             "ConsensusModuleAgent",
             ClusterInterceptor.RequestVote.class,
-            "onRequestVote");
+            "logRequestVote");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,

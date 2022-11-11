@@ -214,7 +214,9 @@ final class ClusterEventEncoder
         final long logLeadershipTermId,
         final long logPosition,
         final long candidateTermId,
-        final int candidateId)
+        final int candidateId,
+        final int protocolVersion,
+        final int memberId)
     {
         int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
@@ -230,12 +232,18 @@ final class ClusterEventEncoder
         encodingBuffer.putInt(offset + encodedLength, candidateId, LITTLE_ENDIAN);
         encodedLength += SIZE_OF_INT;
 
+        encodingBuffer.putInt(offset + encodedLength, protocolVersion, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+
+        encodingBuffer.putInt(offset + encodedLength, memberId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+
         return encodedLength;
     }
 
     static int requestVoteLength()
     {
-        return (3 * SIZE_OF_LONG) + SIZE_OF_INT;
+        return (3 * SIZE_OF_LONG) + 3 * SIZE_OF_INT;
     }
 
     static int encodeCatchupPosition(

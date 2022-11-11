@@ -794,6 +794,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final int candidateId,
         final int protocolVersion)
     {
+        logRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId, protocolVersion, memberId);
         if (null != election)
         {
             election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId, protocolVersion);
@@ -2160,6 +2161,15 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final long termBaseLogPosition,
         final TimeUnit timeUnit,
         final int appVersion)
+    {
+    }
+
+    private void logRequestVote(
+        final long logLeadershipTermId,
+        final long logPosition,
+        final long candidateTermId,
+        final int candidateId,
+        final int protocolVersion, final int memberId)
     {
     }
 

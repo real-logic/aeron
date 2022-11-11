@@ -222,13 +222,13 @@ public final class ClusterEventLogger
      * @param logLeadershipTermId leadershipTermId reached by the member for it recorded log.
      * @param leadershipTermId    the most current leadershipTermId a member has seen.
      * @param logPosition         position the member has durably recorded.
-     * @param followerMemberId    member who sent the event.
+     * @param memberId            member who sent the event.
      */
     public void logCanvassPosition(
         final long logLeadershipTermId,
         final long leadershipTermId,
         final long logPosition,
-        final int followerMemberId)
+        final int memberId)
     {
         final int length = canvassPositionLength();
         final int captureLength = captureLength(length);
@@ -248,7 +248,7 @@ public final class ClusterEventLogger
                     logLeadershipTermId,
                     leadershipTermId,
                     logPosition,
-                    followerMemberId);
+                    memberId);
             }
             finally
             {
@@ -264,12 +264,16 @@ public final class ClusterEventLogger
      * @param logPosition         position reached in the log for the latest leadership term.
      * @param candidateTermId     the term id as the candidate sees it for the election.
      * @param candidateId         id of the candidate node.
+     * @param protocolVersion     from the request.
+     * @param memberId            id of the node receiving the request.
      */
     public void logRequestVote(
         final long logLeadershipTermId,
         final long logPosition,
         final long candidateTermId,
-        final int candidateId)
+        final int candidateId,
+        final int protocolVersion,
+        final int memberId)
     {
         final int length = requestVoteLength();
         final int captureLength = captureLength(length);
@@ -289,7 +293,9 @@ public final class ClusterEventLogger
                     logLeadershipTermId,
                     logPosition,
                     candidateTermId,
-                    candidateId);
+                    candidateId,
+                    protocolVersion,
+                    memberId);
             }
             finally
             {
@@ -303,13 +309,13 @@ public final class ClusterEventLogger
      *
      * @param leadershipTermId leadership term to catch up on
      * @param logPosition      position to catchup from
-     * @param followerMemberId the id of the follower that is catching up
+     * @param memberId         the id of the follower that is catching up
      * @param catchupEndpoint  the endpoint to send catchup messages
      */
     public void logCatchupPosition(
         final long leadershipTermId,
         final long logPosition,
-        final int followerMemberId,
+        final int memberId,
         final String catchupEndpoint)
     {
         final int length = catchupPositionLength(catchupEndpoint);
@@ -329,7 +335,7 @@ public final class ClusterEventLogger
                     length,
                     leadershipTermId,
                     logPosition,
-                    followerMemberId,
+                    memberId,
                     catchupEndpoint);
             }
             finally
@@ -489,13 +495,13 @@ public final class ClusterEventLogger
      *
      * @param leadershipTermId the current leadership term id.
      * @param logPosition      the current position in the log.
-     * @param followerMemberId follower member sending the append position.
+     * @param memberId         follower member sending the append position.
      * @param flags            applied to append position by follower.
      */
     public void logAppendPosition(
         final long leadershipTermId,
         final long logPosition,
-        final int followerMemberId,
+        final int memberId,
         final short flags)
     {
         final int length = (2 * SIZE_OF_LONG) + SIZE_OF_INT + SIZE_OF_BYTE;
@@ -514,7 +520,7 @@ public final class ClusterEventLogger
                     length,
                     leadershipTermId,
                     logPosition,
-                    followerMemberId,
+                    memberId,
                     flags);
             }
             finally
@@ -602,12 +608,12 @@ public final class ClusterEventLogger
     /**
      * Log the appending of a session close event to the log.
      *
-     * @param memberId          member (leader) publishing the event
-     * @param sessionId         session id of the session be closed
-     * @param closeReason       reason to close the session
-     * @param leadershipTermId  current leadership term id
-     * @param timestamp         the current timestamp
-     * @param timeUnit          units for the timestamp
+     * @param memberId         member (leader) publishing the event
+     * @param sessionId        session id of the session be closed
+     * @param closeReason      reason to close the session
+     * @param leadershipTermId current leadership term id
+     * @param timestamp        the current timestamp
+     * @param timeUnit         units for the timestamp
      */
     public void logAppendSessionClose(
         final int memberId,

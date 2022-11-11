@@ -378,7 +378,7 @@ int aeron_create_file(const char *path, size_t length, bool sparse_file)
         }
 #elif HAVE_F_PREALLOCATE
         fstore_t flags = {
-            F_ALLOCATEALL | F_ALLOCATECONTIG,
+            F_ALLOCATEALL,
             F_PEOFPOSMODE,
             0,
             (off_t)length,

@@ -83,10 +83,6 @@ class ClusterEventDissectorTest
         final int offset = 10;
         int writeIndex = offset;
         writeIndex += internalEncodeLogHeader(buffer, offset, 100, 200, () -> 5_000_000_000L);
-        buffer.putInt(writeIndex, 86, LITTLE_ENDIAN);
-        writeIndex += SIZE_OF_INT;
-        buffer.putInt(writeIndex, 3, LITTLE_ENDIAN);
-        writeIndex += SIZE_OF_INT;
         buffer.putLong(writeIndex, 101010, LITTLE_ENDIAN);
         writeIndex += SIZE_OF_LONG;
         buffer.putLong(writeIndex, 6, LITTLE_ENDIAN);
@@ -99,6 +95,10 @@ class ClusterEventDissectorTest
         writeIndex += SIZE_OF_LONG;
         buffer.putLong(writeIndex, 800, LITTLE_ENDIAN);
         writeIndex += SIZE_OF_LONG;
+        buffer.putInt(writeIndex, 86, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_INT;
+        buffer.putInt(writeIndex, 3, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_INT;
         buffer.putStringAscii(writeIndex, "old -> new");
 
         ClusterEventDissector.dissectElectionStateChange(buffer, offset, builder);
@@ -115,8 +115,6 @@ class ClusterEventDissectorTest
         final int offset = 10;
         int writeIndex = offset;
         writeIndex += internalEncodeLogHeader(buffer, offset, 100, 200, () -> 5_000_000_000L);
-        buffer.putInt(writeIndex, 123, LITTLE_ENDIAN);
-        writeIndex += SIZE_OF_INT;
         buffer.putLong(writeIndex, 555, LITTLE_ENDIAN);
         writeIndex += SIZE_OF_LONG;
         buffer.putLong(writeIndex, 166, LITTLE_ENDIAN);
@@ -133,6 +131,8 @@ class ClusterEventDissectorTest
         writeIndex += SIZE_OF_LONG;
         buffer.putLong(writeIndex, 800, LITTLE_ENDIAN);
         writeIndex += SIZE_OF_LONG;
+        buffer.putInt(writeIndex, 123, LITTLE_ENDIAN);
+        writeIndex += SIZE_OF_INT;
         buffer.putStringAscii(writeIndex, "election state", LITTLE_ENDIAN);
 
         ClusterEventDissector.dissectTruncateLogEntry(TRUNCATE_LOG_ENTRY, buffer, offset, builder);

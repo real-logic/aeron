@@ -131,10 +131,6 @@ final class ClusterEventDissector
         int absoluteOffset = offset;
         absoluteOffset += dissectLogHeader(CONTEXT, ELECTION_STATE_CHANGE, buffer, absoluteOffset, builder);
 
-        final int memberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_INT;
-        final int leaderId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_INT;
         final long candidateTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
         final long leadershipTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
@@ -147,6 +143,10 @@ final class ClusterEventDissector
         absoluteOffset += SIZE_OF_LONG;
         final long catchupPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
+        final int memberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+        final int leaderId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
 
         builder.append(": memberId=").append(memberId).append(' ');
         buffer.getStringAscii(absoluteOffset, builder);
@@ -276,9 +276,6 @@ final class ClusterEventDissector
         int absoluteOffset = offset;
         absoluteOffset += dissectLogHeader(CONTEXT, eventCode, buffer, absoluteOffset, builder);
 
-        final int memberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_INT;
-
         final long logLeadershipTermId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
 
@@ -302,6 +299,9 @@ final class ClusterEventDissector
 
         final long newPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
+
+        final int memberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
 
         builder.append(": memberId=").append(memberId);
         builder.append(" state=");

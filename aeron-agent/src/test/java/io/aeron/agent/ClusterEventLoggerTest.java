@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import io.aeron.cluster.AppVersionValidator;
 import io.aeron.cluster.codecs.CloseReason;
 import org.agrona.SemanticVersion;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -65,7 +66,7 @@ class ClusterEventLoggerTest
         final int memberId = 19;
         final int leaderId = -1;
         final int logSessionId = 3;
-        final int appVersion = 777;
+        final int appVersion = SemanticVersion.compose(0, 3, 9);
         final int captureLength = newLeaderShipTermLength();
         final boolean isStartup = true;
         final long termBaseLogPosition = 982734;
@@ -118,6 +119,17 @@ class ClusterEventLoggerTest
         index += SIZE_OF_INT;
 
         assertEquals(isStartup, 1 == logBuffer.getByte(index));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectNewLeadershipTerm(logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: NEW_LEADERSHIP_TERM " +
+            "\\[89/89]: memberId=19 logLeadershipTermId=434 nextLeadershipTermId=2561 " +
+            "nextTermBaseLogPosition=2562 nextLogPosition=2563 leadershipTermId=-500 termBaseLogPosition=982734 " +
+            "logPosition=43 leaderRecordingId=76434 timestamp=2 leaderId=-1 logSessionId=3 appVersion=0.3.9 " +
+            "isStartup=true";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
 
     @Test
@@ -137,6 +149,15 @@ class ClusterEventLoggerTest
         final int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
         assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
         assertEquals(payload, logBuffer.getStringAscii(index + SIZE_OF_INT));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectStateChange(
+            ClusterEventCode.STATE_CHANGE, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: STATE_CHANGE " +
+            "\\[26/26]: memberId=42 MINUTES -> SECONDS";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
 
     @Test
@@ -187,6 +208,15 @@ class ClusterEventLoggerTest
         assertEquals(leaderId, logBuffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
         assertEquals(from.name() + STATE_SEPARATOR + "null", logBuffer.getStringAscii(index));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectElectionStateChange(logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: ELECTION_STATE_CHANGE " +
+            "\\[72/72]: memberId=18 ERAS -> null leaderId=-1 candidateTermId=29 leadershipTermId=0 " +
+            "logPosition=100 logLeadershipTermId=-9 appendPosition=16384 catchupPosition=8192";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
 
     @Test
@@ -335,6 +365,15 @@ class ClusterEventLoggerTest
         assertEquals(memberId, logBuffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
         assertEquals(enumName(state), logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectTruncateLogEntry(TRUNCATE_LOG_ENTRY, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: TRUNCATE_LOG_ENTRY \\[79/79]: " +
+            "memberId=8 state=FOREVER logLeadershipTermId=777 leadershipTermId=1233 candidateTermId=42 " +
+            "commitPosition=1000 logPosition=33 appendPosition=555 oldPosition=98 newPosition=24";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
 
     @Test

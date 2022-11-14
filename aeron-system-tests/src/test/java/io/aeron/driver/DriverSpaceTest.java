@@ -21,12 +21,12 @@ import io.aeron.ErrorCode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,13 +40,13 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class DriverSpaceTest
 {
-    private static Path aeronDir;
-    private static Path publicationsDir;
     @RegisterExtension
-    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    private final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    private Path aeronDir;
+    private Path publicationsDir;
 
-    @BeforeAll
-    static void verifyFileSystemSetup()
+    @BeforeEach
+    void verifyFileSystemSetup()
     {
         final Path tempfsDir;
         switch (OS.current())
@@ -104,12 +104,8 @@ public class DriverSpaceTest
     }
 
     @ParameterizedTest
-    @CsvSource({
-        "true, 16m",
-        "true, 1g",
-        "false, 64m"
-    })
-    void shouldThrowExceptionIfOutOfDiscSpace(final boolean performStorageChecks, final String termLength)
+    @ValueSource(booleans = { true, false })
+    void shouldThrowExceptionIfOutOfDiscSpace(final boolean performStorageChecks)
     {
         assumeTrue(performStorageChecks || OS.WINDOWS == OS.current() || TestMediaDriver.shouldRunCMediaDriver());
 
@@ -124,7 +120,7 @@ public class DriverSpaceTest
         {
             try
             {
-                aeron.addPublication("aeron:ipc?term-length=" + termLength + "|sparse=false", 10001);
+                aeron.addPublication("aeron:ipc?term-length=16m|sparse=false", 10001);
                 fail("RegistrationException was not thrown");
             }
             catch (final RegistrationException ex)

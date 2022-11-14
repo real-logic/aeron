@@ -515,7 +515,7 @@ public class ElectionTest
         final long candidateTermId = leadershipTermId + 1;
         when(consensusModuleAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
         election.onVote(
-            candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[0].id(), false);
+            candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[0].id(), true);
         election.onVote(
             candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
         election.doWork(clock.nanoTime());

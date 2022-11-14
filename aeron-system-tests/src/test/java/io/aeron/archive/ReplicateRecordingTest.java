@@ -453,7 +453,7 @@ class ReplicateRecordingTest
 
             dstRecordingSignalConsumer.reset();
             dstAeronArchive.stopReplication(replicationId);
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
         }
 
         srcRecordingSignalConsumer.reset();
@@ -572,7 +572,7 @@ class ReplicateRecordingTest
 
             dstRecordingSignalConsumer.reset();
             dstAeronArchive.stopReplication(replicationId);
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
 
             dstRecordingSignalConsumer.reset();
             if (useParams)
@@ -597,7 +597,7 @@ class ReplicateRecordingTest
 
             dstRecordingSignalConsumer.reset();
             dstAeronArchive.stopReplication(replicationId);
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
         }
 
         srcRecordingSignalConsumer.reset();

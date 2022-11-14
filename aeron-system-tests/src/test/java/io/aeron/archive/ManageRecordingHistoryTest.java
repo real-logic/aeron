@@ -360,8 +360,7 @@ class ManageRecordingHistoryTest
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
-            awaitSignal(aeronArchive, signalConsumer, RecordingSignal.STOP);
-            assertEquals(recordingId, signalConsumer.recordingId);
+            awaitSignal(aeronArchive, signalConsumer, recordingId, RecordingSignal.STOP);
 
             final String prefix = recordingId + "-";
             final String[] files = archive.context().archiveDir().list((dir, name) -> name.startsWith(prefix));
@@ -375,7 +374,7 @@ class ManageRecordingHistoryTest
 
             signalConsumer.reset();
             final long deletedSegments = aeronArchive.deleteDetachedSegments(recordingId);
-            awaitSignal(aeronArchive, signalConsumer, RecordingSignal.DELETE);
+            awaitSignal(aeronArchive, signalConsumer, recordingId, RecordingSignal.DELETE);
             assertEquals(2L, deletedSegments);
             assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
 
@@ -403,8 +402,7 @@ class ManageRecordingHistoryTest
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
-            awaitSignal(aeronArchive, signalConsumer, RecordingSignal.STOP);
-            assertEquals(dstRecordingId, signalConsumer.recordingId);
+            awaitSignal(aeronArchive, signalConsumer, dstRecordingId, RecordingSignal.STOP);
 
             final long startPosition = 0L;
             final long migratePosition = AeronArchive.segmentFileBasePosition(
@@ -412,8 +410,7 @@ class ManageRecordingHistoryTest
 
             signalConsumer.reset();
             final long count = aeronArchive.purgeSegments(dstRecordingId, migratePosition);
-            awaitSignal(aeronArchive, signalConsumer, RecordingSignal.DELETE);
-            assertEquals(dstRecordingId, signalConsumer.recordingId);
+            awaitSignal(aeronArchive, signalConsumer, dstRecordingId, RecordingSignal.DELETE);
             assertEquals(2L, count);
             assertEquals(migratePosition, aeronArchive.getStartPosition(dstRecordingId));
 
@@ -433,14 +430,12 @@ class ManageRecordingHistoryTest
 
                 signalConsumer.reset();
                 aeronArchive.stopRecording(migratePub);
-                awaitSignal(aeronArchive, signalConsumer, RecordingSignal.STOP);
-                assertEquals(srcRecordingId, signalConsumer.recordingId);
+                awaitSignal(aeronArchive, signalConsumer, srcRecordingId, RecordingSignal.STOP);
             }
 
             signalConsumer.reset();
             aeronArchive.truncateRecording(srcRecordingId, migratePosition);
-            awaitSignal(aeronArchive, signalConsumer, RecordingSignal.DELETE);
-            assertEquals(srcRecordingId, signalConsumer.recordingId);
+            awaitSignal(aeronArchive, signalConsumer, srcRecordingId, RecordingSignal.DELETE);
 
             final File archiveDir = archive.context().archiveDir();
             final String srcPrefix = srcRecordingId + "-";
@@ -508,15 +503,14 @@ class ManageRecordingHistoryTest
 
             signalConsumer.reset();
             aeronArchive.stopRecording(publication);
-            awaitSignal(aeronArchive, signalConsumer, RecordingSignal.STOP);
-            assertEquals(dstRecordingId, signalConsumer.recordingId);
+            awaitSignal(aeronArchive, signalConsumer, dstRecordingId, RecordingSignal.STOP);
 
             final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
                 startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
 
             signalConsumer.reset();
             final long purgedSegments = aeronArchive.purgeSegments(dstRecordingId, segmentFileBasePosition);
-            awaitSignal(aeronArchive, signalConsumer, RecordingSignal.DELETE);
+            awaitSignal(aeronArchive, signalConsumer, dstRecordingId, RecordingSignal.DELETE);
             assertEquals(2L, purgedSegments);
             assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(dstRecordingId));
 
@@ -536,8 +530,7 @@ class ManageRecordingHistoryTest
 
                 signalConsumer.reset();
                 aeronArchive.stopRecording(migratePub);
-                awaitSignal(aeronArchive, signalConsumer, RecordingSignal.STOP);
-                assertEquals(srcRecordingId, signalConsumer.recordingId);
+                awaitSignal(aeronArchive, signalConsumer, srcRecordingId, RecordingSignal.STOP);
             }
 
             final File archiveDir = archive.context().archiveDir();
@@ -563,8 +556,7 @@ class ManageRecordingHistoryTest
 
             signalConsumer.reset();
             final long migratedSegments = aeronArchive.migrateSegments(srcRecordingId, dstRecordingId);
-            awaitSignal(aeronArchive, signalConsumer, RecordingSignal.DELETE);
-            assertEquals(srcRecordingId, signalConsumer.recordingId);
+            awaitSignal(aeronArchive, signalConsumer, srcRecordingId, RecordingSignal.DELETE);
             assertEquals(2L, migratedSegments);
             assertEquals(startPosition, aeronArchive.getStartPosition(dstRecordingId));
             assertEquals(startPosition, aeronArchive.getStopPosition(srcRecordingId));

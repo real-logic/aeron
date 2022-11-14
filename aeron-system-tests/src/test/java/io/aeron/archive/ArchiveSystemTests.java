@@ -120,4 +120,29 @@ class ArchiveSystemTests
         signalConsumer.reset();
         awaitSignal(aeronArchive, signalConsumer, expectedSignal);
     }
+
+    static void awaitSignal(
+        final AeronArchive aeronArchive,
+        final TestRecordingSignalConsumer signalConsumer,
+        final long expectedRecordingId,
+        final RecordingSignal expectedSignal)
+    {
+        while (expectedRecordingId != signalConsumer.recordingId || expectedSignal != signalConsumer.signal)
+        {
+            if (0 == aeronArchive.pollForRecordingSignals())
+            {
+                Tests.yield();
+            }
+        }
+    }
+
+    static void resetAndAwaitSignal(
+        final AeronArchive aeronArchive,
+        final TestRecordingSignalConsumer signalConsumer,
+        final long expectedRecordingId,
+        final RecordingSignal expectedSignal)
+    {
+        signalConsumer.reset();
+        awaitSignal(aeronArchive, signalConsumer, expectedRecordingId, expectedSignal);
+    }
 }

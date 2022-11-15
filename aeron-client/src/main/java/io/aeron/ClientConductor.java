@@ -1375,7 +1375,7 @@ final class ClientConductor implements Agent
                 forceCloseResources();
 
                 throw new DriverTimeoutException(
-                    "MediaDriver keepalive: age=" +
+                    "MediaDriver (" + aeron.context().aeronDirectoryName() + ") keepalive: age=" +
                     (nowMs - lastKeepAliveMs) + "ms > timeout=" + driverTimeoutMs + "ms");
             }
 

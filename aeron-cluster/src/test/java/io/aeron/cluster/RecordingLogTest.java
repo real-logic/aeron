@@ -869,6 +869,24 @@ class RecordingLogTest
             RECORDING_ID, 0, 0, leadershipTermId, NULL_POSITION, logPosition, nowNs, nowNs, 1));
     }
 
+    @ParameterizedTest
+    @CsvSource({ "0,TERM", "1,SNAPSHOT", "-5,UNKNOWN", "36542364,UNKNOWN" })
+    void typeAsString(final int type, final String expectedString)
+    {
+        assertEquals(expectedString, RecordingLog.typeAsString(type));
+    }
+
+    @Test
+    void entryToString()
+    {
+        final RecordingLog.Entry entry = new RecordingLog.Entry(
+            42, 5, 1024, 701, 1_000_000_000_000L, 16, ENTRY_TYPE_SNAPSHOT, true, 2);
+        assertEquals(
+            "Entry{recordingId=42, leadershipTermId=5, termBaseLogPosition=1024, logPosition=701, " +
+            "timestamp=1000000000000, serviceId=16, type=SNAPSHOT, isValid=true, entryIndex=2}",
+            entry.toString());
+    }
+
     private static void addRecordingLogEntry(
         final ArrayList<RecordingLog.Entry> entries, final int serviceId, final int recordingId, final int entryType)
     {

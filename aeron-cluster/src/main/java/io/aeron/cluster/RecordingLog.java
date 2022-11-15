@@ -32,7 +32,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -264,7 +268,7 @@ public final class RecordingLog implements AutoCloseable
                 ", logPosition=" + logPosition +
                 ", timestamp=" + timestamp +
                 ", serviceId=" + serviceId +
-                ", type=" + type +
+                ", type=" + typeAsString(type) +
                 ", isValid=" + isValid +
                 ", entryIndex=" + entryIndex +
                 '}';
@@ -1224,6 +1228,19 @@ public final class RecordingLog implements AutoCloseable
             "entries=" + entriesCache +
             ", cacheIndex=" + cacheIndexByLeadershipTermIdMap +
             '}';
+    }
+
+    static String typeAsString(final int type)
+    {
+        switch (type)
+        {
+            case ENTRY_TYPE_TERM:
+                return "TERM";
+            case ENTRY_TYPE_SNAPSHOT:
+                return "SNAPSHOT";
+            default:
+                return "UNKNOWN";
+        }
     }
 
     static void addSnapshots(

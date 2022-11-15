@@ -2622,7 +2622,7 @@ public final class AeronArchive implements AutoCloseable
         public static final String RECORDING_EVENTS_ENABLED_PROP_NAME = "aeron.archive.recording.events.enabled";
 
         /**
-         * Channel enabled for recording progress events of recordings from an archive which defaults to true.
+         * Channel enabled for recording progress events of recordings from an archive which defaults to false.
          */
         public static final boolean RECORDING_EVENTS_ENABLED_DEFAULT = false;
 

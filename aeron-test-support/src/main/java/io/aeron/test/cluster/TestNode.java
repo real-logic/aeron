@@ -305,19 +305,17 @@ public final class TestNode implements AutoCloseable
         long errors = countersReader.getCounterValue(SystemCounterDescriptor.ERRORS.id());
 
         final AtomicCounter consensusModuleCounter = consensusModule.context().errorCounter();
-        if (null != consensusModuleCounter)
-        {
-            errors += countersReader.getCounterValue(consensusModuleCounter.id());
-        }
+        errors += countersReader.getCounterValue(consensusModuleCounter.id());
 
         for (final ClusteredServiceContainer serviceContainer : containers)
         {
             final AtomicCounter serviceErrorCounter = serviceContainer.context().errorCounter();
-            if (null != serviceErrorCounter)
-            {
-                errors += countersReader.getCounterValue(serviceErrorCounter.id());
-            }
+            errors += countersReader.getCounterValue(serviceErrorCounter.id());
         }
+
+        final AtomicCounter archiveErrorCounter = archive.context().errorCounter();
+        errors += countersReader.getCounterValue(archiveErrorCounter.id());
+
         return errors;
     }
 

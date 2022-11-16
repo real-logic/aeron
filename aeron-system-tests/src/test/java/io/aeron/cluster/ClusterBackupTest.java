@@ -520,6 +520,37 @@ class ClusterBackupTest
         assertFalse(node.service().wasSnapshotLoaded());
     }
 
+    @InterruptAfter(20)
+    @ParameterizedTest()
+    @EnumSource(value = ClusterBackup.SourceType.class)
+    void shouldBackupClusterWithInvalidNameResolution(final ClusterBackup.SourceType sourceType)
+    {
+        final int backupNodeId = 3;
+        final TestCluster cluster = aCluster()
+            .withStaticNodes(3)
+            .withMemberSpecificInvalidNameResolution(backupNodeId)
+            .start();
+        systemTestWatcher.cluster(cluster);
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("UnknownHostException"));
+
+        final TestNode leader = cluster.awaitLeader();
+
+        final int messageCount = 10;
+        cluster.connectClient();
+        cluster.sendAndAwaitMessages(messageCount);
+
+        final long logPosition = leader.service().cluster().logPosition();
+
+        cluster.startClusterBackupNode(true, sourceType);
+
+        Tests.sleep(12_000);
+
+        cluster.restoreByMemberNameResolution(backupNodeId);
+
+        cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+        cluster.awaitBackupLiveLogPosition(logPosition);
+    }
+
     private static void awaitErrorLogged(final TestBackupNode testBackupNode, final String expectedErrorMessage)
     {
         final AtomicBuffer atomicBuffer = testBackupNode.clusterBackupErrorLog();

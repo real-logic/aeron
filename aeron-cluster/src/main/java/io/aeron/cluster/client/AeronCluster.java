@@ -963,8 +963,9 @@ public final class AeronCluster implements AutoCloseable
         public static final long MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
-         * Property name for the comma separated list of cluster ingress endpoints for use with unicast. This is the
-         * endpoint values which get substituted into the {@link #INGRESS_CHANNEL_PROP_NAME} when using UDP unicast.
+         * Property name for the comma separated map of cluster memberId to ingress endpoint for use with unicast. This
+         * is the endpoint values which get substituted into the {@link #INGRESS_CHANNEL_PROP_NAME} when using UDP
+         * unicast.
          * <p>
          * {@code "0=endpoint,1=endpoint,2=endpoint"}
          * <p>
@@ -1779,6 +1780,7 @@ public final class AeronCluster implements AutoCloseable
                 final TimeoutException ex = new TimeoutException(
                     "cluster connect timeout: step=" + step +
                     " ingressChannel=" + ctx.ingressChannel() +
+                    " ingressEndpoints=" + ctx.ingressEndpoints() +
                     " ingressPublication=" + ingressPublication +
                     " egress.isConnected=" + egressSubscription.isConnected() +
                     " responseChannel=" + egressSubscription.tryResolveChannelEndpointPort());

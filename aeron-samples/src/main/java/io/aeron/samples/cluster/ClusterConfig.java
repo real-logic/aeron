@@ -435,12 +435,32 @@ public final class ClusterConfig
         final int portBase,
         final int clientFacingPortOffset)
     {
+        return ingressEndpoints(0, hostnames, portBase, clientFacingPortOffset);
+    }
+
+
+    /**
+     * Ingress endpoints generated from a list of hostnames.
+     *
+     * @param startingMemberId       first memberId to be used when generating the ports.
+     * @param hostnames              for the cluster members.
+     * @param portBase               Base port for the cluster
+     * @param clientFacingPortOffset Offset for the client facing port
+     * @return a formatted string of ingress endpoints for connecting to a cluster.
+     */
+    public static String ingressEndpoints(
+        final int startingMemberId,
+        final List<String> hostnames,
+        final int portBase,
+        final int clientFacingPortOffset)
+    {
         final StringBuilder sb = new StringBuilder();
         for (int i = 0; i < hostnames.size(); i++)
         {
-            sb.append(i).append('=');
+            final int memberId = i + startingMemberId;
+            sb.append(memberId).append('=');
             sb.append(hostnames.get(i)).append(':').append(
-                calculatePort(i, portBase, clientFacingPortOffset));
+                calculatePort(memberId, portBase, clientFacingPortOffset));
             sb.append(',');
         }
 

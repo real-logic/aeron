@@ -709,7 +709,7 @@ class Election
     {
         int workCount = 0;
 
-        if (ClusterMember.hasWonVote(clusterMembers, candidateTermId))
+        if (ClusterMember.isQuorumVote(clusterMembers, candidateTermId))
         {
             leaderMember = thisMember;
             leadershipTermId = candidateTermId;

@@ -41,6 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
@@ -389,6 +390,20 @@ class ConsensusModuleContextTest
         final Throwable cause = exception.getCause();
         assertInstanceOf(IllegalStateException.class, cause);
         assertEquals("active Mark file detected", cause.getMessage());
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "0, 1000", "123632842384368, 123632842384368" })
+    void startupCanvassTimeoutMustBeGreaterThanTheLeaderHeartbeatTimeout(
+        final long startupCanvassTimeoutNs, final long leaderHeartbeatTimeoutNs)
+    {
+        context.startupCanvassTimeoutNs(startupCanvassTimeoutNs)
+            .leaderHeartbeatTimeoutNs(leaderHeartbeatTimeoutNs);
+
+        final ClusterException exception = assertThrows(ClusterException.class, context::conclude);
+        assertEquals("ERROR - startupCanvassTimeoutNs=" + startupCanvassTimeoutNs +
+            " must be greater than leaderHeartbeatTimeoutNs=" + leaderHeartbeatTimeoutNs,
+            exception.getMessage());
     }
 
     @Test

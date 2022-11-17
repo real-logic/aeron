@@ -1015,11 +1015,7 @@ class ClusterTest
         cluster.stopAllNodes();
 
         final TestNode oldLeader = cluster.startStaticNode(leader.index(), false);
-        oldLeader.awaitElectionState(ElectionState.CANVASS);
-
         final TestNode oldFollower1 = cluster.startStaticNode(followers.get(0).index(), true);
-        oldFollower1.awaitElectionState(ElectionState.CLOSED);
-
         final TestNode oldFollower2 = cluster.startStaticNode(followers.get(1).index(), true);
 
         final TestNode newLeader = cluster.awaitLeader();

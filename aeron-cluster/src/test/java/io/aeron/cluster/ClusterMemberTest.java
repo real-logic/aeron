@@ -157,7 +157,7 @@ public class ClusterMemberTest
     }
 
     @Test
-    void isQuorumVoteReturnsTrueWhenQuorumIsReached()
+    void hasQuorumVotesReturnsTrueWhenQuorumIsReached()
     {
         final int candidateTermId = -5;
         final ClusterMember[] members = new ClusterMember[]
@@ -169,11 +169,11 @@ public class ClusterMemberTest
             newMember(5).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertTrue(isQuorumVote(members, candidateTermId));
+        assertTrue(hasQuorumVotes(members, candidateTermId));
     }
 
     @Test
-    void isQuorumVoteReturnsFalseIfAtLeastOneNegativeVoteIsDetected()
+    void hasQuorumVotesReturnsFalseIfAtLeastOneNegativeVoteIsDetected()
     {
         final int candidateTermId = 8;
         final ClusterMember[] members = new ClusterMember[]
@@ -183,11 +183,11 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertFalse(isQuorumVote(members, candidateTermId));
+        assertFalse(hasQuorumVotes(members, candidateTermId));
     }
 
     @Test
-    void isQuorumVoteReturnsFalseWhenQuorumIsNotReached()
+    void hasQuorumVotesReturnsFalseWhenQuorumIsNotReached()
     {
         final int candidateTermId = 2;
         final ClusterMember[] members = new ClusterMember[]
@@ -197,11 +197,11 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId + 5).vote(Boolean.TRUE)
         };
 
-        assertFalse(isQuorumVote(members, candidateTermId));
+        assertFalse(hasQuorumVotes(members, candidateTermId));
     }
 
     @Test
-    void isUnanimousVoteReturnsFalseIfThereIsAtLeastOneNegativeVoteForAGivenCandidateTerm()
+    void hasUnanimousVotesReturnsFalseIfThereIsAtLeastOneNegativeVoteForAGivenCandidateTerm()
     {
         final int candidateTermId = 42;
         final ClusterMember[] members = new ClusterMember[]
@@ -211,11 +211,11 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.FALSE)
         };
 
-        assertFalse(isUnanimousVote(members, candidateTermId));
+        assertFalse(hasUnanimousVotes(members, candidateTermId));
     }
 
     @Test
-    void isUnanimousVoteReturnsFalseIfNotAllNodesVotedPositively()
+    void hasUnanimousVotesReturnsFalseIfNotAllNodesVotedPositively()
     {
         final int candidateTermId = 2;
         final ClusterMember[] members = new ClusterMember[]
@@ -225,11 +225,11 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertFalse(isUnanimousVote(members, candidateTermId));
+        assertFalse(hasUnanimousVotes(members, candidateTermId));
     }
 
     @Test
-    void isUnanimousVoteReturnsFalseIfNotAllNodesHadTheExpectedCandidateTermId()
+    void hasUnanimousVotesReturnsFalseIfNotAllNodesHadTheExpectedCandidateTermId()
     {
         final int candidateTermId = 2;
         final ClusterMember[] members = new ClusterMember[]
@@ -239,11 +239,11 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertFalse(isUnanimousVote(members, candidateTermId));
+        assertFalse(hasUnanimousVotes(members, candidateTermId));
     }
 
     @Test
-    void isUnanimousVoteReturnsTrueIfAllNodesVotedWithTrue()
+    void hasUnanimousVotesReturnsTrueIfAllNodesVotedWithTrue()
     {
         final int candidateTermId = 42;
         final ClusterMember[] members = new ClusterMember[]
@@ -253,7 +253,7 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertTrue(isUnanimousVote(members, candidateTermId));
+        assertTrue(hasUnanimousVotes(members, candidateTermId));
     }
 
     @ParameterizedTest

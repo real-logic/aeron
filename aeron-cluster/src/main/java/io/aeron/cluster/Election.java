@@ -710,9 +710,9 @@ class Election
     {
         int workCount = 0;
 
-        if (ClusterMember.isUnanimousVote(clusterMembers, candidateTermId) ||
+        if (ClusterMember.hasUnanimousVotes(clusterMembers, candidateTermId) ||
             (nowNs >= (timeOfLastStateChangeNs + ctx.electionTimeoutNs()) &&
-            ClusterMember.isQuorumVote(clusterMembers, candidateTermId)))
+            ClusterMember.hasQuorumVotes(clusterMembers, candidateTermId)))
         {
             leaderMember = thisMember;
             leadershipTermId = candidateTermId;

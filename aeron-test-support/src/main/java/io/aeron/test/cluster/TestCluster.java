@@ -106,6 +106,7 @@ public final class TestCluster implements AutoCloseable
     private final int dynamicMemberCount;
     private final int appointedLeaderId;
     private final int backupNodeIndex;
+    private final IntHashSet invalidInitialResolutions;
     private final IntFunction<TestNode.TestService[]> serviceSupplier;
     private String logChannel;
     private String ingressChannel;
@@ -117,14 +118,12 @@ public final class TestCluster implements AutoCloseable
     private AeronCluster client;
     private TestBackupNode backupNode;
     private int archiveSegmentFileLength;
-    private IntHashSet byHostInvalidInitialResolutions;
-    private IntHashSet byMemberInvalidInitialResolutions;
 
     private TestCluster(
         final int staticMemberCount,
         final int dynamicMemberCount,
         final int appointedLeaderId,
-        final IntHashSet byHostInvalidInitialResolutions,
+        final IntHashSet invalidInitialResolutions,
         final IntFunction<TestNode.TestService[]> serviceSupplier)
     {
         this.serviceSupplier = requireNonNull(serviceSupplier);
@@ -143,7 +142,7 @@ public final class TestCluster implements AutoCloseable
         this.staticMemberCount = staticMemberCount;
         this.dynamicMemberCount = dynamicMemberCount;
         this.appointedLeaderId = appointedLeaderId;
-        this.byHostInvalidInitialResolutions = byHostInvalidInitialResolutions;
+        this.invalidInitialResolutions = invalidInitialResolutions;
     }
 
     public static void awaitElectionClosed(final TestNode follower)
@@ -504,7 +503,7 @@ public final class TestCluster implements AutoCloseable
             .errorHandler(errorHandler(index))
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false)
-            .nameResolver(new RedirectingNameResolver(nodeNameMappings(index)));
+            .nameResolver(new RedirectingNameResolver(nodeNameMappings()));
 
         context.archiveContext
             .catalogCapacity(CATALOG_CAPACITY)
@@ -532,7 +531,7 @@ public final class TestCluster implements AutoCloseable
             .sourceType(sourceType)
             .deleteDirOnStart(cleanStart);
 
-        backupNode = new TestBackupNode(index, context, dataCollector);
+        backupNode = new TestBackupNode(context, dataCollector);
 
         return backupNode;
     }
@@ -1525,22 +1524,8 @@ public final class TestCluster implements AutoCloseable
 
     public void restoreNameResolution(final int nodeId)
     {
-        byHostInvalidInitialResolutions.remove(nodeId);
+        invalidInitialResolutions.remove(nodeId);
         toggleNameResolution(hostname(nodeId), RedirectingNameResolver.USE_RE_RESOLUTION_HOST);
-    }
-
-    public void restoreByMemberNameResolution(final int memberId)
-    {
-        byMemberInvalidInitialResolutions.remove(memberId);
-        final TestMediaDriver mediaDriver = null != backupNode && backupNode.index() == memberId ?
-            backupNode.mediaDriver() : node(memberId).mediaDriver();
-        final CountersReader counters = mediaDriver.counters();
-
-        for (int i = 0; i < 3; i++)
-        {
-            RedirectingNameResolver.updateNameResolutionStatus(
-                counters, hostname(i), RedirectingNameResolver.USE_RE_RESOLUTION_HOST);
-        }
     }
 
     private void toggleNameResolution(final String hostname, final int disableValue)
@@ -1557,12 +1542,7 @@ public final class TestCluster implements AutoCloseable
 
     private String nodeNameMappings()
     {
-        return nodeNameMappings(byHostInvalidInitialResolutions);
-    }
-
-    private String nodeNameMappings(final int memberId)
-    {
-        return nodeNameMappings(byHostInvalidInitialResolutions, byMemberInvalidInitialResolutions, memberId);
+        return nodeNameMappings(invalidInitialResolutions);
     }
 
     private static String nodeNameMappings(final IntHashSet invalidInitialResolutions)
@@ -1571,23 +1551,6 @@ public final class TestCluster implements AutoCloseable
             "node0," + (invalidInitialResolutions.contains(0) ? "bad.invalid" : "localhost") + ",localhost|" +
             "node1," + (invalidInitialResolutions.contains(1) ? "bad.invalid" : "localhost") + ",localhost|" +
             "node2," + (invalidInitialResolutions.contains(2) ? "bad.invalid" : "localhost") + ",localhost|";
-    }
-
-    private static String nodeNameMappings(
-        final IntHashSet byHostInvalidInitialResolutions,
-        final IntHashSet byMemberInvalidInitialResolutions,
-        final int memberId)
-    {
-        final boolean memberInvalid = byMemberInvalidInitialResolutions.contains(memberId);
-
-        final String host0 = memberInvalid || byHostInvalidInitialResolutions.contains(0) ? "bad.invalid" : "localhost";
-        final String host1 = memberInvalid || byHostInvalidInitialResolutions.contains(1) ? "bad.invalid" : "localhost";
-        final String host2 = memberInvalid || byHostInvalidInitialResolutions.contains(2) ? "bad.invalid" : "localhost";
-
-        return
-            "node0," + host0 + ",localhost|" +
-            "node1," + host1 + ",localhost|" +
-            "node2," + host2 + ",localhost|";
     }
 
     public DataCollector dataCollector()
@@ -1724,8 +1687,7 @@ public final class TestCluster implements AutoCloseable
         private TimerServiceSupplier timerServiceSupplier;
         private IntFunction<TestNode.TestService[]> serviceSupplier =
             (i) -> new TestNode.TestService[]{ new TestNode.TestService().index(i) };
-        private final IntHashSet byHostInvalidInitialResolutions = new IntHashSet();
-        private final IntHashSet byMemberInvalidInitialResolutions = new IntHashSet();
+        private final IntHashSet invalidInitialResolutions = new IntHashSet();
         private int archiveSegmentFileLength = TestCluster.SEGMENT_FILE_LENGTH;
 
         public Builder withStaticNodes(final int nodeCount)
@@ -1753,13 +1715,7 @@ public final class TestCluster implements AutoCloseable
                 throw new IllegalArgumentException("Only nodes 0 to 2 have name mappings that can be invalidated");
             }
 
-            byHostInvalidInitialResolutions.add(nodeId);
-            return this;
-        }
-
-        public Builder withMemberSpecificInvalidNameResolution(final int memberId)
-        {
-            byMemberInvalidInitialResolutions.add(memberId);
+            invalidInitialResolutions.add(nodeId);
             return this;
         }
 
@@ -1822,7 +1778,7 @@ public final class TestCluster implements AutoCloseable
                 nodeCount,
                 dynamicNodeCount,
                 appointedLeaderId,
-                byHostInvalidInitialResolutions,
+                invalidInitialResolutions,
                 serviceSupplier);
             testCluster.logChannel(logChannel);
             testCluster.ingressChannel(ingressChannel);
@@ -1831,7 +1787,6 @@ public final class TestCluster implements AutoCloseable
             testCluster.authorisationServiceSupplier(authorisationServiceSupplier);
             testCluster.timerServiceSupplier(timerServiceSupplier);
             testCluster.segmentFileLength(archiveSegmentFileLength);
-            testCluster.invalidInitialResolutions(byHostInvalidInitialResolutions, byMemberInvalidInitialResolutions);
 
             try
             {
@@ -1843,7 +1798,7 @@ public final class TestCluster implements AutoCloseable
                     }
                     catch (final RegistrationException e)
                     {
-                        if (!byHostInvalidInitialResolutions.contains(i))
+                        if (!invalidInitialResolutions.contains(i))
                         {
                             throw e;
                         }
@@ -1864,14 +1819,6 @@ public final class TestCluster implements AutoCloseable
             this.archiveSegmentFileLength = archiveSegmentFileLength;
             return this;
         }
-    }
-
-    private void invalidInitialResolutions(
-        final IntHashSet byHostInvalidInitialResolutions,
-        final IntHashSet byMemberInvalidInitialResolutions)
-    {
-        this.byHostInvalidInitialResolutions = byHostInvalidInitialResolutions;
-        this.byMemberInvalidInitialResolutions = byMemberInvalidInitialResolutions;
     }
 
     public static DriverOutputConsumer clientDriverOutputConsumer(final DataCollector dataCollector)

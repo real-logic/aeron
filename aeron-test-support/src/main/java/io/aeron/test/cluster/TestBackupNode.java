@@ -34,13 +34,11 @@ public class TestBackupNode implements AutoCloseable
     private final TestMediaDriver mediaDriver;
     private final Archive archive;
     private final ClusterBackup clusterBackup;
-    private final int index;
     private final Context context;
     private boolean isClosed = false;
 
-    TestBackupNode(final int index, final Context context, final DataCollector dataCollector)
+    TestBackupNode(final Context context, final DataCollector dataCollector)
     {
-        this.index = index;
         this.context = context;
         try
         {
@@ -120,16 +118,6 @@ public class TestBackupNode implements AutoCloseable
     public AtomicBuffer clusterBackupErrorLog()
     {
         return clusterBackup.context().clusterMarkFile().errorBuffer();
-    }
-
-    int index()
-    {
-        return index;
-    }
-
-    TestMediaDriver mediaDriver()
-    {
-        return mediaDriver;
     }
 
     static class Context

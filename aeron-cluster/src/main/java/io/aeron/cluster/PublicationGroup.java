@@ -32,7 +32,7 @@ class PublicationGroup<P extends Publication> implements AutoCloseable
     private final String channelTemplate;
     private final int streamId;
     private final PublicationFactory<P> publicationFactory;
-    private int cursor = 0;
+    int cursor = 0;
     private int excludedPublicationCursorValue = -1;
     private P current;
 
@@ -112,6 +112,11 @@ class PublicationGroup<P extends Publication> implements AutoCloseable
     public void close()
     {
         CloseHelper.quietClose(current);
+    }
+
+    public boolean isConnected()
+    {
+        return null != current && current.isConnected();
     }
 
     interface PublicationFactory<P>

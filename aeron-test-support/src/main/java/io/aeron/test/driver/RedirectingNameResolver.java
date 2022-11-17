@@ -37,7 +37,7 @@ public class RedirectingNameResolver implements NameResolver
     public static final int USE_RE_RESOLUTION_HOST = 1;
     public static final int NAME_ENTRY_COUNTER_TYPE_ID = 2001;
     public static final int EXPECTED_COLUMN_COUNT = 3;
-    private static final String INVALID_HOSTNAME_SENTINAL = "forced-resolve-failure.invalid";
+    private static final String INVALID_HOSTNAME_SENTINEL = "forced-resolve-failure.invalid";
 
     private final Map<String, NameEntry> nameToEntryMap = new Object2ObjectHashMap<>();
     private final String csvConfiguration;
@@ -79,7 +79,7 @@ public class RedirectingNameResolver implements NameResolver
         final String hostname = null != nameEntry ? nameEntry.redirectHost(name) : name;
 
         InetAddress resolvedAddress = null;
-        if (!Objects.equals(INVALID_HOSTNAME_SENTINAL, hostname))
+        if (!Objects.equals(INVALID_HOSTNAME_SENTINEL, hostname))
         {
             resolvedAddress = DefaultNameResolver.INSTANCE.resolve(hostname, uriParamName, isReResolution);
         }
@@ -143,7 +143,7 @@ public class RedirectingNameResolver implements NameResolver
             final long operation = counter.get();
             if (DISABLE_RESOLUTION == operation)
             {
-                return INVALID_HOSTNAME_SENTINAL;
+                return INVALID_HOSTNAME_SENTINEL;
             }
             else if (USE_INITIAL_RESOLUTION_HOST == operation)
             {

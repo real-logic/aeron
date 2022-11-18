@@ -68,7 +68,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ClusterNetworkTopologyTest
 {
     private static final int REMOTE_LAUNCH_PORT = 11112;
-    private static final long CLUSTER_START_ELECTION_TIMEOUT_S = 10;
+    private static final long STARTUP_CANVASS_TIMEOUT_S = 15;
     private static final List<String> HOSTNAMES = Arrays.asList("10.42.0.10", "10.42.0.11", "10.42.0.12");
     private static final List<String> INTERNAL_HOSTNAMES = Arrays.asList("10.42.1.10", "10.42.1.11", "10.42.1.12");
 
@@ -268,7 +268,7 @@ class ClusterNetworkTopologyTest
                 .dirDeleteOnStart(true)
                 .dirDeleteOnShutdown(true));
             AeronCluster.AsyncConnect asyncConnect = AeronCluster.asyncConnect(new AeronCluster.Context()
-                .messageTimeoutNs(TimeUnit.SECONDS.toNanos(CLUSTER_START_ELECTION_TIMEOUT_S * 2))
+                .messageTimeoutNs(TimeUnit.SECONDS.toNanos(STARTUP_CANVASS_TIMEOUT_S * 2))
                 .egressListener(egressListener)
                 .egressChannel("aeron:udp?endpoint=10.42.0.1:0")
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
@@ -464,7 +464,7 @@ class ClusterNetworkTopologyTest
         command.add("-Daeron.event.cluster.log.disable=CANVASS_POSITION,APPEND_POSITION,COMMIT_POSITION");
         command.add("-Daeron.event.log.filename=" + new File(clusterDir, "event.log").getAbsolutePath());
         command.add("-Daeron.driver.resolver.name=node" + nodeId);
-        command.add("-Daeron.cluster.startup.canvass.timeout=" + CLUSTER_START_ELECTION_TIMEOUT_S + "s");
+        command.add("-Daeron.cluster.startup.canvass.timeout=" + STARTUP_CANVASS_TIMEOUT_S + "s");
 
         if (null != ingressChannel)
         {

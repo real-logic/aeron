@@ -73,7 +73,7 @@ set_tests_properties(c_terminate_test PROPERTIES TIMEOUT 60)
 set_tests_properties(c_terminate_test PROPERTIES RUN_SERIAL TRUE)
 
 aeron_driver_test(c_system_test aeron_c_system_test.cpp)
-set_tests_properties(c_system_test PROPERTIES TIMEOUT 60)
+set_tests_properties(c_system_test PROPERTIES TIMEOUT 120)
 set_tests_properties(c_system_test PROPERTIES RUN_SERIAL TRUE)
 
 aeron_driver_test(c_multi_destination_test aeron_c_multi_destination_test.cpp)

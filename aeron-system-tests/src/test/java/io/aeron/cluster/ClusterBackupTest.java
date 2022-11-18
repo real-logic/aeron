@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import static io.aeron.test.SystemTestWatcher.UNKNOWN_HOST_FILTER;
 import static io.aeron.test.cluster.TestCluster.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -531,7 +532,7 @@ class ClusterBackupTest
             .withMemberSpecificInvalidNameResolution(backupNodeId)
             .start();
         systemTestWatcher.cluster(cluster);
-        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains("UnknownHostException"));
+        systemTestWatcher.ignoreErrorsMatching(UNKNOWN_HOST_FILTER);
 
         final TestNode leader = cluster.awaitLeader();
 
@@ -544,8 +545,6 @@ class ClusterBackupTest
         cluster.startClusterBackupNode(true, sourceType);
 
         cluster.awaitBackupNodeErrors();
-
-//        Tests.sleep(6_000);
 
         cluster.restoreByMemberNameResolution(backupNodeId);
 

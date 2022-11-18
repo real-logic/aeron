@@ -36,6 +36,11 @@ enum EventCodeType
     CLUSTER(2),
 
     /**
+     * Events related to cluster standby operations including standby consensus and transitioning
+     */
+    STANDBY(3),
+
+    /**
      * User defined events for third party usage.
      */
     USER(0xFFFF);

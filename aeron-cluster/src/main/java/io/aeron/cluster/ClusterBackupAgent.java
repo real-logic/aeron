@@ -15,7 +15,12 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ChannelUri;
+import io.aeron.Counter;
+import io.aeron.ExclusivePublication;
+import io.aeron.FragmentAssembler;
+import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.ControlResponsePoller;
@@ -26,9 +31,12 @@ import io.aeron.archive.codecs.RecordingSignalEventDecoder;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.codecs.*;
+import io.aeron.cluster.codecs.BackupResponseDecoder;
+import io.aeron.cluster.codecs.ChallengeDecoder;
+import io.aeron.cluster.codecs.EventCode;
+import io.aeron.cluster.codecs.MessageHeaderDecoder;
+import io.aeron.cluster.codecs.SessionEventDecoder;
 import io.aeron.cluster.service.ClusterMarkFile;
-import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
@@ -46,9 +54,18 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.CommonContext.TAGS_PARAM_NAME;
-import static io.aeron.archive.client.AeronArchive.*;
+import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
-import static io.aeron.cluster.ClusterBackup.State.*;
+import static io.aeron.cluster.ClusterBackup.State.BACKING_UP;
+import static io.aeron.cluster.ClusterBackup.State.BACKUP_QUERY;
+import static io.aeron.cluster.ClusterBackup.State.CLOSED;
+import static io.aeron.cluster.ClusterBackup.State.LIVE_LOG_RECORD;
+import static io.aeron.cluster.ClusterBackup.State.LIVE_LOG_REPLAY;
+import static io.aeron.cluster.ClusterBackup.State.RESET_BACKUP;
+import static io.aeron.cluster.ClusterBackup.State.SNAPSHOT_RETRIEVE;
+import static io.aeron.cluster.ClusterBackup.State.UPDATE_RECORDING_LOG;
 import static io.aeron.exceptions.AeronException.Category;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
@@ -624,21 +641,13 @@ public final class ClusterBackupAgent implements Agent
             clusterArchiveAsyncConnect = null;
             clusterArchive = null;
 
-            try
-            {
-                consensusPublicationGroup.next(aeron);
-            }
-            catch (final RegistrationException ex)
-            {
-                ctx.countedErrorHandler().onError(new ClusterException(
-                    "failed to add publication for backup query", ex, Category.WARN));
-            }
+            consensusPublicationGroup.next(aeron);
             correlationId = NULL_VALUE;
             timeOfLastBackupQueryMs = nowMs;
 
             return 1;
         }
-        else if (NULL_VALUE == correlationId && consensusPublicationGroup.current().isConnected())
+        else if (NULL_VALUE == correlationId && consensusPublicationGroup.isConnected())
         {
             final long correlationId = aeron.nextCorrelationId();
 

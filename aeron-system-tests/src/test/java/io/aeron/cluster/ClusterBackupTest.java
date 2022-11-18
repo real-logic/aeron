@@ -520,7 +520,7 @@ class ClusterBackupTest
         assertFalse(node.service().wasSnapshotLoaded());
     }
 
-    @InterruptAfter(20)
+    @InterruptAfter(30)
     @ParameterizedTest()
     @EnumSource(value = ClusterBackup.SourceType.class)
     void shouldBackupClusterWithInvalidNameResolution(final ClusterBackup.SourceType sourceType)
@@ -543,7 +543,9 @@ class ClusterBackupTest
 
         cluster.startClusterBackupNode(true, sourceType);
 
-        Tests.sleep(12_000);
+        cluster.awaitBackupNodeErrors();
+
+//        Tests.sleep(6_000);
 
         cluster.restoreByMemberNameResolution(backupNodeId);
 

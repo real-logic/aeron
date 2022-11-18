@@ -18,16 +18,23 @@ package io.aeron.agent;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
-import javax.management.*;
+import javax.management.InstanceAlreadyExistsException;
+import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.NotCompliantMBeanException;
+import javax.management.ObjectName;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.ServiceLoader;
 
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventLogReaderAgent.decodeLogEvent;
@@ -45,6 +52,7 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
      */
     public static final String LOGGING_MBEAN_NAME = "io.aeron:type=logging";
     private static final double NANOS_PER_SECOND = 1_000_000_000.0;
+    private final Int2ObjectHashMap<ComponentLogger> additionalLoggers = new Int2ObjectHashMap<>();
 
     enum State
     {
@@ -63,6 +71,10 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
 
     CollectingEventLogReaderAgent()
     {
+        for (final ComponentLogger componentLogger : ServiceLoader.load(ComponentLogger.class))
+        {
+            additionalLoggers.put(componentLogger.typeCode(), componentLogger);
+        }
     }
 
     /**
@@ -232,7 +244,8 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
                     final int eventCodeId = msgTypeId & 0xFFFF;
 
                     builder.setLength(0);
-                    decodeLogEvent(collectingBuffer, readingPosition, eventCodeTypeId, eventCodeId, builder);
+                    decodeLogEvent(
+                        collectingBuffer, readingPosition, eventCodeTypeId, eventCodeId, additionalLoggers, builder);
                     readingPosition += length;
 
                     out.print(builder);

@@ -30,8 +30,10 @@ import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.ServiceLoader;
 
 import static io.aeron.agent.ConfigOption.*;
 import static io.aeron.agent.EventConfiguration.*;
@@ -145,7 +147,16 @@ public final class EventLogAgent
             configOptions.get(ENABLED_CLUSTER_EVENT_CODES),
             configOptions.get(DISABLED_CLUSTER_EVENT_CODES));
 
-        if (DRIVER_EVENT_CODES.isEmpty() && ARCHIVE_EVENT_CODES.isEmpty() && CLUSTER_EVENT_CODES.isEmpty())
+        final ArrayList<ComponentLogger> loggers = new ArrayList<>();
+        for (final ComponentLogger componentLogger : ServiceLoader.load(ComponentLogger.class))
+        {
+            loggers.add(componentLogger);
+        }
+
+        if (DRIVER_EVENT_CODES.isEmpty() &&
+            ARCHIVE_EVENT_CODES.isEmpty() &&
+            CLUSTER_EVENT_CODES.isEmpty() &&
+            loggers.stream().allMatch(ComponentLogger::isEventCodesEmpty))
         {
             return;
         }
@@ -167,6 +178,11 @@ public final class EventLogAgent
         agentBuilder = addDriverInstrumentation(agentBuilder);
         agentBuilder = addArchiveInstrumentation(agentBuilder);
         agentBuilder = addClusterInstrumentation(agentBuilder);
+
+        for (final ComponentLogger componentLogger : ServiceLoader.load(ComponentLogger.class))
+        {
+            agentBuilder = componentLogger.addInstrumentation(agentBuilder);
+        }
 
         logTransformer = agentBuilder.installOn(instrumentation);
 
@@ -578,7 +594,7 @@ public final class EventLogAgent
         return tempBuilder;
     }
 
-    private static <E extends Enum<E>> AgentBuilder addEventInstrumentation(
+    static <E extends Enum<E>> AgentBuilder addEventInstrumentation(
         final AgentBuilder agentBuilder,
         final EnumSet<E> enabledEvents,
         final E code,

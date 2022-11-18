@@ -1711,6 +1711,15 @@ public final class TestCluster implements AutoCloseable
         return new Builder();
     }
 
+    public void awaitBackupNodeErrors()
+    {
+        final TestBackupNode testBackupNode = requireNonNull(backupNode);
+        while (0 == testBackupNode.clusterBackupErrorCount())
+        {
+            Tests.sleep(1, "No errors observed on backup node");
+        }
+    }
+
     public static final class Builder
     {
         private int nodeCount = 3;

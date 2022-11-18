@@ -176,7 +176,7 @@ final class EventConfiguration
             DriverEventCode::valueOf);
     }
 
-    private static <E extends Enum<E>> EnumSet<E> parseEventCodes(
+    static <E extends Enum<E>> EnumSet<E> parseEventCodes(
         final Class<E> eventCodeType,
         final String eventCodes,
         final Map<String, EnumSet<E>> specialEvents,

@@ -122,6 +122,11 @@ public class TestBackupNode implements AutoCloseable
         return clusterBackup.context().clusterMarkFile().errorBuffer();
     }
 
+    long clusterBackupErrorCount()
+    {
+        return clusterBackup.context().errorCounter().get();
+    }
+
     int index()
     {
         return index;

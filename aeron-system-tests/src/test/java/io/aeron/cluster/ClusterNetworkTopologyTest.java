@@ -461,7 +461,7 @@ class ClusterNetworkTopologyTest
         command.add("-Djava.net.preferIPv4Stack=true");
         command.add("-Daeron.dir.delete.on.start=true");
         command.add("-Daeron.event.cluster.log=all");
-        command.add("-Daeron.event.cluster.log.disable=CANVASS_POSITION");
+        command.add("-Daeron.event.cluster.log.disable=CANVASS_POSITION,APPEND_POSITION,COMMIT_POSITION");
         command.add("-Daeron.event.log.filename=" + new File(clusterDir, "event.log").getAbsolutePath());
         command.add("-Daeron.driver.resolver.name=node" + nodeId);
         command.add("-Daeron.cluster.startup.canvass.timeout=" + CLUSTER_START_ELECTION_TIMEOUT_S + "s");

@@ -18,6 +18,7 @@ package io.aeron.agent;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -27,6 +28,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
+import java.util.ServiceLoader;
 
 import static io.aeron.agent.CommonEventDissector.dissectLogStartMessage;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
@@ -54,9 +56,15 @@ public final class EventLogReaderAgent implements Agent
     private final MessageHandler messageHandler = this::onMessage;
     private final ByteBuffer byteBuffer;
     private final FileChannel fileChannel;
+    private final Int2ObjectHashMap<ComponentLogger> additionalLoggers = new Int2ObjectHashMap<>();
 
     EventLogReaderAgent(final String filename)
     {
+        for (final ComponentLogger componentLogger : ServiceLoader.load(ComponentLogger.class))
+        {
+            additionalLoggers.put(componentLogger.typeCode(), componentLogger);
+        }
+
         if (null != filename)
         {
             try
@@ -133,7 +141,7 @@ public final class EventLogReaderAgent implements Agent
 
         builder.setLength(0);
 
-        decodeLogEvent(buffer, index, eventCodeTypeId, eventCodeId, builder);
+        decodeLogEvent(buffer, index, eventCodeTypeId, eventCodeId, additionalLoggers, builder);
 
         if (null == fileChannel)
         {
@@ -150,6 +158,7 @@ public final class EventLogReaderAgent implements Agent
         final int index,
         final int eventCodeTypeId,
         final int eventCodeId,
+        final Int2ObjectHashMap<ComponentLogger> additionalLoggers,
         final StringBuilder builder)
     {
         if (DriverEventCode.EVENT_CODE_TYPE == eventCodeTypeId)
@@ -166,7 +175,15 @@ public final class EventLogReaderAgent implements Agent
         }
         else
         {
-            builder.append("Unknown EventCodeType: ").append(eventCodeTypeId);
+            final ComponentLogger componentLogger = additionalLoggers.get(eventCodeTypeId);
+            if (null != componentLogger)
+            {
+                componentLogger.decode(buffer, index, eventCodeId, builder);
+            }
+            else
+            {
+                builder.append("Unknown EventCodeType: ").append(eventCodeTypeId);
+            }
         }
 
         builder.append(lineSeparator());

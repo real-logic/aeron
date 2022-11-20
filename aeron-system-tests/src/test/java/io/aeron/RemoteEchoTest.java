@@ -182,7 +182,7 @@ class RemoteEchoTest
     }
 
     @Test
-    @InterruptAfter(10)
+    @InterruptAfter(20)
     void shouldHandleTenUnicastEchoPairs()
     {
         final List<Publication> pubs = new ArrayList<>();

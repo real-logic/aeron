@@ -25,7 +25,11 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.samples.cluster.ClusterConfig;
 import io.aeron.samples.cluster.EchoServiceNode;
 import io.aeron.samples.cluster.tutorial.BasicAuctionClusterClient;
-import io.aeron.test.*;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
+import io.aeron.test.TopologyTest;
 import io.aeron.test.launcher.FileResolveUtil;
 import io.aeron.test.launcher.RemoteLaunchClient;
 import org.agrona.IoUtil;
@@ -54,12 +58,16 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -68,7 +76,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class ClusterNetworkTopologyTest
 {
     private static final int REMOTE_LAUNCH_PORT = 11112;
-    private static final long STARTUP_CANVASS_TIMEOUT_S = 15;
+    private static final long STARTUP_CANVASS_TIMEOUT_S =
+        NANOSECONDS.toSeconds(2 * ConsensusModule.Configuration.leaderHeartbeatTimeoutNs());
     private static final List<String> HOSTNAMES = Arrays.asList("10.42.0.10", "10.42.0.11", "10.42.0.12");
     private static final List<String> INTERNAL_HOSTNAMES = Arrays.asList("10.42.1.10", "10.42.1.11", "10.42.1.12");
 
@@ -268,7 +277,7 @@ class ClusterNetworkTopologyTest
                 .dirDeleteOnStart(true)
                 .dirDeleteOnShutdown(true));
             AeronCluster.AsyncConnect asyncConnect = AeronCluster.asyncConnect(new AeronCluster.Context()
-                .messageTimeoutNs(TimeUnit.SECONDS.toNanos(STARTUP_CANVASS_TIMEOUT_S * 2))
+                .messageTimeoutNs(SECONDS.toNanos(STARTUP_CANVASS_TIMEOUT_S * 2))
                 .egressListener(egressListener)
                 .egressChannel("aeron:udp?endpoint=10.42.0.1:0")
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())

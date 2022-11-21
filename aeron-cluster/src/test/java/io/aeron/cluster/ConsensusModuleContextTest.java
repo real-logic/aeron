@@ -45,6 +45,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -393,8 +394,8 @@ class ConsensusModuleContextTest
     }
 
     @ParameterizedTest
-    @CsvSource({ "0, 1000", "123632842384368, 123632842384368" })
-    void startupCanvassTimeoutMustBeGreaterThanTheLeaderHeartbeatTimeout(
+    @CsvSource({ "0, 1000", "5000,5000", "2000000000, 1000000001" })
+    void startupCanvassTimeoutMustBeMultiplesOfTheLeaderHeartbeatTimeout(
         final long startupCanvassTimeoutNs, final long leaderHeartbeatTimeoutNs)
     {
         context.startupCanvassTimeoutNs(startupCanvassTimeoutNs)
@@ -402,8 +403,17 @@ class ConsensusModuleContextTest
 
         final ClusterException exception = assertThrows(ClusterException.class, context::conclude);
         assertEquals("ERROR - startupCanvassTimeoutNs=" + startupCanvassTimeoutNs +
-            " must be greater than leaderHeartbeatTimeoutNs=" + leaderHeartbeatTimeoutNs,
+            " must be multiples of the leaderHeartbeatTimeoutNs=" + leaderHeartbeatTimeoutNs,
             exception.getMessage());
+    }
+
+    @Test
+    void startupCanvassTimeoutMustCanBeSetToBeMultiplesOfTheLeaderHeartbeatTimeout()
+    {
+        context.startupCanvassTimeoutNs(TimeUnit.SECONDS.toNanos(30))
+            .leaderHeartbeatTimeoutNs(TimeUnit.SECONDS.toNanos(5));
+
+        context.conclude();
     }
 
     @Test

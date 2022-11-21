@@ -1398,10 +1398,10 @@ public final class ConsensusModule implements AutoCloseable
                 throw new ClusterException("failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
 
-            if (startupCanvassTimeoutNs <= leaderHeartbeatTimeoutNs)
+            if (startupCanvassTimeoutNs / leaderHeartbeatTimeoutNs < 2)
             {
                 throw new ClusterException("startupCanvassTimeoutNs=" + startupCanvassTimeoutNs +
-                    " must be greater than leaderHeartbeatTimeoutNs=" + leaderHeartbeatTimeoutNs);
+                    " must be multiples of the leaderHeartbeatTimeoutNs=" + leaderHeartbeatTimeoutNs);
             }
 
             if (null == clusterClock)

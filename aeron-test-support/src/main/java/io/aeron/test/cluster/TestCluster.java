@@ -112,7 +112,7 @@ public final class TestCluster implements AutoCloseable
     static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0";
     static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k|alias=ingress";
     static final long LEADER_HEARTBEAT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
-    static final long STARTUP_CANVASS_TIMEOUT_NS = LEADER_HEARTBEAT_TIMEOUT_NS + TimeUnit.SECONDS.toNanos(5);
+    static final long STARTUP_CANVASS_TIMEOUT_NS = LEADER_HEARTBEAT_TIMEOUT_NS * 2;
 
     public static final String DEFAULT_NODE_MAPPINGS =
         "node0,localhost,localhost|" +

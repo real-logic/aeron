@@ -24,39 +24,39 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.aeron.exceptions.StorageSpaceException.isOutOfDiscError;
+import static io.aeron.exceptions.StorageSpaceException.isStorageSpaceError;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StorageSpaceExceptionTest
 {
     @Test
-    void isOutOfDiscErrorReturnsFalseIfNull()
+    void isStorageSpaceErrorReturnsFalseIfNull()
     {
-        assertFalse(isOutOfDiscError(null));
+        assertFalse(isStorageSpaceError(null));
     }
 
     @Test
-    void isOutOfDiscErrorReturnsFalseIfNotIOException()
+    void isStorageSpaceErrorReturnsFalseIfNotIOException()
     {
-        assertFalse(isOutOfDiscError(new IllegalArgumentException("No space left on device")));
+        assertFalse(isStorageSpaceError(new IllegalArgumentException("No space left on device")));
     }
 
     @Test
-    void isOutOfDiscErrorReturnsFalseIfWrongMessage()
+    void isStorageSpaceErrorReturnsFalseIfWrongMessage()
     {
-        assertFalse(isOutOfDiscError(new IllegalArgumentException(
+        assertFalse(isStorageSpaceError(new IllegalArgumentException(
             "Es steht nicht genug Speicherplatz auf dem Datenträger zur Verfügung")));
     }
 
     @ParameterizedTest
-    @MethodSource("outOfDiscSpaceExceptions")
-    void isOutOfDiscErrorReturnsTrueWhenIOExceptionWithAParticularMessage(final Throwable exception)
+    @MethodSource("errors")
+    void isStorageSpaceErrorReturnsTrueWhenIOExceptionWithAParticularMessage(final Throwable exception)
     {
-        assertTrue(isOutOfDiscError(exception));
+        assertTrue(isStorageSpaceError(exception));
     }
 
-    private static List<Throwable> outOfDiscSpaceExceptions()
+    private static List<Throwable> errors()
     {
         return Arrays.asList(
             new IOException("No space left on device") /* Linux */,

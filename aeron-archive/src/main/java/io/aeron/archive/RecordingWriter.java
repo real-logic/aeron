@@ -239,7 +239,7 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
 
         try
         {
-            isLowStorageSpace = StorageSpaceException.isOutOfDiscError(ex) ||
+            isLowStorageSpace = StorageSpaceException.isStorageSpaceError(ex) ||
                 ctx.archiveFileStore().getUsableSpace() < writeLength;
         }
         catch (final IOException ex2)

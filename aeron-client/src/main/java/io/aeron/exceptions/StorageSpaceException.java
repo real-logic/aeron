@@ -41,7 +41,7 @@ public class StorageSpaceException extends AeronException
      * @param error to check.
      * @return {@code true} if cause is {@link java.io.IOException} with a specific error.
      */
-    public static boolean isOutOfDiscError(final Throwable error)
+    public static boolean isStorageSpaceError(final Throwable error)
     {
         Throwable cause = error;
         while (null != cause)

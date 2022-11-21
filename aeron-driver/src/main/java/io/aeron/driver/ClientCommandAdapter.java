@@ -286,7 +286,7 @@ final class ClientCommandAdapter implements ControlledMessageHandler
         catch (final Exception ex)
         {
             recordError(ex);
-            if (StorageSpaceException.isOutOfDiscError(ex))
+            if (StorageSpaceException.isStorageSpaceError(ex))
             {
                 clientProxy.onError(correlationId, STORAGE_SPACE, ex.getMessage());
             }

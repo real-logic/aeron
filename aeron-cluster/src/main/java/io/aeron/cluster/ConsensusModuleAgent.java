@@ -87,6 +87,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private long timeOfLastLogUpdateNs = 0;
     private long timeOfLastAppendPositionUpdateNs = 0;
     private long timeOfLastAppendPositionSendNs = 0;
+    private long timeOfLastLeaderMessageReceivedNs;
     private long slowTickDeadlineNs = 0;
     private long markFileUpdateDeadlineNs = 0;
 
@@ -862,6 +863,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             throw new AgentTerminationException();
         }
 
+        final long nowNs = clusterClock.timeNanos();
+        timeOfLastLeaderMessageReceivedNs = nowNs;
+
         if (null != election)
         {
             election.onNewLeadershipTerm(
@@ -883,7 +887,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             leaderId == leaderMember.id())
         {
             notifiedCommitPosition = Math.max(notifiedCommitPosition, logPosition);
-            timeOfLastLogUpdateNs = clusterClock.timeNanos();
+            timeOfLastLogUpdateNs = nowNs;
         }
         else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
         {
@@ -920,6 +924,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
         logOnCommitPosition(memberId, leadershipTermId, logPosition, leaderMemberId);
 
+        final long nowNs = clusterClock.timeNanos();
+        timeOfLastLeaderMessageReceivedNs = nowNs;
+
         if (null != election)
         {
             election.onCommitPosition(leadershipTermId, logPosition, leaderMemberId);
@@ -929,7 +936,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             Cluster.Role.FOLLOWER == role)
         {
             notifiedCommitPosition = logPosition;
-            timeOfLastLogUpdateNs = clusterClock.timeNanos();
+            timeOfLastLogUpdateNs = nowNs;
         }
         else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
         {
@@ -2119,7 +2126,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return workCount;
     }
 
-    private void leadershipTermId(final long leadershipTermId)
+    void leadershipTermId(final long leadershipTermId)
     {
         this.leadershipTermId = leadershipTermId;
         for (final PendingServiceMessageTracker tracker : pendingServiceMessageTrackers)
@@ -3043,6 +3050,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     long quorumPosition()
     {
         return ClusterMember.quorumPosition(activeMembers, rankedPositions);
+    }
+
+    long timeOfLastLeaderMessageReceivedNs()
+    {
+        return timeOfLastLeaderMessageReceivedNs;
     }
 
     int updateLeaderPosition(final long nowNs, final long position)

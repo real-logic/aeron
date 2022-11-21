@@ -55,9 +55,7 @@ import org.mockito.Mockito;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
-import static io.aeron.cluster.ClusterControl.ToggleState.NEUTRAL;
-import static io.aeron.cluster.ClusterControl.ToggleState.RESUME;
-import static io.aeron.cluster.ClusterControl.ToggleState.SUSPEND;
+import static io.aeron.cluster.ClusterControl.ToggleState.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_LIMIT_MSG;
 import static io.aeron.cluster.ConsensusModuleAgent.SLOW_TICK_INTERVAL_NS;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
@@ -65,16 +63,7 @@ import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class ConsensusModuleAgentTest
 {
@@ -93,6 +82,7 @@ public class ConsensusModuleAgentTest
     private final ConsensusModule.Context ctx = TestContexts.localhostConsensusModule()
         .errorHandler(Tests::onError)
         .errorCounter(mock(AtomicCounter.class))
+        .countedErrorHandler(mock(CountedErrorHandler.class))
         .moduleStateCounter(mock(Counter.class))
         .commitPositionCounter(mock(Counter.class))
         .controlToggleCounter(mock(Counter.class))
@@ -424,5 +414,57 @@ public class ConsensusModuleAgentTest
             final ConsensusModuleAgent consensusModuleAgent = new ConsensusModuleAgent(ctx);
             consensusModuleAgent.onStart();
         }
+    }
+
+    @Test
+    void onNewLeadershipTermShouldUpdateTimeOfLastLeaderMessageReceived()
+    {
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.NANOSECONDS);
+        ctx.clusterClock(clock)
+            .epochClock(clock)
+            .appVersionValidator(AppVersionValidator.SEMANTIC_VERSIONING_VALIDATOR);
+
+        final int leadershipTermId = 2;
+        final ConsensusModuleAgent consensusModuleAgent = new ConsensusModuleAgent(ctx);
+        consensusModuleAgent.leadershipTermId(leadershipTermId);
+        assertEquals(0, consensusModuleAgent.timeOfLastLeaderMessageReceivedNs());
+
+        clock.increment(12345);
+
+        consensusModuleAgent.onNewLeadershipTerm(
+            3,
+            4,
+            1024,
+            2048,
+            leadershipTermId,
+            100,
+            600,
+            8,
+            200,
+            0,
+            42,
+            777,
+            false);
+
+        assertEquals(12345, consensusModuleAgent.timeOfLastLeaderMessageReceivedNs());
+    }
+
+    @Test
+    void onCommmitPositionShouldUpdateTimeOfLastLeaderMessageReceived()
+    {
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.NANOSECONDS);
+        ctx.clusterClock(clock)
+            .epochClock(clock);
+
+        final int leadershipTermId = 42;
+        final ConsensusModuleAgent consensusModuleAgent = new ConsensusModuleAgent(ctx);
+        consensusModuleAgent.leadershipTermId(leadershipTermId);
+        assertEquals(0, consensusModuleAgent.timeOfLastLeaderMessageReceivedNs());
+
+        clock.increment(444);
+
+        consensusModuleAgent.onCommitPosition(leadershipTermId, 555, 0);
+
+        assertEquals(444, consensusModuleAgent.timeOfLastLeaderMessageReceivedNs());
     }
 }

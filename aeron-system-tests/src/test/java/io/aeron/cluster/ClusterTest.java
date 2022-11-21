@@ -293,7 +293,7 @@ class ClusterTest
     }
 
     @Test
-    @InterruptAfter(20)
+    @InterruptAfter(40)
     void shouldHandleClusterStartWhenANameIsNotResolvable()
     {
         final int initiallyUnresolvableNodeId = 1;

@@ -103,10 +103,9 @@ class ConsensusModuleSnapshotTaker
         }
         else
         {
-            final ExpandableArrayBuffer buffer = offerBuffer;
             final int offset = 0;
-            encodeSession(session, responseChannel, buffer, offset);
-            offer(buffer, offset, length);
+            encodeSession(session, responseChannel, offerBuffer, offset);
+            offer(offerBuffer, offset, length);
         }
     }
 
@@ -122,7 +121,6 @@ class ConsensusModuleSnapshotTaker
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .correlationId(correlationId)
                     .deadline(deadline);
-
                 bufferClaim.commit();
                 break;
             }
@@ -154,10 +152,9 @@ class ConsensusModuleSnapshotTaker
         }
         else
         {
-            final ExpandableArrayBuffer buffer = offerBuffer;
             final int offset = 0;
-            encodeClusterMembers(memberId, highMemberId, clusterMembers, buffer, offset);
-            offer(buffer, offset, length);
+            encodeClusterMembers(memberId, highMemberId, clusterMembers, offerBuffer, offset);
+            offer(offerBuffer, offset, length);
         }
     }
 
@@ -177,7 +174,6 @@ class ConsensusModuleSnapshotTaker
                     .logServiceSessionId(tracker.logServiceSessionId())
                     .pendingMessageCapacity(tracker.pendingMessages().size())
                     .serviceId(tracker.serviceId());
-
                 bufferClaim.commit();
                 break;
             }

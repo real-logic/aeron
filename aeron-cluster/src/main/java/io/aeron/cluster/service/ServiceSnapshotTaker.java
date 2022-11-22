@@ -51,8 +51,8 @@ final class ServiceSnapshotTaker extends SnapshotTaker
                 {
                     final MutableDirectBuffer buffer = bufferClaim.buffer();
                     final int offset = bufferClaim.offset();
-                    encodeSession(session, responseChannel, encodedPrincipal, buffer, offset);
 
+                    encodeSession(session, responseChannel, encodedPrincipal, buffer, offset);
                     bufferClaim.commit();
                     break;
                 }
@@ -62,10 +62,9 @@ final class ServiceSnapshotTaker extends SnapshotTaker
         }
         else
         {
-            final ExpandableArrayBuffer buffer = offerBuffer;
             final int offset = 0;
-            encodeSession(session, responseChannel, encodedPrincipal, buffer, offset);
-            offer(buffer, 0, length);
+            encodeSession(session, responseChannel, encodedPrincipal, offerBuffer, offset);
+            offer(offerBuffer, offset, length);
         }
     }
 

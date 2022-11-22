@@ -1263,7 +1263,7 @@ class Election
                     break;
 
                 case LEADER_LOG_REPLICATION:
-                    logSessionId = consensusModuleAgent.addLogPublication();
+                    logSessionId = consensusModuleAgent.addLogPublication(appendPosition);
                     break;
 
                 case LEADER_INIT:

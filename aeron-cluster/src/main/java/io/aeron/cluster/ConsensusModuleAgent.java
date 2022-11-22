@@ -1576,7 +1576,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    int addLogPublication()
+    int addLogPublication(final long appendPosition)
     {
         final long logPublicationTag = aeron.nextCorrelationId();
         logPublicationChannelTag = aeron.nextCorrelationId();
@@ -1604,7 +1604,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         if (null != recoveryPlan.log)
         {
             channelUri.initialPosition(
-                recoveryPlan.appendedLogPosition, recoveryPlan.log.initialTermId, recoveryPlan.log.termBufferLength);
+                appendPosition, recoveryPlan.log.initialTermId, recoveryPlan.log.termBufferLength);
             channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(recoveryPlan.log.mtuLength));
         }
         else

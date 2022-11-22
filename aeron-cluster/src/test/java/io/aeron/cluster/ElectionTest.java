@@ -74,7 +74,7 @@ public class ElectionTest
         when(aeron.addCounter(anyInt(), anyString())).thenReturn(electionStateCounter);
         when(aeron.addSubscription(anyString(), anyInt())).thenReturn(subscription);
         when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
-        when(consensusModuleAgent.addLogPublication()).thenReturn(LOG_SESSION_ID);
+        when(consensusModuleAgent.addLogPublication(anyLong())).thenReturn(LOG_SESSION_ID);
         when(subscription.imageBySessionId(anyInt())).thenReturn(logImage);
 
         when(clusterMarkFile.candidateTermId()).thenAnswer((invocation) -> markFileCandidateTermId.get());

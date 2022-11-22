@@ -22,6 +22,7 @@ import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SnapshotMark;
 import io.aeron.cluster.codecs.SnapshotMarkerEncoder;
 import io.aeron.logbuffer.BufferClaim;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;
@@ -209,6 +210,28 @@ public class SnapshotTaker
         if (null != aeronAgentInvoker)
         {
             aeronAgentInvoker.invoke();
+        }
+    }
+
+    /**
+     * Helper method to offer a message into the snapshot publication.
+     *
+     * @param buffer containing the message.
+     * @param offset at which the message begins.
+     * @param length of the message.
+     */
+    protected final void offer(final DirectBuffer buffer, final int offset, final int length)
+    {
+        idleStrategy.reset();
+        while (true)
+        {
+            final long result = publication.offer(buffer, offset, length);
+            if (result > 0)
+            {
+                break;
+            }
+
+            checkResultAndIdle(result);
         }
     }
 }

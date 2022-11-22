@@ -192,9 +192,9 @@ class ConsensusModuleSnapshotTakerTest
         final ClusterSession clusterSession = new ClusterSession(
             42, -1, 76, 98, 4, responseChannel, CloseReason.TIMEOUT);
         when(publication.maxPayloadLength()).thenReturn(length - 1);
-        when(publication.offer(any(), anyInt(), anyInt()))
+        when(publication.offer(any(), eq(0), eq(length)))
             .thenReturn(BACK_PRESSURED, ADMIN_ACTION)
-            .thenAnswer(mockOffer(length));
+            .thenAnswer(mockOffer());
 
         snapshotTaker.snapshotSession(clusterSession);
 
@@ -261,9 +261,9 @@ class ConsensusModuleSnapshotTakerTest
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersEncoder.BLOCK_LENGTH +
             ClusterMembersEncoder.clusterMembersHeaderLength() + clusterMembers.length();
         when(publication.maxPayloadLength()).thenReturn(40);
-        when(publication.offer(any(), anyInt(), anyInt()))
+        when(publication.offer(any(), eq(0), eq(length)))
             .thenReturn(BACK_PRESSURED)
-            .thenAnswer(mockOffer(length));
+            .thenAnswer(mockOffer());
 
         snapshotTaker.snapshotClusterMembers(memberId, highMemberId, clusterMembers);
 
@@ -294,15 +294,13 @@ class ConsensusModuleSnapshotTakerTest
         };
     }
 
-    private Answer<Long> mockOffer(final int expectedLength)
+    private Answer<Long> mockOffer()
     {
         return (invocation) ->
         {
             final DirectBuffer srcBuffer = invocation.getArgument(0);
             final int srcOffset = invocation.getArgument(1);
-            assertEquals(0, srcOffset);
             final int length = invocation.getArgument(2);
-            assertEquals(expectedLength, length);
             buffer.putBytes(0, srcBuffer, srcOffset, length);
             return 128L;
         };

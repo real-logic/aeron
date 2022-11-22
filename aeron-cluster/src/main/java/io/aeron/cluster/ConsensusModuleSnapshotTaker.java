@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.ExclusivePublication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.SnapshotTaker;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.ExpandableRingBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AgentInvoker;
@@ -29,6 +30,7 @@ class ConsensusModuleSnapshotTaker
 {
     private static final int ENCODED_TIMER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH + TimerEncoder.BLOCK_LENGTH;
 
+    private final ExpandableArrayBuffer offerBuffer = new ExpandableArrayBuffer(1024);
     private final ClusterSessionEncoder clusterSessionEncoder = new ClusterSessionEncoder();
     private final TimerEncoder timerEncoder = new TimerEncoder();
     private final ConsensusModuleEncoder consensusModuleEncoder = new ConsensusModuleEncoder();
@@ -44,18 +46,7 @@ class ConsensusModuleSnapshotTaker
 
     public boolean onMessage(final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
     {
-        idleStrategy.reset();
-        while (true)
-        {
-            final long result = publication.offer(buffer, offset, length);
-            if (result > 0)
-            {
-                break;
-            }
-
-            checkResultAndIdle(result);
-        }
-
+        offer(buffer, offset, length);
         return true;
     }
 
@@ -94,27 +85,28 @@ class ConsensusModuleSnapshotTaker
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterSessionEncoder.BLOCK_LENGTH +
             ClusterSessionEncoder.responseChannelHeaderLength() + responseChannel.length();
 
-        idleStrategy.reset();
-        while (true)
+        if (length <= publication.maxPayloadLength())
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            idleStrategy.reset();
+            while (true)
             {
-                clusterSessionEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .clusterSessionId(session.id())
-                    .correlationId(session.correlationId())
-                    .openedLogPosition(session.openedLogPosition())
-                    .timeOfLastActivity(session.timeOfLastActivityNs())
-                    .closeReason(session.closeReason())
-                    .responseStreamId(session.responseStreamId())
-                    .responseChannel(responseChannel);
+                final long result = publication.tryClaim(length, bufferClaim);
+                if (result > 0)
+                {
+                    encodeSession(session, responseChannel, bufferClaim.buffer(), bufferClaim.offset());
+                    bufferClaim.commit();
+                    break;
+                }
 
-                bufferClaim.commit();
-                break;
+                checkResultAndIdle(result);
             }
-
-            checkResultAndIdle(result);
+        }
+        else
+        {
+            final ExpandableArrayBuffer buffer = offerBuffer;
+            final int offset = 0;
+            encodeSession(session, responseChannel, buffer, offset);
+            offer(buffer, offset, length);
         }
     }
 
@@ -143,24 +135,29 @@ class ConsensusModuleSnapshotTaker
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersEncoder.BLOCK_LENGTH +
             ClusterMembersEncoder.clusterMembersHeaderLength() + clusterMembers.length();
-
-        idleStrategy.reset();
-        while (true)
+        if (length <= publication.maxPayloadLength())
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            idleStrategy.reset();
+            while (true)
             {
-                clusterMembersEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .memberId(memberId)
-                    .highMemberId(highMemberId)
-                    .clusterMembers(clusterMembers);
+                final long result = publication.tryClaim(length, bufferClaim);
+                if (result > 0)
+                {
+                    encodeClusterMembers(
+                        memberId, highMemberId, clusterMembers, bufferClaim.buffer(), bufferClaim.offset());
+                    bufferClaim.commit();
+                    break;
+                }
 
-                bufferClaim.commit();
-                break;
+                checkResultAndIdle(result);
             }
-
-            checkResultAndIdle(result);
+        }
+        else
+        {
+            final ExpandableArrayBuffer buffer = offerBuffer;
+            final int offset = 0;
+            encodeClusterMembers(memberId, highMemberId, clusterMembers, buffer, offset);
+            offer(buffer, offset, length);
         }
     }
 
@@ -189,5 +186,48 @@ class ConsensusModuleSnapshotTaker
         }
 
         tracker.pendingMessages().forEach(this, Integer.MAX_VALUE);
+    }
+
+    private void offer(final MutableDirectBuffer buffer, final int offset, final int length)
+    {
+        idleStrategy.reset();
+        while (true)
+        {
+            final long result = publication.offer(buffer, offset, length);
+            if (result > 0)
+            {
+                break;
+            }
+
+            checkResultAndIdle(result);
+        }
+    }
+
+    private void encodeSession(
+        final ClusterSession session, final String responseChannel, final MutableDirectBuffer buffer, final int offset)
+    {
+        clusterSessionEncoder
+            .wrapAndApplyHeader(buffer, offset, messageHeaderEncoder)
+            .clusterSessionId(session.id())
+            .correlationId(session.correlationId())
+            .openedLogPosition(session.openedLogPosition())
+            .timeOfLastActivity(session.timeOfLastActivityNs())
+            .closeReason(session.closeReason())
+            .responseStreamId(session.responseStreamId())
+            .responseChannel(responseChannel);
+    }
+
+    private void encodeClusterMembers(
+        final int memberId,
+        final int highMemberId,
+        final String clusterMembers,
+        final MutableDirectBuffer buffer,
+        final int offset)
+    {
+        clusterMembersEncoder
+            .wrapAndApplyHeader(buffer, offset, messageHeaderEncoder)
+            .memberId(memberId)
+            .highMemberId(highMemberId)
+            .clusterMembers(clusterMembers);
     }
 }

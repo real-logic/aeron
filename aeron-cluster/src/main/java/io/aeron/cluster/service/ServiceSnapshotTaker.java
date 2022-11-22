@@ -16,12 +16,16 @@
 package io.aeron.cluster.service;
 
 import io.aeron.ExclusivePublication;
-import io.aeron.cluster.codecs.*;
+import io.aeron.cluster.codecs.ClientSessionEncoder;
+import io.aeron.cluster.codecs.MessageHeaderEncoder;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.IdleStrategy;
 
 final class ServiceSnapshotTaker extends SnapshotTaker
 {
+    private final ExpandableArrayBuffer offerBuffer = new ExpandableArrayBuffer(1024);
     private final ClientSessionEncoder clientSessionEncoder = new ClientSessionEncoder();
 
     ServiceSnapshotTaker(
@@ -37,25 +41,46 @@ final class ServiceSnapshotTaker extends SnapshotTaker
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClientSessionEncoder.BLOCK_LENGTH +
             ClientSessionEncoder.responseChannelHeaderLength() + responseChannel.length() +
             ClientSessionEncoder.encodedPrincipalHeaderLength() + encodedPrincipal.length;
-
-        idleStrategy.reset();
-        while (true)
+        if (length <= publication.maxPayloadLength())
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            idleStrategy.reset();
+            while (true)
             {
-                clientSessionEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .clusterSessionId(session.id())
-                    .responseStreamId(session.responseStreamId())
-                    .responseChannel(responseChannel)
-                    .putEncodedPrincipal(encodedPrincipal, 0, encodedPrincipal.length);
+                final long result = publication.tryClaim(length, bufferClaim);
+                if (result > 0)
+                {
+                    final MutableDirectBuffer buffer = bufferClaim.buffer();
+                    final int offset = bufferClaim.offset();
+                    encodeSession(session, responseChannel, encodedPrincipal, buffer, offset);
 
-                bufferClaim.commit();
-                break;
+                    bufferClaim.commit();
+                    break;
+                }
+
+                checkResultAndIdle(result);
             }
-
-            checkResultAndIdle(result);
         }
+        else
+        {
+            final ExpandableArrayBuffer buffer = offerBuffer;
+            final int offset = 0;
+            encodeSession(session, responseChannel, encodedPrincipal, buffer, offset);
+            offer(buffer, 0, length);
+        }
+    }
+
+    private void encodeSession(
+        final ClientSession session,
+        final String responseChannel,
+        final byte[] encodedPrincipal,
+        final MutableDirectBuffer buffer,
+        final int offset)
+    {
+        clientSessionEncoder
+            .wrapAndApplyHeader(buffer, offset, messageHeaderEncoder)
+            .clusterSessionId(session.id())
+            .responseStreamId(session.responseStreamId())
+            .responseChannel(responseChannel)
+            .putEncodedPrincipal(encodedPrincipal, 0, encodedPrincipal.length);
     }
 }

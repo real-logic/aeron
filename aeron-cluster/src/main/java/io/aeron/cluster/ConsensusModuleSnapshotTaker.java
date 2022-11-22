@@ -188,21 +188,6 @@ class ConsensusModuleSnapshotTaker
         tracker.pendingMessages().forEach(this, Integer.MAX_VALUE);
     }
 
-    private void offer(final MutableDirectBuffer buffer, final int offset, final int length)
-    {
-        idleStrategy.reset();
-        while (true)
-        {
-            final long result = publication.offer(buffer, offset, length);
-            if (result > 0)
-            {
-                break;
-            }
-
-            checkResultAndIdle(result);
-        }
-    }
-
     private void encodeSession(
         final ClusterSession session, final String responseChannel, final MutableDirectBuffer buffer, final int offset)
     {

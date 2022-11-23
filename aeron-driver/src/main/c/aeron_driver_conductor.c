@@ -2743,7 +2743,15 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
     if (result < 0)
     {
         int os_errno = aeron_errcode();
-        int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
+        int code = AERON_ERROR_CODE_GENERIC_ERROR;
+        if (os_errno < 0)
+        {
+            code = -os_errno;
+        }
+        else if (AERON_FILEUTIL_ERROR_ENOSPC == os_errno)
+        {
+            code = AERON_ERROR_CODE_STORAGE_SPACE;
+        }
         aeron_driver_conductor_on_error(conductor, code, aeron_errmsg(), strlen(aeron_errmsg()), correlation_id);
         aeron_driver_conductor_log_error(conductor);
     }

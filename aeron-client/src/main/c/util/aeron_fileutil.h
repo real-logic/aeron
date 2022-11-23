@@ -47,8 +47,9 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file);
 #if defined(AERON_COMPILER_GCC)
 #include <unistd.h>
 
+#define AERON_FILEUTIL_ERROR_ENOSPC ENOSPC
+
 #define aeron_mkdir mkdir
-#define aeron_ftruncate ftruncate
 #elif defined(AERON_COMPILER_MSVC)
 #define _CRT_RAND_S
 #include <io.h>
@@ -61,7 +62,8 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file);
 #define S_IRWXG 0
 #define S_IRWXO 0
 
-int aeron_ftruncate(int fd, size_t length);
+#define AERON_FILEUTIL_ERROR_ENOSPC ERROR_DISK_FULL
+
 int aeron_mkdir(const char *path, int permission);
 #endif
 

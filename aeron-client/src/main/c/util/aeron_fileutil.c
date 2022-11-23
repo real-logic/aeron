@@ -66,24 +66,37 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
 
     if (!hmap)
     {
-        AERON_SET_ERR(errno, "%s", "CreateFileMapping");
-        close(fd);
+        AERON_SET_ERR_WIN(GetLastError(), "%s", "CreateFileMapping failed");
         return -1;
     }
 
     mapping->addr = MapViewOfFileEx(hmap, FILE_MAP_WRITE, 0, 0, mapping->length, NULL);
 
-    if (!CloseHandle(hmap))
-    {
-        fprintf(stderr, "unable to close file mapping handle\n");
-    }
-
     if (!mapping->addr)
     {
         mapping->addr = MAP_FAILED;
+        AERON_SET_ERR_WIN(GetLastError(), "%s", "MapViewOfFileEx failed");
+
+        if (!CloseHandle(hmap))
+        {
+            AERON_APPEND_ERR("(%d) Failed to close file mapping handle", GetLastError());
+        }
+        _close(fd);
+        return -1;
     }
 
-    close(fd);
+    if (!CloseHandle(hmap))
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "%s", "Failed to close file mapping handle");
+        if (0 != aeron_unmap(mapping))
+        {
+            AERON_APPEND_ERR("(%d) Failed to unmap", GetLastError());
+        }
+        _close(fd);
+        return -1;
+    }
+
+    _close(fd);
 
     if (pre_touch && MAP_FAILED != mapping->addr)
     {
@@ -93,8 +106,11 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
 
         if (!PrefetchVirtualMemory(GetCurrentProcess(), 1, &entry, 0))
         {
-            fprintf(stderr, "Unable to prefetch memory");
-            aeron_unmap(mapping);
+            AERON_SET_ERR_WIN(GetLastError(), "%s", "PrefetchVirtualMemory failed");
+            if (0 != aeron_unmap(mapping))
+            {
+                AERON_APPEND_ERR("(%d) Failed to unmap", GetLastError());
+            }
             mapping->addr = MAP_FAILED;
         }
     }
@@ -107,25 +123,6 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file)
     if (NULL != mapped_file->addr)
     {
         return UnmapViewOfFile(mapped_file->addr) ? 0 : -1;
-    }
-
-    return 0;
-}
-
-int aeron_ftruncate(int fd, size_t length)
-{
-    HANDLE hfile = (HANDLE)_get_osfhandle(fd);
-    LARGE_INTEGER file_size;
-    file_size.QuadPart = (LONGLONG)length;
-
-    if (!SetFilePointerEx(hfile, file_size, NULL, FILE_BEGIN))
-    {
-        return -1;
-    }
-
-    if (!SetEndOfFile(hfile))
-    {
-        return -1;
     }
 
     return 0;
@@ -164,13 +161,63 @@ uint64_t aeron_usable_fs_space(const char *path)
     return (uint64_t)lpAvailableToCaller.QuadPart;
 }
 
-int aeron_create_file(const char *path)
+int aeron_create_file(const char *path, size_t length, bool sparse_file)
 {
     int fd;
     int error = _sopen_s(&fd, path, _O_RDWR | _O_CREAT | _O_EXCL, _SH_DENYNO, _S_IREAD | _S_IWRITE);
 
     if (NO_ERROR != error)
     {
+        AERON_SET_ERR_WIN(GetLastError(), "Failed to create file: %s", path);
+        return -1;
+    }
+
+    HANDLE hfile = (HANDLE)_get_osfhandle(fd);
+    if (INVALID_HANDLE_VALUE == hfile)
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "Failed to obtain operating-system file handle: %s", path);
+        goto error;
+    }
+
+    if (sparse_file)
+    {
+        DWORD bytesReturned;
+        if (!DeviceIoControl(hfile, FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &bytesReturned, NULL))
+        {
+            AERON_SET_ERR_WIN(GetLastError(), "Failed to mark file as sparse: %s", path);
+            goto error;
+        }
+    }
+
+    LARGE_INTEGER file_size;
+    file_size.QuadPart = (LONGLONG)length;
+
+    if (!SetFilePointerEx(hfile, file_size, NULL, FILE_BEGIN) ||
+        !SetEndOfFile(hfile))
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "Failed to truncate file: %s", path);
+        goto error;
+    }
+
+    return fd;
+
+error:
+    _close(fd);
+    if (-1 == remove(path))
+    {
+        AERON_APPEND_ERR("(%d) Failed to remove file", GetLastError());
+    }
+    return -1;
+}
+
+int aeron_open_file_rw(const char *path)
+{
+    int fd;
+    int error = _sopen_s(&fd, path, _O_RDWR, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+
+    if (NO_ERROR != error)
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "Failed to open file: %s", path);
         return -1;
     }
 
@@ -236,9 +283,16 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, bool pre_touch)
 #endif
 
     mapping->addr = mmap(NULL, mapping->length, PROT_READ | PROT_WRITE, flags, fd, 0);
-    close(fd);
 
-    return MAP_FAILED == mapping->addr ? -1 : 0;
+    if (MAP_FAILED == mapping->addr)
+    {
+        AERON_SET_ERR(errno, "%s", "Failed to mmap");
+        close(fd);
+        return -1;
+    }
+
+    close(fd);
+    return 0;
 }
 
 int aeron_unmap(aeron_mapped_file_t *mapped_file)
@@ -285,15 +339,90 @@ uint64_t aeron_usable_fs_space(const char *path)
 
     if (statvfs(path, &vfs) == 0)
     {
-        result = vfs.f_bsize * vfs.f_bavail;
+        result = vfs.f_frsize * vfs.f_bavail;
     }
 
     return result;
 }
 
-int aeron_create_file(const char *path)
+int aeron_create_file(const char *path, size_t length, bool sparse_file)
 {
-    return open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    int fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    if (fd < 0)
+    {
+        AERON_SET_ERR(errno, "Failed to create file: %s", path);
+        return -1;
+    }
+
+    if (sparse_file)
+    {
+        if (0 != ftruncate(fd, (off_t)length))
+        {
+            AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
+            goto error;
+        }
+    }
+    else
+    {
+#if HAVE_FALLOCATE
+        if (0 != fallocate(fd, 0, 0, (off_t)length))
+        {
+            AERON_SET_ERR(errno, "Failed to allocate file space: %s", path);
+            goto error;
+        }
+#elif HAVE_POSIX_FALLOCATE
+        if (0 != posix_fallocate(fd, 0, (off_t)length))
+        {
+            AERON_SET_ERR(errno, "Failed to allocate file space: %s", path);
+            goto error;
+        }
+#elif HAVE_F_PREALLOCATE
+        fstore_t flags = {
+            F_ALLOCATEALL,
+            F_PEOFPOSMODE,
+            0,
+            (off_t)length,
+            0};
+        if (-1 == fcntl(fd, F_PREALLOCATE, &flags)) // changes physical file size
+        {
+            AERON_SET_ERR(errno, "Failed to allocate file space: %s", path);
+            goto error;
+        }
+
+        if (0 != ftruncate(fd, (off_t)length)) // changes logical file size
+        {
+            AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
+            goto error;
+        }
+#else
+        if (0 != ftruncate(fd, (off_t)length))
+        {
+            AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
+            goto error;
+        }
+#endif
+    }
+
+    return fd;
+
+error:
+    close(fd);
+    if (-1 == remove(path))
+    {
+        AERON_APPEND_ERR("(%d) Failed to remove file", errno);
+    }
+    return -1;
+}
+
+int aeron_open_file_rw(const char *path)
+{
+    int fd = open(path, O_RDWR);
+    if (-1 == fd)
+    {
+        AERON_SET_ERR(errno, "Failed to open file: %s", path);
+        return -1;
+    }
+    return fd;
 }
 #endif
 
@@ -314,74 +443,62 @@ static void aeron_touch_pages(volatile uint8_t *base, size_t length, size_t page
 
 int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool fill_with_zeroes)
 {
-    int result = -1;
-
-    int fd = aeron_create_file(path);
-    if (fd >= 0)
+    int fd = aeron_create_file(path, mapped_file->length, !fill_with_zeroes);
+    if (-1 == fd)
     {
-        if (0 == aeron_ftruncate(fd, mapped_file->length))
+        return -1;
+    }
+
+    if (0 != aeron_mmap(mapped_file, fd, fill_with_zeroes))
+    {
+        AERON_APPEND_ERR("file: %s", path);
+        if (-1 == remove(path))
         {
-            if (0 == aeron_mmap(mapped_file, fd, fill_with_zeroes))
-            {
+            AERON_APPEND_ERR("Failed to remove file: %s", path);
+        }
+        return -1;
+    }
+
 #ifndef AERON_NATIVE_PRETOUCH
-                if (fill_with_zeroes)
-                {
-                    aeron_touch_pages(mapped_file->addr, mapped_file->length, AERON_BLOCK_SIZE);
-                }
+    if (fill_with_zeroes)
+    {
+        aeron_touch_pages(mapped_file->addr, mapped_file->length, AERON_BLOCK_SIZE);
+    }
 #endif
 
-                result = 0;
-            }
-            else
-            {
-                AERON_SET_ERR(errno, "Failed to mmap file: %s", path);
-            }
-        }
-        else
-        {
-            AERON_SET_ERR(errno, "Failed to truncate file: %s", path);
-        }
-    }
-    else
-    {
-        AERON_SET_ERR(errno, "Failed to create file: %s", path);
-    }
-
-    return result;
+    return 0;
 }
 
 int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
 {
-    int result = -1;
-
-    int fd = open(path, O_RDWR);
-    if (fd >= 0)
+    int fd = aeron_open_file_rw(path);
+    if (fd < 0)
     {
-        const int64_t file_length = aeron_file_length(path);
-        if (-1 != file_length)
-        {
-            mapped_file->length = (size_t)file_length;
-
-            if (0 == aeron_mmap(mapped_file, fd, false))
-            {
-                result = 0;
-            }
-            else
-            {
-                AERON_SET_ERR(errno, "Failed to mmap file: %s", path);
-            }
-        }
-        else
-        {
-            AERON_SET_ERR(errno, "Failed to determine the size of the file: %s", path);
-        }
-    }
-    else
-    {
-        AERON_SET_ERR(errno, "Failed to open file: %s", path);
+        return -1;
     }
 
-    return result;
+    const int64_t file_length = aeron_file_length(path);
+    if (-1 == file_length)
+    {
+#if !defined(_MSC_VER)
+        AERON_SET_ERR(errno, "Failed to determine the size of the file: %s", path);
+        close(fd);
+#else
+        AERON_SET_ERR_WIN(GetLastError(), "Failed to determine the size of the file: %s", path);
+        _close(fd);
+#endif
+        return -1;
+    }
+
+    mapped_file->length = (size_t)file_length;
+
+    if (0 != aeron_mmap(mapped_file, fd, false))
+    {
+        AERON_APPEND_ERR("file: %s", path);
+        return -1;
+    }
+
+    return 0;
 }
 
 uint64_t aeron_usable_fs_space_disabled(const char *path)
@@ -448,129 +565,110 @@ int aeron_raw_log_map(
     uint64_t term_length,
     uint64_t page_size)
 {
-    int result = -1;
     const uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, page_size);
 
-    int fd = aeron_create_file(path);
-    if (fd >= 0)
+    int fd = aeron_create_file(path, (size_t)log_length, use_sparse_files);
+    if (-1 == fd)
     {
-        if (0 == aeron_ftruncate(fd, (size_t)log_length))
-        {
-            mapped_raw_log->mapped_file.length = (size_t)log_length;
-            mapped_raw_log->mapped_file.addr = NULL;
+        return -1;
+    }
 
-            if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, !use_sparse_files))
-            {
-                AERON_SET_ERR(errno, "Failed to map raw log, filename: %s", path);
-                return -1;
-            }
+    mapped_raw_log->mapped_file.length = (size_t)log_length;
+    mapped_raw_log->mapped_file.addr = NULL;
+
+    if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, !use_sparse_files))
+    {
+        AERON_APPEND_ERR("filename: %s", path);
+        if (-1 == remove(path))
+        {
+            AERON_APPEND_ERR("Failed to remove raw log, filename: %s", path);
+        }
+        return -1;
+    }
 
 #ifndef AERON_NATIVE_PRETOUCH
-            if (!use_sparse_files)
-            {
-                aeron_touch_pages(mapped_raw_log->mapped_file.addr, (size_t)log_length, (size_t)page_size);
-            }
+    if (!use_sparse_files)
+    {
+        aeron_touch_pages(mapped_raw_log->mapped_file.addr, (size_t)log_length, (size_t)page_size);
+    }
 #endif
 
-            for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
-            {
-                mapped_raw_log->term_buffers[i].addr = (uint8_t *)mapped_raw_log->mapped_file.addr + (i * term_length);
-                mapped_raw_log->term_buffers[i].length = (size_t)term_length;
-            }
-
-            mapped_raw_log->log_meta_data.addr =
-                (uint8_t *)mapped_raw_log->mapped_file.addr + (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
-            mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
-            mapped_raw_log->term_length = (size_t)term_length;
-
-            result = 0;
-        }
-        else
-        {
-            AERON_SET_ERR(errno, "Failed to truncate raw log, filename: %s", path);
-            close(fd);
-        }
-    }
-    else
+    for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
     {
-        AERON_SET_ERR(errno, "Failed to create raw log, filename: %s", path);
+        mapped_raw_log->term_buffers[i].addr = (uint8_t *)mapped_raw_log->mapped_file.addr + (i * term_length);
+        mapped_raw_log->term_buffers[i].length = (size_t)term_length;
     }
 
-    return result;
+    mapped_raw_log->log_meta_data.addr =
+        (uint8_t *)mapped_raw_log->mapped_file.addr + (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
+    mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
+    mapped_raw_log->term_length = (size_t)term_length;
+
+    return 0;
 }
 
 int aeron_raw_log_map_existing(aeron_mapped_raw_log_t *mapped_raw_log, const char *path, bool pre_touch)
 {
-    int result = -1;
-
-    int fd = open(path, O_RDWR);
-    if (fd >= 0)
+    int fd = aeron_open_file_rw(path);
+    if (fd < 0)
     {
-        const int64_t file_length = aeron_file_length(path);
-        if (-1 != file_length)
-        {
-            mapped_raw_log->mapped_file.length = file_length;
+        return -1;
+    }
 
-            if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, pre_touch))
-            {
-                AERON_SET_ERR(errno, "Failed to mmap existing raw log, filename: %s", path);
-                return -1;
-            }
-        }
-        else
-        {
-            AERON_SET_ERR(errno, "Failed to determine the size of the existing raw log, filename: %s", path);
-            close(fd);
-            return -1;
-        }
+    const int64_t file_length = aeron_file_length(path);
+    if (-1 == file_length)
+    {
+#if !defined(_MSC_VER)
+        AERON_SET_ERR(errno, "Failed to determine the size of the existing raw log, filename: %s", path);
+        close(fd);
+#else
+        AERON_SET_ERR_WIN(GetLastError(), "Failed to determine the size of the existing raw log, filename: %s", path);
+        _close(fd);
+#endif
+        return -1;
+    }
 
-        mapped_raw_log->log_meta_data.addr =
-            (uint8_t *)mapped_raw_log->mapped_file.addr +
-            (mapped_raw_log->mapped_file.length - AERON_LOGBUFFER_META_DATA_LENGTH);
-        mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
+    mapped_raw_log->mapped_file.length = file_length;
+    mapped_raw_log->mapped_file.addr = NULL;
 
-        aeron_logbuffer_metadata_t *log_meta_data = (aeron_logbuffer_metadata_t *)mapped_raw_log->log_meta_data.addr;
-        size_t term_length = (size_t)log_meta_data->term_length;
-        size_t page_size = (size_t)log_meta_data->page_size;
+    if (0 != aeron_mmap(&mapped_raw_log->mapped_file, fd, pre_touch))
+    {
+        AERON_APPEND_ERR("filename: %s", path);
+        return -1;
+    }
 
-        if (aeron_logbuffer_check_term_length(term_length) < 0 || aeron_logbuffer_check_page_size(page_size) < 0)
-        {
-            AERON_APPEND_ERR("Raw log metadata invalid, unmapping, filename: %s", path);
-            aeron_unmap(&mapped_raw_log->mapped_file);
-            return -1;
-        }
+    mapped_raw_log->log_meta_data.addr =
+        (uint8_t *)mapped_raw_log->mapped_file.addr +
+        (mapped_raw_log->mapped_file.length - AERON_LOGBUFFER_META_DATA_LENGTH);
+    mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
 
-        mapped_raw_log->term_length = term_length;
+    aeron_logbuffer_metadata_t *log_meta_data = (aeron_logbuffer_metadata_t *)mapped_raw_log->log_meta_data.addr;
+    size_t term_length = (size_t)log_meta_data->term_length;
+    size_t page_size = (size_t)log_meta_data->page_size;
 
-        for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
-        {
-            mapped_raw_log->term_buffers[i].addr = (uint8_t *)mapped_raw_log->mapped_file.addr + (i * term_length);
-            mapped_raw_log->term_buffers[i].length = term_length;
-        }
+    if (aeron_logbuffer_check_term_length(term_length) < 0 || aeron_logbuffer_check_page_size(page_size) < 0)
+    {
+        AERON_APPEND_ERR("Raw log metadata invalid, unmapping, filename: %s", path);
+        aeron_unmap(&mapped_raw_log->mapped_file);
+        return -1;
+    }
+
+    mapped_raw_log->term_length = term_length;
+
+    for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+    {
+        mapped_raw_log->term_buffers[i].addr = (uint8_t *)mapped_raw_log->mapped_file.addr + (i * term_length);
+        mapped_raw_log->term_buffers[i].length = term_length;
+    }
 
 #ifndef AERON_NATIVE_PRETOUCH
-        if (pre_touch)
-        {
-            for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
-            {
-                uint8_t *base_addr = mapped_raw_log->term_buffers[i].addr;
-
-                for (size_t offset = 0; offset < term_length; offset += page_size)
-                {
-                    aeron_cas_int32((volatile int32_t *)(base_addr + offset), 0, 0);
-                }
-            }
-        }
+    if (pre_touch)
+    {
+        aeron_touch_pages(mapped_raw_log->mapped_file.addr, (size_t)file_length, (size_t)page_size);
+    }
 #endif
 
-        result = 0;
-    }
-    else
-    {
-        AERON_SET_ERR(errno, "Failed to open existing raw log, filename: %s", path);
-    }
-
-    return result;
+    return 0;
 }
 
 int aeron_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)

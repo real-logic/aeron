@@ -82,6 +82,10 @@ public enum ErrorCode
      */
     GENERIC_ERROR(11),
 
+    /**
+     * Aeron encountered insufficient storage space while adding a resource.
+     */
+    STORAGE_SPACE(12),
 
     // *** Insert new codes above here.
 

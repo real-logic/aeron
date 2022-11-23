@@ -16,6 +16,8 @@
 package io.aeron.driver.buffer;
 
 import io.aeron.driver.Configuration;
+import io.aeron.exceptions.AeronException;
+import io.aeron.exceptions.StorageSpaceException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -25,12 +27,22 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileStore;
+import java.nio.file.Files;
+import java.util.List;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeLogLength;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class FileStoreLogFactoryTest
 {
@@ -108,5 +120,91 @@ class FileStoreLogFactoryTest
         assertEquals(LogBufferDescriptor.LOG_META_DATA_LENGTH, metaData.capacity());
         assertEquals(0, metaData.getByte(0));
         assertEquals(0, metaData.getByte(LogBufferDescriptor.LOG_META_DATA_LENGTH - 1));
+    }
+
+    @Test
+    void shouldThrowInsufficientUsableStorageExceptionIfNotEnoughSpaceOnDisc() throws IOException
+    {
+        final FileStore fileStore = mock(FileStore.class);
+        when(fileStore.getUsableSpace()).thenReturn(1L);
+        when(fileStore.toString()).thenReturn("test-fs");
+        final ErrorHandler errorHandler = mock(ErrorHandler.class);
+
+        try (MockedStatic<Files> files = Mockito.mockStatic(Files.class))
+        {
+            files.when(() -> Files.getFileStore(any())).thenReturn(fileStore);
+
+            try (FileStoreLogFactory logFactory = new FileStoreLogFactory(
+                DATA_DIR.getAbsolutePath(), PAGE_SIZE, true, LOW_STORAGE_THRESHOLD, errorHandler))
+            {
+                final int imageTermBufferLength = 64 * 1024;
+                assertThrowsStorageSpaceException(
+                    fileStore,
+                    imageTermBufferLength,
+                    () -> logFactory.newImage(1, imageTermBufferLength, true));
+
+                final int publicationTermBufferLength = 1024 * 1024;
+                assertThrowsStorageSpaceException(
+                    fileStore,
+                    publicationTermBufferLength,
+                    () -> logFactory.newPublication(2, publicationTermBufferLength, false));
+
+            }
+        }
+
+        verifyNoInteractions(errorHandler);
+    }
+
+    @Test
+    void shouldWarnAboutLowStorageSpace() throws IOException
+    {
+        final int termLength = 64 * 1024;
+        final long logLength = computeLogLength(termLength, PAGE_SIZE);
+        final long lowStorageWarningThreshold = logLength * 3;
+        final FileStore fileStore = mock(FileStore.class);
+        when(fileStore.getUsableSpace()).thenReturn(logLength * 3, logLength);
+        when(fileStore.toString()).thenReturn("test-fs");
+        final ErrorHandler errorHandler = mock(ErrorHandler.class);
+
+        try (MockedStatic<Files> files = Mockito.mockStatic(Files.class))
+        {
+            files.when(() -> Files.getFileStore(any())).thenReturn(fileStore);
+
+            try (FileStoreLogFactory logFactory = new FileStoreLogFactory(
+                DATA_DIR.getAbsolutePath(), PAGE_SIZE, true, lowStorageWarningThreshold, errorHandler))
+            {
+                try (RawLog rawLog = logFactory.newPublication(11, termLength, true))
+                {
+                    assertNotNull(rawLog);
+                }
+                try (RawLog rawLog = logFactory.newImage(2222, termLength, false))
+                {
+                    assertNotNull(rawLog);
+                }
+            }
+        }
+
+        final ArgumentCaptor<AeronException> exceptionArgumentCaptor = ArgumentCaptor.forClass(AeronException.class);
+        verify(errorHandler, times(2)).onError(exceptionArgumentCaptor.capture());
+        final List<AeronException> exceptions = exceptionArgumentCaptor.getAllValues();
+        for (int i = 0; i < 2; i++)
+        {
+            final long usableSpace = 0 == i ? logLength * 3 : logLength;
+            final AeronException exception = exceptions.get(i);
+            assertEquals(AeronException.Category.WARN, exception.category());
+            assertEquals("WARN - space is running low: threshold=" + lowStorageWarningThreshold +
+                " usable=" + usableSpace + " in " + fileStore, exception.getMessage());
+        }
+        verifyNoMoreInteractions(errorHandler);
+    }
+
+    private static void assertThrowsStorageSpaceException(
+        final FileStore fileStore, final int termBufferLength, final Executable executable)
+    {
+        final StorageSpaceException exception = assertThrowsExactly(StorageSpaceException.class, executable);
+        assertEquals(
+            "ERROR - insufficient usable storage for new log of length=" +
+            computeLogLength(termBufferLength, PAGE_SIZE) + " in " + fileStore,
+            exception.getMessage());
     }
 }

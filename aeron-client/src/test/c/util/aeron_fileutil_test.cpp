@@ -135,7 +135,6 @@ TEST_F(FileUtilTest, resolveShouldReportTruncatedPaths)
     ASSERT_EQ('\0', result[sizeof(result) - 1]);
 }
 
-
 TEST_F(FileUtilTest, mapNewFileShouldHandleFilesBiggerThan2GB)
 {
     aeron_mapped_file_t mapped_file = {};
@@ -230,6 +229,53 @@ TEST_F(FileUtilTest, rawLogMapExistingShouldHandleMaxTermBufferLength)
     logbuffer_metadata = (aeron_logbuffer_metadata_t *)(mapped_raw_log.log_meta_data.addr);
     EXPECT_EQ(term_length, (size_t)logbuffer_metadata->term_length);
     EXPECT_EQ(page_size, (size_t)logbuffer_metadata->page_size);
+    for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+    {
+        EXPECT_NE(nullptr, mapped_raw_log.term_buffers[i].addr);
+        EXPECT_EQ(term_length, mapped_raw_log.term_buffers[i].length);
+    }
+
+    ASSERT_TRUE(aeron_raw_log_free(&mapped_raw_log, file)) << aeron_errmsg();
+
+    EXPECT_EQ(nullptr, mapped_raw_log.mapped_file.addr);
+    EXPECT_EQ((size_t)0, mapped_raw_log.mapped_file.length);
+    EXPECT_EQ((int64_t)-1, aeron_file_length(file));
+}
+
+TEST_F(FileUtilTest, mapNewFileShouldCreateANonSparseFile)
+{
+    aeron_mapped_file_t mapped_file = {};
+    const char *file = "test_map_new_file_non_sparse.log";
+    const size_t file_length = 64 * 1024;
+    mapped_file.length = file_length;
+    ASSERT_EQ(0, aeron_map_new_file(&mapped_file, file, true)) << aeron_errmsg();
+
+    EXPECT_NE(nullptr, mapped_file.addr);
+    EXPECT_EQ(file_length, mapped_file.length);
+    EXPECT_EQ((int64_t)file_length, aeron_file_length(file));
+
+    ASSERT_EQ(0, aeron_unmap(&mapped_file)) << aeron_errmsg();
+
+    EXPECT_NE(nullptr, mapped_file.addr);
+    EXPECT_EQ(file_length, mapped_file.length);
+    EXPECT_EQ(0, remove(file));
+    EXPECT_EQ((int64_t)-1, aeron_file_length(file));
+}
+
+TEST_F(FileUtilTest, rawLogMapShouldCreateNonSparseFile)
+{
+    aeron_mapped_raw_log_t mapped_raw_log = {};
+    const char *file = "test_raw_log_map_non_sparse_file.log";
+    const size_t file_length = 3149824;
+    const size_t term_length = 1024 * 1024;
+    ASSERT_EQ(0, aeron_raw_log_map(&mapped_raw_log, file, false, term_length, AERON_PAGE_MIN_SIZE)) << aeron_errmsg();
+
+    EXPECT_NE(nullptr, mapped_raw_log.mapped_file.addr);
+    EXPECT_EQ(file_length, mapped_raw_log.mapped_file.length);
+    EXPECT_EQ((int64_t)file_length, aeron_file_length(file));
+    EXPECT_EQ(term_length, mapped_raw_log.term_length);
+    EXPECT_NE(nullptr, mapped_raw_log.log_meta_data.addr);
+    EXPECT_EQ(AERON_LOGBUFFER_META_DATA_LENGTH, mapped_raw_log.log_meta_data.length);
     for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
     {
         EXPECT_NE(nullptr, mapped_raw_log.term_buffers[i].addr);

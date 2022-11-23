@@ -223,6 +223,9 @@ const char *aeron_error_code_str(int errcode)
         case AERON_ERROR_CODE_RESOURCE_TEMPORARILY_UNAVAILABLE:
             return "resource temporarily unavailable";
 
+        case AERON_ERROR_CODE_STORAGE_SPACE:
+            return "insufficient storage space";
+
         default:
             return "unknown error code";
     }

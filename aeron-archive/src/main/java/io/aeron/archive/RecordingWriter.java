@@ -18,11 +18,11 @@ package io.aeron.archive;
 import io.aeron.Image;
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.ArchiveException;
+import io.aeron.exceptions.StorageSpaceException;
 import io.aeron.logbuffer.BlockHandler;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
-import org.agrona.Strings;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -234,13 +234,12 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
 
     private void checkErrorType(final IOException ex, final int writeLength)
     {
-        final String msg = ex.getMessage();
         boolean isLowStorageSpace = false;
         IOException suppressed = null;
 
         try
         {
-            isLowStorageSpace = (!Strings.isEmpty(msg) && msg.contains("No space left on device")) ||
+            isLowStorageSpace = StorageSpaceException.isStorageSpaceError(ex) ||
                 ctx.archiveFileStore().getUsableSpace() < writeLength;
         }
         catch (final IOException ex2)
@@ -249,7 +248,7 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
         }
 
         final int errorCode = isLowStorageSpace ? ArchiveException.STORAGE_SPACE : ArchiveException.GENERIC;
-        final ArchiveException error = new ArchiveException("java.io.IOException - " + msg, ex, errorCode);
+        final ArchiveException error = new ArchiveException("java.io.IOException - " + ex.getMessage(), ex, errorCode);
 
         if (null != suppressed)
         {

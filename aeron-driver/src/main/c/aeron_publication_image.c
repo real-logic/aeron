@@ -85,7 +85,7 @@ int aeron_publication_image_create(
     if (context->perform_storage_checks && context->usable_fs_space_func(context->aeron_dir) < log_length)
     {
         AERON_SET_ERR(
-            ENOSPC,
+            -AERON_ERROR_CODE_STORAGE_SPACE,
             "Insufficient usable storage for new log of length=%" PRId64 " in %s",
             log_length,
             context->aeron_dir);

@@ -73,7 +73,7 @@ set_tests_properties(c_terminate_test PROPERTIES TIMEOUT 60)
 set_tests_properties(c_terminate_test PROPERTIES RUN_SERIAL TRUE)
 
 aeron_driver_test(c_system_test aeron_c_system_test.cpp)
-set_tests_properties(c_system_test PROPERTIES TIMEOUT 60)
+set_tests_properties(c_system_test PROPERTIES TIMEOUT 120)
 set_tests_properties(c_system_test PROPERTIES RUN_SERIAL TRUE)
 
 aeron_driver_test(c_multi_destination_test aeron_c_multi_destination_test.cpp)
@@ -94,6 +94,7 @@ set_tests_properties(c_cnc_test PROPERTIES RUN_SERIAL TRUE)
 
 aeron_driver_test(congestion_control_test aeron_congestion_control_test.cpp)
 
+aeron_driver_test(ipc_publication_test aeron_ipc_publication_test.cpp)
 aeron_driver_test(network_publication_test aeron_network_publication_test.cpp)
 aeron_driver_test(timestamps_test aeron_timestamps_test.cpp)
 aeron_driver_test(position_test aeron_position_test.cpp)

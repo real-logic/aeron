@@ -16,13 +16,14 @@
 package io.aeron.driver.buffer;
 
 import io.aeron.exceptions.AeronException;
-import org.agrona.*;
+import io.aeron.exceptions.StorageSpaceException;
+import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
-import java.nio.channels.FileChannel;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 
@@ -36,7 +37,6 @@ public class FileStoreLogFactory implements LogFactory
     private static final String PUBLICATIONS = "publications";
     private static final String IMAGES = "images";
 
-    private long blankTemplateLength;
     private final long lowStorageWarningThreshold;
     private final int filePageSize;
     private final boolean checkStorage;
@@ -44,8 +44,6 @@ public class FileStoreLogFactory implements LogFactory
     private final File publicationsDir;
     private final File imagesDir;
     private final FileStore fileStore;
-    private final RandomAccessFile blankFile;
-    private final FileChannel blankChannel;
 
     /**
      * Construct a {@link LogFactory} over a file store.
@@ -79,8 +77,6 @@ public class FileStoreLogFactory implements LogFactory
         try
         {
             fileStore = checkStorage ? Files.getFileStore(dataDir.toPath()) : null;
-            blankFile = new RandomAccessFile(new File(dataDir, "blank.template"), "rw");
-            blankChannel = blankFile.getChannel();
         }
         catch (final IOException ex)
         {
@@ -93,7 +89,6 @@ public class FileStoreLogFactory implements LogFactory
      */
     public void close()
     {
-        CloseHelper.close(blankChannel);
     }
 
     /**
@@ -131,24 +126,10 @@ public class FileStoreLogFactory implements LogFactory
         final long logLength = computeLogLength(termLength, filePageSize);
         checkStorage(logLength);
 
-        if (logLength > blankTemplateLength)
-        {
-            try
-            {
-                blankFile.setLength(logLength);
-            }
-            catch (final IOException ex)
-            {
-                throw new UncheckedIOException(ex);
-            }
-
-            blankTemplateLength = logLength;
-        }
-
         final File location = streamLocation(rootDir, correlationId);
 
         return new MappedRawLog(
-            location, blankChannel, useSparseFiles, logLength, termLength, filePageSize, errorHandler);
+            location, useSparseFiles, logLength, termLength, filePageSize, errorHandler);
     }
 
     private void checkStorage(final long logLength)
@@ -159,7 +140,7 @@ public class FileStoreLogFactory implements LogFactory
 
             if (usableSpace < logLength)
             {
-                throw new AeronException(
+                throw new StorageSpaceException(
                     "insufficient usable storage for new log of length=" + logLength + " in " + fileStore);
             }
 

@@ -71,8 +71,30 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: 8
+      - name: Setup small temp file system (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo mkdir -p /mnt/tmp_aeron_dir
+          sudo mount -t tmpfs -o size=20M,mode=777 tmpfs /mnt/tmp_aeron_dir
+      - name: Setup small temp file system (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          $current_size = (Get-PartitionSupportedSize -DiskNumber 1 -PartitionNumber 1)
+          $new_size = ($current_size.SizeMax - 100 * 1024 * 1024)
+          Resize-Partition -DiskNumber 1 -PartitionNumber 1 -Size ($new_size)
+          New-Partition -DiskNumber 1 -Size 30MB -DriveLetter T | Format-Volume -FileSystem NTFS -Confirm:$false
+          mkdir T:/tmp_aeron_dir
       - name: Build with Gradle
         run: ./gradlew -x javadoc
+      - name: Remove small temp file system (Linux)
+        if: always() && runner.os == 'Linux'
+        run: |
+          sudo umount /mnt/tmp_aeron_dir
+          sudo rm -rf /mnt/tmp_aeron_dir
+      - name: Remove small temp file system (Windows)
+        if: always() && runner.os == 'Windows'
+        run: |
+          Remove-Partition -DriveLetter T -Confirm:$false
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -247,8 +269,17 @@ jobs:
           curl --retry ${INSTALL_COMPILER_RETRIES} -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
+      - name: Setup small temp file system
+        run: |
+          sudo mkdir -p /mnt/tmp_aeron_dir
+          sudo mount -t tmpfs -o size=20M,mode=777 tmpfs /mnt/tmp_aeron_dir
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+      - name: Remove small temp file system
+        if: always()
+        run: |
+          sudo umount /mnt/tmp_aeron_dir
+          sudo rm -rf /mnt/tmp_aeron_dir
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -441,8 +472,17 @@ jobs:
           curl --retry ${INSTALL_COMPILER_RETRIES} -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Linux-x86_64/bin" >> $GITHUB_PATH
+      - name: Setup small temp file system
+        run: |
+          sudo mkdir -p /mnt/tmp_aeron_dir
+          sudo mount -t tmpfs -o size=20M,mode=777 tmpfs /mnt/tmp_aeron_dir
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+      - name: Remove small temp file system
+        if: always()
+        run: |
+          sudo umount /mnt/tmp_aeron_dir
+          sudo rm -rf /mnt/tmp_aeron_dir
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -549,6 +589,9 @@ jobs:
           curl --retry ${INSTALL_COMPILER_RETRIES} -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
           tar xf cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Darwin-x86_64/CMake.app/Contents/bin" >> $GITHUB_PATH
+      - name: Setup small temp file system
+        run: |
+          sudo diskutil eraseDisk APFS tmp_aeron_dir $(hdiutil attach -nomount ram://$((2 * 1024 * 20)))
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
       - name: Copy test logs
@@ -601,8 +644,18 @@ jobs:
           $client.DownloadFile("https://github.com/Kitware/CMake/releases/download/v$Env:CMAKE_VERSION/cmake-$Env:CMAKE_VERSION-win64-x64.zip","cmake-$Env:CMAKE_VERSION-win64-x64.zip")
           7z x cmake-$Env:CMAKE_VERSION-win64-x64.zip
           echo "cmake-$Env:CMAKE_VERSION-win64-x64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
+      - name: Setup small temp file system
+        run: |
+          $current_size = (Get-PartitionSupportedSize -DiskNumber 1 -PartitionNumber 1)
+          $new_size = ($current_size.SizeMax - 100 * 1024 * 1024)
+          Resize-Partition -DiskNumber 1 -PartitionNumber 1 -Size ($new_size)
+          New-Partition -DiskNumber 1 -Size 30MB -DriveLetter T | Format-Volume -FileSystem NTFS -Confirm:$false
+          mkdir T:/tmp_aeron_dir
       - name: Build
         run: cppbuild/cppbuild
+      - name: Remove small temp file system
+        run: |
+          Remove-Partition -DriveLetter T -Confirm:$false
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

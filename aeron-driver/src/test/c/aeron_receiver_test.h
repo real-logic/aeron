@@ -224,6 +224,7 @@ protected:
             &channel->remote_control, &channel->local_data,
             TERM_BUFFER_SIZE, MTU, nullptr, true, true, false, &m_system_counters) < 0)
         {
+            congestion_control_strategy->fini(congestion_control_strategy);
             return nullptr;
         }
 

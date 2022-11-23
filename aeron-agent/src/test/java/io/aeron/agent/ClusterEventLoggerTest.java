@@ -42,7 +42,11 @@ import static io.aeron.agent.ClusterEventCode.REPLAY_NEW_LEADERSHIP_TERM;
 import static io.aeron.agent.ClusterEventCode.REQUEST_VOTE;
 import static io.aeron.agent.ClusterEventCode.STATE_CHANGE;
 import static io.aeron.agent.ClusterEventCode.STOP_CATCHUP;
+import static io.aeron.agent.ClusterEventCode.TERMINATION_ACK;
+import static io.aeron.agent.ClusterEventCode.TERMINATION_POSITION;
 import static io.aeron.agent.ClusterEventCode.TRUNCATE_LOG_ENTRY;
+import static io.aeron.agent.ClusterEventEncoder.terminationAckLength;
+import static io.aeron.agent.ClusterEventEncoder.terminationPositionLength;
 import static io.aeron.agent.ClusterEventEncoder.canvassPositionLength;
 import static io.aeron.agent.ClusterEventEncoder.electionStateChangeLength;
 import static io.aeron.agent.ClusterEventEncoder.newLeaderShipTermLength;
@@ -700,6 +704,73 @@ class ClusterEventLoggerTest
         final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: CANVASS_POSITION " +
             "\\[36/36]: memberId=222 logLeadershipTermId=96 logPosition=128 leadershipTermId=54 followerMemberId=15 " +
             "protocolVersion=1.9.9";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
+
+    @Test
+    void logTerminationPosition()
+    {
+        final long logLeadershipTermId = 96;
+        final long logPosition = 128L;
+        final int memberId = 222;
+        final int offset = 64;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+
+        logger.logTerminationPosition(memberId, logLeadershipTermId, logPosition);
+
+        verifyLogHeader(
+            logBuffer,
+            offset,
+            TERMINATION_POSITION.toEventCodeId(),
+            terminationPositionLength(),
+            terminationPositionLength());
+
+        final int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+        assertEquals(logLeadershipTermId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        assertEquals(logPosition, logBuffer.getLong(index + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(memberId, logBuffer.getInt(index + 2 * SIZE_OF_LONG, LITTLE_ENDIAN));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectTerminationPosition(
+            TERMINATION_POSITION, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: TERMINATION_POSITION " +
+            "\\[20/20]: memberId=222 logLeadershipTermId=96 logPosition=128";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
+
+    @Test
+    void logTerminationAck()
+    {
+        final long logLeadershipTermId = 96;
+        final long logPosition = 128L;
+        final int memberId = 222;
+        final int senderMemberId = 982374;
+        final int offset = 64;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+
+        logger.logTerminationAck(memberId, logLeadershipTermId, logPosition, senderMemberId);
+
+        verifyLogHeader(
+            logBuffer,
+            offset,
+            TERMINATION_ACK.toEventCodeId(),
+            terminationAckLength(),
+            terminationAckLength());
+
+        final int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+        assertEquals(logLeadershipTermId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        assertEquals(logPosition, logBuffer.getLong(index + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(memberId, logBuffer.getInt(index + 2 * SIZE_OF_LONG, LITTLE_ENDIAN));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectTerminationAck(
+            TERMINATION_ACK, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: TERMINATION_ACK " +
+            "\\[24/24]: memberId=222 logLeadershipTermId=96 logPosition=128 senderMemberId=982374";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }

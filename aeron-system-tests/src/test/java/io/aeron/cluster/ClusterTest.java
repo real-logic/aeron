@@ -197,6 +197,9 @@ class ClusterTest
         systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
+        TestCluster.awaitElectionClosed(cluster.node(0));
+        TestCluster.awaitElectionClosed(cluster.node(1));
+        TestCluster.awaitElectionClosed(cluster.node(2));
 
         cluster.node(0).isTerminationExpected(true);
         cluster.node(1).isTerminationExpected(true);

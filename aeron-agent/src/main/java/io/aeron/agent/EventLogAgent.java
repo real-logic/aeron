@@ -591,6 +591,22 @@ public final class EventLogAgent
             ClusterInterceptor.StopCatchup.class,
             "logOnStopCatchup");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.TERMINATION_POSITION,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.TerminationPosition.class,
+            "logOnTerminationPosition");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            CLUSTER_EVENT_CODES,
+            ClusterEventCode.TERMINATION_ACK,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.TerminationAck.class,
+            "logOnTerminationAck");
+
         return tempBuilder;
     }
 

@@ -667,4 +667,83 @@ public final class ClusterEventLogger
             }
         }
     }
+
+    /**
+     * Log the receiving of a termination position event.
+     *
+     * @param memberId              that received the termination position.
+     * @param logLeadershipTermId   leadership term for the supplied position.
+     * @param logPosition           position to terminate at.
+     */
+    public void logTerminationPosition(
+        final int memberId,
+        final long logLeadershipTermId,
+        final long logPosition)
+    {
+        final int length = terminationPositionLength();
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(TERMINATION_POSITION.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                ClusterEventEncoder.encodeTerminationPosition(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    memberId,
+                    logLeadershipTermId,
+                    logPosition);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log the receiving of an acknowledgement to a termination position event.
+     *
+     * @param memberId              that received the termination ack.
+     * @param logLeadershipTermId   leadership term for the supplied position.
+     * @param logPosition           position to terminate at.
+     * @param senderMemberId        member sending the ack.
+     */
+    public void logTerminationAck(
+        final int memberId,
+        final long logLeadershipTermId,
+        final long logPosition,
+        final int senderMemberId)
+    {
+        final int length = ClusterEventEncoder.terminationAckLength();
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(TERMINATION_ACK.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                ClusterEventEncoder.encodeTerminationAck(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    memberId,
+                    logLeadershipTermId,
+                    logPosition,
+                    senderMemberId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
 }

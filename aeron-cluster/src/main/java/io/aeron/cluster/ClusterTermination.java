@@ -79,7 +79,7 @@ class ClusterTermination
 
         for (final ClusterMember member : members)
         {
-            if (!member.hasTerminated() && member.logPosition() < terminationPosition)
+            if (!member.isLeader() && !member.hasTerminated())
             {
                 result = false;
                 break;

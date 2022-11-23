@@ -1059,6 +1059,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
     void onTerminationPosition(final long leadershipTermId, final long logPosition)
     {
+        logOnTerminationPosition(memberId, leadershipTermId, logPosition);
+
         if (leadershipTermId == this.leadershipTermId && Cluster.Role.FOLLOWER == role)
         {
             terminationPosition = logPosition;
@@ -1068,6 +1070,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
     void onTerminationAck(final long leadershipTermId, final long logPosition, final int memberId)
     {
+        logOnTerminationAck(this.memberId, leadershipTermId, logPosition, memberId);
+
         if (leadershipTermId == this.leadershipTermId &&
             logPosition >= terminationPosition &&
             Cluster.Role.LEADER == role)
@@ -2208,6 +2212,21 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final long logPosition,
         final int followerMemberId,
         final String catchupEndpoint)
+    {
+    }
+
+    private static void logOnTerminationPosition(
+        final int memberId,
+        final long logLeadershipTermId,
+        final long logPosition)
+    {
+    }
+
+    private static void logOnTerminationAck(
+        final int memberId,
+        final long logLeadershipTermId,
+        final long logPosition,
+        final int senderMemberId)
     {
     }
 

@@ -106,7 +106,17 @@ public enum ClusterEventCode implements EventCode
     /**
      * Event when the ClusterBackup changes state
      */
-    CLUSTER_BACKUP_STATE_CHANGE(16, ClusterEventDissector::dissectStateChange);
+    CLUSTER_BACKUP_STATE_CHANGE(16, ClusterEventDissector::dissectStateChange),
+
+    /**
+     * Event when a node is instructed to terminate
+     */
+    TERMINATION_POSITION(17, ClusterEventDissector::dissectTerminationPosition),
+
+    /**
+     * Event when a node acks the termination request
+     */
+    TERMINATION_ACK(18, ClusterEventDissector::dissectTerminationAck);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

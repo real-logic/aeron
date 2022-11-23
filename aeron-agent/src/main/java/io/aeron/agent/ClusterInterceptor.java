@@ -295,4 +295,24 @@ class ClusterInterceptor
             LOGGER.logStateChange(CLUSTER_BACKUP_STATE_CHANGE, Aeron.NULL_VALUE, oldState, newState);
         }
     }
+
+    static class TerminationPosition
+    {
+        @Advice.OnMethodEnter
+        static void logOnTerminationPosition(final int memberId, final long leadershipTermId, final long position)
+        {
+            LOGGER.logTerminationPosition(memberId, leadershipTermId, position);
+        }
+    }
+
+    static class TerminationAck
+    {
+        @Advice.OnMethodEnter
+        static void logOnTerminationAck(
+            final int memberId, final long leadershipTermId, final long position, final int senderMemberId)
+        {
+            LOGGER.logTerminationAck(memberId, leadershipTermId, position, senderMemberId);
+        }
+    }
+
 }

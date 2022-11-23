@@ -52,7 +52,6 @@ class ReplayMergeTest
     private static final int MIN_MESSAGES_PER_TERM =
         TERM_LENGTH / (MESSAGE_PREFIX.length() + DataHeaderFlyweight.HEADER_LENGTH);
 
-    private static final int PUBLICATION_TAG = 2;
     private static final int STREAM_ID = 1033;
 
     private static final String CONTROL_ENDPOINT = "localhost:23265";
@@ -67,7 +66,6 @@ class ReplayMergeTest
 
     private final String publicationChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
-        .tags("1," + PUBLICATION_TAG)
         .controlEndpoint(CONTROL_ENDPOINT)
         .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
         .termLength(TERM_LENGTH)
@@ -83,12 +81,6 @@ class ReplayMergeTest
     private final String replayDestination = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .endpoint(REPLAY_ENDPOINT)
-        .build();
-
-    private final String replayChannel = new ChannelUriStringBuilder()
-        .media(CommonContext.UDP_MEDIA)
-        .isSessionIdTagged(true)
-        .sessionId(PUBLICATION_TAG)
         .build();
 
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
@@ -218,6 +210,11 @@ class ReplayMergeTest
         final Publication publication,
         final String subscriptionChannel)
     {
+        final String replayChannel = new ChannelUriStringBuilder()
+            .media(CommonContext.UDP_MEDIA)
+            .sessionId(publication.sessionId())
+            .build();
+
         try (Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID);
             ReplayMerge replayMerge = new ReplayMerge(
                 subscription,

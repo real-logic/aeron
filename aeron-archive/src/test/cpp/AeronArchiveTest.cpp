@@ -1080,7 +1080,6 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
 
     const std::string publicationChannel = ChannelUriStringBuilder()
         .media(UDP_MEDIA)
-        .tags("1,2")
         .controlEndpoint(controlEndpoint)
         .controlMode(MDC_CONTROL_MODE_DYNAMIC)
         .flowControl("tagged,g:99901/1,t:5s")
@@ -1096,12 +1095,6 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     const std::string replayDestination = ChannelUriStringBuilder()
         .media(UDP_MEDIA)
         .endpoint(replayEndpoint)
-        .build();
-
-    const std::string replayChannel = ChannelUriStringBuilder()
-        .media(UDP_MEDIA)
-        .isSessionIdTagged(true)
-        .sessionId(2)
         .build();
 
     const std::size_t initialMessageCount = minMessagesPerTerm * 3;
@@ -1162,6 +1155,11 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     {
         std::shared_ptr<Subscription> subscription = addSubscription(
             *aeronArchive->context().aeron(), subscriptionChannel, m_recordingStreamId);
+
+        const std::string replayChannel = ChannelUriStringBuilder()
+            .media(UDP_MEDIA)
+            .sessionId(publication->sessionId())
+            .build();
 
         ReplayMerge replayMerge(
             subscription,

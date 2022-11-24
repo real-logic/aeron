@@ -372,19 +372,21 @@ public class CommonContext implements Cloneable
                 return System.out;
 
             case "no_op":
-                return new PrintStream(new OutputStream()
-                {
-                    public void write(final int b)
-                    {
-                        // No-op
-                    }
-                });
+                return NO_OP_LOGGER;
 
             case "stderr":
             default:
                 return System.err;
         }
     }
+
+    private static final PrintStream NO_OP_LOGGER = new PrintStream(new OutputStream()
+    {
+        public void write(final int b)
+        {
+            // No-op
+        }
+    });
 
     /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
@@ -997,7 +999,7 @@ public class CommonContext implements Cloneable
      */
     public static ErrorHandler setupErrorHandler(final ErrorHandler userErrorHandler, final DistinctErrorLog errorLog)
     {
-        final LoggingErrorHandler loggingErrorHandler = new LoggingErrorHandler(errorLog);
+        final LoggingErrorHandler loggingErrorHandler = new LoggingErrorHandler(errorLog, fallbackLogger());
         if (null == userErrorHandler)
         {
             return loggingErrorHandler;

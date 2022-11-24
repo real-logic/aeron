@@ -23,12 +23,15 @@ import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Path;
 
+import static io.aeron.CommonContext.FALLBACK_LOGGER_PROP_NAME;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Mockito.*;
@@ -57,6 +60,28 @@ class CommonContextTest
         assertNotNull(errorHandler);
         final LoggingErrorHandler loggingErrorHandler = assertInstanceOf(LoggingErrorHandler.class, errorHandler);
         assertSame(distinctErrorLog, loggingErrorHandler.distinctErrorLog());
+        assertSame(System.err, loggingErrorHandler.errorOverflow());
+    }
+
+    @Test
+    void setupErrorHandlerUsesAFallBackLoggingHandlerForTheOverflow()
+    {
+        System.setProperty(FALLBACK_LOGGER_PROP_NAME, "no_op");
+        try
+        {
+            final DistinctErrorLog distinctErrorLog = mock(DistinctErrorLog.class);
+
+            final ErrorHandler errorHandler = CommonContext.setupErrorHandler(null, distinctErrorLog);
+
+            assertNotNull(errorHandler);
+            final LoggingErrorHandler loggingErrorHandler = assertInstanceOf(LoggingErrorHandler.class, errorHandler);
+            assertSame(distinctErrorLog, loggingErrorHandler.distinctErrorLog());
+            assertSame(CommonContext.fallbackLogger(), loggingErrorHandler.errorOverflow());
+        }
+        finally
+        {
+            System.clearProperty(FALLBACK_LOGGER_PROP_NAME);
+        }
     }
 
     @Test
@@ -115,5 +140,59 @@ class CommonContextTest
 
         verify(logger).println(and(startsWith("WARNING: existing errors saved to: "), endsWith("-error.log")));
         verifyNoMoreInteractions(logger);
+    }
+
+    @Test
+    void fallbackLoggerReturnsSystemErrorIfNothingSpecified()
+    {
+        System.clearProperty(FALLBACK_LOGGER_PROP_NAME);
+        assertSame(System.err, CommonContext.fallbackLogger());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "", "stderr", "gaga" })
+    void fallbackLoggerReturnsSystemError(final String logger)
+    {
+        System.setProperty(FALLBACK_LOGGER_PROP_NAME, logger);
+        try
+        {
+            assertSame(System.err, CommonContext.fallbackLogger());
+        }
+        finally
+        {
+            System.clearProperty(FALLBACK_LOGGER_PROP_NAME);
+        }
+    }
+
+    @Test
+    void fallbackLoggerReturnsSystemOutIfConfigured()
+    {
+        System.setProperty(FALLBACK_LOGGER_PROP_NAME, "stdout");
+        try
+        {
+            assertSame(System.out, CommonContext.fallbackLogger());
+        }
+        finally
+        {
+            System.clearProperty(FALLBACK_LOGGER_PROP_NAME);
+        }
+    }
+
+    @Test
+    void fallbackLoggerReturnsNoOpLoggerIfConfigured()
+    {
+        System.setProperty(FALLBACK_LOGGER_PROP_NAME, "no_op");
+        try
+        {
+            final PrintStream logger = CommonContext.fallbackLogger();
+            assertNotNull(logger);
+            assertNotSame(System.err, logger);
+            assertNotSame(System.out, logger);
+            assertSame(logger, CommonContext.fallbackLogger());
+        }
+        finally
+        {
+            System.clearProperty(FALLBACK_LOGGER_PROP_NAME);
+        }
     }
 }

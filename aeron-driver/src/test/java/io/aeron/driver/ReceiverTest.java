@@ -72,6 +72,7 @@ class ReceiverTest
     private static final int INITIAL_WINDOW_LENGTH = Configuration.INITIAL_WINDOW_LENGTH_DEFAULT;
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
     private static final InetSocketAddress SOURCE_ADDRESS = new InetSocketAddress("localhost", 45679);
+    private static final String SOURCE_IDENTITY = Configuration.sourceIdentity(SOURCE_ADDRESS);
 
     private static final Position POSITION = mock(Position.class);
     private static final ArrayList<SubscriberPosition> POSITIONS = new ArrayList<>();
@@ -218,6 +219,7 @@ class ReceiverTest
             mockHighestReceivedPosition,
             mockRebuildPosition,
             SOURCE_ADDRESS,
+            SOURCE_IDENTITY,
             congestionControl);
 
         final int messagesRead = toConductorQueue.drain(
@@ -283,6 +285,7 @@ class ReceiverTest
                     mockHighestReceivedPosition,
                     mockRebuildPosition,
                     SOURCE_ADDRESS,
+                    SOURCE_IDENTITY,
                     congestionControl);
 
                 receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
@@ -347,6 +350,7 @@ class ReceiverTest
                     mockHighestReceivedPosition,
                     mockRebuildPosition,
                     SOURCE_ADDRESS,
+                    SOURCE_IDENTITY,
                     congestionControl);
 
                 receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
@@ -414,6 +418,7 @@ class ReceiverTest
                     mockHighestReceivedPosition,
                     mockRebuildPosition,
                     SOURCE_ADDRESS,
+                    SOURCE_IDENTITY,
                     congestionControl);
 
                 receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
@@ -485,6 +490,7 @@ class ReceiverTest
                     mockHighestReceivedPosition,
                     mockRebuildPosition,
                     SOURCE_ADDRESS,
+                    SOURCE_IDENTITY,
                     congestionControl);
 
                 receiverProxy.newPublicationImage(receiveChannelEndpoint, image);

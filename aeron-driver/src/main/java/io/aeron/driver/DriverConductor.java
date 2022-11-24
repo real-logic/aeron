@@ -289,6 +289,7 @@ public final class DriverConductor implements Agent
 
                 final boolean treatAsMulticast = subscription.group() == INFER ?
                     channelEndpoint.udpChannel(transportIndex).isMulticast() : subscription.group() == FORCE_TRUE;
+                final String sourceIdentity = Configuration.sourceIdentity(sourceAddress);
 
                 final PublicationImage image = new PublicationImage(
                     registrationId,
@@ -307,13 +308,13 @@ public final class DriverConductor implements Agent
                     hwmPos,
                     rcvPos,
                     sourceAddress,
+                    sourceIdentity,
                     congestionControl);
 
                 channelEndpoint.incRefImages();
                 publicationImages.add(image);
                 receiverProxy.newPublicationImage(channelEndpoint, image);
 
-                final String sourceIdentity = Configuration.sourceIdentity(sourceAddress);
                 for (int i = 0, size = subscriberPositions.size(); i < size; i++)
                 {
                     final SubscriberPosition position = subscriberPositions.get(i);
@@ -1629,7 +1630,7 @@ public final class DriverConductor implements Agent
                     registrationId,
                     position.id(),
                     image.rawLog().fileName(),
-                    Configuration.sourceIdentity(image.sourceAddress()));
+                    image.sourceIdentity());
             }
         }
     }

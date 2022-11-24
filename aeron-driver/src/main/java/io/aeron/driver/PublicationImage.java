@@ -31,7 +31,11 @@ import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.MemoryAccess;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
@@ -155,6 +159,7 @@ public final class PublicationImage
     private final ErrorHandler errorHandler;
     private final Position rebuildPosition;
     private final InetSocketAddress sourceAddress;
+    private final String sourceIdentity;
     private final AtomicCounter heartbeatsReceived;
     private final AtomicCounter statusMessagesSent;
     private final AtomicCounter nakMessagesSent;
@@ -182,6 +187,7 @@ public final class PublicationImage
         final Position hwmPosition,
         final Position rebuildPosition,
         final InetSocketAddress sourceAddress,
+        final String sourceIdentity,
         final CongestionControl congestionControl)
     {
         this.correlationId = correlationId;
@@ -196,6 +202,7 @@ public final class PublicationImage
         this.hwmPosition = hwmPosition;
         this.rebuildPosition = rebuildPosition;
         this.sourceAddress = sourceAddress;
+        this.sourceIdentity = sourceIdentity;
         this.initialTermId = initialTermId;
         this.congestionControl = congestionControl;
         this.errorHandler = ctx.errorHandler();
@@ -380,8 +387,8 @@ public final class PublicationImage
         }
         else if (null != lossReport)
         {
-            final String source = Configuration.sourceIdentity(sourceAddress);
-            reportEntry = lossReport.createEntry(length, epochClock.time(), sessionId, streamId, channel(), source);
+            reportEntry = lossReport.createEntry(
+                length, epochClock.time(), sessionId, streamId, channel(), sourceIdentity);
 
             if (null == reportEntry)
             {
@@ -398,6 +405,17 @@ public final class PublicationImage
     InetSocketAddress sourceAddress()
     {
         return sourceAddress;
+    }
+
+    /**
+     * Source identity for a {@link #sourceAddress()}.
+     *
+     * @return source identity for a source address.
+     * @see Configuration#sourceIdentity(InetSocketAddress)
+     */
+    String sourceIdentity()
+    {
+        return sourceIdentity;
     }
 
     /**
@@ -995,7 +1013,7 @@ public final class PublicationImage
                             untethered.position.id(),
                             joinPosition(),
                             rawLog.fileName(),
-                            Configuration.sourceIdentity(sourceAddress));
+                            sourceIdentity);
                         untethered.state(UntetheredSubscription.State.ACTIVE, nowNs, streamId, sessionId);
                     }
                 }

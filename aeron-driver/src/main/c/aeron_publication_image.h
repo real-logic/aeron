@@ -73,6 +73,8 @@ typedef struct aeron_publication_image_stct
     connections;
 
     struct sockaddr_storage source_address;
+    size_t source_identity_length;
+    char source_identity[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
     aeron_loss_detector_t loss_detector;
 
     aeron_mapped_raw_log_t mapped_raw_log;

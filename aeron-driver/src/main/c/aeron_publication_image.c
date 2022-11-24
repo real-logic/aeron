@@ -103,8 +103,8 @@ int aeron_publication_image_create(
     _image->log_file_name = NULL;
     if (aeron_alloc((void **)(&_image->log_file_name), (size_t)path_length + 1) < 0)
     {
-        aeron_free(_image);
         AERON_APPEND_ERR("%s", "Could not allocate publication image log_file_name");
+        aeron_free(_image);
         return -1;
     }
 
@@ -114,19 +114,15 @@ int aeron_publication_image_create(
         aeron_publication_image_on_gap_detected,
         _image) < 0)
     {
-        aeron_free(_image->log_file_name);
-        aeron_free(_image);
         AERON_APPEND_ERR("%s", "Could not init publication image loss detector");
-        return -1;
+        goto error;
     }
 
     if (context->raw_log_map_func(
         &_image->mapped_raw_log, path, is_sparse, (uint64_t)term_buffer_length, context->file_page_size) < 0)
     {
-        aeron_free(_image->log_file_name);
-        aeron_free(_image);
         AERON_APPEND_ERR("error mapping network raw log: %s", path);
-        return -1;
+        goto error;
     }
     _image->raw_log_close_func = context->raw_log_close_func;
     _image->raw_log_free_func = context->raw_log_free_func;
@@ -138,8 +134,7 @@ int aeron_publication_image_create(
 
     if (aeron_publication_image_add_destination(_image, destination) < 0)
     {
-        // TODO: add missing clean up.
-        return -1;
+        goto error;
     }
     if (!destination->has_control_addr)
     {
@@ -201,6 +196,14 @@ int aeron_publication_image_create(
     _image->sm_timeout_ns = (int64_t)context->status_message_timeout_ns;
 
     memcpy(&_image->source_address, source_address, sizeof(_image->source_address));
+    const int source_identity_length = aeron_format_source_identity(
+        _image->source_identity, sizeof(_image->source_identity), source_address);
+    if (source_identity_length <= 0)
+    {
+        AERON_APPEND_ERR("%s", "failed to format source identity");
+        goto error;
+    }
+    _image->source_identity_length = (size_t)source_identity_length;
 
     _image->heartbeats_received_counter = aeron_system_counter_addr(
         system_counters, AERON_SYSTEM_COUNTER_HEARTBEATS_RECEIVED);
@@ -245,6 +248,11 @@ int aeron_publication_image_create(
     *image = _image;
 
     return 0;
+error:
+    aeron_free(_image->connections.array);
+    aeron_free(_image->log_file_name);
+    aeron_free(_image);
+    return -1;
 }
 
 int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, aeron_publication_image_t *image)
@@ -322,9 +330,6 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
     {
         if (NULL != image->conductor_fields.endpoint)
         {
-            char source[AERON_MAX_PATH];
-            int source_length = aeron_format_source_identity(source, sizeof(source), &image->source_address);
-
             image->loss_reporter_offset = aeron_loss_reporter_create_entry(
                 image->loss_reporter,
                 (int64_t)length,
@@ -333,8 +338,8 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
                 image->stream_id,
                 image->conductor_fields.endpoint->conductor_fields.udp_channel->original_uri,
                 image->conductor_fields.endpoint->conductor_fields.udp_channel->uri_length,
-                source,
-                (size_t)source_length);
+                image->source_identity,
+                image->source_identity_length);
         }
 
         if (-1 == image->loss_reporter_offset)
@@ -840,10 +845,6 @@ void aeron_publication_image_check_untethered_subscriptions(
                 case AERON_SUBSCRIPTION_TETHER_RESTING:
                     if (now_ns > (tetherable_position->time_of_last_update_ns + resting_timeout_ns))
                     {
-                        char source_identity[AERON_MAX_PATH];
-                        int source_identity_length = aeron_format_source_identity(
-                            source_identity, sizeof(source_identity), &image->source_address);
-
                         aeron_counter_set_ordered(tetherable_position->value_addr, *image->rcv_pos_position.value_addr);
                         aeron_driver_conductor_on_available_image(
                             conductor,
@@ -854,8 +855,8 @@ void aeron_publication_image_check_untethered_subscriptions(
                             image->log_file_name_length,
                             tetherable_position->counter_id,
                             tetherable_position->subscription_registration_id,
-                            source_identity,
-                            (size_t)source_identity_length);
+                            image->source_identity,
+                            image->source_identity_length);
 
                         image->untethered_subscription_state_change_func(
                             tetherable_position,

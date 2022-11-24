@@ -3621,10 +3621,6 @@ int aeron_driver_conductor_on_add_network_subscription(
                 command->stream_id == image->stream_id &&
                 aeron_publication_image_is_accepting_subscriptions(image))
             {
-                char source_identity[AERON_MAX_PATH];
-                size_t source_identity_length = aeron_format_source_identity(
-                    source_identity, sizeof(source_identity), &image->source_address);
-
                 if (aeron_driver_conductor_link_subscribable(
                     conductor,
                     link,
@@ -3634,8 +3630,8 @@ int aeron_driver_conductor_on_add_network_subscription(
                     image->stream_id,
                     aeron_publication_image_join_position(image),
                     now_ns,
-                    source_identity_length,
-                    source_identity,
+                    image->source_identity_length,
+                    image->source_identity,
                     image->log_file_name_length,
                     image->log_file_name) < 0)
                 {
@@ -4573,16 +4569,12 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
 
     for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
     {
-        char source_identity[AERON_MAX_PATH];
         aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
 
         if (!aeron_subscription_link_matches_allowing_wildcard(link, endpoint, command->stream_id, command->session_id))
         {
             continue;
         }
-
-        size_t source_identity_length = aeron_format_source_identity(
-            source_identity, sizeof(source_identity), &command->src_address);
 
         if (aeron_driver_conductor_link_subscribable(
             conductor,
@@ -4593,8 +4585,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
             command->stream_id,
             join_position,
             now_ns,
-            source_identity_length,
-            source_identity,
+            image->source_identity_length,
+            image->source_identity,
             image->log_file_name_length,
             image->log_file_name) < 0)
         {

@@ -30,6 +30,7 @@ import org.agrona.SystemUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -51,6 +52,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -1249,21 +1251,39 @@ public class ClusterTool
 
     private static void printTypeAndActivityTimestamp(final PrintStream out, final ClusterMarkFile markFile)
     {
-        out.print("Type: " + markFile.decoder().componentType() + " ");
+        printTypeAndActivityTimestamp(
+            out,
+            markFile.decoder().componentType().toString(),
+            markFile.decoder().startTimestamp(),
+            markFile.activityTimestampVolatile());
+    }
+
+    static void printTypeAndActivityTimestamp(
+        final PrintStream out,
+        final String clusterComponentType,
+        final long startTimestampMs,
+        final long activityTimestampMs)
+    {
+        out.print("Type: " + clusterComponentType + " ");
         out.format(
             "%1$tH:%1$tM:%1$tS (start: %2$tF %2$tH:%2$tM:%2$tS, activity: %3$tF %3$tH:%3$tM:%3$tS)%n",
             new Date(),
-            new Date(markFile.decoder().startTimestamp()),
-            new Date(markFile.activityTimestampVolatile()));
+            new Date(startTimestampMs),
+            new Date(activityTimestampMs));
     }
 
     private static void printErrors(final PrintStream out, final ClusterMarkFile markFile)
     {
-        out.println("Cluster component error log:");
-        CommonContext.printErrorLog(markFile.errorBuffer(), out);
+        printErrors(out, markFile::errorBuffer, "Cluster");
     }
 
-    private static void printDriverErrors(final PrintStream out, final String aeronDirectory)
+    static void printErrors(final PrintStream out, final Supplier<AtomicBuffer> errorBuffer, final String name)
+    {
+        out.println(name + " component error log:");
+        CommonContext.printErrorLog(errorBuffer.get(), out);
+    }
+
+    static void printDriverErrors(final PrintStream out, final String aeronDirectory)
     {
         out.println("Aeron driver error log (directory: " + aeronDirectory + "):");
         final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);

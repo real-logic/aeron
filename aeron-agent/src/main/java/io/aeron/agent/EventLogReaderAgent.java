@@ -28,7 +28,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
-import java.util.ServiceLoader;
+import java.util.List;
 
 import static io.aeron.agent.CommonEventDissector.dissectLogStartMessage;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
@@ -49,20 +49,20 @@ public final class EventLogReaderAgent implements Agent
     /**
      * Event Buffer length system property name. If not set then output will default to {@link System#out}.
      */
-    public static final String LOG_FILENAME_PROP_NAME = ConfigOption.LOG_FILENAME.propertyName();
+    public static final String LOG_FILENAME_PROP_NAME = ConfigOption.LOG_FILENAME;
 
     private final ManyToOneRingBuffer ringBuffer = EventConfiguration.EVENT_RING_BUFFER;
-    private final StringBuilder builder = new StringBuilder();
+    private final StringBuilder builder = new StringBuilder(MAX_EVENT_LENGTH);
     private final MessageHandler messageHandler = this::onMessage;
     private final ByteBuffer byteBuffer;
     private final FileChannel fileChannel;
-    private final Int2ObjectHashMap<ComponentLogger> additionalLoggers = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<ComponentLogger> loggers = new Int2ObjectHashMap<>();
 
-    EventLogReaderAgent(final String filename)
+    EventLogReaderAgent(final String filename, final List<ComponentLogger> loggers)
     {
-        for (final ComponentLogger componentLogger : ServiceLoader.load(ComponentLogger.class))
+        for (final ComponentLogger componentLogger : loggers)
         {
-            additionalLoggers.put(componentLogger.typeCode(), componentLogger);
+            this.loggers.put(componentLogger.typeCode(), componentLogger);
         }
 
         if (null != filename)
@@ -141,7 +141,7 @@ public final class EventLogReaderAgent implements Agent
 
         builder.setLength(0);
 
-        decodeLogEvent(buffer, index, eventCodeTypeId, eventCodeId, additionalLoggers, builder);
+        decodeLogEvent(buffer, index, eventCodeTypeId, eventCodeId, loggers, builder);
 
         if (null == fileChannel)
         {
@@ -158,32 +158,17 @@ public final class EventLogReaderAgent implements Agent
         final int index,
         final int eventCodeTypeId,
         final int eventCodeId,
-        final Int2ObjectHashMap<ComponentLogger> additionalLoggers,
+        final Int2ObjectHashMap<ComponentLogger> loggers,
         final StringBuilder builder)
     {
-        if (DriverEventCode.EVENT_CODE_TYPE == eventCodeTypeId)
+        final ComponentLogger componentLogger = loggers.get(eventCodeTypeId);
+        if (null != componentLogger)
         {
-            DriverEventCode.get(eventCodeId).decode(buffer, index, builder);
-        }
-        else if (ArchiveEventCode.EVENT_CODE_TYPE == eventCodeTypeId)
-        {
-            ArchiveEventCode.get(eventCodeId).decode(buffer, index, builder);
-        }
-        else if (ClusterEventCode.EVENT_CODE_TYPE == eventCodeTypeId)
-        {
-            ClusterEventCode.get(eventCodeId).decode(buffer, index, builder);
+            componentLogger.decode(buffer, index, eventCodeId, builder);
         }
         else
         {
-            final ComponentLogger componentLogger = additionalLoggers.get(eventCodeTypeId);
-            if (null != componentLogger)
-            {
-                componentLogger.decode(buffer, index, eventCodeId, builder);
-            }
-            else
-            {
-                builder.append("Unknown EventCodeType: ").append(eventCodeTypeId);
-            }
+            builder.append("Unknown EventCodeType: ").append(eventCodeTypeId);
         }
 
         builder.append(lineSeparator());

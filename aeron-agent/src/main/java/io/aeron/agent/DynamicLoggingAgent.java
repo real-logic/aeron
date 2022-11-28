@@ -22,7 +22,7 @@ import org.agrona.SystemUtil;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.EnumMap;
+import java.util.Map;
 
 import static io.aeron.agent.ConfigOption.*;
 import static java.lang.System.out;
@@ -67,7 +67,7 @@ public class DynamicLoggingAgent
                     SystemUtil.loadPropertiesFile(PropertyAction.PRESERVE, args[i]);
                 }
 
-                final EnumMap<ConfigOption, String> configOptions = fromSystemProperties();
+                final Map<String, String> configOptions = fromSystemProperties();
                 final String agentArgs = buildAgentArgs(configOptions);
                 attachAgent(START_COMMAND, agentJar, processId, agentArgs);
                 out.println("Logging started.");

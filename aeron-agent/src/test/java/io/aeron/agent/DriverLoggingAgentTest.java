@@ -34,8 +34,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -179,7 +180,7 @@ public class DriverLoggingAgentTest
 
     private void before(final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents)
     {
-        final EnumMap<ConfigOption, String> configOptions = new EnumMap<>(ConfigOption.class);
+        final Map<String, String> configOptions = new HashMap<>();
         configOptions.put(ConfigOption.READER_CLASSNAME, StubEventLogReaderAgent.class.getName());
         configOptions.put(ConfigOption.ENABLED_DRIVER_EVENT_CODES, enabledEvents);
         AgentTests.startLogging(configOptions);

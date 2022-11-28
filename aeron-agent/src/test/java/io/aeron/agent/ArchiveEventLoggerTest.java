@@ -31,7 +31,7 @@ import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.ArchiveEventLogger.CONTROL_REQUEST_EVENTS;
 import static io.aeron.agent.CommonEventEncoder.*;
-import static io.aeron.agent.EventConfiguration.*;
+import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.archive.codecs.MessageHeaderEncoder.ENCODED_LENGTH;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -52,7 +52,8 @@ class ArchiveEventLoggerTest
     @AfterEach
     void after()
     {
-        reset();
+        ArchiveComponentLogger.ENABLED_EVENTS.clear();
+        EventConfiguration.EVENT_RING_BUFFER.unblock();
     }
 
     @ParameterizedTest
@@ -63,7 +64,7 @@ class ArchiveEventLoggerTest
             "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE" })
     void logControlRequest(final ArchiveEventCode eventCode)
     {
-        ARCHIVE_EVENT_CODES.add(eventCode);
+        ArchiveComponentLogger.ENABLED_EVENTS.add(eventCode);
         final int srcOffset = 100;
         final int length = MAX_EVENT_LENGTH * 2;
         new MessageHeaderEncoder().wrap(srcBuffer, srcOffset).templateId(eventCode.templateId());

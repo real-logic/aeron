@@ -27,17 +27,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 
-import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.aeron.agent.ArchiveEventCode.*;
-import static io.aeron.agent.ClusterEventCode.*;
+import static io.aeron.agent.ClusterEventCode.ROLE_CHANGE;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.ConfigOption.*;
 import static io.aeron.agent.DriverEventCode.*;
-import static io.aeron.agent.EventConfiguration.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.*;
@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(InterruptingTestCallback.class)
 final class AgentTests
 {
-    static void startLogging(final EnumMap<ConfigOption, String> configOptions)
+    static void startLogging(final Map<String, String> configOptions)
     {
         EventLogAgent.agentmain(buildAgentArgs(configOptions), ByteBuddyAgent.install());
     }
@@ -85,14 +85,14 @@ final class AgentTests
     @NullAndEmptySource
     void agentmainShouldUseSystemPropertiesWhenAgentsArgsIsEmpty(final String agentArgs)
     {
-        System.setProperty(ENABLED_DRIVER_EVENT_CODES.propertyName(), "admin");
+        System.setProperty(ENABLED_DRIVER_EVENT_CODES, "admin");
         System.setProperty(
-            ENABLED_ARCHIVE_EVENT_CODES.propertyName(),
+            ENABLED_ARCHIVE_EVENT_CODES,
             "CMD_IN_EXTEND_RECORDING,REPLICATION_SESSION_STATE_CHANGE,CATALOG_RESIZE");
-        System.setProperty(DISABLED_ARCHIVE_EVENT_CODES.propertyName(), "REPLICATION_SESSION_STATE_CHANGE");
-        System.setProperty(ENABLED_CLUSTER_EVENT_CODES.propertyName(), "all");
-        System.setProperty(DISABLED_CLUSTER_EVENT_CODES.propertyName(), "ROLE_CHANGE");
-        System.setProperty(READER_CLASSNAME.propertyName(), TestLoggingAgent.class.getName());
+        System.setProperty(DISABLED_ARCHIVE_EVENT_CODES, "REPLICATION_SESSION_STATE_CHANGE");
+        System.setProperty(ENABLED_CLUSTER_EVENT_CODES, "all");
+        System.setProperty(DISABLED_CLUSTER_EVENT_CODES, "ROLE_CHANGE");
+        System.setProperty(READER_CLASSNAME, TestLoggingAgent.class.getName());
         final int instanceCount = TestLoggingAgent.INSTANCE_COUNT.get();
         try
         {
@@ -105,20 +105,22 @@ final class AgentTests
                 FRAME_OUT,
                 NAME_RESOLUTION_NEIGHBOR_ADDED,
                 NAME_RESOLUTION_NEIGHBOR_REMOVED)),
-                DRIVER_EVENT_CODES);
+                DriverComponentLogger.ENABLED_EVENTS);
             assertEquals(
                 EnumSet.of(CMD_IN_EXTEND_RECORDING, CATALOG_RESIZE),
-                ARCHIVE_EVENT_CODES);
+                ArchiveComponentLogger.ENABLED_EVENTS);
             assertEquals(
                 EnumSet.complementOf(EnumSet.of(ROLE_CHANGE)),
-                CLUSTER_EVENT_CODES);
+                ClusterComponentLogger.ENABLED_EVENTS);
         }
         finally
         {
-            for (final ConfigOption option : ConfigOption.values())
-            {
-                System.clearProperty(option.propertyName());
-            }
+            System.clearProperty(ENABLED_DRIVER_EVENT_CODES);
+            System.clearProperty(ENABLED_ARCHIVE_EVENT_CODES);
+            System.clearProperty(DISABLED_ARCHIVE_EVENT_CODES);
+            System.clearProperty(ENABLED_CLUSTER_EVENT_CODES);
+            System.clearProperty(DISABLED_CLUSTER_EVENT_CODES);
+            System.clearProperty(READER_CLASSNAME);
         }
     }
 
@@ -126,7 +128,7 @@ final class AgentTests
     void shouldFailToStartLoggingIfAgentAlreadyRunning()
     {
         final int instanceCount = TestLoggingAgent.INSTANCE_COUNT.get();
-        final EnumMap<ConfigOption, String> configOptions = new EnumMap<>(ConfigOption.class);
+        final Map<String, String> configOptions = new HashMap<>();
         configOptions.put(READER_CLASSNAME, TestLoggingAgent.class.getName());
 
         startLogging(configOptions); // logging is not started as no events are configured
@@ -145,7 +147,7 @@ final class AgentTests
     void shouldStartLoggingAfterItWasStopped()
     {
         final int instanceCount = TestLoggingAgent.INSTANCE_COUNT.get();
-        final EnumMap<ConfigOption, String> configOptions = new EnumMap<>(ConfigOption.class);
+        final Map<String, String> configOptions = new HashMap<>();
         configOptions.put(READER_CLASSNAME, TestLoggingAgent.class.getName());
         configOptions.put(ENABLED_ARCHIVE_EVENT_CODES, CMD_IN_AUTH_CONNECT.name());
 
@@ -153,9 +155,9 @@ final class AgentTests
         assertEquals(instanceCount + 1, TestLoggingAgent.INSTANCE_COUNT.get());
 
         stopLogging();
-        assertEquals(EnumSet.noneOf(DriverEventCode.class), DRIVER_EVENT_CODES);
-        assertEquals(EnumSet.noneOf(ArchiveEventCode.class), ARCHIVE_EVENT_CODES);
-        assertEquals(EnumSet.noneOf(ClusterEventCode.class), CLUSTER_EVENT_CODES);
+        assertEquals(EnumSet.noneOf(DriverEventCode.class), DriverComponentLogger.ENABLED_EVENTS);
+        assertEquals(EnumSet.noneOf(ArchiveEventCode.class), ArchiveComponentLogger.ENABLED_EVENTS);
+        assertEquals(EnumSet.noneOf(ClusterEventCode.class), ClusterComponentLogger.ENABLED_EVENTS);
 
         startLogging(configOptions);
         assertEquals(instanceCount + 2, TestLoggingAgent.INSTANCE_COUNT.get());
@@ -166,7 +168,7 @@ final class AgentTests
     {
         assertNull(TestLoggingAgentWithFileName.LOG_FILE_NAME.get());
         final String logFileName = "/dev/shm/my-file.txt";
-        final EnumMap<ConfigOption, String> configOptions = new EnumMap<>(ConfigOption.class);
+        final Map<String, String> configOptions = new HashMap<>();
         configOptions.put(READER_CLASSNAME, TestLoggingAgentWithFileName.class.getName());
         configOptions.put(LOG_FILENAME, logFileName);
         configOptions.put(ENABLED_ARCHIVE_EVENT_CODES, "all");
@@ -180,7 +182,7 @@ final class AgentTests
     void shouldStartAndStopLoggingAgent()
     {
         final int instanceCount = TestLoggingAgent.INSTANCE_COUNT.get();
-        final EnumMap<ConfigOption, String> configOptions = new EnumMap<>(ConfigOption.class);
+        final Map<String, String> configOptions = new HashMap<>();
         configOptions.put(READER_CLASSNAME, TestLoggingAgent.class.getName());
         configOptions.put(ENABLED_ARCHIVE_EVENT_CODES, "all");
 

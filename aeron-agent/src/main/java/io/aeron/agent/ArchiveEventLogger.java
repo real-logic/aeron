@@ -26,7 +26,6 @@ import java.util.EnumSet;
 import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.ArchiveEventEncoder.*;
 import static io.aeron.agent.CommonEventEncoder.*;
-import static io.aeron.agent.EventConfiguration.ARCHIVE_EVENT_CODES;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.of;
@@ -72,7 +71,7 @@ public final class ArchiveEventLogger
 
         final int templateId = headerDecoder.templateId();
         final ArchiveEventCode eventCode = getByTemplateId(templateId);
-        if (eventCode != null && ARCHIVE_EVENT_CODES.contains(eventCode))
+        if (eventCode != null && ArchiveComponentLogger.ENABLED_EVENTS.contains(eventCode))
         {
             log(eventCode, buffer, offset, length);
         }

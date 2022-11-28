@@ -18,23 +18,24 @@ package io.aeron.agent;
 import org.agrona.Strings;
 import org.agrona.concurrent.Agent;
 
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * A set of configuration options.
  */
-enum ConfigOption
+final class ConfigOption
 {
     /**
      * Event Buffer log file name system property. If not set then output will default to {@link System#out}.
      */
-    LOG_FILENAME("aeron.event.log.filename"),
+    static final String LOG_FILENAME = "aeron.event.log.filename";
 
     /**
      * Event reader {@link Agent} which consumes the {@link EventConfiguration#EVENT_RING_BUFFER} to output log events.
      */
-    READER_CLASSNAME("aeron.event.log.reader.classname"),
+    static final String READER_CLASSNAME = "aeron.event.log.reader.classname";
 
     /**
      * Driver Event tags system property. This is either:
@@ -46,14 +47,14 @@ enum ConfigOption
      * {@link DriverEventCode#NAME_RESOLUTION_NEIGHBOR_REMOVED}.</li>
      * </ul>
      */
-    ENABLED_DRIVER_EVENT_CODES("aeron.event.log"),
+    static final String ENABLED_DRIVER_EVENT_CODES = "aeron.event.log";
 
     /**
      * Disabled Driver Event tags system property. Follows the format specified for
      * {@link #ENABLED_DRIVER_EVENT_CODES}. This property will disable any codes in the set
      * specified there. Defined on its own has no effect.
      */
-    DISABLED_DRIVER_EVENT_CODES("aeron.event.log.disable"),
+    static final String DISABLED_DRIVER_EVENT_CODES = "aeron.event.log.disable";
 
     /**
      * Archive Event tags system property. This is either:
@@ -62,14 +63,14 @@ enum ConfigOption
      * <li>{@code all} which enables all the codes.</li>
      * </ul>
      */
-    ENABLED_ARCHIVE_EVENT_CODES("aeron.event.archive.log"),
+    static final String ENABLED_ARCHIVE_EVENT_CODES = "aeron.event.archive.log";
 
     /**
      * Disabled Archive Event tags system property. Follows the format specified for
      * {@link #ENABLED_ARCHIVE_EVENT_CODES}. This property will disable any codes in the
      * set specified there. Defined on its own has no effect.
      */
-    DISABLED_ARCHIVE_EVENT_CODES("aeron.event.archive.log.disable"),
+    static final String DISABLED_ARCHIVE_EVENT_CODES = "aeron.event.archive.log.disable";
 
     /**
      * Cluster Event tags system property. This is either:
@@ -78,51 +79,33 @@ enum ConfigOption
      * <li>{@code all} which enables all the codes.</li>
      * </ul>
      */
-    ENABLED_CLUSTER_EVENT_CODES("aeron.event.cluster.log"),
+    static final String ENABLED_CLUSTER_EVENT_CODES = "aeron.event.cluster.log";
 
     /**
      * Disabled Cluster Event tags system property name. Follows the format specified for
      * {@link #ENABLED_CLUSTER_EVENT_CODES}. This property will disable any codes in the
      * set specified there. Defined on its own has no effect.
      */
-    DISABLED_CLUSTER_EVENT_CODES("aeron.event.cluster.log.disable");
+    static final String DISABLED_CLUSTER_EVENT_CODES = "aeron.event.cluster.log.disable";
 
     static final String START_COMMAND = "start";
     static final String STOP_COMMAND = "stop";
 
     private static final char VALUE_SEPARATOR = '=';
     private static final char OPTION_SEPARATOR = '|';
-    private static final ConfigOption[] OPTIONS = values();
 
-    private final String propertyName;
-
-    ConfigOption(final String propertyName)
+    static Map<String, String> fromSystemProperties()
     {
-        this.propertyName = propertyName;
-    }
-
-    String propertyName()
-    {
-        return propertyName;
-    }
-
-    static EnumMap<ConfigOption, String> fromSystemProperties()
-    {
-        final EnumMap<ConfigOption, String> values = new EnumMap<>(ConfigOption.class);
-
-        for (final ConfigOption option : OPTIONS)
+        final HashMap<String, String> result = new HashMap<>();
+        final Properties properties = System.getProperties();
+        for (final Map.Entry<Object, Object> entry : properties.entrySet())
         {
-            final String value = System.getProperty(option.propertyName());
-            if (null != value)
-            {
-                values.put(option, value);
-            }
+            result.put((String)entry.getKey(), (String)entry.getValue());
         }
-
-        return values;
+        return result;
     }
 
-    static String buildAgentArgs(final EnumMap<ConfigOption, String> configOptions)
+    static String buildAgentArgs(final Map<String, String> configOptions)
     {
         if (configOptions.isEmpty())
         {
@@ -130,7 +113,7 @@ enum ConfigOption
         }
 
         final StringBuilder builder = new StringBuilder();
-        for (final Map.Entry<ConfigOption, String> entry : configOptions.entrySet())
+        for (final Map.Entry<String, String> entry : configOptions.entrySet())
         {
             builder.append(entry.getKey())
                 .append(VALUE_SEPARATOR)
@@ -146,14 +129,14 @@ enum ConfigOption
         return builder.toString();
     }
 
-    static EnumMap<ConfigOption, String> parseAgentArgs(final String agentArgs)
+    static Map<String, String> parseAgentArgs(final String agentArgs)
     {
         if (Strings.isEmpty(agentArgs))
         {
             throw new IllegalArgumentException("cannot parse empty value");
         }
 
-        final EnumMap<ConfigOption, String> values = new EnumMap<>(ConfigOption.class);
+        final Map<String, String> values = new HashMap<>();
 
         int optionIndex = -1;
         do
@@ -176,11 +159,10 @@ enum ConfigOption
             }
 
             final String optionName = agentArgs.substring(nameIndex + 1, valueIndex);
-            final ConfigOption option = valueOf(optionName);
             final String value = agentArgs.substring(
                 valueIndex + 1,
                 optionIndex > 0 ? optionIndex : agentArgs.length());
-            values.put(option, value);
+            values.put(optionName, value);
         }
         while (optionIndex > 0);
 

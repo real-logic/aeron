@@ -29,7 +29,6 @@ import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventEncoder.encode;
 import static io.aeron.agent.DriverEventEncoder.*;
-import static io.aeron.agent.EventConfiguration.DRIVER_EVENT_CODES;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -67,7 +66,7 @@ public final class DriverEventLogger
      */
     public void log(final DriverEventCode code, final DirectBuffer buffer, final int offset, final int length)
     {
-        if (DRIVER_EVENT_CODES.contains(code))
+        if (DriverComponentLogger.ENABLED_EVENTS.contains(code))
         {
             final int captureLength = captureLength(length);
             final int encodedLength = encodedLength(captureLength);

@@ -34,8 +34,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import static io.aeron.agent.ArchiveEventCode.*;
@@ -122,7 +123,7 @@ public class ArchiveLoggingAgentTest
 
     private void before(final String enabledEvents, final EnumSet<ArchiveEventCode> expectedEvents)
     {
-        final EnumMap<ConfigOption, String> configOptions = new EnumMap<>(ConfigOption.class);
+        final Map<String, String> configOptions = new HashMap<>();
         configOptions.put(ConfigOption.READER_CLASSNAME, StubEventLogReaderAgent.class.getName());
         configOptions.put(ConfigOption.ENABLED_ARCHIVE_EVENT_CODES, enabledEvents);
         AgentTests.startLogging(configOptions);

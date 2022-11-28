@@ -31,7 +31,7 @@ import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventEncoder.untetheredSubscriptionStateChangeLength;
 import static io.aeron.agent.DriverEventLogger.toEventCodeId;
-import static io.aeron.agent.EventConfiguration.*;
+import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.fill;
@@ -51,7 +51,8 @@ class DriverEventLoggerTest
     @AfterEach
     void after()
     {
-        reset();
+        DriverComponentLogger.ENABLED_EVENTS.clear();
+        EventConfiguration.EVENT_RING_BUFFER.unblock();
     }
 
     @ParameterizedTest
@@ -75,7 +76,7 @@ class DriverEventLoggerTest
     void log()
     {
         final DriverEventCode eventCode = CMD_IN_TERMINATE_DRIVER;
-        DRIVER_EVENT_CODES.add(eventCode);
+        DriverComponentLogger.ENABLED_EVENTS.add(eventCode);
         final int recordOffset = align(13, ALIGNMENT);
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
         final int length = 100;

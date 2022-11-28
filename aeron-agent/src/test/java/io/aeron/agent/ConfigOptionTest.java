@@ -15,12 +15,13 @@
  */
 package io.aeron.agent;
 
-import org.agrona.collections.ObjectHashSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 
-import java.util.EnumMap;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static io.aeron.agent.ConfigOption.*;
@@ -29,51 +30,41 @@ import static org.junit.jupiter.api.Assertions.*;
 class ConfigOptionTest
 {
     @Test
-    void propertyNameShouldBeUnique()
-    {
-        final ObjectHashSet<String> properties = new ObjectHashSet<>();
-        for (final ConfigOption option : values())
-        {
-            assertTrue(properties.add(option.propertyName()));
-        }
-    }
-
-    @Test
     void shouldReadSystemProperties()
     {
-        final EnumMap<ConfigOption, String> expectedValues = new EnumMap<>(ConfigOption.class);
+        final Map<String, String> expectedValues = new HashMap<>();
         try
         {
             expectedValues.put(DISABLED_ARCHIVE_EVENT_CODES, "abc");
             expectedValues.put(LOG_FILENAME, "");
             expectedValues.put(ENABLED_CLUSTER_EVENT_CODES, "1,2,3");
-            for (final Map.Entry<ConfigOption, String> entry : expectedValues.entrySet())
+            for (final Map.Entry<String, String> entry : expectedValues.entrySet())
             {
-                System.setProperty(entry.getKey().propertyName(), entry.getValue());
+                System.setProperty(entry.getKey(), entry.getValue());
             }
             System.setProperty("ignore me", "1000");
 
-            final EnumMap<ConfigOption, String> values = fromSystemProperties();
+            final Map<String, String> values = fromSystemProperties();
 
-            assertEquals(expectedValues, values);
+            assertEquals("abc", values.get(DISABLED_ARCHIVE_EVENT_CODES));
+            assertEquals("", values.get(LOG_FILENAME));
+            assertEquals("1,2,3", values.get(ENABLED_CLUSTER_EVENT_CODES));
         }
         finally
         {
-            System.clearProperty(DISABLED_ARCHIVE_EVENT_CODES.propertyName());
-            System.clearProperty(LOG_FILENAME.propertyName());
-            System.clearProperty(ENABLED_CLUSTER_EVENT_CODES.propertyName());
+            System.clearProperty(DISABLED_ARCHIVE_EVENT_CODES);
+            System.clearProperty(LOG_FILENAME);
+            System.clearProperty(ENABLED_CLUSTER_EVENT_CODES);
             System.clearProperty("ignore me");
         }
     }
 
     @Test
-    void shouldReturnAnEmptyMapIfNoSystemPropertiesAreSet()
+    void shouldReturnAllSystemProperties()
     {
-        final EnumMap<ConfigOption, String> expectedValues = new EnumMap<>(ConfigOption.class);
+        final Map<String, String> values = fromSystemProperties();
 
-        final EnumMap<ConfigOption, String> values = fromSystemProperties();
-
-        assertEquals(expectedValues, values);
+        assertNotEquals(Collections.emptySet(), values);
     }
 
     @Test
@@ -85,13 +76,13 @@ class ConfigOptionTest
     @Test
     void shouldReturnNullIfConfigOptionsMapIsEmpty()
     {
-        assertNull(buildAgentArgs(new EnumMap<>(ConfigOption.class)));
+        assertNull(buildAgentArgs(new HashMap<>()));
     }
 
     @Test
     void shouldCombineConfigOptionsIntoAnAgentArgsString()
     {
-        final EnumMap<ConfigOption, String> configOptions = new EnumMap<>(ConfigOption.class);
+        final Map<String, String> configOptions = new LinkedHashMap<>();
         configOptions.put(READER_CLASSNAME, "reader class");
         configOptions.put(DISABLED_CLUSTER_EVENT_CODES, "CANVASS_POSITION");
         configOptions.put(ENABLED_DRIVER_EVENT_CODES, "all");
@@ -100,11 +91,12 @@ class ConfigOptionTest
 
         final String agentArgs = buildAgentArgs(configOptions);
 
-        assertEquals("LOG_FILENAME=file.txt|" +
-            "READER_CLASSNAME=reader class|" +
-            "ENABLED_DRIVER_EVENT_CODES=all|" +
-            "DISABLED_DRIVER_EVENT_CODES=admin|" +
-            "DISABLED_CLUSTER_EVENT_CODES=CANVASS_POSITION",
+        assertEquals(
+            "aeron.event.log.reader.classname=reader class|" +
+            "aeron.event.cluster.log.disable=CANVASS_POSITION|" +
+            "aeron.event.log=all|" +
+            "aeron.event.log.filename=file.txt|" +
+            "aeron.event.log.disable=admin",
             agentArgs);
     }
 
@@ -120,7 +112,7 @@ class ConfigOptionTest
     @Test
     void shouldParseAgentArgsAsAConfigOptionsMap()
     {
-        final EnumMap<ConfigOption, String> expectedOptions = new EnumMap<>(ConfigOption.class);
+        final Map<String, String> expectedOptions = new HashMap<>();
         expectedOptions.put(LOG_FILENAME, "log.out");
         expectedOptions.put(READER_CLASSNAME, "my reader");
         expectedOptions.put(ENABLED_DRIVER_EVENT_CODES, "all");
@@ -128,13 +120,13 @@ class ConfigOptionTest
         expectedOptions.put(ENABLED_CLUSTER_EVENT_CODES, "all");
         expectedOptions.put(DISABLED_CLUSTER_EVENT_CODES, "CANVASS_POSITION,STATE_CHANGE");
 
-        final EnumMap<ConfigOption, String> configOptions = parseAgentArgs(
-            "||1600|abc|LOG_FILENAME=log.out|" +
-            "ENABLED_CLUSTER_EVENT_CODES=all|" +
-            "READER_CLASSNAME=my reader|" +
-            "DISABLED_DRIVER_EVENT_CODES=FRAME_IN,FRAME_OUT|" +
-            "ENABLED_DRIVER_EVENT_CODES=all|" +
-            "DISABLED_CLUSTER_EVENT_CODES=CANVASS_POSITION,STATE_CHANGE");
+        final Map<String, String> configOptions = parseAgentArgs(
+            "||1600|abc|aeron.event.log.filename=log.out|" +
+            "aeron.event.cluster.log=all|" +
+            "aeron.event.log.reader.classname=my reader|" +
+            "aeron.event.log.disable=FRAME_IN,FRAME_OUT|" +
+            "aeron.event.log=all|" +
+            "aeron.event.cluster.log.disable=CANVASS_POSITION,STATE_CHANGE");
 
         assertEquals(expectedOptions, configOptions);
     }
@@ -142,20 +134,12 @@ class ConfigOptionTest
     @Test
     void shouldParseAgentArgsThatEndWithExtraSeparators()
     {
-        final EnumMap<ConfigOption, String> expectedOptions = new EnumMap<>(ConfigOption.class);
+        final Map<String, String> expectedOptions = new HashMap<>();
         expectedOptions.put(ENABLED_ARCHIVE_EVENT_CODES, "REPLICATION_SESSION_STATE_CHANGE,CMD_IN_START_RECORDING");
 
-        final EnumMap<ConfigOption, String> configOptions =
-            parseAgentArgs("ENABLED_ARCHIVE_EVENT_CODES=REPLICATION_SESSION_STATE_CHANGE,CMD_IN_START_RECORDING||||");
+        final Map<String, String> configOptions =
+            parseAgentArgs("aeron.event.archive.log=REPLICATION_SESSION_STATE_CHANGE,CMD_IN_START_RECORDING||||");
 
         assertEquals(expectedOptions, configOptions);
-    }
-
-    @Test
-    void shouldThrowAnIllegalArgumentExceptionUponUnknownConfigOptionNameInTheAgentArgs()
-    {
-        final IllegalArgumentException exception =
-            assertThrows(IllegalArgumentException.class, () -> parseAgentArgs("x=5"));
-        assertEquals("No enum constant io.aeron.agent.ConfigOption.x", exception.getMessage());
     }
 }

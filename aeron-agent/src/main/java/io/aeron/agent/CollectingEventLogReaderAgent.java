@@ -33,10 +33,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.ServiceLoader;
+import java.util.List;
 
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
+import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.agent.EventLogReaderAgent.decodeLogEvent;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
@@ -51,8 +51,8 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
      * MBean name for this logging agent.
      */
     public static final String LOGGING_MBEAN_NAME = "io.aeron:type=logging";
-    private static final double NANOS_PER_SECOND = 1_000_000_000.0;
-    private final Int2ObjectHashMap<ComponentLogger> additionalLoggers = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<ComponentLogger> loggers = new Int2ObjectHashMap<>();
+    private String startMessage;
 
     enum State
     {
@@ -63,17 +63,16 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
     private final ExpandableArrayBuffer collectingBuffer = new ExpandableArrayBuffer();
     private final MessageHandler messageHandler = this::onMessage;
     private final Object mutex = new Object();
-    private final int infoMessageTypeId =
-        Arrays.stream(DriverEventCode.values()).mapToInt(DriverEventCode::id).min().orElse(0) - 1;
 
+    private final StringBuilder decodeBuffer = new StringBuilder(MAX_EVENT_LENGTH);
     private volatile State state = State.IGNORING;
     private int bufferPosition = 0;
 
-    CollectingEventLogReaderAgent()
+    CollectingEventLogReaderAgent(final String fileName, final List<ComponentLogger> loggers)
     {
-        for (final ComponentLogger componentLogger : ServiceLoader.load(ComponentLogger.class))
+        for (final ComponentLogger componentLogger : loggers)
         {
-            additionalLoggers.put(componentLogger.typeCode(), componentLogger);
+            this.loggers.put(componentLogger.typeCode(), componentLogger);
         }
     }
 
@@ -194,21 +193,15 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
 
     private void writeLogStartMessage(final String name)
     {
-        final StringBuilder builder = new StringBuilder();
         final long timestampNs = System.nanoTime();
-        final String message = builder
-            .append('[')
-            .append(((double)timestampNs) / NANOS_PER_SECOND)
-            .append(", ")
+        decodeBuffer.setLength(0);
+        LogUtil.appendTimestamp(decodeBuffer, timestampNs);
+        startMessage = decodeBuffer
+            .append(" [")
             .append(LocalDateTime.now())
             .append("] ")
             .append(name)
             .toString();
-
-        collectingBuffer.putInt(bufferPosition, infoMessageTypeId);
-        bufferPosition += SIZE_OF_INT;
-        final int strLength = collectingBuffer.putStringAscii(bufferPosition, message);
-        bufferPosition += strLength;
     }
 
     private void doOutputToFile(final String filename)
@@ -217,8 +210,9 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
 
         try (PrintStream out = new PrintStream(filename))
         {
-            final StringBuilder builder = new StringBuilder();
             final int terminalPosition = bufferPosition;
+
+            out.println(startMessage);
 
             int readingPosition = 0;
             while (readingPosition < terminalPosition)
@@ -226,30 +220,18 @@ public final class CollectingEventLogReaderAgent implements Agent, CollectingEve
                 final int msgTypeId = collectingBuffer.getInt(readingPosition);
                 readingPosition += SIZE_OF_INT;
 
-                if (infoMessageTypeId == msgTypeId)
-                {
-                    final int strLength = collectingBuffer.getInt(readingPosition);
-                    readingPosition += SIZE_OF_INT;
-                    final String message = collectingBuffer.getStringWithoutLengthAscii(readingPosition, strLength);
-                    readingPosition += strLength;
+                final int length = collectingBuffer.getInt(readingPosition);
+                readingPosition += SIZE_OF_INT;
 
-                    out.println(message);
-                }
-                else
-                {
-                    final int length = collectingBuffer.getInt(readingPosition);
-                    readingPosition += SIZE_OF_INT;
+                final int eventCodeTypeId = msgTypeId >> 16;
+                final int eventCodeId = msgTypeId & 0xFFFF;
 
-                    final int eventCodeTypeId = msgTypeId >> 16;
-                    final int eventCodeId = msgTypeId & 0xFFFF;
+                decodeBuffer.setLength(0);
+                decodeLogEvent(
+                    collectingBuffer, readingPosition, eventCodeTypeId, eventCodeId, loggers, decodeBuffer);
+                readingPosition += length;
 
-                    builder.setLength(0);
-                    decodeLogEvent(
-                        collectingBuffer, readingPosition, eventCodeTypeId, eventCodeId, additionalLoggers, builder);
-                    readingPosition += length;
-
-                    out.print(builder);
-                }
+                out.print(decodeBuffer);
             }
 
             bufferPosition = 0;

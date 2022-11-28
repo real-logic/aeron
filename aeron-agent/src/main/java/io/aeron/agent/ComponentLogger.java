@@ -18,6 +18,8 @@ package io.aeron.agent;
 import net.bytebuddy.agent.builder.AgentBuilder;
 import org.agrona.MutableDirectBuffer;
 
+import java.util.Map;
+
 /**
  * Interface that describes a logger for a given Aeron component.
  */
@@ -31,26 +33,29 @@ public interface ComponentLogger
     int typeCode();
 
     /**
-     * Returns true of there are no event codes defined for this ComponentLogger.
-     * @return <code>true</code> if the configured event codes is empty.
-     */
-    boolean isEventCodesEmpty();
-
-    /**
      * Decode a message on the reader side.
      *
      * @param buffer      containing the message.
-     * @param index       offset in the buffer to the message.
+     * @param offset      in the buffer to the message.
      * @param eventCodeId of the event to be decoded.
      * @param builder     to render the message to.
      */
-    void decode(MutableDirectBuffer buffer, int index, int eventCodeId, StringBuilder builder);
+    void decode(MutableDirectBuffer buffer, int offset, int eventCodeId, StringBuilder builder);
 
     /**
-     * Add instrumentation to the code to log the appropriate messages.
+     * Add code instrumentation to inject log messages.
      *
-     * @param agentBuilder builder to use to instrument the java code.
-     * @return the updated agent builder after instrumentation has been applied.
+     * @param agentBuilder  to perform instrumentation with.
+     * @param configOptions list of configuration options which are coming via system properties or the
+     *                      {@code agentArgs} String of the
+     *                      {@code premain(String agentArgs, Instrumentation instrumentation)} method.
+     * @return the updated agent builder after instrumentation has been applied. Return the original
+     * {@code agentBuilder} instance to indicate that no instrumentation has been applied.
      */
-    AgentBuilder addInstrumentation(AgentBuilder agentBuilder);
+    AgentBuilder addInstrumentation(AgentBuilder agentBuilder, Map<String, String> configOptions);
+
+    /**
+     * Reset the logger and its configuration. Typically called when stopping/disabling logging.
+     */
+    void reset();
 }

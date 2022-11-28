@@ -403,7 +403,7 @@ class ConsensusModuleContextTest
 
         final ClusterException exception = assertThrows(ClusterException.class, context::conclude);
         assertEquals("ERROR - startupCanvassTimeoutNs=" + startupCanvassTimeoutNs +
-            " must be multiples of the leaderHeartbeatTimeoutNs=" + leaderHeartbeatTimeoutNs,
+            " must be a multiple of leaderHeartbeatTimeoutNs=" + leaderHeartbeatTimeoutNs,
             exception.getMessage());
     }
 

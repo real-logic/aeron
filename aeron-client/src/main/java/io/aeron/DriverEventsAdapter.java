@@ -161,7 +161,7 @@ class DriverEventsAdapter implements MessageHandler
                 subscriptionReady.wrap(buffer, index);
 
                 final long correlationId = subscriptionReady.correlationId();
-                if (correlationId == activeCorrelationId)
+                if (correlationId == activeCorrelationId || asyncCommandIdSet.remove(correlationId))
                 {
                     receivedCorrelationId = correlationId;
                     conductor.onNewSubscription(correlationId, subscriptionReady.channelStatusCounterId());

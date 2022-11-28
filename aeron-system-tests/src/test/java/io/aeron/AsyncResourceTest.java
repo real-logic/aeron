@@ -24,14 +24,29 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
+import org.agrona.collections.MutableReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 @SuppressWarnings("try")
 class AsyncResourceTest
@@ -72,6 +87,7 @@ class AsyncResourceTest
     void shouldAddAsyncPublications()
     {
         final Aeron.Context clientCtx = new Aeron.Context()
+            .useConductorAgentInvoker(true)
             .errorHandler(Tests::onError);
 
         try (Aeron aeron = Aeron.connect(clientCtx))
@@ -79,14 +95,14 @@ class AsyncResourceTest
             final long registrationIdOne = aeron.asyncAddPublication(AERON_IPC, STREAM_ID);
             final long registrationIdTwo = aeron.asyncAddExclusivePublication(AERON_IPC, STREAM_ID);
 
-            ConcurrentPublication publicationOne;
-            while (null == (publicationOne = aeron.getPublication(registrationIdOne)))
+            ExclusivePublication publicationTwo;
+            while (null == (publicationTwo = aeron.getExclusivePublication(registrationIdTwo)))
             {
                 Tests.yield();
             }
 
-            ExclusivePublication publicationTwo;
-            while (null == (publicationTwo = aeron.getExclusivePublication(registrationIdTwo)))
+            ConcurrentPublication publicationOne;
+            while (null == (publicationOne = aeron.getPublication(registrationIdOne)))
             {
                 Tests.yield();
             }
@@ -126,25 +142,31 @@ class AsyncResourceTest
         }
     }
 
-    @Test
+    @ParameterizedTest
     @Timeout(10)
-    void shouldDetectInvalidUri()
+    @MethodSource("resourcesAddAndGet")
+    void shouldDetectInvalidUri(final Resource resource)
     {
-        final ErrorHandler mockClientErrorHandler = mock(ErrorHandler.class);
+        final MutableReference<Throwable> mockClientErrorHandler = new MutableReference<>();
         final Aeron.Context clientCtx = new Aeron.Context()
-            .errorHandler(mockClientErrorHandler);
+            .errorHandler(mockClientErrorHandler::set);
 
         try (Aeron aeron = Aeron.connect(clientCtx))
         {
             testWatcher.ignoreErrorsMatching(
                 (s) -> s.contains("Aeron URIs must start with") || s.contains("invalid channel"));
 
-            final long registrationId = aeron.asyncAddPublication("invalid" + AERON_IPC, STREAM_ID);
+            final long registrationId = resource.add(aeron, "invalid" + AERON_IPC, STREAM_ID);
 
-            verify(mockClientErrorHandler, timeout(5000)).onError(any(RegistrationException.class));
+            while (null == mockClientErrorHandler.get())
+            {
+                Tests.yield();
+            }
 
+            assertInstanceOf(RegistrationException.class, mockClientErrorHandler.get());
             assertFalse(aeron.isCommandActive(registrationId));
             assertFalse(aeron.hasActiveCommands());
+            assertThrows(RegistrationException.class, () -> resource.get(aeron, registrationId));
         }
     }
 
@@ -169,5 +191,90 @@ class AsyncResourceTest
             assertFalse(aeron.isCommandActive(registrationId));
             assertFalse(aeron.hasActiveCommands());
         }
+    }
+
+    @Test
+    @Timeout(10)
+    void shouldAddAsyncSubscriptions()
+    {
+        final Aeron.Context clientCtx = new Aeron.Context()
+            .errorHandler(Tests::onError);
+
+        try (Aeron aeron = Aeron.connect(clientCtx))
+        {
+            final AvailableImageHandler availableImageHandler = image -> {};
+            final UnavailableImageHandler unavailableImageHandler = image -> {};
+
+            final long registrationIdOne = aeron.asyncAddSubscription(
+                AERON_IPC, STREAM_ID, availableImageHandler, unavailableImageHandler);
+            final long registrationIdTwo = aeron.asyncAddSubscription(AERON_IPC, STREAM_ID);
+
+            Subscription subscriptionOne;
+            while (null == (subscriptionOne = aeron.getSubscription(registrationIdOne)))
+            {
+                Tests.yield();
+            }
+
+            Subscription subscriptionTwo;
+            while (null == (subscriptionTwo = aeron.getSubscription(registrationIdTwo)))
+            {
+                Tests.yield();
+            }
+
+            assertFalse(aeron.isCommandActive(registrationIdOne));
+            assertFalse(aeron.isCommandActive(registrationIdTwo));
+            assertFalse(aeron.hasActiveCommands());
+
+            assertNotNull(subscriptionOne);
+            assertNotNull(subscriptionTwo);
+        }
+    }
+
+    interface Resource
+    {
+        long add(Aeron aeron, String channel, int streamId);
+
+        Object get(Aeron aeron, long registrationId);
+    }
+
+    private static Stream<Arguments> resourcesAddAndGet()
+    {
+        return Stream.of(
+            Arguments.of(new Resource()
+            {
+                public long add(final Aeron aeron, final String channel, final int streamId)
+                {
+                    return aeron.asyncAddPublication(channel, streamId);
+                }
+
+                public Object get(final Aeron aeron, final long registrationId)
+                {
+                    return aeron.getPublication(registrationId);
+                }
+            }),
+            Arguments.of(new Resource()
+            {
+                public long add(final Aeron aeron, final String channel, final int streamId)
+                {
+                    return aeron.asyncAddExclusivePublication(channel, streamId);
+                }
+
+                public Object get(final Aeron aeron, final long registrationId)
+                {
+                    return aeron.getExclusivePublication(registrationId);
+                }
+            }),
+            Arguments.of(new Resource()
+            {
+                public long add(final Aeron aeron, final String channel, final int streamId)
+                {
+                    return aeron.asyncAddSubscription(channel, streamId);
+                }
+
+                public Object get(final Aeron aeron, final long registrationId)
+                {
+                    return aeron.getSubscription(registrationId);
+                }
+            }));
     }
 }

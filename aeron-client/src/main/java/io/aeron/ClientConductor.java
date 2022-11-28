@@ -72,6 +72,7 @@ final class ClientConductor implements Agent
     private final Long2ObjectHashMap<LogBuffers> logBuffersByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<LogBuffers> lingeringLogBuffers = new ArrayList<>();
     private final Long2ObjectHashMap<Object> resourceByRegIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<RegistrationException> asyncExceptionByRegIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<String> stashedChannelByRegistrationId = new Long2ObjectHashMap<>();
     private final LongHashSet asyncCommandIdSet = new LongHashSet();
     private final AvailableImageHandler defaultAvailableImageHandler;
@@ -237,15 +238,16 @@ final class ClientConductor implements Agent
         }
         else if (asyncCommandIdSet.remove(correlationId))
         {
-            stashedChannelByRegistrationId.remove(correlationId);
-            handleError(new RegistrationException(correlationId, codeValue, errorCode, message));
+            onAsyncError(correlationId, codeValue, errorCode, message);
         }
     }
 
     void onAsyncError(final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
     {
         stashedChannelByRegistrationId.remove(correlationId);
-        handleError(new RegistrationException(correlationId, codeValue, errorCode, message));
+        final RegistrationException ex = new RegistrationException(correlationId, codeValue, errorCode, message);
+        asyncExceptionByRegIdMap.put(correlationId, ex);
+        handleError(ex);
     }
 
     void onChannelEndpointError(final long correlationId, final String message)
@@ -334,7 +336,18 @@ final class ClientConductor implements Agent
 
     void onNewSubscription(final long correlationId, final int statusIndicatorId)
     {
-        final Subscription subscription = (Subscription)resourceByRegIdMap.get(correlationId);
+        final Object resource = resourceByRegIdMap.get(correlationId);
+        final Subscription subscription;
+        if (resource instanceof PendingSubscription)
+        {
+            subscription = ((PendingSubscription)resource).subscription;
+            resourceByRegIdMap.put(correlationId, subscription);
+        }
+        else
+        {
+            subscription = (Subscription)resource;
+        }
+
         subscription.channelStatusId(statusIndicatorId);
     }
 
@@ -532,7 +545,7 @@ final class ClientConductor implements Agent
                 service(NO_CORRELATION_ID);
             }
 
-            return (ConcurrentPublication)resourceByRegIdMap.get(registrationId);
+            return (ConcurrentPublication)resourceOrThrow(registrationId);
         }
         finally
         {
@@ -553,7 +566,7 @@ final class ClientConductor implements Agent
                 service(NO_CORRELATION_ID);
             }
 
-            return (ExclusivePublication)resourceByRegIdMap.get(registrationId);
+            return (ExclusivePublication)resourceOrThrow(registrationId);
         }
         finally
         {
@@ -659,6 +672,76 @@ final class ClientConductor implements Agent
             awaitResponse(correlationId);
 
             return subscription;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    long asyncAddSubscription(final String channel, final int streamId)
+    {
+        return asyncAddSubscription(channel, streamId, defaultAvailableImageHandler, defaultUnavailableImageHandler);
+    }
+
+    long asyncAddSubscription(
+        final String channel,
+        final int streamId,
+        final AvailableImageHandler availableImageHandler,
+        final UnavailableImageHandler unavailableImageHandler)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            final long registrationId = driverProxy.addSubscription(channel, streamId);
+            final PendingSubscription subscription = new PendingSubscription(new Subscription(
+                this,
+                channel,
+                streamId,
+                registrationId,
+                availableImageHandler,
+                unavailableImageHandler));
+
+            resourceByRegIdMap.put(registrationId, subscription);
+            asyncCommandIdSet.add(registrationId);
+
+            return registrationId;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    Subscription getSubscription(final long registrationId)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            if (asyncCommandIdSet.contains(registrationId))
+            {
+                service(NO_CORRELATION_ID);
+            }
+
+            final Object resource = resourceByRegIdMap.get(registrationId);
+            if (resource instanceof Subscription)
+            {
+                return (Subscription)resource;
+            }
+
+            final RegistrationException ex = asyncExceptionByRegIdMap.remove(registrationId);
+            if (null != ex)
+            {
+                throw ex;
+            }
+
+            return null;
         }
         finally
         {
@@ -1549,6 +1632,30 @@ final class ClientConductor implements Agent
             {
                 isInCallback = false;
             }
+        }
+    }
+
+    private Object resourceOrThrow(final long registrationId)
+    {
+        final Object resource = resourceByRegIdMap.get(registrationId);
+        if (null == resource)
+        {
+            final RegistrationException ex = asyncExceptionByRegIdMap.remove(registrationId);
+            if (null != ex)
+            {
+                throw ex;
+            }
+        }
+        return resource;
+    }
+
+    private static final class PendingSubscription
+    {
+        private final Subscription subscription;
+
+        private PendingSubscription(final Subscription subscription)
+        {
+            this.subscription = subscription;
         }
     }
 }

@@ -391,6 +391,56 @@ public class Aeron implements AutoCloseable
     }
 
     /**
+     * Add a new {@link Subscription} for subscribing to messages from publishers.
+     *
+     * @param channel                 for receiving the messages known to the media layer.
+     * @param streamId                within the channel scope.
+     * @param availableImageHandler   called when {@link Image}s become available for consumption. Null is valid if no
+     *                                action is to be taken.
+     * @param unavailableImageHandler called when {@link Image}s go unavailable for consumption. Null is valid if no
+     *                                action is to be taken.
+     * @return @return the registration id of the subscription which can be used to get the added subscription.
+     * @see Aeron#addSubscription(String, int, AvailableImageHandler, UnavailableImageHandler)
+     * @see Aeron#getSubscription(long)
+     */
+    public long asyncAddSubscription(
+        final String channel,
+        final int streamId,
+        final AvailableImageHandler availableImageHandler,
+        final UnavailableImageHandler unavailableImageHandler)
+    {
+        return conductor.asyncAddSubscription(channel, streamId, availableImageHandler, unavailableImageHandler);
+    }
+
+    /**
+     * Add a new {@link Subscription} for subscribing to messages from publishers.
+     *
+     * @param channel                 for receiving the messages known to the media layer.
+     * @param streamId                within the channel scope.
+     * @return @return the registration id of the subscription which can be used to get the added subscription.
+     * @see Aeron#addSubscription(String, int)
+     * @see Aeron#getSubscription(long)
+     */
+    public long asyncAddSubscription(final String channel, final int streamId)
+    {
+        return conductor.asyncAddSubscription(channel, streamId);
+    }
+
+    /**
+     * Get a {@link Subscription} for subscribing to messages from publishers.
+     *
+     * @param registrationId returned from
+     *                       {@link #asyncAddSubscription(String, int, AvailableImageHandler, UnavailableImageHandler)}
+     *                       or  {@link #asyncAddSubscription(String, int)}
+     * @return a new {@link ConcurrentPublication} when available otherwise null.
+     * @see #asyncAddPublication(String, int)
+     */
+    public Subscription getSubscription(final long registrationId)
+    {
+        return conductor.getSubscription(registrationId);
+    }
+
+    /**
      * Generate the next correlation id that is unique for the connected Media Driver.
      * <p>
      * This is useful generating correlation identifiers for pairing requests with responses in a clients own

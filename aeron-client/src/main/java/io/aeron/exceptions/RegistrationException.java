@@ -61,6 +61,20 @@ public class RegistrationException extends AeronException
     }
 
     /**
+     * Construct a from another to be nested, useful when exceptions are reported asynchronously and need to be
+     * rethrown from other places in the code.
+     *
+     * @param cause original RegistrationException to be stored as the exception cause.
+     */
+    public RegistrationException(final RegistrationException cause)
+    {
+        super(stripCategoryName(cause.getMessage()), cause, cause.category());
+        this.correlationId = cause.correlationId;
+        this.errorCode = cause.errorCode;
+        this.errorCodeValue = cause.errorCodeValue;
+    }
+
+    /**
      * Get the correlation id of the command to register the resource action.
      *
      * @return the correlation id of the command to register the resource action.

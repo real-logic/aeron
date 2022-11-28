@@ -778,6 +778,70 @@ public final class TestCluster implements AutoCloseable
         return client;
     }
 
+    public AeronCluster asyncConnectClient()
+    {
+        final AeronCluster.Context clientCtx = new AeronCluster.Context()
+            .ingressChannel(ingressChannel)
+            .egressChannel(egressChannel);
+
+        final String aeronDirName = CommonContext.getAeronDirectoryName();
+
+        if (null == clientMediaDriver)
+        {
+            dataCollector.add(Paths.get(aeronDirName));
+
+            final MediaDriver.Context ctx = new MediaDriver.Context()
+                .threadingMode(ThreadingMode.INVOKER)
+                .dirDeleteOnStart(true)
+                .dirDeleteOnShutdown(false)
+                .aeronDirectoryName(aeronDirName)
+                .nameResolver(new RedirectingNameResolver(nodeNameMappings()));
+
+            clientMediaDriver = TestMediaDriver.launch(ctx, clientDriverOutputConsumer(dataCollector));
+        }
+
+        final Aeron aeron = Aeron.connect(new Aeron.Context()
+            .useConductorAgentInvoker(true)
+            .aeronDirectoryName(aeronDirName));
+
+        clientCtx
+            .aeron(aeron)
+            .ownsAeronClient(true)
+            .isIngressExclusive(true)
+            .egressListener(egressListener)
+            .controlledEgressListener(controlledEgressListener)
+            .ingressEndpoints(staticClusterMemberEndpoints);
+
+        try
+        {
+            CloseHelper.close(client);
+            final AeronCluster.AsyncConnect asyncConnect = AeronCluster.asyncConnect(clientCtx.clone());
+            while (null == (client = asyncConnect.poll()))
+            {
+                clientMediaDriver.sharedAgentInvoker().invoke();
+                aeron.conductorAgentInvoker().invoke();
+
+                Tests.yield();
+            }
+        }
+        catch (final TimeoutException ex)
+        {
+            System.out.println("Warning: " + ex);
+
+            CloseHelper.close(client);
+            final AeronCluster.AsyncConnect asyncConnect = AeronCluster.asyncConnect(clientCtx.clone());
+            while (null == (client = asyncConnect.poll()))
+            {
+                clientMediaDriver.sharedAgentInvoker().invoke();
+                aeron.conductorAgentInvoker().invoke();
+
+                Tests.yield();
+            }
+        }
+
+        return client;
+    }
+
     public AeronCluster connectIpcClient(final AeronCluster.Context clientCtx, final String aeronDirName)
     {
         clientCtx
@@ -922,7 +986,7 @@ public final class TestCluster implements AutoCloseable
 
         while ((count = defaultEgressListener.responseCount()) < messageCount)
         {
-            client.pollEgress();
+            pollClient();
 
             try
             {
@@ -942,8 +1006,23 @@ public final class TestCluster implements AutoCloseable
         while (defaultEgressListener.newLeaderEvent() < count || !client.ingressPublication().isConnected())
         {
             await(1);
-            client.pollEgress();
+            pollClient();
         }
+    }
+
+    private void pollClient()
+    {
+        if (null != clientMediaDriver && ThreadingMode.INVOKER == clientMediaDriver.context().threadingMode())
+        {
+            clientMediaDriver.sharedAgentInvoker().invoke();
+        }
+
+        if (null != client.context().aeron().conductorAgentInvoker())
+        {
+            client.context().aeron().conductorAgentInvoker().invoke();
+        }
+
+        client.pollEgress();
     }
 
     public void awaitCommitPosition(final TestNode node, final long logPosition)

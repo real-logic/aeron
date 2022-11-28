@@ -236,10 +236,6 @@ final class ClientConductor implements Agent
             subscription.internalClose(NULL_VALUE);
             resourceByRegIdMap.remove(correlationId);
         }
-        else if (asyncCommandIdSet.remove(correlationId))
-        {
-            onAsyncError(correlationId, codeValue, errorCode, message);
-        }
     }
 
     void onAsyncError(final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
@@ -247,7 +243,6 @@ final class ClientConductor implements Agent
         stashedChannelByRegistrationId.remove(correlationId);
         final RegistrationException ex = new RegistrationException(correlationId, codeValue, errorCode, message);
         asyncExceptionByRegIdMap.put(correlationId, ex);
-        handleError(ex);
     }
 
     void onChannelEndpointError(final long correlationId, final String message)
@@ -738,7 +733,7 @@ final class ClientConductor implements Agent
             final RegistrationException ex = asyncExceptionByRegIdMap.remove(registrationId);
             if (null != ex)
             {
-                throw ex;
+                throw new RegistrationException(ex);
             }
 
             return null;
@@ -1643,7 +1638,7 @@ final class ClientConductor implements Agent
             final RegistrationException ex = asyncExceptionByRegIdMap.remove(registrationId);
             if (null != ex)
             {
-                throw ex;
+                throw new RegistrationException(ex);
             }
         }
         return resource;

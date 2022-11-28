@@ -38,15 +38,11 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.any;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 
 @SuppressWarnings("try")
 class AsyncResourceTest
@@ -158,15 +154,22 @@ class AsyncResourceTest
 
             final long registrationId = resource.add(aeron, "invalid" + AERON_IPC, STREAM_ID);
 
-            while (null == mockClientErrorHandler.get())
+            try
             {
-                Tests.yield();
+                while (null == resource.get(aeron, registrationId))
+                {
+                    Tests.yield();
+                }
+
+                fail("RegistrationException not thrown");
+            }
+            catch (final RegistrationException ignore)
+            {
+                // Expected
             }
 
-            assertInstanceOf(RegistrationException.class, mockClientErrorHandler.get());
             assertFalse(aeron.isCommandActive(registrationId));
             assertFalse(aeron.hasActiveCommands());
-            assertThrows(RegistrationException.class, () -> resource.get(aeron, registrationId));
         }
     }
 
@@ -186,7 +189,19 @@ class AsyncResourceTest
 
             final long registrationId = aeron.asyncAddPublication("aeron:udp?endpoint=wibble:1234", STREAM_ID);
 
-            verify(mockClientErrorHandler, timeout(55_000)).onError(any(RegistrationException.class));
+            try
+            {
+                while (null == aeron.getPublication(registrationId))
+                {
+                    Tests.yield();
+                }
+
+                fail("RegistrationException not thrown");
+            }
+            catch (final RegistrationException ignore)
+            {
+                // Expected
+            }
 
             assertFalse(aeron.isCommandActive(registrationId));
             assertFalse(aeron.hasActiveCommands());

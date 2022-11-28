@@ -169,6 +169,9 @@ class ClusterTest
         systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
+        final List<TestNode> followers = cluster.followers();
+        TestCluster.awaitElectionClosed(followers.get(0));
+        TestCluster.awaitElectionClosed(followers.get(1));
 
         cluster.node(0).isTerminationExpected(true);
         cluster.node(1).isTerminationExpected(true);
@@ -255,14 +258,14 @@ class ClusterTest
     }
 
     @Test
-    @InterruptAfter(40)
+    @InterruptAfter(20)
     void shouldEchoMessages()
     {
         cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
-        cluster.connectClient();
+        cluster.asyncConnectClient();
 
         cluster.sendAndAwaitMessages(10);
     }

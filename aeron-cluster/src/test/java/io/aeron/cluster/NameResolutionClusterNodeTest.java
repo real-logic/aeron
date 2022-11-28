@@ -150,6 +150,12 @@ class NameResolutionClusterNodeTest
         return AeronCluster.connect(
             new AeronCluster.Context()
                 .egressListener(egressListener)
+                .errorHandler(
+                    (t) ->
+                    {
+                        System.err.println("** MY HANDLER **");
+                        t.printStackTrace();
+                    })
                 .ingressChannel("aeron:udp")
                 .ingressEndpoints(INGRESS_ENDPOINTS + ",1=badname:9011"));
     }

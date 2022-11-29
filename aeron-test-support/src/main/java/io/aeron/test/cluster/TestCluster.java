@@ -823,7 +823,10 @@ public final class TestCluster implements AutoCloseable
             final AeronCluster.AsyncConnect asyncConnect = AeronCluster.asyncConnect(clientCtx.clone());
             while (null == (client = asyncConnect.poll()))
             {
-                clientMediaDriver.sharedAgentInvoker().invoke();
+                if (clientMediaDriver instanceof JavaTestMediaDriver)
+                {
+                    clientMediaDriver.sharedAgentInvoker().invoke();
+                }
                 aeron.conductorAgentInvoker().invoke();
 
                 Tests.yield();

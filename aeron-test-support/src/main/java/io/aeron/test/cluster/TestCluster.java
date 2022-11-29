@@ -57,6 +57,7 @@ import io.aeron.security.NullCredentialsSupplier;
 import io.aeron.test.DataCollector;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.DriverOutputConsumer;
+import io.aeron.test.driver.JavaTestMediaDriver;
 import io.aeron.test.driver.RedirectingNameResolver;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
@@ -68,6 +69,7 @@ import org.agrona.collections.IntHashSet;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -1012,14 +1014,16 @@ public final class TestCluster implements AutoCloseable
 
     private void pollClient()
     {
-        if (null != clientMediaDriver && ThreadingMode.INVOKER == clientMediaDriver.context().threadingMode())
+        if (clientMediaDriver instanceof JavaTestMediaDriver &&
+            ThreadingMode.INVOKER == clientMediaDriver.context().threadingMode())
         {
             clientMediaDriver.sharedAgentInvoker().invoke();
         }
 
-        if (null != client.context().aeron().conductorAgentInvoker())
+        final AgentInvoker agentInvoker = client.context().aeron().conductorAgentInvoker();
+        if (null != agentInvoker)
         {
-            client.context().aeron().conductorAgentInvoker().invoke();
+            agentInvoker.invoke();
         }
 
         client.pollEgress();

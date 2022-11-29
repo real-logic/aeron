@@ -65,15 +65,11 @@ inline bool is_running(void)
 void ping_poll_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
     aeron_exclusive_publication_t *publication = (aeron_exclusive_publication_t *)clientd;
-    aeron_buffer_claim_t buffer_claim;
 
-    while (aeron_exclusive_publication_try_claim(publication, length, &buffer_claim) < 0)
+    while (aeron_exclusive_publication_offer(publication, buffer, length, NULL, NULL) < 0)
     {
         aeron_idle_strategy_busy_spinning_idle(NULL, 0);
     }
-
-    memcpy(buffer_claim.data, buffer, length);
-    aeron_buffer_claim_commit(&buffer_claim);
 }
 
 int main(int argc, char **argv)

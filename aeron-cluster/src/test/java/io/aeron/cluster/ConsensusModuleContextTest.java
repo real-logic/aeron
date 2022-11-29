@@ -41,9 +41,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -389,6 +391,29 @@ class ConsensusModuleContextTest
         final Throwable cause = exception.getCause();
         assertInstanceOf(IllegalStateException.class, cause);
         assertEquals("active Mark file detected", cause.getMessage());
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "0, 1000", "5000,5000", "2000000000, 1000000001" })
+    void startupCanvassTimeoutMustBeMultiplesOfTheLeaderHeartbeatTimeout(
+        final long startupCanvassTimeoutNs, final long leaderHeartbeatTimeoutNs)
+    {
+        context.startupCanvassTimeoutNs(startupCanvassTimeoutNs)
+            .leaderHeartbeatTimeoutNs(leaderHeartbeatTimeoutNs);
+
+        final ClusterException exception = assertThrows(ClusterException.class, context::conclude);
+        assertEquals("ERROR - startupCanvassTimeoutNs=" + startupCanvassTimeoutNs +
+            " must be a multiple of leaderHeartbeatTimeoutNs=" + leaderHeartbeatTimeoutNs,
+            exception.getMessage());
+    }
+
+    @Test
+    void startupCanvassTimeoutMustCanBeSetToBeMultiplesOfTheLeaderHeartbeatTimeout()
+    {
+        context.startupCanvassTimeoutNs(TimeUnit.SECONDS.toNanos(30))
+            .leaderHeartbeatTimeoutNs(TimeUnit.SECONDS.toNanos(5));
+
+        context.conclude();
     }
 
     @Test

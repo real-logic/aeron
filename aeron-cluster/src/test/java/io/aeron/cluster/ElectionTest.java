@@ -591,7 +591,7 @@ public class ElectionTest
 
         election.onCanvassPosition(leadershipTermId, logPosition, leadershipTermId, 0, VERSION);
 
-        clock.increment(ctx.electionTimeoutNs());
+        clock.increment(ctx.leaderHeartbeatTimeoutNs());
         election.doWork(clock.nanoTime());
         inOrder.verify(electionStateCounter).setOrdered(ElectionState.NOMINATE.code());
 

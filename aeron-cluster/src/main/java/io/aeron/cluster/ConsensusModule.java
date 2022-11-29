@@ -1371,8 +1371,6 @@ public final class ConsensusModule implements AutoCloseable
         @SuppressWarnings("MethodLength")
         public void conclude()
         {
-            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-
             if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
             {
                 throw new ConcurrentConcludeException();
@@ -1398,6 +1396,12 @@ public final class ConsensusModule implements AutoCloseable
             if (!clusterDir.exists() && !clusterDir.mkdirs())
             {
                 throw new ClusterException("failed to create cluster dir: " + clusterDir.getAbsolutePath());
+            }
+
+            if (startupCanvassTimeoutNs / leaderHeartbeatTimeoutNs < 2)
+            {
+                throw new ClusterException("startupCanvassTimeoutNs=" + startupCanvassTimeoutNs +
+                    " must be a multiple of leaderHeartbeatTimeoutNs=" + leaderHeartbeatTimeoutNs);
             }
 
             if (null == clusterClock)
@@ -1499,6 +1503,8 @@ public final class ConsensusModule implements AutoCloseable
                     aeron.context().errorHandler(countedErrorHandler);
                 }
             }
+
+            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
             if (null == moduleStateCounter)
             {

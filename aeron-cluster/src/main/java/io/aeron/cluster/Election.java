@@ -677,10 +677,11 @@ class Election
             return workCount;
         }
 
-        final long deadlineNs = timeOfLastStateChangeNs + (isExtendedCanvass ? ctx.startupCanvassTimeoutNs() : 0);
+        final long deadlineNs = isExtendedCanvass ? timeOfLastStateChangeNs + ctx.startupCanvassTimeoutNs() :
+            consensusModuleAgent.timeOfLastLeaderUpdateNs() + ctx.leaderHeartbeatTimeoutNs();
 
         if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember) ||
-            (ClusterMember.isQuorumCandidate(clusterMembers, thisMember) && nowNs >= deadlineNs))
+            (nowNs >= deadlineNs && ClusterMember.isQuorumCandidate(clusterMembers, thisMember)))
         {
             final long delayNs = (long)(ctx.random().nextDouble() * (ctx.electionTimeoutNs() >> 1));
             nominationDeadlineNs = nowNs + delayNs;
@@ -709,7 +710,9 @@ class Election
     {
         int workCount = 0;
 
-        if (ClusterMember.hasWonVote(clusterMembers, candidateTermId))
+        if (ClusterMember.hasUnanimousVotes(clusterMembers, candidateTermId) ||
+            (nowNs >= (consensusModuleAgent.timeOfLastLeaderUpdateNs() + ctx.electionTimeoutNs()) &&
+            ClusterMember.hasQuorumVotes(clusterMembers, candidateTermId)))
         {
             leaderMember = thisMember;
             leadershipTermId = candidateTermId;

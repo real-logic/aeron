@@ -15,7 +15,10 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ChannelUri;
+import io.aeron.ExclusivePublication;
+import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.exceptions.RegistrationException;
@@ -963,13 +966,33 @@ public final class ClusterMember
     }
 
     /**
+     * Has all the members voted positively.
+     *
+     * @param clusterMembers  to check for votes.
+     * @param candidateTermId for the vote.
+     * @return {@code true} if all members voted positively.
+     */
+    public static boolean hasUnanimousVotes(final ClusterMember[] clusterMembers, final long candidateTermId)
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (candidateTermId != member.candidateTermId || !Boolean.TRUE.equals(member.vote))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Has sufficient positive votes being counted for a majority and no negative votes.
      *
      * @param clusterMembers  to check for votes.
      * @param candidateTermId for the vote.
-     * @return true if sufficient positive votes being counted for a majority and no negative votes.
+     * @return {@code true} if sufficient positive votes being counted for a majority and no negative votes.
      */
-    public static boolean hasWonVote(final ClusterMember[] clusterMembers, final long candidateTermId)
+    public static boolean hasQuorumVotes(final ClusterMember[] clusterMembers, final long candidateTermId)
     {
         int votes = 0;
         for (final ClusterMember member : clusterMembers)

@@ -47,6 +47,21 @@ public class TestClusterClock implements ClusterClock, EpochClock, NanoClock
         return timeUnit.toNanos(tick.get());
     }
 
+    public long timeMillis()
+    {
+        return timeUnit.toMillis(tick.get());
+    }
+
+    public long timeMicros()
+    {
+        return timeUnit.toMicros(tick.get());
+    }
+
+    public long timeNanos()
+    {
+        return timeUnit.toNanos(tick.get());
+    }
+
     public void update(final long tick, final TimeUnit tickTimeUnit)
     {
         this.tick.set(tickTimeUnit.convert(tick, tickTimeUnit));

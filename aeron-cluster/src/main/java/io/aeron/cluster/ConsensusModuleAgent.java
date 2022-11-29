@@ -87,7 +87,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private long timeOfLastLogUpdateNs = 0;
     private long timeOfLastAppendPositionUpdateNs = 0;
     private long timeOfLastAppendPositionSendNs = 0;
-    private long timeOfLastLeaderMessageReceivedNs;
+    private long timeOfLastLeaderUpdateNs;
     private long slowTickDeadlineNs = 0;
     private long markFileUpdateDeadlineNs = 0;
 
@@ -864,7 +864,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
 
         final long nowNs = clusterClock.timeNanos();
-        timeOfLastLeaderMessageReceivedNs = nowNs;
+        timeOfLastLeaderUpdateNs = nowNs;
 
         if (null != election)
         {
@@ -925,7 +925,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         logOnCommitPosition(memberId, leadershipTermId, logPosition, leaderMemberId);
 
         final long nowNs = clusterClock.timeNanos();
-        timeOfLastLeaderMessageReceivedNs = nowNs;
+        timeOfLastLeaderUpdateNs = nowNs;
 
         if (null != election)
         {
@@ -3052,9 +3052,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return ClusterMember.quorumPosition(activeMembers, rankedPositions);
     }
 
-    long timeOfLastLeaderMessageReceivedNs()
+    long timeOfLastLeaderUpdateNs()
     {
-        return timeOfLastLeaderMessageReceivedNs;
+        return timeOfLastLeaderUpdateNs;
     }
 
     int updateLeaderPosition(final long nowNs, final long position)

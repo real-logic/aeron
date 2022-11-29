@@ -427,7 +427,7 @@ public class ConsensusModuleAgentTest
         final int leadershipTermId = 2;
         final ConsensusModuleAgent consensusModuleAgent = new ConsensusModuleAgent(ctx);
         consensusModuleAgent.leadershipTermId(leadershipTermId);
-        assertEquals(0, consensusModuleAgent.timeOfLastLeaderMessageReceivedNs());
+        assertEquals(0, consensusModuleAgent.timeOfLastLeaderUpdateNs());
 
         clock.increment(12345);
 
@@ -446,7 +446,7 @@ public class ConsensusModuleAgentTest
             777,
             false);
 
-        assertEquals(12345, consensusModuleAgent.timeOfLastLeaderMessageReceivedNs());
+        assertEquals(12345, consensusModuleAgent.timeOfLastLeaderUpdateNs());
     }
 
     @Test
@@ -459,12 +459,12 @@ public class ConsensusModuleAgentTest
         final int leadershipTermId = 42;
         final ConsensusModuleAgent consensusModuleAgent = new ConsensusModuleAgent(ctx);
         consensusModuleAgent.leadershipTermId(leadershipTermId);
-        assertEquals(0, consensusModuleAgent.timeOfLastLeaderMessageReceivedNs());
+        assertEquals(0, consensusModuleAgent.timeOfLastLeaderUpdateNs());
 
         clock.increment(444);
 
         consensusModuleAgent.onCommitPosition(leadershipTermId, 555, 0);
 
-        assertEquals(444, consensusModuleAgent.timeOfLastLeaderMessageReceivedNs());
+        assertEquals(444, consensusModuleAgent.timeOfLastLeaderUpdateNs());
     }
 }

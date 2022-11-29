@@ -399,7 +399,7 @@ public class Aeron implements AutoCloseable
      *                                action is to be taken.
      * @param unavailableImageHandler called when {@link Image}s go unavailable for consumption. Null is valid if no
      *                                action is to be taken.
-     * @return @return the registration id of the subscription which can be used to get the added subscription.
+     * @return the registration id of the subscription which can be used to get the added subscription.
      * @see Aeron#addSubscription(String, int, AvailableImageHandler, UnavailableImageHandler)
      * @see Aeron#getSubscription(long)
      */
@@ -417,7 +417,7 @@ public class Aeron implements AutoCloseable
      *
      * @param channel                 for receiving the messages known to the media layer.
      * @param streamId                within the channel scope.
-     * @return @return the registration id of the subscription which can be used to get the added subscription.
+     * @return the registration id of the subscription which can be used to get the added subscription.
      * @see Aeron#addSubscription(String, int)
      * @see Aeron#getSubscription(long)
      */

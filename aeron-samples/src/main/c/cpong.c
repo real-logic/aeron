@@ -93,7 +93,7 @@ int main(int argc, char **argv)
     int32_t pong_stream_id = DEFAULT_PONG_STREAM_ID;
     int32_t ping_stream_id = DEFAULT_PING_STREAM_ID;
 
-    while ((opt = getopt(argc, argv, "hvC:c:p:C:s:")) != -1)
+    while ((opt = getopt(argc, argv, "hvC:c:p:S:s:")) != -1)
     {
         switch (opt)
         {

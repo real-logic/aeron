@@ -139,7 +139,7 @@ int main(int argc, char **argv)
     int32_t ping_stream_id = DEFAULT_PING_STREAM_ID;
     struct hdr_histogram *histogram = NULL;
 
-    while ((opt = getopt(argc, argv, "hvC:c:L:m:p:C:s:w:")) != -1)
+    while ((opt = getopt(argc, argv, "hvC:c:L:m:p:S:s:w:")) != -1)
     {
         switch (opt)
         {

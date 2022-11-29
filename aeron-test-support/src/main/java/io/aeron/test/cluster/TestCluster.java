@@ -817,17 +817,18 @@ public final class TestCluster implements AutoCloseable
             .controlledEgressListener(controlledEgressListener)
             .ingressEndpoints(staticClusterMemberEndpoints);
 
+        final AgentInvoker conductorAgentInvoker = aeron.conductorAgentInvoker();
         try
         {
             CloseHelper.close(client);
             final AeronCluster.AsyncConnect asyncConnect = AeronCluster.asyncConnect(clientCtx.clone());
             while (null == (client = asyncConnect.poll()))
             {
-                if (clientMediaDriver instanceof JavaTestMediaDriver)
+                invokeSharedAgentInvoker();
+                if (null != conductorAgentInvoker)
                 {
-                    clientMediaDriver.sharedAgentInvoker().invoke();
+                    conductorAgentInvoker.invoke();
                 }
-                aeron.conductorAgentInvoker().invoke();
 
                 Tests.yield();
             }
@@ -840,8 +841,11 @@ public final class TestCluster implements AutoCloseable
             final AeronCluster.AsyncConnect asyncConnect = AeronCluster.asyncConnect(clientCtx.clone());
             while (null == (client = asyncConnect.poll()))
             {
-                clientMediaDriver.sharedAgentInvoker().invoke();
-                aeron.conductorAgentInvoker().invoke();
+                invokeSharedAgentInvoker();
+                if (null != conductorAgentInvoker)
+                {
+                    conductorAgentInvoker.invoke();
+                }
 
                 Tests.yield();
             }
@@ -1020,19 +1024,24 @@ public final class TestCluster implements AutoCloseable
 
     private void pollClient()
     {
+        invokeSharedAgentInvoker();
+
+        final AgentInvoker conductorAgentInvoker = client.context().aeron().conductorAgentInvoker();
+        if (null != conductorAgentInvoker)
+        {
+            conductorAgentInvoker.invoke();
+        }
+
+        client.pollEgress();
+    }
+
+    private void invokeSharedAgentInvoker()
+    {
         if (clientMediaDriver instanceof JavaTestMediaDriver &&
             ThreadingMode.INVOKER == clientMediaDriver.context().threadingMode())
         {
             clientMediaDriver.sharedAgentInvoker().invoke();
         }
-
-        final AgentInvoker agentInvoker = client.context().aeron().conductorAgentInvoker();
-        if (null != agentInvoker)
-        {
-            agentInvoker.invoke();
-        }
-
-        client.pollEgress();
     }
 
     public void awaitCommitPosition(final TestNode node, final long logPosition)

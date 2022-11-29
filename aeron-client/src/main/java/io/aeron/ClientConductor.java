@@ -540,7 +540,7 @@ final class ClientConductor implements Agent
                 service(NO_CORRELATION_ID);
             }
 
-            return (ConcurrentPublication)resourceOrThrow(registrationId);
+            return resourceOrThrow(registrationId, ConcurrentPublication.class);
         }
         finally
         {
@@ -561,7 +561,7 @@ final class ClientConductor implements Agent
                 service(NO_CORRELATION_ID);
             }
 
-            return (ExclusivePublication)resourceOrThrow(registrationId);
+            return resourceOrThrow(registrationId, ExclusivePublication.class);
         }
         finally
         {
@@ -724,19 +724,7 @@ final class ClientConductor implements Agent
                 service(NO_CORRELATION_ID);
             }
 
-            final Object resource = resourceByRegIdMap.get(registrationId);
-            if (resource instanceof Subscription)
-            {
-                return (Subscription)resource;
-            }
-
-            final RegistrationException ex = asyncExceptionByRegIdMap.remove(registrationId);
-            if (null != ex)
-            {
-                throw new RegistrationException(ex);
-            }
-
-            return null;
+            return resourceOrThrow(registrationId, Subscription.class);
         }
         finally
         {
@@ -1630,18 +1618,21 @@ final class ClientConductor implements Agent
         }
     }
 
-    private Object resourceOrThrow(final long registrationId)
+    private <T> T resourceOrThrow(final long registrationId, final Class<T> resourceClass)
     {
         final Object resource = resourceByRegIdMap.get(registrationId);
-        if (null == resource)
+        if (resourceClass.isInstance(resource))
         {
-            final RegistrationException ex = asyncExceptionByRegIdMap.remove(registrationId);
-            if (null != ex)
-            {
-                throw new RegistrationException(ex);
-            }
+            return resourceClass.cast(resource);
         }
-        return resource;
+
+        final RegistrationException ex = asyncExceptionByRegIdMap.remove(registrationId);
+        if (null != ex)
+        {
+            throw new RegistrationException(ex);
+        }
+
+        return null;
     }
 
     private static final class PendingSubscription

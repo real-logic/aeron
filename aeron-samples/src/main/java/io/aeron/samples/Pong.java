@@ -17,9 +17,7 @@ package io.aeron.samples;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.aeron.Aeron;
-import io.aeron.Publication;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.*;
 import org.agrona.CloseHelper;
@@ -83,13 +81,19 @@ public class Pong
                 aeron.addExclusivePublication(PONG_CHANNEL, PONG_STREAM_ID) :
                 aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID))
         {
-            final BufferClaim bufferClaim = new BufferClaim();
-            final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
-                pingHandler(bufferClaim, publication, buffer, offset, length, header);
+            idleStrategy.reset();
+            while (!subscription.isConnected())
+            {
+                idleStrategy.idle();
+            }
+
+            final Image image = subscription.imageAtIndex(0);
+            final FragmentHandler fragmentHandler = new ImageFragmentAssembler((buffer, offset, length, header) ->
+                pingHandler(publication, buffer, offset, length));
 
             while (running.get())
             {
-                idleStrategy.idle(subscription.poll(fragmentHandler, FRAME_COUNT_LIMIT));
+                idleStrategy.idle(image.poll(fragmentHandler, FRAME_COUNT_LIMIT));
             }
 
             System.out.println("Shutting down...");
@@ -99,22 +103,15 @@ public class Pong
     }
 
     private static void pingHandler(
-        final BufferClaim bufferClaim,
         final Publication pongPublication,
         final DirectBuffer buffer,
         final int offset,
-        final int length,
-        final Header header)
+        final int length)
     {
         PING_HANDLER_IDLE_STRATEGY.reset();
-        while (pongPublication.tryClaim(length, bufferClaim) <= 0)
+        while (pongPublication.offer(buffer, offset, length) <= 0)
         {
             PING_HANDLER_IDLE_STRATEGY.idle();
         }
-
-        bufferClaim
-            .flags(header.flags())
-            .putBytes(buffer, offset, length)
-            .commit();
     }
 }

@@ -33,7 +33,6 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
@@ -51,7 +50,6 @@ import org.agrona.collections.LongArrayList;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
@@ -297,26 +295,6 @@ public final class TestNode implements AutoCloseable
     CountersReader countersReader()
     {
         return mediaDriver.counters();
-    }
-
-    public long errors()
-    {
-        final CountersReader countersReader = countersReader();
-        long errors = countersReader.getCounterValue(SystemCounterDescriptor.ERRORS.id());
-
-        final AtomicCounter consensusModuleCounter = consensusModule.context().errorCounter();
-        errors += countersReader.getCounterValue(consensusModuleCounter.id());
-
-        for (final ClusteredServiceContainer serviceContainer : containers)
-        {
-            final AtomicCounter serviceErrorCounter = serviceContainer.context().errorCounter();
-            errors += countersReader.getCounterValue(serviceErrorCounter.id());
-        }
-
-        final AtomicCounter archiveErrorCounter = archive.context().errorCounter();
-        errors += countersReader.getCounterValue(archiveErrorCounter.id());
-
-        return errors;
     }
 
     public ClusterMembership clusterMembership()

@@ -914,10 +914,6 @@ class ClusterTest
 
         cluster.client().close();
         cluster.awaitActiveSessionCount(0);
-
-        assertEquals(0L, leader.errors());
-        assertEquals(0L, followerA.errors());
-        assertEquals(0L, followerB.errors());
     }
 
     @Test
@@ -1023,10 +1019,6 @@ class ClusterTest
 
         cluster.followers(2);
         cluster.awaitServicesMessageCount(messageCount);
-
-        assertEquals(0L, oldLeader.errors());
-        assertEquals(0L, oldFollower1.errors());
-        assertEquals(0L, oldFollower2.errors());
     }
 
     @Test

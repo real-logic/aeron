@@ -40,6 +40,7 @@
 
 #include "samples_configuration.h"
 #include "sample_util.h"
+#include "aeron_alloc.h"
 
 const char usage_str[] =
     "[-h][-v][-C uri][-c uri][-p prefix][-S stream-id][-s stream-id]\n"
@@ -54,7 +55,12 @@ const char usage_str[] =
     "    -s stream-id     stream-id to use for ping channel\n"
     "    -w messages      number of warm up messages to send\n";
 
-#define MAX_MESSAGE_LENGTH (64 * 1024)
+typedef struct aeron_cping_pong_handler_data_stct
+{
+    size_t receive_count;
+    struct hdr_histogram *histogram;
+}
+aeron_cping_pong_handler_data_t;
 
 volatile bool running = true;
 
@@ -70,18 +76,16 @@ inline bool is_running(void)
     return result;
 }
 
-void null_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
-{
-}
-
 void pong_measuring_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
-    struct hdr_histogram *histogram = (struct hdr_histogram *)clientd;
+    aeron_cping_pong_handler_data_t *data = (aeron_cping_pong_handler_data_t *)clientd;
+    data->receive_count++;
+
     int64_t end_ns = aeron_nano_clock();
     int64_t start_ns;
 
     memcpy(&start_ns, buffer, sizeof(uint64_t));
-    hdr_record_value(histogram, end_ns - start_ns);
+    hdr_record_value(data->histogram, end_ns - start_ns);
 }
 
 void send_ping_and_receive_pong(
@@ -89,28 +93,27 @@ void send_ping_and_receive_pong(
     aeron_image_t *image,
     aeron_fragment_handler_t fragment_handler,
     void *poll_clientd,
+    aeron_cping_pong_handler_data_t *pong_handler_data,
     uint64_t messages,
     uint64_t message_length)
 {
-    uint8_t message[MAX_MESSAGE_LENGTH];
+    uint8_t message[message_length];
     int64_t *timestamp = (int64_t *)message;
 
-    memset(message, 0, sizeof(message));
+    memset(message, 0, message_length);
 
     for (size_t i = 0; i < messages && is_running(); i++)
     {
-        int64_t position;
-
         do
         {
             *timestamp = aeron_nano_clock();
         }
-        while ((position = aeron_exclusive_publication_offer(
-            publication, message, message_length, NULL, NULL)) < 0);
+        while (aeron_exclusive_publication_offer(
+            publication, message, message_length, NULL, NULL) < 0);
 
-        while (aeron_image_position(image) < position)
+        while (pong_handler_data->receive_count < (i + 1))
         {
-            while (aeron_image_poll(image, fragment_handler, poll_clientd, DEFAULT_FRAGMENT_COUNT_LIMIT) <= 0)
+            if (aeron_image_poll(image, fragment_handler, poll_clientd, DEFAULT_FRAGMENT_COUNT_LIMIT) <= 0)
             {
                 aeron_idle_strategy_busy_spinning_idle(NULL, 0);
             }
@@ -137,7 +140,7 @@ int main(int argc, char **argv)
     uint64_t warm_up_messages = DEFAULT_NUMBER_OF_WARM_UP_MESSAGES;
     int32_t pong_stream_id = DEFAULT_PONG_STREAM_ID;
     int32_t ping_stream_id = DEFAULT_PING_STREAM_ID;
-    struct hdr_histogram *histogram = NULL;
+    aeron_cping_pong_handler_data_t *pong_handler_data = NULL;
 
     while ((opt = getopt(argc, argv, "hvC:c:L:m:p:S:s:w:")) != -1)
     {
@@ -325,9 +328,19 @@ int main(int argc, char **argv)
         goto cleanup;
     }
 
-    hdr_init(1, 10 * 1000 * 1000 * INT64_C(1000), 3, &histogram);
+    if (aeron_alloc((void **)&pong_handler_data, sizeof(aeron_cping_pong_handler_data_t)) < 0)
+    {
+        fprintf(stderr, "aeron_alloc: %s\n", aeron_errmsg());
+        goto cleanup;
+    }
 
-    if (aeron_image_fragment_assembler_create(&fragment_assembler, pong_measuring_handler, histogram) < 0)
+    if (hdr_init(1, 10 * 1000 * 1000 * INT64_C(1000), 3, &pong_handler_data->histogram) < 0)
+    {
+        fprintf(stderr, "hdr_init: %s\n", aeron_errmsg());
+        goto cleanup;
+    }
+
+    if (aeron_image_fragment_assembler_create(&fragment_assembler, pong_measuring_handler, pong_handler_data) < 0)
     {
         fprintf(stderr, "aeron_image_fragment_assembler_create: %s\n", aeron_errmsg());
         goto cleanup;
@@ -339,23 +352,40 @@ int main(int argc, char **argv)
     int64_t start_warm_up_ns = aeron_nano_clock();
 
     send_ping_and_receive_pong(
-        publication, image, null_handler, NULL, warm_up_messages, message_length);
+        publication,
+        image,
+        aeron_image_fragment_assembler_handler,
+        fragment_assembler,
+        pong_handler_data,
+        warm_up_messages, message_length);
 
     printf("Warm up complete in %" PRId64 "ns\n", aeron_nano_clock() - start_warm_up_ns);
     printf("Pinging %" PRIu64 " messages of length %" PRIu64 " bytes\n", messages, message_length);
 
-    hdr_reset(histogram);
+    hdr_reset(pong_handler_data->histogram);
+    pong_handler_data->receive_count = 0;
 
     send_ping_and_receive_pong(
-        publication, image, aeron_image_fragment_assembler_handler, fragment_assembler, messages, message_length);
+        publication,
+        image,
+        aeron_image_fragment_assembler_handler,
+        fragment_assembler,
+        pong_handler_data,
+        messages,
+        message_length);
 
-    hdr_percentiles_print(histogram, stdout, 5, 1000.0, CLASSIC);
+    hdr_percentiles_print(pong_handler_data->histogram, stdout, 5, 1000.0, CLASSIC);
     fflush(stdout);
 
     printf("Shutting down...\n");
     status = EXIT_SUCCESS;
 
 cleanup:
+    if (NULL != pong_handler_data)
+    {
+        hdr_close(pong_handler_data->histogram);
+    }
+    aeron_free(pong_handler_data);
     aeron_subscription_image_release(subscription, image);
     aeron_subscription_close(subscription, NULL, NULL);
     aeron_exclusive_publication_close(publication, NULL, NULL);

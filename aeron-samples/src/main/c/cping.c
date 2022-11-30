@@ -101,6 +101,7 @@ void send_ping_and_receive_pong(
     int64_t *timestamp = (int64_t *)message;
 
     memset(message, 0, message_length);
+    pong_handler_data->receive_count = 0;
 
     for (size_t i = 0; i < messages && is_running(); i++)
     {
@@ -363,7 +364,6 @@ int main(int argc, char **argv)
     printf("Pinging %" PRIu64 " messages of length %" PRIu64 " bytes\n", messages, message_length);
 
     hdr_reset(pong_handler_data->histogram);
-    pong_handler_data->receive_count = 0;
 
     send_ping_and_receive_pong(
         publication,

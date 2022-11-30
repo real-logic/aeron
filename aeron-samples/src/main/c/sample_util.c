@@ -32,10 +32,12 @@ void print_available_image(void *clientd, aeron_subscription_t *subscription, ae
     else
     {
         printf(
-            "Available image on %s streamId=%" PRId32 " sessionId=%" PRId32 " from %s\n",
+            "Available image on %s streamId=%" PRId32 " sessionId=%" PRId32 " mtu=%" PRId32 " term-length=%" PRId32 " from %s\n",
             subscription_constants.channel,
             subscription_constants.stream_id,
             image_constants.session_id,
+            (int32_t)image_constants.mtu_length,
+            (int32_t)image_constants.term_buffer_length,
             image_constants.source_identity);
     }
 }

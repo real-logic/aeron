@@ -15,15 +15,19 @@
  */
 package io.aeron.samples;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.Image;
+import io.aeron.ImageFragmentAssembler;
+import io.aeron.Publication;
+import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
-import org.HdrHistogram.Histogram;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
+import org.HdrHistogram.Histogram;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -36,6 +40,7 @@ import java.util.concurrent.TimeUnit;
  * Ping component of Ping-Pong latency test recorded to a histogram to capture full distribution.
  * <p>
  * Sends message to {@link Pong} for echoing and records times on return.
+ *
  * @see Pong
  */
 public class Ping
@@ -68,7 +73,9 @@ public class Ping
     {
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final Aeron.Context ctx = new Aeron.Context().availableImageHandler(Ping::availablePongImageHandler);
-        final FragmentHandler fragmentHandler = new FragmentAssembler(Ping::pongHandler);
+        final MutableLong receiveCount = new MutableLong();
+        final FragmentHandler fragmentHandler = new ImageFragmentAssembler(
+            (buffer, offset, length, header) -> pongHandler(buffer, offset, receiveCount));
 
         if (EMBEDDED_MEDIA_DRIVER)
         {
@@ -95,7 +102,7 @@ public class Ping
 
             for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {
-                roundTripMessages(fragmentHandler, publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
+                roundTripMessages(fragmentHandler, publication, subscription, receiveCount, WARMUP_NUMBER_OF_MESSAGES);
                 Thread.yield();
             }
 
@@ -107,7 +114,7 @@ public class Ping
                 HISTOGRAM.reset();
                 System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
-                roundTripMessages(fragmentHandler, publication, subscription, NUMBER_OF_MESSAGES);
+                roundTripMessages(fragmentHandler, publication, subscription, receiveCount, NUMBER_OF_MESSAGES);
                 System.out.println("Histogram of RTT latencies in microseconds.");
 
                 HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
@@ -122,6 +129,7 @@ public class Ping
         final FragmentHandler fragmentHandler,
         final Publication publication,
         final Subscription subscription,
+        final MutableLong receiveCount,
         final long count)
     {
         while (!subscription.isConnected())
@@ -130,18 +138,18 @@ public class Ping
         }
 
         final Image image = subscription.imageAtIndex(0);
+        receiveCount.set(0);
 
         for (long i = 0; i < count; i++)
         {
-            long offeredPosition;
-
             do
             {
                 OFFER_BUFFER.putLong(0, System.nanoTime());
             }
-            while ((offeredPosition = publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH, null)) < 0L);
+            while (publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH, null) < 0L);
 
-            while (image.position() < offeredPosition)
+            POLLING_IDLE_STRATEGY.reset();
+            while (receiveCount.get() != (i + 1))
             {
                 final int fragments = image.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
                 POLLING_IDLE_STRATEGY.idle(fragments);
@@ -149,8 +157,12 @@ public class Ping
         }
     }
 
-    private static void pongHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    private static void pongHandler(
+        final DirectBuffer buffer,
+        final int offset,
+        final MutableLong receiveCount)
     {
+        receiveCount.increment();
         final long pingTimestamp = buffer.getLong(offset);
         final long rttNs = System.nanoTime() - pingTimestamp;
 
@@ -160,9 +172,7 @@ public class Ping
     private static void availablePongImageHandler(final Image image)
     {
         final Subscription subscription = image.subscription();
-        System.out.format(
-            "Available image: channel=%s streamId=%d session=%d%n",
-            subscription.channel(), subscription.streamId(), image.sessionId());
+        SamplesUtil.printAvailableImage(image);
 
         if (PONG_STREAM_ID == subscription.streamId() && PONG_CHANNEL.equals(subscription.channel()))
         {

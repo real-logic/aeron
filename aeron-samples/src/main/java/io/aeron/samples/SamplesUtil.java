@@ -158,8 +158,9 @@ public class SamplesUtil
     {
         final Subscription subscription = image.subscription();
         System.out.printf(
-            "Available image on %s streamId=%d sessionId=%d from %s%n",
-            subscription.channel(), subscription.streamId(), image.sessionId(), image.sourceIdentity());
+            "Available image on %s streamId=%d sessionId=%d mtu=%d term-length=%d from %s%n",
+            subscription.channel(), subscription.streamId(), image.sessionId(), image.mtuLength(),
+            image.termBufferLength(), image.sourceIdentity());
     }
 
     /**

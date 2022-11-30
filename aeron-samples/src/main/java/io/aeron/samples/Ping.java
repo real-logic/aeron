@@ -72,7 +72,9 @@ public class Ping
     public static void main(final String[] args) throws InterruptedException
     {
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
-        final Aeron.Context ctx = new Aeron.Context().availableImageHandler(Ping::availablePongImageHandler);
+        final Aeron.Context ctx = new Aeron.Context()
+            .availableImageHandler(Ping::availablePongImageHandler)
+            .unavailableImageHandler(SamplesUtil::printUnavailableImage);
         final MutableLong receiveCount = new MutableLong();
         final FragmentHandler fragmentHandler = new ImageFragmentAssembler(
             (buffer, offset, length, header) -> pongHandler(buffer, offset, receiveCount));

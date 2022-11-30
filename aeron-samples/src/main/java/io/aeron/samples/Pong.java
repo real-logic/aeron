@@ -15,21 +15,26 @@
  */
 package io.aeron.samples;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.Image;
+import io.aeron.ImageFragmentAssembler;
+import io.aeron.Publication;
+import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SigInt;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Pong component of Ping-Pong.
  * <p>
  * Echoes back messages from {@link Ping}.
+ *
  * @see Ping
  */
 public class Pong
@@ -39,7 +44,6 @@ public class Pong
     private static final int FRAME_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
     private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
-    private static final boolean INFO_FLAG = SampleConfiguration.INFO_FLAG;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
     private static final boolean EXCLUSIVE_PUBLICATIONS = SampleConfiguration.EXCLUSIVE_PUBLICATIONS;
 
@@ -55,15 +59,11 @@ public class Pong
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
 
         final Aeron.Context ctx = new Aeron.Context();
+        ctx.availableImageHandler(SamplesUtil::printAvailableImage);
+        ctx.unavailableImageHandler(SamplesUtil::printUnavailableImage);
         if (EMBEDDED_MEDIA_DRIVER)
         {
             ctx.aeronDirectoryName(driver.aeronDirectoryName());
-        }
-
-        if (INFO_FLAG)
-        {
-            ctx.availableImageHandler(SamplesUtil::printAvailableImage);
-            ctx.unavailableImageHandler(SamplesUtil::printUnavailableImage);
         }
 
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();

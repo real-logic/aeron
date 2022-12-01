@@ -522,9 +522,8 @@ public final class DriverConductor implements Agent
             final SubscriptionLink link = subscriptionLinks.get(i);
             if (link.isLinked(publication))
             {
-                clientProxy.onUnavailableImage(
-                    publication.registrationId(), link.registrationId(), publication.streamId(), publication.channel());
-                subscriptionLinks.get(i).unlink(publication);
+                notifyUnavailableImageLink(publication.registrationId(), link);
+                link.unlink(publication);
             }
         }
     }
@@ -601,8 +600,7 @@ public final class DriverConductor implements Agent
             if (link.isLinked(image))
             {
                 rejoin = link.isRejoin();
-                clientProxy.onUnavailableImage(
-                    image.correlationId(), link.registrationId(), image.streamId(), image.channel());
+                notifyUnavailableImageLink(image.correlationId(), link);
             }
         }
 
@@ -621,11 +619,7 @@ public final class DriverConductor implements Agent
             final SubscriptionLink link = subscriptionLinks.get(i);
             if (link.isLinked(publication))
             {
-                clientProxy.onUnavailableImage(
-                    publication.registrationId(),
-                    link.registrationId(),
-                    publication.streamId(),
-                    CommonContext.IPC_CHANNEL);
+                notifyUnavailableImageLink(publication.registrationId(), link);
             }
         }
     }

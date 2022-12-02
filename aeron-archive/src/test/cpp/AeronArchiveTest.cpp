@@ -130,43 +130,43 @@ public:
 
         std::string aeronDirArg = "-Daeron.dir=" + m_context.aeronDirectoryName();
         std::string archiveDirArg = "-Daeron.archive.dir=" + m_archiveDir;
-        const char * const argv[] =
-        {
-            "java",
+        const char *const argv[] =
+            {
+                "java",
 #if JAVA_MAJOR_VERSION >= 9
-            "--add-opens",
-            "java.base/java.lang.reflect=ALL-UNNAMED",
-            "--add-opens",
-            "java.base/java.net=ALL-UNNAMED",
-            "--add-opens",
-            "java.base/sun.nio.ch=ALL-UNNAMED",
+                "--add-opens",
+                "java.base/java.lang.reflect=ALL-UNNAMED",
+                "--add-opens",
+                "java.base/java.net=ALL-UNNAMED",
+                "--add-opens",
+                "java.base/sun.nio.ch=ALL-UNNAMED",
 #endif
-            "-Daeron.dir.delete.on.start=true",
-            "-Daeron.dir.delete.on.shutdown=true",
-            "-Daeron.archive.dir.delete.on.start=true",
-            "-Daeron.archive.max.catalog.entries=128",
-            "-Daeron.term.buffer.sparse.file=true",
-            "-Daeron.perform.storage.checks=false",
-            "-Daeron.term.buffer.length=64k",
-            "-Daeron.ipc.term.buffer.length=64k",
-            "-Daeron.threading.mode=SHARED",
-            "-Daeron.shared.idle.strategy=yield",
-            "-Daeron.archive.threading.mode=SHARED",
-            "-Daeron.archive.idle.strategy=yield",
-            "-Daeron.archive.recording.events.enabled=false",
-            "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
-            "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
-            "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
-            "-Daeron.archive.control.channel=aeron:udp?endpoint=localhost:8010",
-            "-Daeron.archive.replication.channel=aeron:udp?endpoint=localhost:0",
-            "-Daeron.archive.control.response.channel=aeron:udp?endpoint=localhost:0",
-            archiveDirArg.c_str(),
-            aeronDirArg.c_str(),
-            "-cp",
-            m_aeronAllJar.c_str(),
-            "io.aeron.archive.ArchivingMediaDriver",
-            nullptr
-        };
+                "-Daeron.dir.delete.on.start=true",
+                "-Daeron.dir.delete.on.shutdown=true",
+                "-Daeron.archive.dir.delete.on.start=true",
+                "-Daeron.archive.max.catalog.entries=128",
+                "-Daeron.term.buffer.sparse.file=true",
+                "-Daeron.perform.storage.checks=false",
+                "-Daeron.term.buffer.length=64k",
+                "-Daeron.ipc.term.buffer.length=64k",
+                "-Daeron.threading.mode=SHARED",
+                "-Daeron.shared.idle.strategy=yield",
+                "-Daeron.archive.threading.mode=SHARED",
+                "-Daeron.archive.idle.strategy=yield",
+                "-Daeron.archive.recording.events.enabled=false",
+                "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
+                "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
+                "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
+                "-Daeron.archive.control.channel=aeron:udp?endpoint=localhost:8010",
+                "-Daeron.archive.replication.channel=aeron:udp?endpoint=localhost:0",
+                "-Daeron.archive.control.response.channel=aeron:udp?endpoint=localhost:0",
+                archiveDirArg.c_str(),
+                aeronDirArg.c_str(),
+                "-cp",
+                m_aeronAllJar.c_str(),
+                "io.aeron.archive.ArchivingMediaDriver",
+                nullptr
+            };
 
 #if defined(_WIN32)
         m_pid = _spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
@@ -1060,12 +1060,12 @@ TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
     EXPECT_EQ(1L, std::count_if(
         descriptors.begin(),
         descriptors.end(),
-        [=](const SubscriptionDescriptor &descriptor){ return descriptor.m_subscriptionId == subIdOne;}));
+        [=](const SubscriptionDescriptor &descriptor){ return descriptor.m_subscriptionId == subIdOne; }));
 
     EXPECT_EQ(1L, std::count_if(
         descriptors.begin(),
         descriptors.end(),
-        [=](const SubscriptionDescriptor &descriptor){ return descriptor.m_subscriptionId == subIdThree;}));
+        [=](const SubscriptionDescriptor &descriptor){ return descriptor.m_subscriptionId == subIdThree; }));
 }
 
 TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
@@ -1371,11 +1371,13 @@ TEST_F(AeronArchiveTest, shouldReadRecordingDescriptor)
     const std::int64_t subscriptionId = aeronArchive->startRecording(
         m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
 
-    const std::int64_t recordingId = [&] {
-        CountersReader &countersReader = aeron->countersReader();
-        const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
-        return RecordingPos::getRecordingId(countersReader, counterId);
-    }();
+    const std::int64_t recordingId =
+        [&]
+        {
+            CountersReader &countersReader = aeron->countersReader();
+            const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
+            return RecordingPos::getRecordingId(countersReader, counterId);
+        }();
 
     aeronArchive->stopRecording(subscriptionId);
 

@@ -1015,7 +1015,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
             lastSlowTickNs = nowNs;
             final long nowMs = epochClock.time();
 
-            if (commitPosition.isClosed())
+            if (null != commitPosition && commitPosition.isClosed())
             {
                 ctx.errorLog().record(new AeronEvent(
                     "commit-pos counter unexpectedly closed, terminating", AeronException.Category.WARN));

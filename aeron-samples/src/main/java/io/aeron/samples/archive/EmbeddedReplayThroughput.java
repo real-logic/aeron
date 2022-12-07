@@ -55,10 +55,18 @@ abstract class EmbeddedReplayThroughputValue extends EmbeddedReplayThroughputLhs
     long messageCount;
 }
 
+abstract class EmbeddedReplayThroughputRhsPadding extends EmbeddedReplayThroughputValue
+{
+    byte p064, p065, p066, p067, p068, p069, p070, p071, p072, p073, p074, p075, p076, p077, p078, p079;
+    byte p080, p081, p082, p083, p084, p085, p086, p087, p088, p089, p090, p091, p092, p093, p094, p095;
+    byte p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
+    byte p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
+}
+
 /**
  * Tests the throughput when replaying a recorded stream of messages.
  */
-public class EmbeddedReplayThroughput extends EmbeddedReplayThroughputValue implements AutoCloseable
+public class EmbeddedReplayThroughput extends EmbeddedReplayThroughputRhsPadding implements AutoCloseable
 {
     private static final int REPLAY_STREAM_ID = 101;
     private static final String REPLAY_URI = "aeron:ipc";
@@ -67,11 +75,6 @@ public class EmbeddedReplayThroughput extends EmbeddedReplayThroughputValue impl
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
-
-    byte p064, p065, p066, p067, p068, p069, p070, p071, p072, p073, p074, p075, p076, p077, p078, p079;
-    byte p080, p081, p082, p083, p084, p085, p086, p087, p088, p089, p090, p091, p092, p093, p094, p095;
-    byte p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
-    byte p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
 
     private final ArchivingMediaDriver archivingMediaDriver;
     private final Aeron aeron;

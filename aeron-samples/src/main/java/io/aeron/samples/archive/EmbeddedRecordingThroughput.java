@@ -20,6 +20,7 @@ import io.aeron.ExclusivePublication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
@@ -54,6 +55,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
     private final Aeron aeron;
     private final AeronArchive aeronArchive;
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, CACHE_LINE_LENGTH));
+    private final RecordingSignalCapture recordingSignalCapture;
 
     /**
      * Main method for launching the process.
@@ -99,9 +101,12 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
 
         aeron = Aeron.connect();
 
+        recordingSignalCapture = new RecordingSignalCapture();
+
         aeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
-                .aeron(aeron));
+                .aeron(aeron)
+                .recordingSignalConsumer(recordingSignalCapture));
     }
 
     /**
@@ -171,6 +176,9 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
 
     private void truncateRecording(final long previousRecordingId)
     {
+        recordingSignalCapture.reset();
         aeronArchive.truncateRecording(previousRecordingId, 0L);
+
+        recordingSignalCapture.awaitSignal(aeronArchive, previousRecordingId, RecordingSignal.DELETE);
     }
 }

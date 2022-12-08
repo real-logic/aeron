@@ -29,7 +29,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.File;
 import java.nio.file.Path;
 
 import static io.aeron.archive.Archive.Configuration.*;
@@ -195,6 +198,85 @@ class ArchiveContextTest
             .thenReturn(AeronCounters.ARCHIVE_ERROR_COUNT_TYPE_ID);
 
         assertThrows(ConfigurationException.class, context::conclude);
+    }
+
+    @Test
+    void markFileDirShouldReturnArchiveDirWhenNotSet(final @TempDir File archiveDir)
+    {
+        context.archiveDir(archiveDir);
+
+        assertSame(archiveDir, context.markFileDir());
+    }
+
+    @Test
+    void markFileDirShouldReturnExplicitlySetDirectory(final @TempDir File tempDir)
+    {
+        final File archiveDir = new File(tempDir, "archiveDir");
+        final File markFileDir = new File(tempDir, "markFileDir");
+        context.archiveDir(archiveDir);
+        context.markFileDir(markFileDir);
+
+        assertSame(markFileDir, context.markFileDir());
+        assertSame(archiveDir, context.archiveDir());
+    }
+
+    @Test
+    void configurationMarkFileDirReturnsNullIfPropertyNotSet()
+    {
+        System.clearProperty(MARK_FILE_DIR_PROP_NAME);
+        assertNull(Archive.Configuration.markFileDir());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "", "abc", "x/y/z" })
+    void configurationMarkFileDirReturnsValueSet(final String markFileDir)
+    {
+        System.setProperty(MARK_FILE_DIR_PROP_NAME, markFileDir);
+        try
+        {
+            assertEquals(markFileDir, Archive.Configuration.markFileDir());
+        }
+        finally
+        {
+            System.clearProperty(MARK_FILE_DIR_PROP_NAME);
+        }
+    }
+
+    @Test
+    void concludeShouldCreateMarkFileDirSetViaSystemProperty(final @TempDir File tempDir)
+    {
+        final File rootDir = new File(tempDir, "root");
+        final File markFileDir = new File(rootDir, "mark-file-dir");
+        assertFalse(markFileDir.exists());
+
+        System.setProperty(MARK_FILE_DIR_PROP_NAME, markFileDir.getAbsolutePath());
+        try
+        {
+            assertSame(context.archiveDir(), context.markFileDir());
+
+            context.conclude();
+
+            assertEquals(markFileDir, context.markFileDir());
+            assertTrue(markFileDir.exists());
+        }
+        finally
+        {
+            System.clearProperty(MARK_FILE_DIR_PROP_NAME);
+        }
+    }
+
+    @Test
+    void concludeShouldCreateMarkFileDirSetDirectly(final @TempDir File tempDir)
+    {
+        final File rootDir = new File(tempDir, "root");
+        final File markFileDir = new File(rootDir, "mark-file-dir");
+        assertFalse(markFileDir.exists());
+        context.markFileDir(markFileDir);
+
+        context.conclude();
+
+        assertEquals(markFileDir, context.markFileDir());
+        assertTrue(markFileDir.exists());
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

@@ -222,6 +222,11 @@ public final class Archive implements AutoCloseable
         public static final String ARCHIVE_DIR_DEFAULT = "aeron-archive";
 
         /**
+         * Alternative directory to store mark file (i.e. {@code archive-mark.dat}).
+         */
+        public static final String MARK_FILE_DIR_PROP_NAME = "aeron.archive.mark.file.dir";
+
+        /**
          * Recordings will be segmented on disk in files limited to the segment length which must be a multiple of
          * the term length for each stream. For lots of small recording this value may be reduced.
          */
@@ -507,6 +512,16 @@ public final class Archive implements AutoCloseable
         public static String archiveDirName()
         {
             return System.getProperty(ARCHIVE_DIR_PROP_NAME, ARCHIVE_DIR_DEFAULT);
+        }
+
+        /**
+         * Get the alternative directory to be used for storing the archive mark file.
+         *
+         * @return the directory to be used for storing the archive mark file.
+         */
+        public static String markFileDir()
+        {
+            return System.getProperty(MARK_FILE_DIR_PROP_NAME);
         }
 
         /**
@@ -860,6 +875,7 @@ public final class Archive implements AutoCloseable
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
         private File archiveDir;
+        private File markFileDir;
         private String archiveDirectoryName = Configuration.archiveDirName();
         private FileChannel archiveDirChannel;
         private FileStore archiveFileStore;
@@ -997,6 +1013,15 @@ public final class Archive implements AutoCloseable
                 archiveDir = new File(archiveDirectoryName);
             }
 
+            if (null == markFileDir)
+            {
+                final String dir = Configuration.markFileDir();
+                if (!Strings.isEmpty(dir))
+                {
+                    markFileDir = new File(dir);
+                }
+            }
+
             if (deleteArchiveOnStart)
             {
                 IoUtil.delete(archiveDir, false);
@@ -1005,6 +1030,11 @@ public final class Archive implements AutoCloseable
             if (!archiveDir.exists() && !archiveDir.mkdirs())
             {
                 throw new ArchiveException("failed to create archive dir: " + archiveDir.getAbsolutePath());
+            }
+
+            if (null != markFileDir && !markFileDir.exists() && !markFileDir.mkdirs())
+            {
+                throw new ArchiveException("failed to create mark file dir: " + markFileDir.getAbsolutePath());
             }
 
             archiveDirChannel = channelForDirectorySync(archiveDir, catalogFileSyncLevel);
@@ -1310,6 +1340,32 @@ public final class Archive implements AutoCloseable
         public Context archiveDir(final File archiveDir)
         {
             this.archiveDir = archiveDir;
+            return this;
+        }
+
+        /**
+         * Get the directory in which the Archive will store mark file (i.e. {@code archive-mark.dat}). It defaults to
+         * {@link #archiveDir()} if it is not set explicitly via the
+         * {@link Configuration#MARK_FILE_DIR_PROP_NAME}.
+         *
+         * @return the directory in which the Archive will store mark file (i.e. {@code archive-mark.dat}).
+         * @see Configuration#MARK_FILE_DIR_PROP_NAME
+         * @see #archiveDir()
+         */
+        public File markFileDir()
+        {
+            return null != markFileDir ? markFileDir : archiveDir;
+        }
+
+        /**
+         * Set the directory in which the Archive will store mark file (i.e. {@code archive-mark.dat}).
+         *
+         * @param markFileDir the directory in which the Archive will store mark file (i.e. {@code archive-mark.dat}).
+         * @return this for a fluent API.
+         */
+        public Context markFileDir(final File markFileDir)
+        {
+            this.markFileDir = markFileDir;
             return this;
         }
 

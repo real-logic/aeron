@@ -83,7 +83,7 @@ public class ArchiveMarkFile implements AutoCloseable
     ArchiveMarkFile(final Archive.Context ctx)
     {
         this(
-            new File(ctx.archiveDir(), FILENAME),
+            new File(ctx.markFileDir(), FILENAME),
             alignedTotalFileLength(ctx),
             ctx.errorBufferLength(),
             ctx.epochClock(),

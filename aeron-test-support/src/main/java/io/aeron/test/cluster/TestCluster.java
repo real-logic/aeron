@@ -1119,6 +1119,27 @@ public final class TestCluster implements AutoCloseable
         return awaitLeader(NULL_VALUE);
     }
 
+    public TestNode awaitLeaderAndClosedElection(final int nodeId)
+    {
+        final TestNode leader = awaitLeader(nodeId);
+
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                awaitElectionClosed(node);
+            }
+        }
+
+        return leader;
+    }
+
+    public TestNode awaitLeaderAndClosedElection()
+    {
+        return awaitLeaderAndClosedElection(NULL_VALUE);
+    }
+
+
     public List<TestNode> followers()
     {
         return followers(0);

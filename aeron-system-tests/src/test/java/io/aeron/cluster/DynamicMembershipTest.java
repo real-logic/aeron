@@ -278,7 +278,7 @@ class DynamicMembershipTest
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);
 
-        final TestNode initialLeader = cluster.awaitLeader();
+        final TestNode initialLeader = cluster.awaitLeaderAndClosedElection();
         final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
         awaitElectionClosed(dynamicMember);
@@ -291,7 +291,7 @@ class DynamicMembershipTest
         cluster.awaitNodeTermination(initialLeader);
         cluster.stopNode(initialLeader);
 
-        final TestNode newLeader = cluster.awaitLeader(initialLeaderIndex);
+        final TestNode newLeader = cluster.awaitLeaderAndClosedElection(initialLeaderIndex);
         final ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 3);
 
         assertEquals(newLeader.index(), clusterMembership.leaderMemberId);

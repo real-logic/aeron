@@ -3018,6 +3018,20 @@ public final class Archive implements AutoCloseable
                 CloseHelper.close(countedErrorHandler, totalReadBytesCounter);
                 CloseHelper.close(countedErrorHandler, totalReadTimeCounter);
                 CloseHelper.close(countedErrorHandler, maxReadTimeCounter);
+                closeDutyCycleCounters(conductorDutyCycleTracker);
+                closeDutyCycleCounters(recorderDutyCycleTracker);
+                closeDutyCycleCounters(replayerDutyCycleTracker);
+            }
+        }
+
+        private void closeDutyCycleCounters(final DutyCycleTracker dutyCycleTracker)
+        {
+            if (dutyCycleTracker instanceof DutyCycleStallTracker)
+            {
+                final DutyCycleStallTracker dutyCycleStallTracker =
+                    (DutyCycleStallTracker)dutyCycleTracker;
+                CloseHelper.close(countedErrorHandler, dutyCycleStallTracker.maxCycleTime());
+                CloseHelper.close(countedErrorHandler, dutyCycleStallTracker.cycleTimeThresholdExceededCount());
             }
         }
 

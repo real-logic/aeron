@@ -354,10 +354,7 @@ int aeron_udp_channel_parse(
         if (aeron_find_multicast_interface(
             endpoint_addr.ss_family, _channel->uri.params.udp.bind_interface, &interface_addr, &interface_index) < 0)
         {
-            AERON_SET_ERR(
-                -AERON_ERROR_CODE_INVALID_CHANNEL,
-                "could not find interface=(%s): %s",
-                _channel->uri.params.udp.bind_interface, aeron_errmsg());
+            AERON_APPEND_ERR("%s", "");
             goto error_cleanup;
         }
 

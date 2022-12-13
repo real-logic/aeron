@@ -256,6 +256,7 @@ int aeron_interface_parse_and_resolve(const char *interface_str, struct sockaddr
 
     if (-1 == aeron_interface_split(interface_str, &parsed_interface))
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -534,6 +535,7 @@ int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_
 
     if (aeron_interface_parse_and_resolve(interface_str, &state.lookup_addr, &state.prefixlen) < 0)
     {
+        AERON_APPEND_ERR("could not parse interface='%s'", interface_str);
         return -1;
     }
 
@@ -547,7 +549,7 @@ int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_
 
     if (0 == result)
     {
-        AERON_SET_ERR(EINVAL, "could not find matching interface=(%s)", interface_str);
+        AERON_SET_ERR(EINVAL, "could not find matching interface='%s'", interface_str);
         return -1;
     }
 

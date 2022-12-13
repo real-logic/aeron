@@ -33,6 +33,7 @@ import org.agrona.*;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2LongCounterMap;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.MutableLong;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
@@ -111,8 +112,8 @@ abstract class ArchiveConductor
     private final ControlSessionProxy controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
     private final DutyCycleTracker dutyCycleTracker;
     final Archive.Context ctx;
-    SessionWorker<RecordingSession> recorder;
-    SessionWorker<ReplaySession> replayer;
+    Recorder recorder;
+    Replayer replayer;
 
     ArchiveConductor(final Archive.Context ctx)
     {
@@ -188,9 +189,9 @@ abstract class ArchiveConductor
         }
     }
 
-    abstract SessionWorker<RecordingSession> newRecorder();
+    abstract Recorder newRecorder();
 
-    abstract SessionWorker<ReplaySession> newReplayer();
+    abstract Replayer newReplayer();
 
     /**
      * {@inheritDoc}
@@ -723,10 +724,14 @@ abstract class ArchiveConductor
             catalog,
             archiveDir,
             cachedEpochClock,
+            nanoClock,
             replayPublication,
             recordingSummary,
             replayLimitPosition,
-            ctx.replayChecksum());
+            ctx.replayChecksum(),
+            replayer.totalReadBytes,
+            replayer.totalReadTimeNs,
+            replayer.maxReadTimeNs);
 
         replaySessionByIdMap.put(replaySessionId, replaySession);
         replayer.addSession(replaySession);
@@ -1642,7 +1647,10 @@ abstract class ArchiveConductor
             position,
             ctx,
             controlSession,
-            autoStop);
+            autoStop,
+            recorder.totalWriteBytes,
+            recorder.totalWriteTimeNs,
+            recorder.maxWriteTimeNs);
 
         controlSession.sendSignal(
             correlationId,
@@ -1701,7 +1709,10 @@ abstract class ArchiveConductor
                 position,
                 ctx,
                 controlSession,
-                autoStop);
+                autoStop,
+                recorder.totalWriteBytes,
+                recorder.totalWriteTimeNs,
+                recorder.maxWriteTimeNs);
 
             catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
             controlSession.sendSignal(
@@ -2109,6 +2120,66 @@ abstract class ArchiveConductor
                 controlSession.sendSignal(
                     correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
             }
+        }
+    }
+
+    abstract static class Recorder extends SessionWorker<RecordingSession>
+    {
+        final MutableLong totalWriteBytes = new MutableLong();
+        final MutableLong totalWriteTimeNs = new MutableLong();
+        final MutableLong maxWriteTimeNs = new MutableLong();
+        private final Counter totalWriteBytesCounter;
+        private final Counter totalWriteTimeCounter;
+        private final Counter maxWriteTimeCounter;
+
+        Recorder(final CountedErrorHandler errorHandler, final Archive.Context context)
+        {
+            super("archive-recorder", errorHandler);
+            totalWriteBytesCounter = context.totalWriteBytesCounter();
+            totalWriteTimeCounter = context.totalWriteTimeCounter();
+            maxWriteTimeCounter = context.maxWriteTimeCounter();
+        }
+
+        public int doWork()
+        {
+            final int workCount = super.doWork();
+            if (workCount > 0)
+            {
+                totalWriteBytesCounter.set(totalWriteBytes.get());
+                totalWriteTimeCounter.set(totalWriteTimeNs.get());
+                maxWriteTimeCounter.set(maxWriteTimeNs.get());
+            }
+            return workCount;
+        }
+    }
+
+    abstract static class Replayer extends SessionWorker<ReplaySession>
+    {
+        final MutableLong totalReadBytes = new MutableLong();
+        final MutableLong totalReadTimeNs = new MutableLong();
+        final MutableLong maxReadTimeNs = new MutableLong();
+        private final Counter totalReadBytesCounter;
+        private final Counter totalReadTimeCounter;
+        private final Counter maxReadTimeCounter;
+
+        Replayer(final CountedErrorHandler errorHandler, final Archive.Context context)
+        {
+            super("archive-replayer", errorHandler);
+            totalReadBytesCounter = context.totalReadBytesCounter();
+            totalReadTimeCounter = context.totalReadTimeCounter();
+            maxReadTimeCounter = context.maxReadTimeCounter();
+        }
+
+        public int doWork()
+        {
+            final int workCount = super.doWork();
+            if (workCount > 0)
+            {
+                totalReadBytesCounter.set(totalReadBytes.get());
+                totalReadTimeCounter.set(totalReadTimeNs.get());
+                maxReadTimeCounter.set(maxReadTimeNs.get());
+            }
+            return workCount;
         }
     }
 }

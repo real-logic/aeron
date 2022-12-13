@@ -160,6 +160,42 @@ public final class AeronCounters
      */
     public static final int ARCHIVE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID = 104;
 
+    /**
+     * The type id of the {@link Counter} used for keeping track of the max time it took recoder to write a block of
+     * data to the storage.
+     */
+    public static final int ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID = 105;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the total number of bytes written by the recorder
+     * to the storage.
+     */
+    public static final int ARCHIVE_RECORDER_TOTAL_WRITE_BYTES_TYPE_ID = 106;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the total time the recorder spent writing data to
+     * the storage.
+     */
+    public static final int ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID = 107;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the max it took replayer to read a block from the
+     * storage.
+     */
+    public static final int ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID = 108;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the total number of bytes read by the replayer from
+     * the storage.
+     */
+    public static final int ARCHIVE_REPLAYER_TOTAL_READ_BYTES_TYPE_ID = 109;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the total time the replayer spent reading data from
+     * the storage.
+     */
+    public static final int ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID = 110;
+
     // Cluster counters
 
     /**

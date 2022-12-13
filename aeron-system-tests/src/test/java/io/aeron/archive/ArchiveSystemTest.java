@@ -384,6 +384,13 @@ class ArchiveSystemTest
                 Tests.yield();
             }
         }
+        final Archive.Context context = archive.context();
+        Tests.await(() -> context.totalWriteBytesCounter().get() >= totalDataLength);
+        final long totalWriteTimeNs = context.totalWriteTimeCounter().get();
+        assertNotEquals(0, totalWriteTimeNs);
+        final long maxWriteTimeNs = context.maxWriteTimeCounter().get();
+        assertNotEquals(0, maxWriteTimeNs);
+        assertTrue(totalWriteTimeNs > maxWriteTimeNs);
 
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
         validateArchiveFile(recordingId);
@@ -566,17 +573,15 @@ class ArchiveSystemTest
         {
             final long replayCorrelationId = client.nextCorrelationId();
 
-            if (!archiveProxy.replay(
+            assertTrue(archiveProxy.replay(
                 recordingId,
                 startPosition,
                 totalRecordingLength,
                 REPLAY_URI,
                 REPLAY_STREAM_ID,
                 replayCorrelationId,
-                controlSessionId))
-            {
-                throw new IllegalStateException("failed to replay");
-            }
+                controlSessionId),
+                "failed to replay");
 
             ArchiveTests.awaitOk(controlResponse, replayCorrelationId);
             Tests.awaitConnected(replay);
@@ -602,6 +607,14 @@ class ArchiveSystemTest
             assertEquals(MESSAGE_COUNT, messageCount);
             assertEquals(0L, remaining);
         }
+
+        final Archive.Context context = archive.context();
+        Tests.await(() -> context.totalReadBytesCounter().get() >= totalDataLength);
+        final long totalReadTimeNs = context.totalReadTimeCounter().get();
+        assertNotEquals(0, totalReadTimeNs);
+        final long maxReadTimeNs = context.maxReadTimeCounter().get();
+        assertNotEquals(0, maxReadTimeNs);
+        assertTrue(totalReadTimeNs > maxReadTimeNs);
     }
 
     private void validateArchiveFile(final long recordingId)

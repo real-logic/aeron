@@ -24,8 +24,10 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CountedErrorHandler;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -89,6 +91,11 @@ class ReplaySession implements Session, AutoCloseable
     private final ExclusivePublication publication;
     private final ControlSession controlSession;
     private final CachedEpochClock epochClock;
+
+    private final NanoClock nanoClock;
+    final MutableLong totalReadBytes;
+    final MutableLong totalReadTimeNs;
+    final MutableLong maxReadTimeNs;
     private final File archiveDir;
     private final Catalog catalog;
     private final Counter limitPosition;
@@ -112,10 +119,14 @@ class ReplaySession implements Session, AutoCloseable
         final Catalog catalog,
         final File archiveDir,
         final CachedEpochClock epochClock,
+        final NanoClock nanoClock,
         final ExclusivePublication publication,
         final RecordingSummary recordingSummary,
         final Counter replayLimitPosition,
-        final Checksum checksum)
+        final Checksum checksum,
+        final MutableLong totalReadBytes,
+        final MutableLong totalReadTimeNs,
+        final MutableLong maxReadTimeNs)
     {
         this.controlSession = controlSession;
         this.sessionId = replaySessionId;
@@ -126,6 +137,7 @@ class ReplaySession implements Session, AutoCloseable
         this.streamId = recordingSummary.streamId;
         this.mtuLength = recordingSummary.mtuLength;
         this.epochClock = epochClock;
+        this.nanoClock = nanoClock;
         this.archiveDir = archiveDir;
         this.publication = publication;
         this.limitPosition = replayLimitPosition;
@@ -135,6 +147,9 @@ class ReplaySession implements Session, AutoCloseable
         this.checksum = checksum;
         this.startPosition = recordingSummary.startPosition;
         this.stopPosition = null == limitPosition ? recordingSummary.stopPosition : limitPosition.get();
+        this.totalReadBytes = totalReadBytes;
+        this.totalReadTimeNs = totalReadTimeNs;
+        this.maxReadTimeNs = maxReadTimeNs;
 
         final long fromPosition = position == NULL_POSITION ? startPosition : position;
         final long maxLength = null == limitPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
@@ -366,70 +381,79 @@ class ReplaySession implements Session, AutoCloseable
         }
 
         int workCount = 0;
-        final int bytesRead = readRecording(stopPosition - replayPosition);
-        if (bytesRead > 0)
+        if (publication.availableWindow() > 0)
         {
-            int batchOffset = 0;
-            int paddingFrameLength = 0;
-            final int sessionId = publication.sessionId();
-            final int streamId = publication.streamId();
-            final long remaining = replayLimit - replayPosition;
-            final Checksum checksum = this.checksum;
-            final UnsafeBuffer replayBuffer = this.replayBuffer;
-
-            while (batchOffset < bytesRead && batchOffset < remaining)
+            final long startNs = nanoClock.nanoTime();
+            final int bytesRead = readRecording(stopPosition - replayPosition);
+            if (bytesRead > 0)
             {
-                final int frameLength = frameLength(replayBuffer, batchOffset);
-                if (frameLength <= 0)
-                {
-                    raiseError(frameLength, bytesRead, batchOffset, remaining);
-                }
+                int batchOffset = 0;
+                int paddingFrameLength = 0;
+                final int sessionId = publication.sessionId();
+                final int streamId = publication.streamId();
+                final long remaining = replayLimit - replayPosition;
+                final Checksum checksum = this.checksum;
+                final UnsafeBuffer replayBuffer = this.replayBuffer;
 
-                final int frameType = frameType(replayBuffer, batchOffset);
-                final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-
-                if (HDR_TYPE_DATA == frameType)
+                while (batchOffset < bytesRead && batchOffset < remaining)
                 {
-                    if (batchOffset + alignedLength > bytesRead)
+                    final int frameLength = frameLength(replayBuffer, batchOffset);
+                    if (frameLength <= 0)
                     {
+                        raiseError(frameLength, bytesRead, batchOffset, remaining);
+                    }
+
+                    final int frameType = frameType(replayBuffer, batchOffset);
+                    final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+
+                    if (HDR_TYPE_DATA == frameType)
+                    {
+                        if (batchOffset + alignedLength > bytesRead)
+                        {
+                            break;
+                        }
+
+                        if (null != checksum)
+                        {
+                            verifyChecksum(checksum, batchOffset, alignedLength);
+                        }
+
+                        replayBuffer.putInt(batchOffset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+                        replayBuffer.putInt(batchOffset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+                        batchOffset += alignedLength;
+                    }
+                    else if (HDR_TYPE_PAD == frameType)
+                    {
+                        paddingFrameLength = frameLength;
                         break;
                     }
+                }
 
-                    if (null != checksum)
+                final long readTimeNs = nanoClock.nanoTime() - startNs;
+                totalReadBytes.getAndAdd(bytesRead);
+                totalReadTimeNs.getAndAdd(readTimeNs);
+                maxReadTimeNs.set(Math.max(readTimeNs, maxReadTimeNs.get()));
+
+                if (batchOffset > 0)
+                {
+                    final long position = publication.offerBlock(replayBuffer, 0, batchOffset);
+                    if (hasPublicationAdvanced(position, batchOffset))
                     {
-                        verifyChecksum(checksum, batchOffset, alignedLength);
+                        workCount++;
                     }
+                    else
+                    {
+                        paddingFrameLength = 0;
+                    }
+                }
 
-                    replayBuffer.putInt(batchOffset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
-                    replayBuffer.putInt(batchOffset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
-                    batchOffset += alignedLength;
-                }
-                else if (HDR_TYPE_PAD == frameType)
+                if (paddingFrameLength > 0)
                 {
-                    paddingFrameLength = frameLength;
-                    break;
-                }
-            }
-
-            if (batchOffset > 0)
-            {
-                final long position = publication.offerBlock(replayBuffer, 0, batchOffset);
-                if (hasPublicationAdvanced(position, batchOffset))
-                {
-                    workCount++;
-                }
-                else
-                {
-                    paddingFrameLength = 0;
-                }
-            }
-
-            if (paddingFrameLength > 0)
-            {
-                final long position = publication.appendPadding(paddingFrameLength - HEADER_LENGTH);
-                if (hasPublicationAdvanced(position, align(paddingFrameLength, FRAME_ALIGNMENT)))
-                {
-                    workCount++;
+                    final long position = publication.appendPadding(paddingFrameLength - HEADER_LENGTH);
+                    if (hasPublicationAdvanced(position, align(paddingFrameLength, FRAME_ALIGNMENT)))
+                    {
+                        workCount++;
+                    }
                 }
             }
         }
@@ -486,29 +510,24 @@ class ReplaySession implements Session, AutoCloseable
 
     private int readRecording(final long availableReplay) throws IOException
     {
-        if (publication.availableWindow() > 0)
+        final int limit = min((int)min(availableReplay, replayBuffer.capacity()), termLength - termOffset);
+        final ByteBuffer byteBuffer = replayBuffer.byteBuffer();
+        byteBuffer.clear().limit(limit);
+
+        int position = termBaseSegmentOffset + termOffset;
+        do
         {
-            final int limit = min((int)min(availableReplay, replayBuffer.capacity()), termLength - termOffset);
-            final ByteBuffer byteBuffer = replayBuffer.byteBuffer();
-            byteBuffer.clear().limit(limit);
-
-            int position = termBaseSegmentOffset + termOffset;
-            do
+            final int bytesRead = fileChannel.read(byteBuffer, position);
+            if (bytesRead <= 0)
             {
-                final int bytesRead = fileChannel.read(byteBuffer, position);
-                if (bytesRead <= 0)
-                {
-                    break;
-                }
-
-                position += bytesRead;
+                break;
             }
-            while (byteBuffer.remaining() > 0);
 
-            return byteBuffer.limit();
+            position += bytesRead;
         }
+        while (byteBuffer.remaining() > 0);
 
-        return 0;
+        return limit;
     }
 
     private void onError(final String errorMessage)

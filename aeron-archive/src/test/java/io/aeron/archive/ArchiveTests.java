@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Aeron;
 import io.aeron.Subscription;
 import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.codecs.ControlResponseCode;
@@ -22,6 +23,7 @@ import io.aeron.test.Tests;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableBoolean;
+import org.agrona.collections.MutableLong;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -91,9 +93,10 @@ class ArchiveTests
             TIMEOUT_NS);
     }
 
-    static void awaitOk(final Subscription controlResponse, final long expectedCorrelationId)
+    static long awaitOk(final Subscription controlResponse, final long expectedCorrelationId)
     {
         final MutableBoolean hasResponse = new MutableBoolean();
+        final MutableLong relevantIdCapture = new MutableLong(Aeron.NULL_VALUE);
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
             {
@@ -112,6 +115,7 @@ class ArchiveTests
                             throw new IllegalStateException("expected=" + ControlResponseCode.OK + " actual=" + code);
                         }
 
+                        relevantIdCapture.set(relevantId);
                         hasResponse.set(true);
                     }
                 }
@@ -131,11 +135,14 @@ class ArchiveTests
             },
             Integer.MAX_VALUE,
             TIMEOUT_NS);
+
+        return relevantIdCapture.get();
     }
 
-    static void awaitResponse(final Subscription controlResponse, final long expectedCorrelationId)
+    static long awaitResponse(final Subscription controlResponse, final long expectedCorrelationId)
     {
         final MutableBoolean hasResponse = new MutableBoolean();
+        final MutableLong relevantIdCapture = new MutableLong(Aeron.NULL_VALUE);
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
             {
@@ -148,6 +155,7 @@ class ArchiveTests
                 {
                     if (correlationId == expectedCorrelationId)
                     {
+                        relevantIdCapture.set(relevantId);
                         hasResponse.set(true);
                     }
                 }
@@ -167,5 +175,7 @@ class ArchiveTests
             },
             Integer.MAX_VALUE,
             TIMEOUT_NS);
+
+        return relevantIdCapture.get();
     }
 }

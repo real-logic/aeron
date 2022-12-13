@@ -76,7 +76,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         }
     }
 
-    SessionWorker<RecordingSession> newRecorder()
+    Recorder newRecorder()
     {
         return new DedicatedModeRecorder(
             errorHandler,
@@ -84,10 +84,10 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             closeQueue,
             ctx.abortLatch(),
             ctx.recorderDutyCycleTracker(),
-            ctx.nanoClock());
+            ctx);
     }
 
-    SessionWorker<ReplaySession> newReplayer()
+    Replayer newReplayer()
     {
         return new DedicatedModeReplayer(
             errorHandler,
@@ -95,7 +95,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             closeQueue,
             ctx.abortLatch(),
             ctx.replayerDutyCycleTracker(),
-            ctx.nanoClock());
+            ctx);
     }
 
     private int processCloseQueue()
@@ -121,7 +121,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         return i;
     }
 
-    static class DedicatedModeRecorder extends SessionWorker<RecordingSession>
+    static class DedicatedModeRecorder extends Recorder
     {
         private final ManyToOneConcurrentLinkedQueue<RecordingSession> sessionsQueue;
         private final ManyToOneConcurrentLinkedQueue<Session> closeQueue;
@@ -137,16 +137,16 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             final ManyToOneConcurrentLinkedQueue<Session> closeQueue,
             final CountDownLatch abortLatch,
             final DutyCycleTracker dutyCycleTracker,
-            final NanoClock nanoClock)
+            final Archive.Context context)
         {
-            super("archive-recorder", errorHandler);
+            super(errorHandler, context);
 
             this.closeQueue = closeQueue;
             this.errorCounter = errorCounter;
             this.sessionsQueue = new ManyToOneConcurrentLinkedQueue<>();
             this.abortLatch = abortLatch;
             this.dutyCycleTracker = dutyCycleTracker;
-            this.nanoClock = nanoClock;
+            this.nanoClock = context.nanoClock();
         }
 
         /**
@@ -261,7 +261,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         }
     }
 
-    static class DedicatedModeReplayer extends SessionWorker<ReplaySession>
+    static class DedicatedModeReplayer extends Replayer
     {
         private final ManyToOneConcurrentLinkedQueue<ReplaySession> sessionsQueue;
         private final ManyToOneConcurrentLinkedQueue<Session> closeQueue;
@@ -277,16 +277,16 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             final ManyToOneConcurrentLinkedQueue<Session> closeQueue,
             final CountDownLatch abortLatch,
             final DutyCycleTracker dutyCycleTracker,
-            final NanoClock nanoClock)
+            final Archive.Context context)
         {
-            super("archive-replayer", errorHandler);
+            super(errorHandler, context);
 
             this.closeQueue = closeQueue;
             this.errorCounter = errorCounter;
             this.sessionsQueue = new ManyToOneConcurrentLinkedQueue<>();
             this.abortLatch = abortLatch;
             this.dutyCycleTracker = dutyCycleTracker;
-            this.nanoClock = nanoClock;
+            this.nanoClock = context.nanoClock();
         }
 
         /**

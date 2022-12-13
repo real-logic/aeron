@@ -31,6 +31,7 @@ import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.errors.ErrorLogReader;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opentest4j.TestAbortedException;
 
@@ -49,9 +50,11 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecutionCallback, AfterEachCallback
+public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecutionCallback, AfterEachCallback,
+    BeforeTestExecutionCallback
 {
     private static final String CLUSTER_TERMINATION_EXCEPTION = ClusterTerminationException.class.getName();
     private static final String UNKNOWN_HOST_EXCEPTION = UnknownHostException.class.getName();
@@ -79,6 +82,8 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     private DataCollector dataCollector = new DataCollector();
     private ArrayList<AutoCloseable> closeables = new ArrayList<>();
     private boolean skipDeleteOnFailure = false;
+    private long startTimeNs;
+    private long endTimeNs;
 
     public SystemTestWatcher cluster(final TestCluster testCluster)
     {
@@ -133,8 +138,14 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         this.skipDeleteOnFailure = skipDeleteOnFailure;
     }
 
+    public void beforeTestExecution(final ExtensionContext context) throws Exception
+    {
+        startTimeNs = System.nanoTime();
+    }
+
     public void afterTestExecution(final ExtensionContext context)
     {
+        endTimeNs = System.nanoTime();
         mediaDriverTestUtil.afterTestExecution(context);
         if (null != dataCollector)
         {
@@ -156,7 +167,8 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             {
                 final String test = context.getTestClass().map(Class::getName).orElse("unknown") + "-" +
                     context.getTestMethod().map(Method::getName).orElse("unknown");
-                System.out.println("*** " + test + " failed, cause: " + failureCause.get());
+                System.out.println("*** " + test + " failed in " +
+                    NANOSECONDS.toMillis(endTimeNs - startTimeNs) + " ms, cause: " + failureCause.get());
                 reportAndTerminate(test);
                 mediaDriverTestUtil.testFailed();
             }

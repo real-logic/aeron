@@ -272,7 +272,7 @@ class DynamicMembershipTest
     }
 
     @Test
-    @InterruptAfter(30)
+    @InterruptAfter(60)
     void shouldRemoveLeaderAfterDynamicNodeJoinedThenRestartCluster()
     {
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();

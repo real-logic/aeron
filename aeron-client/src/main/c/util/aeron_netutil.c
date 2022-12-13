@@ -466,7 +466,7 @@ struct lookup_state
 {
     struct sockaddr_storage lookup_addr;
     struct sockaddr_storage *if_addr;
-    unsigned int *if_index;
+    unsigned int if_index;
     unsigned int if_flags;
     size_t prefixlen;
     size_t if_prefixlen;
@@ -487,7 +487,7 @@ int aeron_ip_lookup_func(
             if ((flags & IFF_LOOPBACK) && !state->found)
             {
                 memcpy(state->if_addr, addr, addr_len);
-                *state->if_index = if_nametoindex(name);
+                state->if_index = if_nametoindex(name);
                 state->found = true;
                 return 1;
             }
@@ -498,7 +498,7 @@ int aeron_ip_lookup_func(
                 if (current_if_prefixlen > state->if_prefixlen)
                 {
                     memcpy(state->if_addr, addr, addr_len);
-                    *state->if_index = if_nametoindex(name);
+                    state->if_index = if_nametoindex(name);
                     state->if_prefixlen = current_if_prefixlen;
                 }
 
@@ -531,7 +531,7 @@ void aeron_ip_copy_port(struct sockaddr_storage *dest_addr, struct sockaddr_stor
 
 int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_addr, unsigned int *if_index)
 {
-    struct lookup_state state;
+    struct lookup_state state = { 0 };
 
     if (aeron_interface_parse_and_resolve(interface_str, &state.lookup_addr, &state.prefixlen) < 0)
     {
@@ -540,10 +540,6 @@ int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_
     }
 
     state.if_addr = if_addr;
-    state.if_index = if_index;
-    state.if_prefixlen = 0;
-    state.if_flags = 0;
-    state.found = false;
 
     int result = aeron_lookup_interfaces(aeron_ip_lookup_func, &state);
 
@@ -554,6 +550,7 @@ int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_
     }
 
     aeron_ip_copy_port(if_addr, &state.lookup_addr);
+    *if_index = state.if_index;
 
     return 0;
 }

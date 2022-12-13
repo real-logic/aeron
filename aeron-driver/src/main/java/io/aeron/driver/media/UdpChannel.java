@@ -197,6 +197,10 @@ public final class UdpChannel
             }
 
             final Context context = new Context()
+                .isMulticast(false)
+                .hasExplicitControl(false)
+                .hasMulticastTtl(false)
+                .hasTagId(false)
                 .uriStr(channelUriString)
                 .channelUri(channelUri)
                 .isManualControlMode(isManualControlMode)
@@ -906,7 +910,7 @@ public final class UdpChannel
 
         for (final NetworkInterface networkInterface : filteredInterfaces)
         {
-            if (networkInterface.supportsMulticast() || networkInterface.isLoopback())
+            if (networkInterface.isUp() && (networkInterface.supportsMulticast() || networkInterface.isLoopback()))
             {
                 return networkInterface;
             }
@@ -938,7 +942,9 @@ public final class UdpChannel
                     .append(", addresses: ")
                     .append(ifc.getInterfaceAddresses())
                     .append(", multicast: ")
-                    .append(ifc.supportsMulticast());
+                    .append(ifc.supportsMulticast())
+                    .append(", state: ")
+                    .append(ifc.isUp() ? "UP" : "DOWN");
             }
         }
 
@@ -1002,6 +1008,7 @@ public final class UdpChannel
             return this;
         }
 
+        @SuppressWarnings("UnusedReturnValue")
         Context canonicalForm(final String canonicalForm)
         {
             this.canonicalForm = canonicalForm;
@@ -1026,12 +1033,14 @@ public final class UdpChannel
             return this;
         }
 
+        @SuppressWarnings("UnusedReturnValue")
         Context multicastTtl(final int multicastTtl)
         {
             this.multicastTtl = multicastTtl;
             return this;
         }
 
+        @SuppressWarnings("UnusedReturnValue")
         Context tagId(final long tagId)
         {
             this.tagId = tagId;
@@ -1104,12 +1113,14 @@ public final class UdpChannel
             return this;
         }
 
+        @SuppressWarnings("UnusedReturnValue")
         Context channelReceiveTimestampOffset(final int timestampOffset)
         {
             this.channelReceiveTimestampOffset = timestampOffset;
             return this;
         }
 
+        @SuppressWarnings("UnusedReturnValue")
         Context channelSendTimestampOffset(final int timestampOffset)
         {
             this.channelSendTimestampOffset = timestampOffset;

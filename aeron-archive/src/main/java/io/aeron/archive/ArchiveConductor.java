@@ -2145,9 +2145,9 @@ abstract class ArchiveConductor
             final int workCount = super.doWork();
             if (workCount > 0)
             {
-                totalWriteBytesCounter.set(totalWriteBytes.get());
-                totalWriteTimeCounter.set(totalWriteTimeNs.get());
-                maxWriteTimeCounter.set(maxWriteTimeNs.get());
+                totalWriteBytesCounter.setOrdered(totalWriteBytes.get());
+                totalWriteTimeCounter.setOrdered(totalWriteTimeNs.get());
+                maxWriteTimeCounter.setOrdered(maxWriteTimeNs.get());
             }
             return workCount;
         }
@@ -2175,9 +2175,9 @@ abstract class ArchiveConductor
             final int workCount = super.doWork();
             if (workCount > 0)
             {
-                totalReadBytesCounter.set(totalReadBytes.get());
-                totalReadTimeCounter.set(totalReadTimeNs.get());
-                maxReadTimeCounter.set(maxReadTimeNs.get());
+                totalReadBytesCounter.setOrdered(totalReadBytes.get());
+                totalReadTimeCounter.setOrdered(totalReadTimeNs.get());
+                maxReadTimeCounter.setOrdered(maxReadTimeNs.get());
             }
             return workCount;
         }

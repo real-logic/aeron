@@ -179,8 +179,8 @@ public final class AeronCounters
     public static final int ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID = 107;
 
     /**
-     * The type id of the {@link Counter} used for keeping track of the max it took replayer to read a block from the
-     * storage.
+     * The type id of the {@link Counter} used for keeping track of the max time it took replayer to read a block from
+     * the storage.
      */
     public static final int ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID = 108;
 

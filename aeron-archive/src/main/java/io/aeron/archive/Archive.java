@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
-import static io.aeron.AeronCounters.validateCounterTypeId;
+import static io.aeron.AeronCounters.*;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.Archive.Configuration.ARCHIVE_CONTROL_SESSIONS_TYPE_ID;
 import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
@@ -941,6 +941,13 @@ public final class Archive implements AutoCloseable
         private DutyCycleTracker recorderDutyCycleTracker;
         private DutyCycleTracker replayerDutyCycleTracker;
 
+        private Counter totalWriteBytesCounter;
+        private Counter totalWriteTimeCounter;
+        private Counter maxWriteTimeCounter;
+        private Counter totalReadBytesCounter;
+        private Counter totalReadTimeCounter;
+        private Counter maxReadTimeCounter;
+
         /**
          * Perform a shallow copy of the object.
          *
@@ -1267,6 +1274,48 @@ public final class Archive implements AutoCloseable
                     ARCHIVE_CONTROL_SESSIONS_TYPE_ID, "Archive Control Sessions");
             }
             validateCounterTypeId(aeron, controlSessionsCounter, ARCHIVE_CONTROL_SESSIONS_TYPE_ID);
+
+            if (null == totalWriteBytesCounter)
+            {
+                totalWriteBytesCounter = aeron.addCounter(
+                    ARCHIVE_RECORDER_TOTAL_WRITE_BYTES_TYPE_ID, "archive-recorder total write bytes");
+            }
+            validateCounterTypeId(aeron, totalWriteBytesCounter, ARCHIVE_RECORDER_TOTAL_WRITE_BYTES_TYPE_ID);
+
+            if (null == totalWriteTimeCounter)
+            {
+                totalWriteTimeCounter = aeron.addCounter(
+                    ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID, "archive-recorder total write time in ns");
+            }
+            validateCounterTypeId(aeron, totalWriteTimeCounter, ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID);
+
+            if (null == maxWriteTimeCounter)
+            {
+                maxWriteTimeCounter = aeron.addCounter(
+                    ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID, "archive-recorder max write time in ns");
+            }
+            validateCounterTypeId(aeron, maxWriteTimeCounter, ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID);
+
+            if (null == totalReadBytesCounter)
+            {
+                totalReadBytesCounter = aeron.addCounter(
+                    ARCHIVE_REPLAYER_TOTAL_READ_BYTES_TYPE_ID, "archive-replayer total read bytes");
+            }
+            validateCounterTypeId(aeron, totalReadBytesCounter, ARCHIVE_REPLAYER_TOTAL_READ_BYTES_TYPE_ID);
+
+            if (null == totalReadTimeCounter)
+            {
+                totalReadTimeCounter = aeron.addCounter(
+                    ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID, "archive-replayer total read time in ns");
+            }
+            validateCounterTypeId(aeron, totalReadTimeCounter, ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID);
+
+            if (null == maxReadTimeCounter)
+            {
+                maxReadTimeCounter = aeron.addCounter(
+                    ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID, "archive-replayer max read time in ns");
+            }
+            validateCounterTypeId(aeron, maxReadTimeCounter, ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID);
 
             int expectedCount = DEDICATED == threadingMode ? 2 : 0;
             expectedCount += aeron.conductorAgentInvoker() == null ? 1 : 0;
@@ -2383,6 +2432,138 @@ public final class Archive implements AutoCloseable
         }
 
         /**
+         * Get the counter used to track the total number of bytes written by the recorder.
+         *
+         * @return the counter used to track the total number of bytes written by the recorder.
+         */
+        public Counter totalWriteBytesCounter()
+        {
+            return totalWriteBytesCounter;
+        }
+
+        /**
+         * Set the counter used to track the total number of bytes written by the recorder.
+         *
+         * @param counter used to track the total number of bytes written by the recorder.
+         * @return this for a fluent API.
+         */
+        public Context totalWriteBytesCounter(final Counter counter)
+        {
+            this.totalWriteBytesCounter = counter;
+            return this;
+        }
+
+        /**
+         * Get the counter used to track the total time used by the recorder to write data.
+         *
+         * @return the counter used to track the total time used by the recorder to write data.
+         */
+        public Counter totalWriteTimeCounter()
+        {
+            return totalWriteTimeCounter;
+        }
+
+        /**
+         * Set the counter used to track the total time used by the recorder to write data.
+         *
+         * @param counter used to track the total time used by the recorder to write data.
+         * @return this for a fluent API.
+         */
+        public Context totalWriteTimeCounter(final Counter counter)
+        {
+            this.totalWriteTimeCounter = counter;
+            return this;
+        }
+
+        /**
+         * Get the counter used to track the max time used by the recorder to write a block of data.
+         *
+         * @return the counter used to track the max time used by the recorder to write a block of data.
+         */
+        public Counter maxWriteTimeCounter()
+        {
+            return maxWriteTimeCounter;
+        }
+
+        /**
+         * Set the counter used to track the max time used by the recorder to write a block of data.
+         *
+         * @param counter used to track the max time used by the recorder to write a block of data.
+         * @return this for a fluent API.
+         */
+        public Context maxWriteTimeCounter(final Counter counter)
+        {
+            maxWriteTimeCounter = counter;
+            return this;
+        }
+
+        /**
+         * Get the counter used to track the total number of bytes read by the replayer.
+         *
+         * @return the counter used to track the total number of bytes read by the replayer.
+         */
+        public Counter totalReadBytesCounter()
+        {
+            return totalReadBytesCounter;
+        }
+
+        /**
+         * Set the counter used to track the total number of bytes read by the replayer.
+         *
+         * @param counter used to track the total number of bytes read by the replayer.
+         * @return this for a fluent API.
+         */
+        public Context totalReadBytesCounter(final Counter counter)
+        {
+            this.totalReadBytesCounter = counter;
+            return this;
+        }
+
+        /**
+         * Get the counter used to track the total time used by the replayer to read data.
+         *
+         * @return the counter used to track the total time used by the replayer to read data.
+         */
+        public Counter totalReadTimeCounter()
+        {
+            return totalReadTimeCounter;
+        }
+
+        /**
+         * Set the counter used to track the total time used by the replayer to read data.
+         *
+         * @param counter used to track the total time used by the replayer to read data.
+         * @return this for a fluent API.
+         */
+        public Context totalReadTimeCounter(final Counter counter)
+        {
+            this.totalReadTimeCounter = counter;
+            return this;
+        }
+
+        /**
+         * Get the counter used to track the max time used by the replayer to read a block of data.
+         *
+         * @return the counter used to track the max time used by the replayer to read a block of data.
+         */
+        public Counter maxReadTimeCounter()
+        {
+            return maxReadTimeCounter;
+        }
+
+        /**
+         * Set the counter used to track the max time used by the replayer to read a block of data.
+         *
+         * @param counter used to track the max time used by the replayer to read a block of data.
+         * @return this for a fluent API.
+         */
+        public Context maxReadTimeCounter(final Counter counter)
+        {
+            this.maxReadTimeCounter = counter;
+            return this;
+        }
+
+        /**
          * Get the max number of concurrent recordings.
          *
          * @return the max number of concurrent recordings.
@@ -2831,6 +3012,26 @@ public final class Archive implements AutoCloseable
             else
             {
                 CloseHelper.close(countedErrorHandler, controlSessionsCounter);
+                CloseHelper.close(countedErrorHandler, totalWriteBytesCounter);
+                CloseHelper.close(countedErrorHandler, totalWriteTimeCounter);
+                CloseHelper.close(countedErrorHandler, maxWriteTimeCounter);
+                CloseHelper.close(countedErrorHandler, totalReadBytesCounter);
+                CloseHelper.close(countedErrorHandler, totalReadTimeCounter);
+                CloseHelper.close(countedErrorHandler, maxReadTimeCounter);
+                closeDutyCycleCounters(conductorDutyCycleTracker);
+                closeDutyCycleCounters(recorderDutyCycleTracker);
+                closeDutyCycleCounters(replayerDutyCycleTracker);
+            }
+        }
+
+        private void closeDutyCycleCounters(final DutyCycleTracker dutyCycleTracker)
+        {
+            if (dutyCycleTracker instanceof DutyCycleStallTracker)
+            {
+                final DutyCycleStallTracker dutyCycleStallTracker =
+                    (DutyCycleStallTracker)dutyCycleTracker;
+                CloseHelper.close(countedErrorHandler, dutyCycleStallTracker.maxCycleTime());
+                CloseHelper.close(countedErrorHandler, dutyCycleStallTracker.cycleTimeThresholdExceededCount());
             }
         }
 

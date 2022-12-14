@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.ArchiveException;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.CountedErrorHandler;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -61,7 +62,10 @@ class RecordingSession implements Session
         final Counter position,
         final Archive.Context ctx,
         final ControlSession controlSession,
-        final boolean isAutoStop)
+        final boolean isAutoStop,
+        final MutableLong totalBytesWritten,
+        final MutableLong totalWriteTimeNs,
+        final MutableLong maxWriteTimeNs)
     {
         this.correlationId = correlationId;
         this.recordingId = recordingId;
@@ -75,7 +79,8 @@ class RecordingSession implements Session
         this.progressEventPosition = image.joinPosition();
 
         blockLengthLimit = Math.min(image.termBufferLength(), ctx.fileIoMaxLength());
-        recordingWriter = new RecordingWriter(recordingId, startPosition, segmentLength, image, ctx);
+        recordingWriter = new RecordingWriter(
+            recordingId, startPosition, segmentLength, image, ctx, totalBytesWritten, totalWriteTimeNs, maxWriteTimeNs);
     }
 
     /**

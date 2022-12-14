@@ -25,7 +25,9 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,10 +65,25 @@ class RecordingSessionTest
     private final Counter mockPosition = mock(Counter.class);
     private final Image image = mockImage(mockSubscription());
     private final File archiveDir = ArchiveTests.makeTestDirectory();
+
+    private final MutableLong totalBytesWritten = new MutableLong();
+    private final MutableLong totalWriteTimeNs = new MutableLong();
+    private final MutableLong maxWriteTimeNs = new MutableLong();
+
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
     private final EpochClock epochClock = mock(EpochClock.class);
+    private final NanoClock nanoClock = new NanoClock()
+    {
+        private long timeNs = 1;
+
+        public long nanoTime()
+        {
+            timeNs = timeNs * 2;
+            return timeNs;
+        }
+    };
     private Archive.Context context;
     private long positionLong;
 
@@ -101,7 +118,8 @@ class RecordingSessionTest
         context = new Archive.Context()
             .segmentFileLength(SEGMENT_LENGTH)
             .archiveDir(archiveDir)
-            .epochClock(epochClock);
+            .epochClock(epochClock)
+            .nanoClock(nanoClock);
     }
 
     @AfterEach
@@ -127,7 +145,10 @@ class RecordingSessionTest
             mockPosition,
             context,
             CONTROL_SESSION,
-            false);
+            false,
+            totalBytesWritten,
+            totalWriteTimeNs,
+            maxWriteTimeNs);
 
         assertEquals(RECORDING_ID, session.sessionId());
 
@@ -153,6 +174,11 @@ class RecordingSessionTest
             });
 
         assertNotEquals(0, session.doWork(), "Expect some work");
+        assertNotEquals(0, session.doWork(), "Expect some work");
+
+        assertEquals(RECORDED_BLOCK_LENGTH * 2, totalBytesWritten.get());
+        assertEquals(10, totalWriteTimeNs.get());
+        assertEquals(8, maxWriteTimeNs.get());
 
         final File segmentFile = new File(archiveDir, segmentFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());

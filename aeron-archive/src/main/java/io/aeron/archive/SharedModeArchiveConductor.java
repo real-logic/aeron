@@ -40,14 +40,14 @@ final class SharedModeArchiveConductor extends ArchiveConductor
         recorderAgentInvoker.start();
     }
 
-    protected SessionWorker<RecordingSession> newRecorder()
+    Recorder newRecorder()
     {
-        return new SharedModeRecorder(errorHandler);
+        return new SharedModeRecorder(errorHandler, ctx);
     }
 
-    protected SessionWorker<ReplaySession> newReplayer()
+    Replayer newReplayer()
     {
-        return new SharedModeReplayer(errorHandler);
+        return new SharedModeReplayer(errorHandler, ctx);
     }
 
     public int doWork()
@@ -67,11 +67,11 @@ final class SharedModeArchiveConductor extends ArchiveConductor
         CloseHelper.close(ctx.countedErrorHandler(), replayerAgentInvoker);
     }
 
-    class SharedModeRecorder extends SessionWorker<RecordingSession>
+    class SharedModeRecorder extends Recorder
     {
-        SharedModeRecorder(final CountedErrorHandler errorHandler)
+        SharedModeRecorder(final CountedErrorHandler errorHandler, final Archive.Context context)
         {
-            super("archive-recorder", errorHandler);
+            super(errorHandler, context);
         }
 
         protected void closeSession(final RecordingSession session)
@@ -80,11 +80,11 @@ final class SharedModeArchiveConductor extends ArchiveConductor
         }
     }
 
-    class SharedModeReplayer extends SessionWorker<ReplaySession>
+    class SharedModeReplayer extends Replayer
     {
-        SharedModeReplayer(final CountedErrorHandler errorHandler)
+        SharedModeReplayer(final CountedErrorHandler errorHandler, final Archive.Context context)
         {
-            super("archive-replayer", errorHandler);
+            super(errorHandler, context);
         }
 
         protected void closeSession(final ReplaySession session)

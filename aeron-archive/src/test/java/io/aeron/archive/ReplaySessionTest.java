@@ -27,8 +27,10 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CountedErrorHandler;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -79,6 +81,12 @@ class ReplaySessionTest
     private final Counter recordingPositionCounter = mock(Counter.class);
     private final UnsafeBuffer replayBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
 
+    private final MutableLong totalWriteBytes = new MutableLong();
+    private final MutableLong totalWriteTimeNs = new MutableLong();
+    private final MutableLong maxWriteTimeNs = new MutableLong();
+    private final MutableLong totalReadBytes = new MutableLong();
+    private final MutableLong totalReadTimeNs = new MutableLong();
+    private final MutableLong maxReadTimeNs = new MutableLong();
     private int messageCounter = 0;
     private int offerBlockOffset = 0;
 
@@ -86,6 +94,17 @@ class ReplaySessionTest
     private final File archiveDir = ArchiveTests.makeTestDirectory();
     private final ControlResponseProxy proxy = mock(ControlResponseProxy.class);
     private final CachedEpochClock epochClock = new CachedEpochClock();
+    private final NanoClock nanoClock = new NanoClock()
+    {
+        private long time = 10;
+
+        public long nanoTime()
+        {
+            final long result = time;
+            time *= 2;
+            return result;
+        }
+    };
     private final Catalog mockCatalog = mock(Catalog.class);
     private final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
     private Archive.Context context;
@@ -98,6 +117,7 @@ class ReplaySessionTest
             .segmentFileLength(SEGMENT_LENGTH)
             .archiveDir(archiveDir)
             .epochClock(epochClock)
+            .nanoClock(nanoClock)
             .countedErrorHandler(countedErrorHandler);
 
         when(recordingPositionCounter.get()).then((invocation) -> recordingPosition);
@@ -122,7 +142,14 @@ class ReplaySessionTest
         recordingSummary.sessionId = SESSION_ID;
 
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context);
+            RECORDING_ID,
+            START_POSITION,
+            SEGMENT_LENGTH,
+            mockImage,
+            context,
+            totalWriteBytes,
+            totalWriteTimeNs,
+            maxWriteTimeNs);
 
         writer.init();
 
@@ -244,6 +271,9 @@ class ReplaySessionTest
             assertThat(messageCounter, is(1));
 
             validateFrame(termBuffer, 0, FRAME_LENGTH, 0, UNFRAGMENTED, sessionId, streamId);
+            assertEquals(3072, totalReadBytes.get());
+            assertEquals(2560, totalReadTimeNs.get());
+            assertEquals(2560, maxReadTimeNs.get());
             assertTrue(replaySession.isDone());
         }
     }
@@ -346,7 +376,14 @@ class ReplaySessionTest
 
         context.recordChecksumBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
         final RecordingWriter writer = new RecordingWriter(
-            recordingId, START_POSITION, SEGMENT_LENGTH, mockImage, context);
+            recordingId,
+            START_POSITION,
+            SEGMENT_LENGTH,
+            mockImage,
+            context,
+            totalWriteBytes,
+            totalWriteTimeNs,
+            maxWriteTimeNs);
 
         writer.init();
 
@@ -451,7 +488,14 @@ class ReplaySessionTest
         context.recordChecksum(crc32());
         context.recordChecksumBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context);
+            RECORDING_ID,
+            START_POSITION,
+            SEGMENT_LENGTH,
+            mockImage,
+            context,
+            totalWriteBytes,
+            totalWriteTimeNs,
+            maxWriteTimeNs);
 
         writer.init();
 
@@ -565,7 +609,14 @@ class ReplaySessionTest
     {
         context.recordChecksumBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context);
+            RECORDING_ID,
+            START_POSITION,
+            SEGMENT_LENGTH,
+            mockImage,
+            context,
+            totalWriteBytes,
+            totalWriteTimeNs,
+            maxWriteTimeNs);
 
         writer.init();
 
@@ -702,10 +753,14 @@ class ReplaySessionTest
             mockCatalog,
             archiveDir,
             epochClock,
+            nanoClock,
             replay,
             recordingSummary,
             recordingPositionCounter,
-            checksum);
+            checksum,
+            totalReadBytes,
+            totalReadTimeNs,
+            maxReadTimeNs);
     }
 
     static void validateFrame(

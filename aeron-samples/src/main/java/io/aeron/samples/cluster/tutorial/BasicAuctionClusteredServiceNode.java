@@ -161,7 +161,8 @@ public class BasicAuctionClusteredServiceNode
             .archiveClientContext(replicationArchiveContext)
             .localControlChannel("aeron:ipc?term-length=64k")
             .recordingEventsEnabled(false)
-            .threadingMode(ArchiveThreadingMode.SHARED);
+            .threadingMode(ArchiveThreadingMode.SHARED)
+            .replicationChannel("aeron:udp?endpoint=" + hostname + ":0");
         // end::archive[]
 
         // tag::archive_client[]
@@ -177,7 +178,7 @@ public class BasicAuctionClusteredServiceNode
             .errorHandler(errorHandler("Consensus Module"))
             .clusterMemberId(nodeId)                                                                     // <1>
             .clusterMembers(clusterMembers(Arrays.asList(hostnames)))                                    // <2>
-            .clusterDir(new File(baseDir, "cluster"))                                                    // <3>
+            .clusterDir(new File(baseDir, "cluster"))                                               // <3>
             .ingressChannel("aeron:udp?term-length=64k")                                                 // <4>
             .logChannel(logControlChannel(nodeId, hostname, LOG_CONTROL_PORT_OFFSET))                    // <5>
             .replicationChannel(logReplicationChannel(hostname))                                         // <6>

@@ -1633,7 +1633,14 @@ abstract class ArchiveConductor
             sourceIdentity);
 
         final Counter position = RecordingPos.allocate(
-            aeron, counterMetadataBuffer, recordingId, sessionId, streamId, strippedChannel, sourceIdentity);
+            aeron,
+            counterMetadataBuffer,
+            ctx.archiveId(),
+            recordingId,
+            sessionId,
+            streamId,
+            strippedChannel,
+            sourceIdentity);
         position.setOrdered(startPosition);
 
         final RecordingSession session = new RecordingSession(
@@ -1690,6 +1697,7 @@ abstract class ArchiveConductor
             final Counter position = RecordingPos.allocate(
                 aeron,
                 counterMetadataBuffer,
+                ctx.archiveId(),
                 recordingId,
                 image.sessionId(),
                 image.subscription().streamId(),

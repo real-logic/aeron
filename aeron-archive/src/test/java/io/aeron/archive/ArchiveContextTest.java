@@ -23,6 +23,8 @@ import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.test.TestContexts;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -31,15 +33,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.nio.file.Path;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.AeronCounters.ARCHIVE_CONTROL_SESSIONS_TYPE_ID;
 import static io.aeron.AeronCounters.*;
 import static io.aeron.archive.Archive.Configuration.*;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
+import static org.agrona.concurrent.status.CountersReader.RECORD_UNUSED;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ArchiveContextTest
 {
@@ -288,14 +297,18 @@ class ArchiveContextTest
     {
         context.totalWriteBytesCounter(null);
 
-        final Aeron aeron = context.aeron();
-        final Counter counter = mockCounter(aeron.countersReader(), ARCHIVE_RECORDER_TOTAL_WRITE_BYTES_TYPE_ID, 42);
-        when(aeron.addCounter(ARCHIVE_RECORDER_TOTAL_WRITE_BYTES_TYPE_ID, "archive-recorder total write bytes"))
-            .thenReturn(counter);
+        final long archiveId = 555;
+        final ArgumentCaptor<DirectBuffer> tempBuffer = ArgumentCaptor.forClass(DirectBuffer.class);
+        final Counter counter = mockArchiveCounter(
+            archiveId, ARCHIVE_RECORDER_TOTAL_WRITE_BYTES_TYPE_ID, 42, tempBuffer);
 
         context.conclude();
 
         assertSame(counter, context.totalWriteBytesCounter());
+        final DirectBuffer buffer = tempBuffer.getValue();
+        assertEquals(archiveId, buffer.getLong(0));
+        final String expectedLabel = "archive-recorder total write bytes - archiveId=" + archiveId;
+        assertEquals(expectedLabel, buffer.getStringWithoutLengthAscii(SIZE_OF_LONG, expectedLabel.length()));
     }
 
     @Test
@@ -313,14 +326,19 @@ class ArchiveContextTest
     {
         context.totalWriteTimeCounter(null);
 
-        final Aeron aeron = context.aeron();
-        final Counter counter = mockCounter(aeron.countersReader(), ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID, 42);
-        when(aeron.addCounter(ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID, "archive-recorder total write time in ns"))
-            .thenReturn(counter);
+        final long archiveId = 89;
+        final ArgumentCaptor<DirectBuffer> tempBuffer = ArgumentCaptor.forClass(DirectBuffer.class);
+        final Counter counter = mockArchiveCounter(
+            archiveId, ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID, -666, tempBuffer);
+
 
         context.conclude();
 
         assertSame(counter, context.totalWriteTimeCounter());
+        final DirectBuffer buffer = tempBuffer.getValue();
+        assertEquals(archiveId, buffer.getLong(0));
+        final String expectedLabel = "archive-recorder total write time in ns - archiveId=" + archiveId;
+        assertEquals(expectedLabel, buffer.getStringWithoutLengthAscii(SIZE_OF_LONG, expectedLabel.length()));
     }
 
     @Test
@@ -338,14 +356,18 @@ class ArchiveContextTest
     {
         context.maxWriteTimeCounter(null);
 
-        final Aeron aeron = context.aeron();
-        final Counter counter = mockCounter(aeron.countersReader(), ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID, 142);
-        when(aeron.addCounter(ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID, "archive-recorder max write time in ns"))
-            .thenReturn(counter);
+        final long archiveId = -76555;
+        final ArgumentCaptor<DirectBuffer> tempBuffer = ArgumentCaptor.forClass(DirectBuffer.class);
+        final Counter counter = mockArchiveCounter(
+            archiveId, ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID, 234126361, tempBuffer);
 
         context.conclude();
 
         assertSame(counter, context.maxWriteTimeCounter());
+        final DirectBuffer buffer = tempBuffer.getValue();
+        assertEquals(archiveId, buffer.getLong(0));
+        final String expectedLabel = "archive-recorder max write time in ns - archiveId=" + archiveId;
+        assertEquals(expectedLabel, buffer.getStringWithoutLengthAscii(SIZE_OF_LONG, expectedLabel.length()));
     }
 
     @Test
@@ -363,14 +385,18 @@ class ArchiveContextTest
     {
         context.totalReadBytesCounter(null);
 
-        final Aeron aeron = context.aeron();
-        final Counter counter = mockCounter(aeron.countersReader(), ARCHIVE_REPLAYER_TOTAL_READ_BYTES_TYPE_ID, 999);
-        when(aeron.addCounter(ARCHIVE_REPLAYER_TOTAL_READ_BYTES_TYPE_ID, "archive-replayer total read bytes"))
-            .thenReturn(counter);
+        final long archiveId = 4234623784689L;
+        final ArgumentCaptor<DirectBuffer> tempBuffer = ArgumentCaptor.forClass(DirectBuffer.class);
+        final Counter counter = mockArchiveCounter(
+            archiveId, ARCHIVE_REPLAYER_TOTAL_READ_BYTES_TYPE_ID, 999, tempBuffer);
 
         context.conclude();
 
         assertSame(counter, context.totalReadBytesCounter());
+        final DirectBuffer buffer = tempBuffer.getValue();
+        assertEquals(archiveId, buffer.getLong(0));
+        final String expectedLabel = "archive-replayer total read bytes - archiveId=" + archiveId;
+        assertEquals(expectedLabel, buffer.getStringWithoutLengthAscii(SIZE_OF_LONG, expectedLabel.length()));
     }
 
     @Test
@@ -388,14 +414,18 @@ class ArchiveContextTest
     {
         context.totalReadTimeCounter(null);
 
-        final Aeron aeron = context.aeron();
-        final Counter counter = mockCounter(aeron.countersReader(), ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID, -8);
-        when(aeron.addCounter(ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID, "archive-replayer total read time in ns"))
-            .thenReturn(counter);
+        final long archiveId = 3;
+        final ArgumentCaptor<DirectBuffer> tempBuffer = ArgumentCaptor.forClass(DirectBuffer.class);
+        final Counter counter = mockArchiveCounter(
+            archiveId, ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID, 0, tempBuffer);
 
         context.conclude();
 
         assertSame(counter, context.totalReadTimeCounter());
+        final DirectBuffer buffer = tempBuffer.getValue();
+        assertEquals(archiveId, buffer.getLong(0));
+        final String expectedLabel = "archive-replayer total read time in ns - archiveId=" + archiveId;
+        assertEquals(expectedLabel, buffer.getStringWithoutLengthAscii(SIZE_OF_LONG, expectedLabel.length()));
     }
 
     @Test
@@ -413,10 +443,9 @@ class ArchiveContextTest
     {
         context.maxReadTimeCounter(null);
 
-        final Aeron aeron = context.aeron();
-        final Counter counter = mockCounter(aeron.countersReader(), ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID, -76);
-        when(aeron.addCounter(ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID, "archive-replayer max read time in ns"))
-            .thenReturn(counter);
+        final long archiveId = 4321L;
+        final ArgumentCaptor<DirectBuffer> tempBuffer = ArgumentCaptor.forClass(DirectBuffer.class);
+        final Counter counter = mockArchiveCounter(archiveId, ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID, -76, tempBuffer);
 
         context.conclude();
 
@@ -431,6 +460,125 @@ class ArchiveContextTest
 
         final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
         assertTrue(exception.getMessage().endsWith("expected=" + ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID));
+    }
+
+    @Test
+    void concludeThrowsConfigurationExceptionIfMaxWriteCounterAlreadyExistsForTheCurrentArchive()
+    {
+        context.maxWriteTimeCounter(null);
+
+        final long archiveId = 42;
+        final int id = 2;
+        context.archiveId(archiveId);
+        final AtomicBuffer metadataBuffer = mock(AtomicBuffer.class);
+        final CountersReader countersReader = context.aeron().countersReader();
+        when(countersReader.metaDataBuffer()).thenReturn(metadataBuffer);
+        when(countersReader.maxCounterId()).thenReturn(id + 1);
+        when(countersReader.getCounterState(anyInt())).thenReturn(
+            RECORD_ALLOCATED, RECORD_ALLOCATED, RECORD_ALLOCATED, RECORD_UNUSED);
+        when(countersReader.getCounterTypeId(anyInt())).thenReturn(
+            ARCHIVE_CONTROL_SESSIONS_TYPE_ID, ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID);
+        when(metadataBuffer.getLong(anyInt())).thenReturn(archiveId, Long.MAX_VALUE, archiveId);
+
+        final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
+        assertEquals(
+            "ERROR - existing max write time counter detected for archiveId=" + archiveId,
+            exception.getMessage());
+    }
+
+    @Test
+    void archiveIdIsNullValueByDefault()
+    {
+        assertEquals(NULL_VALUE, context.archiveId());
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = { Long.MIN_VALUE, Long.MAX_VALUE, 0, 5, 28, -17 })
+    void archiveIdReturnsAssignedValue(final long archiveId)
+    {
+        context.archiveId(archiveId);
+        assertEquals(archiveId, context.archiveId());
+
+        context.conclude();
+        assertEquals(archiveId, context.archiveId());
+    }
+
+    @Test
+    void concludeUsesSystemPropertyToAssignArchiveId()
+    {
+        final long archiveId = 53110011;
+        System.setProperty(ARCHIVE_ID_PROP_NAME, Long.toString(archiveId));
+        try
+        {
+            context.conclude();
+
+            assertEquals(archiveId, context.archiveId());
+        }
+        finally
+        {
+            System.clearProperty(ARCHIVE_ID_PROP_NAME);
+        }
+    }
+
+    @Test
+    void concludeUsesAeronClientIdIfSystemPropertyIsNotSet()
+    {
+        final long archiveId = -236462348238L;
+        when(context.aeron().clientId()).thenReturn(archiveId);
+
+        context.conclude();
+
+        assertEquals(archiveId, context.archiveId());
+    }
+
+    @Test
+    void concludeUsesAeronClientIdIfSystemPropertyIsEmpty()
+    {
+        System.setProperty(ARCHIVE_ID_PROP_NAME, "");
+        try
+        {
+            final long archiveId = 42;
+            when(context.aeron().clientId()).thenReturn(archiveId);
+
+            context.conclude();
+
+            assertEquals(archiveId, context.archiveId());
+        }
+        finally
+        {
+            System.clearProperty(ARCHIVE_ID_PROP_NAME);
+        }
+    }
+
+    @Test
+    void concludeUsesAeronClientIdIfSystemPropertyIsSetToNullValue()
+    {
+        System.setProperty(ARCHIVE_ID_PROP_NAME, "-1");
+        try
+        {
+            final long archiveId = 888;
+            when(context.aeron().clientId()).thenReturn(archiveId);
+
+            context.conclude();
+
+            assertEquals(archiveId, context.archiveId());
+        }
+        finally
+        {
+            System.clearProperty(ARCHIVE_ID_PROP_NAME);
+        }
+    }
+
+    private Counter mockArchiveCounter(
+        final long archiveId, final int typeId, final int id, final ArgumentCaptor<DirectBuffer> tempBuffer)
+    {
+        context.archiveId(archiveId);
+        final Aeron aeron = context.aeron();
+        final Counter counter = mockCounter(aeron.countersReader(), typeId, id);
+        when(aeron.addCounter(
+            eq(typeId), tempBuffer.capture(), eq(0), eq(SIZE_OF_LONG), any(), eq(SIZE_OF_LONG), anyInt()))
+            .thenReturn(counter);
+        return counter;
     }
 
     private static Counter mockCounter(final CountersReader countersReader, final int typeId, final int id)

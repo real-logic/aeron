@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.AeronCounters.*;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.Archive.Configuration.ARCHIVE_CONTROL_SESSIONS_TYPE_ID;
@@ -495,6 +496,12 @@ public final class Archive implements AutoCloseable
         public static final String REPLAY_CHECKSUM_PROP_NAME = "aeron.archive.replay.checksum";
 
         /**
+         * Property name for the identity of the Archive instance. If not specified defaults to the
+         * {@link Aeron#clientId()} of the assigned {@link Aeron} instance.
+         */
+        public static final String ARCHIVE_ID_PROP_NAME = "aeron.archive.id";
+
+        /**
          * Update interval in ms for archive mark file.
          */
         static final long MARK_FILE_UPDATE_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
@@ -910,7 +917,7 @@ public final class Archive implements AutoCloseable
         private int maxConcurrentRecordings = Configuration.maxConcurrentRecordings();
         private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
         private int fileIoMaxLength = Configuration.fileIoMaxLength();
-
+        private long archiveId = NULL_VALUE;
         private ArchiveThreadingMode threadingMode = Configuration.threadingMode();
         private ThreadFactory threadFactory;
         private ThreadFactory recorderThreadFactory;
@@ -1086,6 +1093,8 @@ public final class Archive implements AutoCloseable
             errorHandler = CommonContext.setupErrorHandler(
                 errorHandler, new DistinctErrorLog(markFile.errorBuffer(), epochClock, US_ASCII));
 
+            final ExpandableArrayBuffer tempBuffer = new ExpandableArrayBuffer();
+
             if (null == aeron)
             {
                 ownsAeronClient = true;
@@ -1104,9 +1113,13 @@ public final class Archive implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    errorCounter = aeron.addCounter(Configuration.ARCHIVE_ERROR_COUNT_TYPE_ID, "Archive Errors");
+                    concludeArchiveId();
+                    errorCounter = ArchiveCounters.allocate(
+                        aeron, tempBuffer, Configuration.ARCHIVE_ERROR_COUNT_TYPE_ID, "Archive Errors", archiveId);
                 }
             }
+
+            concludeArchiveId();
 
             if (!(aeron.context().subscriberErrorHandler() instanceof RethrowingErrorHandler))
             {
@@ -1147,12 +1160,19 @@ public final class Archive implements AutoCloseable
             if (null == conductorDutyCycleTracker)
             {
                 conductorDutyCycleTracker = new DutyCycleStallTracker(
-                    aeron.addCounter(
-                        AeronCounters.ARCHIVE_MAX_CYCLE_TIME_TYPE_ID, "archive-conductor max cycle time in ns"),
-                    aeron.addCounter(
+                    ArchiveCounters.allocate(
+                        aeron,
+                        tempBuffer,
+                        AeronCounters.ARCHIVE_MAX_CYCLE_TIME_TYPE_ID,
+                        "archive-conductor max cycle time in ns",
+                        archiveId),
+                    ArchiveCounters.allocate(
+                        aeron,
+                        tempBuffer,
                         AeronCounters.ARCHIVE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
                         "archive-conductor work cycle time exceeded count: threshold=" +
-                        conductorCycleThresholdNs + "ns"),
+                        conductorCycleThresholdNs + "ns",
+                        archiveId),
                     conductorCycleThresholdNs);
             }
 
@@ -1179,26 +1199,38 @@ public final class Archive implements AutoCloseable
                 if (null == recorderDutyCycleTracker)
                 {
                     recorderDutyCycleTracker = new DutyCycleStallTracker(
-                        aeron.addCounter(
+                        ArchiveCounters.allocate(
+                            aeron,
+                            tempBuffer,
                             AeronCounters.ARCHIVE_MAX_CYCLE_TIME_TYPE_ID,
-                            "archive-recorder max cycle time in ns"),
-                        aeron.addCounter(
+                            "archive-recorder max cycle time in ns",
+                            archiveId),
+                        ArchiveCounters.allocate(
+                            aeron,
+                            tempBuffer,
                             AeronCounters.ARCHIVE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
                             "archive-recorder work cycle time exceeded count: threshold=" +
-                            recorderCycleThresholdNs + "ns"),
+                            recorderCycleThresholdNs + "ns",
+                            archiveId),
                         recorderCycleThresholdNs);
                 }
 
                 if (null == replayerDutyCycleTracker)
                 {
                     replayerDutyCycleTracker = new DutyCycleStallTracker(
-                        aeron.addCounter(
+                        ArchiveCounters.allocate(
+                            aeron,
+                            tempBuffer,
                             AeronCounters.ARCHIVE_MAX_CYCLE_TIME_TYPE_ID,
-                            "archive-replayer max cycle time in ns"),
-                        aeron.addCounter(
+                            "archive-replayer max cycle time in ns",
+                            archiveId),
+                        ArchiveCounters.allocate(
+                            aeron,
+                            tempBuffer,
                             AeronCounters.ARCHIVE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
                             "archive-replayer work cycle time exceeded count: threshold=" +
-                            replayerCycleThresholdNs + "ns"),
+                            replayerCycleThresholdNs + "ns",
+                            archiveId),
                         replayerCycleThresholdNs);
                 }
             }
@@ -1270,52 +1302,84 @@ public final class Archive implements AutoCloseable
 
             if (null == controlSessionsCounter)
             {
-                controlSessionsCounter = aeron.addCounter(
-                    ARCHIVE_CONTROL_SESSIONS_TYPE_ID, "Archive Control Sessions");
+                controlSessionsCounter = ArchiveCounters.allocate(
+                    aeron, tempBuffer, ARCHIVE_CONTROL_SESSIONS_TYPE_ID, "Archive Control Sessions", archiveId);
             }
             validateCounterTypeId(aeron, controlSessionsCounter, ARCHIVE_CONTROL_SESSIONS_TYPE_ID);
 
+            if (null == maxWriteTimeCounter)
+            {
+                final int counterId = ArchiveCounters.find(
+                    aeron.countersReader(), ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID, archiveId);
+                if (NULL_VALUE != counterId)
+                {
+                    throw new ConfigurationException(
+                        "existing max write time counter detected for archiveId=" + archiveId);
+                }
+
+                maxWriteTimeCounter = ArchiveCounters.allocate(
+                    aeron,
+                    tempBuffer,
+                    ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID,
+                    "archive-recorder max write time in ns",
+                    archiveId);
+            }
+            validateCounterTypeId(aeron, maxWriteTimeCounter, ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID);
+
             if (null == totalWriteBytesCounter)
             {
-                totalWriteBytesCounter = aeron.addCounter(
-                    ARCHIVE_RECORDER_TOTAL_WRITE_BYTES_TYPE_ID, "archive-recorder total write bytes");
+                totalWriteBytesCounter = ArchiveCounters.allocate(
+                    aeron,
+                    tempBuffer,
+                    ARCHIVE_RECORDER_TOTAL_WRITE_BYTES_TYPE_ID,
+                    "archive-recorder total write bytes",
+                    archiveId);
             }
             validateCounterTypeId(aeron, totalWriteBytesCounter, ARCHIVE_RECORDER_TOTAL_WRITE_BYTES_TYPE_ID);
 
             if (null == totalWriteTimeCounter)
             {
-                totalWriteTimeCounter = aeron.addCounter(
-                    ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID, "archive-recorder total write time in ns");
+                totalWriteTimeCounter = ArchiveCounters.allocate(
+                    aeron,
+                    tempBuffer,
+                    ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID,
+                    "archive-recorder total write time in ns",
+                    archiveId);
             }
             validateCounterTypeId(aeron, totalWriteTimeCounter, ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID);
 
-            if (null == maxWriteTimeCounter)
+            if (null == maxReadTimeCounter)
             {
-                maxWriteTimeCounter = aeron.addCounter(
-                    ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID, "archive-recorder max write time in ns");
+                maxReadTimeCounter = ArchiveCounters.allocate(
+                    aeron,
+                    tempBuffer,
+                    ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID,
+                    "archive-replayer max read time in ns",
+                    archiveId);
             }
-            validateCounterTypeId(aeron, maxWriteTimeCounter, ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID);
+            validateCounterTypeId(aeron, maxReadTimeCounter, ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID);
 
             if (null == totalReadBytesCounter)
             {
-                totalReadBytesCounter = aeron.addCounter(
-                    ARCHIVE_REPLAYER_TOTAL_READ_BYTES_TYPE_ID, "archive-replayer total read bytes");
+                totalReadBytesCounter = ArchiveCounters.allocate(
+                    aeron,
+                    tempBuffer,
+                    ARCHIVE_REPLAYER_TOTAL_READ_BYTES_TYPE_ID,
+                    "archive-replayer total read bytes",
+                    archiveId);
             }
             validateCounterTypeId(aeron, totalReadBytesCounter, ARCHIVE_REPLAYER_TOTAL_READ_BYTES_TYPE_ID);
 
             if (null == totalReadTimeCounter)
             {
-                totalReadTimeCounter = aeron.addCounter(
-                    ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID, "archive-replayer total read time in ns");
+                totalReadTimeCounter = ArchiveCounters.allocate(
+                    aeron,
+                    tempBuffer,
+                    ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID,
+                    "archive-replayer total read time in ns",
+                    archiveId);
             }
             validateCounterTypeId(aeron, totalReadTimeCounter, ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID);
-
-            if (null == maxReadTimeCounter)
-            {
-                maxReadTimeCounter = aeron.addCounter(
-                    ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID, "archive-replayer max read time in ns");
-            }
-            validateCounterTypeId(aeron, maxReadTimeCounter, ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID);
 
             int expectedCount = DEDICATED == threadingMode ? 2 : 0;
             expectedCount += aeron.conductorAgentInvoker() == null ? 1 : 0;
@@ -2388,6 +2452,30 @@ public final class Archive implements AutoCloseable
         }
 
         /**
+         * Set the id for this Archive instance.
+         *
+         * @param archiveId for this Archive instance.
+         * @return this for a fluent API
+         * @see io.aeron.archive.Archive.Configuration#ARCHIVE_ID_PROP_NAME
+         */
+        public Context archiveId(final long archiveId)
+        {
+            this.archiveId = archiveId;
+            return this;
+        }
+
+        /**
+         * Get the id of this Archive instance.
+         *
+         * @return the id of this Archive instance.
+         * @see io.aeron.archive.Archive.Configuration#ARCHIVE_ID_PROP_NAME
+         */
+        public long archiveId()
+        {
+            return archiveId;
+        }
+
+        /**
          * Get the error counter that will record the number of errors observed.
          *
          * @return the error counter that will record the number of errors observed.
@@ -3032,6 +3120,19 @@ public final class Archive implements AutoCloseable
                     (DutyCycleStallTracker)dutyCycleTracker;
                 CloseHelper.close(countedErrorHandler, dutyCycleStallTracker.maxCycleTime());
                 CloseHelper.close(countedErrorHandler, dutyCycleStallTracker.cycleTimeThresholdExceededCount());
+            }
+        }
+
+        private void concludeArchiveId()
+        {
+            if (NULL_VALUE == archiveId)
+            {
+                final String prop = getProperty(Configuration.ARCHIVE_ID_PROP_NAME);
+                if (Strings.isEmpty(prop) ||
+                    NULL_VALUE == (archiveId = AsciiEncoding.parseLongAscii(prop, 0, prop.length())))
+                {
+                    archiveId = aeron.clientId();
+                }
             }
         }
 

@@ -18,9 +18,9 @@ package io.aeron.samples.cluster.tutorial;
 import io.aeron.CommonContext;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
-import io.aeron.archive.Archive;
-import io.aeron.archive.ArchiveThreadingMode;
-import io.aeron.cluster.*;
+import io.aeron.cluster.ClusterControl;
+import io.aeron.cluster.ClusteredMediaDriver;
+import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.CloseReason;
@@ -32,6 +32,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.samples.cluster.ClusterConfig;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
@@ -41,6 +42,7 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.console.ContinueBarrier;
 
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -255,38 +257,15 @@ public final class SingleNodeCluster implements AutoCloseable
      */
     public SingleNodeCluster(final ClusteredService externalService, final boolean isCleanStart)
     {
-        final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
-        final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context();
-        final Archive.Context archiveContext = new Archive.Context();
-        final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context();
-
         final ClusteredService service = null == externalService ? new SingleNodeCluster.Service() : externalService;
-
-        mediaDriverContext
-            .threadingMode(ThreadingMode.SHARED)
-            .errorHandler(Throwable::printStackTrace)
-            .dirDeleteOnShutdown(true)
-            .dirDeleteOnStart(true);
-
-        archiveContext
-            .recordingEventsEnabled(false)
-            .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(isCleanStart);
-
-        consensusModuleContext
-            .errorHandler(Throwable::printStackTrace)
-            .deleteDirOnStart(isCleanStart);
-
-        serviceContainerContext
-            .clusteredService(service)
-            .errorHandler(Throwable::printStackTrace);
+        final ClusterConfig config = ClusterConfig.create(0, Collections.singletonList("localhost"), 9000, service);
 
         clusteredMediaDriver = ClusteredMediaDriver.launch(
-            mediaDriverContext,
-            archiveContext,
-            consensusModuleContext);
+            config.mediaDriverContext(),
+            config.archiveContext(),
+            config.consensusModuleContext());
 
-        container = ClusteredServiceContainer.launch(serviceContainerContext);
+        container = ClusteredServiceContainer.launch(config.clusteredServiceContext());
     }
 
     /**
@@ -318,7 +297,8 @@ public final class SingleNodeCluster implements AutoCloseable
             new AeronCluster.Context()
                 .errorHandler(Throwable::printStackTrace)
                 .egressListener(egressMessageListener)
-                .aeronDirectoryName(aeronDirectoryName));
+                .aeronDirectoryName(aeronDirectoryName)
+                .ingressChannel(clusteredMediaDriver.consensusModule().context().ingressChannel()));
     }
 
     void sendMessageToCluster(final int id, final int messageLength)

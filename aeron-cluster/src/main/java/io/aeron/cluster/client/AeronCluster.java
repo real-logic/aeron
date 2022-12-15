@@ -1205,6 +1205,11 @@ public final class AeronCluster implements AutoCloseable
                     };
             }
 
+            if (Strings.isEmpty(ingressChannel))
+            {
+                throw new ConfigurationException("ingressChannel must be specified");
+            }
+
             if (ingressChannel.startsWith(CommonContext.IPC_CHANNEL))
             {
                 if (null != ingressEndpoints)

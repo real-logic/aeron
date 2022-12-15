@@ -82,15 +82,15 @@ public final class ClusterConfig
      * addresses for ingress requests and 'internal' addresses that will handle all the cluster replication and
      * control traffic.
      *
-     * @param startingMemberId      id for the first member in the list of entries.
-     * @param memberId                id for this node.
-     * @param ingressHostnames      list of hostnames that will receive ingress request traffic.
-     * @param clusterHostnames      list of hostnames that will receive cluster traffic.
-     * @param portBase              base port to derive remaining ports from.
-     * @param parentDir             directory under which the persistent directories will be created.
-     * @param clusteredService      instance of the clustered service that will run with this configuration.
-     * @param additionalServices    instances of additional clustered services that will run with this configuration.
-     * @return                      configuration that wraps all aeron service configuration.
+     * @param startingMemberId   id for the first member in the list of entries.
+     * @param memberId           id for this node.
+     * @param ingressHostnames   list of hostnames that will receive ingress request traffic.
+     * @param clusterHostnames   list of hostnames that will receive cluster traffic.
+     * @param portBase           base port to derive remaining ports from.
+     * @param parentDir          directory under which the persistent directories will be created.
+     * @param clusteredService   instance of the clustered service that will run with this configuration.
+     * @param additionalServices instances of additional clustered services that will run with this configuration.
+     * @return configuration that wraps all aeron service configuration.
      */
     public static ClusterConfig create(
         final int startingMemberId,
@@ -149,7 +149,8 @@ public final class ClusterConfig
             .clusterDir(new File(baseDir, CLUSTER_SUB_DIR))
             .archiveContext(aeronArchiveContext.clone())
             .serviceCount(1 + additionalServices.length)
-            .replicationChannel("aeron:udp?endpoint=" + hostname + ":0");
+            .replicationChannel("aeron:udp?endpoint=" + hostname + ":0")
+            .ingressChannel("aeron:udp?endpoint=" + ingressHostname + ":" + (portBase + CLIENT_FACING_PORT_OFFSET));
 
         final List<ClusteredServiceContainer.Context> serviceContexts = new ArrayList<>();
 
@@ -188,13 +189,13 @@ public final class ClusterConfig
      * addresses for ingress requests and 'internal' addresses that will handle all the cluster replication and
      * control traffic.
      *
-     * @param nodeId                id for this node.
-     * @param ingressHostnames      list of hostnames that will receive ingress request traffic.
-     * @param clusterHostnames      list of hostnames that will receive cluster traffic.
-     * @param portBase              base port to derive remaining ports from.
-     * @param clusteredService      instance of the clustered service that will run with this configuration.
-     * @param additionalServices    instances of additional clustered services that will run with this configuration.
-     * @return                      configuration that wraps all aeron service configuration.
+     * @param nodeId             id for this node.
+     * @param ingressHostnames   list of hostnames that will receive ingress request traffic.
+     * @param clusterHostnames   list of hostnames that will receive cluster traffic.
+     * @param portBase           base port to derive remaining ports from.
+     * @param clusteredService   instance of the clustered service that will run with this configuration.
+     * @param additionalServices instances of additional clustered services that will run with this configuration.
+     * @return configuration that wraps all aeron service configuration.
      */
     public static ClusterConfig create(
         final int nodeId,
@@ -218,11 +219,11 @@ public final class ClusterConfig
     /**
      * Create a new ClusterConfig. This only supports a single lists of hostnames.
      *
-     * @param nodeId            id for this node.
-     * @param hostnames         list of hostnames that will receive ingress request and cluster traffic.
-     * @param portBase          base port to derive remaining ports from.
-     * @param clusteredService  instance of the clustered service that will run on this node.
-     * @return                  configuration that wraps the detailed aeron service configuration.
+     * @param nodeId           id for this node.
+     * @param hostnames        list of hostnames that will receive ingress request and cluster traffic.
+     * @param portBase         base port to derive remaining ports from.
+     * @param clusteredService instance of the clustered service that will run on this node.
+     * @return configuration that wraps the detailed aeron service configuration.
      */
     public static ClusterConfig create(
         final int nodeId,
@@ -425,8 +426,8 @@ public final class ClusterConfig
     /**
      * Ingress endpoints generated from a list of hostnames.
      *
-     * @param hostnames for the cluster members.
-     * @param portBase Base port for the cluster
+     * @param hostnames              for the cluster members.
+     * @param portBase               Base port for the cluster
      * @param clientFacingPortOffset Offset for the client facing port
      * @return a formatted string of ingress endpoints for connecting to a cluster.
      */

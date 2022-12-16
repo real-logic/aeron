@@ -45,6 +45,7 @@ import org.agrona.console.ContinueBarrier;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.samples.cluster.ClusterConfig.*;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
@@ -57,8 +58,10 @@ public final class SingleNodeCluster implements AutoCloseable
 {
     private static final int MESSAGE_ID = 1;
     private static final int TIMER_ID = 2;
+    private static final int PORT_BASE = 9000;
 
     // cluster side
+    private final ClusterConfig config;
     private final ClusteredMediaDriver clusteredMediaDriver;
     private final ClusteredServiceContainer container;
 
@@ -258,7 +261,14 @@ public final class SingleNodeCluster implements AutoCloseable
     public SingleNodeCluster(final ClusteredService externalService, final boolean isCleanStart)
     {
         final ClusteredService service = null == externalService ? new SingleNodeCluster.Service() : externalService;
-        final ClusterConfig config = ClusterConfig.create(0, Collections.singletonList("localhost"), 9000, service);
+        config = ClusterConfig.create(0, Collections.singletonList("localhost"), PORT_BASE, service);
+
+        config.mediaDriverContext().dirDeleteOnStart(true);
+        config.archiveContext().deleteArchiveOnStart(isCleanStart);
+        config.consensusModuleContext()
+            .deleteDirOnStart(isCleanStart)
+            .ingressChannel("aeron:udp?endpoint=" + config.ingressHostname() + ":" +
+            calculatePort(config.memberId(), PORT_BASE, CLIENT_FACING_PORT_OFFSET));
 
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             config.mediaDriverContext(),
@@ -298,7 +308,9 @@ public final class SingleNodeCluster implements AutoCloseable
                 .errorHandler(Throwable::printStackTrace)
                 .egressListener(egressMessageListener)
                 .aeronDirectoryName(aeronDirectoryName)
-                .ingressChannel(clusteredMediaDriver.consensusModule().context().ingressChannel()));
+                .ingressChannel("aeron:udp")
+                .ingressEndpoints(ingressEndpoints(
+                    Collections.singletonList(config.ingressHostname()), PORT_BASE, CLIENT_FACING_PORT_OFFSET)));
     }
 
     void sendMessageToCluster(final int id, final int messageLength)

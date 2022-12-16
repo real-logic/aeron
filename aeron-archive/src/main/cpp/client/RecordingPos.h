@@ -29,6 +29,9 @@ namespace aeron { namespace archive { namespace client
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                         Archive ID                            |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
  *  |                        Recording ID                           |
  *  |                                                               |
  *  +---------------------------------------------------------------+
@@ -52,6 +55,7 @@ constexpr const std::int64_t NULL_RECORDING_ID = aeron::NULL_VALUE;
 #pragma pack(4)
 struct RecordingPosKeyDefn
 {
+    std::int64_t archiveId;
     std::int64_t recordingId;
     std::int32_t sessionId;
     std::int32_t sourceIdentityLength;

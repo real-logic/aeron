@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static io.aeron.archive.Archive.Configuration.CATALOG_FILE_NAME;
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.ArchiveTool.*;
@@ -1186,8 +1187,10 @@ class ArchiveToolTests
         verifyRecording(
             out, archiveDir, validRecording3, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
 
+        final File catalogFile = new File(archiveDir, CATALOG_FILE_NAME);
         try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
         {
+            assertEquals(catalogFile.length(), catalog.capacity());
             assertRecordingState(catalog, validRecording3, INVALID);
 
             assertTrue(catalog.invalidateRecording(validRecording6));
@@ -1201,10 +1204,14 @@ class ArchiveToolTests
         assertTrue(segmentFiles.stream().allMatch((file) -> new File(archiveDir, file).exists()),
             "Non-existing segment files");
 
+        final long fileLengthBeforeCompact = catalogFile.length();
         compact(out, archiveDir, epochClock);
+        final long fileLengthAfterCompact = catalogFile.length();
+        assertTrue(fileLengthAfterCompact < fileLengthBeforeCompact);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
+            assertEquals(catalog.capacity(), fileLengthAfterCompact);
             assertNoRecording(catalog, validRecording3);
             assertNoRecording(catalog, validRecording6);
 

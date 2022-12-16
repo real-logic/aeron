@@ -736,7 +736,7 @@ public class ArchiveTool
             try (FileChannel channel = FileChannel.open(compactFilePath, READ, WRITE, CREATE_NEW);
                 Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
             {
-                final MappedByteBuffer mappedByteBuffer = channel.map(READ_WRITE, 0, MAX_CATALOG_LENGTH);
+                final MappedByteBuffer mappedByteBuffer = channel.map(READ_WRITE, 0, catalog.capacity());
                 mappedByteBuffer.order(CatalogHeaderEncoder.BYTE_ORDER);
                 try
                 {
@@ -780,6 +780,8 @@ public class ArchiveTool
                                 unsafeBuffer.putBytes(index, headerDecoder.buffer(), 0, frameLength);
                             }
                         });
+
+                    channel.truncate(offset.get()); // Trim to size
 
                     out.println("Compaction result: deleted " + deletedRecords.get() + " records and reclaimed " +
                         reclaimedBytes.get() + " bytes");

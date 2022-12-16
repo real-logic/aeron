@@ -114,7 +114,7 @@ public final class ClusterConfig
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + memberId + "-driver";
         final File baseDir = new File(parentDir, "aeron-cluster-" + memberId);
 
-        final String ingressHostname = clusterHostnames.get(memberId - startingMemberId);
+        final String ingressHostname = ingressHostnames.get(memberId - startingMemberId);
         final String hostname = clusterHostnames.get(memberId - startingMemberId);
 
         final MediaDriver.Context mediaDriverContext = new MediaDriver.Context()
@@ -149,8 +149,7 @@ public final class ClusterConfig
             .clusterDir(new File(baseDir, CLUSTER_SUB_DIR))
             .archiveContext(aeronArchiveContext.clone())
             .serviceCount(1 + additionalServices.length)
-            .replicationChannel("aeron:udp?endpoint=" + hostname + ":0")
-            .ingressChannel("aeron:udp?endpoint=" + ingressHostname + ":" + (portBase + CLIENT_FACING_PORT_OFFSET));
+            .replicationChannel("aeron:udp?endpoint=" + hostname + ":0");
 
         final List<ClusteredServiceContainer.Context> serviceContexts = new ArrayList<>();
 

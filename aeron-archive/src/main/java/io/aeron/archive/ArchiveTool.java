@@ -732,6 +732,10 @@ public class ArchiveTool
         final File compactFile = new File(archiveDir, CATALOG_FILE_NAME + ".compact");
         try
         {
+            final MutableInteger offset = new MutableInteger(CatalogHeaderEncoder.BLOCK_LENGTH);
+            final MutableInteger deletedRecords = new MutableInteger();
+            final MutableInteger reclaimedBytes = new MutableInteger();
+
             final Path compactFilePath = compactFile.toPath();
             try (FileChannel channel = FileChannel.open(compactFilePath, READ, WRITE, CREATE_NEW);
                 Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
@@ -748,10 +752,6 @@ public class ArchiveTool
                         .length(CatalogHeaderEncoder.BLOCK_LENGTH)
                         .nextRecordingId(catalog.nextRecordingId())
                         .alignment(catalog.alignment());
-
-                    final MutableInteger offset = new MutableInteger(CatalogHeaderEncoder.BLOCK_LENGTH);
-                    final MutableInteger deletedRecords = new MutableInteger();
-                    final MutableInteger reclaimedBytes = new MutableInteger();
 
                     catalog.forEach(
                         (recordingDescriptorOffset,
@@ -780,17 +780,17 @@ public class ArchiveTool
                                 unsafeBuffer.putBytes(index, headerDecoder.buffer(), 0, frameLength);
                             }
                         });
-
-                    channel.truncate(offset.get()); // Trim to size
-
-                    out.println("Compaction result: deleted " + deletedRecords.get() + " records and reclaimed " +
-                        reclaimedBytes.get() + " bytes");
                 }
                 finally
                 {
                     BufferUtil.free(mappedByteBuffer);
                 }
+
+                channel.truncate(offset.get()); // trim to size
             }
+
+            out.println("Compaction result: deleted " + deletedRecords.get() + " records and reclaimed " +
+                reclaimedBytes.get() + " bytes");
 
             final Path catalogFilePath = compactFilePath.resolveSibling(CATALOG_FILE_NAME);
             Files.delete(catalogFilePath);

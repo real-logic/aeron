@@ -141,10 +141,10 @@ public final class RecordingPos
         for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
         {
             final int counterState = countersReader.getCounterState(i);
-            if (counterState == RECORD_ALLOCATED &&
-                countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID)
+            if (RECORD_ALLOCATED == counterState)
             {
-                if (buffer.getLong(CountersReader.metaDataOffset(i) + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId)
+                if (countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID &&
+                    buffer.getLong(CountersReader.metaDataOffset(i) + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId)
                 {
                     return i;
                 }
@@ -172,10 +172,10 @@ public final class RecordingPos
         for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
         {
             final int counterState = countersReader.getCounterState(i);
-            if (counterState == RECORD_ALLOCATED &&
-                countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID)
+            if (RECORD_ALLOCATED == counterState)
             {
-                if (buffer.getInt(CountersReader.metaDataOffset(i) + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
+                if (countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID &&
+                    buffer.getInt(CountersReader.metaDataOffset(i) + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
                 {
                     return i;
                 }

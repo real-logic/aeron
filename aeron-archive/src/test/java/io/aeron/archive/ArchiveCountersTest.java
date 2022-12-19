@@ -23,6 +23,7 @@ import org.agrona.concurrent.status.CountersManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -108,5 +109,33 @@ class ArchiveCountersTest
             (keyBuffer) -> keyBuffer.putLong(0, archiveId));
 
         assertEquals(counter4, ArchiveCounters.find(countersManager, typeId, archiveId));
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = { Long.MIN_VALUE, Long.MAX_VALUE, 0, -1, 56436747823L, -1235127312317278312L })
+    void lengthOfArchiveIdLabelCountsNumberOfAsciiDigitsRequiredToEncodeArchiveId(final long archiveId)
+    {
+        final int archiveIdLength = String.valueOf(archiveId).length();
+
+        assertEquals(
+            ArchiveCounters.ARCHIVE_ID_LABEL_PREFIX.length() + archiveIdLength,
+            ArchiveCounters.lengthOfArchiveIdLabel(archiveId));
+    }
+
+    @Test
+    void appendArchiveIdLabel()
+    {
+        final int offset = 13;
+        final long archiveId = -23462384L;
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[100]);
+
+        final int length = ArchiveCounters.appendArchiveIdLabel(buffer, offset, archiveId);
+
+        assertEquals(ArchiveCounters.lengthOfArchiveIdLabel(archiveId), length);
+        final int prefixLength = ArchiveCounters.ARCHIVE_ID_LABEL_PREFIX.length();
+        assertEquals(
+            ArchiveCounters.ARCHIVE_ID_LABEL_PREFIX,
+            buffer.getStringWithoutLengthAscii(offset, prefixLength));
+        assertEquals(archiveId, buffer.parseLongAscii(offset + prefixLength, length - prefixLength));
     }
 }

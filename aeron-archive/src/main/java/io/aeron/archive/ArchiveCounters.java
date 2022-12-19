@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
+import org.agrona.AsciiEncoding;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -28,8 +29,10 @@ import static org.agrona.concurrent.status.CountersReader.*;
 /**
  * For allocating and finding Archive associated counters identified by the {@link Aeron#clientId()}.
  */
-final class ArchiveCounters
+public final class ArchiveCounters
 {
+    static final String ARCHIVE_ID_LABEL_PREFIX = " - archiveId=";
+
     private ArchiveCounters()
     {
     }
@@ -57,10 +60,47 @@ final class ArchiveCounters
         index += SIZE_OF_LONG;
 
         index += tempBuffer.putStringWithoutLengthAscii(index, name);
-        index += tempBuffer.putStringWithoutLengthAscii(index, " - archiveId=");
-        index += tempBuffer.putLongAscii(index, archiveId);
+        index += appendArchiveIdLabel(tempBuffer, index, archiveId);
 
-        return aeron.addCounter(typeId, tempBuffer, 0, SIZE_OF_LONG, tempBuffer, SIZE_OF_LONG, index - SIZE_OF_LONG);
+        final int keyLength = SIZE_OF_LONG;
+        return aeron.addCounter(typeId, tempBuffer, 0, keyLength, tempBuffer, keyLength, index - keyLength);
+    }
+
+    /**
+     * Append {@code archiveId} at the end of the counter label.
+     *
+     * @param tempBuffer to append label to.
+     * @param offset     at which current label data ends.
+     * @param archiveId  to use as suffix.
+     * @return length of the suffix appended.
+     */
+    public static int appendArchiveIdLabel(
+        final MutableDirectBuffer tempBuffer, final int offset, final long archiveId)
+    {
+        int suffixLength = 0;
+        suffixLength += tempBuffer.putStringWithoutLengthAscii(offset, ARCHIVE_ID_LABEL_PREFIX);
+        suffixLength += tempBuffer.putLongAscii(offset + suffixLength, archiveId);
+        return suffixLength;
+    }
+
+    /**
+     * Returns the length of the archive id suffix in bytes.
+     *
+     * @param archiveId that will be added to the label.
+     * @return the length of the archive id suffix in bytes.
+     */
+    public static int lengthOfArchiveIdLabel(final long archiveId)
+    {
+        if (archiveId < 0)
+        {
+            return Long.MIN_VALUE == archiveId ?
+                ARCHIVE_ID_LABEL_PREFIX.length() + AsciiEncoding.MIN_LONG_VALUE.length :
+                ARCHIVE_ID_LABEL_PREFIX.length() + 1 + AsciiEncoding.digitCount(-archiveId);
+        }
+        else
+        {
+            return ARCHIVE_ID_LABEL_PREFIX.length() + AsciiEncoding.digitCount(archiveId);
+        }
     }
 
     /**

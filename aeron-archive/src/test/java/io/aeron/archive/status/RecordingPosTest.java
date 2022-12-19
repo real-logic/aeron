@@ -17,6 +17,7 @@ package io.aeron.archive.status;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
+import io.aeron.archive.ArchiveCounters;
 import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -67,28 +68,35 @@ class RecordingPosTest
 
         assertSame(counter, result);
         int offset = 0;
-        assertEquals(archiveId, tempBuffer.getLong(offset));
-        offset += SIZE_OF_LONG;
         assertEquals(recordingId, tempBuffer.getLong(offset));
         offset += SIZE_OF_LONG;
         assertEquals(sessionId, tempBuffer.getInt(offset));
         offset += SIZE_OF_INT;
-        final int expectedSourceIdentityLength = MAX_KEY_LENGTH - offset - SIZE_OF_INT;
+        final int expectedSourceIdentityLength = MAX_KEY_LENGTH - offset - SIZE_OF_INT - SIZE_OF_LONG;
         assertEquals(expectedSourceIdentityLength, tempBuffer.getInt(offset));
         assertTrue(expectedSourceIdentityLength < sourceIdentity.length());
         offset += SIZE_OF_INT;
         assertEquals(
             sourceIdentity.substring(0, expectedSourceIdentityLength),
             tempBuffer.getStringWithoutLengthAscii(offset, expectedSourceIdentityLength));
+        offset += expectedSourceIdentityLength;
+        assertEquals(archiveId, tempBuffer.getLong(offset));
+        offset += SIZE_OF_LONG;
 
-        offset = BitUtil.align(offset + expectedSourceIdentityLength, SIZE_OF_INT);
-        assertEquals("rec-pos: -9223372036854775808 54311 42 -13 ", tempBuffer.getStringWithoutLengthAscii(offset, 43));
-        offset += 43;
-        final int expectedStrippedChannelLength = MAX_LABEL_LENGTH - offset;
+        offset = BitUtil.align(offset, SIZE_OF_INT);
+        final String expectedPrefix = "rec-pos: 54311 42 -13 ";
+        assertEquals(expectedPrefix, tempBuffer.getStringWithoutLengthAscii(offset, expectedPrefix.length()));
+        offset += expectedPrefix.length();
+        final int expectedStrippedChannelLength =
+            MAX_LABEL_LENGTH - expectedPrefix.length() - ArchiveCounters.lengthOfArchiveIdLabel(archiveId);
         assertTrue(expectedStrippedChannelLength < strippedChannel.length());
         assertEquals(
             strippedChannel.substring(0, expectedStrippedChannelLength),
             tempBuffer.getStringWithoutLengthAscii(offset, expectedStrippedChannelLength));
+        offset += expectedStrippedChannelLength;
+        assertEquals(
+            " - archiveId=-9223372036854775808",
+            tempBuffer.getStringWithoutLengthAscii(offset, ArchiveCounters.lengthOfArchiveIdLabel(archiveId)));
     }
 
     @Test
@@ -110,7 +118,7 @@ class RecordingPosTest
             eq(30),
             eq(tempBuffer),
             eq(32),
-            eq(29)))
+            eq(41)))
             .thenReturn(counter);
 
         final Counter result = RecordingPos.allocate(
@@ -125,8 +133,6 @@ class RecordingPosTest
 
         assertSame(counter, result);
         int offset = 0;
-        assertEquals(archiveId, tempBuffer.getLong(offset));
-        offset += SIZE_OF_LONG;
         assertEquals(recordingId, tempBuffer.getLong(offset));
         offset += SIZE_OF_LONG;
         assertEquals(sessionId, tempBuffer.getInt(offset));
@@ -134,10 +140,18 @@ class RecordingPosTest
         assertEquals(sourceIdentity.length(), tempBuffer.getInt(offset));
         offset += SIZE_OF_INT;
         assertEquals(sourceIdentity, tempBuffer.getStringWithoutLengthAscii(offset, sourceIdentity.length()));
+        offset += sourceIdentity.length();
+        assertEquals(archiveId, tempBuffer.getLong(offset));
+        offset += SIZE_OF_LONG;
 
-        offset = 32;
-        assertEquals("rec-pos: 888 1 30 222 ", tempBuffer.getStringWithoutLengthAscii(offset, 22));
-        offset += 22;
+        offset = BitUtil.align(offset, SIZE_OF_INT);
+        final String expectedLabelPrefix = "rec-pos: 1 30 222 ";
+        assertEquals(expectedLabelPrefix, tempBuffer.getStringWithoutLengthAscii(offset, expectedLabelPrefix.length()));
+        offset += expectedLabelPrefix.length();
         assertEquals(strippedChannel, tempBuffer.getStringWithoutLengthAscii(offset, strippedChannel.length()));
+        offset += strippedChannel.length();
+        assertEquals(
+            " - archiveId=888",
+            tempBuffer.getStringWithoutLengthAscii(offset, ArchiveCounters.lengthOfArchiveIdLabel(archiveId)));
     }
 }

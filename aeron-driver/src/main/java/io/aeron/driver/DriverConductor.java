@@ -1180,10 +1180,10 @@ public final class DriverConductor implements Agent
     {
         final long consumerPosition = toDriverCommands.consumerPosition();
 
-        if (consumerPosition == lastConsumerCommandPosition)
+        if (consumerPosition == lastConsumerCommandPosition &&
+            toDriverCommands.producerPosition() > consumerPosition)
         {
-            if (toDriverCommands.producerPosition() > consumerPosition &&
-                ((timeOfLastToDriverPositionChangeNs + clientLivenessTimeoutNs) - nowNs < 0))
+            if ((timeOfLastToDriverPositionChangeNs + clientLivenessTimeoutNs) - nowNs < 0)
             {
                 if (toDriverCommands.unblock())
                 {

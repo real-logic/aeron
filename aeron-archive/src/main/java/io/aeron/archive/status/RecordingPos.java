@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.AeronCounters;
 import io.aeron.Counter;
 import io.aeron.Image;
+import io.aeron.archive.ArchiveCounters;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -44,6 +45,9 @@ import static org.agrona.concurrent.status.CountersReader.*;
  *  |                Source Identity for the Image                  |
  *  |                                                              ...
  * ...                                                              |
+ *  +---------------------------------------------------------------+
+ *  |                         Archive ID                            |
+ *  |                                                               |
  *  +---------------------------------------------------------------+
  * </pre>
  */
@@ -74,6 +78,7 @@ public final class RecordingPos
      *
      * @param aeron           on which the counter will be registered.
      * @param tempBuffer      for encoding the metadata.
+     * @param archiveId       to which the counter belongs.
      * @param recordingId     for the recording.
      * @param sessionId       for the publication being recorded.
      * @param streamId        for the publication being recorded.
@@ -84,6 +89,7 @@ public final class RecordingPos
     public static Counter allocate(
         final Aeron aeron,
         final UnsafeBuffer tempBuffer,
+        final long archiveId,
         final long recordingId,
         final int sessionId,
         final int streamId,
@@ -93,9 +99,13 @@ public final class RecordingPos
         tempBuffer.putLong(RECORDING_ID_OFFSET, recordingId);
         tempBuffer.putInt(SESSION_ID_OFFSET, sessionId);
 
-        final int sourceIdentityLength = Math.min(sourceIdentity.length(), MAX_KEY_LENGTH - SOURCE_IDENTITY_OFFSET);
-        tempBuffer.putStringAscii(SOURCE_IDENTITY_LENGTH_OFFSET, sourceIdentity);
-        final int keyLength = SOURCE_IDENTITY_OFFSET + sourceIdentityLength;
+        final int sourceIdentityLength = Math.min(
+            sourceIdentity.length(), MAX_KEY_LENGTH - SOURCE_IDENTITY_OFFSET - SIZE_OF_LONG);
+        tempBuffer.putInt(SOURCE_IDENTITY_LENGTH_OFFSET, sourceIdentityLength);
+        tempBuffer.putStringWithoutLengthAscii(SOURCE_IDENTITY_OFFSET, sourceIdentity, 0, sourceIdentityLength);
+        final int archiveIdOffset = SOURCE_IDENTITY_OFFSET + sourceIdentityLength;
+        tempBuffer.putLong(archiveIdOffset, archiveId);
+        final int keyLength = archiveIdOffset + SIZE_OF_LONG;
 
         final int labelOffset = BitUtil.align(keyLength, SIZE_OF_INT);
         int labelLength = 0;
@@ -107,7 +117,11 @@ public final class RecordingPos
         labelLength += tempBuffer.putIntAscii(labelOffset + labelLength, streamId);
         labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " ");
         labelLength += tempBuffer.putStringWithoutLengthAscii(
-            labelOffset + labelLength, strippedChannel, 0, MAX_LABEL_LENGTH - labelLength);
+            labelOffset + labelLength,
+            strippedChannel,
+            0,
+            MAX_LABEL_LENGTH - labelLength - ArchiveCounters.lengthOfArchiveIdLabel(archiveId));
+        labelLength += ArchiveCounters.appendArchiveIdLabel(tempBuffer, labelOffset + labelLength, archiveId);
 
         return aeron.addCounter(
             RECORDING_POSITION_TYPE_ID, tempBuffer, 0, keyLength, tempBuffer, labelOffset, labelLength);
@@ -127,10 +141,10 @@ public final class RecordingPos
         for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
         {
             final int counterState = countersReader.getCounterState(i);
-            if (counterState == RECORD_ALLOCATED &&
-                countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID)
+            if (RECORD_ALLOCATED == counterState)
             {
-                if (buffer.getLong(CountersReader.metaDataOffset(i) + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId)
+                if (countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID &&
+                    buffer.getLong(CountersReader.metaDataOffset(i) + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId)
                 {
                     return i;
                 }
@@ -158,10 +172,10 @@ public final class RecordingPos
         for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
         {
             final int counterState = countersReader.getCounterState(i);
-            if (counterState == RECORD_ALLOCATED &&
-                countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID)
+            if (RECORD_ALLOCATED == counterState)
             {
-                if (buffer.getInt(CountersReader.metaDataOffset(i) + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
+                if (countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID &&
+                    buffer.getInt(CountersReader.metaDataOffset(i) + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
                 {
                     return i;
                 }
@@ -184,12 +198,11 @@ public final class RecordingPos
      */
     public static long getRecordingId(final CountersReader countersReader, final int counterId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
-
         if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED &&
             countersReader.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID)
         {
-            return buffer.getLong(CountersReader.metaDataOffset(counterId) + KEY_OFFSET + RECORDING_ID_OFFSET);
+            return countersReader.metaDataBuffer()
+                .getLong(CountersReader.metaDataOffset(counterId) + KEY_OFFSET + RECORDING_ID_OFFSET);
         }
 
         return NULL_RECORDING_ID;
@@ -204,13 +217,12 @@ public final class RecordingPos
      */
     public static String getSourceIdentity(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = counters.metaDataBuffer();
 
         if (counters.getCounterState(counterId) == RECORD_ALLOCATED &&
             counters.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
-            return buffer.getStringAscii(recordOffset + KEY_OFFSET + SOURCE_IDENTITY_LENGTH_OFFSET);
+            return counters.metaDataBuffer().getStringAscii(recordOffset + KEY_OFFSET + SOURCE_IDENTITY_LENGTH_OFFSET);
         }
 
         return null;
@@ -226,11 +238,10 @@ public final class RecordingPos
      */
     public static boolean isActive(final CountersReader counters, final int counterId, final long recordingId)
     {
-        final DirectBuffer buffer = counters.metaDataBuffer();
-        final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-        return counters.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID &&
-            buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId &&
-            counters.getCounterState(counterId) == RECORD_ALLOCATED;
+        return counters.getCounterState(counterId) == RECORD_ALLOCATED &&
+            counters.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID &&
+            counters.metaDataBuffer()
+                .getLong(CountersReader.metaDataOffset(counterId) + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId;
     }
 }

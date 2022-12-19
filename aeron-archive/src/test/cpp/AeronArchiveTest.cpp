@@ -612,7 +612,7 @@ TEST_P(AeronArchiveParamTest, shouldRecordThenReplay)
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
     std::int32_t sessionId;
-    std::int64_t recordingIdFromCounter;
+    std::int64_t recordingId;
     std::int64_t stopPosition;
 
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
@@ -630,7 +630,10 @@ TEST_P(AeronArchiveParamTest, shouldRecordThenReplay)
 
         CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
         const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
-        recordingIdFromCounter = RecordingPos::getRecordingId(countersReader, counterId);
+        recordingId = RecordingPos::getRecordingId(countersReader, counterId);
+        EXPECT_TRUE(RecordingPos::isActive(countersReader, counterId, recordingId));
+        EXPECT_EQ(counterId, RecordingPos::findCounterIdByRecordingId(countersReader, recordingId));
+        EXPECT_EQ("aeron:ipc", RecordingPos::getSourceIdentity(countersReader, counterId));
 
         offerMessages(*publication, messageCount, messagePrefix);
         consumeMessages(*subscription, messageCount, messagePrefix);
@@ -647,7 +650,7 @@ TEST_P(AeronArchiveParamTest, shouldRecordThenReplay)
     aeronArchive->stopRecording(subscriptionId);
 
     YieldingIdleStrategy idleStrategy;
-    while (aeronArchive->getStopPosition(recordingIdFromCounter) != stopPosition)
+    while (aeronArchive->getStopPosition(recordingId) != stopPosition)
     {
         idleStrategy.idle();
     }
@@ -661,14 +664,14 @@ TEST_P(AeronArchiveParamTest, shouldRecordThenReplay)
         if (useParams)
         {
             aeronArchive->startReplay(
-                recordingIdFromCounter,
+                recordingId,
                 m_replayChannel,
                 m_replayStreamId,
                 ReplayParams().position(position).length(length).fileIoMaxLength(4096));
         }
         else
         {
-            aeronArchive->startReplay(recordingIdFromCounter, position, length, m_replayChannel, m_replayStreamId);
+            aeronArchive->startReplay(recordingId, position, length, m_replayChannel, m_replayStreamId);
         }
 
         consumeMessages(*subscription, messageCount, messagePrefix);
@@ -1128,6 +1131,9 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
     const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
     const std::int64_t recordingId = RecordingPos::getRecordingId(countersReader, counterId);
+    EXPECT_TRUE(RecordingPos::isActive(countersReader, counterId, recordingId));
+    EXPECT_EQ(counterId, RecordingPos::findCounterIdByRecordingId(countersReader, recordingId));
+    EXPECT_EQ("127.0.0.1:23265", RecordingPos::getSourceIdentity(countersReader, counterId));
 
     offerMessages(*publication, initialMessageCount, messagePrefix);
     while (countersReader.getCounterValue(counterId) < publication->position())

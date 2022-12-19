@@ -206,7 +206,7 @@ public:
     inline std::int32_t getCounterTypeId(std::int32_t id) const
     {
         validateCounterId(id);
-        return m_metadataBuffer.getInt32Volatile(metadataOffset(id) + TYPE_ID_OFFSET);
+        return m_metadataBuffer.getInt32(metadataOffset(id) + TYPE_ID_OFFSET);
     }
 
     inline std::int64_t getFreeForReuseDeadline(std::int32_t id) const

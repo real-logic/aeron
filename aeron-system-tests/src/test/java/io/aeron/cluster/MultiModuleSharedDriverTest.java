@@ -24,9 +24,15 @@ import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.NameResolver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
-import io.aeron.test.*;
+import io.aeron.test.DataCollector;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.TestContexts;
+import io.aeron.test.Tests;
 import io.aeron.test.cluster.StubClusteredService;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.driver.RedirectingNameResolver;
@@ -51,7 +57,7 @@ class MultiModuleSharedDriverTest
 
     @Test
     @InterruptAfter(20)
-    @SuppressWarnings({ "try", "methodlength"})
+    @SuppressWarnings({ "try", "methodlength" })
     void shouldSupportTwoSingleNodeClusters()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
@@ -167,13 +173,13 @@ class MultiModuleSharedDriverTest
                     .egressListener(egressListener)
                     .ingressChannel("aeron:udp?term-length=64k")
                     .ingressEndpoints(TestCluster.ingressEndpoints(0, 2))
-                    .egressChannel("aeron:udp?endpoint=localhost:9020"));
+                    .egressChannel("aeron:udp?endpoint=localhost:0"));
                 AeronCluster client1 = AeronCluster.connect(new AeronCluster.Context()
                     .aeronDirectoryName(node1.archivingMediaDriver.mediaDriver().aeronDirectoryName())
                     .egressListener(egressListener)
                     .ingressChannel("aeron:udp?term-length=64k")
                     .ingressEndpoints(TestCluster.ingressEndpoints(1, 2))
-                    .egressChannel("aeron:udp?endpoint=localhost:9120")))
+                    .egressChannel("aeron:udp?endpoint=localhost:0")))
             {
                 echoMessage(client0, "Message 0", egress);
                 echoMessage(client1, "Message 1", egress);
@@ -224,6 +230,7 @@ class MultiModuleSharedDriverTest
         final int nodeId;
         final DataCollector dataCollector;
         final ArchivingMediaDriver archivingMediaDriver;
+        final NameResolver nameResolver;
 
         final ConsensusModule consensusModule0;
         final ClusteredServiceContainer container0;
@@ -237,11 +244,12 @@ class MultiModuleSharedDriverTest
         {
             this.nodeId = nodeId;
             this.dataCollector = dataCollector;
+            nameResolver = new RedirectingNameResolver(TestCluster.DEFAULT_NODE_MAPPINGS);
 
             final MediaDriver.Context driverCtx = new MediaDriver.Context()
                 .aeronDirectoryName(CommonContext.getAeronDirectoryName() + "-" + nodeId)
                 .threadingMode(ThreadingMode.SHARED)
-                .nameResolver(new RedirectingNameResolver(TestCluster.DEFAULT_NODE_MAPPINGS))
+                .nameResolver(nameResolver)
                 .dirDeleteOnStart(true);
 
             final Archive.Context archiveCtx = TestContexts.localhostArchive()
@@ -278,6 +286,9 @@ class MultiModuleSharedDriverTest
         ConsensusModule consensusModule(final int clusterId, final String aeronDirectoryName)
         {
             final int nodeOffset = (clusterId * 100) + (nodeId * 10);
+            // The `:X` suffix will be removed by the `RedirectingNameResolver:lookup`
+            final String ingressChannelWithInvalidEndpointFormatToBeRemovedByNameResolver =
+                "aeron:udp?term-length=64k|endpoint=node" + nodeId + ":2" + clusterId + "11" + nodeId + ":X";
             final ConsensusModule.Context ctx = new ConsensusModule.Context()
                 .clusterMemberId(nodeId)
                 .clusterId(clusterId)
@@ -288,7 +299,8 @@ class MultiModuleSharedDriverTest
                 .logChannel("aeron:udp?term-length=64k")
                 .serviceStreamId(104 + nodeOffset)
                 .consensusModuleStreamId(105 + nodeOffset)
-                .ingressChannel("aeron:udp?term-length=64k")
+                .ingressChannel(ingressChannelWithInvalidEndpointFormatToBeRemovedByNameResolver)
+                .nameResolver(nameResolver)
                 .replicationChannel("aeron:udp?endpoint=localhost:0");
 
             return ConsensusModule.launch(ctx);

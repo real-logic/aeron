@@ -27,7 +27,6 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.*;
-import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.DutyCycleTracker;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.exceptions.AeronException;
@@ -3575,7 +3574,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.ingressEndpoint());
         }
 
-        final InetSocketAddress address = UdpChannel.destinationAddress(ingressUri, DefaultNameResolver.INSTANCE);
+        final InetSocketAddress address = UdpChannel.destinationAddress(ingressUri, ctx.nameResolver());
 
         // assume that if not resolved is a non-multicast address
         final InetAddress inetAddress;

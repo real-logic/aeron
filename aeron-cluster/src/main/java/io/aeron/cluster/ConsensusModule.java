@@ -22,7 +22,9 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
+import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.DutyCycleTracker;
+import io.aeron.driver.NameResolver;
 import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
@@ -1347,6 +1349,7 @@ public final class ConsensusModule implements AutoCloseable
         private boolean isLogMdc;
         private boolean useAgentInvoker = false;
         private ConsensusModuleStateExport boostrapState = null;
+        private NameResolver nameResolver;
 
         /**
          * Perform a shallow copy of the object.
@@ -1653,6 +1656,11 @@ public final class ConsensusModule implements AutoCloseable
             if (null == egressPublisher)
             {
                 egressPublisher = new EgressPublisher();
+            }
+
+            if (null == nameResolver)
+            {
+                nameResolver = DefaultNameResolver.INSTANCE;
             }
 
             final ChannelUri channelUri = ChannelUri.parse(logChannel());
@@ -3567,6 +3575,28 @@ public final class ConsensusModule implements AutoCloseable
         public TimerServiceSupplier timerServiceSupplier()
         {
             return timerServiceSupplier;
+        }
+
+        /**
+         * Get the {@link NameResolver} to use for resolving endpoints and control names.
+         *
+         * @return {@link NameResolver} to use for resolving endpoints and control names.
+         */
+        public NameResolver nameResolver()
+        {
+            return nameResolver;
+        }
+
+        /**
+         * Set the {@link NameResolver} to use for resolving endpoints and control names.
+         *
+         * @param nameResolver to use for resolving endpoints and control names.
+         * @return this for fluent API.
+         */
+        public Context nameResolver(final NameResolver nameResolver)
+        {
+            this.nameResolver = nameResolver;
+            return this;
         }
 
         /**

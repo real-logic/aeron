@@ -23,6 +23,8 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.cluster.service.ClusterMarkFile;
+import io.aeron.driver.DefaultNameResolver;
+import io.aeron.driver.NameResolver;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
@@ -421,6 +423,29 @@ class ConsensusModuleContextTest
     {
         when(context.aeron().context().useConductorAgentInvoker()).thenReturn(false);
         assertThrows(ClusterException.class, () -> context.conclude());
+    }
+
+    @Test
+    void shouldUseExplicitlyAssignedNameResolver()
+    {
+        final NameResolver nameResolver = mock(NameResolver.class);
+        assertNull(context.nameResolver());
+
+        context.nameResolver(nameResolver);
+        assertSame(nameResolver, context.nameResolver());
+
+        context.conclude();
+        assertSame(nameResolver, context.nameResolver());
+    }
+
+    @Test
+    void shouldUseDefaultNameResolver()
+    {
+        assertNull(context.nameResolver());
+
+        context.conclude();
+
+        assertSame(DefaultNameResolver.INSTANCE, context.nameResolver());
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

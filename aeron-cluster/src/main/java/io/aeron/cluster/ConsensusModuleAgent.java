@@ -44,6 +44,7 @@ import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -3577,15 +3578,17 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final InetSocketAddress address = UdpChannel.destinationAddress(ingressUri, DefaultNameResolver.INSTANCE);
 
         // assume that if not resolved is a non-multicast address
-        return null != address && null != address.getAddress() && address.getAddress().isMulticastAddress();
+        final InetAddress inetAddress;
+        return !address.isUnresolved() &&
+            null != (inetAddress = address.getAddress()) &&
+            inetAddress.isMulticastAddress();
     }
 
     private void connectIngress()
     {
         final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
-        final boolean isIngressMulticast = isIngressMulticast();
 
-        if (Cluster.Role.LEADER != role && isIngressMulticast)
+        if (Cluster.Role.LEADER != role && isIngressMulticast())
         {
             // don't subscribe to ingress if follower and multicast ingress
             return;

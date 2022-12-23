@@ -50,6 +50,7 @@ final class ConsensusPublisher
     private final BackupResponseEncoder backupResponseEncoder = new BackupResponseEncoder();
     private final HeartbeatRequestEncoder heartbeatRequestEncoder = new HeartbeatRequestEncoder();
     private final HeartbeatResponseEncoder heartbeatResponseEncoder = new HeartbeatResponseEncoder();
+    private final EnterElectionEncoder enterElectionEncoder = new EnterElectionEncoder();
 
     void canvassPosition(
         final ExclusivePublication publication,
@@ -754,6 +755,39 @@ final class ConsensusPublisher
             final long result = session.responsePublication().offer(buffer, 0, length);
             if (result > 0)
             {
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    boolean enterElection(final ExclusivePublication publication, final long leadershipTermId, final int followerMemberId, final boolean needDelay)
+    {
+        if (null == publication)
+        {
+            return false;
+        }
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + EnterElectionEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                enterElectionEncoder
+                        .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                        .leadershipTermId(leadershipTermId)
+                        .followerMemberId(followerMemberId)
+                        .needDelay(needDelay ? BooleanType.TRUE : BooleanType.FALSE);
+
+                bufferClaim.commit();
+
                 return true;
             }
 

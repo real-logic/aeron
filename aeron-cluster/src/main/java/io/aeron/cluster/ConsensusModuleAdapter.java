@@ -38,6 +38,7 @@ final class ConsensusModuleAdapter implements AutoCloseable
     private final CloseSessionDecoder closeSessionDecoder = new CloseSessionDecoder();
     private final ClusterMembersQueryDecoder clusterMembersQueryDecoder = new ClusterMembersQueryDecoder();
     private final RemoveMemberDecoder removeMemberDecoder = new RemoveMemberDecoder();
+    private final LeaderTransferDecoder leaderTransferDecoder = new LeaderTransferDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onFragment);
 
     ConsensusModuleAdapter(final Subscription subscription, final ConsensusModuleAgent consensusModuleAgent)
@@ -157,6 +158,17 @@ final class ConsensusModuleAdapter implements AutoCloseable
                 consensusModuleAgent.onRemoveMember(
                     removeMemberDecoder.memberId(),
                     BooleanType.TRUE == removeMemberDecoder.isPassive());
+                break;
+
+            case LeaderTransferDecoder.TEMPLATE_ID:
+                leaderTransferDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                consensusModuleAgent.onLeaderTransfer(
+                    leaderTransferDecoder.memberId());
                 break;
         }
 

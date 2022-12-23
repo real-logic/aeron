@@ -160,6 +160,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private String catchupLogDestination;
     private String ingressEndpoints;
     private boolean isElectionRequired;
+    private LeaderTransfer leaderTransfer;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {
@@ -347,6 +348,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             else if (null != election)
             {
                 workCount += election.doWork(nowNs);
+            }
+            else if (null != leaderTransfer)
+            {
+                workCount += leaderTransfer.doWork(nowNs);
             }
             else
             {
@@ -748,6 +753,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         {
             election.onCanvassPosition(
                 logLeadershipTermId, logPosition, leadershipTermId, followerMemberId, protocolVersion);
+        }
+        else if (null != leaderTransfer)
+        {
+            enterElection();
+            election.delay();
         }
         else if (Cluster.Role.LEADER == role)
         {
@@ -1587,6 +1597,40 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
+    void onLeaderTransfer(final int memberId)
+    {
+        if (Cluster.Role.LEADER == role && this.memberId != memberId)
+        {
+            if (null == leaderTransfer && null == election)
+            {
+                for (final ClusterMember member : activeMembers) {
+                    if (member.id() == memberId) {
+                        leaderTransfer = new LeaderTransfer(
+                                logPublisher,
+                                consensusPublisher,
+                                leadershipTermId,
+                                activeMembers,
+                                member,
+                                ctx,
+                                this);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    void onEnterElection(final long leadershipTermId, final int followerMemberId, final boolean needDelay)
+    {
+        if (leadershipTermId == this.leadershipTermId && followerMemberId == memberId)
+        {
+            enterElection();
+            if (needDelay) {
+                election.delay();
+            }
+        }
+    }
+
     int addLogPublication(final long appendPosition)
     {
         final long logPublicationTag = aeron.nextCorrelationId();
@@ -1854,6 +1898,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         election = null;
 
         connectIngress();
+    }
+
+    void leaderTransferComplete()
+    {
+        leaderTransfer = null;
     }
 
     boolean dynamicJoinComplete(final long nowNs)
@@ -3226,6 +3275,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final long termBaseLogPosition = null != termEntry ?
             termEntry.termBaseLogPosition : recoveryPlan.lastTermBaseLogPosition;
 
+        leaderTransfer = null;
         election = new Election(
             false,
             leadershipTermId,

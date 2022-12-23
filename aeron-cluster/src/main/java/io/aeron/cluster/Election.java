@@ -61,6 +61,7 @@ class Election
     private long timeOfLastCommitPositionUpdateNs;
     private final long initialTimeOfLastUpdateNs;
     private long nominationDeadlineNs;
+    private long electionDelayDeadlineNs;
     private long logPosition;
     private long appendPosition;
     private long catchupJoinPosition = NULL_POSITION;
@@ -120,7 +121,7 @@ class Election
         this.initialTimeOfLastUpdateNs = nowNs - TimeUnit.DAYS.toNanos(1);
         this.timeOfLastUpdateNs = initialTimeOfLastUpdateNs;
         this.timeOfLastCommitPositionUpdateNs = initialTimeOfLastUpdateNs;
-
+        this.electionDelayDeadlineNs = nowNs;
         Objects.requireNonNull(thisMember);
         ctx.electionStateCounter().setOrdered(INIT.code());
 
@@ -132,6 +133,11 @@ class Election
             ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
             state(LEADER_LOG_REPLICATION, nowNs);
         }
+    }
+
+    void delay()
+    {
+        this.electionDelayDeadlineNs += ctx.electionTimeoutNs();
     }
 
     ClusterMember leader()
@@ -670,6 +676,11 @@ class Election
             }
 
             workCount++;
+        }
+
+        if (nowNs < electionDelayDeadlineNs)
+        {
+            return workCount;
         }
 
         if (isPassiveMember() || (ctx.appointedLeaderId() != NULL_VALUE && ctx.appointedLeaderId() != thisMember.id()))
@@ -1237,6 +1248,7 @@ class Election
     {
         if (newState != state)
         {
+            System.out.println("state: " + state + ", " + ctx.clusterClock().timeNanos());
             logStateChange(
                 thisMember.id(),
                 state,

@@ -212,6 +212,14 @@ public class ClusterTool
                 removeMember(System.out, clusterDir, Integer.parseInt(args[2]), true);
                 break;
 
+            case "leader-transfer":
+                if (args.length < 3)
+                {
+                    printHelp();
+                    System.exit(-1);
+                }
+                leaderTransfer(System.out, clusterDir, Integer.parseInt(args[2]));
+                break;
             case "backup-query":
                 if (args.length < 3)
                 {
@@ -535,6 +543,32 @@ public class ClusterTool
     }
 
     /**
+     * Transfer leader to another member.
+     *
+     * @param out        to print the output to.
+     * @param clusterDir where the cluster is running.
+     * @param memberId   new leader.
+     */
+    public static void leaderTransfer(
+            final PrintStream out, final File clusterDir, final int memberId)
+    {
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
+        {
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+            {
+                if (!leaderTransfer(markFile, memberId))
+                {
+                    out.println("could not send leader transfer request");
+                }
+            }
+        }
+        else
+        {
+            out.println(ClusterMarkFile.FILENAME + " does not exist.");
+        }
+    }
+
+    /**
      * Print out the time of the next backup query.
      *
      * @param out        to print the output to.
@@ -790,6 +824,33 @@ public class ClusterTool
 
         return false;
     }
+
+    /**
+     * transfer leader to another member.
+     *
+     * @param markFile  for the cluster component.
+     * @param memberId  new leader.
+     * @return true if the removal request was successful.
+     */
+    public static boolean leaderTransfer(final ClusterMarkFile markFile, final int memberId)
+    {
+        final String aeronDirectoryName = markFile.decoder().aeronDirectory();
+        final String controlChannel = markFile.decoder().controlChannel();
+        final int consensusModuleStreamId = markFile.decoder().consensusModuleStreamId();
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
+             ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(
+                     aeron.addPublication(controlChannel, consensusModuleStreamId)))
+        {
+            if (consensusModuleProxy.leaderTransfer(memberId))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 
     /**
      * Get the deadline time (MS) for the next cluster backup query.
@@ -1376,6 +1437,7 @@ public class ClusterTool
             "                     list-members: prints leader memberId, active members and passive members lists.%n" +
             "                    remove-member: [memberId] requests removal of a member by memberId.%n" +
             "                   remove-passive: [memberId] requests removal of a passive member by memberId.%n" +
+            "                   leader-transfer: [memberId] requests leader transfer to memberId.%n" +
             "                     backup-query: [delay] get, or set, time of next backup query.%n" +
             "       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.%n" +
             "                         snapshot: triggers a snapshot on the leader.%n" +

@@ -887,21 +887,24 @@ class ClusterTest
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
         final TestNode followerA = followers.get(0);
-        TestNode followerB = followers.get(1);
+        final TestNode followerB = followers.get(1);
 
         cluster.connectClient();
 
         final Thread messageThread = startPublisherThread(cluster, messageCounter);
+        final TestNode restartedFollowerB;
         try
         {
+            Tests.await(() -> followerB.commitPosition() > 0);
+
             cluster.stopNode(followerB);
             final int delaySoClusterAdvancesMs = 2_000;
             Tests.sleep(delaySoClusterAdvancesMs);
 
-            followerB = cluster.startStaticNode(followerB.index(), false);
+            restartedFollowerB = cluster.startStaticNode(followerB.index(), false);
+            awaitElectionClosed(followerB);
             final int delaySoIngressAdvancesAfterCatchupMs = 2_000;
             Tests.sleep(delaySoIngressAdvancesAfterCatchupMs);
-            awaitElectionClosed(followerB);
         }
         finally
         {
@@ -910,7 +913,7 @@ class ClusterTest
         }
 
         cluster.awaitResponseMessageCount(messageCounter.get());
-        cluster.awaitServiceMessageCount(followerB, messageCounter.get());
+        cluster.awaitServiceMessageCount(restartedFollowerB, messageCounter.get());
 
         cluster.client().close();
         cluster.awaitActiveSessionCount(0);

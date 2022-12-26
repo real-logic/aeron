@@ -2776,10 +2776,10 @@ void aeron_driver_conductor_on_check_for_blocked_driver_commands(aeron_driver_co
 {
     int64_t consumer_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
 
-    if (consumer_position == conductor->last_consumer_command_position)
+    if (consumer_position == conductor->last_consumer_command_position &&
+        aeron_mpsc_rb_producer_position(&conductor->to_driver_commands) > consumer_position)
     {
-        if (aeron_mpsc_rb_producer_position(&conductor->to_driver_commands) > consumer_position &&
-            now_ns > (conductor->time_of_last_to_driver_position_change_ns +
+        if (now_ns > (conductor->time_of_last_to_driver_position_change_ns +
                 (int64_t)conductor->context->client_liveness_timeout_ns))
         {
             if (aeron_mpsc_rb_unblock(&conductor->to_driver_commands))

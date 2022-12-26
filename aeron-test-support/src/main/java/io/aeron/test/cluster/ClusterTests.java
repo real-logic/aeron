@@ -212,15 +212,15 @@ public class ClusterTests
                         {
                             break;
                         }
+                    }
 
-                        try
-                        {
-                            Thread.sleep(1);
-                        }
-                        catch (final InterruptedException ignore)
-                        {
-                            break;
-                        }
+                    try
+                    {
+                        Thread.sleep(1);
+                    }
+                    catch (final InterruptedException ignore)
+                    {
+                        break;
                     }
 
                     idleStrategy.idle(client.pollEgress());

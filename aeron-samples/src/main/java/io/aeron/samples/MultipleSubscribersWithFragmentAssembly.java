@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 Real Logic Limited.
+ * Copyright 2014-2023 Real Logic Limited.
  * Copyright 2015 Kaazing Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");

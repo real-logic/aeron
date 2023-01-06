@@ -406,7 +406,7 @@ public:
         AtomicBuffer &termBuffer = m_termBuffers[index];
         TermReader::ReadOutcome outcome{};
 
-        TermReader::read(outcome, termBuffer, offset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
+        TermReader::read(outcome, termBuffer, offset, std::forward<F>(fragmentHandler), fragmentLimit, m_header, m_exceptionHandler);
 
         const std::int64_t newPosition = position + (outcome.offset - offset);
         if (newPosition > position)

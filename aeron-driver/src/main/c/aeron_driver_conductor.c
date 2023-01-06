@@ -484,7 +484,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->send_channel_endpoints.length = 0;
     conductor->send_channel_endpoints.capacity = 0;
     conductor->send_channel_endpoints.on_time_event = aeron_send_channel_endpoint_entry_on_time_event;
-    conductor->send_channel_endpoints.has_reached_end_of_life = aeron_send_channel_endpoint_entry_has_reached_end_of_life;
+    conductor->send_channel_endpoints.has_reached_end_of_life =
+        aeron_send_channel_endpoint_entry_has_reached_end_of_life;
     conductor->send_channel_endpoints.delete_func = aeron_send_channel_endpoint_entry_delete;
     conductor->send_channel_endpoints.free_func = aeron_send_channel_endpoint_entry_free;
 
@@ -492,7 +493,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->receive_channel_endpoints.length = 0;
     conductor->receive_channel_endpoints.capacity = 0;
     conductor->receive_channel_endpoints.on_time_event = aeron_receive_channel_endpoint_entry_on_time_event;
-    conductor->receive_channel_endpoints.has_reached_end_of_life = aeron_receive_channel_endpoint_entry_has_reached_end_of_life;
+    conductor->receive_channel_endpoints.has_reached_end_of_life =
+        aeron_receive_channel_endpoint_entry_has_reached_end_of_life;
     conductor->receive_channel_endpoints.delete_func = aeron_receive_channel_endpoint_entry_delete;
     conductor->receive_channel_endpoints.free_func = aeron_receive_channel_endpoint_entry_free;
 
@@ -539,7 +541,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->next_session_id = aeron_randomised_int32();
     conductor->publication_reserved_session_id_low = context->publication_reserved_session_id_low;
     conductor->publication_reserved_session_id_high = context->publication_reserved_session_id_high;
-    conductor->last_consumer_command_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
+    conductor->last_command_consumer_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
 
     context->conductor_duty_cycle_stall_tracker.max_cycle_time_counter = aeron_counters_manager_addr(
         &conductor->counters_manager, AERON_SYSTEM_COUNTER_CONDUCTOR_MAX_CYCLE_TIME);
@@ -2776,11 +2778,12 @@ void aeron_driver_conductor_on_check_for_blocked_driver_commands(aeron_driver_co
 {
     int64_t consumer_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
 
-    if (consumer_position == conductor->last_consumer_command_position &&
+    if (consumer_position == conductor->last_command_consumer_position &&
         aeron_mpsc_rb_producer_position(&conductor->to_driver_commands) > consumer_position)
     {
-        if (now_ns > (conductor->time_of_last_to_driver_position_change_ns +
-                (int64_t)conductor->context->client_liveness_timeout_ns))
+        int64_t position_change_deadline_ns = conductor->time_of_last_to_driver_position_change_ns +
+            (int64_t)conductor->context->client_liveness_timeout_ns;
+        if (now_ns > position_change_deadline_ns)
         {
             if (aeron_mpsc_rb_unblock(&conductor->to_driver_commands))
             {
@@ -2791,7 +2794,7 @@ void aeron_driver_conductor_on_check_for_blocked_driver_commands(aeron_driver_co
     else
     {
         conductor->time_of_last_to_driver_position_change_ns = now_ns;
-        conductor->last_consumer_command_position = consumer_position;
+        conductor->last_command_consumer_position = consumer_position;
     }
 }
 

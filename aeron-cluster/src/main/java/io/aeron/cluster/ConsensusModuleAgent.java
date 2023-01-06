@@ -864,7 +864,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
 
         final long nowNs = clusterClock.timeNanos();
-        timeOfLastLeaderUpdateNs = nowNs;
+        if (leadershipTermId >= this.leadershipTermId)
+        {
+            timeOfLastLeaderUpdateNs = nowNs;
+        }
 
         if (null != election)
         {
@@ -925,7 +928,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         logOnCommitPosition(memberId, leadershipTermId, logPosition, leaderMemberId);
 
         final long nowNs = clusterClock.timeNanos();
-        timeOfLastLeaderUpdateNs = nowNs;
+        if (leadershipTermId >= this.leadershipTermId)
+        {
+            timeOfLastLeaderUpdateNs = nowNs;
+        }
 
         if (null != election)
         {

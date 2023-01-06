@@ -79,7 +79,7 @@ public final class DriverConductor implements Agent
     private final long timerIntervalNs;
     private final long clientLivenessTimeoutNs;
     private long timeOfLastToDriverPositionChangeNs;
-    private long lastConsumerCommandPosition;
+    private long lastCommandConsumerPosition;
     private long timerCheckDeadlineNs;
     private long clockUpdateDeadlineNs;
 
@@ -144,7 +144,7 @@ public final class DriverConductor implements Agent
             clientProxy,
             this);
 
-        lastConsumerCommandPosition = toDriverCommands.consumerPosition();
+        lastCommandConsumerPosition = toDriverCommands.consumerPosition();
     }
 
     /**
@@ -1180,8 +1180,7 @@ public final class DriverConductor implements Agent
     {
         final long consumerPosition = toDriverCommands.consumerPosition();
 
-        if (consumerPosition == lastConsumerCommandPosition &&
-            toDriverCommands.producerPosition() > consumerPosition)
+        if (consumerPosition == lastCommandConsumerPosition && toDriverCommands.producerPosition() > consumerPosition)
         {
             if ((timeOfLastToDriverPositionChangeNs + clientLivenessTimeoutNs) - nowNs < 0)
             {
@@ -1194,7 +1193,7 @@ public final class DriverConductor implements Agent
         else
         {
             timeOfLastToDriverPositionChangeNs = nowNs;
-            lastConsumerCommandPosition = consumerPosition;
+            lastCommandConsumerPosition = consumerPosition;
         }
     }
 

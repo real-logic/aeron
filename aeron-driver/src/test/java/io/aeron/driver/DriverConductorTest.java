@@ -32,6 +32,7 @@ import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
+import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
@@ -52,7 +53,6 @@ import org.mockito.stubbing.Answer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongConsumer;
 
@@ -65,8 +65,7 @@ import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.*;
 import static org.agrona.BitUtil.align;
 import static org.agrona.concurrent.status.CountersReader.*;
 import static org.hamcrest.CoreMatchers.is;
@@ -1029,6 +1028,42 @@ class DriverConductorTest
     }
 
     @Test
+    void shouldFreeResourcesInChunks()
+    {
+        final LongArrayList registrationIds = new LongArrayList();
+        for (int i = 0; i < DriverConductor.MANAGED_RESOURCES_TO_FREE_PER_CYCLE + 1; i++)
+        {
+            registrationIds.add(driverProxy.addPublication(CHANNEL_IPC, 5000 + i));
+            driverConductor.doWork();
+        }
+
+        registrationIds.forEachLong(id -> assertNotNull(driverConductor.getIpcPublication(id)));
+
+        nanoClock.advance(CLIENT_LIVENESS_TIMEOUT_NS + 1);
+        epochClock.advance(NANOSECONDS.toMillis(CLIENT_LIVENESS_TIMEOUT_NS) + 1);
+        driverConductor.doWork();
+
+        // at this point ipcPublications are not yet freed as they didn't linger
+        registrationIds.forEachLong(id -> assertNotNull(driverConductor.getIpcPublication(id)));
+
+        nanoClock.advance(DEFAULT_TIMER_INTERVAL_NS + 1);
+        driverConductor.doWork();
+
+        // now (ipcPublications - 1) are freed and the last one remains
+        for (int i = registrationIds.size() - 1; i > 0; i--)
+        {
+            assertNull(driverConductor.getIpcPublication(registrationIds.get(i)));
+        }
+        assertNotNull(driverConductor.getIpcPublication(registrationIds.get(0)));
+
+        nanoClock.advance(DEFAULT_TIMER_INTERVAL_NS + 1);
+        driverConductor.doWork();
+
+        // now the last ipcPublication was also removed
+        assertNull(driverConductor.getIpcPublication(registrationIds.get(0)));
+    }
+
+    @Test
     void shouldNotTimeoutIpcPublicationWithKeepalive()
     {
         driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
@@ -1850,15 +1885,16 @@ class DriverConductorTest
 
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)
     {
-        while (!condition.getAsBoolean())
+        do
         {
-            final long millisecondsToAdvance = 16;
+            final int millisecondsToAdvance = 16;
 
-            nanoClock.advance(TimeUnit.MILLISECONDS.toNanos(millisecondsToAdvance));
+            nanoClock.advance(MILLISECONDS.toNanos(millisecondsToAdvance));
             epochClock.advance(millisecondsToAdvance);
             timeConsumer.accept(nanoClock.nanoTime());
             driverConductor.doWork();
         }
+        while (!condition.getAsBoolean());
     }
 
     private void doWorkUntil(final BooleanSupplier condition)

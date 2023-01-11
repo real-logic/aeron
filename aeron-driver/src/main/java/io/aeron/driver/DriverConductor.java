@@ -66,6 +66,7 @@ import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
  */
 public final class DriverConductor implements Agent
 {
+    static final int MANAGED_RESOURCES_TO_FREE_PER_CYCLE = 3;
     private static final long CLOCK_UPDATE_INTERNAL_NS = TimeUnit.MILLISECONDS.toNanos(1);
     private static final String[] INVALID_DESTINATION_KEYS =
     {
@@ -111,10 +112,10 @@ public final class DriverConductor implements Agent
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
     private final MutableDirectBuffer tempBuffer;
     private final DataHeaderFlyweight defaultDataHeader = new DataHeaderFlyweight(createDefaultHeader(0, 0, 0));
+    private final DutyCycleTracker dutyCycleTracker;
     private NameResolver nameResolver;
     private DriverNameResolver driverNameResolver;
     private final AtomicCounter errorCounter;
-    private final DutyCycleTracker dutyCycleTracker;
 
     DriverConductor(final MediaDriver.Context ctx)
     {
@@ -1962,14 +1963,16 @@ public final class DriverConductor implements Agent
     private <T extends DriverManagedResource> void checkManagedResources(
         final ArrayList<T> list, final long nowNs, final long nowMs)
     {
+        int freeAttempts = 0;
         for (int lastIndex = list.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final DriverManagedResource resource = list.get(i);
 
             resource.onTimeEvent(nowNs, nowMs, this);
 
-            if (resource.hasReachedEndOfLife())
+            if (resource.hasReachedEndOfLife() && freeAttempts < MANAGED_RESOURCES_TO_FREE_PER_CYCLE)
             {
+                freeAttempts++;
                 if (resource.free())
                 {
                     fastUnorderedRemove(list, i, lastIndex--);

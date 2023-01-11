@@ -237,6 +237,13 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutIpcPublicationWithActiveIpcS
     int64_t sub_id = nextCorrelationId();
     int64_t remove_correlation_id = nextCorrelationId();
 
+    std::vector<int64_t> other_publications;
+    for (int i = 0; i < (int)AERON_DRIVER_CONDUCTOR_MANAGED_RESOURCES_TO_FREE_PER_CYCLE; i++)
+    {
+        int64_t id = nextCorrelationId();
+        other_publications.push_back(id);
+        ASSERT_EQ(addIpcPublication(client_id, id, 5000 + i, false), 0);
+    }
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
     ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, false), 0);
     doWorkUntilDone();
@@ -248,16 +255,25 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutIpcPublicationWithActiveIpcS
 
     int64_t timeout = m_context.m_context->publication_linger_timeout_ns * 2;
 
-    doWorkForNs(
-        timeout,
-        100,
-        [&]()
-        {
-            clientKeepalive(client_id);
-        });
+    clientKeepalive(client_id);
+    test_increment_nano_time(timeout);
+    doWork();
+
+    for (int i = 0; i < (int)AERON_DRIVER_CONDUCTOR_MANAGED_RESOURCES_TO_FREE_PER_CYCLE; i++)
+    {
+        int64_t id = other_publications[i];
+        auto publication = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, id);
+        publication->conductor_fields.has_reached_end_of_life = true;
+    }
+
+    clientKeepalive(client_id);
+    test_increment_nano_time(m_context.m_context->timer_interval_ns + 1);
+    doWork();
 
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
-    EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(nullptr, aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id));
+    EXPECT_NE(nullptr, aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, other_publications[0]));
     EXPECT_EQ(aeron_driver_conductor_num_active_ipc_subscriptions(&m_conductor.m_conductor, STREAM_ID_1), 0u);
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_UNAVAILABLE_IMAGE, _, _))

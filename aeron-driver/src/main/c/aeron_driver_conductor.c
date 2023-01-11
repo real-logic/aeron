@@ -1379,12 +1379,14 @@ void aeron_driver_conductor_image_transition_to_linger(
 }
 
 #define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l, t, now_ns, now_ms) \
-for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--) \
+for (int last_index = (int)l.length - 1, i = last_index, free_attempts = 0; i >= 0; i--) \
 { \
     t *elem = &l.array[i]; \
     l.on_time_event(c, elem, now_ns, now_ms); \
-    if (l.has_reached_end_of_life(c, elem)) \
+    if (l.has_reached_end_of_life(c, elem) && \
+        free_attempts < AERON_DRIVER_CONDUCTOR_MANAGED_RESOURCES_TO_FREE_PER_CYCLE) \
     { \
+        free_attempts++; \
         if (l.free_func(elem)) \
         { \
             l.delete_func(c, elem); \

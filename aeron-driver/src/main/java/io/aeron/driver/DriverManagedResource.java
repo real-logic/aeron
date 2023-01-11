@@ -31,7 +31,8 @@ public interface DriverManagedResource
     }
 
     /**
-     * Close resources that are not external.
+     * Close resources that are not external.  This will not call {@link DriverManagedResource#free()}.  That will
+     * need to be called separately at the appropriate time.
      */
     void close();
 

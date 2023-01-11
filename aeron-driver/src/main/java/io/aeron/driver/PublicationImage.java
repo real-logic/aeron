@@ -276,7 +276,6 @@ public final class PublicationImage
         }
 
         CloseHelper.close(errorHandler, congestionControl);
-        CloseHelper.close(errorHandler, rawLog);
     }
 
     /**

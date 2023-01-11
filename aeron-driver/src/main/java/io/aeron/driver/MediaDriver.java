@@ -474,6 +474,7 @@ public final class MediaDriver implements AutoCloseable
         private int publicationReservedSessionIdHigh = Configuration.publicationReservedSessionIdHigh();
         private int lossReportBufferLength = Configuration.lossReportBufferLength();
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
+        private int resourceFreeLimit = Configuration.resourceFreeLimit();
 
         private Long receiverGroupTag = Configuration.groupTag();
         private long flowControlGroupTag = Configuration.flowControlGroupTag();
@@ -3139,6 +3140,31 @@ public final class MediaDriver implements AutoCloseable
         public long receiverCycleThresholdNs()
         {
             return receiverCycleThresholdNs;
+        }
+
+        /**
+         * Maximum number of {@link DriverManagedResource}s to free within a single duty cycle within the conductor.
+         *
+         * @param resourceFreeLimit number of resources to limit to.
+         * @return this for a fluent API.
+         * @see Configuration#resourceFreeLimit()
+         * @see Configuration#RESOURCE_FREE_LIMIT_PROP_NAME
+         * @see Configuration#RESOURCE_FREE_LIMIT_DEFAULT
+         */
+        public Context resourceFreeLimit(final int resourceFreeLimit)
+        {
+            this.resourceFreeLimit = resourceFreeLimit;
+            return this;
+        }
+
+        /**
+         * Maximum number of {@link DriverManagedResource}s to free within a single duty cycle within the conductor.
+         *
+         * @return limit on the number of resources that can be freed.
+         */
+        public int resourceFreeLimit()
+        {
+            return resourceFreeLimit;
         }
 
         /**

@@ -1972,19 +1972,6 @@ public final class DriverConductor implements Agent
 
             resource.onTimeEvent(nowNs, nowMs, this);
 
-//            if (resource.hasReachedEndOfLife())
-//            {
-//                if (resource.free())
-//                {
-//                    fastUnorderedRemove(list, i, lastIndex--);
-//                    CloseHelper.close(ctx.errorHandler(), resource);
-//                }
-//                else
-//                {
-//                    ctx.systemCounters().get(FREE_FAILS).incrementOrdered();
-//                }
-//            }
-
             if (resource.hasReachedEndOfLife())
             {
                 CloseHelper.close(ctx.errorHandler(), resource::close);

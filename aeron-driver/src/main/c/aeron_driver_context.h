@@ -25,6 +25,7 @@
 #include "concurrent/aeron_spsc_concurrent_array_queue.h"
 #include "concurrent/aeron_mpsc_concurrent_array_queue.h"
 #include "concurrent/aeron_mpsc_rb.h"
+#include "concurrent/aeron_broadcast_descriptor.h"
 #include "aeron_flow_control.h"
 #include "aeron_congestion_control.h"
 #include "aeron_agent.h"
@@ -42,6 +43,12 @@
 
 #define AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX (16)
 #define AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH (64 * 1024)
+
+#define AERON_TO_CONDUCTOR_BUFFER_LENGTH_DEFAULT (1024 * 1024 + AERON_RB_TRAILER_LENGTH)
+#define AERON_TO_CLIENTS_BUFFER_LENGTH_DEFAULT (1024 * 1024 + AERON_BROADCAST_BUFFER_TRAILER_LENGTH)
+#define AERON_COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT (1024 * 1024)
+#define AERON_COUNTERS_VALUES_BUFFER_LENGTH_MAX (500 * 1024 * 1024)
+#define AERON_ERROR_BUFFER_LENGTH_DEFAULT (1024 * 1024)
 
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 

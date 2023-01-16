@@ -613,8 +613,9 @@ class ArchiveContextTest
         System.setProperty(ERROR_BUFFER_LENGTH_PROP_NAME, String.valueOf(errorBufferLength));
         try
         {
+            final Archive.Context ctx = TestContexts.localhostArchive();
             final ConfigurationException exception =
-                assertThrowsExactly(ConfigurationException.class, context::conclude);
+                assertThrowsExactly(ConfigurationException.class, ctx::conclude);
             assertEquals("ERROR - invalid errorBufferLength=" + errorBufferLength, exception.getMessage());
         }
         finally

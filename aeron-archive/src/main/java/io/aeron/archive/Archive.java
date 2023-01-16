@@ -933,7 +933,7 @@ public final class Archive implements AutoCloseable
         private AuthorisationServiceSupplier authorisationServiceSupplier;
         private Counter controlSessionsCounter;
 
-        private int errorBufferLength;
+        private int errorBufferLength = Configuration.errorBufferLength();
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
@@ -1085,11 +1085,6 @@ public final class Archive implements AutoCloseable
 
             if (null == markFile)
             {
-                if (0 == errorBufferLength)
-                {
-                    errorBufferLength = Configuration.errorBufferLength();
-                }
-
                 if (errorBufferLength < ERROR_BUFFER_LENGTH_DEFAULT ||
                     errorBufferLength > Integer.MAX_VALUE - ArchiveMarkFile.HEADER_LENGTH)
                 {

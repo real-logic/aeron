@@ -58,10 +58,10 @@ import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.BitUtil.align;
 import static org.agrona.IoUtil.mapNewFile;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
@@ -608,6 +608,25 @@ public final class MediaDriver implements AutoCloseable
                 validateMtuLength(mtuLength);
                 validateMtuLength(ipcMtuLength);
                 validatePageSize(filePageSize);
+                validateValueRange(
+                    conductorBufferLength, CONDUCTOR_BUFFER_LENGTH_DEFAULT, Integer.MAX_VALUE, "conductorBufferLength");
+                validateValueRange(
+                    toClientsBufferLength,
+                    TO_CLIENTS_BUFFER_LENGTH_DEFAULT,
+                    Integer.MAX_VALUE,
+                    "toClientsBufferLength");
+                validateValueRange(
+                    counterValuesBufferLength,
+                    COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT,
+                    COUNTERS_VALUES_BUFFER_LENGTH_MAX,
+                    "counterValuesBufferLength");
+                validateValueRange(
+                    errorBufferLength, ERROR_BUFFER_LENGTH_DEFAULT, Integer.MAX_VALUE, "errorBufferLength");
+                validateValueRange(
+                    publicationTermWindowLength, 0, TERM_MAX_LENGTH, "publicationTermWindowLength");
+                validateValueRange(
+                    ipcPublicationTermWindowLength, 0, TERM_MAX_LENGTH, "ipcPublicationTermWindowLength");
+
                 validateSessionIdRange(publicationReservedSessionIdLow, publicationReservedSessionIdHigh);
 
                 LogBufferDescriptor.checkTermLength(publicationTermBufferLength);
@@ -616,15 +635,16 @@ public final class MediaDriver implements AutoCloseable
                 validateUnblockTimeout(publicationUnblockTimeoutNs, clientLivenessTimeoutNs, timerIntervalNs);
                 validateUntetheredTimeouts(untetheredWindowLimitTimeoutNs, untetheredRestingTimeoutNs, timerIntervalNs);
 
-                cncByteBuffer = mapNewFile(
-                    cncFile(),
-                    CncFileDescriptor.computeCncFileLength(
+                final long cncFileLength = tempAlign(
+                    (long)END_OF_METADATA_OFFSET +
                     conductorBufferLength +
-                        toClientsBufferLength +
-                        Configuration.countersMetadataBufferLength(counterValuesBufferLength) +
-                        counterValuesBufferLength +
-                        errorBufferLength,
-                        filePageSize));
+                    toClientsBufferLength +
+                    countersMetadataBufferLength(counterValuesBufferLength) +
+                    counterValuesBufferLength +
+                    errorBufferLength,
+                    filePageSize);
+                validateValueRange(cncFileLength, 0, Integer.MAX_VALUE, "CnC file length");
+                cncByteBuffer = mapNewFile(cncFile(), cncFileLength);
 
                 cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
                 CncFileDescriptor.fillMetaData(
@@ -3600,7 +3620,15 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == lossReport)
             {
-                lossReportBuffer = mapLossReport(aeronDirectoryName(), align(lossReportBufferLength, filePageSize));
+                final long pageAlignedLossReportBufferLength = tempAlign(lossReportBufferLength, filePageSize);
+                validateValueRange(
+                    pageAlignedLossReportBufferLength,
+                    LOSS_REPORT_BUFFER_LENGTH_DEFAULT,
+                    Integer.MAX_VALUE,
+                    "lossReportBufferLength");
+                lossReportBuffer = mapLossReport(
+                    aeronDirectoryName(),
+                    (int)pageAlignedLossReportBufferLength);
                 lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
             }
 
@@ -3726,6 +3754,12 @@ public final class MediaDriver implements AutoCloseable
                     }
                     break;
             }
+        }
+
+        private static long tempAlign(final long length, final int alignment)
+        {
+            // FIXME: Replace with `BitUtil#align(long,long)`
+            return (length + (alignment - 1)) & -alignment;
         }
 
         /**

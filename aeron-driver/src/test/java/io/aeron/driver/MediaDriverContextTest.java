@@ -16,10 +16,18 @@
 package io.aeron.driver;
 
 import io.aeron.driver.MediaDriver.Context;
+import io.aeron.exceptions.ConfigurationException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import static io.aeron.driver.Configuration.NAK_MAX_BACKOFF_DEFAULT_NS;
-import static io.aeron.driver.Configuration.NAK_MULTICAST_MAX_BACKOFF_PROP_NAME;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static io.aeron.driver.Configuration.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MediaDriverContextTest
@@ -52,5 +60,86 @@ class MediaDriverContextTest
         final Context context = new Context();
         context.nakMulticastMaxBackoffNs(Long.MIN_VALUE);
         assertEquals(Long.MIN_VALUE, context.nakMulticastMaxBackoffNs());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { Integer.MIN_VALUE, -5, 0, 1024 * 1024, 1024 * 1024 + 64 * 12 - 1 })
+    void conductorBufferLengthMustBeWithinRange(final int length)
+    {
+        final Context context = new Context();
+        context.conductorBufferLength(length);
+
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
+        assertTrue(exception.getMessage().contains("conductorBufferLength"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { Integer.MIN_VALUE, -5, 0, 1024 * 1024, 1024 * 1024 + 64 * 2 - 1 })
+    void toClientsBufferLengthMustBeWithinRange(final int length)
+    {
+        final Context context = new Context();
+        context.toClientsBufferLength(length);
+
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
+        assertTrue(exception.getMessage().contains("toClientsBufferLength"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -76, 0, 1024 * 1024 - 1, 1024 * 1024 * 1024 })
+    void counterValuesBufferLengthMustBeWithinRange(final int length)
+    {
+        final Context context = new Context();
+        context.counterValuesBufferLength(length);
+
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
+        assertTrue(exception.getMessage().contains("counterValuesBufferLength"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -76, 0, ERROR_BUFFER_LENGTH_DEFAULT - 1 })
+    void errorBufferLengthMustBeWithinRange(final int length)
+    {
+        final Context context = new Context();
+        context.errorBufferLength(length);
+
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
+        assertTrue(exception.getMessage().contains("errorBufferLength"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -6, 0, 5, LOSS_REPORT_BUFFER_LENGTH_DEFAULT - 4096 })
+    void lossReportBufferLengthMustBeWithinRange(final int length, final @TempDir Path temp) throws IOException
+    {
+        final Path aeronDir = temp.resolve("aeron");
+        Files.createDirectories(aeronDir);
+
+        final Context context = new Context();
+        context.aeronDirectoryName(aeronDir.toString());
+        context.lossReportBufferLength(length);
+
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
+        assertTrue(exception.getMessage().contains("lossReportBufferLength"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -76, -3, TERM_MAX_LENGTH + 1 })
+    void publicationTermWindowLengthMustBeWithinRange(final int length)
+    {
+        final Context context = new Context();
+        context.publicationTermWindowLength(length);
+
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
+        assertTrue(exception.getMessage().contains("publicationTermWindowLength"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -76, -3, TERM_MAX_LENGTH + 1 })
+    void ipcPublicationTermWindowLengthMustBeWithinRange(final int length)
+    {
+        final Context context = new Context();
+        context.ipcPublicationTermWindowLength(length);
+
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
+        assertTrue(exception.getMessage().contains("ipcPublicationTermWindowLength"));
     }
 }

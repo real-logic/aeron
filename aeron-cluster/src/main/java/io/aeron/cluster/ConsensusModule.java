@@ -708,7 +708,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Size in bytes of the error buffer for the cluster.
          */
-        public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
+        public static final int ERROR_BUFFER_LENGTH_DEFAULT = ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;
 
         /**
          * Timeout a leader will wait on getting termination ACKs from followers.

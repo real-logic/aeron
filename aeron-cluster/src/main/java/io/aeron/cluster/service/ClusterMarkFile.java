@@ -51,6 +51,8 @@ public final class ClusterMarkFile implements AutoCloseable
 
     public static final int HEADER_LENGTH = 8 * 1024;
     public static final int VERSION_FAILED = -1;
+    public static final int ERROR_BUFFER_MIN_LENGTH = 1024 * 1024;
+    public static final int ERROR_BUFFER_MAX_LENGTH = Integer.MAX_VALUE - HEADER_LENGTH;
 
     public static final String FILE_EXTENSION = ".dat";
     public static final String FILENAME = "cluster-mark" + FILE_EXTENSION;
@@ -78,6 +80,11 @@ public final class ClusterMarkFile implements AutoCloseable
         final EpochClock epochClock,
         final long timeoutMs)
     {
+        if (errorBufferLength < ERROR_BUFFER_MIN_LENGTH || errorBufferLength > ERROR_BUFFER_MAX_LENGTH)
+        {
+            throw new IllegalArgumentException("Invalid errorBufferLength: " + errorBufferLength);
+        }
+
         final boolean markFileExists = file.exists();
         final int totalFileLength = HEADER_LENGTH + errorBufferLength;
 

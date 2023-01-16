@@ -264,13 +264,28 @@ void aeron_network_publication_close(
         publication->conductor_fields.managed_resource.clientd = NULL;
 
         aeron_retransmit_handler_close(&publication->retransmit_handler);
-        publication->raw_log_close_func(&publication->mapped_raw_log, publication->log_file_name);
         publication->flow_control->fini(publication->flow_control);
-        aeron_free(publication->log_file_name);
+    }
+}
+
+bool aeron_network_publication_free(aeron_network_publication_t *publication)
+{
+    if (NULL == publication)
+    {
+        return true;
     }
 
+    if (!publication->raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
+    {
+         return false;
+    }
+
+    aeron_free(publication->log_file_name);
     aeron_free(publication);
+    return true;
 }
+
+extern bool aeron_network_publication_free_voidp(void *publication);
 
 int aeron_network_publication_setup_message_check(
     aeron_network_publication_t *publication, int64_t now_ns, int32_t active_term_id, int32_t term_offset)

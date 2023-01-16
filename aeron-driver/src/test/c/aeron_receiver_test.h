@@ -109,6 +109,7 @@ protected:
         for (auto image : m_images)
         {
             aeron_publication_image_close(&m_counters_manager, image);
+            aeron_publication_image_free(image);
         }
 
         for (auto endpoint : m_endpoints)

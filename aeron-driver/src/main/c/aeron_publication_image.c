@@ -272,15 +272,30 @@ int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, ae
         aeron_free(subscribable->array);
         aeron_free(image->connections.array);
 
-        image->raw_log_close_func(&image->mapped_raw_log, image->log_file_name);
         image->congestion_control->fini(image->congestion_control);
-        aeron_free(image->log_file_name);
     }
-
-    aeron_free(image);
 
     return 0;
 }
+
+bool aeron_publication_image_free(aeron_publication_image_t *image)
+{
+    if (NULL == image)
+    {
+        return true;
+    }
+
+    if (!image->raw_log_free_func(&image->mapped_raw_log, image->log_file_name))
+    {
+        return false;
+    }
+
+    aeron_free(image->log_file_name);
+    aeron_free(image);
+    return true;
+}
+
+extern bool aeron_publication_image_free_voidp(void *image);
 
 void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, int64_t position)
 {

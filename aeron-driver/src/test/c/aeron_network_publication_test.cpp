@@ -70,6 +70,7 @@ protected:
         for (auto publication : m_publications)
         {
             aeron_network_publication_close(&m_counters_manager, publication);
+            aeron_network_publication_free(publication);
         }
 
         for (auto endpoint : m_endpoints)

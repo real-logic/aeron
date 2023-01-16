@@ -138,6 +138,13 @@ int aeron_network_publication_create(
 void aeron_network_publication_close(
     aeron_counters_manager_t *counters_manager, aeron_network_publication_t *publication);
 
+bool aeron_network_publication_free(aeron_network_publication_t *publication);
+
+inline bool aeron_network_publication_free_voidp(void *publication)
+{
+    return aeron_network_publication_free((aeron_network_publication_t *)publication);
+}
+
 void aeron_network_publication_incref(void *clientd);
 
 void aeron_network_publication_decref(void *clientd);

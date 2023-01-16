@@ -56,6 +56,7 @@ protected:
         for (auto publication : m_publications)
         {
             aeron_ipc_publication_close(&m_counters_manager, publication);
+            aeron_ipc_publication_free(publication);
         }
 
         aeron_system_counters_close(&m_system_counters);

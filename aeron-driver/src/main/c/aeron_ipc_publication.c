@@ -200,13 +200,28 @@ void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aer
         }
         aeron_free(subscribable->array);
 
-        publication->raw_log_close_func(&publication->mapped_raw_log, publication->log_file_name);
-        aeron_free(publication->log_file_name);
         aeron_free(publication->channel);
     }
-
-    aeron_free(publication);
 }
+
+bool aeron_ipc_publication_free(aeron_ipc_publication_t *publication)
+{
+    if (NULL == publication)
+    {
+        return true;
+    }
+
+    if (!publication->raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
+    {
+        return false;
+    }
+
+    aeron_free(publication->log_file_name);
+    aeron_free(publication);
+    return true;
+}
+
+extern bool aeron_ipc_publication_free_voidp(void *publication);
 
 int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
 {

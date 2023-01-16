@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.exceptions.ConfigurationException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,10 +33,17 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MediaDriverContextTest
 {
+    private final Context context = new Context();
+
+    @AfterEach
+    void afterEach()
+    {
+        context.close();
+    }
+
     @Test
     void nakMulticastMaxBackoffNsDefaultValue()
     {
-        final Context context = new Context();
         assertEquals(NAK_MAX_BACKOFF_DEFAULT_NS, context.nakMulticastMaxBackoffNs());
     }
 
@@ -57,7 +65,6 @@ class MediaDriverContextTest
     @Test
     void nakMulticastMaxBackoffNsExplicitValue()
     {
-        final Context context = new Context();
         context.nakMulticastMaxBackoffNs(Long.MIN_VALUE);
         assertEquals(Long.MIN_VALUE, context.nakMulticastMaxBackoffNs());
     }
@@ -66,7 +73,6 @@ class MediaDriverContextTest
     @ValueSource(ints = { Integer.MIN_VALUE, -5, 0, 1024 * 1024, 1024 * 1024 + 64 * 12 - 1 })
     void conductorBufferLengthMustBeWithinRange(final int length)
     {
-        final Context context = new Context();
         context.conductorBufferLength(length);
 
         final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
@@ -77,7 +83,6 @@ class MediaDriverContextTest
     @ValueSource(ints = { Integer.MIN_VALUE, -5, 0, 1024 * 1024, 1024 * 1024 + 64 * 2 - 1 })
     void toClientsBufferLengthMustBeWithinRange(final int length)
     {
-        final Context context = new Context();
         context.toClientsBufferLength(length);
 
         final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
@@ -88,7 +93,6 @@ class MediaDriverContextTest
     @ValueSource(ints = { -76, 0, 1024 * 1024 - 1, 1024 * 1024 * 1024 })
     void counterValuesBufferLengthMustBeWithinRange(final int length)
     {
-        final Context context = new Context();
         context.counterValuesBufferLength(length);
 
         final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
@@ -99,7 +103,6 @@ class MediaDriverContextTest
     @ValueSource(ints = { -76, 0, ERROR_BUFFER_LENGTH_DEFAULT - 1 })
     void errorBufferLengthMustBeWithinRange(final int length)
     {
-        final Context context = new Context();
         context.errorBufferLength(length);
 
         final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
@@ -113,7 +116,6 @@ class MediaDriverContextTest
         final Path aeronDir = temp.resolve("aeron");
         Files.createDirectories(aeronDir);
 
-        final Context context = new Context();
         context.aeronDirectoryName(aeronDir.toString());
         context.lossReportBufferLength(length);
 
@@ -125,7 +127,6 @@ class MediaDriverContextTest
     @ValueSource(ints = { -76, -3, TERM_MAX_LENGTH + 1 })
     void publicationTermWindowLengthMustBeWithinRange(final int length)
     {
-        final Context context = new Context();
         context.publicationTermWindowLength(length);
 
         final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
@@ -136,7 +137,6 @@ class MediaDriverContextTest
     @ValueSource(ints = { -76, -3, TERM_MAX_LENGTH + 1 })
     void ipcPublicationTermWindowLengthMustBeWithinRange(final int length)
     {
-        final Context context = new Context();
         context.ipcPublicationTermWindowLength(length);
 
         final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);

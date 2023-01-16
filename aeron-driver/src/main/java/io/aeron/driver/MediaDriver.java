@@ -570,9 +570,13 @@ public final class MediaDriver implements AutoCloseable
             {
                 CloseHelper.close(errorHandler, logFactory);
 
-                final AtomicCounter errorCounter = systemCounters.get(ERRORS);
-                errorCounter.disconnectCountersManager();
-                errorCounter.close();
+                if (null != systemCounters)
+                {
+                    final AtomicCounter errorCounter = systemCounters.get(ERRORS);
+                    errorCounter.disconnectCountersManager();
+                    errorCounter.close();
+                }
+
                 if (errorHandler instanceof AutoCloseable)
                 {
                     CloseHelper.quietClose((AutoCloseable)errorHandler);

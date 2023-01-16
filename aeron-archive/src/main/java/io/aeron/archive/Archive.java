@@ -51,9 +51,9 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.AeronCounters.*;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.Archive.Configuration.ARCHIVE_CONTROL_SESSIONS_TYPE_ID;
+import static io.aeron.archive.Archive.Configuration.ERROR_BUFFER_LENGTH_DEFAULT;
 import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
+import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static java.lang.System.getProperty;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
@@ -994,6 +994,9 @@ public final class Archive implements AutoCloseable
                 throw new ConfigurationException("invalid fileIoMaxLength=" + fileIoMaxLength);
             }
 
+            io.aeron.driver.Configuration.validateMtuLength(controlMtuLength);
+            checkTermLength(controlTermBufferLength);
+
             if (null == controlChannel)
             {
                 throw new ConfigurationException("Archive.Context.controlChannel must be set");
@@ -1085,6 +1088,12 @@ public final class Archive implements AutoCloseable
                 if (0 == errorBufferLength)
                 {
                     errorBufferLength = Configuration.errorBufferLength();
+                }
+
+                if (errorBufferLength < ERROR_BUFFER_LENGTH_DEFAULT ||
+                    errorBufferLength > Integer.MAX_VALUE - ArchiveMarkFile.HEADER_LENGTH)
+                {
+                    throw new ConfigurationException("invalid errorBufferLength=" + errorBufferLength);
                 }
 
                 markFile = new ArchiveMarkFile(this);

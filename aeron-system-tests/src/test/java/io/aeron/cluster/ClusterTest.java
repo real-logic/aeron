@@ -815,6 +815,7 @@ class ClusterTest
         }
 
         cluster.awaitNewLeadershipEvent(1);
+        cluster.awaitLeaderAndClosedElection();
         cluster.followers(2);
     }
 

@@ -1,5 +1,4 @@
 
-
 ////
 * Copyright 2014-2023 Real Logic Limited.
 *
@@ -859,7 +858,7 @@ the service should start recovering from where it to use the new snapshot on re-
 Here are some exercises that you can try out.
 
 . Have multiple customers competing on the same auction.
-. Use multicast for the egress channel so that customers can see the others prices and make better bids.
+. Use multicast for a generic egress channel (common to all clients) so that customers can see others prices to make informed bids.
 . Implement a second message type that will allow customers to query for the current bid price of the auction.
 
 //== Timers

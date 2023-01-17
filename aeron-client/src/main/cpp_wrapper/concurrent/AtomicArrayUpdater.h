@@ -96,7 +96,7 @@ public:
         std::int64_t changeNumber = m_beginChange.load(std::memory_order_relaxed) + 1;
         m_beginChange.store(changeNumber, std::memory_order_release);
 
-        std::atomic_thread_fence(std::memory_order_release);
+        aeron::concurrent::atomic::release();
         m_array.first = array;
         m_array.second = length;
 

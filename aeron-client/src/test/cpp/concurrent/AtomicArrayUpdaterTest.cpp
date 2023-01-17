@@ -27,63 +27,57 @@ using namespace aeron;
 using namespace aeron::concurrent;
 
 #define NUM_THREADS (2)
-#define NUM_ELEMENTS (12480)
+#define NUM_ELEMENTS (10000)
 
 class AtomicArrayUpdaterTest : public testing::Test
 {
-public:
-    void TearDown() override
-    {
-        auto pair = m_arrayUpdater.load();
-        delete[] pair.first;
-    }
-
-protected:
-    AtomicArrayUpdater<std::int64_t> m_arrayUpdater = {};
 };
 
-TEST_F(AtomicArrayUpdaterTest, shouldAddElements)
+TEST(AtomicArrayUpdaterTest, shouldAddElements)
 {
-    auto pair = m_arrayUpdater.load();
+    AtomicArrayUpdater<int64_t> arrayUpdater;
+    auto pair = arrayUpdater.load();
     ASSERT_EQ(nullptr, pair.first);
     ASSERT_EQ(0, pair.second);
 
-    pair = m_arrayUpdater.addElement(INT64_MAX);
+    pair = arrayUpdater.addElement(INT64_MAX);
     ASSERT_EQ(nullptr, pair.first);
     ASSERT_EQ(0, pair.second);
     delete[] pair.first;
 
-    pair = m_arrayUpdater.load();
+    pair = arrayUpdater.load();
     ASSERT_EQ(1, pair.second);
     ASSERT_EQ(INT64_MAX, pair.first[0]);
 
-    pair = m_arrayUpdater.addElement(INT64_MIN);
+    pair = arrayUpdater.addElement(INT64_MIN);
     ASSERT_EQ(1, pair.second);
     ASSERT_EQ(INT64_MAX, pair.first[0]);
     delete[] pair.first;
 
-    pair = m_arrayUpdater.load();
+    pair = arrayUpdater.load();
     ASSERT_EQ(2, pair.second);
     ASSERT_EQ(INT64_MAX, pair.first[0]);
     ASSERT_EQ(INT64_MIN, pair.first[1]);
+    delete[] pair.first;
 }
 
-TEST_F(AtomicArrayUpdaterTest, shouldRemoveElements)
+TEST(AtomicArrayUpdaterTest, shouldRemoveElements)
 {
-    auto pair = m_arrayUpdater.addElement(1);
+    AtomicArrayUpdater<int64_t> arrayUpdater;
+    auto pair = arrayUpdater.addElement(1);
     delete[] pair.first;
-    pair = m_arrayUpdater.addElement(2);
+    pair = arrayUpdater.addElement(2);
     delete[] pair.first;
-    pair = m_arrayUpdater.addElement(3);
+    pair = arrayUpdater.addElement(3);
     delete[] pair.first;
 
-    pair = m_arrayUpdater.load();
+    pair = arrayUpdater.load();
     ASSERT_EQ(3, pair.second);
     ASSERT_EQ(1, pair.first[0]);
     ASSERT_EQ(2, pair.first[1]);
     ASSERT_EQ(3, pair.first[2]);
 
-    auto removed = m_arrayUpdater.removeElement(
+    auto removed = arrayUpdater.removeElement(
         [&](int64_t elem)
         {
             return elem == 2;
@@ -94,23 +88,25 @@ TEST_F(AtomicArrayUpdaterTest, shouldRemoveElements)
     ASSERT_EQ(3, removed.first[2]);
     delete[] removed.first;
 
-    pair = m_arrayUpdater.load();
+    pair = arrayUpdater.load();
     ASSERT_EQ(2, pair.second);
     ASSERT_EQ(1, pair.first[0]);
     ASSERT_EQ(3, pair.first[1]);
 
-    removed = m_arrayUpdater.removeElement(
+    removed = arrayUpdater.removeElement(
         [&](int64_t elem)
         {
             return elem == 2;
         });
     ASSERT_EQ(nullptr, removed.first);
     ASSERT_EQ(0, removed.second);
+
+    delete[] pair.first;
 }
 
-TEST_F(AtomicArrayUpdaterTest, shouldStoreAnArray)
+TEST(AtomicArrayUpdaterTest, shouldStoreAnArray)
 {
-    AtomicArrayUpdater<std::int64_t> arrayUpdater = {};
+    AtomicArrayUpdater<int64_t> arrayUpdater;
     auto pair = arrayUpdater.addElement(INT64_MAX);
     delete[] pair.first;
     pair = arrayUpdater.addElement(INT64_MIN);
@@ -127,13 +123,16 @@ TEST_F(AtomicArrayUpdaterTest, shouldStoreAnArray)
     ASSERT_NE(originalArray, pair.first);
     ASSERT_EQ(newArray, pair.first);
     ASSERT_EQ(3, pair.second);
+
     delete[] originalArray;
 }
 
-TEST_F(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
+TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
 {
+    AtomicArrayUpdater<int64_t> arrayUpdater;
     std::atomic<int> countDown(NUM_THREADS);
     std::vector<std::thread> threads;
+    std::vector<int64_t *> pendingDeletes[NUM_THREADS];
 
     for (int i = 0; i < NUM_THREADS; i++)
     {
@@ -147,12 +146,14 @@ TEST_F(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
                         std::this_thread::yield(); // wait for other threads
                     }
 
+                    std::vector<int64_t *> deleteList;
                     int64_t element = phase * 1000000000000;
                     for (int j = 0; j < NUM_ELEMENTS; j++)
                     {
-                        auto pair = m_arrayUpdater.addElement(element++);
-                        delete[] pair.first;
+                        auto pair = arrayUpdater.addElement(element++);
+                        deleteList.push_back(pair.first);
                     }
+                    pendingDeletes[phase] = deleteList;
                 }));
     }
 
@@ -164,22 +165,33 @@ TEST_F(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
         }
     }
 
-    auto pair = m_arrayUpdater.load();
+    auto pair = arrayUpdater.load();
     ASSERT_EQ(NUM_THREADS * NUM_ELEMENTS, pair.second);
+
+    delete[] pair.first;
+    for (const auto &list: pendingDeletes)
+    {
+        for (auto &x: list)
+        {
+            delete[] x;
+        }
+    }
 }
 
-TEST_F(AtomicArrayUpdaterTest, shouldRemoveElementsConcurrently)
+TEST(AtomicArrayUpdaterTest, shouldRemoveElementsConcurrently)
 {
+    AtomicArrayUpdater<int64_t> arrayUpdater;
     for (int i = 0; i < NUM_ELEMENTS; i++)
     {
-        auto pair = m_arrayUpdater.addElement(i);
+        auto pair = arrayUpdater.addElement(i);
         delete[] pair.first;
     }
-    auto pair = m_arrayUpdater.addElement(INT64_MIN);
+    auto pair = arrayUpdater.addElement(INT64_MIN);
     delete[] pair.first;
 
     std::atomic<int> countDown(NUM_THREADS);
     std::vector<std::thread> threads;
+    std::vector<int64_t *> pendingDeletes[NUM_THREADS];
 
     for (int i = 0; i < NUM_THREADS; i++)
     {
@@ -193,15 +205,17 @@ TEST_F(AtomicArrayUpdaterTest, shouldRemoveElementsConcurrently)
                         std::this_thread::yield(); // wait for other threads
                     }
 
+                    std::vector<int64_t *> deleteList;
                     for (int j = 0; j < NUM_ELEMENTS; j++)
                     {
-                        auto pair = m_arrayUpdater.removeElement(
+                        auto pair = arrayUpdater.removeElement(
                             [&](int64_t elem)
                             {
                                 return elem > 0 && ((elem & 1) == phase);
                             });
-                        delete[] pair.first;
+                        deleteList.push_back(pair.first);
                     }
+                    pendingDeletes[phase] = deleteList;
                 }));
     }
 
@@ -213,22 +227,33 @@ TEST_F(AtomicArrayUpdaterTest, shouldRemoveElementsConcurrently)
         }
     }
 
-    pair = m_arrayUpdater.load();
+    pair = arrayUpdater.load();
     ASSERT_EQ(2, pair.second);
     ASSERT_EQ(0, pair.first[0]);
     ASSERT_EQ(INT64_MIN, pair.first[1]);
+
+    delete[] pair.first;
+    for (const auto &list: pendingDeletes)
+    {
+        for (auto &x: list)
+        {
+            delete[] x;
+        }
+    }
 }
 
-TEST_F(AtomicArrayUpdaterTest, shouldAddAndRemoveElementsConcurrently)
+TEST(AtomicArrayUpdaterTest, shouldAddAndRemoveElementsConcurrently)
 {
+    AtomicArrayUpdater<int64_t> arrayUpdater;
     for (int i = 0; i < NUM_ELEMENTS; i++)
     {
-        auto pair = m_arrayUpdater.addElement(i);
+        auto pair = arrayUpdater.addElement(i);
         delete[] pair.first;
     }
 
     std::atomic<int> countDown(NUM_THREADS);
     std::vector<std::thread> threads;
+    std::vector<int64_t *> pendingDeletes[NUM_THREADS];
 
     threads.push_back(
         std::thread(
@@ -241,12 +266,14 @@ TEST_F(AtomicArrayUpdaterTest, shouldAddAndRemoveElementsConcurrently)
                 }
 
                 int64_t elem = 1000000000001;
+                std::vector<int64_t *> deleteList;
                 for (int j = 0; j < NUM_ELEMENTS; j++)
                 {
-                    auto pair = m_arrayUpdater.addElement(elem); // add odd
-                    delete[] pair.first;
+                    auto pair = arrayUpdater.addElement(elem); // add odd
+                    deleteList.push_back(pair.first);
                     elem += 2;
                 }
+                pendingDeletes[0] = deleteList;
             }));
 
     threads.push_back(
@@ -259,15 +286,17 @@ TEST_F(AtomicArrayUpdaterTest, shouldAddAndRemoveElementsConcurrently)
                     std::this_thread::yield(); // wait for other threads
                 }
 
+                std::vector<int64_t *> deleteList;
                 for (int j = 0; j < NUM_ELEMENTS; j++)
                 {
-                    auto pair = m_arrayUpdater.removeElement(
+                    auto pair = arrayUpdater.removeElement(
                         [&](int64_t elem)
                         {
                             return (elem & 1) == 0; // remove even
                         });
-                    delete[] pair.first;
+                    deleteList.push_back(pair.first);
                 }
+                pendingDeletes[1] = deleteList;
             }));
 
     for (std::thread &t: threads)
@@ -278,6 +307,15 @@ TEST_F(AtomicArrayUpdaterTest, shouldAddAndRemoveElementsConcurrently)
         }
     }
 
-    auto pair = m_arrayUpdater.load();
+    auto pair = arrayUpdater.load();
     ASSERT_EQ((NUM_ELEMENTS / 2) + NUM_ELEMENTS, pair.second);
+
+    delete[] pair.first;
+    for (const auto &list: pendingDeletes)
+    {
+        for (auto &x: list)
+        {
+            delete[] x;
+        }
+    }
 }

@@ -509,10 +509,7 @@ public:
     {
         if (!m_isClosed.exchange(true))
         {
-            std::pair<Image::array_t, std::size_t> imageArrayPair = m_imageArray.load();
-            m_imageArray.store(new std::shared_ptr<Image>[0], 0);
-
-            return imageArrayPair;
+            return m_imageArray.store(new std::shared_ptr<Image>[0], 0);
         }
         else
         {

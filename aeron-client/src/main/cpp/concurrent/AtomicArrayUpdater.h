@@ -82,6 +82,7 @@ public:
 
             E *array = m_array.first;
             std::size_t length = m_array.second;
+            aeron::concurrent::atomic::acquire();
 
             if (changeNumber == m_beginChange.load(std::memory_order_acquire))
             {
@@ -98,9 +99,11 @@ public:
 
             E *array = m_array.first;
             std::size_t length = m_array.second;
+            aeron::concurrent::atomic::acquire();
 
             if (m_beginChange.compare_exchange_strong(changeNumber, changeNumber + 1, std::memory_order_acq_rel))
             {
+                aeron::concurrent::atomic::release();
                 m_array.first = newArray;
                 m_array.second = newLength;
 
@@ -119,10 +122,13 @@ public:
 
             E *array = m_array.first;
             std::size_t length = m_array.second;
+            aeron::concurrent::atomic::acquire();
 
             if (m_beginChange.compare_exchange_strong(changeNumber, changeNumber + 1, std::memory_order_acq_rel))
             {
                 std::pair<E *, std::size_t> newArray = aeron::util::addToArray(array, length, element);
+
+                aeron::concurrent::atomic::release();
                 m_array.first = newArray.first;
                 m_array.second = newArray.second;
 
@@ -142,6 +148,7 @@ public:
 
             E *array = m_array.first;
             std::size_t length = m_array.second;
+            aeron::concurrent::atomic::acquire();
 
             if (changeNumber == m_beginChange.load(std::memory_order_acquire))
             {
@@ -153,6 +160,8 @@ public:
                             changeNumber, changeNumber + 1, std::memory_order_acq_rel))
                         {
                             std::pair<E *, std::size_t> newArray = aeron::util::removeFromArray(array, length, i);
+
+                            aeron::concurrent::atomic::release();
                             m_array.first = newArray.first;
                             m_array.second = newArray.second;
 

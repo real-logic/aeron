@@ -272,10 +272,6 @@ static void aeron_driver_conductor_on_endpoint_change_null(const void *channel)
 #define AERON_THREADING_MODE_DEFAULT AERON_THREADING_MODE_DEDICATED
 #define AERON_DIR_DELETE_ON_START_DEFAULT false
 #define AERON_DIR_DELETE_ON_SHUTDOWN_DEFAULT false
-#define AERON_TO_CONDUCTOR_BUFFER_LENGTH_DEFAULT (1024 * 1024 + AERON_RB_TRAILER_LENGTH)
-#define AERON_TO_CLIENTS_BUFFER_LENGTH_DEFAULT (1024 * 1024 + AERON_BROADCAST_BUFFER_TRAILER_LENGTH)
-#define AERON_COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT (1024 * 1024)
-#define AERON_ERROR_BUFFER_LENGTH_DEFAULT (1024 * 1024)
 #define AERON_CLIENT_LIVENESS_TIMEOUT_NS_DEFAULT (10 * 1000 * 1000 * 1000LL)
 #define AERON_TERM_BUFFER_LENGTH_DEFAULT (16 * 1024 * 1024)
 #define AERON_IPC_TERM_BUFFER_LENGTH_DEFAULT (64 * 1024 * 1024)
@@ -631,28 +627,28 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         AERON_TO_CONDUCTOR_BUFFER_LENGTH_ENV_VAR,
         getenv(AERON_TO_CONDUCTOR_BUFFER_LENGTH_ENV_VAR),
         _context->to_driver_buffer_length,
-        1024 + AERON_RB_TRAILER_LENGTH,
+        AERON_TO_CONDUCTOR_BUFFER_LENGTH_DEFAULT,
         INT32_MAX);
 
     _context->to_clients_buffer_length = aeron_config_parse_size64(
         AERON_TO_CLIENTS_BUFFER_LENGTH_ENV_VAR,
         getenv(AERON_TO_CLIENTS_BUFFER_LENGTH_ENV_VAR),
         _context->to_clients_buffer_length,
-        1024 + AERON_BROADCAST_BUFFER_TRAILER_LENGTH,
+        AERON_TO_CLIENTS_BUFFER_LENGTH_DEFAULT,
         INT32_MAX);
 
     _context->counters_values_buffer_length = aeron_config_parse_size64(
         AERON_COUNTERS_VALUES_BUFFER_LENGTH_ENV_VAR,
         getenv(AERON_COUNTERS_VALUES_BUFFER_LENGTH_ENV_VAR),
         _context->counters_values_buffer_length,
-        1024,
-        INT32_MAX);
+        AERON_COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT,
+        AERON_COUNTERS_VALUES_BUFFER_LENGTH_MAX);
 
     _context->error_buffer_length = aeron_config_parse_size64(
         AERON_ERROR_BUFFER_LENGTH_ENV_VAR,
         getenv(AERON_ERROR_BUFFER_LENGTH_ENV_VAR),
         _context->error_buffer_length,
-        1024,
+        AERON_ERROR_BUFFER_LENGTH_DEFAULT,
         INT32_MAX);
 
     _context->client_liveness_timeout_ns = aeron_config_parse_duration_ns(
@@ -702,14 +698,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         getenv(AERON_IPC_PUBLICATION_TERM_WINDOW_LENGTH_ENV_VAR),
         _context->ipc_publication_window_length,
         0,
-        INT32_MAX);
+        AERON_LOGBUFFER_TERM_MAX_LENGTH);
 
     _context->publication_window_length = aeron_config_parse_size64(
         AERON_PUBLICATION_TERM_WINDOW_LENGTH_ENV_VAR,
         getenv(AERON_PUBLICATION_TERM_WINDOW_LENGTH_ENV_VAR),
         _context->publication_window_length,
         0,
-        INT32_MAX);
+        AERON_LOGBUFFER_TERM_MAX_LENGTH);
 
     _context->socket_rcvbuf = aeron_config_parse_size64(
         AERON_SOCKET_SO_RCVBUF_ENV_VAR,

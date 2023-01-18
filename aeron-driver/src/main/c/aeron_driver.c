@@ -287,10 +287,37 @@ void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context)
     context->error_buffer = aeron_cnc_error_log_buffer(metadata);
 }
 
+int aeron_driver_validate_value_range(uint64_t value, uint64_t min_value, uint64_t max_value, const char *name)
+{
+    if (value < min_value)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "%s less than min size of %" PRIu64 ": page size=%" PRIu64,
+            name, min_value, value);
+        return -1;
+    }
+
+    if (value > max_value)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "%s greater than max size of %" PRIu64 ": page size=%" PRIu64,
+            name, max_value, value);
+        return -1;
+    }
+
+    return 0;
+}
+
 int aeron_driver_create_cnc_file(aeron_driver_t *driver)
 {
     char buffer[AERON_MAX_PATH];
     size_t cnc_file_length = aeron_cnc_length(driver->context);
+    if (aeron_driver_validate_value_range(cnc_file_length, 0, INT32_MAX, "CnC file length") < 0)
+    {
+        return -1;
+    }
 
     driver->context->cnc_map.addr = NULL;
     driver->context->cnc_map.length = cnc_file_length;
@@ -453,21 +480,9 @@ cleanup:
 
 int aeron_driver_validate_page_size(aeron_driver_t *driver)
 {
-    if (driver->context->file_page_size < AERON_PAGE_MIN_SIZE)
+    if (aeron_driver_validate_value_range(
+        driver->context->file_page_size, AERON_PAGE_MIN_SIZE, AERON_PAGE_MAX_SIZE, "file_page_size") < 0)
     {
-        AERON_SET_ERR(
-            EINVAL,
-            "Page size less than min size of %" PRIu64 ": page size=%" PRIu64,
-            AERON_PAGE_MIN_SIZE, driver->context->file_page_size);
-        return -1;
-    }
-
-    if (driver->context->file_page_size > AERON_PAGE_MAX_SIZE)
-    {
-        AERON_SET_ERR(
-            EINVAL,
-            "Page size greater than max size of %" PRIu64 ": page size=%" PRIu64,
-            AERON_PAGE_MAX_SIZE, driver->context->file_page_size);
         return -1;
     }
 
@@ -774,6 +789,60 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     if (aeron_driver_context_validate_mtu_length(_driver->context->mtu_length) < 0 ||
         aeron_driver_context_validate_mtu_length(_driver->context->ipc_mtu_length) < 0)
+    {
+        goto error;
+    }
+
+    if (aeron_driver_validate_value_range(
+        _driver->context->to_driver_buffer_length,
+        AERON_TO_CONDUCTOR_BUFFER_LENGTH_DEFAULT,
+        INT32_MAX,
+        "to_driver_buffer_length") < 0)
+    {
+        goto error;
+    }
+
+    if (aeron_driver_validate_value_range(
+        _driver->context->to_clients_buffer_length,
+        AERON_TO_CLIENTS_BUFFER_LENGTH_DEFAULT,
+        INT32_MAX,
+        "to_clients_buffer_length") < 0)
+    {
+        goto error;
+    }
+
+    if (aeron_driver_validate_value_range(
+        _driver->context->counters_values_buffer_length,
+        AERON_COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT,
+        AERON_COUNTERS_VALUES_BUFFER_LENGTH_MAX,
+        "counters_values_buffer_length") < 0)
+    {
+        goto error;
+    }
+
+    if (aeron_driver_validate_value_range(
+        _driver->context->error_buffer_length,
+        AERON_ERROR_BUFFER_LENGTH_DEFAULT,
+        INT32_MAX,
+        "error_buffer_length") < 0)
+    {
+        goto error;
+    }
+
+    if (aeron_driver_validate_value_range(
+        _driver->context->publication_window_length,
+        0,
+        AERON_LOGBUFFER_TERM_MAX_LENGTH,
+        "publication_window_length") < 0)
+    {
+        goto error;
+    }
+
+    if (aeron_driver_validate_value_range(
+        _driver->context->ipc_publication_window_length,
+        0,
+        AERON_LOGBUFFER_TERM_MAX_LENGTH,
+        "ipc_publication_window_length") < 0)
     {
         goto error;
     }

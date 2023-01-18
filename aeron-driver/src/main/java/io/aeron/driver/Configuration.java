@@ -177,6 +177,11 @@ public final class Configuration
     public static final int COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
     /**
+     * Maximum length of the buffer for the counters file.
+     */
+    public static final int COUNTERS_VALUES_BUFFER_LENGTH_MAX = 500 * 1024 * 1024;
+
+    /**
      * Property name for length of the memory mapped buffer for the distinct error log.
      */
     public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.error.buffer.length";
@@ -682,6 +687,7 @@ public final class Configuration
 
     /**
      * Property name for resolver interface to which network connections are made.
+     *
      * @see #RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME
      */
     public static final String RESOLVER_INTERFACE_PROP_NAME = "aeron.driver.resolver.interface";
@@ -689,6 +695,7 @@ public final class Configuration
     /**
      * Property name for resolver bootstrap neighbors for which it can bootstrap naming, format is comma separated list
      * of {@code hostname:port} pairs.
+     *
      * @see #RESOLVER_INTERFACE_PROP_NAME
      */
     public static final String RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME = "aeron.driver.resolver.bootstrap.neighbor";
@@ -837,6 +844,7 @@ public final class Configuration
      * Should spy subscriptions simulate a connection to a network publication.
      * <p>
      * If true then this will override the min group size of the min and tagged flow control strategies.
+     *
      * @return true if spy subscriptions should simulate a connection to a network publication.
      * @see #SPIES_SIMULATE_CONNECTION_PROP_NAME
      */
@@ -1852,21 +1860,11 @@ public final class Configuration
      */
     public static void validatePageSize(final int pageSize)
     {
-        if (pageSize < PAGE_MIN_SIZE)
-        {
-            throw new ConfigurationException(
-                "page size less than min size of " + PAGE_MIN_SIZE + ": " + pageSize);
-        }
-
-        if (pageSize > PAGE_MAX_SIZE)
-        {
-            throw new ConfigurationException(
-                "page size greater than max size of " + PAGE_MAX_SIZE + ": " + pageSize);
-        }
+        validateValueRange(pageSize, PAGE_MIN_SIZE, PAGE_MAX_SIZE, "filePageSize");
 
         if (!BitUtil.isPowerOfTwo(pageSize))
         {
-            throw new ConfigurationException("page size not a power of 2: " + pageSize);
+            throw new ConfigurationException("filePageSize not a power of 2: " + pageSize);
         }
     }
 
@@ -1886,7 +1884,7 @@ public final class Configuration
 
         if (Math.abs((long)high - low) > Integer.MAX_VALUE)
         {
-            throw new ConfigurationException("reserved range too large");
+            throw new ConfigurationException("reserved session range too large");
         }
     }
 
@@ -1964,4 +1962,20 @@ public final class Configuration
     {
         return srcAddress.getHostString() + ':' + srcAddress.getPort();
     }
+
+    static void validateValueRange(final long value, final long minValue, final long maxValue, final String name)
+    {
+        if (value < minValue)
+        {
+            throw new ConfigurationException(
+                name + " less than min size of " + minValue + ": " + value);
+        }
+
+        if (value > maxValue)
+        {
+            throw new ConfigurationException(
+                name + " greater than max size of " + maxValue + ": " + value);
+        }
+    }
+
 }

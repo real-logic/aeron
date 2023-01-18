@@ -42,6 +42,10 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.AeronCounters.ARCHIVE_CONTROL_SESSIONS_TYPE_ID;
 import static io.aeron.AeronCounters.*;
 import static io.aeron.archive.Archive.Configuration.*;
+import static io.aeron.driver.Configuration.MAX_UDP_PAYLOAD_LENGTH;
+import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
+import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
 import static org.agrona.concurrent.status.CountersReader.RECORD_UNUSED;
@@ -566,6 +570,57 @@ class ArchiveContextTest
         finally
         {
             System.clearProperty(ARCHIVE_ID_PROP_NAME);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -31, HEADER_LENGTH, MAX_UDP_PAYLOAD_LENGTH + 1, 69 })
+    void shouldValidateControlMtuLength(final int controlMtuLength)
+    {
+        context.controlMtuLength(controlMtuLength);
+
+        final ConfigurationException exception =
+            assertThrowsExactly(ConfigurationException.class, context::conclude);
+        assertTrue(exception.getMessage().contains("mtuLength=" + controlMtuLength));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -100, 0, TERM_MIN_LENGTH - 1, TERM_MAX_LENGTH + 64, 100000 })
+    void shouldValidateControlTermBufferLength(final int controlTermBufferLength)
+    {
+        context.controlTermBufferLength(controlTermBufferLength);
+
+        final IllegalStateException exception =
+            assertThrowsExactly(IllegalStateException.class, context::conclude);
+        assertTrue(exception.getMessage().contains(": length=" + controlTermBufferLength));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -3, ERROR_BUFFER_LENGTH_DEFAULT - 1, Integer.MAX_VALUE })
+    void shouldValidateErrorBufferLengthSetExplicitly(final int errorBufferLength)
+    {
+        context.errorBufferLength(errorBufferLength);
+
+        final ConfigurationException exception =
+            assertThrowsExactly(ConfigurationException.class, context::conclude);
+        assertEquals("ERROR - invalid errorBufferLength=" + errorBufferLength, exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 0, ERROR_BUFFER_LENGTH_DEFAULT - 1, Integer.MAX_VALUE })
+    void shouldValidateErrorBufferLengthSetViaSystemProperty(final int errorBufferLength)
+    {
+        System.setProperty(ERROR_BUFFER_LENGTH_PROP_NAME, String.valueOf(errorBufferLength));
+        try
+        {
+            final Archive.Context ctx = TestContexts.localhostArchive();
+            final ConfigurationException exception =
+                assertThrowsExactly(ConfigurationException.class, ctx::conclude);
+            assertEquals("ERROR - invalid errorBufferLength=" + errorBufferLength, exception.getMessage());
+        }
+        finally
+        {
+            System.clearProperty(ERROR_BUFFER_LENGTH_PROP_NAME);
         }
     }
 

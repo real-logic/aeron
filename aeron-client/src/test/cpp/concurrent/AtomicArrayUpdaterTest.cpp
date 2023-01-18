@@ -26,7 +26,8 @@
 using namespace aeron;
 using namespace aeron::concurrent;
 
-#define NUM_ELEMENTS (20000)
+#define NUM_ELEMENTS (10000)
+#define NUM_ITERATIONS (10)
 
 class AtomicArrayUpdaterTest : public testing::Test
 {
@@ -128,184 +129,199 @@ TEST(AtomicArrayUpdaterTest, shouldStoreAnArray)
 
 TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
 {
-    AtomicArrayUpdater<int64_t> arrayUpdater;
-    std::atomic<int> countDown(2);
-    std::vector<int64_t *> deleteList;
-
-    std::thread mutator = std::thread(
-        [&]()
-        {
-            const int phase = (countDown--) - 1;
-            while (countDown > 0)
-            {
-                std::this_thread::yield();
-            }
-
-            int64_t element = phase * 1000000000000;
-            for (int j = 0; j < NUM_ELEMENTS; j++)
-            {
-                auto pair = arrayUpdater.addElement(element++);
-                deleteList.emplace_back(pair.first);
-            }
-        });
-
-    countDown--;
-    while (countDown > 0)
+    for (int iter = 0; iter < NUM_ITERATIONS; iter++)
     {
-        std::this_thread::yield();
-    }
+        AtomicArrayUpdater<int64_t> arrayUpdater;
+        arrayUpdater.addElement(INT64_MIN);
+        std::atomic<int> countDown(2);
+        std::vector<int64_t *> deleteList;
+        const int64_t minElement = 1000000000000;
 
-    for (int i = 0; i < NUM_ELEMENTS; i++)
-    {
-        auto pair = arrayUpdater.load();
-        const int index = static_cast<int>(pair.second) - 1;
-        if (index >= 0)
+        std::thread mutator = std::thread(
+            [&]()
+            {
+                countDown--;
+                while (countDown > 0)
+                {
+                    std::this_thread::yield();
+                }
+
+                int64_t element = minElement;
+                for (int j = 0; j < NUM_ELEMENTS; j++)
+                {
+                    auto pair = arrayUpdater.addElement(++element);
+                    deleteList.emplace_back(pair.first);
+                }
+            });
+
+        countDown--;
+        while (countDown > 0)
         {
-            ASSERT_GE(pair.first[index], 0);
+            std::this_thread::yield();
         }
-    }
 
-    if (mutator.joinable())
-    {
-        mutator.join();
-    }
+        for (int i = 0; i < NUM_ELEMENTS; i++)
+        {
+            auto pair = arrayUpdater.load();
+            const int index = static_cast<int>(pair.second) - 1;
+            if (0 == index)
+            {
+                ASSERT_EQ(INT64_MIN, pair.first[index]);
+            }
+            else
+            {
+                ASSERT_NE(INT64_MIN, pair.first[index]);
+            }
+        }
 
-    auto pair = arrayUpdater.load();
-    ASSERT_EQ(NUM_ELEMENTS, pair.second);
+        if (mutator.joinable())
+        {
+            mutator.join();
+        }
 
-    delete[] pair.first;
-    for (auto &array: deleteList)
-    {
-        delete[] array;
+        auto pair = arrayUpdater.load();
+        ASSERT_EQ(NUM_ELEMENTS + 1, pair.second);
+        ASSERT_EQ(INT64_MIN, pair.first[0]);
+        ASSERT_EQ(minElement + NUM_ELEMENTS, pair.first[pair.second - 1]);
+
+        delete[] pair.first;
+        for (auto &array: deleteList)
+        {
+            delete[] array;
+        }
     }
 }
 
 TEST(AtomicArrayUpdaterTest, shouldRemoveElementsConcurrently)
 {
-    AtomicArrayUpdater<int64_t> arrayUpdater;
-    for (int i = 0; i < NUM_ELEMENTS; i++)
+    for (int iter = 0; iter < NUM_ITERATIONS; iter++)
     {
-        auto pair = arrayUpdater.addElement(i);
-        delete[] pair.first;
-    }
-    auto pair = arrayUpdater.addElement(INT64_MIN);
-    delete[] pair.first;
-
-    std::atomic<int> countDown(2);
-    std::vector<int64_t *> deleteList;
-
-    std::thread mutator = std::thread(
-        [&]()
+        AtomicArrayUpdater<int64_t> arrayUpdater;
+        for (int i = 0; i < NUM_ELEMENTS; i++)
         {
-            countDown--;
-            while (countDown > 0)
+            auto pair = arrayUpdater.addElement(i);
+            delete[] pair.first;
+        }
+        auto pair = arrayUpdater.addElement(INT64_MIN);
+        delete[] pair.first;
+
+        std::atomic<int> countDown(2);
+        std::vector<int64_t *> deleteList;
+
+        std::thread mutator = std::thread(
+            [&]()
             {
-                std::this_thread::yield();
-            }
+                countDown--;
+                while (countDown > 0)
+                {
+                    std::this_thread::yield();
+                }
 
-            std::vector<int64_t *> deleteList;
-            for (int j = 0; j < NUM_ELEMENTS; j++)
-            {
-                auto pair = arrayUpdater.removeElement(
-                    [&](int64_t elem)
-                    {
-                        return elem > 0;
-                    });
-                deleteList.emplace_back(pair.first);
-            }
-        });
+                for (int j = 0; j < NUM_ELEMENTS; j++)
+                {
+                    auto pair = arrayUpdater.removeElement(
+                        [&](int64_t elem)
+                        {
+                            return elem > 0;
+                        });
+                    deleteList.emplace_back(pair.first);
+                }
+            });
 
-    countDown--;
-    while (countDown > 0)
-    {
-        std::this_thread::yield();
-    }
+        countDown--;
+        while (countDown > 0)
+        {
+            std::this_thread::yield();
+        }
 
-    for (int i = 0; i < NUM_ELEMENTS; i++)
-    {
+        for (int i = 0; i < NUM_ELEMENTS; i++)
+        {
+            pair = arrayUpdater.load();
+            const int index = static_cast<int>(pair.second) - 1;
+            ASSERT_EQ(INT64_MIN, pair.first[index]);
+        }
+
+        if (mutator.joinable())
+        {
+            mutator.join();
+        }
+
         pair = arrayUpdater.load();
-        const int index = static_cast<int>(pair.second) - 1;
-        ASSERT_NE(INT64_MAX, pair.first[index]);
-    }
+        ASSERT_EQ(2, pair.second);
+        ASSERT_EQ(0, pair.first[0]);
+        ASSERT_EQ(INT64_MIN, pair.first[1]);
 
-    if (mutator.joinable())
-    {
-        mutator.join();
-    }
-
-    pair = arrayUpdater.load();
-    ASSERT_EQ(2, pair.second);
-    ASSERT_EQ(0, pair.first[0]);
-    ASSERT_EQ(INT64_MIN, pair.first[1]);
-
-    delete[] pair.first;
-    for (auto &array: deleteList)
-    {
-        delete[] array;
+        delete[] pair.first;
+        for (auto &array: deleteList)
+        {
+            delete[] array;
+        }
     }
 }
 
 TEST(AtomicArrayUpdaterTest, shouldAddAndRemoveElementsConcurrently)
 {
-    AtomicArrayUpdater<int64_t> arrayUpdater;
-    for (int i = 0; i < NUM_ELEMENTS; i++)
+    for (int iter = 0; iter < NUM_ITERATIONS; iter++)
     {
-        auto pair = arrayUpdater.addElement(i);
-        delete[] pair.first;
-    }
-
-    std::atomic<int> countDown(2);
-    std::vector<int64_t *> deleteList;
-
-    std::thread mutator = std::thread(
-        [&]()
+        AtomicArrayUpdater<int64_t> arrayUpdater;
+        for (int i = 0; i < NUM_ELEMENTS; i++)
         {
-            countDown--;
-            while (countDown > 0)
+            auto pair = arrayUpdater.addElement(i);
+            delete[] pair.first;
+        }
+
+        std::atomic<int> countDown(2);
+        std::vector<int64_t *> deleteList;
+
+        std::thread mutator = std::thread(
+            [&]()
             {
-                std::this_thread::yield(); // wait for other thread
-            }
+                countDown--;
+                while (countDown > 0)
+                {
+                    std::this_thread::yield(); // wait for other thread
+                }
 
-            int64_t elem = 1000000000000;
-            std::vector<int64_t *> deleteList;
-            for (int j = 0; j < NUM_ELEMENTS; j++)
-            {
-                auto pair = arrayUpdater.addElement(elem++);
-                deleteList.emplace_back(pair.first);
+                int64_t elem = 1000000000000;
+                for (int j = 0; j < NUM_ELEMENTS; j++)
+                {
+                    auto pair = arrayUpdater.addElement(elem++);
+                    deleteList.emplace_back(pair.first);
 
-                pair = arrayUpdater.removeElement(
-                    [&](int64_t elem)
-                    {
-                        return elem > 5 && (elem & 1) == 0;
-                    });
-                deleteList.emplace_back(pair.first);
-            }
-        });
+                    pair = arrayUpdater.removeElement(
+                        [&](int64_t elem)
+                        {
+                            return elem > 5 && (elem & 1) == 0;
+                        });
+                    deleteList.emplace_back(pair.first);
+                }
+            });
 
-    countDown--;
-    while (countDown > 0)
-    {
-        std::this_thread::yield();
-    }
+        countDown--;
+        while (countDown > 0)
+        {
+            std::this_thread::yield();
+        }
 
-    for (int i = 0; i < NUM_ELEMENTS; i++)
-    {
+        for (int i = 0; i < NUM_ELEMENTS; i++)
+        {
+            auto pair = arrayUpdater.load();
+            const int index = static_cast<int>(pair.second) - 1;
+            ASSERT_GE(pair.first[index], 0);
+        }
+
+        if (mutator.joinable())
+        {
+            mutator.join();
+        }
+
         auto pair = arrayUpdater.load();
-        const int index = static_cast<int>(pair.second) - 1;
-        ASSERT_GE(pair.first[index], 0);
-    }
+        ASSERT_EQ(NUM_ELEMENTS + 3, pair.second);
 
-    if (mutator.joinable())
-    {
-        mutator.join();
-    }
-
-    auto pair = arrayUpdater.load();
-    ASSERT_EQ(NUM_ELEMENTS + 3, pair.second);
-
-    delete[] pair.first;
-    for (auto &array: deleteList)
-    {
-        delete[] array;
+        delete[] pair.first;
+        for (auto &array: deleteList)
+        {
+            delete[] array;
+        }
     }
 }

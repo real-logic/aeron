@@ -26,8 +26,7 @@
 using namespace aeron;
 using namespace aeron::concurrent;
 
-#define NUM_THREADS (2)
-#define NUM_ELEMENTS (10000)
+#define NUM_ELEMENTS (20000)
 
 class AtomicArrayUpdaterTest : public testing::Test
 {
@@ -130,32 +129,27 @@ TEST(AtomicArrayUpdaterTest, shouldStoreAnArray)
 TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
 {
     AtomicArrayUpdater<int64_t> arrayUpdater;
-    std::atomic<int> countDown(NUM_THREADS);
-    std::vector<std::thread> threads;
-    std::vector<int64_t *> pendingDeletes[NUM_THREADS];
+    std::atomic<int> countDown(2);
+    std::vector<int64_t *> deleteList;
 
-    for (int i = 0; i < NUM_THREADS; i++)
-    {
-        threads.emplace_back(
-            [&]()
+    std::thread mutator = std::thread(
+        [&]()
+        {
+            const int phase = (countDown--) - 1;
+            while (countDown > 0)
             {
-                const int phase = (countDown--) - 1;
-                while (countDown > 0)
-                {
-                    std::this_thread::yield();
-                }
+                std::this_thread::yield();
+            }
 
-                std::vector<int64_t *> deleteList;
-                int64_t element = phase * 1000000000000;
-                for (int j = 0; j < NUM_ELEMENTS; j++)
-                {
-                    auto pair = arrayUpdater.addElement(element++);
-                    deleteList.emplace_back(pair.first);
-                }
-                pendingDeletes[phase] = deleteList;
-            });
-    }
+            int64_t element = phase * 1000000000000;
+            for (int j = 0; j < NUM_ELEMENTS; j++)
+            {
+                auto pair = arrayUpdater.addElement(element++);
+                deleteList.emplace_back(pair.first);
+            }
+        });
 
+    countDown--;
     while (countDown > 0)
     {
         std::this_thread::yield();
@@ -171,24 +165,18 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
         }
     }
 
-    for (std::thread &t: threads)
+    if (mutator.joinable())
     {
-        if (t.joinable())
-        {
-            t.join();
-        }
+        mutator.join();
     }
 
     auto pair = arrayUpdater.load();
-    ASSERT_EQ(NUM_THREADS * NUM_ELEMENTS, pair.second);
+    ASSERT_EQ(NUM_ELEMENTS, pair.second);
 
     delete[] pair.first;
-    for (const auto &list: pendingDeletes)
+    for (auto &array: deleteList)
     {
-        for (auto &x: list)
-        {
-            delete[] x;
-        }
+        delete[] array;
     }
 }
 
@@ -203,104 +191,10 @@ TEST(AtomicArrayUpdaterTest, shouldRemoveElementsConcurrently)
     auto pair = arrayUpdater.addElement(INT64_MIN);
     delete[] pair.first;
 
-    std::atomic<int> countDown(NUM_THREADS);
-    std::vector<std::thread> threads;
-    std::vector<int64_t *> pendingDeletes[NUM_THREADS];
+    std::atomic<int> countDown(2);
+    std::vector<int64_t *> deleteList;
 
-    for (int i = 0; i < NUM_THREADS; i++)
-    {
-        threads.emplace_back(
-            [&]()
-            {
-                const int phase = (countDown--) - 1;
-                while (countDown > 0)
-                {
-                    std::this_thread::yield();
-                }
-
-                std::vector<int64_t *> deleteList;
-                for (int j = 0; j < NUM_ELEMENTS; j++)
-                {
-                    auto pair = arrayUpdater.removeElement(
-                        [&](int64_t elem)
-                        {
-                            return elem > 0 && ((elem & 1) == phase);
-                        });
-                    deleteList.emplace_back(pair.first);
-                }
-                pendingDeletes[phase] = deleteList;
-            });
-    }
-
-    while (countDown > 0)
-    {
-        std::this_thread::yield();
-    }
-
-    for (int i = 0; i < NUM_ELEMENTS; i++)
-    {
-        pair = arrayUpdater.load();
-        const int index = static_cast<int>(pair.second) - 1;
-        ASSERT_NE(INT64_MAX, pair.first[index]);
-    }
-
-    for (std::thread &t: threads)
-    {
-        if (t.joinable())
-        {
-            t.join();
-        }
-    }
-
-    pair = arrayUpdater.load();
-    ASSERT_EQ(2, pair.second);
-    ASSERT_EQ(0, pair.first[0]);
-    ASSERT_EQ(INT64_MIN, pair.first[1]);
-
-    delete[] pair.first;
-    for (const auto &list: pendingDeletes)
-    {
-        for (auto &x: list)
-        {
-            delete[] x;
-        }
-    }
-}
-
-TEST(AtomicArrayUpdaterTest, shouldAddAndRemoveElementsConcurrently)
-{
-    AtomicArrayUpdater<int64_t> arrayUpdater;
-    for (int i = 0; i < NUM_ELEMENTS; i++)
-    {
-        auto pair = arrayUpdater.addElement(i);
-        delete[] pair.first;
-    }
-
-    std::atomic<int> countDown(NUM_THREADS);
-    std::vector<std::thread> threads;
-    std::vector<int64_t *> pendingDeletes[NUM_THREADS];
-
-    threads.emplace_back(
-        [&]()
-        {
-            countDown--;
-            while (countDown > 0)
-            {
-                std::this_thread::yield(); // wait for other thread
-            }
-
-            int64_t elem = 1000000000001;
-            std::vector<int64_t *> deleteList;
-            for (int j = 0; j < NUM_ELEMENTS; j++)
-            {
-                auto pair = arrayUpdater.addElement(elem); // add odd
-                deleteList.emplace_back(pair.first);
-                elem += 2;
-            }
-            pendingDeletes[0] = deleteList;
-        });
-
-    threads.emplace_back(
+    std::thread mutator = std::thread(
         [&]()
         {
             countDown--;
@@ -315,13 +209,80 @@ TEST(AtomicArrayUpdaterTest, shouldAddAndRemoveElementsConcurrently)
                 auto pair = arrayUpdater.removeElement(
                     [&](int64_t elem)
                     {
-                        return (elem & 1) == 0; // remove even
+                        return elem > 0;
                     });
                 deleteList.emplace_back(pair.first);
             }
-            pendingDeletes[1] = deleteList;
         });
 
+    countDown--;
+    while (countDown > 0)
+    {
+        std::this_thread::yield();
+    }
+
+    for (int i = 0; i < NUM_ELEMENTS; i++)
+    {
+        pair = arrayUpdater.load();
+        const int index = static_cast<int>(pair.second) - 1;
+        ASSERT_NE(INT64_MAX, pair.first[index]);
+    }
+
+    if (mutator.joinable())
+    {
+        mutator.join();
+    }
+
+    pair = arrayUpdater.load();
+    ASSERT_EQ(2, pair.second);
+    ASSERT_EQ(0, pair.first[0]);
+    ASSERT_EQ(INT64_MIN, pair.first[1]);
+
+    delete[] pair.first;
+    for (auto &array: deleteList)
+    {
+        delete[] array;
+    }
+}
+
+TEST(AtomicArrayUpdaterTest, shouldAddAndRemoveElementsConcurrently)
+{
+    AtomicArrayUpdater<int64_t> arrayUpdater;
+    for (int i = 0; i < NUM_ELEMENTS; i++)
+    {
+        auto pair = arrayUpdater.addElement(i);
+        delete[] pair.first;
+    }
+
+    std::atomic<int> countDown(2);
+    std::vector<int64_t *> deleteList;
+
+    std::thread mutator = std::thread(
+        [&]()
+        {
+            countDown--;
+            while (countDown > 0)
+            {
+                std::this_thread::yield(); // wait for other thread
+            }
+
+            int64_t elem = 1000000000000;
+            std::vector<int64_t *> deleteList;
+            for (int j = 0; j < NUM_ELEMENTS; j++)
+            {
+                auto pair = arrayUpdater.addElement(elem++);
+                deleteList.emplace_back(pair.first);
+
+                pair = arrayUpdater.removeElement(
+                    [&](int64_t elem)
+                    {
+                        return elem > 5 && (elem & 1) == 0;
+                    });
+                deleteList.emplace_back(pair.first);
+            }
+        });
+
+    countDown--;
     while (countDown > 0)
     {
         std::this_thread::yield();
@@ -334,23 +295,17 @@ TEST(AtomicArrayUpdaterTest, shouldAddAndRemoveElementsConcurrently)
         ASSERT_GE(pair.first[index], 0);
     }
 
-    for (std::thread &t: threads)
+    if (mutator.joinable())
     {
-        if (t.joinable())
-        {
-            t.join();
-        }
+        mutator.join();
     }
 
     auto pair = arrayUpdater.load();
-    ASSERT_EQ((NUM_ELEMENTS / 2) + NUM_ELEMENTS, pair.second);
+    ASSERT_EQ(NUM_ELEMENTS + 3, pair.second);
 
     delete[] pair.first;
-    for (const auto &list: pendingDeletes)
+    for (auto &array: deleteList)
     {
-        for (auto &x: list)
-        {
-            delete[] x;
-        }
+        delete[] array;
     }
 }

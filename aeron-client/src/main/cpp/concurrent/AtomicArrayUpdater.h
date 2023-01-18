@@ -82,6 +82,8 @@ public:
 
             E *array = m_array.first;
             std::size_t length = m_array.second;
+            // The `acquire` fence is linked to the `release` fence in the mutator methods and is needed to prevent the
+            // older GCC compilers (<=7) from generating the wrong code.
             aeron::concurrent::atomic::acquire();
 
             if (changeNumber == m_beginChange.load(std::memory_order_acquire))
@@ -99,10 +101,14 @@ public:
 
             E *array = m_array.first;
             std::size_t length = m_array.second;
+            // The `acquire` fence is linked to the `release` fence in the mutator methods and is needed to prevent the
+            // older GCC compilers (<=7) from generating the wrong code.
             aeron::concurrent::atomic::acquire();
 
             if (m_beginChange.compare_exchange_strong(changeNumber, changeNumber + 1, std::memory_order_acq_rel))
             {
+                // The `release` fence is added here to prevent the older GCC compilers (<=7) from generating the wrong
+                // code.
                 aeron::concurrent::atomic::release();
                 m_array.first = newArray;
                 m_array.second = newLength;
@@ -122,12 +128,16 @@ public:
 
             E *array = m_array.first;
             std::size_t length = m_array.second;
+            // The `acquire` fence is linked to the `release` fence in the mutator methods and is needed to prevent the
+            // older GCC compilers (<=7) from generating the wrong code.
             aeron::concurrent::atomic::acquire();
 
             if (m_beginChange.compare_exchange_strong(changeNumber, changeNumber + 1, std::memory_order_acq_rel))
             {
                 std::pair<E *, std::size_t> newArray = aeron::util::addToArray(array, length, element);
 
+                // The `release` fence is added here to prevent the older GCC compilers (<=7) from generating the wrong
+                // code.
                 aeron::concurrent::atomic::release();
                 m_array.first = newArray.first;
                 m_array.second = newArray.second;
@@ -148,6 +158,8 @@ public:
 
             E *array = m_array.first;
             std::size_t length = m_array.second;
+            // The `acquire` fence is linked to the `release` fence in the mutator methods and is needed to prevent the
+            // older GCC compilers (<=7) from generating the wrong code.
             aeron::concurrent::atomic::acquire();
 
             if (changeNumber == m_beginChange.load(std::memory_order_acquire))
@@ -161,6 +173,8 @@ public:
                         {
                             std::pair<E *, std::size_t> newArray = aeron::util::removeFromArray(array, length, i);
 
+                            // The `release` fence is added here to prevent the older GCC compilers (<=7) from
+                            // generating the wrong code.
                             aeron::concurrent::atomic::release();
                             m_array.first = newArray.first;
                             m_array.second = newArray.second;

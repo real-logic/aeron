@@ -80,8 +80,8 @@ public:
         {
             std::int64_t changeNumber = m_endChange.load(std::memory_order_acquire);
 
-            E *array = m_array;
-            std::size_t length = m_length;
+            E *array = m_array.load(std::memory_order_relaxed);
+            std::size_t length = m_length.load(std::memory_order_relaxed);
             aeron::concurrent::atomic::acquire();
 
             if (changeNumber == m_beginChange.load(std::memory_order_acquire))
@@ -91,41 +91,43 @@ public:
         }
     }
 
-    inline std::pair<E *, std::size_t> store(E *newArray, std::size_t length)
+    inline std::pair<E *, std::size_t> store(E *newArray, std::size_t newLength)
     {
-        E *oldArray = m_array;
-        std::size_t oldLength = m_length;
-        std::int64_t changeNumber = m_beginChange.load(std::memory_order_relaxed) + 1;
+        E *oldArray = m_array.load(std::memory_order_relaxed);
+        std::size_t oldLength = m_length.load(std::memory_order_relaxed);
 
-        m_beginChange.store(changeNumber, std::memory_order_release);
-
-        aeron::concurrent::atomic::release();
-        m_array = newArray;
-        m_length = length;
-
-        m_endChange.store(changeNumber, std::memory_order_release);
+        update(newArray, newLength);
 
         return { oldArray, oldLength };
     }
 
     std::pair<E *, std::size_t> addElement(E element)
     {
-        std::pair<E *, std::size_t> newArray = aeron::util::addToArray(m_array, m_length, element);
+        E *array = m_array.load(std::memory_order_relaxed);
+        std::size_t length = m_length.load(std::memory_order_relaxed);
 
-        return store(newArray.first, newArray.second);
+        std::pair<E *, std::size_t> newArray = aeron::util::addToArray(array, length, element);
+
+        update(newArray.first, newArray.second);
+
+        return { array, length };
     }
 
     template<typename F>
     std::pair<E *, std::size_t> removeElement(F &&func)
     {
-        for (std::size_t i = 0, length = m_length; i < length; i++)
-        {
-            if (func(m_array[i]))
-            {
-                std::pair<E *, std::size_t> newArray = aeron::util::removeFromArray(m_array, length, i);
-                std::pair<E *, std::size_t> oldArray = store(newArray.first, newArray.second);
+        E *array = m_array.load(std::memory_order_relaxed);
+        std::size_t length = m_length.load(std::memory_order_relaxed);
 
-                return { oldArray.first, i };
+        for (std::size_t i = 0; i < length; i++)
+        {
+            if (func(array[i]))
+            {
+                std::pair<E *, std::size_t> newArray = aeron::util::removeFromArray(array, length, i);
+
+                update(newArray.first, newArray.second);
+
+                return { array, i };
             }
         }
 
@@ -134,9 +136,20 @@ public:
 
 private:
     std::atomic<std::int64_t> m_beginChange = { -1 };
-    E *m_array = nullptr;
-    std::size_t m_length = 0;
+    std::atomic<E *> m_array = { nullptr };
+    std::atomic<std::size_t> m_length = { 0 };
     std::atomic<std::int64_t> m_endChange = { -1 };
+
+    inline void update(E *newArray, std::size_t newLength)
+    {
+        std::int64_t changeNumber = m_beginChange.fetch_add(1, std::memory_order_release);
+
+        aeron::concurrent::atomic::release();
+        m_array.store(newArray, std::memory_order_release);
+        m_length.store(newLength, std::memory_order_release);
+
+        m_endChange.store(changeNumber + 1, std::memory_order_release);
+    }
 };
 
 }}

@@ -18,6 +18,7 @@
 #include <thread>
 #include <atomic>
 #include <vector>
+#include <chrono>
 
 #include <gtest/gtest.h>
 
@@ -131,6 +132,7 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
 {
     for (int iter = 0; iter < NUM_ITERATIONS; iter++)
     {
+        std::cout << "Iteration #" << iter << std::endl;
         AtomicArrayUpdater<int64_t> arrayUpdater;
         arrayUpdater.addElement(INT64_MIN);
         std::atomic<int> countDown(2);
@@ -146,12 +148,14 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
                     std::this_thread::yield();
                 }
 
+                std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Writer ready" << std::endl;
                 int64_t element = minElement;
                 for (int j = 0; j < NUM_ELEMENTS; j++)
                 {
                     auto pair = arrayUpdater.addElement(++element);
                     deleteList.emplace_back(pair.first);
                 }
+                std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Writer done" << std::endl;
             });
 
         countDown--;
@@ -160,6 +164,7 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
             std::this_thread::yield();
         }
 
+        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Reader ready" << std::endl;
         while (true)
         {
             auto pair = arrayUpdater.load();
@@ -179,22 +184,27 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
                 break;
             }
         }
+        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Reader done" << std::endl;
 
         if (mutator.joinable())
         {
             mutator.join();
         }
+        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Mutator joined" << std::endl;
 
         auto pair = arrayUpdater.load();
         ASSERT_EQ(NUM_ELEMENTS + 1, pair.second);
         ASSERT_EQ(INT64_MIN, pair.first[0]);
         ASSERT_EQ(minElement + NUM_ELEMENTS, pair.first[pair.second - 1]);
 
+        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Deleting..." << std::endl;
         delete[] pair.first;
         for (auto &array: deleteList)
         {
             delete[] array;
         }
+        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Delete done" << std::endl;
+        std::cout << "----------------------------------------" << std::endl;
     }
 }
 

@@ -82,6 +82,9 @@ public:
 
             E *array = m_array.load(std::memory_order_relaxed);
             std::size_t length = m_length.load(std::memory_order_relaxed);
+            // The `acquire` fence is added to turn previous `relaxed` reads into an `acquire` reads but without
+            // imposing a strict order on the reads.
+            // The fields are written with the `release` order with which this `acquire` fence synchronizes with.
             aeron::concurrent::atomic::acquire();
 
             if (changeNumber == m_beginChange.load(std::memory_order_acquire))
@@ -144,7 +147,6 @@ private:
     {
         std::int64_t changeNumber = m_beginChange.fetch_add(1, std::memory_order_release);
 
-        aeron::concurrent::atomic::release();
         m_array.store(newArray, std::memory_order_release);
         m_length.store(newLength, std::memory_order_release);
 

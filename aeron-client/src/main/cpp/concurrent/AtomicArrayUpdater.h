@@ -78,7 +78,7 @@ public:
     {
         while (true)
         {
-            std::int64_t changeNumber = m_endChange.load(std::memory_order_acquire);
+            std::uint64_t changeNumber = m_endChange.load(std::memory_order_acquire);
 
             E *array = m_array.load(std::memory_order_relaxed);
             std::size_t length = m_length.load(std::memory_order_relaxed);
@@ -138,14 +138,14 @@ public:
     }
 
 private:
-    std::atomic<std::int64_t> m_beginChange = { -1 };
+    std::atomic<std::uint64_t> m_beginChange = { 0 };
     std::atomic<E *> m_array = { nullptr };
     std::atomic<std::size_t> m_length = { 0 };
-    std::atomic<std::int64_t> m_endChange = { -1 };
+    std::atomic<std::uint64_t> m_endChange = { 0 };
 
     inline void update(E *newArray, std::size_t newLength)
     {
-        const std::int64_t newChangeNumber = m_beginChange.load(std::memory_order_relaxed) + 1;
+        const std::uint64_t newChangeNumber = m_beginChange.load(std::memory_order_relaxed) + 1;
         m_beginChange.store(newChangeNumber, std::memory_order_release);
 
         m_array.store(newArray, std::memory_order_release);

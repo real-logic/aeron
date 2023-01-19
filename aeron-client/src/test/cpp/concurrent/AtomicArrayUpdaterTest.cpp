@@ -180,7 +180,7 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
                 ASSERT_NE(INT64_MIN, pair.first[index]);
             }
 
-            if (NUM_ELEMENTS == pair.second)
+            if (pair.second > NUM_ELEMENTS)
             {
                 break;
             }

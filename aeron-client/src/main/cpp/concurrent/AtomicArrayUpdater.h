@@ -145,12 +145,13 @@ private:
 
     inline void update(E *newArray, std::size_t newLength)
     {
-        std::int64_t changeNumber = m_beginChange.fetch_add(1, std::memory_order_release);
+        const std::int64_t newChangeNumber = m_beginChange.load(std::memory_order_relaxed) + 1;
+        m_beginChange.store(newChangeNumber, std::memory_order_release);
 
         m_array.store(newArray, std::memory_order_release);
         m_length.store(newLength, std::memory_order_release);
 
-        m_endChange.store(changeNumber + 1, std::memory_order_release);
+        m_endChange.store(newChangeNumber, std::memory_order_release);
     }
 };
 

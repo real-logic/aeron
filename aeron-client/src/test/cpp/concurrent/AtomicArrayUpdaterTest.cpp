@@ -160,7 +160,7 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
             std::this_thread::yield();
         }
 
-        for (int i = 0; i < NUM_ELEMENTS; i++)
+        while (true)
         {
             auto pair = arrayUpdater.load();
             const int index = static_cast<int>(pair.second) - 1;
@@ -170,7 +170,13 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
             }
             else
             {
+                ASSERT_EQ(INT64_MIN, pair.first[0]);
                 ASSERT_NE(INT64_MIN, pair.first[index]);
+            }
+
+            if (NUM_ELEMENTS == pair.second)
+            {
+                break;
             }
         }
 
@@ -234,11 +240,20 @@ TEST(AtomicArrayUpdaterTest, shouldRemoveElementsConcurrently)
             std::this_thread::yield();
         }
 
-        for (int i = 0; i < NUM_ELEMENTS; i++)
+        while (true)
         {
             pair = arrayUpdater.load();
             const int index = static_cast<int>(pair.second) - 1;
             ASSERT_EQ(INT64_MIN, pair.first[index]);
+            if (index > 0)
+            {
+                ASSERT_EQ(0, pair.first[0]);
+            }
+
+            if (2 == pair.second)
+            {
+                break;
+            }
         }
 
         if (mutator.joinable())
@@ -282,10 +297,10 @@ TEST(AtomicArrayUpdaterTest, shouldAddAndRemoveElementsConcurrently)
                     std::this_thread::yield(); // wait for other thread
                 }
 
-                int64_t elem = 1000000000000;
+                int64_t next = 11111111111111;
                 for (int j = 0; j < NUM_ELEMENTS; j++)
                 {
-                    auto pair = arrayUpdater.addElement(elem++);
+                    auto pair = arrayUpdater.addElement(next++);
                     deleteList.emplace_back(pair.first);
 
                     pair = arrayUpdater.removeElement(
@@ -303,11 +318,16 @@ TEST(AtomicArrayUpdaterTest, shouldAddAndRemoveElementsConcurrently)
             std::this_thread::yield();
         }
 
-        for (int i = 0; i < NUM_ELEMENTS; i++)
+        while (true)
         {
             auto pair = arrayUpdater.load();
             const int index = static_cast<int>(pair.second) - 1;
             ASSERT_GE(pair.first[index], 0);
+
+            if (pair.second > NUM_ELEMENTS)
+            {
+                break;
+            }
         }
 
         if (mutator.joinable())

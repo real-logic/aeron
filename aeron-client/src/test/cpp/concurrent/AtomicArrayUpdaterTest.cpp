@@ -137,7 +137,8 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
         arrayUpdater.addElement(INT64_MIN);
         std::atomic<int> countDown(2);
         std::vector<int64_t *> deleteList;
-        const int64_t minElement = 1000000000000;
+        const int64_t minElement =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 
         std::thread mutator = std::thread(
             [&]()
@@ -190,7 +191,6 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
         {
             mutator.join();
         }
-        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Mutator joined" << std::endl;
 
         auto pair = arrayUpdater.load();
         ASSERT_EQ(NUM_ELEMENTS + 1, pair.second);

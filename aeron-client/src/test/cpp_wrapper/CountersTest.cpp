@@ -22,6 +22,7 @@
 #include "EmbeddedMediaDriver.h"
 #include "Aeron.h"
 #include "TestUtil.h"
+#include "HeartbeatTimestamp.h"
 
 #define COUNTER_LABEL "counter label"
 #define COUNTER_TYPE_ID (102)

@@ -30,6 +30,7 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Counter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ExclusivePublication.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FragmentAssembler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/HeartbeatTimestamp.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Image.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ImageControlledFragmentAssembler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ImageFragmentAssembler.h
@@ -54,6 +55,7 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/DataFrameHeader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/FrameDescriptor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/Header.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/HeaderWriter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/LogBufferDescriptor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/TermReader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/status/ReadablePosition.h
@@ -64,6 +66,7 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/util/CommandOptionParser.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/StringUtil.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/Exceptions.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/util/LangUtil.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/MacroUtil.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/ScopeUtils.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/BitUtil.h

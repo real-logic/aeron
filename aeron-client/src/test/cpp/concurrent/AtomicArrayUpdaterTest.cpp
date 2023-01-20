@@ -30,6 +30,16 @@ using namespace aeron::concurrent;
 #define NUM_ELEMENTS (10000)
 #define NUM_ITERATIONS (10)
 
+static std::mutex g_cout_mutex;
+static void trace(const char* msg)
+{
+    const long time = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+
+    std::lock_guard<std::mutex> guard(g_cout_mutex);
+    std::cout << time << " " << msg << std::endl;
+}
+
 class AtomicArrayUpdaterTest : public testing::Test
 {
 };
@@ -132,7 +142,7 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
 {
     for (int iter = 0; iter < NUM_ITERATIONS; iter++)
     {
-        std::cout << "Iteration #" << iter << std::endl;
+        trace(std::string("Iteration #").append(std::to_string(iter)).c_str());
         AtomicArrayUpdater<int64_t> arrayUpdater;
         arrayUpdater.addElement(INT64_MIN);
         std::atomic<int> countDown(2);
@@ -149,14 +159,14 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
                     std::this_thread::yield();
                 }
 
-                std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Writer ready" << std::endl;
+                trace("Writer ready");
                 int64_t element = minElement;
                 for (int j = 0; j < NUM_ELEMENTS; j++)
                 {
                     auto pair = arrayUpdater.addElement(++element);
                     deleteList.emplace_back(pair.first);
                 }
-                std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Writer done" << std::endl;
+                trace("Writer done");
             });
 
         countDown--;
@@ -165,7 +175,7 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
             std::this_thread::yield();
         }
 
-        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Reader ready" << std::endl;
+        trace("Reader ready");
         while (true)
         {
             auto pair = arrayUpdater.load();
@@ -185,7 +195,7 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
                 break;
             }
         }
-        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Reader done" << std::endl;
+        trace("Reader done");
 
         if (mutator.joinable())
         {
@@ -197,13 +207,11 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
         ASSERT_EQ(INT64_MIN, pair.first[0]);
         ASSERT_EQ(minElement + NUM_ELEMENTS, pair.first[pair.second - 1]);
 
-        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Deleting..." << std::endl;
         delete[] pair.first;
         for (auto &array: deleteList)
         {
             delete[] array;
         }
-        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() << " Delete done" << std::endl;
         std::cout << "----------------------------------------" << std::endl;
     }
 }

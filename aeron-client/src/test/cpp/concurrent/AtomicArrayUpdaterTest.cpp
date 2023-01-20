@@ -18,7 +18,6 @@
 #include <thread>
 #include <atomic>
 #include <vector>
-#include <chrono>
 
 #include <gtest/gtest.h>
 
@@ -29,16 +28,6 @@ using namespace aeron::concurrent;
 
 #define NUM_ELEMENTS (10000)
 #define NUM_ITERATIONS (10)
-
-static std::mutex g_cout_mutex;
-static void trace(const char* msg)
-{
-    const long time = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-
-    std::lock_guard<std::mutex> guard(g_cout_mutex);
-    std::cout << time << " " << msg << std::endl;
-}
 
 class AtomicArrayUpdaterTest : public testing::Test
 {
@@ -142,13 +131,11 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
 {
     for (int iter = 0; iter < NUM_ITERATIONS; iter++)
     {
-        trace(std::string("Iteration #").append(std::to_string(iter)).c_str());
         AtomicArrayUpdater<int64_t> arrayUpdater;
         arrayUpdater.addElement(INT64_MIN);
         std::atomic<int> countDown(2);
         std::vector<int64_t *> deleteList;
-        const int64_t minElement =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        const int64_t minElement = 212121 * iter;
 
         std::thread mutator = std::thread(
             [&]()
@@ -159,14 +146,12 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
                     std::this_thread::yield();
                 }
 
-                trace("Writer ready");
                 int64_t element = minElement;
                 for (int j = 0; j < NUM_ELEMENTS; j++)
                 {
                     auto pair = arrayUpdater.addElement(++element);
                     deleteList.emplace_back(pair.first);
                 }
-                trace("Writer done");
             });
 
         countDown--;
@@ -175,7 +160,6 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
             std::this_thread::yield();
         }
 
-        trace("Reader ready");
         while (true)
         {
             auto pair = arrayUpdater.load();
@@ -195,7 +179,6 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
                 break;
             }
         }
-        trace("Reader done");
 
         if (mutator.joinable())
         {
@@ -212,7 +195,6 @@ TEST(AtomicArrayUpdaterTest, shouldAddElementsConcurrently)
         {
             delete[] array;
         }
-        std::cout << "----------------------------------------" << std::endl;
     }
 }
 

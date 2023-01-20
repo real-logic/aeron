@@ -180,6 +180,9 @@ elseif (MSVC)
 
 endif ()
 
+if (DEFINED AERON_COMPILER_OPTIMIZATION_LEVEL)
+    add_compile_options(-O${AERON_COMPILER_OPTIMIZATION_LEVEL})
+endif()
 
 ##########################################################
 # Project variables, etc.

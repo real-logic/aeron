@@ -47,6 +47,14 @@ if not "%1"=="" (
         set "BUILD_DIR=%DIR%\Debug"
         set "BUILD_CONFIG=Debug"
         echo "Enabling debug build"
+    ) else if "%1"=="--relwithdebinfo-build" (
+        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCMAKE_BUILD_TYPE=RelWithDebInfo"
+        set "BUILD_DIR=%DIR%\RelWithDebInfo"
+        set "BUILD_CONFIG=RelWithDebInfo"
+        echo "Enabling release with debug info build"
+    ) else if "%1"=="--compiler-optimization-level" (
+        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_COMPILER_OPTIMIZATION_LEVEL=%2"
+        echo "Setting compiler optimization level to: %2"
     ) else if "%1"=="--sanitise-build" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DSANITISE_BUILD=ON"
         echo "Enabling sanitise build"

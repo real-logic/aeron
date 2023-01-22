@@ -1119,6 +1119,11 @@ void aeron_ipc_publication_entry_delete(aeron_driver_conductor_t *conductor, aer
     entry->publication = NULL;
 }
 
+static inline bool aeron_ipc_publication_free_voidp(void *publication)
+{
+    return aeron_ipc_publication_free((aeron_ipc_publication_t *)publication);
+}
+
 void aeron_ipc_publication_entry_free(aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry)
 {
     aeron_driver_conductor_add_end_of_life_resource(conductor, entry->publication, aeron_ipc_publication_free_voidp);
@@ -1159,6 +1164,11 @@ void aeron_network_publication_entry_delete(
             endpoint->conductor_fields.udp_channel->canonical_form,
             endpoint->conductor_fields.udp_channel->canonical_length);
     }
+}
+
+static inline bool aeron_network_publication_free_voidp(void *publication)
+{
+    return aeron_network_publication_free((aeron_network_publication_t *)publication);
 }
 
 void aeron_network_publication_entry_free(aeron_driver_conductor_t *conductor, aeron_network_publication_entry_t *entry)
@@ -1279,6 +1289,11 @@ void aeron_publication_image_entry_delete(
 
     aeron_publication_image_close(&conductor->counters_manager, image);
     entry->image = NULL;
+}
+
+static inline bool aeron_publication_image_free_voidp(void *image)
+{
+    return aeron_publication_image_free((aeron_publication_image_t *)image);
 }
 
 void aeron_publication_image_entry_free(aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)

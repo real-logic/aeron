@@ -167,11 +167,6 @@ int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, ae
 
 bool aeron_publication_image_free(aeron_publication_image_t *image);
 
-inline bool aeron_publication_image_free_voidp(void *image)
-{
-    return aeron_publication_image_free((aeron_publication_image_t *)image);
-}
-
 void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, int64_t position);
 
 void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int32_t term_offset, size_t length);

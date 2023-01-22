@@ -285,8 +285,6 @@ bool aeron_network_publication_free(aeron_network_publication_t *publication)
     return true;
 }
 
-extern bool aeron_network_publication_free_voidp(void *publication);
-
 int aeron_network_publication_setup_message_check(
     aeron_network_publication_t *publication, int64_t now_ns, int32_t active_term_id, int32_t term_offset)
 {

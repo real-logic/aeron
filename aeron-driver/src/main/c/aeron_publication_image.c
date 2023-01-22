@@ -295,8 +295,6 @@ bool aeron_publication_image_free(aeron_publication_image_t *image)
     return true;
 }
 
-extern bool aeron_publication_image_free_voidp(void *image);
-
 void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, int64_t position)
 {
     int64_t clean_position = image->conductor_fields.clean_position;

@@ -221,8 +221,6 @@ bool aeron_ipc_publication_free(aeron_ipc_publication_t *publication)
     return true;
 }
 
-extern bool aeron_ipc_publication_free_voidp(void *publication);
-
 int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
 {
     int work_count = 0;

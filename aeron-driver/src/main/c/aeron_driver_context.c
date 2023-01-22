@@ -984,10 +984,10 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         1,
         UINT32_MAX);
 
-    _context->resource_free_limit = aeron_config_parse_uint32(
-        AERON_DRIVER_RESOURCE_FREE_LIMIT_ENV_VAR,
-        getenv(AERON_DRIVER_RESOURCE_FREE_LIMIT_ENV_VAR),
-        (uint32_t)_context->resource_free_limit,
+    _context->resource_free_queue_length = aeron_config_parse_uint32(
+        AERON_DRIVER_RESOURCE_FREE_QUEUE_LENGTH_ENV_VAR,
+        getenv(AERON_DRIVER_RESOURCE_FREE_QUEUE_LENGTH_ENV_VAR),
+        (uint32_t)_context->resource_free_queue_length,
         16,
         UINT32_MAX);
 

@@ -1,12 +1,22 @@
 name: "CodeQL"
 
 on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: run-commit-tests
   push:
-    branches: [ "master" ]
+    branches:
+      - master
+      - release/**
   pull_request:
-    branches: [ "master" ]
-  schedule:
-    - cron: "55 3 * * 1"
+    types: [opened, synchronize]
+    branches:
+      - master
+      - release/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:

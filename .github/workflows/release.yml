@@ -1,4 +1,5 @@
 name: Release Documentation
+
 on:
   release:
     types: [published]

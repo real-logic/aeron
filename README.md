@@ -5,6 +5,7 @@ Aeron
 [![Javadocs](https://www.javadoc.io/badge/io.aeron/aeron-all.svg)](https://www.javadoc.io/doc/io.aeron/aeron-all)
 
 [![Actions Status](https://github.com/real-logic/aeron/workflows/Continuous%20Integration/badge.svg)](https://github.com/real-logic/aeron/actions)
+[![CodeQL Status](https://github.com/real-logic/aeron/workflows/CodeQL/badge.svg)](https://github.com/real-logic/aeron/actions)
 
 Efficient reliable UDP unicast, UDP multicast, and IPC message transport. Java, C, and C++ clients are available in this
 repository, and a [.NET client](https://github.com/AdaptiveConsulting/Aeron.NET) is available. All

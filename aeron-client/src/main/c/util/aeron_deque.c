@@ -38,6 +38,11 @@ int aeron_deque_init(aeron_deque_t *deque, size_t initial_element_count, size_t 
     return 0;
 }
 
+void aeron_deque_close(aeron_deque_t *deque)
+{
+    aeron_free(deque->data);
+}
+
 static int aeron_deque_reallocate(aeron_deque_t *deque)
 {
     if ((SIZE_MAX >> 1) <= deque->element_count)
@@ -46,9 +51,15 @@ static int aeron_deque_reallocate(aeron_deque_t *deque)
         return -1;
     }
 
+    if (deque->first_element == deque->last_element)
+    {
+        return 0;
+    }
+
     size_t new_element_count = deque->element_count << 1;
     size_t new_size = new_element_count * deque->element_size;
     void *new_data = NULL;
+
     if (aeron_alloc(&new_data, new_size) < 0)
     {
         AERON_APPEND_ERR("%s", "");
@@ -76,10 +87,13 @@ static int aeron_deque_reallocate(aeron_deque_t *deque)
         memcpy((void *)dest_last_ptr, deque->data, num_bytes_begin_of_buffer_to_last);
     }
 
+    void *old_data = (void *)deque->data;
     deque->data = new_data;
     deque->first_element = 0;
     deque->last_element = size;
     deque->element_count = new_element_count;
+
+    aeron_free(old_data);
 
     return 0;
 }

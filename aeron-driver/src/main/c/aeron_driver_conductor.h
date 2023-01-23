@@ -32,6 +32,7 @@
 #include "aeron_driver_conductor_proxy.h"
 #include "aeron_publication_image.h"
 #include "reports/aeron_loss_reporter.h"
+#include "util/aeron_deque.h"
 
 #define AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS (5 * 1000 * 1000 * 1000LL)
 #define AERON_DRIVER_CONDUCTOR_CLOCK_UPDATE_INTERNAL_NS (1000 * 1000LL)
@@ -284,7 +285,7 @@ typedef struct aeron_driver_conductor_stct
     }
     lingering_resources;
 
-    aeron_spsc_concurrent_array_queue_t end_of_life_queue;
+    aeron_deque_t end_of_life_queue;
 
     int64_t *errors_counter;
     int64_t *unblocked_commands_counter;

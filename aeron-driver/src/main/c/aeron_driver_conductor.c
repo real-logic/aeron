@@ -526,8 +526,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->spy_subscriptions.length = 0;
     conductor->spy_subscriptions.capacity = 0;
 
-    if (aeron_spsc_concurrent_array_queue_init(
-        &conductor->end_of_life_queue, (size_t)context->resource_free_queue_length))
+    if (aeron_deque_init(&conductor->end_of_life_queue, 1024, sizeof(aeron_end_of_life_resource_t)))
     {
         AERON_APPEND_ERR("%s", "");
         return -1;
@@ -1363,20 +1362,13 @@ void aeron_driver_conductor_add_end_of_life_resource(
     void *resource,
     aeron_end_of_life_resource_free_t free_func)
 {
-    aeron_end_of_life_resource_t *end_of_life_resource;
+    aeron_end_of_life_resource_t end_of_life_resource = { 0 };
     int64_t *counter = aeron_system_counter_addr(
         &conductor->system_counters, AERON_SYSTEM_COUNTER_FREE_FAILS);
 
-    if (0 == aeron_alloc((void **)&end_of_life_resource, sizeof(aeron_end_of_life_resource_t)))
-    {
-        end_of_life_resource->resource = resource;
-        end_of_life_resource->free_func = free_func;
-        if (!aeron_spsc_concurrent_array_queue_offer(&conductor->end_of_life_queue, end_of_life_resource))
-        {
-            aeron_counter_ordered_increment(counter, 1);
-        }
-    }
-    else
+    end_of_life_resource.resource = resource;
+    end_of_life_resource.free_func = free_func;
+    if (!aeron_deque_add_last(&conductor->end_of_life_queue, (void *)&end_of_life_resource))
     {
         aeron_counter_ordered_increment(counter, 1);
     }
@@ -1384,31 +1376,26 @@ void aeron_driver_conductor_add_end_of_life_resource(
 
 int aeron_driver_conductor_free_end_of_life_resources(aeron_driver_conductor_t *conductor)
 {
-    const uint32_t limit = (int)conductor->context->resource_free_limit;
-    uint32_t count = 0;
+    const int limit = (int)conductor->context->resource_free_limit;
+    aeron_end_of_life_resource_t end_of_life_resource = { 0 };
+    int count = 0;
 
     for (; count < limit; count++)
     {
-        aeron_end_of_life_resource_t *entry = aeron_spsc_concurrent_array_queue_poll(
-            &conductor->end_of_life_queue);
-        if (NULL == entry)
+        if (aeron_deque_remove_first(&conductor->end_of_life_queue, (void *)&end_of_life_resource) < 0)
         {
             break;
         }
 
-        if (!entry->free_func(entry->resource))
+        if (!end_of_life_resource.free_func(end_of_life_resource.resource))
         {
             int64_t *counter = aeron_system_counter_addr(&conductor->system_counters, AERON_SYSTEM_COUNTER_FREE_FAILS);
             aeron_counter_ordered_increment(counter, 1);
-            aeron_spsc_concurrent_array_queue_offer(&conductor->end_of_life_queue, entry);
-        }
-        else
-        {
-            aeron_free(entry);
+            aeron_deque_add_last(&conductor->end_of_life_queue, (void *)&end_of_life_resource);
         }
     }
 
-    return 0 != count ? 1 : 0;
+    return count;
 }
 
 #define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l, t, now_ns, now_ms)             \
@@ -2966,7 +2953,7 @@ void aeron_driver_conductor_on_close(void *clientd)
     aeron_free(conductor->publication_images.array);
 
     // Free remaining end_of_life_entries.
-    aeron_spsc_concurrent_array_queue_close(&conductor->end_of_life_queue);
+    aeron_deque_close(&conductor->end_of_life_queue);
 
     aeron_system_counters_close(&conductor->system_counters);
     aeron_counters_manager_close(&conductor->counters_manager);

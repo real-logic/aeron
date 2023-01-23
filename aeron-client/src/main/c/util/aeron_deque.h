@@ -20,6 +20,8 @@ typedef struct aeron_deque_stct aeron_deque_t;
 
 int aeron_deque_init(aeron_deque_t *deque, size_t initial_element_count, size_t element_size);
 
+void aeron_deque_close(aeron_deque_t *deque);
+
 /**
  * Add value into the deque as the last element.  Will memcpy into the deque from the void pointer provided using
  * the specified element size.  May need to allocate in order to increase the size of the dequeue.

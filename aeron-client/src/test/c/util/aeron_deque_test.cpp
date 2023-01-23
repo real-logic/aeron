@@ -37,6 +37,8 @@ TEST_F(DequeTest, shouldAddLastAndRemoveFirst)
     ASSERT_EQ(0, aeron_deque_remove_first(&deque, &actual));
 
     ASSERT_EQ(expected, actual);
+
+    aeron_deque_close(&deque);
 }
 
 TEST_F(DequeTest, shouldReturnErrorIfEmptyOnRemove)
@@ -45,6 +47,8 @@ TEST_F(DequeTest, shouldReturnErrorIfEmptyOnRemove)
     uint64_t actual = 0;
     ASSERT_EQ(0, aeron_deque_init(&deque, 8, sizeof(uint64_t)));
     ASSERT_EQ(-1, aeron_deque_remove_first(&deque, &actual));
+
+    aeron_deque_close(&deque);
 }
 
 TEST_F(DequeTest, shouldWrapAroundWithAddsAndRemoves)
@@ -62,6 +66,8 @@ TEST_F(DequeTest, shouldWrapAroundWithAddsAndRemoves)
         ASSERT_EQ(0, aeron_deque_remove_first(&deque, &actual));
         ASSERT_EQ(expected, actual);
     }
+
+    aeron_deque_close(&deque);
 }
 
 TEST_F(DequeTest, shouldExpandMultipleAddsWithWrappedBuffer)
@@ -96,6 +102,8 @@ TEST_F(DequeTest, shouldExpandMultipleAddsWithWrappedBuffer)
         ASSERT_EQ(0, aeron_deque_remove_first(&deque, &actual)) << "i = " << i;
         ASSERT_EQ(expected, actual);
     }
+
+    aeron_deque_close(&deque);
 }
 
 TEST_F(DequeTest, shouldExpandMultipleAdds)
@@ -120,5 +128,7 @@ TEST_F(DequeTest, shouldExpandMultipleAdds)
         ASSERT_EQ(0, aeron_deque_remove_first(&deque, &actual)) << "i = " << i;
         ASSERT_EQ(expected, actual);
     }
+
+    aeron_deque_close(&deque);
 }
 

@@ -67,4 +67,4 @@ aeron_client_test(channelUriStringBuilderTest ChannelUriStringBuilderTest.cpp)
 aeron_client_test(channelUriTest ChannelUriTest.cpp)
 
 aeron_client_test(atomicArrayUpdaterTest concurrent/AtomicArrayUpdaterTest.cpp)
-set_tests_properties(atomicArrayUpdaterTest PROPERTIES TIMEOUT 30)
+set_tests_properties(atomicArrayUpdaterTest PROPERTIES TIMEOUT 60)

@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 
+import static io.aeron.archive.Archive.Configuration.CATALOG_FILE_NAME;
 import static io.aeron.archive.Archive.Configuration.FILE_IO_MAX_LENGTH_DEFAULT;
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -1189,6 +1190,11 @@ final class Catalog implements AutoCloseable
 
             return max(segmentFileBasePosition + segmentStopOffset, startPosition);
         }
+    }
+
+    static boolean existsIn(final File archiveDir)
+    {
+        return new File(archiveDir, CATALOG_FILE_NAME).exists();
     }
 
     static boolean fragmentStraddlesPageBoundary(final int fragmentOffset, final int fragmentLength)

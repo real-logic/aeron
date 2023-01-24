@@ -19,7 +19,6 @@ import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.codecs.*;
-import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.driver.Configuration;
 import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -67,6 +66,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.*;
 import static java.util.Collections.emptySet;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.align;
@@ -339,11 +339,8 @@ public class ArchiveTool
     @Deprecated
     public static int maxEntries(final File archiveDir, final long newMaxEntries)
     {
-        final long capacity = newMaxEntries * DEFAULT_RECORD_LENGTH;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, capacity, INSTANCE, null, null))
-        {
-            return (int)(catalog.capacity() / DEFAULT_RECORD_LENGTH);
-        }
+        final long newCapacity = capacity(archiveDir, newMaxEntries * DEFAULT_RECORD_LENGTH);
+        return (int)(newCapacity / DEFAULT_RECORD_LENGTH);
     }
 
     /**
@@ -848,7 +845,19 @@ public class ArchiveTool
 
     static Catalog openCatalogReadOnly(final File archiveDir, final EpochClock epochClock)
     {
-        return new Catalog(archiveDir, epochClock);
+        if (Catalog.existsIn(archiveDir))
+        {
+            return new Catalog(archiveDir, epochClock);
+        }
+        else
+        {
+            try (ArchiveMarkFile archiveMarkFile = openMarkFile(archiveDir, (s) -> {}))
+            {
+                final File realArchiveDir = new File(requireNonNull(
+                    archiveMarkFile.archiveDirectory(), "Location of archive directory not available"));
+                return new Catalog(realArchiveDir, epochClock);
+            }
+        }
     }
 
     static Catalog openCatalogReadWrite(
@@ -858,7 +867,19 @@ public class ArchiveTool
         final Checksum checksum,
         final IntConsumer versionCheck)
     {
-        return new Catalog(archiveDir, epochClock, capacity, true, checksum, versionCheck);
+        if (Catalog.existsIn(archiveDir))
+        {
+            return new Catalog(archiveDir, epochClock, capacity, true, checksum, versionCheck);
+        }
+        else
+        {
+            try (ArchiveMarkFile archiveMarkFile = openMarkFile(archiveDir, (s) -> {}))
+            {
+                final File realArchiveDir = new File(requireNonNull(
+                    archiveMarkFile.archiveDirectory(), "Location of archive directory not available"));
+                return new Catalog(realArchiveDir, epochClock, capacity, true, checksum, versionCheck);
+            }
+        }
     }
 
     private static String validateChecksumClass(final String checksumClassName)
@@ -1304,11 +1325,7 @@ public class ArchiveTool
         out.println("Archive error log:");
         CommonContext.printErrorLog(markFile.errorBuffer(), out);
 
-        final MarkFileHeaderDecoder decoder = markFile.decoder();
-        decoder.skipControlChannel();
-        decoder.skipLocalControlChannel();
-        decoder.skipEventsChannel();
-        final String aeronDirectory = decoder.aeronDirectory();
+        final String aeronDirectory = markFile.aeronDirectory();
 
         out.println();
         out.println("Aeron driver error log (directory: " + aeronDirectory + "):");
@@ -1528,7 +1545,7 @@ public class ArchiveTool
     private static void printHelp()
     {
         System.out.format(
-            "Usage: <archive-dir> <command> (items in square brackets are optional)%n%n" +
+            "Usage: <archive-mark-file-dir> <command> (items in square brackets are optional)%n%n" +
             "  capacity [capacity in bytes]: gets or increases catalog capacity.%n%n" +
             "  checksum className [recordingId] [-a]: computes and persists checksums.%n" +
             "     checksums are computed using the specified Checksum implementation%n" +

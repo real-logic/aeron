@@ -1029,6 +1029,10 @@ public final class Archive implements AutoCloseable
             {
                 archiveDir = new File(archiveDirectoryName);
             }
+            else
+            {
+                archiveDirectoryName = archiveDir.getAbsolutePath();
+            }
 
             if (null == markFileDir)
             {

@@ -50,7 +50,7 @@ public class ArchiveMarkFile implements AutoCloseable
     /**
      * Minor version for the archive files stored on disk. A change to this indicates new features.
      */
-    public static final int MINOR_VERSION = 1;
+    public static final int MINOR_VERSION = 2;
 
     /**
      * Patch version for the archive files stored on disk. A change to this indicates feature parity bug fixes.
@@ -73,6 +73,8 @@ public class ArchiveMarkFile implements AutoCloseable
      * Name for the archive {@link MarkFile} stored in the {@link Archive.Configuration#ARCHIVE_DIR_PROP_NAME}.
      */
     public static final String FILENAME = "archive-mark.dat";
+
+    private static final int VERSION_WITH_ARCHIVE_DIRECTORY = 2;
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
     private final MarkFileHeaderEncoder headerEncoder = new MarkFileHeaderEncoder();
@@ -110,14 +112,7 @@ public class ArchiveMarkFile implements AutoCloseable
             totalFileLength,
             timeoutMs,
             epochClock,
-            (version) ->
-            {
-                if (SemanticVersion.major(version) != MAJOR_VERSION)
-                {
-                    throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
-                        " does not match software: " + MAJOR_VERSION);
-                }
-            },
+            ArchiveMarkFile::validateVersion,
             null);
 
         buffer = markFile.buffer();
@@ -171,14 +166,7 @@ public class ArchiveMarkFile implements AutoCloseable
             filename,
             epochClock,
             timeoutMs,
-            (version) ->
-            {
-                if (SemanticVersion.major(version) != MAJOR_VERSION)
-                {
-                    throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
-                        " does not match software: " + MAJOR_VERSION);
-                }
-            },
+            ArchiveMarkFile::validateVersion,
             logger);
     }
 
@@ -331,6 +319,35 @@ public class ArchiveMarkFile implements AutoCloseable
         return HEADER_LENGTH + ctx.errorBufferLength();
     }
 
+    String aeronDirectory()
+    {
+        headerDecoder.sbeRewind();
+        headerDecoder.skipControlChannel();
+        headerDecoder.skipLocalControlChannel();
+        headerDecoder.skipEventsChannel();
+        return headerDecoder.aeronDirectory();
+    }
+
+    String archiveDirectory()
+    {
+        if (!markFileIncludesArchiveDirectory())
+        {
+            return null;
+        }
+
+        headerDecoder.sbeRewind();
+        headerDecoder.skipControlChannel();
+        headerDecoder.skipLocalControlChannel();
+        headerDecoder.skipEventsChannel();
+        headerDecoder.skipAeronDirectory();
+        return headerDecoder.archiveDirectory();
+    }
+
+    private boolean markFileIncludesArchiveDirectory()
+    {
+        return VERSION_WITH_ARCHIVE_DIRECTORY <= headerDecoder.version();
+    }
+
     private void encode(final Archive.Context ctx)
     {
         headerEncoder
@@ -343,6 +360,17 @@ public class ArchiveMarkFile implements AutoCloseable
             .controlChannel(ctx.controlChannel())
             .localControlChannel(ctx.localControlChannel())
             .eventsChannel(ctx.recordingEventsChannel())
-            .aeronDirectory(ctx.aeronDirectoryName());
+            .aeronDirectory(ctx.aeronDirectoryName())
+            .archiveDirectory(ctx.archiveDirectoryName())
+            .markFileDirectory(ctx.markFileDir().getAbsolutePath());
+    }
+
+    private static void validateVersion(final int version)
+    {
+        if (SemanticVersion.major(version) != MAJOR_VERSION)
+        {
+            throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
+                " does not match software: " + MAJOR_VERSION);
+        }
     }
 }

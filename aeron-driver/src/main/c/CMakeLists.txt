@@ -153,6 +153,7 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_arrayutil.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_bitutil.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_clock.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_deque.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_dlopen.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_env.c
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_error.c
@@ -220,6 +221,7 @@ set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_arrayutil.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_bitutil.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_clock.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_deque.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_dlopen.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_env.h
     ${AERON_C_CLIENT_SOURCE_PATH}/util/aeron_error.h

@@ -275,7 +275,6 @@ public final class NetworkPublication
         }
 
         CloseHelper.close(flowControl);
-        CloseHelper.close(errorHandler, rawLog);
     }
 
     /**

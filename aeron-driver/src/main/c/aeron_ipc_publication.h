@@ -95,6 +95,8 @@ int aeron_ipc_publication_create(
 
 void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aeron_ipc_publication_t *publication);
 
+bool aeron_ipc_publication_free(aeron_ipc_publication_t *publication);
+
 int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication);
 
 void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, int64_t position);

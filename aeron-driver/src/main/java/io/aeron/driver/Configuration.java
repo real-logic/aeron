@@ -241,6 +241,16 @@ public final class Configuration
     public static final int SEND_TO_STATUS_POLL_RATIO_DEFAULT = 6;
 
     /**
+     * Property name for the limit of the number of driver managed resources that can be freed in a single duty cycle.
+     */
+    public static final String RESOURCE_FREE_LIMIT_PROP_NAME = "aeron.driver.resource.free.limit";
+
+    /**
+     * Default value for the limit of the number of driver managed resources that can be freed in a single duty cycle.
+     */
+    public static final int RESOURCE_FREE_LIMIT_DEFAULT = 10;
+
+    /**
      * Property name for SO_RCVBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Product (BDP).
      */
     public static final String SOCKET_RCVBUF_LENGTH_PROP_NAME = "aeron.socket.so_rcvbuf";
@@ -1297,6 +1307,18 @@ public final class Configuration
     public static int sendToStatusMessagePollRatio()
     {
         return getInteger(SEND_TO_STATUS_POLL_RATIO_PROP_NAME, SEND_TO_STATUS_POLL_RATIO_DEFAULT);
+    }
+
+    /**
+     * Limit the number of driver managed resources that can be freed in the same duty cycle.
+     *
+     * @return limit of the number of resources.
+     * @see #RESOURCE_FREE_LIMIT_PROP_NAME
+     * @see #RESOURCE_FREE_LIMIT_DEFAULT
+     */
+    public static int resourceFreeLimit()
+    {
+        return getInteger(RESOURCE_FREE_LIMIT_PROP_NAME, RESOURCE_FREE_LIMIT_DEFAULT);
     }
 
     /**

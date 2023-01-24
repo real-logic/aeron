@@ -46,6 +46,7 @@ import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -102,6 +103,7 @@ public final class DriverConductor implements Agent
     private final ArrayList<SubscriptionLink> subscriptionLinks = new ArrayList<>();
     private final ArrayList<CounterLink> counterLinks = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
+    private final ArrayDeque<DriverManagedResource> endOfLiveResources = new ArrayDeque<>();
     private final ObjectHashSet<SessionKey> activeSessionSet = new ObjectHashSet<>();
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
@@ -191,6 +193,7 @@ public final class DriverConductor implements Agent
         publicationImages.forEach(PublicationImage::free);
         networkPublications.forEach(NetworkPublication::free);
         ipcPublications.forEach(IpcPublication::free);
+        freeEndOfLifeResources(Integer.MAX_VALUE);
         toDriverCommands.consumerHeartbeatTime(Aeron.NULL_VALUE);
         ctx.close();
     }
@@ -217,6 +220,7 @@ public final class DriverConductor implements Agent
         workCount += clientCommandAdapter.receive();
         workCount += trackStreamPositions(workCount, nowNs);
         workCount += nameResolver.doWork(cachedEpochClock.time());
+        workCount += freeEndOfLifeResources(ctx.resourceFreeLimit());
 
         return workCount;
     }
@@ -1970,17 +1974,37 @@ public final class DriverConductor implements Agent
 
             if (resource.hasReachedEndOfLife())
             {
-                if (resource.free())
-                {
-                    fastUnorderedRemove(list, i, lastIndex--);
-                    CloseHelper.close(ctx.errorHandler(), resource);
-                }
-                else
-                {
-                    ctx.systemCounters().get(FREE_FAILS).incrementOrdered();
-                }
+                CloseHelper.close(ctx.errorHandler(), resource::close);
+                endOfLiveResources.add(resource);
+                fastUnorderedRemove(list, i, lastIndex--);
             }
         }
+    }
+
+    private int freeEndOfLifeResources(final int freeLimit)
+    {
+        int workCount = 0;
+
+        for (int i = 0; i < freeLimit; i++)
+        {
+            final DriverManagedResource resource = endOfLiveResources.pollFirst();
+            if (null == resource)
+            {
+                break;
+            }
+
+            if (resource.free())
+            {
+                workCount++;
+            }
+            else
+            {
+                ctx.systemCounters().get(FREE_FAILS).incrementOrdered();
+                endOfLiveResources.addLast(resource);
+            }
+        }
+
+        return workCount;
     }
 
     private void linkSpies(final ArrayList<SubscriptionLink> links, final NetworkPublication publication)

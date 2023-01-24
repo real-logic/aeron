@@ -462,7 +462,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->clients.on_time_event = aeron_client_on_time_event;
     conductor->clients.has_reached_end_of_life = aeron_client_has_reached_end_of_life;
     conductor->clients.delete_func = aeron_client_delete;
-    conductor->clients.free_func = aeron_client_free;
+    conductor->clients.free_func = NULL;
 
     conductor->ipc_publications.array = NULL;
     conductor->ipc_publications.length = 0;
@@ -487,7 +487,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->send_channel_endpoints.has_reached_end_of_life =
         aeron_send_channel_endpoint_entry_has_reached_end_of_life;
     conductor->send_channel_endpoints.delete_func = aeron_send_channel_endpoint_entry_delete;
-    conductor->send_channel_endpoints.free_func = aeron_send_channel_endpoint_entry_free;
+    conductor->send_channel_endpoints.free_func = NULL;
 
     conductor->receive_channel_endpoints.array = NULL;
     conductor->receive_channel_endpoints.length = 0;
@@ -496,7 +496,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->receive_channel_endpoints.has_reached_end_of_life =
         aeron_receive_channel_endpoint_entry_has_reached_end_of_life;
     conductor->receive_channel_endpoints.delete_func = aeron_receive_channel_endpoint_entry_delete;
-    conductor->receive_channel_endpoints.free_func = aeron_receive_channel_endpoint_entry_free;
+    conductor->receive_channel_endpoints.free_func = NULL;
 
     conductor->publication_images.array = NULL;
     conductor->publication_images.length = 0;
@@ -512,7 +512,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->lingering_resources.on_time_event = aeron_linger_resource_entry_on_time_event;
     conductor->lingering_resources.has_reached_end_of_life = aeron_linger_resource_entry_has_reached_end_of_life;
     conductor->lingering_resources.delete_func = aeron_linger_resource_entry_delete;
-    conductor->lingering_resources.free_func = aeron_linger_resource_entry_free;
+    conductor->lingering_resources.free_func = NULL;
 
     conductor->ipc_subscriptions.array = NULL;
     conductor->ipc_subscriptions.length = 0;
@@ -525,6 +525,12 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->spy_subscriptions.array = NULL;
     conductor->spy_subscriptions.length = 0;
     conductor->spy_subscriptions.capacity = 0;
+
+    if (aeron_deque_init(&conductor->end_of_life_queue, 1024, sizeof(aeron_end_of_life_resource_t)))
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
 
     conductor->errors_counter = aeron_counters_manager_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_ERRORS);
     conductor->unblocked_commands_counter = aeron_counters_manager_addr(
@@ -978,7 +984,7 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
     client->heartbeat_timestamp.value_addr = NULL;
 }
 
-bool aeron_client_free(aeron_client_t *client)
+bool aeron_client_free(void *resource)
 {
     return true;
 }
@@ -1112,18 +1118,14 @@ void aeron_ipc_publication_entry_delete(aeron_driver_conductor_t *conductor, aer
     entry->publication = NULL;
 }
 
-bool aeron_ipc_publication_entry_free(aeron_ipc_publication_entry_t *entry)
+static inline bool aeron_ipc_publication_free_voidp(void *publication)
 {
-    aeron_ipc_publication_t *publication = entry->publication;
-    if (publication->raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
-    {
-        aeron_free(publication->log_file_name);
-        publication->log_file_name = NULL;
+    return aeron_ipc_publication_free((aeron_ipc_publication_t *)publication);
+}
 
-        return true;
-    }
-
-    return false;
+void aeron_ipc_publication_entry_free(aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry)
+{
+    aeron_driver_conductor_add_end_of_life_resource(conductor, entry->publication, aeron_ipc_publication_free_voidp);
 }
 
 void aeron_network_publication_entry_on_time_event(
@@ -1163,18 +1165,14 @@ void aeron_network_publication_entry_delete(
     }
 }
 
-bool aeron_network_publication_entry_free(aeron_network_publication_entry_t *entry)
+static inline bool aeron_network_publication_free_voidp(void *publication)
 {
-    aeron_network_publication_t *publication = entry->publication;
-    if (publication->raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
-    {
-        aeron_free(publication->log_file_name);
-        publication->log_file_name = NULL;
+    return aeron_network_publication_free((aeron_network_publication_t *)publication);
+}
 
-        return true;
-    }
-
-    return false;
+void aeron_network_publication_entry_free(aeron_driver_conductor_t *conductor, aeron_network_publication_entry_t *entry)
+{
+    aeron_driver_conductor_add_end_of_life_resource(conductor, entry->publication, aeron_network_publication_free_voidp);
 }
 
 void aeron_driver_conductor_cleanup_spies(aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication)
@@ -1226,11 +1224,6 @@ void aeron_send_channel_endpoint_entry_delete(
     aeron_send_channel_endpoint_delete(&conductor->counters_manager, entry->endpoint);
 }
 
-bool aeron_send_channel_endpoint_entry_free(aeron_send_channel_endpoint_entry_t *entry)
-{
-    return true;
-}
-
 void aeron_receive_channel_endpoint_entry_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_entry_t *entry, int64_t now_ns, int64_t now_ms)
 {
@@ -1267,11 +1260,6 @@ void aeron_receive_channel_endpoint_entry_delete(
     aeron_receive_channel_endpoint_delete(&conductor->counters_manager, entry->endpoint);
 }
 
-bool aeron_receive_channel_endpoint_entry_free(aeron_receive_channel_endpoint_entry_t *entry)
-{
-    return true;
-}
-
 void aeron_publication_image_entry_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry, int64_t now_ns, int64_t now_ms)
 {
@@ -1302,18 +1290,14 @@ void aeron_publication_image_entry_delete(
     entry->image = NULL;
 }
 
-bool aeron_publication_image_entry_free(aeron_publication_image_entry_t *entry)
+static inline bool aeron_publication_image_free_voidp(void *image)
 {
-    aeron_publication_image_t *image = entry->image;
-    if (image->raw_log_free_func(&image->mapped_raw_log, image->log_file_name))
-    {
-        aeron_free(image->log_file_name);
-        image->log_file_name = NULL;
+    return aeron_publication_image_free((aeron_publication_image_t *)image);
+}
 
-        return true;
-    }
-
-    return false;
+void aeron_publication_image_entry_free(aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
+{
+    aeron_driver_conductor_add_end_of_life_resource(conductor, entry->image, aeron_publication_image_free_voidp);
 }
 
 void aeron_linger_resource_entry_on_time_event(
@@ -1334,11 +1318,6 @@ bool aeron_linger_resource_entry_has_reached_end_of_life(
 void aeron_linger_resource_entry_delete(aeron_driver_conductor_t *conductor, aeron_linger_resource_entry_t *entry)
 {
     aeron_free(entry->buffer);
-}
-
-bool aeron_linger_resource_entry_free(aeron_linger_resource_entry_t *entry)
-{
-    return true;
 }
 
 // Called from conductor
@@ -1378,26 +1357,63 @@ void aeron_driver_conductor_image_transition_to_linger(
     }
 }
 
-#define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l, t, now_ns, now_ms) \
-for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--) \
-{ \
-    t *elem = &l.array[i]; \
-    l.on_time_event(c, elem, now_ns, now_ms); \
-    if (l.has_reached_end_of_life(c, elem)) \
-    { \
-        if (l.free_func(elem)) \
-        { \
-            l.delete_func(c, elem); \
-            aeron_array_fast_unordered_remove((uint8_t *)l.array, sizeof(t), i, last_index); \
-            last_index--; \
-            l.length--; \
-        } \
-        else \
-        { \
-            int64_t *counter = aeron_system_counter_addr(&c->system_counters, AERON_SYSTEM_COUNTER_FREE_FAILS); \
-            aeron_counter_ordered_increment(counter, 1); \
-        } \
-    } \
+void aeron_driver_conductor_add_end_of_life_resource(
+    aeron_driver_conductor_t *conductor,
+    void *resource,
+    aeron_end_of_life_resource_free_t free_func)
+{
+    aeron_end_of_life_resource_t end_of_life_resource = { 0 };
+    int64_t *counter = aeron_system_counter_addr(
+        &conductor->system_counters, AERON_SYSTEM_COUNTER_FREE_FAILS);
+
+    end_of_life_resource.resource = resource;
+    end_of_life_resource.free_func = free_func;
+    if (!aeron_deque_add_last(&conductor->end_of_life_queue, (void *)&end_of_life_resource))
+    {
+        aeron_counter_ordered_increment(counter, 1);
+    }
+}
+
+int aeron_driver_conductor_free_end_of_life_resources(aeron_driver_conductor_t *conductor)
+{
+    const int limit = (int)conductor->context->resource_free_limit;
+    aeron_end_of_life_resource_t end_of_life_resource = { 0 };
+    int count = 0;
+
+    for (; count < limit; count++)
+    {
+        if (aeron_deque_remove_first(&conductor->end_of_life_queue, (void *)&end_of_life_resource) < 0)
+        {
+            break;
+        }
+
+        if (!end_of_life_resource.free_func(end_of_life_resource.resource))
+        {
+            int64_t *counter = aeron_system_counter_addr(&conductor->system_counters, AERON_SYSTEM_COUNTER_FREE_FAILS);
+            aeron_counter_ordered_increment(counter, 1);
+            aeron_deque_add_last(&conductor->end_of_life_queue, (void *)&end_of_life_resource);
+        }
+    }
+
+    return count;
+}
+
+#define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l, t, now_ns, now_ms)             \
+for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--)                      \
+{                                                                                          \
+    t *elem = &l.array[i];                                                                 \
+    l.on_time_event(c, elem, now_ns, now_ms);                                              \
+    if (l.has_reached_end_of_life(c, elem))                                                \
+    {                                                                                      \
+        if (NULL != l.free_func)                                                           \
+        {                                                                                  \
+            l.free_func(c, elem);                                                          \
+        }                                                                                  \
+        l.delete_func(c, elem);                                                            \
+        aeron_array_fast_unordered_remove((uint8_t *)l.array, sizeof(t), i, last_index);   \
+        last_index--;                                                                      \
+        l.length--;                                                                        \
+    }                                                                                      \
 }
 
 void aeron_driver_conductor_on_check_managed_resources(
@@ -2863,6 +2879,8 @@ int aeron_driver_conductor_do_work(void *clientd)
         aeron_publication_image_track_rebuild(conductor->publication_images.array[i].image, now_ns);
     }
 
+    work_count += aeron_driver_conductor_free_end_of_life_resources(conductor);
+
     return work_count;
 }
 
@@ -2882,6 +2900,7 @@ void aeron_driver_conductor_on_close(void *clientd)
     for (size_t i = 0, length = conductor->ipc_publications.length; i < length; i++)
     {
         aeron_ipc_publication_close(&conductor->counters_manager, conductor->ipc_publications.array[i].publication);
+        aeron_ipc_publication_free(conductor->ipc_publications.array[i].publication);
     }
     aeron_free(conductor->ipc_publications.array);
 
@@ -2889,6 +2908,7 @@ void aeron_driver_conductor_on_close(void *clientd)
     {
         aeron_network_publication_close(
             &conductor->counters_manager, conductor->network_publications.array[i].publication);
+        aeron_network_publication_free(conductor->network_publications.array[i].publication);
     }
     aeron_free(conductor->network_publications.array);
 
@@ -2928,8 +2948,12 @@ void aeron_driver_conductor_on_close(void *clientd)
     for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
     {
         aeron_publication_image_close(&conductor->counters_manager, conductor->publication_images.array[i].image);
+        aeron_publication_image_free(conductor->publication_images.array[i].image);
     }
     aeron_free(conductor->publication_images.array);
+
+    // Free remaining end_of_life_entries.
+    aeron_deque_close(&conductor->end_of_life_queue);
 
     aeron_system_counters_close(&conductor->system_counters);
     aeron_counters_manager_close(&conductor->counters_manager);

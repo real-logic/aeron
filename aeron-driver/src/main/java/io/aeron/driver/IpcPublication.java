@@ -229,8 +229,6 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                 CloseHelper.close(errorHandler, untetheredSubscription.position);
             }
         }
-
-        CloseHelper.close(errorHandler, rawLog);
     }
 
     /**

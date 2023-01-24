@@ -329,6 +329,8 @@ static void aeron_driver_conductor_on_endpoint_change_null(const void *channel)
 #define AERON_RECEIVER_IO_VECTOR_CAPACITY_DEFAULT UINT32_C(2)
 #define AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT UINT32_C(2)
 #define AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT UINT32_C(2)
+#define AERON_DRIVER_RESOURCE_FREE_LIMIT_DEFAULT UINT32_C(10)
+#define AERON_DRIVER_RESOURCE_FREE_QUEUE_LENGTH_DEFAULT UINT32_C(65536)
 #define AERON_CPU_AFFINITY_DEFAULT (-1)
 #define AERON_DRIVER_CONNECT_DEFAULT true
 
@@ -525,6 +527,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->receiver_io_vector_capacity = AERON_RECEIVER_IO_VECTOR_CAPACITY_DEFAULT;
     _context->sender_io_vector_capacity = AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT;
     _context->network_publication_max_messages_per_send = AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT;
+    _context->resource_free_limit = AERON_DRIVER_RESOURCE_FREE_LIMIT_DEFAULT;
+    _context->resource_free_queue_length = AERON_DRIVER_RESOURCE_FREE_LIMIT_DEFAULT;
     _context->connect_enabled = AERON_DRIVER_CONNECT_DEFAULT;
     _context->conductor_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
     _context->sender_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
@@ -968,6 +972,20 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         (int32_t)_context->network_publication_max_messages_per_send,
         1,
         AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND);
+
+    _context->resource_free_limit = aeron_config_parse_uint32(
+        AERON_DRIVER_RESOURCE_FREE_LIMIT_ENV_VAR,
+        getenv(AERON_DRIVER_RESOURCE_FREE_LIMIT_ENV_VAR),
+        (uint32_t)_context->resource_free_limit,
+        1,
+        UINT32_MAX);
+
+    _context->resource_free_queue_length = aeron_config_parse_uint32(
+        AERON_DRIVER_RESOURCE_FREE_QUEUE_LENGTH_ENV_VAR,
+        getenv(AERON_DRIVER_RESOURCE_FREE_QUEUE_LENGTH_ENV_VAR),
+        (uint32_t)_context->resource_free_queue_length,
+        16,
+        UINT32_MAX);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;
@@ -2845,6 +2863,38 @@ uint32_t aeron_driver_context_get_network_publication_max_messages_per_send(aero
 {
     return NULL != context ?
         context->network_publication_max_messages_per_send : AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT;
+}
+
+int aeron_driver_context_set_resource_free_limit(aeron_driver_context_t *context, uint32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->resource_free_limit = value;
+    return 0;
+}
+
+uint32_t aeron_driver_context_get_resource_free_limit(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->resource_free_limit : AERON_DRIVER_RESOURCE_FREE_LIMIT_DEFAULT;
+}
+
+int aeron_driver_context_set_resource_free_queue_length(aeron_driver_context_t *context, uint32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->resource_free_queue_length = value;
+    return 0;
+}
+
+uint32_t aeron_driver_context_get_resource_free_queue_length(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->resource_free_queue_length : AERON_DRIVER_RESOURCE_FREE_QUEUE_LENGTH_DEFAULT;
 }
 
 void aeron_set_thread_affinity_on_start(void *state, const char *role_name)

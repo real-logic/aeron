@@ -18,7 +18,7 @@ package io.aeron.driver;
 /**
  * Common behaviour supported for driver resources such as publications and images.
  */
-public interface DriverManagedResource extends AutoCloseable
+public interface DriverManagedResource
 {
     /**
      * Free external resources such as files. if successful then return true.
@@ -31,7 +31,8 @@ public interface DriverManagedResource extends AutoCloseable
     }
 
     /**
-     * Close resources that are not external.
+     * Close resources that are not external.  This will not call {@link DriverManagedResource#free()}.  That will
+     * need to be called separately at the appropriate time.
      */
     void close();
 

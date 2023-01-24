@@ -87,6 +87,7 @@ set(SOURCE
     util/aeron_arrayutil.c
     util/aeron_bitutil.c
     util/aeron_clock.c
+    util/aeron_deque.c
     util/aeron_dlopen.c
     util/aeron_env.c
     util/aeron_error.c
@@ -156,6 +157,7 @@ set(HEADERS
     util/aeron_arrayutil.h
     util/aeron_bitutil.h
     util/aeron_clock.h
+    util/aeron_deque.h
     util/aeron_dlopen.h
     util/aeron_env.h
     util/aeron_error.h

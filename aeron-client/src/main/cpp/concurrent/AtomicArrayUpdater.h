@@ -80,8 +80,8 @@ public:
         {
             std::uint64_t changeNumber = m_endChange.load(std::memory_order_acquire);
 
-            E *array = m_array.load(std::memory_order_relaxed);
-            std::size_t length = m_length.load(std::memory_order_relaxed);
+            E *array = m_array;
+            std::size_t length = m_length;
             // The `acquire` fence is added to turn previous `relaxed` reads into an `acquire` reads but without
             // imposing a strict order on the reads. It synchronizes with the `release` fence from the `update` method.
             aeron::concurrent::atomic::acquire();
@@ -95,8 +95,8 @@ public:
 
     inline std::pair<E *, std::size_t> store(E *newArray, std::size_t newLength)
     {
-        E *oldArray = m_array.load(std::memory_order_relaxed);
-        std::size_t oldLength = m_length.load(std::memory_order_relaxed);
+        E *oldArray = m_array;
+        std::size_t oldLength = m_length;
 
         update(newArray, newLength);
 
@@ -105,8 +105,8 @@ public:
 
     std::pair<E *, std::size_t> addElement(E element)
     {
-        E *array = m_array.load(std::memory_order_relaxed);
-        std::size_t length = m_length.load(std::memory_order_relaxed);
+        E *array = m_array;
+        std::size_t length = m_length;
 
         std::pair<E *, std::size_t> newArray = aeron::util::addToArray(array, length, element);
 
@@ -118,8 +118,8 @@ public:
     template<typename F>
     std::pair<E *, std::size_t> removeElement(F &&func)
     {
-        E *array = m_array.load(std::memory_order_relaxed);
-        std::size_t length = m_length.load(std::memory_order_relaxed);
+        E *array = m_array;
+        std::size_t length = m_length;
 
         for (std::size_t i = 0; i < length; i++)
         {
@@ -138,8 +138,8 @@ public:
 
 private:
     std::atomic<std::uint64_t> m_beginChange = { 0 };
-    std::atomic<E *> m_array = { nullptr };
-    std::atomic<std::size_t> m_length = { 0 };
+    E* m_array = nullptr;
+    std::size_t m_length = 0;
     std::atomic<std::uint64_t> m_endChange = { 0 };
 
     inline void update(E *newArray, std::size_t newLength)
@@ -150,8 +150,8 @@ private:
         // The `release` fence which makes two following `relaxed` stores into the `release` stores and synchronizes
         // with the `acquire` fence from the `load` method.
         aeron::concurrent::atomic::release();
-        m_array.store(newArray, std::memory_order_relaxed);
-        m_length.store(newLength, std::memory_order_relaxed);
+        m_array = newArray;
+        m_length = newLength;
 
         m_endChange.store(newChangeNumber, std::memory_order_release);
     }

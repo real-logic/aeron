@@ -74,7 +74,7 @@ public class ArchiveMarkFile implements AutoCloseable
      */
     public static final String FILENAME = "archive-mark.dat";
 
-    private static final int VERSION_WITH_ARCHIVE_DIRECTORY = 2;
+    private static final int VERSION_WITH_ARCHIVE_DIRECTORY = SemanticVersion.compose(3, 2, 0);
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
     private final MarkFileHeaderEncoder headerEncoder = new MarkFileHeaderEncoder();

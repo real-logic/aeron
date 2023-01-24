@@ -509,6 +509,25 @@ project(':aeron-archive') {
         args = [codecsFile]
     }
 
+    task generateV1MarkCodecs(type: JavaExec) {
+        def codecsFile = 'src/main/resources/archive/aeron-archive-mark-codecs.xml'
+        def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
+
+        inputs.files(codecsFile, sbeFile)
+        outputs.dir generatedTestDir
+
+        mainClass.set('uk.co.real_logic.sbe.SbeTool')
+        classpath = configurations.codecGeneration
+        systemProperties(
+                'sbe.output.dir': generatedTestDir,
+                'sbe.target.language': 'Java',
+                'sbe.validation.xsd': sbeFile,
+                'sbe.validation.stop.on.error': 'true',
+                'sbe.target.namespace': 'io.aeron.archive.codecs.mark.v1',
+                'sbe.schema.transform.version': '*:1')
+        args = [codecsFile]
+    }
+
     def generatedCppDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated")
     task generateCppCodecs(type: JavaExec) {
         mainClass.set('uk.co.real_logic.sbe.SbeTool')
@@ -526,6 +545,7 @@ project(':aeron-archive') {
     compileGeneratedJava.dependsOn generateCodecs
     compileTestJava.dependsOn compileGeneratedTestJava
     compileGeneratedTestJava.dependsOn generateV6Codecs
+    compileGeneratedTestJava.dependsOn generateV1MarkCodecs
 
     jar {
         from sourceSets.generated.output

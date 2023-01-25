@@ -34,6 +34,20 @@ import static org.agrona.AsciiEncoding.parseLongAscii;
 import static org.agrona.SystemUtil.parseDuration;
 import static org.agrona.collections.ArrayUtil.add;
 
+abstract class AbstractMinMulticastFlowControlLhsPadding
+{
+    byte p000, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
+    byte p016, p017, p018, p019, p020, p021, p022, p023, p024, p025, p026, p027, p028, p029, p030, p031;
+    byte p032, p033, p034, p035, p036, p037, p038, p039, p040, p041, p042, p043, p044, p045, p046, p047;
+    byte p048, p049, p050, p051, p052, p053, p054, p055, p056, p057, p058, p059, p060, p061, p062, p063;
+}
+
+abstract class AbstractMinMulticastFlowControlFields extends AbstractMinMulticastFlowControlLhsPadding
+{
+    long lastSetupSenderLimit;
+    long timeOfLastSetupNs;
+}
+
 /**
  * Abstract minimum multicast sender flow control strategy. It supports the concept of only tracking the minimum of a
  * group of receivers, not all possible receivers. However, it is agnostic of how that group is determined.
@@ -41,8 +55,15 @@ import static org.agrona.collections.ArrayUtil.add;
  * Tracking of receivers is done as long as they continue to send Status Messages. Once SMs stop, the receiver tracking
  * for that receiver will time out after a given number of nanoseconds.
  */
-public abstract class AbstractMinMulticastFlowControl implements FlowControl
+public abstract class AbstractMinMulticastFlowControl
+    extends AbstractMinMulticastFlowControlFields
+    implements FlowControl
 {
+    byte p064, p065, p066, p067, p068, p069, p070, p071, p072, p073, p074, p075, p076, p077, p078, p079;
+    byte p080, p081, p082, p083, p084, p085, p086, p087, p088, p089, p090, p091, p092, p093, p094, p095;
+    byte p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
+    byte p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
+
     static final Receiver[] EMPTY_RECEIVERS = new Receiver[0];
 
     private final boolean isGroupTagAware;
@@ -52,10 +73,8 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
     private long receiverTimeoutNs;
     private Receiver[] receivers = EMPTY_RECEIVERS;
     private String channel;
-    private AtomicCounter numReceivers;
+    private AtomicCounter receiverCount;
     private ErrorHandler errorHandler;
-    private long timeOfLastSetupNs;
-    private long lastSetupSenderLimit;
 
     /**
      * Base constructor for use by specialised implementations.
@@ -88,7 +107,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         parseUriParam(udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME));
         hasRequiredReceivers = receivers.length >= groupMinSize;
         errorHandler = context.errorHandler();
-        numReceivers = FlowControlReceivers.allocate(
+        receiverCount = FlowControlReceivers.allocate(
             context.tempBuffer(), countersManager, registrationId, sessionId, streamId, channel);
         timeOfLastSetupNs = 0;
         lastSetupSenderLimit = -1;
@@ -99,7 +118,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
      */
     public void close()
     {
-        CloseHelper.close(errorHandler, numReceivers);
+        CloseHelper.close(errorHandler, receiverCount);
     }
 
     /**
@@ -112,7 +131,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
         final int positionBitsToShift,
         final long timeNs)
     {
-        if (0 < receivers.length)
+        if (receivers.length > 0)
         {
             timeOfLastSetupNs = timeNs;
             lastSetupSenderLimit = senderLimit;
@@ -154,7 +173,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
             receivers = truncateReceivers(receivers, removed);
             hasRequiredReceivers = receivers.length >= groupMinSize;
             this.receivers = receivers;
-            numReceivers.setOrdered(receivers.length);
+            receiverCount.setOrdered(receivers.length);
         }
 
         return receivers.length < groupMinSize || receivers.length == 0 ? senderLimit : minLimitPosition;
@@ -230,7 +249,7 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
             this.receivers = receivers;
             minPosition = Math.min(minPosition, lastPositionPlusWindow);
             receiverAdded(receiver.receiverId, receiver.sessionId, receiver.streamId, channel, receivers.length);
-            numReceivers.setOrdered(receivers.length);
+            receiverCount.setOrdered(receivers.length);
             lastSetupSenderLimit = -1;
         }
 

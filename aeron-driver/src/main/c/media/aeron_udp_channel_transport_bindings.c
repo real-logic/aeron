@@ -114,8 +114,8 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
     aeron_udp_channel_interceptor_bindings_t *existing_interceptor_bindings,
     const char *interceptors)
 {
-    char interceptors_dup[AERON_MAX_INTERCEPTORS_LEN];
-    char *interceptor_names[AERON_MAX_INTERCEPTOR_NAMES];
+    char interceptors_dup[AERON_MAX_INTERCEPTORS_LEN] = { 0 };
+    char *interceptor_names[AERON_MAX_INTERCEPTOR_NAMES] = { 0 };
     aeron_udp_channel_interceptor_bindings_t *current_bindings = NULL;
     const size_t interceptors_length = strlen(interceptors);
 
@@ -129,7 +129,7 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
         return NULL;
     }
 
-    strcpy(interceptors_dup, interceptors);
+    strncpy(interceptors_dup, interceptors, interceptors_length);
 
     const int num_interceptors = aeron_tokenise(
         interceptors_dup, ',', AERON_MAX_INTERCEPTOR_NAMES, interceptor_names);

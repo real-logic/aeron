@@ -85,7 +85,7 @@ public class RecordedBasicPublisher
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);
                 System.out.println("Recording started: recordingId = " + recordingId);
 
-                for (int i = 0; i < NUMBER_OF_MESSAGES && running.get(); i++)
+                for (long i = 0; i < NUMBER_OF_MESSAGES && running.get(); i++)
                 {
                     final String message = "Hello World! " + i;
                     final byte[] messageBytes = message.getBytes();

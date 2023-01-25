@@ -214,7 +214,7 @@ int aeron_dl_load_libs(aeron_dl_loaded_libs_state_t **state, const char *libs)
         return -1;
     }
 
-    strncpy(libs_dup, libs, libs_length);
+    strncpy(libs_dup, libs, AERON_MAX_DL_LIBS_LEN - 1);
 
     const int num_libs = aeron_tokenise(libs_dup, ',', AERON_MAX_DL_LIB_NAMES, lib_names);
 

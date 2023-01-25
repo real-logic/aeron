@@ -40,6 +40,8 @@ import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
@@ -1029,6 +1031,10 @@ public final class Archive implements AutoCloseable
             {
                 archiveDir = new File(archiveDirectoryName);
             }
+            else
+            {
+                archiveDirectoryName = archiveDir.getAbsolutePath();
+            }
 
             if (null == markFileDir)
             {
@@ -1093,6 +1099,8 @@ public final class Archive implements AutoCloseable
 
                 markFile = new ArchiveMarkFile(this);
             }
+
+            ensureMarkFileLink(archiveDir, markFile);
 
             errorHandler = CommonContext.setupErrorHandler(
                 errorHandler, new DistinctErrorLog(markFile.errorBuffer(), epochClock, US_ASCII));
@@ -3136,6 +3144,58 @@ public final class Archive implements AutoCloseable
                     NULL_VALUE == (archiveId = AsciiEncoding.parseLongAscii(prop, 0, prop.length())))
                 {
                     archiveId = aeron.clientId();
+                }
+            }
+        }
+
+        private static void ensureMarkFileLink(final File archiveDir, final ArchiveMarkFile markFile)
+        {
+            final String archiveDirPath;
+            final String markFileParentPath;
+            try
+            {
+                archiveDirPath = archiveDir.getCanonicalPath();
+            }
+            catch (final IOException ex)
+            {
+                throw new ConfigurationException("failed to resolve canonical path for archiveDir=" + archiveDir);
+            }
+            try
+            {
+                markFileParentPath = markFile.parentDirectory().getCanonicalPath();
+            }
+            catch (final IOException ex)
+            {
+                throw new ConfigurationException(
+                    "failed to resolve canonical path for markFile parent dir=" + archiveDir);
+            }
+
+            final Path linkFile = new File(archiveDirPath, ArchiveMarkFile.LINK_FILENAME).toPath();
+            if (archiveDirPath.equals(markFileParentPath))
+            {
+                try
+                {
+                    Files.deleteIfExists(linkFile);
+                }
+                catch (final IOException ex)
+                {
+                    throw new RuntimeException("failed to remove old link file", ex);
+                }
+            }
+            else
+            {
+                try
+                {
+                    Files.write(
+                        linkFile,
+                        markFileParentPath.getBytes(US_ASCII),
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.WRITE,
+                        StandardOpenOption.TRUNCATE_EXISTING);
+                }
+                catch (final IOException ex)
+                {
+                    throw new RuntimeException("failed to create link for mark file directory", ex);
                 }
             }
         }

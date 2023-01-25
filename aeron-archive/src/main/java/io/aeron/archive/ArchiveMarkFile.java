@@ -74,6 +74,11 @@ public class ArchiveMarkFile implements AutoCloseable
      */
     public static final String FILENAME = "archive-mark.dat";
 
+    /**
+     * Name for a file contain a link to the directory containing the {@link MarkFile}.
+     */
+    public static final String LINK_FILENAME = "archive-mark.lnk";
+
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
     private final MarkFileHeaderEncoder headerEncoder = new MarkFileHeaderEncoder();
     private final MarkFile markFile;
@@ -110,14 +115,7 @@ public class ArchiveMarkFile implements AutoCloseable
             totalFileLength,
             timeoutMs,
             epochClock,
-            (version) ->
-            {
-                if (SemanticVersion.major(version) != MAJOR_VERSION)
-                {
-                    throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
-                        " does not match software: " + MAJOR_VERSION);
-                }
-            },
+            ArchiveMarkFile::validateVersion,
             null);
 
         buffer = markFile.buffer();
@@ -171,14 +169,7 @@ public class ArchiveMarkFile implements AutoCloseable
             filename,
             epochClock,
             timeoutMs,
-            (version) ->
-            {
-                if (SemanticVersion.major(version) != MAJOR_VERSION)
-                {
-                    throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
-                        " does not match software: " + MAJOR_VERSION);
-                }
-            },
+            ArchiveMarkFile::validateVersion,
             logger);
     }
 
@@ -312,6 +303,17 @@ public class ArchiveMarkFile implements AutoCloseable
         return path.getFileName().toString().equals(FILENAME);
     }
 
+    /**
+     * Get the parent directory containing the mark file.
+     *
+     * @return parent directory of the mark file.
+     * @see MarkFile#parentDirectory()
+     */
+    public File parentDirectory()
+    {
+        return markFile.parentDirectory();
+    }
+
     private static int alignedTotalFileLength(final Archive.Context ctx)
     {
         final int headerLength =
@@ -331,6 +333,15 @@ public class ArchiveMarkFile implements AutoCloseable
         return HEADER_LENGTH + ctx.errorBufferLength();
     }
 
+    String aeronDirectory()
+    {
+        headerDecoder.sbeRewind();
+        headerDecoder.skipControlChannel();
+        headerDecoder.skipLocalControlChannel();
+        headerDecoder.skipEventsChannel();
+        return headerDecoder.aeronDirectory();
+    }
+
     private void encode(final Archive.Context ctx)
     {
         headerEncoder
@@ -344,5 +355,14 @@ public class ArchiveMarkFile implements AutoCloseable
             .localControlChannel(ctx.localControlChannel())
             .eventsChannel(ctx.recordingEventsChannel())
             .aeronDirectory(ctx.aeronDirectoryName());
+    }
+
+    private static void validateVersion(final int version)
+    {
+        if (SemanticVersion.major(version) != MAJOR_VERSION)
+        {
+            throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
+                " does not match software: " + MAJOR_VERSION);
+        }
     }
 }

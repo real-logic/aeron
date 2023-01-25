@@ -19,7 +19,6 @@ import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.codecs.*;
-import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.driver.Configuration;
 import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -65,6 +64,7 @@ import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static java.lang.Math.min;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.StandardOpenOption.*;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toMap;
@@ -339,11 +339,8 @@ public class ArchiveTool
     @Deprecated
     public static int maxEntries(final File archiveDir, final long newMaxEntries)
     {
-        final long capacity = newMaxEntries * DEFAULT_RECORD_LENGTH;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, capacity, INSTANCE, null, null))
-        {
-            return (int)(catalog.capacity() / DEFAULT_RECORD_LENGTH);
-        }
+        final long newCapacity = capacity(archiveDir, newMaxEntries * DEFAULT_RECORD_LENGTH);
+        return (int)(newCapacity / DEFAULT_RECORD_LENGTH);
     }
 
     /**
@@ -946,18 +943,43 @@ public class ArchiveTool
     private static ArchiveMarkFile openMarkFile(final File archiveDir, final Consumer<String> logger)
     {
         return new ArchiveMarkFile(
-            archiveDir, ArchiveMarkFile.FILENAME, INSTANCE, TimeUnit.SECONDS.toMillis(5), logger);
+            resolveMarkFileDir(archiveDir), ArchiveMarkFile.FILENAME, INSTANCE, TimeUnit.SECONDS.toMillis(5), logger);
     }
 
     private static ArchiveMarkFile openMarkFileReadWrite(final File archiveDir, final EpochClock epochClock)
     {
         return new ArchiveMarkFile(
-            archiveDir,
+            resolveMarkFileDir(archiveDir),
             ArchiveMarkFile.FILENAME,
             epochClock,
             TimeUnit.SECONDS.toMillis(5),
             (version) -> {},
             null);
+    }
+
+    private static File resolveMarkFileDir(final File archiveDir)
+    {
+        final File linkFile = new File(archiveDir, ArchiveMarkFile.LINK_FILENAME);
+        final File markFileDir;
+        if (linkFile.exists())
+        {
+            try
+            {
+                final byte[] bytes = Files.readAllBytes(linkFile.toPath());
+                final String markFileDirPath = new String(bytes, US_ASCII).trim();
+                markFileDir = new File(markFileDirPath);
+            }
+            catch (final IOException ex)
+            {
+                throw new RuntimeException("failed to read link file=" + linkFile, ex);
+            }
+        }
+        else
+        {
+            markFileDir = archiveDir;
+        }
+
+        return markFileDir;
     }
 
     private static void dump(
@@ -1304,11 +1326,7 @@ public class ArchiveTool
         out.println("Archive error log:");
         CommonContext.printErrorLog(markFile.errorBuffer(), out);
 
-        final MarkFileHeaderDecoder decoder = markFile.decoder();
-        decoder.skipControlChannel();
-        decoder.skipLocalControlChannel();
-        decoder.skipEventsChannel();
-        final String aeronDirectory = decoder.aeronDirectory();
+        final String aeronDirectory = markFile.aeronDirectory();
 
         out.println();
         out.println("Aeron driver error log (directory: " + aeronDirectory + "):");

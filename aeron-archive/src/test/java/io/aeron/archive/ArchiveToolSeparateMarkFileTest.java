@@ -25,7 +25,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.util.Objects;
 
-public class ArchiveToolSeparateMarkFileTest
+class ArchiveToolSeparateMarkFileTest
 {
     @Test
     void shouldDescribe(@TempDir final File archiveDir, @TempDir final File markFileDir)

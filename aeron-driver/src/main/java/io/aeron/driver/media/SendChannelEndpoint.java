@@ -59,8 +59,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.collections.Hashing.compoundKey;
 
 /**
- * Aggregator of multiple {@link NetworkPublication}s onto a single transport channel for
- * sending data and setup frames plus the receiving of status and NAK frames.
+ * Aggregator of multiple {@link NetworkPublication}s onto a single transport channel for the
+ * sending of data and setup frames plus the receiving of status and NAK frames.
  */
 public class SendChannelEndpoint extends UdpChannelTransport
 {

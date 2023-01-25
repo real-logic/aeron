@@ -2860,6 +2860,7 @@ int aeron_driver_conductor_do_work(void *clientd)
         aeron_driver_conductor_on_rb_command_queue,
         conductor,
         AERON_COMMAND_DRAIN_LIMIT);
+    
     work_count += conductor->name_resolver.do_work_func(&conductor->name_resolver, now_ms);
 
     if (now_ns > conductor->timeout_check_deadline_ns)
@@ -2887,6 +2888,11 @@ int aeron_driver_conductor_do_work(void *clientd)
     }
 
     work_count += aeron_driver_conductor_free_end_of_life_resources(conductor);
+
+    if (!work_count)
+    {
+        aeron_raw_log_pools_refill();
+    }
 
     return work_count;
 }

@@ -27,6 +27,7 @@ extern "C"
 
 typedef struct aeron_driver_context_stct aeron_driver_context_t;
 typedef struct aeron_driver_stct aeron_driver_t;
+typedef struct aeron_raw_log_pool_config_stct aeron_raw_log_pool_config_t;
 
 /**
  * Environment variables used for setting values of an aeron_driver_context_t.
@@ -831,6 +832,8 @@ uint32_t aeron_driver_context_get_resource_free_limit(aeron_driver_context_t *co
 #define AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR "AERON_CONDUCTOR_CPU_AFFINITY"
 #define AERON_RECEIVER_CPU_AFFINITY_ENV_VAR "AERON_RECEIVER_CPU_AFFINITY"
 #define AERON_SENDER_CPU_AFFINITY_ENV_VAR "AERON_SENDER_CPU_AFFINITY"
+
+int aeron_driver_context_add_raw_log_pool_config(aeron_driver_context_t *context, aeron_raw_log_pool_config_t cfg);
 
 /**
  * Set the list of filenames to dynamic libraries to load upon context init.

@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include "aeron_alloc.h"
 #include "aeron_platform.h"
 #include "aeron_error.h"
 #include "aeron_fileutil.h"
@@ -506,6 +507,14 @@ uint64_t aeron_usable_fs_space_disabled(const char *path)
     return UINT64_MAX;
 }
 
+int aeron_tmp_logbuffer_location(char *dst, size_t length, const char *aeron_dir, int64_t id)
+{
+    return snprintf(
+        dst, length,
+        "%s/" AERON_TMP_BUFFER_DIR "/%" PRId64 ".logbuffer",
+        aeron_dir, id);
+}
+
 int aeron_ipc_publication_location(char *dst, size_t length, const char *aeron_dir, int64_t correlation_id)
 {
     return snprintf(
@@ -558,6 +567,218 @@ size_t aeron_temp_filename(char *filename, size_t length)
 #endif
 }
 
+typedef struct aeron_mapped_tmp_raw_log_stct
+{
+    aeron_mapped_raw_log_t raw_log;
+    char* path;
+}
+aeron_mapped_tmp_raw_log_t;
+
+typedef struct aeron_raw_log_size_pool_stct
+{
+    // term size of all logbuffers in this pool
+    uint64_t term_length;
+
+    aeron_mapped_tmp_raw_log_t* pool;
+    size_t len;
+    size_t used;
+
+    size_t max_capacity;
+    // the minimum number of logbuffers we should aim to have preallocated
+    size_t minimum_reserve;
+}
+aeron_raw_log_pool_t;
+
+typedef struct aeron_raw_log_pools_stct
+{
+    aeron_raw_log_pool_t* pools;
+    size_t len;
+    int64_t next_id;
+    char *aeron_dir;
+    size_t file_page_size;
+}
+aeron_raw_log_pools_t;
+
+// This can probably be stored in driver context, 
+// however it would require changing of lots of signatures for plumbing
+aeron_raw_log_pools_t g_log_pools;
+
+int aeron_mapped_tmp_raw_log_create(aeron_mapped_tmp_raw_log_t* tmp_raw_log, uint64_t term_length)
+{
+    char path[AERON_MAX_PATH];
+    int path_length = aeron_tmp_logbuffer_location(path, sizeof(path), g_log_pools.aeron_dir, g_log_pools.next_id++);
+
+    aeron_alloc((void**)&tmp_raw_log->path, path_length+1);
+    strncpy(tmp_raw_log->path, path, path_length+1);
+    if (aeron_raw_log_map(&tmp_raw_log->raw_log, path, false, term_length, g_log_pools.file_page_size))
+    {
+        aeron_free(tmp_raw_log->path);
+        return -1;
+    }
+
+    return 0;
+}
+
+void aeron_raw_log_pools_add_pool(aeron_raw_log_pool_config_t pool_config)
+{
+    if (pool_config.initial_capacity < pool_config.minimum_reserve)
+    {
+        fprintf(stderr, "pool config must have higher capacity (%lu) than minimum reserve (%lu).\n", pool_config.initial_capacity, pool_config.minimum_reserve);
+        return;
+    }
+
+    g_log_pools.len++;
+    if (aeron_reallocf((void**)&g_log_pools.pools, sizeof(aeron_raw_log_pool_t)*g_log_pools.len))
+    {
+        fprintf(stderr, "failed to allocate log pool.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    aeron_raw_log_pool_t* pool = &g_log_pools.pools[g_log_pools.len-1];
+    pool->term_length = pool_config.term_length;
+    pool->pool = NULL;    
+    pool->len = pool_config.initial_capacity;
+    pool->used = 0;
+    pool->max_capacity = pool_config.initial_capacity;
+    pool->minimum_reserve = pool_config.minimum_reserve;
+    aeron_alloc((void**)&pool->pool, sizeof(aeron_mapped_tmp_raw_log_t) * pool->len);
+}
+
+int aeron_raw_log_pools_init(char* aeron_dir, size_t file_page_size)
+{
+    g_log_pools.aeron_dir = aeron_dir;
+    g_log_pools.file_page_size = file_page_size;
+
+    for (size_t pools_i = 0; pools_i < g_log_pools.len; pools_i++)
+    {
+        aeron_raw_log_pool_t* pool = &g_log_pools.pools[pools_i];
+        for (size_t i = 0; i < pool->len; i++)
+        {
+            if (aeron_mapped_tmp_raw_log_create(&pool->pool[i], pool->term_length) < 0)
+            {
+                fprintf(stderr, "failed to allocate log for initial pool. i: %lu, size: %lu\n", i, (size_t)pool->term_length);
+                return -1;
+            }
+        }
+    }
+    
+    return 0;
+}
+
+int aeron_raw_log_pools_destroy(void)
+{
+    for (size_t pools_i = 0; pools_i < g_log_pools.len; pools_i++)
+    {
+        aeron_raw_log_pool_t* pool = &g_log_pools.pools[pools_i];
+        for (size_t i = 0; i < pool->len; i++)
+        {
+            aeron_raw_log_free(&pool->pool[i].raw_log, pool->pool[i].path);
+            aeron_free(pool->pool[i].path);
+        }
+        aeron_free(pool->pool);
+    }
+
+    aeron_free(g_log_pools.pools);
+    
+    return 0;
+}
+
+bool aeron_raw_log_pool_take(
+    aeron_mapped_tmp_raw_log_t* log,
+    aeron_raw_log_pool_t* pool)
+{
+    if (pool->len)
+    {
+        pool->len--;
+        pool->used++;
+        *log = pool->pool[pool->len];
+        log->raw_log.from_pool = true;
+        return true;
+    }
+
+    return false;
+}
+
+bool aeron_raw_log_pools_take(
+    aeron_mapped_tmp_raw_log_t* log,
+    uint64_t term_length,
+    uint64_t page_size)
+{
+    if (g_log_pools.file_page_size != page_size) return false;
+
+    for (size_t i = 0; i < g_log_pools.len; i++)
+    {
+        if (g_log_pools.pools[i].term_length == term_length)
+        {
+            aeron_raw_log_pool_t* pool = &g_log_pools.pools[i];
+            return aeron_raw_log_pool_take(log, pool);
+        }
+    }
+
+    return false;
+}
+
+void aeron_raw_log_pool_refill(aeron_raw_log_pool_t* pool)
+{
+    bool minReserveNotMet = pool->len < pool->minimum_reserve;
+    // This happens when buffers are taken from the pool, and are then not used.
+    bool initialPoolNeedsReplaced = (pool->len + pool->used) < pool->max_capacity;
+
+    if (minReserveNotMet || initialPoolNeedsReplaced)
+    {
+        if (aeron_mapped_tmp_raw_log_create(&pool->pool[pool->len], pool->term_length) == 0)
+            pool->len++;
+    } 
+}
+
+void aeron_raw_log_pools_refill(void)
+{
+    for (size_t i = 0; i < g_log_pools.len; i++)
+    {
+        aeron_raw_log_pool_refill(&g_log_pools.pools[i]);
+    }
+}
+
+void aeron_raw_log_pools_return(uint64_t term_length)
+{
+    for (size_t i = 0; i < g_log_pools.len; i++)
+        if (g_log_pools.pools[i].term_length == term_length)
+               g_log_pools.pools[i].used--;
+}
+
+int aeron_raw_log_map_from_pool(
+    aeron_mapped_raw_log_t *mapped_raw_log,
+    const char *path,
+    bool use_sparse_files,
+    uint64_t term_length,
+    uint64_t page_size)
+{
+    // sparse files aren't expensive to mmap, so we dont use the pool
+    if (use_sparse_files)
+    {
+        return aeron_raw_log_map(mapped_raw_log, path, use_sparse_files, term_length, page_size);
+    }
+
+    aeron_mapped_tmp_raw_log_t pool_log;
+    if (!aeron_raw_log_pools_take(&pool_log, term_length, page_size))
+    {
+        return aeron_raw_log_map(mapped_raw_log, path, use_sparse_files, term_length, page_size);
+    }
+
+    if (rename(pool_log.path, path) != 0)
+    {
+        aeron_raw_log_pools_return(pool_log.raw_log.term_length);
+        aeron_raw_log_free(&pool_log.raw_log, pool_log.path);
+        AERON_SET_ERR(errno, "Failed to rename raw log, from: %s, to: %s", pool_log.path, path);
+        return -1;
+    }
+
+    *mapped_raw_log = pool_log.raw_log;
+    aeron_free(pool_log.path);
+
+    return 0;
+}
+
 int aeron_raw_log_map(
     aeron_mapped_raw_log_t *mapped_raw_log,
     const char *path,
@@ -603,6 +824,7 @@ int aeron_raw_log_map(
         (uint8_t *)mapped_raw_log->mapped_file.addr + (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
     mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
     mapped_raw_log->term_length = (size_t)term_length;
+    mapped_raw_log->from_pool = false;
 
     return 0;
 }
@@ -689,6 +911,11 @@ bool aeron_raw_log_free(aeron_mapped_raw_log_t *mapped_raw_log, const char *file
         if (aeron_unmap(&mapped_raw_log->mapped_file) < 0)
         {
             return false;
+        }
+
+        if (mapped_raw_log->from_pool)
+        {
+            aeron_raw_log_pools_return(mapped_raw_log->term_length);
         }
 
         mapped_raw_log->mapped_file.addr = NULL;

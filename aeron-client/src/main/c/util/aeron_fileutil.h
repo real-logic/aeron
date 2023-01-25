@@ -21,6 +21,7 @@
 #include <sys/types.h>
 
 #include "util/aeron_platform.h"
+#include "util/aeron_raw_log_pool_config.h"
 #include "concurrent/aeron_logbuffer_descriptor.h"
 
 typedef struct aeron_mapped_file_stct
@@ -79,11 +80,15 @@ typedef struct aeron_mapped_raw_log_stct
     aeron_mapped_buffer_t log_meta_data;
     aeron_mapped_file_t mapped_file;
     size_t term_length;
+    bool from_pool;
 }
 aeron_mapped_raw_log_t;
 
 #define AERON_PUBLICATIONS_DIR "publications"
+#define AERON_TMP_BUFFER_DIR "tmp"
 #define AERON_IMAGES_DIR "images"
+
+int aeron_tmp_logbuffer_location(char *dst, size_t length, const char *aeron_dir, int64_t id);
 
 int aeron_ipc_publication_location(char *dst, size_t length, const char *aeron_dir, int64_t correlation_id);
 
@@ -96,6 +101,18 @@ size_t aeron_temp_filename(char *filename, size_t length);
 typedef int (*aeron_raw_log_map_func_t)(aeron_mapped_raw_log_t *, const char *, bool, uint64_t, uint64_t);
 typedef int (*aeron_raw_log_close_func_t)(aeron_mapped_raw_log_t *, const char *filename);
 typedef bool (*aeron_raw_log_free_func_t)(aeron_mapped_raw_log_t *, const char *filename);
+
+void aeron_raw_log_pools_add_pool(aeron_raw_log_pool_config_t pool_config);
+int aeron_raw_log_pools_init(char* aeron_dir, size_t file_page_size);
+int aeron_raw_log_pools_destroy(void);
+
+void aeron_raw_log_pools_refill(void);
+int aeron_raw_log_map_from_pool(
+    aeron_mapped_raw_log_t *mapped_raw_log,
+    const char *path,
+    bool use_sparse_files,
+    uint64_t term_length,
+    uint64_t page_size);
 
 int aeron_raw_log_map(
     aeron_mapped_raw_log_t *mapped_raw_log,

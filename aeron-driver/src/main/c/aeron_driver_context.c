@@ -32,6 +32,7 @@
 
 #include "aeron_windows.h"
 #include "util/aeron_error.h"
+#include "util/aeron_raw_log_pool_config.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_parse_util.h"
 #include "aeron_driver.h"
@@ -1057,7 +1058,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->usable_fs_space_func = _context->perform_storage_checks ?
         aeron_usable_fs_space : aeron_usable_fs_space_disabled;
-    _context->raw_log_map_func = aeron_raw_log_map;
+    _context->raw_log_map_func = aeron_raw_log_map_from_pool;
     _context->raw_log_close_func = aeron_raw_log_close;
     _context->raw_log_free_func = aeron_raw_log_free;
 
@@ -2849,6 +2850,17 @@ uint32_t aeron_driver_context_get_network_publication_max_messages_per_send(aero
 {
     return NULL != context ?
         context->network_publication_max_messages_per_send : AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT;
+}
+
+int aeron_driver_context_add_raw_log_pool_config(aeron_driver_context_t *context, aeron_raw_log_pool_config_t cfg)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    aeron_raw_log_pools_add_pool(cfg);
+    return 0;
 }
 
 int aeron_driver_context_set_resource_free_limit(aeron_driver_context_t *context, uint32_t value)

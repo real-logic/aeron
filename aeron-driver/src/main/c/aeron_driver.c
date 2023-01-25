@@ -264,6 +264,18 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
         return -1;
     }
 
+    if (aeron_file_resolve(dirname, AERON_TMP_BUFFER_DIR, filename, sizeof(filename)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Unable to get tmp buffer directory filename");
+        return -1;
+    }
+
+    if (aeron_mkdir(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+    {
+        AERON_SET_ERR(errno, "Failed to mkdir tmp directory: %s", context->aeron_dir);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -862,6 +874,11 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     {
         goto error;
     }
+    
+    if (aeron_raw_log_pools_init(_driver->context->aeron_dir, _driver->context->file_page_size) < 0)
+    {
+        goto error;
+    }
 
     if (aeron_driver_create_loss_report_file(_driver) < 0)
     {
@@ -1131,6 +1148,7 @@ int aeron_driver_close(aeron_driver_t *driver)
         }
     }
 
+    aeron_raw_log_pools_destroy();
     aeron_free(driver);
 
     return 0;

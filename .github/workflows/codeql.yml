@@ -41,6 +41,9 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           queries: +security-and-quality
+          query-filters:
+            - exclude:
+                id: java/unused-reference-type
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v2

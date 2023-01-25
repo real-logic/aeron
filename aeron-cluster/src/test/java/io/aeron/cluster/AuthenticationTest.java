@@ -478,7 +478,7 @@ public class AuthenticationTest
     {
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
-                .warnIfDirectoryExists(true)
+                .warnIfDirectoryExists(false)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(ClusterTests.errorHandler(0))
                 .dirDeleteOnStart(true)

@@ -138,7 +138,7 @@ public:
 
 private:
     std::atomic<std::uint64_t> m_beginChange = { 0 };
-    E* m_array = nullptr;
+    E *m_array = nullptr;
     std::size_t m_length = 0;
     std::atomic<std::uint64_t> m_endChange = { 0 };
 

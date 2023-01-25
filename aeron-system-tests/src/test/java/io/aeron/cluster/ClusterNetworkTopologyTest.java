@@ -257,7 +257,7 @@ class ClusterNetworkTopologyTest
         final String ingressChannel,
         final String ingressEndpoints,
         final Selector selector,
-        final double messageCount)
+        final int messageCount)
     {
         final String message = "Hello World!";
         final MutableDirectBuffer messageBuffer = new UnsafeBuffer(ByteBuffer.allocate(128));

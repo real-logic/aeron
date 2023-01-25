@@ -417,8 +417,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         if (NULL_VALUE == activeCorrelationId)
         {
             final long correlationId = aeron.nextCorrelationId();
-            if (srcArchive.archiveProxy().getRecordingPosition(
-                srcRecordingId, correlationId, srcArchive.controlSessionId()))
+            final long controlSessionId = srcArchive.controlSessionId();
+            if (srcArchive.archiveProxy().getRecordingPosition(srcRecordingId, correlationId, controlSessionId))
             {
                 workCount += trackAction(correlationId);
             }
@@ -534,8 +534,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 replayStreamId,
                 replayParams,
                 correlationId,
-                srcArchive.controlSessionId()
-            ))
+                srcArchive.controlSessionId()))
             {
                 workCount += trackAction(correlationId);
             }
@@ -567,9 +566,10 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     {
         int workCount = 0;
 
-        image = recordingSubscription.imageBySessionId(replaySessionId);
+        final Image image = recordingSubscription.imageBySessionId(replaySessionId);
         if (null != image)
         {
+            this.image = image;
             state(null == liveDestination ? State.REPLICATE : State.CATCHUP);
             workCount += 1;
         }

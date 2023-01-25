@@ -1,0 +1,7 @@
+name: "Aeron CodeQL Scanning"
+
+queries: +security-and-quality
+
+query-filters:
+  - exclude:
+      id: java/unused-reference-type

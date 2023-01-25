@@ -716,9 +716,10 @@ final class ControlSession implements Session
     {
         int workCount = 0;
 
-        controlPublication = aeron.getExclusivePublication(controlPublicationId);
-        if (null != controlPublication)
+        final ExclusivePublication publication = aeron.getExclusivePublication(controlPublicationId);
+        if (null != publication)
         {
+            controlPublication = publication;
             activityDeadlineMs = nowMs + connectTimeoutMs;
             state(State.CONNECTING);
             workCount += 1;

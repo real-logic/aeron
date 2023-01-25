@@ -424,8 +424,16 @@ public final class ReplayMerge implements AutoCloseable
         if (null == image && subscription.isConnected())
         {
             timeOfLastProgressMs = nowMs;
-            image = subscription.imageBySessionId((int)replaySessionId);
-            positionOfLastProgress = null == image ? Aeron.NULL_VALUE : image.position();
+            final Image image = subscription.imageBySessionId((int)replaySessionId);
+            if (null == this.image && null != image)
+            {
+                this.image = image;
+                positionOfLastProgress = image.position();
+            }
+            else
+            {
+                positionOfLastProgress = Aeron.NULL_VALUE;
+            }
         }
 
         if (null != image)

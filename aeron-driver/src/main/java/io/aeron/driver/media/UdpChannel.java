@@ -318,9 +318,9 @@ public final class UdpChannel
      * Parse a buffer length for a given URI paramName with a format specified by
      * {@link SystemUtil#parseSize(String, String)}, clamping the range to 0 &lt;= x &lt;= Integer.MAX_VALUE.
      *
-     * @param channelUri to get the value from
-     * @param paramName  key for the parameter
-     * @return value as an integer
+     * @param channelUri to get the value from.
+     * @param paramName  key for the parameter.
+     * @return value as an integer.
      * @see SystemUtil#parseSize(String, String)
      */
     public static int parseBufferLength(final ChannelUri channelUri, final String paramName)
@@ -412,9 +412,9 @@ public final class UdpChannel
     }
 
     /**
-     * Remote control address information
+     * Remote control address information.
      *
-     * @return remote control address information
+     * @return remote control address information.
      */
     public InetSocketAddress remoteControl()
     {
@@ -462,11 +462,10 @@ public final class UdpChannel
     }
 
     /**
-     * The canonical form for the channel
-     * <p>
-     * {@link UdpChannel#canonicalise}
+     * The canonical form for the channel.
      *
      * @return canonical form for channel.
+     * @see UdpChannel#canonicalise
      */
     public String canonicalForm()
     {
@@ -730,7 +729,7 @@ public final class UdpChannel
      * Get the endpoint destination address from the URI.
      *
      * @param uri          to check.
-     * @param nameResolver to use for resolution
+     * @param nameResolver to use for resolution.
      * @return endpoint address for URI.
      */
     public static InetSocketAddress destinationAddress(final ChannelUri uri, final NameResolver nameResolver)
@@ -752,11 +751,11 @@ public final class UdpChannel
     /**
      * Resolve and endpoint into a {@link InetSocketAddress}.
      *
-     * @param endpoint       to resolve
-     * @param uriParamName   for the resolution
-     * @param isReResolution for the resolution
+     * @param endpoint       to resolve.
+     * @param uriParamName   for the resolution.
+     * @param isReResolution for the resolution.
      * @param nameResolver   to be used for hostname.
-     * @return address for endpoint
+     * @return address for endpoint.
      */
     public static InetSocketAddress resolve(
         final String endpoint, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
@@ -767,7 +766,7 @@ public final class UdpChannel
     /**
      * Offset to store the channel receive timestamp in a user message.
      *
-     * @return offset of channel receive timestamps
+     * @return offset of channel receive timestamps.
      */
     public int channelReceiveTimestampOffset()
     {
@@ -797,7 +796,7 @@ public final class UdpChannel
     /**
      * Offset to store the channel send timestamp in a user message.
      *
-     * @return offset of channel send timestamps
+     * @return offset of channel send timestamps.
      */
     public int channelSendTimestampOffset()
     {

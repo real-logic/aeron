@@ -1545,6 +1545,9 @@ abstract class ArchiveConductor
             .socketRcvbufLength(channelUri)
             .socketSndbufLength(channelUri)
             .receiverWindowLength(channelUri)
+            .channelSendTimestampOffset(channelUri)
+            .channelReceiveTimestampOffset(channelUri)
+            .mediaReceiveTimestampOffset(channelUri)
             .sessionId(channelUri)
             .alias(channelUri);
     }

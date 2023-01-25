@@ -50,7 +50,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * This class should have {@link #conclude()} called before the methods are used or at least
  * {@link #concludeAeronDirectory()} to avoid NPEs.
  * <p>
- * Properties
+ * Properties:
  * <ul>
  * <li><code>aeron.dir</code>: Use value as directory name for Aeron buffers and status.</li>
  * </ul>
@@ -353,8 +353,8 @@ public class CommonContext implements Cloneable
     public static final String RESERVED_OFFSET = "reserved";
 
     /**
-     * Property name for a fallback PrintStream based logger when it is not possible to use the error logging
-     * callback.  Supported values are stdout, stderr, no_op (stderr is the default).
+     * Property name for a fallback {@link PrintStream} based logger when it is not possible to use the error logging
+     * callback. Supported values are stdout, stderr, no_op (stderr is the default).
      */
     public static final String FALLBACK_LOGGER_PROP_NAME = "aeron.fallback.logger";
 

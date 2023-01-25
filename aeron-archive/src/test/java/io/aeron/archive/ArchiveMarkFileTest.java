@@ -16,6 +16,8 @@
 package io.aeron.archive;
 
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.driver.MediaDriver;
+import io.aeron.test.TestContexts;
 import org.agrona.concurrent.SystemEpochClock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -37,7 +39,7 @@ class ArchiveMarkFileTest
         assertFalse(markFile.exists());
 
         try (ArchiveMarkFile archiveMarkFile = new ArchiveMarkFile(
-            new Archive.Context()
+            TestContexts.localhostArchive()
             .aeronDirectoryName(aeronDir.getAbsolutePath())
             .archiveDir(archiveDir)
             .markFileDir(markFileDir)
@@ -50,5 +52,38 @@ class ArchiveMarkFileTest
 
         assertTrue(markFile.exists());
         assertFalse(archiveDir.exists());
+    }
+
+    @Test
+    @SuppressWarnings("try")
+    void shouldCreateLinkFileToMarkFileDirAndRemoveLinkFileIfArchiveDirMatchesMarkFileDir(final @TempDir File tempDir)
+    {
+        final File aeronDir = new File(tempDir, "aeron");
+        final File archiveDir = new File(tempDir, "archive_dir");
+        final File markFileDir = new File(tempDir, "mark-file-home");
+
+        final MediaDriver.Context driverContext = new MediaDriver.Context()
+            .aeronDirectoryName(aeronDir.getAbsolutePath());
+        final Archive.Context archiveContext = TestContexts.localhostArchive()
+            .aeronDirectoryName(driverContext.aeronDirectoryName())
+            .archiveDir(archiveDir)
+            .markFileDir(markFileDir)
+            .epochClock(SystemEpochClock.INSTANCE);
+
+        try (MediaDriver driver = MediaDriver.launch(driverContext.clone());
+            Archive archive = Archive.launch(archiveContext.clone()))
+        {
+            assertTrue(new File(markFileDir, ArchiveMarkFile.FILENAME).exists());
+            assertTrue(new File(archiveDir, ArchiveMarkFile.LINK_FILENAME).exists());
+            assertFalse(new File(archiveDir, ArchiveMarkFile.FILENAME).exists());
+        }
+
+        archiveContext.markFileDir(null);
+        try (MediaDriver driver = MediaDriver.launch(driverContext.clone());
+            Archive archive = Archive.launch(archiveContext.clone()))
+        {
+            assertTrue(new File(archiveDir, ArchiveMarkFile.FILENAME).exists());
+            assertFalse(new File(archiveDir, ArchiveMarkFile.LINK_FILENAME).exists());
+        }
     }
 }

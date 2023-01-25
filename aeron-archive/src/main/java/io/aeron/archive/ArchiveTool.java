@@ -64,9 +64,9 @@ import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static java.lang.Math.min;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.StandardOpenOption.*;
 import static java.util.Collections.emptySet;
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.align;
@@ -845,19 +845,7 @@ public class ArchiveTool
 
     static Catalog openCatalogReadOnly(final File archiveDir, final EpochClock epochClock)
     {
-        if (Catalog.existsIn(archiveDir))
-        {
-            return new Catalog(archiveDir, epochClock);
-        }
-        else
-        {
-            try (ArchiveMarkFile archiveMarkFile = openMarkFile(archiveDir, (s) -> {}))
-            {
-                final File realArchiveDir = new File(requireNonNull(
-                    archiveMarkFile.archiveDirectory(), "Location of archive directory not available"));
-                return new Catalog(realArchiveDir, epochClock);
-            }
-        }
+        return new Catalog(archiveDir, epochClock);
     }
 
     static Catalog openCatalogReadWrite(
@@ -867,19 +855,7 @@ public class ArchiveTool
         final Checksum checksum,
         final IntConsumer versionCheck)
     {
-        if (Catalog.existsIn(archiveDir))
-        {
-            return new Catalog(archiveDir, epochClock, capacity, true, checksum, versionCheck);
-        }
-        else
-        {
-            try (ArchiveMarkFile archiveMarkFile = openMarkFile(archiveDir, (s) -> {}))
-            {
-                final File realArchiveDir = new File(requireNonNull(
-                    archiveMarkFile.archiveDirectory(), "Location of archive directory not available"));
-                return new Catalog(realArchiveDir, epochClock, capacity, true, checksum, versionCheck);
-            }
-        }
+        return new Catalog(archiveDir, epochClock, capacity, true, checksum, versionCheck);
     }
 
     private static String validateChecksumClass(final String checksumClassName)
@@ -967,18 +943,43 @@ public class ArchiveTool
     private static ArchiveMarkFile openMarkFile(final File archiveDir, final Consumer<String> logger)
     {
         return new ArchiveMarkFile(
-            archiveDir, ArchiveMarkFile.FILENAME, INSTANCE, TimeUnit.SECONDS.toMillis(5), logger);
+            resolveMarkFileDir(archiveDir), ArchiveMarkFile.FILENAME, INSTANCE, TimeUnit.SECONDS.toMillis(5), logger);
     }
 
     private static ArchiveMarkFile openMarkFileReadWrite(final File archiveDir, final EpochClock epochClock)
     {
         return new ArchiveMarkFile(
-            archiveDir,
+            resolveMarkFileDir(archiveDir),
             ArchiveMarkFile.FILENAME,
             epochClock,
             TimeUnit.SECONDS.toMillis(5),
             (version) -> {},
             null);
+    }
+
+    private static File resolveMarkFileDir(final File archiveDir)
+    {
+        final File linkFile = new File(archiveDir, ArchiveMarkFile.LINK_FILENAME);
+        final File markFileDir;
+        if (linkFile.exists())
+        {
+            try
+            {
+                final byte[] bytes = Files.readAllBytes(linkFile.toPath());
+                final String markFileDirPath = new String(bytes, US_ASCII).trim();
+                markFileDir = new File(markFileDirPath);
+            }
+            catch (final IOException ex)
+            {
+                throw new RuntimeException("failed to read link file=" + linkFile, ex);
+            }
+        }
+        else
+        {
+            markFileDir = archiveDir;
+        }
+
+        return markFileDir;
     }
 
     private static void dump(
@@ -1545,7 +1546,7 @@ public class ArchiveTool
     private static void printHelp()
     {
         System.out.format(
-            "Usage: <archive-mark-file-dir> <command> (items in square brackets are optional)%n%n" +
+            "Usage: <archive-dir> <command> (items in square brackets are optional)%n%n" +
             "  capacity [capacity in bytes]: gets or increases catalog capacity.%n%n" +
             "  checksum className [recordingId] [-a]: computes and persists checksums.%n" +
             "     checksums are computed using the specified Checksum implementation%n" +

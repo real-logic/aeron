@@ -2,7 +2,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
                    package="io.aeron.archive.codecs.mark"
                    id="100"
-                   version="2"
+                   version="1"
                    semanticVersion="5.2"
                    description="Codecs for Mark file of Aeron Archive."
                    byteOrder="littleEndian">
@@ -42,8 +42,6 @@
         <data  name="localControlChannel"  id="11" type="varAsciiEncoding"/>
         <data  name="eventsChannel"        id="12" type="varAsciiEncoding"/>
         <data  name="aeronDirectory"       id="13" type="varAsciiEncoding"/>
-        <data  name="archiveDirectory"     id="14" type="varAsciiEncoding" sinceVersion="2"/>
-        <data  name="markFileDirectory"    id="15" type="varAsciiEncoding" sinceVersion="2"/>
     </sbe:message>
 
 </sbe:messageSchema>

@@ -50,7 +50,7 @@ public class ArchiveMarkFile implements AutoCloseable
     /**
      * Minor version for the archive files stored on disk. A change to this indicates new features.
      */
-    public static final int MINOR_VERSION = 2;
+    public static final int MINOR_VERSION = 1;
 
     /**
      * Patch version for the archive files stored on disk. A change to this indicates feature parity bug fixes.
@@ -74,7 +74,10 @@ public class ArchiveMarkFile implements AutoCloseable
      */
     public static final String FILENAME = "archive-mark.dat";
 
-    private static final int VERSION_WITH_ARCHIVE_DIRECTORY = SemanticVersion.compose(3, 2, 0);
+    /**
+     * Name for a file contain a link to the directory containing the {@link MarkFile}.
+     */
+    public static final String LINK_FILENAME = "archive-mark.lnk";
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
     private final MarkFileHeaderEncoder headerEncoder = new MarkFileHeaderEncoder();
@@ -300,6 +303,17 @@ public class ArchiveMarkFile implements AutoCloseable
         return path.getFileName().toString().equals(FILENAME);
     }
 
+    /**
+     * Get the parent directory containing the mark file.
+     *
+     * @return parent directory of the mark file.
+     * @see MarkFile#parentDirectory()
+     */
+    public File parentDirectory()
+    {
+        return markFile.parentDirectory();
+    }
+
     private static int alignedTotalFileLength(final Archive.Context ctx)
     {
         final int headerLength =
@@ -328,26 +342,6 @@ public class ArchiveMarkFile implements AutoCloseable
         return headerDecoder.aeronDirectory();
     }
 
-    String archiveDirectory()
-    {
-        if (!markFileIncludesArchiveDirectory())
-        {
-            return null;
-        }
-
-        headerDecoder.sbeRewind();
-        headerDecoder.skipControlChannel();
-        headerDecoder.skipLocalControlChannel();
-        headerDecoder.skipEventsChannel();
-        headerDecoder.skipAeronDirectory();
-        return headerDecoder.archiveDirectory();
-    }
-
-    private boolean markFileIncludesArchiveDirectory()
-    {
-        return VERSION_WITH_ARCHIVE_DIRECTORY <= headerDecoder.version();
-    }
-
     private void encode(final Archive.Context ctx)
     {
         headerEncoder
@@ -360,9 +354,7 @@ public class ArchiveMarkFile implements AutoCloseable
             .controlChannel(ctx.controlChannel())
             .localControlChannel(ctx.localControlChannel())
             .eventsChannel(ctx.recordingEventsChannel())
-            .aeronDirectory(ctx.aeronDirectoryName())
-            .archiveDirectory(ctx.archiveDirectoryName())
-            .markFileDirectory(ctx.markFileDir().getAbsolutePath());
+            .aeronDirectory(ctx.aeronDirectoryName());
     }
 
     private static void validateVersion(final int version)

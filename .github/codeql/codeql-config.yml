@@ -8,3 +8,6 @@ query-filters:
       id: java/unused-reference-type
   - exclude:
       id: java/missing-override-annotation
+
+paths-ignore:
+  - _lgtm_build_dir

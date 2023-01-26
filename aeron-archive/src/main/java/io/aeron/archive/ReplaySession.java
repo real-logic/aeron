@@ -391,7 +391,7 @@ class ReplaySession implements Session, AutoCloseable
                 int paddingFrameLength = 0;
                 final int sessionId = publication.sessionId();
                 final int streamId = publication.streamId();
-                final long remaining = (int)Math.min(replayLimit - replayPosition, Integer.MAX_VALUE);
+                final int remaining = (int)Math.min(replayLimit - replayPosition, Integer.MAX_VALUE);
                 final Checksum checksum = this.checksum;
                 final UnsafeBuffer replayBuffer = this.replayBuffer;
 

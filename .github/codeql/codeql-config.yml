@@ -6,3 +6,5 @@ queries:
 query-filters:
   - exclude:
       id: java/unused-reference-type
+  - exclude:
+      id: java/missing-override-annotation

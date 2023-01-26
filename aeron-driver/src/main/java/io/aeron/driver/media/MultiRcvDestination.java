@@ -32,7 +32,6 @@ final class MultiRcvDestination
 {
     private static final ReceiveDestinationTransport[] EMPTY_TRANSPORTS = new ReceiveDestinationTransport[0];
 
-    private int numDestinations = 0;
     private ReceiveDestinationTransport[] transports = EMPTY_TRANSPORTS;
 
     void close(final ErrorHandler errorHandler, final DataTransportPoller poller)
@@ -62,7 +61,6 @@ final class MultiRcvDestination
 
         transports = ArrayUtil.ensureCapacity(transports, index + 1);
         transports[index] = transport;
-        numDestinations++;
 
         return index;
     }
@@ -70,7 +68,6 @@ final class MultiRcvDestination
     void removeDestination(final int transportIndex)
     {
         transports[transportIndex] = null;
-        numDestinations--;
     }
 
     boolean hasDestination(final int transportIndex)

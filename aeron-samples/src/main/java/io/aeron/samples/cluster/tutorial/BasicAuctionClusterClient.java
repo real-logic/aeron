@@ -47,7 +47,7 @@ public class BasicAuctionClusterClient implements EgressListener
     private final int numOfBids;
     private final int bidIntervalMs;
 
-    private long correlationId = ThreadLocalRandom.current().nextLong();
+    private long correlationId = 0;
     private long lastBidSeen = 100;
 
     /**

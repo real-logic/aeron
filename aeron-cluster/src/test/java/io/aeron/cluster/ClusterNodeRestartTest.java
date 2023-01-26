@@ -256,7 +256,7 @@ public class ClusterNodeRestartTest
 
             while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
             {
-                Tests.sleep(1, "snapshot ", i);
+                Tests.sleep(1, "snapshot %d", i);
             }
         }
 

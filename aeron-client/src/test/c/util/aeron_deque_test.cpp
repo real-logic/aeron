@@ -33,8 +33,8 @@ TEST_F(DequeTest, shouldAddLastAndRemoveFirst)
     uint64_t expected = 8723642836;
     uint64_t actual = 0;
     ASSERT_EQ(0, aeron_deque_init(&deque, 8, sizeof(uint64_t)));
-    ASSERT_EQ(0, aeron_deque_add_last(&deque, &expected));
-    ASSERT_EQ(0, aeron_deque_remove_first(&deque, &actual));
+    ASSERT_EQ(1, aeron_deque_add_last(&deque, &expected));
+    ASSERT_EQ(1, aeron_deque_remove_first(&deque, &actual));
 
     ASSERT_EQ(expected, actual);
 
@@ -46,7 +46,7 @@ TEST_F(DequeTest, shouldReturnErrorIfEmptyOnRemove)
     aeron_deque_t deque = {};
     uint64_t actual = 0;
     ASSERT_EQ(0, aeron_deque_init(&deque, 8, sizeof(uint64_t)));
-    ASSERT_EQ(-1, aeron_deque_remove_first(&deque, &actual));
+    ASSERT_EQ(0, aeron_deque_remove_first(&deque, &actual));
 
     aeron_deque_close(&deque);
 }
@@ -62,8 +62,8 @@ TEST_F(DequeTest, shouldWrapAroundWithAddsAndRemoves)
     {
         expected++;
 
-        ASSERT_EQ(0, aeron_deque_add_last(&deque, &expected));
-        ASSERT_EQ(0, aeron_deque_remove_first(&deque, &actual));
+        ASSERT_EQ(1, aeron_deque_add_last(&deque, &expected));
+        ASSERT_EQ(1, aeron_deque_remove_first(&deque, &actual));
         ASSERT_EQ(expected, actual);
     }
 
@@ -80,8 +80,8 @@ TEST_F(DequeTest, shouldExpandMultipleAddsWithWrappedBuffer)
     for (int i = 0; i < 13; i++)
     {
         expected++;
-        ASSERT_EQ(0, aeron_deque_add_last(&deque, &expected));
-        ASSERT_EQ(0, aeron_deque_remove_first(&deque, &actual));
+        ASSERT_EQ(1, aeron_deque_add_last(&deque, &expected));
+        ASSERT_EQ(1, aeron_deque_remove_first(&deque, &actual));
     }
 
     std::cout << deque.first_element << " " << deque.last_element << std::endl;
@@ -91,7 +91,7 @@ TEST_F(DequeTest, shouldExpandMultipleAddsWithWrappedBuffer)
     {
         expected++;
 
-        ASSERT_EQ(0, aeron_deque_add_last(&deque, &expected));
+        ASSERT_EQ(1, aeron_deque_add_last(&deque, &expected));
     }
 
     expected = 0;
@@ -99,7 +99,7 @@ TEST_F(DequeTest, shouldExpandMultipleAddsWithWrappedBuffer)
     {
         expected++;
 
-        ASSERT_EQ(0, aeron_deque_remove_first(&deque, &actual)) << "i = " << i;
+        ASSERT_EQ(1, aeron_deque_remove_first(&deque, &actual)) << "i = " << i;
         ASSERT_EQ(expected, actual);
     }
 
@@ -117,7 +117,7 @@ TEST_F(DequeTest, shouldExpandMultipleAdds)
     {
         expected++;
 
-        ASSERT_EQ(0, aeron_deque_add_last(&deque, &expected));
+        ASSERT_EQ(1, aeron_deque_add_last(&deque, &expected));
     }
 
     expected = 0;
@@ -125,7 +125,7 @@ TEST_F(DequeTest, shouldExpandMultipleAdds)
     {
         expected++;
 
-        ASSERT_EQ(0, aeron_deque_remove_first(&deque, &actual)) << "i = " << i;
+        ASSERT_EQ(1, aeron_deque_remove_first(&deque, &actual)) << "i = " << i;
         ASSERT_EQ(expected, actual);
     }
 

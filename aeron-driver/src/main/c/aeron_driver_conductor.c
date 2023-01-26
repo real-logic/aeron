@@ -1368,7 +1368,7 @@ void aeron_driver_conductor_add_end_of_life_resource(
 
     end_of_life_resource.resource = resource;
     end_of_life_resource.free_func = free_func;
-    if (!aeron_deque_add_last(&conductor->end_of_life_queue, (void *)&end_of_life_resource))
+    if (aeron_deque_add_last(&conductor->end_of_life_queue, (void *)&end_of_life_resource) < 0)
     {
         aeron_counter_ordered_increment(counter, 1);
     }
@@ -1382,7 +1382,7 @@ int aeron_driver_conductor_free_end_of_life_resources(aeron_driver_conductor_t *
 
     for (; count < limit; count++)
     {
-        if (aeron_deque_remove_first(&conductor->end_of_life_queue, (void *)&end_of_life_resource) < 0)
+        if (0 == aeron_deque_remove_first(&conductor->end_of_life_queue, (void *)&end_of_life_resource))
         {
             break;
         }

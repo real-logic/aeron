@@ -118,15 +118,14 @@ int aeron_deque_add_last(aeron_deque_t *deque, void *value)
         deque->last_element = 0;
     }
 
-    return 0;
+    return 1;
 }
 
 int aeron_deque_remove_first(aeron_deque_t *deque, void *value)
 {
     if (aeron_deque_size(deque) == 0)
     {
-        AERON_SET_ERR(EINVAL, "%s", "deque is empty");
-        return -1;
+        return 0;
     }
     size_t first_offset = deque->first_element * deque->element_size;
     uint8_t *first_ptr = deque->data + first_offset;
@@ -137,6 +136,6 @@ int aeron_deque_remove_first(aeron_deque_t *deque, void *value)
         deque->first_element = 0;
     }
 
-    return 0;
+    return 1;
 }
 

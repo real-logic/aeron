@@ -248,7 +248,7 @@ public class AeronStat
     {
         if (SystemUtil.isWindows())
         {
-            new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            new ProcessBuilder("C:\\Windows\\System32\\cmd.exe", "/c", "cls").inheritIO().start().waitFor();
         }
         else
         {

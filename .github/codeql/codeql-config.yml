@@ -10,4 +10,4 @@ query-filters:
       id: java/missing-override-annotation
 
 paths-ignore:
-  - _lgtm_build_dir
+  - '**/_lgtm_build_dir/**/*'

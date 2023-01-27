@@ -8,15 +8,5 @@ query-filters:
       id: java/unused-reference-type
   - exclude:
       id: java/missing-override-annotation
-
-paths:
-  - aeron-agent
-  - aeron-all
-  - aeron-archive
-  - aeron-client
-  - aeron-cluster
-  - aeron-driver
-  - aeron-samples
-  - aeron-system-tests
-  - aeron-test-support
-  - buildSrc
+  - exclude:
+      id: cpp/unsigned-comparison-zero

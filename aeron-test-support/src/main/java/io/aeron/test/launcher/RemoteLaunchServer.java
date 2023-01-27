@@ -58,9 +58,8 @@ public class RemoteLaunchServer
                 final Field pidField = unixProcessClass.getDeclaredField("pid");
                 pidField.setAccessible(true);
                 unixProcessHandle = lookup.unreflectGetter(pidField);
-                methodHandle =
-                    lookup.findStatic(RemoteLaunchServer.class, "getPidFallback", MethodType
-                        .methodType(long.class, Process.class));
+                methodHandle = lookup.findStatic(
+                    RemoteLaunchServer.class, "getPidFallback", MethodType.methodType(long.class, Process.class));
             }
             catch (final Exception ex2)
             {
@@ -79,6 +78,7 @@ public class RemoteLaunchServer
         {
             return (long)UNIX_PROCESS_PID_HANDLE.invoke(process);
         }
+
         return 0L;
     }
 
@@ -247,13 +247,15 @@ public class RemoteLaunchServer
                         final State state = currentState.get();
                         switch (state)
                         {
+                            case CREATED:
+                                break;
+
                             case PENDING:
                                 if (!currentState.compareAndSet(State.PENDING, State.STARTING))
                                 {
                                     return;
                                 }
                                 currentState.set(startProcess((String[])o));
-
                                 break;
 
                             case STARTING:
@@ -342,22 +344,24 @@ public class RemoteLaunchServer
                 responseReader = new ProcessResponseReader(connectionChannel, pid(), stdOutputStream);
                 final Thread responseThread = new Thread(() -> responseReader.runResponses(p.getInputStream()));
                 responseThread.start();
-                final Thread processMonitorThread = new Thread(() ->
-                {
-                    try
+
+                final Thread processMonitorThread = new Thread(
+                    () ->
                     {
-                        final int exitCode = process.waitFor();
-                        final long endTimeMs = System.currentTimeMillis();
-                        System.out.println(
-                            "[" + pid() + "] Exited with code: " + exitCode +
-                            " after: " + (endTimeMs - startTimeMs) + "ms");
-                    }
-                    catch (final InterruptedException e)
-                    {
-                        System.out.println("[" + pid() + "] Unexpected exception waiting on exit code");
-                        e.printStackTrace(System.out);
-                    }
-                });
+                        try
+                        {
+                            final int exitCode = process.waitFor();
+                            final long endTimeMs = System.currentTimeMillis();
+                            System.out.println(
+                                "[" + pid() + "] Exited with code: " + exitCode +
+                                " after: " + (endTimeMs - startTimeMs) + "ms");
+                        }
+                        catch (final InterruptedException e)
+                        {
+                            System.out.println("[" + pid() + "] Unexpected exception waiting on exit code");
+                            e.printStackTrace(System.out);
+                        }
+                    });
                 processMonitorThread.start();
 
                 return State.RUNNING;

@@ -146,19 +146,18 @@ final class LogReplication
     {
         if (correlationId == replicationId)
         {
-            switch (signal)
+            if (RecordingSignal.EXTEND == signal)
             {
-                case EXTEND:
-                    final CountersReader counters = archive.context().aeron().countersReader();
-                    recordingPositionCounterId = RecordingPos.findCounterIdByRecording(counters, recordingId);
-                    break;
-
-                case DELETE:
-                    throw new ClusterException("recording was deleted during replication: " + this);
-
-                case REPLICATE_END:
-                    isStopped = true;
-                    break;
+                final CountersReader counters = archive.context().aeron().countersReader();
+                recordingPositionCounterId = RecordingPos.findCounterIdByRecording(counters, recordingId);
+            }
+            else if (RecordingSignal.REPLICATE_END == signal)
+            {
+                isStopped = true;
+            }
+            else if (RecordingSignal.DELETE == signal)
+            {
+                throw new ClusterException("recording was deleted during replication: " + this);
             }
 
             this.recordingId = recordingId;

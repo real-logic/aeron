@@ -52,8 +52,7 @@ public class AeronEvent extends AeronException
      *
      * @return a reference to this {@link AeronEvent} instance.
      */
-    @SuppressWarnings("lgtm[java/non-sync-override]")
-    public Throwable fillInStackTrace()
+    public synchronized Throwable fillInStackTrace()
     {
         return this;
     }

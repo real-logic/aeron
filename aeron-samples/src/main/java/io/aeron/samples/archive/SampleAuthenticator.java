@@ -129,6 +129,9 @@ public final class SampleAuthenticator implements Authenticator
         {
             switch (sessionState)
             {
+                case CHALLENGE:
+                    break;
+
                 case AUTHENTICATED:
                     sessionProxy.authenticate(ArrayUtil.EMPTY_BYTE_ARRAY);
                     break;

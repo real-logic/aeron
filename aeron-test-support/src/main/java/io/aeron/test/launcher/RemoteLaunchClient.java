@@ -15,6 +15,8 @@
  */
 package io.aeron.test.launcher;
 
+import io.aeron.driver.Configuration;
+
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -60,6 +62,7 @@ public final class RemoteLaunchClient implements AutoCloseable
         final ObjectOutputStream out = new ObjectOutputStream(Channels.newOutputStream(clientChannel));
         out.writeObject(command);
         out.flush();
+
         clientChannel.configureBlocking(usingBlockingIo);
 
         return clientChannel;
@@ -69,7 +72,8 @@ public final class RemoteLaunchClient implements AutoCloseable
     {
         try (ReadableByteChannel commandResponse = execute(command))
         {
-            final ByteBuffer buffer = ByteBuffer.allocate(4096);
+            final ByteBuffer buffer = ByteBuffer.allocate(Configuration.filePageSize());
+
             while (commandResponse.isOpen())
             {
                 final int read = commandResponse.read(buffer);

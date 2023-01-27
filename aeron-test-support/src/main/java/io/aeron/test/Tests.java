@@ -34,8 +34,16 @@ import org.junit.jupiter.api.extension.TestWatcher;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
@@ -709,6 +717,82 @@ public class Tests
             }
 
             Tests.yield();
+        }
+    }
+
+    public static void printDirectoryContents(final String directoryName, final PrintStream out) throws IOException
+    {
+        printDirectoryContents(Paths.get(directoryName), out);
+    }
+
+    public static void printDirectoryContents(
+        final Path path,
+        final PrintStream out) throws IOException
+    {
+        Files.walkFileTree(path, new PrintingFileVisitor(out));
+    }
+
+    private static void pad(final int indent, final PrintStream out)
+    {
+        if (0 != indent)
+        {
+            out.printf("%" + indent + "s", "");
+        }
+    }
+
+    private static class PrintingFileVisitor implements FileVisitor<Path>
+    {
+        private final PrintStream out;
+        private int indent = 0;
+
+        PrintingFileVisitor(final PrintStream out)
+        {
+            this.out = out;
+        }
+
+        public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs) throws IOException
+        {
+            pad(indent, out);
+            out.println("[" + dir.toAbsolutePath() + "]");
+
+            if (Files.isSymbolicLink(dir))
+            {
+                return FileVisitResult.SKIP_SUBTREE;
+            }
+            else
+            {
+                indent += 2;
+                return FileVisitResult.CONTINUE;
+            }
+        }
+
+        public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException
+        {
+            if (Files.isSymbolicLink(file))
+            {
+                final Path dest = Files.readSymbolicLink(file);
+                pad(indent, out);
+                out.println(file.getName(file.getNameCount() - 1) + " -> " + dest.toAbsolutePath());
+                return FileVisitResult.SKIP_SUBTREE;
+            }
+            else
+            {
+                pad(indent, out);
+                final long size = Files.size(file);
+                out.printf("%-40s %10d%n", file.getName(file.getNameCount() - 1), size);
+                return FileVisitResult.CONTINUE;
+            }
+        }
+
+        public FileVisitResult visitFileFailed(final Path file, final IOException exc) throws IOException
+        {
+            return FileVisitResult.CONTINUE;
+        }
+
+        public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException
+        {
+            indent -= 2;
+            return FileVisitResult.CONTINUE;
         }
     }
 }

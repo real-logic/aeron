@@ -84,6 +84,8 @@ class GapFillLossTest
             Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID);
             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
+            watcher.dataCollector().add(mediaDriver.context().aeronDirectory());
+
             final Subscriber subscriber = new Subscriber(subscription);
             final Thread subscriberThread = new Thread(subscriber);
             subscriberThread.setDaemon(true);
@@ -105,10 +107,6 @@ class GapFillLossTest
 
             verifyLossOccurredForStream(ctx.aeronDirectoryName(), STREAM_ID);
             assertThat(subscriber.messageCount, lessThan(NUM_MESSAGES));
-        }
-        finally
-        {
-            ctx.deleteDirectory();
         }
     }
 

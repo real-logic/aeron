@@ -64,6 +64,7 @@ class CounterTest
                 .errorHandler(Tests::onError)
                 .threadingMode(ThreadingMode.SHARED),
             testWatcher);
+        testWatcher.dataCollector().add(driver.context().aeronDirectory());
 
         clientA = Aeron.connect();
         clientB = Aeron.connect();

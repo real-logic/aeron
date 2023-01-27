@@ -29,6 +29,7 @@ import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -71,11 +72,16 @@ class PublishFromArbitraryPositionTest
         }
     };
 
+    @BeforeEach
+    void setUp()
+    {
+        testWatcher.dataCollector().add(driver.context().aeronDirectory());
+    }
+
     @AfterEach
     void after()
     {
         CloseHelper.closeAll(aeron, driver);
-        driver.context().deleteDirectory();
     }
 
     @Test

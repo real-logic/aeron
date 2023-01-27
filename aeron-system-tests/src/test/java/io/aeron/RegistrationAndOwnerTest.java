@@ -64,6 +64,8 @@ class RegistrationAndOwnerTest
             Publication publication = aeron.addPublication(channel, STREAM_ID);
             Counter userCounter = aeron.addCounter(1002, "Test Counter"))
         {
+            testWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());
+
             awaitConnected(subscription);
             awaitConnected(publication);
 
@@ -80,10 +82,6 @@ class RegistrationAndOwnerTest
                 publication.registrationId(), countersReader.getCounterRegistrationId(publication.positionLimitId()));
 
             assertEquals(userCounter.registrationId(), countersReader.getCounterRegistrationId(userCounter.id()));
-        }
-        finally
-        {
-            ctx.deleteDirectory();
         }
     }
 }

@@ -81,6 +81,8 @@ class ClientErrorHandlerTest
             Subscription subscriptionOne = aeronOne.addSubscription(CHANNEL, STREAM_ID);
             Subscription subscriptionTwo = aeronTwo.addSubscription(CHANNEL, STREAM_ID))
         {
+            testWatcher.dataCollector().add(ctx.aeronDirectory());
+
             awaitConnected(subscriptionOne);
             awaitConnected(subscriptionTwo);
 
@@ -122,10 +124,6 @@ class ClientErrorHandlerTest
             }
 
             verify(mockErrorHandlerTwo, never()).onError(any());
-        }
-        finally
-        {
-            ctx.deleteDirectory();
         }
     }
 }

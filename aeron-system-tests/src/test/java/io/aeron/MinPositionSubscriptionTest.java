@@ -26,6 +26,7 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -51,11 +52,16 @@ class MinPositionSubscriptionTest
 
     private final Aeron aeron = Aeron.connect();
 
+    @BeforeEach
+    void setUp()
+    {
+        testWatcher.dataCollector().add(driver.context().aeronDirectory());
+    }
+
     @AfterEach
     void after()
     {
         CloseHelper.closeAll(aeron, driver);
-        driver.context().deleteDirectory();
     }
 
     @InterruptAfter(10)

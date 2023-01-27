@@ -64,6 +64,8 @@ class ResolvedEndpointSystemTest
             .threadingMode(ThreadingMode.SHARED);
 
         driver = TestMediaDriver.launch(context, testWatcher);
+        testWatcher.dataCollector().add(driver.context().aeronDirectory());
+
         client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
     }
 
@@ -71,10 +73,6 @@ class ResolvedEndpointSystemTest
     void after()
     {
         CloseHelper.closeAll(client, driver);
-        if (null != driver)
-        {
-            driver.context().deleteDirectory();
-        }
     }
 
     @Test

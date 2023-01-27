@@ -19,6 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -28,6 +29,7 @@ import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -66,6 +68,9 @@ class StopStartSecondSubscriberTest
     private final MutableInteger subTwoCount = new MutableInteger();
     private final FragmentHandler fragmentHandlerTwo = (buffer, offset, length, header) -> subTwoCount.value++;
 
+    @RegisterExtension
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
+
     private void launch(final String channelOne, final int streamOne, final String channelTwo, final int streamTwo)
     {
         driverOne = MediaDriver.launchEmbedded(
@@ -73,12 +78,14 @@ class StopStartSecondSubscriberTest
                 .dirDeleteOnStart(true)
                 .errorHandler(Tests::onError)
                 .termBufferSparseFile(true));
+        testWatcher.dataCollector().add(driverOne.context().aeronDirectory());
 
         driverTwo = MediaDriver.launchEmbedded(
             new MediaDriver.Context()
                 .dirDeleteOnStart(true)
                 .errorHandler(Tests::onError)
                 .termBufferSparseFile(true));
+        testWatcher.dataCollector().add(driverTwo.context().aeronDirectory());
 
         publisherOne = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverOne.aeronDirectoryName()));
         subscriberOne = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverTwo.aeronDirectoryName()));
@@ -101,9 +108,6 @@ class StopStartSecondSubscriberTest
             publisherTwo,
             driverOne,
             driverTwo);
-
-        driverOne.context().deleteDirectory();
-        driverTwo.context().deleteDirectory();
     }
 
     @Test

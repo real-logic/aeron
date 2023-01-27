@@ -28,6 +28,7 @@ import org.agrona.ErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,11 +73,17 @@ class SessionSpecificPublicationTest
     private final TestMediaDriver mediaDriver = TestMediaDriver.launch(mediaDriverContext, testWatcher);
     private final Aeron aeron = Aeron.connect();
 
+    @BeforeEach
+    void setUp()
+    {
+        testWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());
+        testWatcher.ignoreErrorsMatching(s -> true);
+    }
+
     @AfterEach
     void after()
     {
         CloseHelper.closeAll(aeron, mediaDriver);
-        mediaDriver.context().deleteDirectory();
     }
 
     @ParameterizedTest

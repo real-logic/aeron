@@ -55,11 +55,9 @@ class TermBufferLengthTest
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
             Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
+            testWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());
+
             assertEquals(expectedTermBufferLength, publication.termBufferLength());
-        }
-        finally
-        {
-            ctx.deleteDirectory();
         }
     }
 }

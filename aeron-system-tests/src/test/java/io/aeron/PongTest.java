@@ -70,6 +70,7 @@ class PongTest
                 .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
                 .threadingMode(ThreadingMode.SHARED),
             testWatcher);
+        testWatcher.dataCollector().add(driver.context().aeronDirectory());
 
         pingClient = Aeron.connect();
         pongClient = Aeron.connect();
@@ -85,7 +86,6 @@ class PongTest
     void after()
     {
         CloseHelper.closeAll(pongClient, pingClient, driver);
-        driver.context().deleteDirectory();
     }
 
     @Test

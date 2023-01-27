@@ -72,6 +72,8 @@ class ChannelValidationTests
     {
         driver = TestMediaDriver.launch(context, watcher);
         aeron = Aeron.connect();
+        watcher.dataCollector().add(driver.context().aeronDirectory());
+        watcher.ignoreErrorsMatching(s -> true);
     }
 
     @AfterEach
@@ -79,10 +81,6 @@ class ChannelValidationTests
     {
         CloseHelper.closeAll(closeables);
         CloseHelper.closeAll(aeron, driver);
-        if (null != driver)
-        {
-            driver.context().deleteDirectory();
-        }
     }
 
     @Test

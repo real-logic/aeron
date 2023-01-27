@@ -29,6 +29,7 @@ import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,11 +69,16 @@ class PublicationUnblockTest
     private final Aeron aeron = Aeron.connect(new Aeron.Context()
         .keepAliveIntervalNs(TimeUnit.MILLISECONDS.toNanos(100)));
 
+    @BeforeEach
+    void setUp()
+    {
+        testWatcher.dataCollector().add(driver.context().aeronDirectory());
+    }
+
     @AfterEach
     void after()
     {
         CloseHelper.closeAll(aeron, driver);
-        driver.context().deleteDirectory();
     }
 
     @ParameterizedTest

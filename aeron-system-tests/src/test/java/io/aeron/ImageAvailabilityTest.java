@@ -24,6 +24,7 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,11 +63,16 @@ class ImageAvailabilityTest
         .useConductorAgentInvoker(true)
         .errorHandler(Tests::onError));
 
+    @BeforeEach
+    void setUp()
+    {
+        testWatcher.dataCollector().add(driver.context().aeronDirectory());
+    }
+
     @AfterEach
     void after()
     {
         CloseHelper.closeAll(aeron, driver);
-        driver.context().deleteDirectory();
     }
 
     @ParameterizedTest

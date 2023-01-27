@@ -47,6 +47,9 @@ class MediaDriverTestUtil
                     {
                         System.out.println();
                         System.out.println("Media Driver: " + aeronDirectoryName + ", exit code: " + files.exitValue);
+                        System.out.println();
+                        Tests.printDirectoryContents(aeronDirectoryName, System.out);
+                        System.out.println();
                         printEnvironment(files.environment, System.out);
                         System.out.println();
                         System.out.println("*** STDOUT ***");

@@ -24,6 +24,7 @@ import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.MutableReference;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -41,11 +42,16 @@ class ReentrantClientTest
         .dirDeleteOnStart(true),
         testWatcher);
 
+    @BeforeEach
+    void setUp()
+    {
+        testWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());
+    }
+
     @AfterEach
     void after()
     {
         CloseHelper.close(mediaDriver);
-        mediaDriver.context().deleteDirectory();
     }
 
     @Test

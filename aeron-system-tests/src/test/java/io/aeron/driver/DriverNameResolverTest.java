@@ -56,11 +56,6 @@ class DriverNameResolverTest
     {
         CloseHelper.closeAll(clients.values());
         CloseHelper.closeAll(drivers.values());
-
-        for (final TestMediaDriver driver : drivers.values())
-        {
-            driver.context().deleteDirectory();
-        }
     }
 
     @Test
@@ -530,5 +525,6 @@ class DriverNameResolverTest
     {
         final String name = testMediaDriver.context().resolverName();
         drivers.put(name, testMediaDriver);
+        testWatcher.dataCollector().add(testMediaDriver.context().aeronDirectory());
     }
 }

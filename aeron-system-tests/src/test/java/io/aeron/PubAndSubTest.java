@@ -23,7 +23,11 @@ import io.aeron.driver.ext.LossGenerator;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.RawBlockHandler;
-import io.aeron.test.*;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SlowTest;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -51,7 +55,13 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(InterruptingTestCallback.class)
 class PubAndSubTest
@@ -93,6 +103,8 @@ class PubAndSubTest
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
 
         driver = TestMediaDriver.launch(context, watcher);
+        watcher.dataCollector().add(driver.context().aeronDirectory());
+
         subscribingClient = Aeron.connect();
         publishingClient = Aeron.connect();
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);
@@ -103,10 +115,6 @@ class PubAndSubTest
     void after()
     {
         CloseHelper.closeAll(publishingClient, subscribingClient, driver);
-        if (null != driver)
-        {
-            driver.context().deleteDirectory();
-        }
     }
 
     @ParameterizedTest

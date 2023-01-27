@@ -122,6 +122,10 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                         listener.onLoadEndSnapshot(buffer, offset, length);
                         isDone = true;
                         return Action.BREAK;
+
+                    case SECTION:
+                    case NULL_VAL:
+                        break;
                 }
                 break;
 

@@ -282,6 +282,9 @@ public final class ClusterBackupAgent implements Agent
                 case RESET_BACKUP:
                     workCount += resetBackup(nowMs);
                     break;
+
+                case CLOSED:
+                    return workCount;
             }
 
             if (hasProgressStalled(nowMs))

@@ -54,7 +54,7 @@ public class ProvisioningMessage
         synchronized (mutex)
         {
             result = value;
-            mutex.notify();
+            mutex.notifyAll();
         }
     }
 }

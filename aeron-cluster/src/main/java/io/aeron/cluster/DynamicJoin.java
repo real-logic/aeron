@@ -133,6 +133,9 @@ final class DynamicJoin
             case JOIN_CLUSTER:
                 workCount += joinCluster(nowNs);
                 break;
+
+            case DONE:
+                break;
         }
 
         return workCount;

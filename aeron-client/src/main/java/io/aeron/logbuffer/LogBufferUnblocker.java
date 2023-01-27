@@ -59,6 +59,9 @@ public class LogBufferUnblocker
 
         switch (TermUnblocker.unblock(logMetaDataBuffer, termBuffer, blockedOffset, tailOffset, termId))
         {
+            case NO_ACTION:
+                break;
+
             case UNBLOCKED_TO_END:
                 rotateLog(logMetaDataBuffer, blockedTermCount, termId);
                 return true;

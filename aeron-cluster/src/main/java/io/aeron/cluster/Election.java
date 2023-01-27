@@ -227,6 +227,9 @@ class Election
             case FOLLOWER_READY:
                 workCount += followerReady(nowNs);
                 break;
+
+            case CLOSED:
+                break;
         }
 
         return workCount;

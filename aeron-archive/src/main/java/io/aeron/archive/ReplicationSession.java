@@ -230,6 +230,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 case ATTEMPT_LIVE_JOIN:
                     workCount += attemptLiveJoin();
                     break;
+
+                case DONE:
+                    break;
             }
         }
         catch (final Exception ex)

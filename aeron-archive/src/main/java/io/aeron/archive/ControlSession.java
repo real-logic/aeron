@@ -191,6 +191,9 @@ final class ControlSession implements Session
             case INACTIVE:
                 state(State.DONE);
                 break;
+
+            case DONE:
+                break;
         }
 
         return workCount;

@@ -5,8 +5,11 @@ queries:
 
 query-filters:
   - exclude:
-      id: java/unused-reference-type
+    id: java/unused-reference-type
   - exclude:
-      id: java/missing-override-annotation
+    id: java/missing-override-annotation
   - exclude:
-      id: cpp/unsigned-comparison-zero
+    id: cpp/unsigned-comparison-zero
+  - exclude:
+    id: cpp/poorly-documented-function
+        

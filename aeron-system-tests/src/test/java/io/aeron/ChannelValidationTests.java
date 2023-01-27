@@ -57,7 +57,7 @@ class ChannelValidationTests
     private final MediaDriver.Context context = new MediaDriver.Context();
     {
         context
-            .errorHandler(ignore -> {})
+            .errorHandler((ignore) -> {})
             .dirDeleteOnStart(true)
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
@@ -73,7 +73,7 @@ class ChannelValidationTests
         driver = TestMediaDriver.launch(context, watcher);
         aeron = Aeron.connect();
         watcher.dataCollector().add(driver.context().aeronDirectory());
-        watcher.ignoreErrorsMatching(s -> true);
+        watcher.ignoreErrorsMatching((s) -> true);
     }
 
     @AfterEach
@@ -283,13 +283,13 @@ class ChannelValidationTests
             defaultOsSocketSndbufLength = channel.getOption(StandardSocketOptions.SO_SNDBUF);
         }
 
-        assumeTrue(
-            defaultOsSocketSndbufLength < Configuration.MAX_UDP_PAYLOAD_LENGTH,
-            "OS buffer sizes to big (use sudo sysctl net.core.wmem_default=8192 to verify)");
-
         final int desiredMaxMessageLength = 2 * defaultOsSocketSndbufLength;
         assumeTrue(
             desiredMaxMessageLength < FrameDescriptor.MAX_MESSAGE_LENGTH,
+            "OS buffer sizes to big (use sudo sysctl net.core.wmem_default=8192 to verify)");
+
+        assumeTrue(
+            defaultOsSocketSndbufLength < Configuration.MAX_UDP_PAYLOAD_LENGTH,
             "OS buffer sizes to big (use sudo sysctl net.core.wmem_default=8192 to verify)");
 
         final int termLength = BitUtil.findNextPositivePowerOfTwo(desiredMaxMessageLength * 8);
@@ -337,13 +337,13 @@ class ChannelValidationTests
             defaultOsSocketRcvbufLength = channel.getOption(StandardSocketOptions.SO_RCVBUF);
         }
 
-        assumeTrue(
-            defaultOsSocketRcvbufLength < Configuration.MAX_UDP_PAYLOAD_LENGTH,
-            "OS buffer sizes to big (use sudo sysctl net.core.rmem_default=8192 to verify)");
-
         final int desiredMaxMessageLength = 2 * defaultOsSocketRcvbufLength;
         assumeTrue(
             desiredMaxMessageLength < FrameDescriptor.MAX_MESSAGE_LENGTH,
+            "OS buffer sizes to big (use sudo sysctl net.core.rmem_default=8192 to verify)");
+
+        assumeTrue(
+            defaultOsSocketRcvbufLength < Configuration.MAX_UDP_PAYLOAD_LENGTH,
             "OS buffer sizes to big (use sudo sysctl net.core.rmem_default=8192 to verify)");
 
         final int termLength = BitUtil.findNextPositivePowerOfTwo(desiredMaxMessageLength * 8);

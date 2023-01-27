@@ -320,6 +320,10 @@ TEST_F(CErrorsTest, subscriptionErrorIncludesClientAndDriverErrorAndReportsInDis
 
 TEST_F(CErrorsTest, counterErrorIncludesClientAndDriverErrorAndReportsInDistinctLog)
 {
+#if !defined(__linux__)
+    GTEST_SKIP();
+#endif
+
     aeron_t *aeron = connect();
     aeron_async_add_counter_t *counter_async = nullptr;
     aeron_counter_t *counter = nullptr;
@@ -361,10 +365,6 @@ TEST_F(CErrorsTest, counterErrorIncludesClientAndDriverErrorAndReportsInDistinct
 
 TEST_F(CErrorsTest, destinationErrorIncludesClientAndDriverErrorAndReportsInDistinctLog)
 {
-#if !defined(__linux__)
-    GTEST_SKIP();
-#endif
-
     aeron_t *aeron = connect();
     aeron_async_add_exclusive_publication_t *pub_async = nullptr;
     aeron_async_destination_t *dest_async = nullptr;

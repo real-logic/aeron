@@ -8,11 +8,21 @@ on:
     branches:
       - master
       - release/**
+    paths-ignore:
+      - '**/thirdparty/*'
+      - '**/generated/*'
+      - '**/generated-src/*'
+      - '**/generated-test/*'
   pull_request:
     types: [opened, synchronize]
     branches:
       - master
       - release/**
+    paths-ignore:
+      - '**/thirdparty/*'
+      - '**/generated/*'
+      - '**/generated-src/*'
+      - '**/generated-test/*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

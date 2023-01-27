@@ -9,5 +9,14 @@ query-filters:
   - exclude:
       id: java/missing-override-annotation
 
-paths-ignore:
-  - '**/_lgtm_build_dir/**/*'
+paths:
+  - aeron-agent
+  - aeron-all
+  - aeron-archive
+  - aeron-client
+  - aeron-cluster
+  - aeron-driver
+  - aeron-samples
+  - aeron-system-tests
+  - aeron-test-support
+  - buildSrc

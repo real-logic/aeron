@@ -1466,6 +1466,7 @@ public final class DriverConductor implements Agent
 
                 validateMtuForSndbuf(
                     params, channelEndpoint.socketSndbufLength(), ctx, udpChannel.originalUriString(), null);
+
                 sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
                 senderProxy.registerSendChannelEndpoint(channelEndpoint);
             }

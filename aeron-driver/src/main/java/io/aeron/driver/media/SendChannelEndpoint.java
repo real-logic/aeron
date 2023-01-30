@@ -30,6 +30,7 @@ import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.status.LocalSocketAddressStatus;
+import org.agrona.CloseHelper;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -213,17 +214,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public void closeIndicators()
     {
-        statusIndicator.close();
-
-        if (null != localSocketAddressIndicator)
-        {
-            localSocketAddressIndicator.close();
-        }
-
-        if (null != mdcDestinationsCounter)
-        {
-            mdcDestinationsCounter.close();
-        }
+        CloseHelper.close(statusIndicator);
+        CloseHelper.close(localSocketAddressIndicator);
+        CloseHelper.close(mdcDestinationsCounter);
     }
 
     /**
@@ -548,7 +541,7 @@ abstract class MultiSndDestination extends MultiSndDestinationHotFields
 
     Destination[] destinations = EMPTY_DESTINATIONS;
     final CachedNanoClock nanoClock;
-    AtomicCounter destinationsCounter;
+    AtomicCounter destinationsCounter = null;
 
     MultiSndDestination(final CachedNanoClock nanoClock)
     {

@@ -39,6 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
@@ -47,8 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -67,7 +67,6 @@ class ChannelEndpointStatusTest
     private static final int NUM_MESSAGES_PER_TERM = 64;
     private static final int MESSAGE_LENGTH =
         (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
-    private static final String ROOT_DIR = SystemUtil.tmpDirName() + "aeron-system-tests" + File.separator;
 
     private Aeron clientA;
     private Aeron clientB;
@@ -101,10 +100,10 @@ class ChannelEndpointStatusTest
     final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @BeforeEach
-    void before()
+    void before(@TempDir final File tempDir)
     {
-        final String baseDirA = ROOT_DIR + "A";
-        final String baseDirB = ROOT_DIR + "B";
+        final String baseDirA = new File(tempDir, "A").getAbsolutePath();
+        final String baseDirB = new File(tempDir, "B").getAbsolutePath();
 
         buffer.putInt(0, 1);
 
@@ -122,6 +121,10 @@ class ChannelEndpointStatusTest
 
         driverA = TestMediaDriver.launch(driverAContext, testWatcher);
         driverB = TestMediaDriver.launch(driverBContext, testWatcher);
+
+        testWatcher.dataCollector().add(driverA.context().aeronDirectory());
+        testWatcher.dataCollector().add(driverB.context().aeronDirectory());
+        testWatcher.ignoreErrorsMatching((s) -> true);
 
         clientA = Aeron.connect(
             new Aeron.Context()
@@ -143,7 +146,6 @@ class ChannelEndpointStatusTest
     void after()
     {
         CloseHelper.closeAll(clientC, clientB, clientA, driverB, driverA);
-        IoUtil.delete(new File(ROOT_DIR), true);
     }
 
     @Test

@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
+@InterruptAfter(20)
 class ChannelEndpointStatusTest
 {
     private static final String URI = "aeron:udp?endpoint=localhost:23456";
@@ -146,14 +147,12 @@ class ChannelEndpointStatusTest
     }
 
     @Test
-    @InterruptAfter(10)
     void shouldErrorBadUri()
     {
         assertThrows(RegistrationException.class, () -> clientA.addSubscription("bad uri", STREAM_ID));
     }
 
     @Test
-    @InterruptAfter(10)
     void shouldBeAbleToQueryChannelStatusForSubscription()
     {
         final Subscription subscription = clientA.addSubscription(URI, STREAM_ID);
@@ -168,7 +167,6 @@ class ChannelEndpointStatusTest
     }
 
     @Test
-    @InterruptAfter(10)
     void shouldBeAbleToQueryChannelStatusForPublication()
     {
         final Publication publication = clientA.addPublication(URI, STREAM_ID);

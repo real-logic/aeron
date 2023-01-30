@@ -481,7 +481,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         {
             mdcDestinationsCounter = MdcDestinations.allocate(
                 tempBuffer, countersManager, registrationId, originalUriString);
-            multiSndDestination.numDestinationsCounter(mdcDestinationsCounter);
+            multiSndDestination.destinationsCounter(mdcDestinationsCounter);
         }
     }
 
@@ -524,14 +524,31 @@ public class SendChannelEndpoint extends UdpChannelTransport
     }
 }
 
-abstract class MultiSndDestination
+abstract class MultiSndDestinationLhsPadding
 {
+    byte p000, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
+    byte p016, p017, p018, p019, p020, p021, p022, p023, p024, p025, p026, p027, p028, p029, p030, p031;
+    byte p032, p033, p034, p035, p036, p037, p038, p039, p040, p041, p042, p043, p044, p045, p046, p047;
+    byte p048, p049, p050, p051, p052, p053, p054, p055, p056, p057, p058, p059, p060, p061, p062, p063;
+}
+
+abstract class MultiSndDestinationHotFields extends MultiSndDestinationLhsPadding
+{
+    int roundRobinIndex = 0;
+}
+
+abstract class MultiSndDestination extends MultiSndDestinationHotFields
+{
+    byte p064, p065, p066, p067, p068, p069, p070, p071, p072, p073, p074, p075, p076, p077, p078, p079;
+    byte p080, p081, p082, p083, p084, p085, p086, p087, p088, p089, p090, p091, p092, p093, p094, p095;
+    byte p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
+    byte p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
+
     static final Destination[] EMPTY_DESTINATIONS = new Destination[0];
 
     Destination[] destinations = EMPTY_DESTINATIONS;
     final CachedNanoClock nanoClock;
-    int roundRobinIndex = 0;
-    AtomicCounter numDestinationsCounter;
+    AtomicCounter destinationsCounter;
 
     MultiSndDestination(final CachedNanoClock nanoClock)
     {
@@ -559,9 +576,9 @@ abstract class MultiSndDestination
     {
     }
 
-    void numDestinationsCounter(final AtomicCounter numDestinationsCounter)
+    void destinationsCounter(final AtomicCounter destinationsCounter)
     {
-        this.numDestinationsCounter = numDestinationsCounter;
+        this.destinationsCounter = destinationsCounter;
     }
 
     static int send(
@@ -675,8 +692,10 @@ class ManualSndMultiDestination extends MultiSndDestination
 
     void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
     {
-        destinations = ArrayUtil.add(destinations, new Destination(nanoClock.nanoTime(), channelUri, address));
-        numDestinationsCounter.setOrdered(destinations.length);
+        destinations = ArrayUtil.add(
+            destinations,
+            new Destination(nanoClock.nanoTime(), channelUri.get(CommonContext.ENDPOINT_PARAM_NAME), address));
+        destinationsCounter.setOrdered(destinations.length);
     }
 
     void removeDestination(final ChannelUri channelUri, final InetSocketAddress address)
@@ -706,7 +725,7 @@ class ManualSndMultiDestination extends MultiSndDestination
             }
         }
 
-        numDestinationsCounter.setOrdered(destinations.length);
+        destinationsCounter.setOrdered(destinations.length);
     }
 
     void checkForReResolution(
@@ -717,8 +736,7 @@ class ManualSndMultiDestination extends MultiSndDestination
             if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs < 0)
             {
                 destination.timeOfLastActivityNs = nowNs;
-                final String endpoint = destination.channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
-                conductorProxy.reResolveEndpoint(endpoint, channelEndpoint, destination.address);
+                conductorProxy.reResolveEndpoint(destination.endpoint, channelEndpoint, destination.address);
             }
         }
     }
@@ -727,7 +745,7 @@ class ManualSndMultiDestination extends MultiSndDestination
     {
         for (final Destination destination : destinations)
         {
-            if (endpoint.equals(destination.channelUri.get(CommonContext.ENDPOINT_PARAM_NAME)))
+            if (endpoint.equals(destination.endpoint))
             {
                 destination.address = newAddress;
                 destination.port = newAddress.getPort();
@@ -833,7 +851,7 @@ class DynamicSndMultiDestination extends MultiSndDestination
     private void add(final Destination destination)
     {
         destinations = ArrayUtil.add(destinations, destination);
-        numDestinationsCounter.setOrdered(destinations.length);
+        destinationsCounter.setOrdered(destinations.length);
     }
 
     private void truncateDestinations(final int removed)
@@ -850,7 +868,7 @@ class DynamicSndMultiDestination extends MultiSndDestination
             destinations = Arrays.copyOf(destinations, newLength);
         }
 
-        numDestinationsCounter.setOrdered(destinations.length);
+        destinationsCounter.setOrdered(destinations.length);
     }
 
     private void removeInactiveDestinations(final long nowNs)
@@ -884,24 +902,24 @@ final class Destination
     boolean isReceiverIdValid;
     int port;
     InetSocketAddress address;
-    final ChannelUri channelUri;
+    final String endpoint;
 
     Destination(final long nowNs, final long receiverId, final InetSocketAddress address)
     {
         this.timeOfLastActivityNs = nowNs;
         this.receiverId = receiverId;
         this.isReceiverIdValid = true;
-        this.channelUri = null;
+        this.endpoint = null;
         this.address = address;
         this.port = address.getPort();
     }
 
-    Destination(final long nowMs, final ChannelUri channelUri, final InetSocketAddress address)
+    Destination(final long nowMs, final String endpoint, final InetSocketAddress address)
     {
         this.timeOfLastActivityNs = nowMs;
         this.receiverId = 0;
         this.isReceiverIdValid = false;
-        this.channelUri = channelUri;
+        this.endpoint = endpoint;
         this.address = address;
         this.port = address.getPort();
     }

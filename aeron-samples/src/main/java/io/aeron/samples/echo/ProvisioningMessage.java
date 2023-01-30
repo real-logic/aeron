@@ -21,18 +21,18 @@ package io.aeron.samples.echo;
 public class ProvisioningMessage
 {
     private final Object mutex = new Object();
-    private volatile Object result = null;
+    private Object result = null;
 
     /**
      * Wait for provision message to be processed.
      *
-     * @throws InterruptedException if the thread is interrupted while waiting for the response
+     * @throws InterruptedException if the thread is interrupted while waiting for the response.
      */
     public void await() throws InterruptedException
     {
-        while (null == result)
+        synchronized (mutex)
         {
-            synchronized (mutex)
+            while (null == result)
             {
                 mutex.wait();
             }

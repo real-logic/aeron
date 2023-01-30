@@ -63,48 +63,8 @@ public class Provisioning implements ProvisioningMBean
         return workDone;
     }
 
-    private int pollEchoPairs()
-    {
-        int workDone = 0;
-        for (final EchoPair echoPair : echoPairByCorrelationId.values())
-        {
-            workDone += echoPair.poll();
-        }
-        return workDone;
-    }
-
-    private int pollProvisioningQueue()
-    {
-        int workDone = 0;
-        ProvisioningMessage poll;
-        while (null != (poll = provisioningMessageQ.poll()))
-        {
-            workDone++;
-
-            try
-            {
-                if (poll instanceof CreateEchoPair)
-                {
-                    handleCreateEchoPair((CreateEchoPair)poll);
-                }
-                else if (poll instanceof RemoveAllEchoPairs)
-                {
-                    handleRemoveAll((RemoveAllEchoPairs)poll);
-                }
-
-                poll.complete("OK");
-            }
-            catch (final Exception e)
-            {
-                poll.complete(e);
-            }
-
-        }
-        return workDone;
-    }
-
     /**
-     * Remove all existing echo pairs
+     * Remove all existing echo pairs.
      */
     public void removeAll()
     {
@@ -116,43 +76,20 @@ public class Provisioning implements ProvisioningMBean
         {
             removeAllEchoPairs.await();
         }
-        catch (final InterruptedException e)
+        catch (final InterruptedException ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
-    }
-
-    private void handleRemoveAll(final RemoveAllEchoPairs removeAll)
-    {
-        for (final EchoPair echoPair : echoPairByCorrelationId.values())
-        {
-            try
-            {
-                ManagementFactory.getPlatformMBeanServer().unregisterMBean(
-                    new ObjectName(ProvisioningConstants.echoPairObjectName(echoPair.correlationId())));
-            }
-            catch (final InstanceNotFoundException ignore)
-            {
-            }
-            catch (final MBeanRegistrationException | MalformedObjectNameException e)
-            {
-                e.printStackTrace();
-            }
-
-            CloseHelper.quietClose(echoPair);
-        }
-
-        echoPairByCorrelationId.clear();
     }
 
     /**
      * Create a pub/sub echo pair.
      *
-     * @param correlationId user specified correlationId to track the echo pair
-     * @param subChannel    channel used for subscription
-     * @param subStreamId   stream id used for subscription
-     * @param pubChannel    channel used for publication
-     * @param pubStreamId   stream id used for publication
+     * @param correlationId user specified correlationId to track the echo pair.
+     * @param subChannel    channel used for subscription.
+     * @param subStreamId   stream id used for subscription.
+     * @param pubChannel    channel used for publication.
+     * @param pubStreamId   stream id used for publication.
      */
     public void createEchoPair(
         final long correlationId,
@@ -174,9 +111,9 @@ public class Provisioning implements ProvisioningMBean
         {
             createEchoPair.await();
         }
-        catch (final InterruptedException e)
+        catch (final InterruptedException ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
     }
 
@@ -193,10 +130,10 @@ public class Provisioning implements ProvisioningMBean
                 create.subscriptionChannel,
                 create.subscriptionStream);
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
             CloseHelper.quietClose(publication);
-            throw e;
+            throw ex;
         }
 
         final EchoPair echoPair = new EchoPair(create.correlationId, subscription, publication);
@@ -209,12 +146,78 @@ public class Provisioning implements ProvisioningMBean
         catch (final InstanceAlreadyExistsException |
             MBeanRegistrationException |
             NotCompliantMBeanException |
-            MalformedObjectNameException e)
+            MalformedObjectNameException ex)
         {
             CloseHelper.quietCloseAll(subscription, publication);
-            throw e;
+            throw ex;
         }
 
         echoPairByCorrelationId.put(echoPair.correlationId(), echoPair);
+    }
+
+    private int pollEchoPairs()
+    {
+        int workDone = 0;
+
+        for (final EchoPair echoPair : echoPairByCorrelationId.values())
+        {
+            workDone += echoPair.poll();
+        }
+
+        return workDone;
+    }
+
+    private int pollProvisioningQueue()
+    {
+        int workDone = 0;
+        ProvisioningMessage poll;
+
+        while (null != (poll = provisioningMessageQ.poll()))
+        {
+            workDone++;
+
+            try
+            {
+                if (poll instanceof CreateEchoPair)
+                {
+                    handleCreateEchoPair((CreateEchoPair)poll);
+                }
+                else if (poll instanceof RemoveAllEchoPairs)
+                {
+                    handleRemoveAll();
+                }
+
+                poll.complete("OK");
+            }
+            catch (final Exception ex)
+            {
+                poll.complete(ex);
+            }
+        }
+
+        return workDone;
+    }
+
+    private void handleRemoveAll()
+    {
+        for (final EchoPair echoPair : echoPairByCorrelationId.values())
+        {
+            try
+            {
+                ManagementFactory.getPlatformMBeanServer().unregisterMBean(
+                    new ObjectName(ProvisioningConstants.echoPairObjectName(echoPair.correlationId())));
+            }
+            catch (final InstanceNotFoundException ignore)
+            {
+            }
+            catch (final MBeanRegistrationException | MalformedObjectNameException ex)
+            {
+                ex.printStackTrace();
+            }
+
+            CloseHelper.quietClose(echoPair);
+        }
+
+        echoPairByCorrelationId.clear();
     }
 }

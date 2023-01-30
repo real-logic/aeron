@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.Header;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
@@ -377,4 +378,38 @@ class TimestampingSystemTest
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
         }
     }
+
+final class Poller implements FragmentHandler
+{
+    private long lastMediaRcvTimestamp = 0;
+    private long lastChannelRcvTimestamp = 0;
+    private long lastChannelSndTimestamp = 0;
+
+    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    {
+
+        long mediaRcvTimestamp = lastChannelRcvTimestamp;
+        if (0 != header.reservedValue())
+        {
+            mediaRcvTimestamp = header.reservedValue();
+            lastMediaRcvTimestamp = mediaRcvTimestamp;
+        }
+
+        long channelRcvTimestamp = buffer.getLong(offset);
+        if (0 != header.reservedValue())
+        {
+            channelRcvTimestamp = header.reservedValue();
+            lastChannelRcvTimestamp = channelRcvTimestamp;
+        }
+
+        long channelSndTimestamp = buffer.getLong(offset + 8);
+        if (0 != header.reservedValue())
+        {
+            channelSndTimestamp = header.reservedValue();
+            lastChannelSndTimestamp = channelSndTimestamp;
+        }
+
+        // Do something with timestamps
+    }
+}
 }

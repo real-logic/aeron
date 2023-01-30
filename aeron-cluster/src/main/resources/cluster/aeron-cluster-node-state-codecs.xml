@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<!--
+Codec for the persistent local state of a cluster node.
+-->
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+                   package="io.aeron.cluster.codecs"
+                   id="112"
+                   version="10"
+                   semanticVersion="5.3"
+                   description="Message Codecs for communicating with, and within, an Aeron Cluster."
+                   byteOrder="littleEndian">
+    <types>
+        <composite name="messageHeader" description="Message identifiers and length of message root.">
+            <type name="blockLength"    primitiveType="uint16"/>
+            <type name="templateId"     primitiveType="uint16"/>
+            <type name="schemaId"       primitiveType="uint16"/>
+            <type name="version"        primitiveType="uint16"/>
+        </composite>
+        <composite name="groupSizeEncoding" description="Repeating group dimensions.">
+            <type name="blockLength"    primitiveType="uint16"/>
+            <type name="numInGroup"     primitiveType="uint16"/>
+        </composite>
+        <composite name="varAsciiEncoding" description="Variable length ASCII string header.">
+            <type name="length"         primitiveType="uint32" maxValue="1073741824"/>
+            <type name="varData"        primitiveType="uint8" length="0" characterEncoding="US-ASCII"/>
+        </composite>
+        <composite name="varDataEncoding" description="Variable length data blob header.">
+            <type name="length"         primitiveType="uint32" maxValue="1073741824"/>
+            <type name="varData"        primitiveType="uint8" length="0"/>
+        </composite>
+        <composite name="sofh">
+            <type name="messageLength" primitiveType="uint32"/>
+            <type name="encodingType" primitiveType="uint32"/>
+        </composite>
+        <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
+    </types>
+
+    <sbe:message name="nodeStateHeader" id="300">
+        <field name="version" id="1" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="candidateTermId" id="301">
+        <field name="candidateTermId"   id="1" type="int64"/>
+        <field name="timestamp"         id="2" type="time_t"/>
+        <field name="logPosition"       id="3" type="int64"/>
+    </sbe:message>
+
+</sbe:messageSchema>

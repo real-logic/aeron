@@ -59,7 +59,7 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
         final File archiveDir)
     {
         try (FileChannel ignore = MigrationUtils.createMigrationTimestampFile(
-            archiveDir, markFile.decoder().version(), minimumVersion()))
+            archiveDir, catalog.version(), minimumVersion()))
         {
             catalog.forEach(
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, encoder, decoder) ->

@@ -15,11 +15,18 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.codecs.node.NodeStateHeaderEncoder;
+import io.aeron.cluster.service.ClusterMarkFile;
+import org.agrona.IoUtil;
+import org.agrona.SemanticVersion;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.MappedByteBuffer;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,5 +64,28 @@ class NodeStateFileTest
             assertEquals(timestampMs, nodeStateFile.candidateTerm().timestamp());
             assertEquals(logPosition, nodeStateFile.candidateTerm().logPosition());
         }
+    }
+
+    @Test
+    void shouldThrowIfVersionMismatch(@TempDir final File archiveDir) throws IOException
+    {
+        try (NodeStateFile ignore = new NodeStateFile(archiveDir, true))
+        {
+            Objects.requireNonNull(ignore);
+        }
+
+        final int invalidVersion = SemanticVersion.compose(
+            ClusterMarkFile.MAJOR_VERSION + 1, ClusterMarkFile.MINOR_VERSION, ClusterMarkFile.PATCH_VERSION);
+        forceVersion(archiveDir, invalidVersion);
+
+        assertThrows(ClusterException.class, () -> new NodeStateFile(archiveDir, false));
+    }
+
+    private void forceVersion(final File archiveDir, final int semanticVersion)
+    {
+        final MappedByteBuffer buffer = IoUtil.mapExistingFile(
+            new File(archiveDir, NodeStateFile.FILENAME), "test node state file");
+        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(buffer);
+        unsafeBuffer.putInt(NodeStateHeaderEncoder.versionEncodingOffset(), semanticVersion);
     }
 }

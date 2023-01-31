@@ -181,7 +181,8 @@ public final class ClusterMarkFile implements AutoCloseable
             {
                 if (SemanticVersion.major(version) != MAJOR_VERSION)
                 {
-                    throw new ClusterException("mark file major version " + SemanticVersion.major(version) +
+                    throw new ClusterException(
+                        "mark file major version " + SemanticVersion.major(version) +
                         " does not match software: " + MAJOR_VERSION);
                 }
             },

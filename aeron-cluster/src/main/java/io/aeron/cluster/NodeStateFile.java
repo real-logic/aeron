@@ -16,9 +16,11 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.node.*;
 import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.IoUtil;
+import org.agrona.SemanticVersion;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -101,7 +103,7 @@ public class NodeStateFile implements AutoCloseable
         {
             if (!createNew)
             {
-                throw new IOException("NodeStateFile does not existing and createNew=false");
+                throw new IOException("NodeStateFile does not exist and createNew=false");
             }
 
             this.mappedFile = IoUtil.mapNewFile(nodeStateFile, MINIMUM_FILE_LENGTH);
@@ -118,12 +120,17 @@ public class NodeStateFile implements AutoCloseable
 
     private void loadInitialState()
     {
-        nodeStateHeaderEncoder.wrap(buffer, 0);
         nodeStateHeaderDecoder.wrap(
             buffer, 0, NodeStateHeaderDecoder.BLOCK_LENGTH, NodeStateHeaderDecoder.SCHEMA_VERSION);
+        nodeStateHeaderEncoder.wrap(buffer, 0);
 
-        // TODO: version check
-//        nodeStateHeaderEncoder.version(ClusterMarkFile.SEMANTIC_VERSION);
+        final int version = nodeStateHeaderDecoder.version();
+        if (ClusterMarkFile.MAJOR_VERSION != SemanticVersion.major(version))
+        {
+            throw new ClusterException(
+                "mark file major version " + SemanticVersion.major(version) +
+                " does not match software: " + ClusterMarkFile.MAJOR_VERSION);
+        }
 
         final int nodeStateOffset = scanForMessageTypeOffset(
             nodeStateHeaderEncoder.sbeBlockLength(), CandidateTermDecoder.TEMPLATE_ID);
@@ -168,24 +175,24 @@ public class NodeStateFile implements AutoCloseable
         nodeStateHeaderEncoder.wrap(buffer, 0);
         nodeStateHeaderDecoder.wrap(
             buffer, 0, NodeStateHeaderDecoder.BLOCK_LENGTH, NodeStateHeaderDecoder.SCHEMA_VERSION);
+
         nodeStateHeaderEncoder.version(ClusterMarkFile.SEMANTIC_VERSION);
 
-        final int firstMessageOffset = nodeStateHeaderEncoder.sbeBlockLength();
-
+        final int firstFramingHeaderOffset = nodeStateHeaderEncoder.sbeBlockLength();
         // Set candidateTermId
-        simpleOpenFramingHeaderEncoder.wrap(buffer, firstMessageOffset);
+        simpleOpenFramingHeaderEncoder.wrap(buffer, firstFramingHeaderOffset);
         simpleOpenFramingHeaderDecoder.wrap(
             buffer,
-            firstMessageOffset,
+            firstFramingHeaderOffset,
             SimpleOpenFramingHeaderDecoder.BLOCK_LENGTH,
             SimpleOpenFramingHeaderDecoder.SCHEMA_VERSION);
 
         simpleOpenFramingHeaderEncoder.encodingType(CandidateTermDecoder.SCHEMA_ID);
 
         candidateTermEncoder.wrapAndApplyHeader(
-            buffer, firstMessageOffset + simpleOpenFramingHeaderEncoder.sbeBlockLength(), messageHeaderEncoder);
+            buffer, firstFramingHeaderOffset + simpleOpenFramingHeaderEncoder.sbeBlockLength(), messageHeaderEncoder);
         candidateTermDecoder.wrapAndApplyHeader(
-            buffer, firstMessageOffset + simpleOpenFramingHeaderEncoder.sbeBlockLength(), messageHeaderDecoder);
+            buffer, firstFramingHeaderOffset + simpleOpenFramingHeaderEncoder.sbeBlockLength(), messageHeaderDecoder);
 
         updateCandidateTermId(Aeron.NULL_VALUE, Aeron.NULL_VALUE, Aeron.NULL_VALUE);
 
@@ -226,6 +233,11 @@ public class NodeStateFile implements AutoCloseable
     public CandidateTerm candidateTerm()
     {
         return candidateTerm;
+    }
+
+    void forceVersion(final int semanticVersion)
+    {
+        nodeStateHeaderEncoder.version(semanticVersion);
     }
 
     /**

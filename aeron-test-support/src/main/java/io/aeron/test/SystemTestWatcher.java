@@ -46,7 +46,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -82,7 +81,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     private ArrayList<AutoCloseable> closeables = new ArrayList<>();
     private boolean skipDeleteOnFailure = false;
     private long startTimeNs;
-    private Throwable error;
+    private long endTimeNs;
 
     public SystemTestWatcher cluster(final TestCluster testCluster)
     {
@@ -139,15 +138,19 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     public void beforeTestExecution(final ExtensionContext context) throws Exception
     {
-        error = null;
         startTimeNs = System.nanoTime();
     }
 
     public void afterTestExecution(final ExtensionContext context)
     {
-        final long endTimeNs = System.nanoTime();
-        final boolean interrupted = Thread.interrupted();
-        error = context.getExecutionException()
+        endTimeNs = System.nanoTime();
+        Thread.interrupted(); // clean the interrupted flag so that it does not prevent cleanup in the tests
+    }
+
+    public void afterEach(final ExtensionContext context)
+    {
+        Thread.interrupted(); // clean the interrupted flag
+        Throwable error = context.getExecutionException()
             .filter(t -> !(t instanceof TestAbortedException))
             .orElse(null);
         try
@@ -175,7 +178,8 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                     context.getTestMethod().map(Method::getName).orElse("unknown");
                 System.out.println("*** " + test + " failed in " +
                     NANOSECONDS.toMillis(endTimeNs - startTimeNs) + " ms, cause: " + error);
-                reportAndTerminate(test);
+                final Throwable terminateError = reportAndTerminate(test);
+                error = setOrUpdateError(error, terminateError);
                 mediaDriverTestUtil.testFailed();
             }
             else
@@ -186,11 +190,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
         finally
         {
-            if (interrupted)
-            {
-                Thread.currentThread().interrupt();
-            }
-
+            deleteAllLocations(error);
             if (null != error)
             {
                 LangUtil.rethrowUnchecked(error);
@@ -198,26 +198,15 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
     }
 
-    public void afterEach(final ExtensionContext context)
-    {
-        // delete the files after the user-defined @AfterEach methods executed allowing them to be properly closed
-        deleteAllLocations();
-    }
-
     private void filterErrors(final MutableInteger count, final StringBuilder errors)
     {
-        filterCncFileErrors(dataCollector.cncFiles(), logFilter, CommonContext::errorLogBuffer, count, errors);
-        filterArchiveMarkFileErrors(dataCollector.archiveMarkFiles(), logFilter, count, errors);
-        filterClusterMarkFileErrors(dataCollector.consensusModuleMarkFiles(), logFilter, count, errors);
-        filterClusterMarkFileErrors(dataCollector.clusterServiceMarkFiles(), logFilter, count, errors);
+        filterCncFileErrors(dataCollector.cncFiles(), count, errors);
+        filterArchiveMarkFileErrors(dataCollector.archiveMarkFiles(), count, errors);
+        filterClusterMarkFileErrors(dataCollector.consensusModuleMarkFiles(), count, errors);
+        filterClusterMarkFileErrors(dataCollector.clusterServiceMarkFiles(), count, errors);
     }
 
-    private static void filterCncFileErrors(
-        final List<Path> paths,
-        final Predicate<String> filter,
-        final Function<MappedByteBuffer, AtomicBuffer> toErrorBuffer,
-        final MutableInteger count,
-        final StringBuilder errors)
+    private void filterCncFileErrors(final List<Path> paths, final MutableInteger count, final StringBuilder errors)
     {
         for (final Path path : paths)
         {
@@ -225,17 +214,8 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             final MappedByteBuffer mmap = SamplesUtil.mapExistingFileReadOnly(file);
             try
             {
-                final AtomicBuffer buffer = toErrorBuffer.apply(mmap);
-                ErrorLogReader.read(
-                    buffer,
-                    (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-                    {
-                        if (filter.test(encodedException))
-                        {
-                            count.set(count.get() + observationCount);
-                            appendError(errors, path, encodedException);
-                        }
-                    });
+                final AtomicBuffer buffer = CommonContext.errorLogBuffer(mmap);
+                readErrors(path, buffer, count, errors);
             }
             finally
             {
@@ -244,54 +224,45 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
     }
 
-    private static void filterClusterMarkFileErrors(
-        final List<Path> paths,
-        final Predicate<String> filter,
-        final MutableInteger count,
-        final StringBuilder errors)
+    private void filterClusterMarkFileErrors(
+        final List<Path> paths, final MutableInteger count, final StringBuilder errors)
     {
         for (final Path path : paths)
         {
             try (ClusterMarkFile clusterMarkFile = openClusterMarkFile(path))
             {
                 final AtomicBuffer buffer = clusterMarkFile.errorBuffer();
-                ErrorLogReader.read(
-                    buffer,
-                    (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-                    {
-                        if (filter.test(encodedException))
-                        {
-                            count.set(count.get() + observationCount);
-                            appendError(errors, path, encodedException);
-                        }
-                    });
+                readErrors(path, buffer, count, errors);
             }
         }
     }
 
-    private static void filterArchiveMarkFileErrors(
-        final List<Path> paths,
-        final Predicate<String> filter,
-        final MutableInteger count,
-        final StringBuilder errors)
+    private void filterArchiveMarkFileErrors(
+        final List<Path> paths, final MutableInteger count, final StringBuilder errors)
     {
         for (final Path path : paths)
         {
             try (ArchiveMarkFile archive = openArchiveMarkFile(path))
             {
                 final AtomicBuffer buffer = archive.errorBuffer();
-                ErrorLogReader.read(
-                    buffer,
-                    (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-                    {
-                        if (filter.test(encodedException))
-                        {
-                            count.set(count.get() + observationCount);
-                            appendError(errors, path, encodedException);
-                        }
-                    });
+                readErrors(path, buffer, count, errors);
             }
         }
+    }
+
+    private void readErrors(
+        final Path path, final AtomicBuffer buffer, final MutableInteger count, final StringBuilder errors)
+    {
+        ErrorLogReader.read(
+            buffer,
+            (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
+            {
+                if (logFilter.test(encodedException))
+                {
+                    count.set(count.get() + observationCount);
+                    appendError(errors, path, encodedException);
+                }
+            });
     }
 
     private static void appendError(final StringBuilder errors, final Path path, final String encodedException)
@@ -339,13 +310,14 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             encodedException);
     }
 
-    private void reportAndTerminate(final String test)
+    private Throwable reportAndTerminate(final String test)
     {
+        Throwable error = null;
         if (null != dataCollector)
         {
             try
             {
-                printCncErrors(dataCollector.cncFiles(), CommonContext::errorLogBuffer);
+                printCncErrors(dataCollector.cncFiles());
                 printArchiveMarkFileErrors(dataCollector.archiveMarkFiles());
                 printClusterMarkFileErrors(dataCollector.consensusModuleMarkFiles(), "Consensus Module Errors");
                 printClusterMarkFileErrors(dataCollector.clusterServiceMarkFiles(), "Cluster Service Errors");
@@ -373,9 +345,10 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 error = setOrUpdateError(error, t);
             }
         }
+        return error;
     }
 
-    Throwable setOrUpdateError(final Throwable existingError, final Throwable newError)
+    private static Throwable setOrUpdateError(final Throwable existingError, final Throwable newError)
     {
         if (null == existingError)
         {
@@ -386,9 +359,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         return existingError;
     }
 
-    private void printCncErrors(
-        final List<Path> paths,
-        final Function<MappedByteBuffer, AtomicBuffer> toErrorBuffer)
+    private void printCncErrors(final List<Path> paths)
     {
         for (final Path path : paths)
         {
@@ -396,7 +367,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             final MappedByteBuffer mmap = SamplesUtil.mapExistingFileReadOnly(cncFile);
             try
             {
-                final AtomicBuffer buffer = toErrorBuffer.apply(mmap);
+                final AtomicBuffer buffer = CommonContext.errorLogBuffer(mmap);
 
                 System.out.printf("%n%n%s file %s%n", "Command `n Control Errors", cncFile);
                 final int distinctErrorCount = ErrorLogReader.read(buffer, this::printObservationCallback);
@@ -424,9 +395,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
     }
 
-    private void printClusterMarkFileErrors(
-        final List<Path> paths,
-        final String fileDescription)
+    private void printClusterMarkFileErrors(final List<Path> paths, final String fileDescription)
     {
         for (final Path path : paths)
         {
@@ -441,7 +410,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
     }
 
-    private void deleteAllLocations()
+    private void deleteAllLocations(final Throwable error)
     {
         if (null != error && skipDeleteOnFailure)
         {

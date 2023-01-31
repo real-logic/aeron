@@ -3842,7 +3842,7 @@ error_cleanup:
 
     AERON_SET_ERR(
         -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
-        "unknown add destination registration_id=%" PRId64,
+        "unknown add destination client_id=%" PRId64 " registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
 

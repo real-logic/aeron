@@ -611,7 +611,7 @@ int64_t aeron_exclusive_publication_offerv(
     {
         AERON_SET_ERR(
             EINVAL,
-            "%s", "Parameters must not be null, publication: %s, iov: %s",
+            "Parameters must not be null, publication: %s, iov: %s",
             AERON_NULL_STR(publication),
             AERON_NULL_STR(iov));
         return AERON_PUBLICATION_ERROR;
@@ -755,7 +755,8 @@ int64_t aeron_exclusive_publication_append_padding(aeron_exclusive_publication_t
     if (length > publication->max_message_length)
     {
         AERON_SET_ERR(
-            EINVAL, "aeron_exclusive_publication_append_padding: length=%" PRIu64 " > max_message_length=%" PRIu64,
+            EINVAL,
+            "aeron_exclusive_publication_append_padding: length=%" PRIu64 " > max_message_length=%" PRIu64,
             (uint64_t)length,
             (uint64_t)publication->max_message_length);
         return AERON_PUBLICATION_ERROR;

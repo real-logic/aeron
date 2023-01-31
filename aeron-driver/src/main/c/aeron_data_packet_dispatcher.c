@@ -160,7 +160,7 @@ int aeron_data_packet_dispatcher_add_subscription_by_session(
     if (aeron_int64_to_ptr_hash_map_put(
         &stream_interest->subscribed_sessions, session_id, &dispatcher->tokens.subscribed) < 0)
     {
-        AERON_APPEND_ERR("%s", "Failed to add session_id (%" PRId32 ") to subscribed sessions", session_id);
+        AERON_APPEND_ERR("Failed to add session_id (%" PRId32 ") to subscribed sessions", session_id);
         return -1;
     }
 

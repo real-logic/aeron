@@ -59,7 +59,8 @@ int aeron_properties_parse_line(
 
     if (length >= (sizeof(state->property_str) - state->value_end))
     {
-        AERON_SET_ERR(EINVAL, "line length " PRIu64 " too long for parser state", (uint64_t)(length + state->value_end));
+        AERON_SET_ERR(
+            EINVAL, "line length of %" PRIu64 " too long for parser state", (uint64_t)(length + state->value_end));
         return -1;
     }
 

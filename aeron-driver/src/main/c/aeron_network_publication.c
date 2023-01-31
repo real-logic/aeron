@@ -95,7 +95,6 @@ int aeron_network_publication_create(
         aeron_free(_pub->log_file_name);
         aeron_free(_pub);
         AERON_APPEND_ERR(
-            "%s",
             "Could not init network publication retransmit handler, delay: %" PRIu64 ", linger: %" PRIu64,
             context->retransmit_unicast_delay_ns,
             context->retransmit_unicast_linger_ns);

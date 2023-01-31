@@ -722,7 +722,7 @@ static int aeron_driver_name_resolver_poll(aeron_driver_name_resolver_t *resolve
 
     if (poll_result < 0)
     {
-        AERON_APPEND_ERR("%s", "Failed to poll in driver name resolver: %s", resolver->name);
+        AERON_APPEND_ERR("Failed to poll in driver name resolver: %s", resolver->name);
         aeron_name_resolver_log_and_clear_error(resolver);
     }
 

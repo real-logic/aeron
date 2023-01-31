@@ -120,7 +120,7 @@ int aeron_udp_channel_transport_init(
     {
         if (aeron_bind(transport->recv_fd, (struct sockaddr *)bind_addr, bind_addr_len) < 0)
         {
-            AERON_APPEND_ERR("%s", "unicast bind, affinity=%d", affinity);
+            AERON_APPEND_ERR("unicast bind, affinity=%d", affinity);
             goto error;
         }
     }
@@ -161,7 +161,7 @@ int aeron_udp_channel_transport_init(
 
             if (aeron_bind(transport->recv_fd, (struct sockaddr *)&addr, bind_addr_len) < 0)
             {
-                AERON_APPEND_ERR("%s", "multicast IPv6 bind, affinity=%d", affinity);
+                AERON_APPEND_ERR("multicast IPv6 bind, affinity=%d", affinity);
                 goto error;
             }
 

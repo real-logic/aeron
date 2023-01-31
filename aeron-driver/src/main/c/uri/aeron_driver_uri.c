@@ -110,7 +110,7 @@ int aeron_uri_publication_session_id_param(
             {
                 AERON_SET_ERR(
                     EINVAL,
-                    "could not parse %s=%s as int64_t in URI: ",
+                    "could not parse %s=%s as int64_t in URI due to: %s",
                     AERON_URI_SESSION_ID_KEY, session_id_str, strerror(errno));
                 return -1;
             }

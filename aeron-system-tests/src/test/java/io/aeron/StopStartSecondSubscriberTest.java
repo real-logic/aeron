@@ -96,6 +96,12 @@ class StopStartSecondSubscriberTest
         subscriptionTwo = subscriberTwo.addSubscription(channelTwo, streamTwo);
         publicationOne = publisherOne.addPublication(channelOne, streamOne);
         publicationTwo = publisherTwo.addPublication(channelTwo, streamTwo);
+
+        while (!subscriptionOne.isConnected() || !subscriptionTwo.isConnected() || !publicationOne.isConnected() ||
+            !publicationTwo.isConnected())
+        {
+            Tests.yield();
+        }
     }
 
     @AfterEach

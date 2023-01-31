@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef AERON_CSV_TABLE_NAME_RESOLVER_H
+#define AERON_CSV_TABLE_NAME_RESOLVER_H
 
 #include "aeron_name_resolver.h"
 
@@ -25,3 +27,5 @@ int aeron_csv_table_name_resolver_supplier(
     aeron_name_resolver_t *resolver,
     const char *args,
     aeron_driver_context_t *context);
+
+#endif //AERON_CSV_TABLE_NAME_RESOLVER_H

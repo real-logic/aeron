@@ -24,11 +24,14 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.test.*;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SlowTest;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -36,11 +39,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -61,10 +65,11 @@ class MinFlowControlSystemTest
     private static final int NUM_MESSAGES_PER_TERM = 64;
     private static final int MESSAGE_LENGTH =
         (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
-    private static final String ROOT_DIR = SystemUtil.tmpDirName() + "aeron-system-tests" + File.separator;
-
     private final MediaDriver.Context driverAContext = new MediaDriver.Context();
     private final MediaDriver.Context driverBContext = new MediaDriver.Context();
+
+    @TempDir
+    private Path tempDir;
 
     private Aeron clientA;
     private Aeron clientB;
@@ -85,8 +90,8 @@ class MinFlowControlSystemTest
     {
         buffer.putInt(0, 1);
 
-        final String baseDirA = ROOT_DIR + "A";
-        final String baseDirB = ROOT_DIR + "B";
+        final String baseDirA = tempDir.resolve("A").toString();
+        final String baseDirB = tempDir.resolve("B").toString();
 
         driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
@@ -326,7 +331,7 @@ class MinFlowControlSystemTest
         {
             driverC = TestMediaDriver.launch(
                 new MediaDriver.Context().publicationTermBufferLength(TERM_BUFFER_LENGTH)
-                    .aeronDirectoryName(ROOT_DIR + "C")
+                    .aeronDirectoryName(tempDir.resolve("C").toString())
                     .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
                     .errorHandler(Tests::onError)
                     .threadingMode(ThreadingMode.SHARED),

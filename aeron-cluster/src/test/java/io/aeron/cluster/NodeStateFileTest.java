@@ -33,17 +33,19 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class NodeStateFileTest
 {
+    private final int syncLevel = 1;
+
     @Test
     void shouldFailIfCreateNewFalseAndFileDoesNotExist(@TempDir final File archiveDir)
     {
-        assertThrows(IOException.class, () -> new NodeStateFile(archiveDir, false));
+        assertThrows(IOException.class, () -> new NodeStateFile(archiveDir, false, syncLevel));
     }
 
     @Test
     void shouldCreateIfCreateNewTrueAndFileDoesNotExist(@TempDir final File archiveDir) throws IOException
     {
         assertEquals(0, Objects.requireNonNull(archiveDir.list()).length);
-        new NodeStateFile(archiveDir, true);
+        new NodeStateFile(archiveDir, true, syncLevel);
         assertTrue(new File(archiveDir, NodeStateFile.FILENAME).exists());
     }
 
@@ -53,12 +55,12 @@ class NodeStateFileTest
         final long candidateTermId = 832234;
         final long timestampMs = 324234;
         final long logPosition = 8923423;
-        try (NodeStateFile nodeStateFile = new NodeStateFile(archiveDir, true))
+        try (NodeStateFile nodeStateFile = new NodeStateFile(archiveDir, true, syncLevel))
         {
             nodeStateFile.updateCandidateTermId(candidateTermId, logPosition, timestampMs);
         }
 
-        try (NodeStateFile nodeStateFile = new NodeStateFile(archiveDir, false))
+        try (NodeStateFile nodeStateFile = new NodeStateFile(archiveDir, false, syncLevel))
         {
             assertEquals(candidateTermId, nodeStateFile.candidateTerm().candidateTermId());
             assertEquals(timestampMs, nodeStateFile.candidateTerm().timestamp());
@@ -69,7 +71,7 @@ class NodeStateFileTest
     @Test
     void shouldThrowIfVersionMismatch(@TempDir final File archiveDir) throws IOException
     {
-        try (NodeStateFile ignore = new NodeStateFile(archiveDir, true))
+        try (NodeStateFile ignore = new NodeStateFile(archiveDir, true, syncLevel))
         {
             Objects.requireNonNull(ignore);
         }
@@ -78,7 +80,7 @@ class NodeStateFileTest
             ClusterMarkFile.MAJOR_VERSION + 1, ClusterMarkFile.MINOR_VERSION, ClusterMarkFile.PATCH_VERSION);
         forceVersion(archiveDir, invalidVersion);
 
-        assertThrows(ClusterException.class, () -> new NodeStateFile(archiveDir, false));
+        assertThrows(ClusterException.class, () -> new NodeStateFile(archiveDir, false, syncLevel));
     }
 
     private void forceVersion(final File archiveDir, final int semanticVersion)

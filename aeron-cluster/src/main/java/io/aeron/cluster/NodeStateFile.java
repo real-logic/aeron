@@ -77,6 +77,7 @@ public class NodeStateFile implements AutoCloseable
     private final CandidateTerm candidateTerm = new CandidateTerm();
     private final MappedByteBuffer mappedFile;
     private final File archiveDir;
+    private int fileSyncLevel;
     private final NodeStateHeaderDecoder nodeStateHeaderDecoder = new NodeStateHeaderDecoder();
     private final NodeStateHeaderEncoder nodeStateHeaderEncoder = new NodeStateHeaderEncoder();
     private final SimpleOpenFramingHeaderDecoder simpleOpenFramingHeaderDecoder = new SimpleOpenFramingHeaderDecoder();
@@ -90,14 +91,17 @@ public class NodeStateFile implements AutoCloseable
     /**
      * Construct the NodeStateFile.
      *
-     * @param archiveDir directory containing the NodeStateFile.
-     * @param createNew whether a new file should be created if one does not already exist.
+     * @param archiveDir    directory containing the NodeStateFile.
+     * @param createNew     whether a new file should be created if one does not already exist.
+     * @param fileSyncLevel whether the mapped byte buffer should be synchronised with the underlying filesystem on
+     *                      change.
      * @throws IOException if there is an error creating the file or <code>createNew == false</code> and the file does
      * not already exist.
      */
-    public NodeStateFile(final File archiveDir, final boolean createNew) throws IOException
+    public NodeStateFile(final File archiveDir, final boolean createNew, final int fileSyncLevel) throws IOException
     {
         this.archiveDir = archiveDir;
+        this.fileSyncLevel = fileSyncLevel;
         final File nodeStateFile = new File(archiveDir, NodeStateFile.FILENAME);
         if (!nodeStateFile.exists())
         {
@@ -109,6 +113,7 @@ public class NodeStateFile implements AutoCloseable
             this.mappedFile = IoUtil.mapNewFile(nodeStateFile, MINIMUM_FILE_LENGTH);
             this.buffer = new UnsafeBuffer(mappedFile, 0, mappedFile.capacity());
             setInitialState();
+            syncFile();
         }
         else
         {
@@ -222,6 +227,7 @@ public class NodeStateFile implements AutoCloseable
             .candidateTermId(candidateTermId)
             .logPosition(logPosition)
             .timestamp(timestampMs);
+        syncFile();
     }
 
     /**
@@ -233,11 +239,6 @@ public class NodeStateFile implements AutoCloseable
     public CandidateTerm candidateTerm()
     {
         return candidateTerm;
-    }
-
-    void forceVersion(final int semanticVersion)
-    {
-        nodeStateHeaderEncoder.version(semanticVersion);
     }
 
     /**
@@ -276,6 +277,14 @@ public class NodeStateFile implements AutoCloseable
         public long logPosition()
         {
             return candidateTermDecoder.logPosition();
+        }
+    }
+
+    private void syncFile()
+    {
+        if (0 < fileSyncLevel)
+        {
+            mappedFile.force();
         }
     }
 }

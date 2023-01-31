@@ -15,8 +15,15 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
+import io.aeron.cluster.codecs.node.*;
+import io.aeron.cluster.service.ClusterMarkFile;
+import org.agrona.IoUtil;
+import org.agrona.concurrent.UnsafeBuffer;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.MappedByteBuffer;
 
 /**
  * An extensible list of information relating to a specific cluster node.  Used to track persistent state that is node
@@ -57,19 +64,206 @@ import java.io.IOException;
  * </pre>
  * </p>
  */
-public class NodeStateFile
+public class NodeStateFile implements AutoCloseable
 {
     public static final String FILENAME = "node-state.dat";
+    private static final int MINIMUM_FILE_LENGTH =
+        NodeStateHeaderDecoder.BLOCK_LENGTH +
+        SimpleOpenFramingHeaderDecoder.BLOCK_LENGTH +
+        MessageHeaderDecoder.ENCODED_LENGTH +
+        CandidateTermDecoder.BLOCK_LENGTH;
+    private final CandidateTerm candidateTerm = new CandidateTerm();
+    private final MappedByteBuffer mappedFile;
+    private final File archiveDir;
+    private final NodeStateHeaderDecoder nodeStateHeaderDecoder = new NodeStateHeaderDecoder();
+    private final NodeStateHeaderEncoder nodeStateHeaderEncoder = new NodeStateHeaderEncoder();
+    private final SimpleOpenFramingHeaderDecoder simpleOpenFramingHeaderDecoder = new SimpleOpenFramingHeaderDecoder();
+    private final SimpleOpenFramingHeaderEncoder simpleOpenFramingHeaderEncoder = new SimpleOpenFramingHeaderEncoder();
+    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+    private final CandidateTermDecoder candidateTermDecoder = new CandidateTermDecoder();
+    private final CandidateTermEncoder candidateTermEncoder = new CandidateTermEncoder();
+    private final UnsafeBuffer buffer;
 
-    private File archiveDir;
-
+    /**
+     * Construct the NodeStateFile.
+     *
+     * @param archiveDir directory containing the NodeStateFile.
+     * @param createNew whether a new file should be created if one does not already exist.
+     * @throws IOException if there is an error creating the file or <code>createNew == false</code> and the file does
+     * not already exist.
+     */
     public NodeStateFile(final File archiveDir, final boolean createNew) throws IOException
     {
         this.archiveDir = archiveDir;
         final File nodeStateFile = new File(archiveDir, NodeStateFile.FILENAME);
-        if (!createNew && !nodeStateFile.exists())
+        if (!nodeStateFile.exists())
         {
-            throw new IOException("NodeStateFile does not existing and createNew=false");
+            if (!createNew)
+            {
+                throw new IOException("NodeStateFile does not existing and createNew=false");
+            }
+
+            this.mappedFile = IoUtil.mapNewFile(nodeStateFile, MINIMUM_FILE_LENGTH);
+            this.buffer = new UnsafeBuffer(mappedFile, 0, mappedFile.capacity());
+            setInitialState();
+        }
+        else
+        {
+            this.mappedFile = IoUtil.mapExistingFile(nodeStateFile, "NodeState");
+            this.buffer = new UnsafeBuffer(mappedFile, 0, mappedFile.capacity());
+            loadInitialState();
+        }
+    }
+
+    private void loadInitialState()
+    {
+        nodeStateHeaderEncoder.wrap(buffer, 0);
+        nodeStateHeaderDecoder.wrap(
+            buffer, 0, NodeStateHeaderDecoder.BLOCK_LENGTH, NodeStateHeaderDecoder.SCHEMA_VERSION);
+
+        // TODO: version check
+//        nodeStateHeaderEncoder.version(ClusterMarkFile.SEMANTIC_VERSION);
+
+        final int nodeStateOffset = scanForMessageTypeOffset(
+            nodeStateHeaderEncoder.sbeBlockLength(), CandidateTermDecoder.TEMPLATE_ID);
+        if (Aeron.NULL_VALUE == nodeStateOffset)
+        {
+            throw new IllegalStateException("failed to find CandidateTerm entry");
+        }
+
+        candidateTermDecoder.wrapAndApplyHeader(buffer, nodeStateOffset, messageHeaderDecoder);
+        candidateTermEncoder.wrap(buffer, nodeStateOffset);
+    }
+
+    private int scanForMessageTypeOffset(final int startPosition, final int templateId)
+    {
+        int position = startPosition;
+
+        while (position < buffer.capacity())
+        {
+            simpleOpenFramingHeaderDecoder.wrap(
+                buffer,
+                position,
+                SimpleOpenFramingHeaderDecoder.BLOCK_LENGTH,
+                SimpleOpenFramingHeaderDecoder.SCHEMA_VERSION);
+
+            final long messageLength = simpleOpenFramingHeaderDecoder.messageLength();
+            final int messagePosition = position + simpleOpenFramingHeaderDecoder.sbeBlockLength();
+
+            messageHeaderDecoder.wrap(buffer, messagePosition);
+            if (templateId == messageHeaderDecoder.templateId())
+            {
+                return messagePosition;
+            }
+
+            position += messageLength;
+        }
+
+        return Aeron.NULL_VALUE;
+    }
+
+    private void setInitialState()
+    {
+        nodeStateHeaderEncoder.wrap(buffer, 0);
+        nodeStateHeaderDecoder.wrap(
+            buffer, 0, NodeStateHeaderDecoder.BLOCK_LENGTH, NodeStateHeaderDecoder.SCHEMA_VERSION);
+        nodeStateHeaderEncoder.version(ClusterMarkFile.SEMANTIC_VERSION);
+
+        final int firstMessageOffset = nodeStateHeaderEncoder.sbeBlockLength();
+
+        // Set candidateTermId
+        simpleOpenFramingHeaderEncoder.wrap(buffer, firstMessageOffset);
+        simpleOpenFramingHeaderDecoder.wrap(
+            buffer,
+            firstMessageOffset,
+            SimpleOpenFramingHeaderDecoder.BLOCK_LENGTH,
+            SimpleOpenFramingHeaderDecoder.SCHEMA_VERSION);
+
+        simpleOpenFramingHeaderEncoder.encodingType(CandidateTermDecoder.SCHEMA_ID);
+
+        candidateTermEncoder.wrapAndApplyHeader(
+            buffer, firstMessageOffset + simpleOpenFramingHeaderEncoder.sbeBlockLength(), messageHeaderEncoder);
+        candidateTermDecoder.wrapAndApplyHeader(
+            buffer, firstMessageOffset + simpleOpenFramingHeaderEncoder.sbeBlockLength(), messageHeaderDecoder);
+
+        updateCandidateTermId(Aeron.NULL_VALUE, Aeron.NULL_VALUE, Aeron.NULL_VALUE);
+
+        simpleOpenFramingHeaderEncoder.messageLength(
+            SimpleOpenFramingHeaderEncoder.BLOCK_LENGTH +
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            candidateTermEncoder.encodedLength());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void close()
+    {
+        IoUtil.unmap(mappedFile);
+    }
+
+    /**
+     * Set the current candidate term id with associated information
+     * @param candidateTermId   current candidate term id
+     * @param logPosition       log position where the term id change occurred
+     * @param timestampMs       timestamp of the candidate term id change
+     */
+    public void updateCandidateTermId(final long candidateTermId, final long logPosition, final long timestampMs)
+    {
+        candidateTermEncoder
+            .candidateTermId(candidateTermId)
+            .logPosition(logPosition)
+            .timestamp(timestampMs);
+    }
+
+    /**
+     * Get the reference to CandidateTerm wrapper that can be used to fetch the values associated with the current
+     * candidate term.
+     *
+     * @return the CandidateTerm wrapper.
+     */
+    public CandidateTerm candidateTerm()
+    {
+        return candidateTerm;
+    }
+
+    /**
+     * Wrapper class for the candidate term.
+     */
+    public final class CandidateTerm
+    {
+        private CandidateTerm()
+        {
+        }
+
+        /**
+         * Gets the current candidateTermId.
+         * @return the candidateTermId
+         */
+        public long candidateTermId()
+        {
+            return candidateTermDecoder.candidateTermId();
+        }
+
+        /**
+         * Get the timestamp of the latest candidateTermId update.
+         *
+         * @return epoch timestamp in ms.
+         */
+        public long timestamp()
+        {
+            return candidateTermDecoder.timestamp();
+        }
+
+        /**
+         * Get the log position of the latest candidateTermId update
+         *
+         * @return log position.
+         */
+        public long logPosition()
+        {
+            return candidateTermDecoder.logPosition();
         }
     }
 }

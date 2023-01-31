@@ -46,7 +46,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -83,7 +82,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     private ArrayList<AutoCloseable> closeables = new ArrayList<>();
     private boolean skipDeleteOnFailure = false;
     private long startTimeNs;
-    private long endTimeNs;
+    private Throwable error;
 
     public SystemTestWatcher cluster(final TestCluster testCluster)
     {
@@ -140,35 +139,42 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     public void beforeTestExecution(final ExtensionContext context) throws Exception
     {
+        error = null;
         startTimeNs = System.nanoTime();
     }
 
     public void afterTestExecution(final ExtensionContext context)
     {
-        endTimeNs = System.nanoTime();
-        mediaDriverTestUtil.afterTestExecution(context);
-        if (null != dataCollector)
-        {
-            final MutableInteger count = new MutableInteger();
-            final StringBuilder errors = new StringBuilder();
-            filterErrors(count, errors);
-            assertEquals(0, count.get(), () -> "Errors observed in " + context.getDisplayName() + ":\n" + errors);
-        }
-    }
-
-    public void afterEach(final ExtensionContext context)
-    {
+        final long endTimeNs = System.nanoTime();
         final boolean interrupted = Thread.interrupted();
-        Optional<Throwable> failureCause = Optional.empty();
+        error = context.getExecutionException()
+            .filter(t -> !(t instanceof TestAbortedException))
+            .orElse(null);
         try
         {
-            failureCause = getFailureExceptionIgnoringAbort(context);
-            if (failureCause.isPresent())
+            try
+            {
+                mediaDriverTestUtil.afterTestExecution(context);
+                if (null != dataCollector)
+                {
+                    final MutableInteger count = new MutableInteger();
+                    final StringBuilder errors = new StringBuilder();
+                    filterErrors(count, errors);
+                    assertEquals(
+                        0, count.get(), () -> "Errors observed in " + context.getDisplayName() + ":\n" + errors);
+                }
+            }
+            catch (final Throwable t)
+            {
+                error = setOrUpdateError(error, t);
+            }
+
+            if (null != error)
             {
                 final String test = context.getTestClass().map(Class::getName).orElse("unknown") + "-" +
                     context.getTestMethod().map(Method::getName).orElse("unknown");
                 System.out.println("*** " + test + " failed in " +
-                    NANOSECONDS.toMillis(endTimeNs - startTimeNs) + " ms, cause: " + failureCause.get());
+                    NANOSECONDS.toMillis(endTimeNs - startTimeNs) + " ms, cause: " + error);
                 reportAndTerminate(test);
                 mediaDriverTestUtil.testFailed();
             }
@@ -180,37 +186,30 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
         finally
         {
-            deleteAllLocations(failureCause);
             if (interrupted)
             {
                 Thread.currentThread().interrupt();
             }
+
+            if (null != error)
+            {
+                LangUtil.rethrowUnchecked(error);
+            }
         }
     }
 
-    private Optional<Throwable> getFailureExceptionIgnoringAbort(final ExtensionContext context)
+    public void afterEach(final ExtensionContext context)
     {
-        final Optional<Throwable> executionException = context.getExecutionException();
-        return executionException.filter(t -> !(t instanceof TestAbortedException));
+        // delete the files after the user-defined @AfterEach methods executed allowing them to be properly closed
+        deleteAllLocations();
     }
 
     private void filterErrors(final MutableInteger count, final StringBuilder errors)
     {
-        final boolean isInterrupted = Thread.interrupted();
-        try
-        {
-            filterCncFileErrors(dataCollector.cncFiles(), logFilter, CommonContext::errorLogBuffer, count, errors);
-            filterArchiveMarkFileErrors(dataCollector.archiveMarkFiles(), logFilter, count, errors);
-            filterClusterMarkFileErrors(dataCollector.consensusModuleMarkFiles(), logFilter, count, errors);
-            filterClusterMarkFileErrors(dataCollector.clusterServiceMarkFiles(), logFilter, count, errors);
-        }
-        finally
-        {
-            if (isInterrupted)
-            {
-                Thread.currentThread().interrupt();
-            }
-        }
+        filterCncFileErrors(dataCollector.cncFiles(), logFilter, CommonContext::errorLogBuffer, count, errors);
+        filterArchiveMarkFileErrors(dataCollector.archiveMarkFiles(), logFilter, count, errors);
+        filterClusterMarkFileErrors(dataCollector.consensusModuleMarkFiles(), logFilter, count, errors);
+        filterClusterMarkFileErrors(dataCollector.clusterServiceMarkFiles(), logFilter, count, errors);
     }
 
     private static void filterCncFileErrors(
@@ -342,8 +341,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     private void reportAndTerminate(final String test)
     {
-        Throwable error = null;
-
         if (null != dataCollector)
         {
             try
@@ -375,11 +372,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             {
                 error = setOrUpdateError(error, t);
             }
-        }
-
-        if (null != error)
-        {
-            LangUtil.rethrowUnchecked(error);
         }
     }
 
@@ -449,9 +441,9 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
     }
 
-    private void deleteAllLocations(final Optional<Throwable> failureCause)
+    private void deleteAllLocations()
     {
-        if (failureCause.isPresent() && skipDeleteOnFailure)
+        if (null != error && skipDeleteOnFailure)
         {
             return;
         }

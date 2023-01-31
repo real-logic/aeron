@@ -37,8 +37,6 @@ using namespace aeron::concurrent;
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::status;
 
-static UnsafeBufferPosition NULL_UNSAFE_BUFFER_POSITION;
-
 enum class ControlledPollAction : int
 {
     /**
@@ -50,18 +48,18 @@ enum class ControlledPollAction : int
      * Break from the current polling operation and commit the position as of the end of the current fragment
      * being handled.
      */
-    BREAK,
+    BREAK = 2,
 
     /**
      * Continue processing but commit the position as of the end of the current fragment so that
      * flow control is applied to this point.
      */
-    COMMIT,
+    COMMIT = 3,
 
     /**
      * Continue processing taking the same approach as the in fragment_handler_t.
      */
-    CONTINUE
+    CONTINUE = 4
 };
 
 /**

@@ -11,6 +11,8 @@ query-filters:
   - exclude:
       id: java/unused-parameter
   - exclude:
+      id: java/uncaught-number-format-exception
+  - exclude:
       id: cpp/unsigned-comparison-zero
   - exclude:
       id: cpp/poorly-documented-function

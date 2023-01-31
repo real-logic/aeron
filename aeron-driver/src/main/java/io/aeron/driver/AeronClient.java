@@ -78,6 +78,19 @@ final class AeronClient implements DriverManagedResource
         return reachedEndOfLife;
     }
 
+
+    public String toString()
+    {
+        return "AeronClient{" +
+            "clientId=" + clientId +
+            ", clientLivenessTimeoutMs=" + clientLivenessTimeoutMs +
+            ", reachedEndOfLife=" + reachedEndOfLife +
+            ", closedByCommand=" + closedByCommand +
+            ", clientTimeouts=" + clientTimeouts +
+            ", heartbeatTimestamp=" + heartbeatTimestamp +
+            '}';
+    }
+
     long clientId()
     {
         return clientId;

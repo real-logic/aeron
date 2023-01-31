@@ -297,7 +297,7 @@ public final class ChannelUri
     public String toString()
     {
         final StringBuilder sb;
-        if (prefix == null || "".equals(prefix))
+        if (prefix == null || prefix.isEmpty())
         {
             sb = new StringBuilder((params.size() * 20) + 10);
         }

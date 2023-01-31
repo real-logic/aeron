@@ -385,7 +385,7 @@ class DynamicMembershipTest
         cluster.awaitServicesMessageCount(2 * messageCount);
 
         cluster.stopNode(leader1);
-        final TestNode leader2 = cluster.awaitLeader();
+        cluster.awaitLeader();
         cluster.startStaticNode(leader1.index(), false);
         awaitElectionClosed(cluster.node(leader1.index()));
 

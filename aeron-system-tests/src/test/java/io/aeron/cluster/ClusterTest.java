@@ -885,10 +885,9 @@ class ClusterTest
         systemTestWatcher.cluster(cluster);
 
         final MutableInteger messageCounter = new MutableInteger();
-        final TestNode leader = cluster.awaitLeader();
+        cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
-        final TestNode followerA = followers.get(0);
-        final TestNode followerB = followers.get(1);
+        final TestNode follower = followers.get(1);
 
         cluster.connectClient();
 
@@ -896,14 +895,14 @@ class ClusterTest
         final TestNode restartedFollowerB;
         try
         {
-            Tests.await(() -> followerB.commitPosition() > 0);
+            Tests.await(() -> follower.commitPosition() > 0);
 
-            cluster.stopNode(followerB);
+            cluster.stopNode(follower);
             final int delaySoClusterAdvancesMs = 2_000;
             Tests.sleep(delaySoClusterAdvancesMs);
 
-            restartedFollowerB = cluster.startStaticNode(followerB.index(), false);
-            awaitElectionClosed(followerB);
+            restartedFollowerB = cluster.startStaticNode(follower.index(), false);
+            awaitElectionClosed(follower);
             final int delaySoIngressAdvancesAfterCatchupMs = 2_000;
             Tests.sleep(delaySoIngressAdvancesAfterCatchupMs);
         }
@@ -1015,8 +1014,8 @@ class ClusterTest
         cluster.stopAllNodes();
 
         final TestNode oldLeader = cluster.startStaticNode(leader.index(), false);
-        final TestNode oldFollower1 = cluster.startStaticNode(followers.get(0).index(), true);
-        final TestNode oldFollower2 = cluster.startStaticNode(followers.get(1).index(), true);
+        cluster.startStaticNode(followers.get(0).index(), true);
+        cluster.startStaticNode(followers.get(1).index(), true);
 
         final TestNode newLeader = cluster.awaitLeader();
         assertEquals(newLeader.index(), oldLeader.index());

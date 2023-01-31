@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Aeron;
 import io.aeron.Image;
 import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.Header;
@@ -50,8 +49,6 @@ class ControlSessionDemuxerTest
         final ReplicateRequest2Encoder replicateRequest2Encoder = new ReplicateRequest2Encoder();
 
         replicateRequest2Encoder.wrapAndApplyHeader(buffer, 0, headerEncoder);
-
-        final int fileIoMaxLength = Aeron.NULL_VALUE; // Since v7
 
         replicateRequest2Encoder
             .controlSessionId(928374L)

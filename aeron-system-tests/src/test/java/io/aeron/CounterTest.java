@@ -175,7 +175,7 @@ class CounterTest
         clientB.addAvailableCounterHandler(this::createReadableCounter);
         clientB.addUnavailableCounterHandler(this::unavailableCounterHandler);
 
-        final Counter counter = clientA.addCounter(
+        clientA.addCounter(
             COUNTER_TYPE_ID,
             keyBuffer,
             0,

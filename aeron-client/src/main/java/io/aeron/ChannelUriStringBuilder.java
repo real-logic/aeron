@@ -234,7 +234,7 @@ public final class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder prefix(final String prefix)
     {
-        if (null != prefix && !prefix.equals("") && !prefix.equals(SPY_QUALIFIER))
+        if (null != prefix && !prefix.isEmpty() && !prefix.equals(SPY_QUALIFIER))
         {
             throw new IllegalArgumentException("invalid prefix: " + prefix);
         }
@@ -1902,7 +1902,7 @@ public final class ChannelUriStringBuilder
     {
         sb.setLength(0);
 
-        if (null != prefix && !"".equals(prefix))
+        if (null != prefix && !prefix.isEmpty())
         {
             sb.append(prefix).append(':');
         }

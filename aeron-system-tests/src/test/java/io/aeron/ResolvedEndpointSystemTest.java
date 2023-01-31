@@ -252,9 +252,10 @@ class ResolvedEndpointSystemTest
                 }
 
                 long totalReceived = 0;
-                while ((totalReceived += mdsSub.poll(fragmentHandler, 10)) < 2)
+                while (totalReceived < 2)
                 {
                     Tests.yieldingIdle("Failed to receive from both publications");
+                    totalReceived += mdsSub.poll(fragmentHandler, 10);
                 }
             }
         }

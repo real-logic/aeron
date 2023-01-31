@@ -109,7 +109,7 @@ class RacingCatchupClusterTest
 
         cluster.stopNode(oldLeader);
 
-        final TestNode newLeader = cluster.awaitLeader();
+        cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
         cluster.connectClient();
 

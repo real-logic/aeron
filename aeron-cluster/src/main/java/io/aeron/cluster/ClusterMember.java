@@ -1038,7 +1038,7 @@ public final class ClusterMember
                 throw new ClusterException("memberId=" + memberId + " not found in clusterMembers");
             }
 
-            if (!"".equals(memberEndpoints))
+            if (!memberEndpoints.isEmpty())
             {
                 ClusterMember.validateMemberEndpoints(member, memberEndpoints);
             }

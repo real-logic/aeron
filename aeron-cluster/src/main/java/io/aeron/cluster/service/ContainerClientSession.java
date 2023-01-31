@@ -140,7 +140,6 @@ final class ContainerClientSession implements ClientSession
             ", responseStreamId=" + responseStreamId +
             ", responseChannel='" + responseChannel + '\'' +
             ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
-            ", clusteredServiceAgent=" + clusteredServiceAgent +
             ", responsePublication=" + responsePublication +
             ", isClosing=" + isClosing +
             '}';

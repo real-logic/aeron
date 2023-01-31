@@ -12,3 +12,5 @@ query-filters:
       id: cpp/unsigned-comparison-zero
   - exclude:
       id: cpp/poorly-documented-function
+  - exclude:
+      id: cpp/trivial-switch

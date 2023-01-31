@@ -21,6 +21,7 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.Objects;
 
 import static java.lang.Boolean.compare;
 import static java.lang.Integer.compare;
@@ -295,6 +296,16 @@ public final class NetworkUtil
             {
                 return compare(isLoopback, other.isLoopback);
             }
+        }
+
+        public boolean equals(final Object o)
+        {
+            return o instanceof FilterResult && compareTo((FilterResult)o) == 0;
+        }
+
+        public int hashCode()
+        {
+            return Objects.hash(interfaceAddress, networkInterface, isLoopback);
         }
     }
 }

@@ -101,4 +101,14 @@ final class LogReplay
             logAdapter.position() >= stopPosition &&
             consensusModuleAgent.state() != ConsensusModule.State.SNAPSHOT;
     }
+
+    public String toString()
+    {
+        return "LogReplay{" +
+            "startPosition=" + startPosition +
+            ", stopPosition=" + stopPosition +
+            ", logSessionId=" + logSessionId +
+            ", logSubscription=" + logSubscription +
+            '}';
+    }
 }

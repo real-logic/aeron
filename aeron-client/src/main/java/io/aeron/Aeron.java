@@ -622,6 +622,18 @@ public class Aeron implements AutoCloseable
         return conductor.removeCloseHandler(handler);
     }
 
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "Aeron{" +
+            "isClosed=" + isClosed +
+            ", clientId=" + clientId +
+            '}';
+    }
+
     /**
      * Called by the {@link ClientConductor} if the client should be terminated due to timeout.
      */

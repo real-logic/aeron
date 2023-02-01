@@ -940,9 +940,10 @@ final class Catalog implements AutoCloseable
 
     private void buildIndex(final boolean writable)
     {
+        final int endOffset = (int)capacity;
         int offset = firstRecordingDescriptorOffset;
         long recordingId = -1;
-        while (offset < capacity)
+        while (offset < endOffset)
         {
             final int frameLength = wrapDescriptorAtOffset(catalogBuffer, offset);
             if (frameLength < 0)

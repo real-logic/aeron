@@ -849,7 +849,7 @@ public final class AeronArchive implements AutoCloseable
      *
      * @param channel  to stop recording for.
      * @param streamId to stop recording for.
-     * @return true if the recording was stopped or false if the subscription is not currently active.
+     * @return {@code true} if the recording was stopped or false if the subscription is not currently active.
      */
     public boolean tryStopRecording(final String channel, final int streamId)
     {
@@ -910,7 +910,7 @@ public final class AeronArchive implements AutoCloseable
      * {@link #extendRecording(long, String, int, SourceLocation)}.
      *
      * @param subscriptionId is the {@link Subscription#registrationId()} for the recording in the archive.
-     * @return true if the recording was stopped or false if the subscription is not currently active.
+     * @return {@code true} if the recording was stopped or false if the subscription is not currently active.
      */
     public boolean tryStopRecording(final long subscriptionId)
     {
@@ -939,7 +939,7 @@ public final class AeronArchive implements AutoCloseable
      * Try stop an active recording by its recording id.
      *
      * @param recordingId for which active recording should be stopped.
-     * @return true if the recording was stopped or false if the recording is not currently active.
+     * @return {@code true} if the recording was stopped or false if the recording is not currently active.
      */
     public boolean tryStopRecordingByIdentity(final long recordingId)
     {
@@ -2026,7 +2026,7 @@ public final class AeronArchive implements AutoCloseable
      * Attempt to stop a replication session by id returned from {@link #replicate(long, long, int, String, String)}.
      *
      * @param replicationId to stop replication for.
-     * @return true if the replication was stopped, false if the replication is not active.
+     * @return {@code true} if the replication was stopped, false if the replication is not active.
      * @see #replicate(long, long, int, String, String)
      */
     public boolean tryStopReplication(final long replicationId)
@@ -2677,13 +2677,14 @@ public final class AeronArchive implements AutoCloseable
         /**
          * Should term buffer files be sparse for control request and response streams.
          *
-         * @return true if term buffer files should be sparse for control request and response streams.
+         * @return {@code true} if term buffer files should be sparse for control request and response streams.
          * @see #CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
          */
         public static boolean controlTermBufferSparse()
         {
-            final String propValue = System.getProperty(CONTROL_TERM_BUFFER_SPARSE_PROP_NAME);
-            return null != propValue ? "true".equals(propValue) : CONTROL_TERM_BUFFER_SPARSE_DEFAULT;
+            final String propValue = System.getProperty(
+                CONTROL_TERM_BUFFER_SPARSE_PROP_NAME, Boolean.toString(CONTROL_TERM_BUFFER_SPARSE_DEFAULT));
+            return "true".equals(propValue);
         }
 
         /**
@@ -2801,13 +2802,14 @@ public final class AeronArchive implements AutoCloseable
         /**
          * Should the recording events stream be enabled.
          *
-         * @return true if the recording events stream be enabled.
+         * @return {@code true} if the recording events stream be enabled.
          * @see #RECORDING_EVENTS_ENABLED_PROP_NAME
          */
         public static boolean recordingEventsEnabled()
         {
-            final String propValue = System.getProperty(RECORDING_EVENTS_ENABLED_PROP_NAME);
-            return null != propValue ? Boolean.parseBoolean(propValue) : RECORDING_EVENTS_ENABLED_DEFAULT;
+            final String propValue = System.getProperty(
+                RECORDING_EVENTS_ENABLED_PROP_NAME, Boolean.toString(RECORDING_EVENTS_ENABLED_DEFAULT));
+            return "true".equals(propValue);
         }
     }
 
@@ -3096,7 +3098,7 @@ public final class AeronArchive implements AutoCloseable
         /**
          * Should the control streams use sparse file term buffers.
          *
-         * @return true if the control stream should use sparse file term buffers.
+         * @return {@code true} if the control stream should use sparse file term buffers.
          * @see Configuration#CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
          */
         public boolean controlTermBufferSparse()

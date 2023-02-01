@@ -22,3 +22,5 @@ query-filters:
       id: cpp/trivial-switch
   - exclude:
       id: cpp/unused-static-variable
+  - exclude:
+      id: cpp/long-switch

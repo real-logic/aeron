@@ -35,6 +35,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.Archive.segmentFileName;
@@ -72,7 +74,7 @@ class RecordingSessionTest
 
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
-    private File termFile;
+    private Path termFilePath;
     private final EpochClock epochClock = mock(EpochClock.class);
     private final NanoClock nanoClock = new NanoClock()
     {
@@ -100,9 +102,9 @@ class RecordingSessionTest
             })
             .when(mockPosition).setOrdered(anyLong());
 
-        termFile = File.createTempFile("test.rec", "sourceIdentity");
+        termFilePath = Files.createTempFile("test.rec", "sourceIdentity");
 
-        mockLogBufferChannel = FileChannel.open(termFile.toPath(), CREATE, READ, WRITE);
+        mockLogBufferChannel = FileChannel.open(termFilePath, CREATE, READ, WRITE);
         mockLogBufferMapped = new UnsafeBuffer(
             mockLogBufferChannel.map(FileChannel.MapMode.READ_WRITE, 0, TERM_BUFFER_LENGTH));
 
@@ -128,7 +130,7 @@ class RecordingSessionTest
         IoUtil.unmap(mockLogBufferMapped.byteBuffer());
         CloseHelper.close(mockLogBufferChannel);
         IoUtil.delete(archiveDir, false);
-        IoUtil.delete(termFile, false);
+        IoUtil.delete(termFilePath.toFile(), false);
     }
 
     @Test
@@ -158,7 +160,7 @@ class RecordingSessionTest
             (invocation) ->
             {
                 final BlockHandler handle = invocation.getArgument(0);
-                if (handle == null)
+                if (null == handle)
                 {
                     return 0;
                 }

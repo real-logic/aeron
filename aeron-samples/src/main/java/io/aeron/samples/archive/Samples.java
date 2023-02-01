@@ -19,6 +19,7 @@ import io.aeron.logbuffer.FragmentHandler;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 /**
  * Common constants and functions used in the Archive samples.
@@ -45,7 +46,7 @@ class Samples
         final File tempDirForTest;
         try
         {
-            tempDirForTest = File.createTempFile("archive", "tmp");
+            tempDirForTest = Files.createTempFile("archive", "tmp").toFile();
         }
         catch (final IOException ex)
         {

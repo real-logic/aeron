@@ -28,6 +28,7 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.MutableDirectBuffer;
@@ -35,6 +36,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -62,6 +64,8 @@ class RecordingReplicatorTest
     private static final String DST_ARCHIVE_REPLICATION_CHANNEL =
         "aeron:udp?alias=dst-replication-channel|endpoint=localhost:9999";
     private static final int TERM_BUFFER_LENGTH = 128 * 1024;
+    @RegisterExtension
+    private final SystemTestWatcher testWatcher = new SystemTestWatcher();
     private MediaDriver srcMediaDriver;
     private MediaDriver dstMediaDriver;
     private Archive srcArchive;
@@ -81,6 +85,7 @@ class RecordingReplicatorTest
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .spiesSimulateConnection(true)
             .dirDeleteOnStart(true));
+        testWatcher.dataCollector().add(srcMediaDriver.context().aeronDirectory());
 
         dstMediaDriver = MediaDriver.launch(new MediaDriver.Context()
             .spiesSimulateConnection(true)
@@ -91,6 +96,7 @@ class RecordingReplicatorTest
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .spiesSimulateConnection(true)
             .dirDeleteOnStart(true));
+        testWatcher.dataCollector().add(dstMediaDriver.context().aeronDirectory());
 
         srcArchive = Archive.launch(new Archive.Context()
             .threadingMode(ArchiveThreadingMode.SHARED)
@@ -99,6 +105,7 @@ class RecordingReplicatorTest
             .controlChannel(SRC_ARCHIVE_CONTROL_CHANNEL)
             .controlStreamId(SRC_ARCHIVE_CONTROL_STREAM_ID)
             .replicationChannel(SRC_ARCHIVE_REPLICATION_CHANNEL));
+        testWatcher.dataCollector().add(srcArchive.context().archiveDir());
 
         dstArchive = Archive.launch(new Archive.Context()
             .threadingMode(ArchiveThreadingMode.SHARED)
@@ -107,6 +114,7 @@ class RecordingReplicatorTest
             .controlChannel(DST_ARCHIVE_CONTROL_CHANNEL)
             .controlStreamId(DST_ARCHIVE_CONTROL_STREAM_ID)
             .replicationChannel(DST_ARCHIVE_REPLICATION_CHANNEL));
+        testWatcher.dataCollector().add(dstArchive.context().archiveDir());
 
         srcAeronArchive = AeronArchive.connect(new AeronArchive.Context()
             .aeronDirectoryName(srcMediaDriver.aeronDirectoryName())

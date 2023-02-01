@@ -504,6 +504,16 @@ public final class Archive implements AutoCloseable
         public static final String ARCHIVE_ID_PROP_NAME = "aeron.archive.id";
 
         /**
+         * Is control channel enabled.
+         */
+        public static final String CONTROL_CHANNEL_ENABLED_PROP_NAME = "aeron.archive.control.channel.enabled";
+
+        /**
+         * Control channel enabled for an archive which defaults to {@code true}.
+         */
+        public static final boolean CONTROL_CHANNEL_ENABLED_DEFAULT = true;
+
+        /**
          * Update interval in ms for archive mark file.
          */
         static final long MARK_FILE_UPDATE_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
@@ -763,7 +773,7 @@ public final class Archive implements AutoCloseable
          */
         public static boolean deleteArchiveOnStart()
         {
-            return "true".equalsIgnoreCase(getProperty(ARCHIVE_DIR_DELETE_ON_START_PROP_NAME, "false"));
+            return "true".equals(getProperty(ARCHIVE_DIR_DELETE_ON_START_PROP_NAME, "false"));
         }
 
         /**
@@ -862,6 +872,19 @@ public final class Archive implements AutoCloseable
         {
             return getProperty(REPLAY_CHECKSUM_PROP_NAME);
         }
+
+        /**
+         * Should the control channel be enabled.
+         *
+         * @return {@code true} if the control channel to be enabled.
+         * @see #CONTROL_CHANNEL_ENABLED_PROP_NAME
+         */
+        public static boolean controlChannelEnabled()
+        {
+            final String propValue = System.getProperty(
+                CONTROL_CHANNEL_ENABLED_PROP_NAME, Boolean.toString(CONTROL_CHANNEL_ENABLED_DEFAULT));
+            return "true".equals(propValue);
+        }
     }
 
     /**
@@ -893,6 +916,7 @@ public final class Archive implements AutoCloseable
         private AeronArchive.Context archiveClientContext;
         private AgentInvoker mediaDriverAgentInvoker;
 
+        private boolean controlChannelEnabled = Configuration.controlChannelEnabled();
         private String controlChannel = AeronArchive.Configuration.controlChannel();
         private int controlStreamId = AeronArchive.Configuration.controlStreamId();
         private String localControlChannel = AeronArchive.Configuration.localControlChannel();
@@ -999,15 +1023,18 @@ public final class Archive implements AutoCloseable
             io.aeron.driver.Configuration.validateMtuLength(controlMtuLength);
             checkTermLength(controlTermBufferLength);
 
-            if (null == controlChannel)
+            if (controlChannelEnabled)
             {
-                throw new ConfigurationException("Archive.Context.controlChannel must be set");
-            }
+                if (null == controlChannel)
+                {
+                    throw new ConfigurationException("Archive.Context.controlChannel must be set");
+                }
 
-            if (!controlChannel.startsWith(CommonContext.UDP_CHANNEL))
-            {
-                throw new ConfigurationException(
-                    "Archive.Context.controlChannel must be UDP media: uri=" + controlChannel);
+                if (!controlChannel.startsWith(CommonContext.UDP_CHANNEL))
+                {
+                    throw new ConfigurationException(
+                        "Archive.Context.controlChannel must be UDP media: uri=" + controlChannel);
+                }
             }
 
             if (!localControlChannel.startsWith(CommonContext.IPC_CHANNEL))
@@ -1288,26 +1315,33 @@ public final class Archive implements AutoCloseable
 
             if (null == archiveClientContext.controlResponseChannel())
             {
-                final ChannelUri controlChannelUri = ChannelUri.parse(controlChannel);
-                final String endpoint = controlChannelUri.get(ENDPOINT_PARAM_NAME);
-                int separatorIndex = -1;
-
-                if (null == endpoint || -1 == (separatorIndex = endpoint.lastIndexOf(':')))
+                if (controlChannelEnabled)
                 {
-                    throw new ConfigurationException(
-                        "Unable to derive Archive.Context.archiveClientContext.controlResponseChannel as " +
-                        "Archive.Context.controlChannel.endpoint=" + endpoint +
-                        " and is not in the <host>:<port> format");
+                    final ChannelUri controlChannelUri = ChannelUri.parse(controlChannel);
+                    final String endpoint = controlChannelUri.get(ENDPOINT_PARAM_NAME);
+                    int separatorIndex = -1;
 
+                    if (null == endpoint || -1 == (separatorIndex = endpoint.lastIndexOf(':')))
+                    {
+                        throw new ConfigurationException(
+                            "Unable to derive Archive.Context.archiveClientContext.controlResponseChannel as " +
+                                "Archive.Context.controlChannel.endpoint=" + endpoint +
+                                " and is not in the <host>:<port> format");
+                    }
+
+                    final String responseEndpoint = endpoint.substring(0, separatorIndex) + ":0";
+                    final String responseChannel = new ChannelUriStringBuilder()
+                        .media("udp")
+                        .endpoint(responseEndpoint)
+                        .build();
+
+                    archiveClientContext.controlResponseChannel(responseChannel);
                 }
-
-                final String responseEndpoint = endpoint.substring(0, separatorIndex) + ":0";
-                final String responseChannel = new ChannelUriStringBuilder()
-                    .media("udp")
-                    .endpoint(responseEndpoint)
-                    .build();
-
-                archiveClientContext.controlResponseChannel(responseChannel);
+                else
+                {
+                    throw new ConfigurationException("Archive.Context.archiveClientContext.controlResponseChannel " +
+                        "must be set if Archive.Context.controlChannelEnabled is false");
+                }
             }
 
             archiveClientContext.aeron(aeron).lock(NoOpLock.INSTANCE).errorHandler(errorHandler);
@@ -1415,7 +1449,7 @@ public final class Archive implements AutoCloseable
         /**
          * Should an existing archive be deleted on start. Useful only for testing.
          *
-         * @return true if an existing archive should be deleted on start up.
+         * @return {@code true} if an existing archive should be deleted on start up.
          */
         public boolean deleteArchiveOnStart()
         {
@@ -1553,6 +1587,30 @@ public final class Archive implements AutoCloseable
         }
 
         /**
+         * Should the UDP control channel be enabled.
+         *
+         * @return {@code true} if the UDP control channel should be enabled.
+         * @see Configuration#CONTROL_CHANNEL_ENABLED_PROP_NAME
+         */
+        public boolean controlChannelEnabled()
+        {
+            return controlChannelEnabled;
+        }
+
+        /**
+         * Set if the UDP control channel should be enabled.
+         *
+         * @param controlChannelEnabled indication of if the recording events channel should be enabled.
+         * @return this for a fluent API.
+         * @see Configuration#CONTROL_CHANNEL_ENABLED_PROP_NAME
+         */
+        public Context controlChannelEnabled(final boolean controlChannelEnabled)
+        {
+            this.controlChannelEnabled = controlChannelEnabled;
+            return this;
+        }
+
+        /**
          * Get the channel URI on which the control request subscription will listen.
          *
          * @return the channel URI on which the control request subscription will listen.
@@ -1651,7 +1709,7 @@ public final class Archive implements AutoCloseable
         /**
          * Should the control streams use sparse file term buffers.
          *
-         * @return true if the control stream should use sparse file term buffers.
+         * @return {@code true} if the control stream should use sparse file term buffers.
          * @see io.aeron.archive.client.AeronArchive.Configuration#CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
          */
         public boolean controlTermBufferSparse()
@@ -1775,7 +1833,7 @@ public final class Archive implements AutoCloseable
         /**
          * Should the recording events channel be enabled.
          *
-         * @return true if the recording events channel should be enabled.
+         * @return {@code true} if the recording events channel should be enabled.
          * @see io.aeron.archive.client.AeronArchive.Configuration#RECORDING_EVENTS_ENABLED_PROP_NAME
          */
         public boolean recordingEventsEnabled()

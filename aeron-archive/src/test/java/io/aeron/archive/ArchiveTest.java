@@ -28,6 +28,7 @@ import io.aeron.archive.codecs.TruncateRecordingRequestDecoder;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -527,6 +528,59 @@ class ArchiveTest
                 sourceIdentity) -> {});
 
             assertEquals(0, count);
+        }
+        finally
+        {
+            archiveCtx.deleteDirectory();
+            driverCtx.deleteDirectory();
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldRunWithControlChannelDisabled() throws IOException
+    {
+        final int streamId = 7;
+        final String channel = "aeron:ipc";
+
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .threadingMode(ThreadingMode.SHARED);
+        final Archive.Context archiveCtx = TestContexts.localhostArchive()
+            .controlChannelEnabled(false)
+            .controlChannel(null)
+            .archiveClientContext(new AeronArchive.Context().controlResponseChannel("aeron:udp?endpoint=localhost:0"))
+            .deleteArchiveOnStart(true)
+            .threadingMode(SHARED);
+
+        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
+            AeronArchive archive = AeronArchive.connect(new AeronArchive.Context()
+                .controlRequestChannel(archiveCtx.localControlChannel())
+                .controlResponseChannel(archiveCtx.localControlChannel()));
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverCtx.aeronDirectoryName())))
+        {
+            final long subscriptionId = archive.startRecording(channel, streamId, LOCAL);
+            try (Publication publication = aeron.addExclusivePublication(channel, streamId))
+            {
+                final int sessionId = publication.sessionId();
+
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = Tests.awaitRecordingCounterId(counters, sessionId);
+
+                final BufferClaim bufferClaim = new BufferClaim();
+                for (int i = 0; i < 111; i++)
+                {
+                    while (publication.tryClaim(4, bufferClaim) < 0)
+                    {
+                        Tests.yield();
+                    }
+                    bufferClaim.buffer().putInt(bufferClaim.offset(), i);
+                    bufferClaim.commit();
+                }
+
+                Tests.awaitPosition(counters, counterId, publication.position());
+            }
+            archive.stopRecording(subscriptionId);
         }
         finally
         {

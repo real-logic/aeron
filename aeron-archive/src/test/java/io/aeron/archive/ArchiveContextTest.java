@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.AeronCounters;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
@@ -622,6 +624,94 @@ class ArchiveContextTest
         {
             System.clearProperty(ERROR_BUFFER_LENGTH_PROP_NAME);
         }
+    }
+
+    @Test
+    void controlChannelEnabledReturnsTrueWhenPropertyIsNotSet()
+    {
+        System.clearProperty(CONTROL_CHANNEL_ENABLED_PROP_NAME);
+        assertTrue(Archive.Configuration.controlChannelEnabled());
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "'', false", "true, true", "True, false", "xyz, false" })
+    void controlChannelEnabledReturnsTrueWhenPropertyIsNotSet(final String propValue, final boolean expected)
+    {
+        System.setProperty(CONTROL_CHANNEL_ENABLED_PROP_NAME, propValue);
+        try
+        {
+            assertEquals(expected, Archive.Configuration.controlChannelEnabled());
+        }
+        finally
+        {
+            System.clearProperty(CONTROL_CHANNEL_ENABLED_PROP_NAME);
+        }
+    }
+
+    @Test
+    void controlChannelMustBeSpecified()
+    {
+        context.controlChannel(null);
+
+        final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
+        assertEquals("ERROR - Archive.Context.controlChannel must be set", exception.getMessage());
+    }
+
+    @Test
+    void controlChannelMustBeUdpChannel()
+    {
+        context.controlChannel("aeron:ipc");
+
+        final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
+        assertEquals(
+            "ERROR - Archive.Context.controlChannel must be UDP media: uri=" + context.controlChannel(),
+            exception.getMessage());
+    }
+
+    @Test
+    void controlChannelMustHaveValidEndpointSpecifiedIfControlResponseChannelOfTheReplicationClientIsNotSet()
+    {
+        context.controlChannel("aeron:udp?endpoint=localhost");
+
+        final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
+        assertEquals(
+            "ERROR - Unable to derive Archive.Context.archiveClientContext.controlResponseChannel as " +
+            "Archive.Context.controlChannel.endpoint=localhost and is not in the <host>:<port> format",
+            exception.getMessage());
+    }
+
+    @Test
+    void whenControlChannelIsDisabledTheControlResponseChannelOnTheReplicationClientMustBeSet()
+    {
+        context.controlChannelEnabled(false);
+        context.controlChannel("rubbish");
+        final AeronArchive.Context archiveClientContext = new AeronArchive.Context();
+        archiveClientContext.controlResponseChannel(null);
+        context.archiveClientContext(archiveClientContext);
+
+        final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
+        assertEquals(
+            "ERROR - Archive.Context.archiveClientContext.controlResponseChannel must be set if " +
+            "Archive.Context.controlChannelEnabled is false",
+            exception.getMessage());
+    }
+
+    @Test
+    void controlChannelCanBeDisabled()
+    {
+        context.controlChannelEnabled(false);
+        context.controlChannel(null);
+        final AeronArchive.Context archiveClientContext = new AeronArchive.Context();
+        final String responseChannel = "aeron:udp?localhost:0";
+        archiveClientContext.controlResponseChannel(responseChannel);
+        context.archiveClientContext(archiveClientContext);
+
+        context.conclude();
+
+        assertFalse(context.controlChannelEnabled());
+        assertNull(context.controlChannel());
+        assertSame(archiveClientContext, context.archiveClientContext());
+        assertEquals(responseChannel, context.archiveClientContext().controlResponseChannel());
     }
 
     private Counter mockArchiveCounter(

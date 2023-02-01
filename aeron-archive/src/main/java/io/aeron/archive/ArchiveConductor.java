@@ -151,9 +151,17 @@ abstract class ArchiveConductor
         recordingEventsProxy = ctx.recordingEventsEnabled() ? new RecordingEventsProxy(
             aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId())) : null;
 
-        final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
-        controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
-        controlSubscription = aeron.addSubscription(controlChannelUri.toString(), ctx.controlStreamId(), this, null);
+        if (ctx.controlChannelEnabled())
+        {
+            final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
+            controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
+            controlSubscription = aeron.addSubscription(
+                controlChannelUri.toString(), ctx.controlStreamId(), this, null);
+        }
+        else
+        {
+            controlSubscription = null;
+        }
         localControlSubscription = aeron.addSubscription(
             ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
     }

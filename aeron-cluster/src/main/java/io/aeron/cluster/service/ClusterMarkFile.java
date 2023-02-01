@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster.service;
 
-import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
@@ -245,42 +244,6 @@ public final class ClusterMarkFile implements AutoCloseable
     public long candidateTermId()
     {
         return buffer.getLongVolatile(MarkFileHeaderDecoder.candidateTermIdEncodingOffset());
-    }
-
-    /**
-     * Record the fact that a node is aware of an election, so it can survive a restart.
-     *
-     * @param candidateTermId to record that a vote has taken place.
-     * @param fileSyncLevel   as defined by cluster file sync level.
-     */
-    public void candidateTermId(final long candidateTermId, final int fileSyncLevel)
-    {
-        buffer.putLongVolatile(MarkFileHeaderEncoder.candidateTermIdEncodingOffset(), candidateTermId);
-        if (fileSyncLevel > 0)
-        {
-            markFile.mappedByteBuffer().force();
-        }
-    }
-
-    /**
-     * Record the fact that a node is aware of an election, so it can survive a restart.
-     *
-     * @param candidateTermId to record that a vote has taken place.
-     * @param fileSyncLevel   as defined by cluster file sync level.
-     * @return the max of the existing and proposed candidateTermId.
-     */
-    public long proposeMaxCandidateTermId(final long candidateTermId, final int fileSyncLevel)
-    {
-        final long existingCandidateTermId = buffer.getLongVolatile(
-            MarkFileHeaderEncoder.candidateTermIdEncodingOffset());
-
-        if (candidateTermId > existingCandidateTermId)
-        {
-            candidateTermId(candidateTermId, fileSyncLevel);
-            return candidateTermId;
-        }
-
-        return existingCandidateTermId;
     }
 
     /**

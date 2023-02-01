@@ -20,7 +20,6 @@ import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.driver.DefaultNameResolver;
@@ -33,6 +32,7 @@ import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.security.DefaultAuthenticatorSupplier;
 import io.aeron.security.SessionProxy;
 import io.aeron.test.TestContexts;
+import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -50,6 +50,9 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
+import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE;
+import static io.aeron.cluster.service.ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -324,7 +327,7 @@ class ConsensusModuleContextTest
         final MarkFileHeaderDecoder decoder = markFile.decoder();
         decoder.sbeRewind();
         assertEquals(ClusterMarkFile.SEMANTIC_VERSION, decoder.version());
-        assertEquals(ClusterComponentType.CONSENSUS_MODULE, decoder.componentType());
+        assertEquals(CONSENSUS_MODULE, decoder.componentType());
         assertEquals(SystemUtil.getPid(), decoder.pid());
         assertEquals(SERVICE_ID, decoder.serviceId());
         assertEquals(context.aeron().context().aeronDirectoryName(), decoder.aeronDirectory());
@@ -446,6 +449,27 @@ class ConsensusModuleContextTest
         context.conclude();
 
         assertSame(DefaultNameResolver.INSTANCE, context.nameResolver());
+    }
+
+    @Test
+    void shouldUseCandidateTermIdFromClusterMarkFileIfNodeStateFileIsNew()
+    {
+        final TestClusterClock epochClock = new TestClusterClock(MILLISECONDS);
+        final ClusterMarkFile clusterMarkFile = new ClusterMarkFile(
+            new File(clusterDir, ClusterMarkFile.FILENAME),
+            CONSENSUS_MODULE,
+            ERROR_BUFFER_MIN_LENGTH,
+            epochClock,
+            1_000);
+        final long existingCandidateTermId = 23;
+
+        assertEquals(Aeron.NULL_VALUE, clusterMarkFile.candidateTermId());
+        clusterMarkFile.encoder().candidateTermId(existingCandidateTermId);
+        context.clusterMarkFile(clusterMarkFile);
+
+        context.conclude();
+
+        assertEquals(existingCandidateTermId, context.nodeStateFile().candidateTerm().candidateTermId());
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

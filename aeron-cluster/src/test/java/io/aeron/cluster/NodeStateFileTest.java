@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.node.NodeStateHeaderEncoder;
 import io.aeron.cluster.service.ClusterMarkFile;
@@ -36,31 +37,38 @@ class NodeStateFileTest
     private final int syncLevel = 1;
 
     @Test
-    void shouldFailIfCreateNewFalseAndFileDoesNotExist(@TempDir final File archiveDir)
+    void shouldFailIfCreateNewFalseAndFileDoesNotExist(@TempDir final File clusterDir)
     {
-        assertThrows(IOException.class, () -> new NodeStateFile(archiveDir, false, syncLevel));
+        assertThrows(IOException.class, () -> new NodeStateFile(clusterDir, false, syncLevel));
     }
 
     @Test
-    void shouldCreateIfCreateNewTrueAndFileDoesNotExist(@TempDir final File archiveDir) throws IOException
+    void shouldCreateIfCreateNewTrueAndFileDoesNotExist(@TempDir final File clusterDir) throws IOException
     {
-        assertEquals(0, Objects.requireNonNull(archiveDir.list()).length);
-        new NodeStateFile(archiveDir, true, syncLevel);
-        assertTrue(new File(archiveDir, NodeStateFile.FILENAME).exists());
+        assertEquals(0, Objects.requireNonNull(clusterDir.list()).length);
+        new NodeStateFile(clusterDir, true, syncLevel);
+        assertTrue(new File(clusterDir, NodeStateFile.FILENAME).exists());
     }
 
     @Test
-    void shouldPersistCandidateTermId(@TempDir final File archiveDir) throws Exception
+    void shouldHaveNullCandidateTermIdOnInitialCreation(@TempDir final File clusterDir) throws IOException
+    {
+        final NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel);
+        assertEquals(Aeron.NULL_VALUE, nodeStateFile.candidateTerm().candidateTermId());
+    }
+
+    @Test
+    void shouldPersistCandidateTermId(@TempDir final File clusterDir) throws Exception
     {
         final long candidateTermId = 832234;
         final long timestampMs = 324234;
         final long logPosition = 8923423;
-        try (NodeStateFile nodeStateFile = new NodeStateFile(archiveDir, true, syncLevel))
+        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
         {
             nodeStateFile.updateCandidateTermId(candidateTermId, logPosition, timestampMs);
         }
 
-        try (NodeStateFile nodeStateFile = new NodeStateFile(archiveDir, false, syncLevel))
+        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, false, syncLevel))
         {
             assertEquals(candidateTermId, nodeStateFile.candidateTerm().candidateTermId());
             assertEquals(timestampMs, nodeStateFile.candidateTerm().timestamp());
@@ -69,24 +77,44 @@ class NodeStateFileTest
     }
 
     @Test
-    void shouldThrowIfVersionMismatch(@TempDir final File archiveDir) throws IOException
+    void shouldThrowIfVersionMismatch(@TempDir final File clusterDir) throws IOException
     {
-        try (NodeStateFile ignore = new NodeStateFile(archiveDir, true, syncLevel))
+        try (NodeStateFile ignore = new NodeStateFile(clusterDir, true, syncLevel))
         {
             Objects.requireNonNull(ignore);
         }
 
         final int invalidVersion = SemanticVersion.compose(
             ClusterMarkFile.MAJOR_VERSION + 1, ClusterMarkFile.MINOR_VERSION, ClusterMarkFile.PATCH_VERSION);
-        forceVersion(archiveDir, invalidVersion);
+        forceVersion(clusterDir, invalidVersion);
 
-        assertThrows(ClusterException.class, () -> new NodeStateFile(archiveDir, false, syncLevel));
+        assertThrows(ClusterException.class, () -> new NodeStateFile(clusterDir, false, syncLevel));
     }
 
-    private void forceVersion(final File archiveDir, final int semanticVersion)
+    @Test
+    void shouldProposeNewMaxTermId(@TempDir final File clusterDir) throws IOException
+    {
+        final long nextCandidateTermId;
+        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
+        {
+            nodeStateFile.updateCandidateTermId(5, 10, 10);
+
+            nextCandidateTermId = nodeStateFile.candidateTerm().candidateTermId() + 1;
+            assertEquals(nextCandidateTermId, nodeStateFile.proposeMaxCandidateTermId(nextCandidateTermId, 20, 20));
+            final long tooLowCandidateTermId = nodeStateFile.candidateTerm().candidateTermId() - 1;
+            assertEquals(nextCandidateTermId, nodeStateFile.proposeMaxCandidateTermId(tooLowCandidateTermId, 30, 30));
+        }
+
+        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, false, syncLevel))
+        {
+            assertEquals(nextCandidateTermId, nodeStateFile.candidateTerm().candidateTermId());
+        }
+    }
+
+    private void forceVersion(final File clusterDir, final int semanticVersion)
     {
         final MappedByteBuffer buffer = IoUtil.mapExistingFile(
-            new File(archiveDir, NodeStateFile.FILENAME), "test node state file");
+            new File(clusterDir, NodeStateFile.FILENAME), "test node state file");
         final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(buffer);
         unsafeBuffer.putInt(NodeStateHeaderEncoder.versionEncodingOffset(), semanticVersion);
     }

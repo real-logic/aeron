@@ -76,7 +76,7 @@ public class NodeStateFile implements AutoCloseable
         CandidateTermDecoder.BLOCK_LENGTH;
     private final CandidateTerm candidateTerm = new CandidateTerm();
     private final MappedByteBuffer mappedFile;
-    private final File archiveDir;
+    private final File clusterDir;
     private int fileSyncLevel;
     private final NodeStateHeaderDecoder nodeStateHeaderDecoder = new NodeStateHeaderDecoder();
     private final NodeStateHeaderEncoder nodeStateHeaderEncoder = new NodeStateHeaderEncoder();
@@ -87,22 +87,23 @@ public class NodeStateFile implements AutoCloseable
     private final CandidateTermDecoder candidateTermDecoder = new CandidateTermDecoder();
     private final CandidateTermEncoder candidateTermEncoder = new CandidateTermEncoder();
     private final UnsafeBuffer buffer;
+    private final int candidateTermIdOffset;
 
     /**
      * Construct the NodeStateFile.
      *
-     * @param archiveDir    directory containing the NodeStateFile.
+     * @param clusterDir    directory containing the NodeStateFile.
      * @param createNew     whether a new file should be created if one does not already exist.
      * @param fileSyncLevel whether the mapped byte buffer should be synchronised with the underlying filesystem on
      *                      change.
      * @throws IOException if there is an error creating the file or <code>createNew == false</code> and the file does
      * not already exist.
      */
-    public NodeStateFile(final File archiveDir, final boolean createNew, final int fileSyncLevel) throws IOException
+    public NodeStateFile(final File clusterDir, final boolean createNew, final int fileSyncLevel) throws IOException
     {
-        this.archiveDir = archiveDir;
+        this.clusterDir = clusterDir;
         this.fileSyncLevel = fileSyncLevel;
-        final File nodeStateFile = new File(archiveDir, NodeStateFile.FILENAME);
+        final File nodeStateFile = new File(clusterDir, NodeStateFile.FILENAME);
         if (!nodeStateFile.exists())
         {
             if (!createNew)
@@ -112,15 +113,21 @@ public class NodeStateFile implements AutoCloseable
 
             this.mappedFile = IoUtil.mapNewFile(nodeStateFile, MINIMUM_FILE_LENGTH);
             this.buffer = new UnsafeBuffer(mappedFile, 0, mappedFile.capacity());
-            setInitialState();
-            syncFile();
+            initialiseEncodersAndDecodersOnCreation();
+            candidateTermIdOffset =
+                candidateTermDecoder.offset() + CandidateTermDecoder.candidateTermIdEncodingOffset();
+            updateCandidateTermId(Aeron.NULL_VALUE, Aeron.NULL_VALUE, Aeron.NULL_VALUE);
         }
         else
         {
             this.mappedFile = IoUtil.mapExistingFile(nodeStateFile, "NodeState");
             this.buffer = new UnsafeBuffer(mappedFile, 0, mappedFile.capacity());
             loadInitialState();
+            candidateTermIdOffset =
+                candidateTermDecoder.offset() + CandidateTermDecoder.candidateTermIdEncodingOffset();
         }
+
+        syncFile();
     }
 
     private void loadInitialState()
@@ -175,7 +182,7 @@ public class NodeStateFile implements AutoCloseable
         return Aeron.NULL_VALUE;
     }
 
-    private void setInitialState()
+    private void initialiseEncodersAndDecodersOnCreation()
     {
         nodeStateHeaderEncoder.wrap(buffer, 0);
         nodeStateHeaderDecoder.wrap(
@@ -198,8 +205,6 @@ public class NodeStateFile implements AutoCloseable
             buffer, firstFramingHeaderOffset + simpleOpenFramingHeaderEncoder.sbeBlockLength(), messageHeaderEncoder);
         candidateTermDecoder.wrapAndApplyHeader(
             buffer, firstFramingHeaderOffset + simpleOpenFramingHeaderEncoder.sbeBlockLength(), messageHeaderDecoder);
-
-        updateCandidateTermId(Aeron.NULL_VALUE, Aeron.NULL_VALUE, Aeron.NULL_VALUE);
 
         simpleOpenFramingHeaderEncoder.messageLength(
             SimpleOpenFramingHeaderEncoder.BLOCK_LENGTH +
@@ -224,10 +229,30 @@ public class NodeStateFile implements AutoCloseable
     public void updateCandidateTermId(final long candidateTermId, final long logPosition, final long timestampMs)
     {
         candidateTermEncoder
-            .candidateTermId(candidateTermId)
             .logPosition(logPosition)
             .timestamp(timestampMs);
+        buffer.putLongVolatile(candidateTermIdOffset, candidateTermId);
         syncFile();
+    }
+
+    /**
+     * Set the current candidate term id with associated information
+     * @param candidateTermId   current candidate term id
+     * @param logPosition       log position where the term id change occurred
+     * @param timestampMs       timestamp of the candidate term id change
+     * @return the new candidate term id.
+     */
+    public long proposeMaxCandidateTermId(final long candidateTermId, final long logPosition, final long timestampMs)
+    {
+        final long existingCandidateTermId = candidateTerm.candidateTermId();
+
+        if (candidateTermId > existingCandidateTermId)
+        {
+            updateCandidateTermId(candidateTermId, logPosition, timestampMs);
+            return candidateTermId;
+        }
+
+        return existingCandidateTermId;
     }
 
     /**
@@ -256,7 +281,7 @@ public class NodeStateFile implements AutoCloseable
          */
         public long candidateTermId()
         {
-            return candidateTermDecoder.candidateTermId();
+            return buffer.getLongVolatile(candidateTermIdOffset);
         }
 
         /**

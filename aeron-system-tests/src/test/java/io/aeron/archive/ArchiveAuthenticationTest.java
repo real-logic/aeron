@@ -369,16 +369,10 @@ class ArchiveAuthenticationTest
             .authenticatorSupplier(authenticatorSupplier)
             .threadingMode(ArchiveThreadingMode.SHARED);
 
-        try
-        {
-            driver = TestMediaDriver.launch(mediaDriverCtx, systemTestWatcher);
-            archive = Archive.launch(archiveCtx);
-        }
-        finally
-        {
-            systemTestWatcher.dataCollector().add(mediaDriverCtx.aeronDirectory());
-            systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
-        }
+        driver = TestMediaDriver.launch(mediaDriverCtx, systemTestWatcher);
+        systemTestWatcher.dataCollector().add(mediaDriverCtx.aeronDirectory());
+        archive = Archive.launch(archiveCtx);
+        systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
     }
 
     private void createRecording()

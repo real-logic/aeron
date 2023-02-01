@@ -49,14 +49,17 @@ class TwoBufferOfferMessageTest
         .dirDeleteOnStart(true)
         .threadingMode(ThreadingMode.SHARED);
 
-    private final TestMediaDriver driver = TestMediaDriver.launch(driverContext, testWatcher);
+    private TestMediaDriver driver;
 
-    private final Aeron aeron = Aeron.connect();
+    private Aeron aeron;
 
     @BeforeEach
     void setUp()
     {
+        driver = TestMediaDriver.launch(driverContext, testWatcher);
         testWatcher.dataCollector().add(driver.context().aeronDirectory());
+
+        aeron = Aeron.connect();
     }
 
     @AfterEach

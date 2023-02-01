@@ -57,31 +57,38 @@ class RegistrationAndOwnerTest
             .errorHandler(Tests::onError)
             .dirDeleteOnStart(true);
 
-        try (
-            TestMediaDriver mediaDriver = TestMediaDriver.launch(ctx, testWatcher);
-            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
-            Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
-            Publication publication = aeron.addPublication(channel, STREAM_ID);
-            Counter userCounter = aeron.addCounter(1002, "Test Counter"))
+        try (TestMediaDriver mediaDriver = TestMediaDriver.launch(ctx, testWatcher))
         {
             testWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());
 
-            awaitConnected(subscription);
-            awaitConnected(publication);
+            try (
+                Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+                Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+                Publication publication = aeron.addPublication(channel, STREAM_ID);
+                Counter userCounter = aeron.addCounter(1002, "Test Counter"))
+            {
+                testWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());
 
-            final CountersReader countersReader = aeron.countersReader();
-            final int subscriberPositionId = subscription.imageAtIndex(0).subscriberPositionId();
+                awaitConnected(subscription);
+                awaitConnected(publication);
 
-            assertEquals(aeron.clientId(), countersReader.getCounterOwnerId(subscriberPositionId));
-            assertEquals(aeron.clientId(), countersReader.getCounterOwnerId(publication.positionLimitId()));
-            assertEquals(aeron.clientId(), countersReader.getCounterOwnerId(userCounter.id()));
+                final CountersReader countersReader = aeron.countersReader();
+                final int subscriberPositionId = subscription.imageAtIndex(0).subscriberPositionId();
 
-            assertEquals(subscription.registrationId(), countersReader.getCounterRegistrationId(subscriberPositionId));
+                assertEquals(aeron.clientId(), countersReader.getCounterOwnerId(subscriberPositionId));
+                assertEquals(aeron.clientId(), countersReader.getCounterOwnerId(publication.positionLimitId()));
+                assertEquals(aeron.clientId(), countersReader.getCounterOwnerId(userCounter.id()));
 
-            assertEquals(
-                publication.registrationId(), countersReader.getCounterRegistrationId(publication.positionLimitId()));
+                assertEquals(
+                    subscription.registrationId(), countersReader.getCounterRegistrationId(subscriberPositionId));
 
-            assertEquals(userCounter.registrationId(), countersReader.getCounterRegistrationId(userCounter.id()));
+                assertEquals(
+                    publication.registrationId(),
+                    countersReader.getCounterRegistrationId(publication.positionLimitId()));
+
+                assertEquals(userCounter.registrationId(),
+                    countersReader.getCounterRegistrationId(userCounter.id()));
+            }
         }
     }
 }

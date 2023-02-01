@@ -62,14 +62,8 @@ class AsyncResourceTest
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
 
-        try
-        {
-            driver = TestMediaDriver.launch(driverCtx, testWatcher);
-        }
-        finally
-        {
-            testWatcher.dataCollector().add(driverCtx.aeronDirectory());
-        }
+        driver = TestMediaDriver.launch(driverCtx, testWatcher);
+        testWatcher.dataCollector().add(driverCtx.aeronDirectory());
     }
 
     @AfterEach

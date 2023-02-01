@@ -76,14 +76,16 @@ class ExclusivePublicationTest
         .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
         .threadingMode(ThreadingMode.SHARED);
 
-    private final TestMediaDriver driver = TestMediaDriver.launch(driverContext, testWatcher);
-
-    private final Aeron aeron = Aeron.connect();
+    private TestMediaDriver driver;
+    private Aeron aeron;
 
     @BeforeEach
     void setUp()
     {
+        driver = TestMediaDriver.launch(driverContext, testWatcher);
         testWatcher.dataCollector().add(driver.context().aeronDirectory());
+
+        aeron = Aeron.connect();
     }
 
     @AfterEach

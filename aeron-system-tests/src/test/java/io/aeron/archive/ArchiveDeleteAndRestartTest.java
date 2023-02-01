@@ -85,16 +85,11 @@ class ArchiveDeleteAndRestartTest
             .threadingMode(ArchiveThreadingMode.SHARED)
             .idleStrategySupplier(YieldingIdleStrategy::new);
 
-        try
-        {
-            driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
-            archive = Archive.launch(archiveContext.clone());
-        }
-        finally
-        {
-            systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
-            systemTestWatcher.dataCollector().add(archiveContext.archiveDir());
-        }
+        driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
+        systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+        archive = Archive.launch(archiveContext.clone());
+        systemTestWatcher.dataCollector().add(archiveContext.archiveDir());
+
         client = Aeron.connect();
     }
 

@@ -37,14 +37,15 @@ class ReentrantClientTest
     @RegisterExtension
     final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
-    private final TestMediaDriver mediaDriver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Tests::onError)
-        .dirDeleteOnStart(true),
-        testWatcher);
+    private TestMediaDriver mediaDriver;
 
     @BeforeEach
     void setUp()
     {
+        mediaDriver = TestMediaDriver.launch(new MediaDriver.Context()
+            .errorHandler(Tests::onError)
+            .dirDeleteOnStart(true),
+        testWatcher);
         testWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());
     }
 

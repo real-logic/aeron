@@ -103,14 +103,8 @@ class NameReResolutionTest
             .threadingMode(ThreadingMode.SHARED)
             .nameResolver(new RedirectingNameResolver(STUB_LOOKUP_CONFIGURATION));
 
-        try
-        {
-            driver = TestMediaDriver.launch(context, systemTestWatcher);
-        }
-        finally
-        {
-            systemTestWatcher.dataCollector().add(context.aeronDirectory());
-        }
+        driver = TestMediaDriver.launch(context, systemTestWatcher);
+        systemTestWatcher.dataCollector().add(context.aeronDirectory());
 
         client = Aeron.connect(new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()));
         countersReader = client.countersReader();

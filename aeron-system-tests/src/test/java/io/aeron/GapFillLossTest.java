@@ -79,34 +79,38 @@ class GapFillLossTest
 
         TestMediaDriver.enableLossGenerationOnReceive(ctx, 0.20, 0xcafebabeL, true, false);
 
-        try (TestMediaDriver mediaDriver = TestMediaDriver.launch(ctx, watcher);
-            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
-            Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID);
-            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+        try (TestMediaDriver mediaDriver = TestMediaDriver.launch(ctx, watcher))
         {
             watcher.dataCollector().add(mediaDriver.context().aeronDirectory());
 
-            final Subscriber subscriber = new Subscriber(subscription);
-            final Thread subscriberThread = new Thread(subscriber);
-            subscriberThread.setDaemon(true);
-            subscriberThread.start();
-
-            long position = 0;
-            for (int i = 0; i < NUM_MESSAGES; i++)
+            try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+                Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID);
+                Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
             {
-                srcBuffer.putLong(0, i);
+                watcher.dataCollector().add(mediaDriver.context().aeronDirectory());
 
-                while ((position = publication.offer(srcBuffer)) < 0L)
+                final Subscriber subscriber = new Subscriber(subscription);
+                final Thread subscriberThread = new Thread(subscriber);
+                subscriberThread.setDaemon(true);
+                subscriberThread.start();
+
+                long position = 0;
+                for (int i = 0; i < NUM_MESSAGES; i++)
                 {
-                    Tests.yield();
+                    srcBuffer.putLong(0, i);
+
+                    while ((position = publication.offer(srcBuffer)) < 0L)
+                    {
+                        Tests.yield();
+                    }
                 }
+
+                FINAL_POSITION.set(position);
+                subscriberThread.join();
+
+                verifyLossOccurredForStream(ctx.aeronDirectoryName(), STREAM_ID);
+                assertThat(subscriber.messageCount, lessThan(NUM_MESSAGES));
             }
-
-            FINAL_POSITION.set(position);
-            subscriberThread.join();
-
-            verifyLossOccurredForStream(ctx.aeronDirectoryName(), STREAM_ID);
-            assertThat(subscriber.messageCount, lessThan(NUM_MESSAGES));
         }
     }
 

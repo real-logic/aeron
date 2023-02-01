@@ -107,23 +107,11 @@ class MinFlowControlSystemTest
             .errorHandler(Tests::onError)
             .threadingMode(ThreadingMode.SHARED);
 
-        try
-        {
-            driverA = TestMediaDriver.launch(driverAContext, testWatcher);
-        }
-        finally
-        {
-            testWatcher.dataCollector().add(driverAContext.aeronDirectory());
-        }
+        driverA = TestMediaDriver.launch(driverAContext, testWatcher);
+        testWatcher.dataCollector().add(driverAContext.aeronDirectory());
 
-        try
-        {
-            driverB = TestMediaDriver.launch(driverBContext, testWatcher);
-        }
-        finally
-        {
-            testWatcher.dataCollector().add(driverBContext.aeronDirectory());
-        }
+        driverB = TestMediaDriver.launch(driverBContext, testWatcher);
+        testWatcher.dataCollector().add(driverBContext.aeronDirectory());
 
         clientA = Aeron.connect(
             new Aeron.Context()

@@ -260,19 +260,20 @@ class MultiModuleSharedDriverTest
                 .deleteArchiveOnStart(true);
 
             archivingMediaDriver = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
+            dataCollector.add(archivingMediaDriver.archive().context().archiveDir());
+            dataCollector.add(archivingMediaDriver.mediaDriver().context().aeronDirectory());
+
             consensusModule0 = consensusModule(0, driverCtx.aeronDirectoryName());
+            dataCollector.add(consensusModule0.context().clusterDir());
             container0 = container(consensusModule0.context());
+
             consensusModule1 = consensusModule(1, driverCtx.aeronDirectoryName());
+            dataCollector.add(consensusModule1.context().clusterDir());
             container1 = container(consensusModule1.context());
         }
 
         public void close()
         {
-            dataCollector.add(consensusModule0.context().clusterDir());
-            dataCollector.add(consensusModule1.context().clusterDir());
-            dataCollector.add(archivingMediaDriver.archive().context().archiveDir());
-            dataCollector.add(archivingMediaDriver.mediaDriver().context().aeronDirectory());
-
             CloseHelper.closeAll(
                 client0,
                 consensusModule0,

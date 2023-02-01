@@ -133,16 +133,10 @@ class CatalogWithJumboRecordingsAndGapsTest
             .fileSyncLevel(0)
             .threadingMode(ArchiveThreadingMode.SHARED);
 
-        try
-        {
-            mediaDriver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
-            archive = Archive.launch(archiveCtx);
-        }
-        finally
-        {
-            systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
-            systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
-        }
+        mediaDriver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
+        systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+        archive = Archive.launch(archiveCtx);
+        systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
 
         aeron = Aeron.connect(
             new Aeron.Context()

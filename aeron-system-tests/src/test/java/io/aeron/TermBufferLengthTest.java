@@ -51,13 +51,16 @@ class TermBufferLengthTest
             .ipcTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH * 2);
 
         try (
-            TestMediaDriver mediaDriver = TestMediaDriver.launch(ctx, testWatcher);
-            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
-            Publication publication = aeron.addPublication(channel, STREAM_ID))
+            TestMediaDriver mediaDriver = TestMediaDriver.launch(ctx, testWatcher))
         {
             testWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());
 
-            assertEquals(expectedTermBufferLength, publication.termBufferLength());
+            try (
+                Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+                Publication publication = aeron.addPublication(channel, STREAM_ID))
+            {
+                assertEquals(expectedTermBufferLength, publication.termBufferLength());
+            }
         }
     }
 }

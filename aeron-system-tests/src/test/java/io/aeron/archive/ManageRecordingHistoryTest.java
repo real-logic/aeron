@@ -91,16 +91,11 @@ class ManageRecordingHistoryTest
             .fileSyncLevel(0)
             .threadingMode(ArchiveThreadingMode.SHARED);
 
-        try
-        {
-            driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
-            archive = Archive.launch(archiveCtx);
-        }
-        finally
-        {
-            systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
-            systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
-        }
+
+        driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
+        systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
+        archive = Archive.launch(archiveCtx);
+        systemTestWatcher.dataCollector().add(archiveCtx.archiveDir());
 
         aeron = Aeron.connect();
 

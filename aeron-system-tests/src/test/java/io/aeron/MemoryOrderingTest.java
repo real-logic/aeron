@@ -56,19 +56,21 @@ class MemoryOrderingTest
     @RegisterExtension
     final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
-    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Tests::onError)
-        .dirDeleteOnStart(true)
-        .threadingMode(ThreadingMode.SHARED)
-        .publicationTermBufferLength(TERM_BUFFER_LENGTH),
-        testWatcher);
-
-    private final Aeron aeron = Aeron.connect();
+    private TestMediaDriver driver;
+    private Aeron aeron;
 
     @BeforeEach
     void setUp()
     {
+        driver = TestMediaDriver.launch(new MediaDriver.Context()
+                .errorHandler(Tests::onError)
+                .dirDeleteOnStart(true)
+                .threadingMode(ThreadingMode.SHARED)
+                .publicationTermBufferLength(TERM_BUFFER_LENGTH),
+            testWatcher);
         testWatcher.dataCollector().add(driver.context().aeronDirectory());
+
+        aeron = Aeron.connect();
     }
 
     @AfterEach

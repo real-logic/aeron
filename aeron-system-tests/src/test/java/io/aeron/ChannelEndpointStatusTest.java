@@ -118,10 +118,10 @@ class ChannelEndpointStatusTest
             .threadingMode(THREADING_MODE);
 
         driverA = TestMediaDriver.launch(driverAContext, testWatcher);
-        driverB = TestMediaDriver.launch(driverBContext, testWatcher);
-
         testWatcher.dataCollector().add(driverA.context().aeronDirectory());
+        driverB = TestMediaDriver.launch(driverBContext, testWatcher);
         testWatcher.dataCollector().add(driverB.context().aeronDirectory());
+
         testWatcher.ignoreErrorsMatching((s) -> true);
 
         clientA = Aeron.connect(

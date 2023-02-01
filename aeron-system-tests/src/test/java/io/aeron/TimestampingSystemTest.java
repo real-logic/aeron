@@ -55,14 +55,9 @@ class TimestampingSystemTest
     {
         // TODO: temporary removal of SHARED to test
         final MediaDriver.Context context = new MediaDriver.Context().dirDeleteOnStart(true);
-        try
-        {
-            return TestMediaDriver.launch(context, systemTestWatcher);
-        }
-        finally
-        {
-            systemTestWatcher.dataCollector().add(context.aeronDirectory());
-        }
+        final TestMediaDriver driver = TestMediaDriver.launch(context, systemTestWatcher);
+        systemTestWatcher.dataCollector().add(driver.context().aeronDirectory());
+        return driver;
     }
 
     @BeforeEach

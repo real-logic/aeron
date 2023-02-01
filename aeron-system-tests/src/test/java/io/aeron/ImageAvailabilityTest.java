@@ -53,20 +53,23 @@ class ImageAvailabilityTest
     @RegisterExtension
     final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
-    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Tests::onError)
-        .dirDeleteOnStart(true)
-        .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(20))
-        .threadingMode(ThreadingMode.SHARED), testWatcher);
+    private TestMediaDriver driver;
 
-    private final Aeron aeron = Aeron.connect(new Aeron.Context()
-        .useConductorAgentInvoker(true)
-        .errorHandler(Tests::onError));
+    private Aeron aeron;
 
     @BeforeEach
     void setUp()
     {
+        driver = TestMediaDriver.launch(new MediaDriver.Context()
+            .errorHandler(Tests::onError)
+            .dirDeleteOnStart(true)
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(20))
+            .threadingMode(ThreadingMode.SHARED), testWatcher);
         testWatcher.dataCollector().add(driver.context().aeronDirectory());
+
+        aeron = Aeron.connect(new Aeron.Context()
+            .useConductorAgentInvoker(true)
+            .errorHandler(Tests::onError));
     }
 
     @AfterEach

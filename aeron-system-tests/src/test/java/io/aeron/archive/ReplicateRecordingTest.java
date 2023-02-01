@@ -133,20 +133,14 @@ class ReplicateRecordingTest
             .fileSyncLevel(0)
             .threadingMode(ArchiveThreadingMode.SHARED);
 
-        try
-        {
-            srcDriver = TestMediaDriver.launch(srcContext, systemTestWatcher);
-            srcArchive = Archive.launch(srcArchiveCtx);
-            dstDriver = TestMediaDriver.launch(dstContext, systemTestWatcher);
-            dstArchive = Archive.launch(dstArchiveCtx);
-        }
-        finally
-        {
-            systemTestWatcher.dataCollector().add(srcContext.aeronDirectory());
-            systemTestWatcher.dataCollector().add(dstContext.aeronDirectory());
-            systemTestWatcher.dataCollector().add(dstArchiveCtx.archiveDir());
-            systemTestWatcher.dataCollector().add(srcArchiveCtx.archiveDir());
-        }
+        srcDriver = TestMediaDriver.launch(srcContext, systemTestWatcher);
+        systemTestWatcher.dataCollector().add(srcContext.aeronDirectory());
+        srcArchive = Archive.launch(srcArchiveCtx);
+        systemTestWatcher.dataCollector().add(srcArchiveCtx.archiveDir());
+        dstDriver = TestMediaDriver.launch(dstContext, systemTestWatcher);
+        systemTestWatcher.dataCollector().add(dstContext.aeronDirectory());
+        dstArchive = Archive.launch(dstArchiveCtx);
+        systemTestWatcher.dataCollector().add(dstArchiveCtx.archiveDir());
 
         srcAeron = Aeron.connect(
             new Aeron.Context()

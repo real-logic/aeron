@@ -134,22 +134,17 @@ class ArchiveSystemTest
             .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030")
             .recordingEventsEnabled(true)
             .idleStrategySupplier(YieldingIdleStrategy::new);
-        try
-        {
-            driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
 
-            if (threadingMode == ThreadingMode.INVOKER)
-            {
-                archiveContext.mediaDriverAgentInvoker(driver.sharedAgentInvoker());
-            }
+        driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
+        systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
 
-            archive = Archive.launch(archiveContext);
-        }
-        finally
+        if (threadingMode == ThreadingMode.INVOKER)
         {
-            systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
-            systemTestWatcher.dataCollector().add(archiveContext.archiveDir());
+            archiveContext.mediaDriverAgentInvoker(driver.sharedAgentInvoker());
         }
+
+        archive = Archive.launch(archiveContext);
+        systemTestWatcher.dataCollector().add(archiveContext.archiveDir());
 
         client = Aeron.connect();
 

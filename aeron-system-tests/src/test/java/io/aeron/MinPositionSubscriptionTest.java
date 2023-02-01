@@ -42,20 +42,22 @@ class MinPositionSubscriptionTest
     @RegisterExtension
     final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
-    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Tests::onError)
-        .dirDeleteOnStart(true)
-        .spiesSimulateConnection(true)
-        .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-        .threadingMode(ThreadingMode.SHARED),
-        testWatcher);
-
-    private final Aeron aeron = Aeron.connect();
+    private TestMediaDriver driver;
+    private Aeron aeron;
 
     @BeforeEach
     void setUp()
     {
+        driver = TestMediaDriver.launch(new MediaDriver.Context()
+                .errorHandler(Tests::onError)
+                .dirDeleteOnStart(true)
+                .spiesSimulateConnection(true)
+                .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
+                .threadingMode(ThreadingMode.SHARED),
+            testWatcher);
         testWatcher.dataCollector().add(driver.context().aeronDirectory());
+
+        aeron = Aeron.connect();
     }
 
     @AfterEach

@@ -105,12 +105,11 @@ class MultiDestinationCastTest
             .threadingMode(ThreadingMode.SHARED);
 
         driverA = TestMediaDriver.launch(driverAContext, testWatcher);
+        testWatcher.dataCollector().add(driverA.context().aeronDirectory());
         driverB = TestMediaDriver.launch(driverBContext, testWatcher);
+        testWatcher.dataCollector().add(driverB.context().aeronDirectory());
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverAContext.aeronDirectoryName()));
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverBContext.aeronDirectoryName()));
-
-        testWatcher.dataCollector().add(driverA.context().aeronDirectory());
-        testWatcher.dataCollector().add(driverB.context().aeronDirectory());
     }
 
     @AfterEach

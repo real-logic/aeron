@@ -56,12 +56,9 @@ class PublishFromArbitraryPositionTest
     @RegisterExtension
     final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
-    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .errorHandler(Tests::onError)
-        .threadingMode(ThreadingMode.SHARED),
-        testWatcher);
+    private TestMediaDriver driver;
 
-    private final Aeron aeron = Aeron.connect();
+    private Aeron aeron;
 
     @RegisterExtension
     final TestWatcher randomSeedWatcher = new TestWatcher()
@@ -75,7 +72,13 @@ class PublishFromArbitraryPositionTest
     @BeforeEach
     void setUp()
     {
+        driver = TestMediaDriver.launch(new MediaDriver.Context()
+                .errorHandler(Tests::onError)
+                .threadingMode(ThreadingMode.SHARED),
+            testWatcher);
         testWatcher.dataCollector().add(driver.context().aeronDirectory());
+
+        aeron = Aeron.connect();
     }
 
     @AfterEach

@@ -57,22 +57,24 @@ class PublicationUnblockTest
     @RegisterExtension
     final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
-    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .threadingMode(ThreadingMode.SHARED)
-        .errorHandler(Tests::onError)
-        .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-        .clientLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(400))
-        .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))
-        .publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500)),
-        testWatcher);
-
-    private final Aeron aeron = Aeron.connect(new Aeron.Context()
-        .keepAliveIntervalNs(TimeUnit.MILLISECONDS.toNanos(100)));
+    private TestMediaDriver driver;
+    private Aeron aeron;
 
     @BeforeEach
     void setUp()
     {
+        driver = TestMediaDriver.launch(new MediaDriver.Context()
+                .threadingMode(ThreadingMode.SHARED)
+                .errorHandler(Tests::onError)
+                .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
+                .clientLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(400))
+                .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))
+                .publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500)),
+            testWatcher);
         testWatcher.dataCollector().add(driver.context().aeronDirectory());
+
+        aeron = Aeron.connect(new Aeron.Context()
+            .keepAliveIntervalNs(TimeUnit.MILLISECONDS.toNanos(100)));
     }
 
     @AfterEach

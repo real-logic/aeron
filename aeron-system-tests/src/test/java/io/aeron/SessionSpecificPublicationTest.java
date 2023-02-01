@@ -70,14 +70,17 @@ class SessionSpecificPublicationTest
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .threadingMode(ThreadingMode.SHARED);
 
-    private final TestMediaDriver mediaDriver = TestMediaDriver.launch(mediaDriverContext, testWatcher);
-    private final Aeron aeron = Aeron.connect();
+    private TestMediaDriver mediaDriver;
+    private Aeron aeron;
 
     @BeforeEach
     void setUp()
     {
+        mediaDriver = TestMediaDriver.launch(mediaDriverContext, testWatcher);
         testWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());
         testWatcher.ignoreErrorsMatching(s -> true);
+
+        aeron = Aeron.connect();
     }
 
     @AfterEach

@@ -37,7 +37,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -122,15 +121,17 @@ class ReplayMergeTest
                 .imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(10))
                 .dirDeleteOnStart(true),
             systemTestWatcher);
+        systemTestWatcher.dataCollector().add(driver.context().aeronDirectory());
 
         archive = Archive.launch(
             TestContexts.localhostArchive()
                 .catalogCapacity(CATALOG_CAPACITY)
-                .aeronDirectoryName(mediaDriverContext.aeronDirectoryName())
+                .aeronDirectoryName(driver.context().aeronDirectoryName())
                 .archiveDir(archiveDir)
                 .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true));
+        systemTestWatcher.dataCollector().add(archive.context().archiveDir());
 
         aeron = Aeron.connect(
             new Aeron.Context()
@@ -143,9 +144,6 @@ class ReplayMergeTest
                 .controlRequestStreamId(archive.context().localControlStreamId())
                 .controlResponseChannel(archive.context().localControlChannel())
                 .aeron(aeron));
-
-        systemTestWatcher.dataCollector().add(Paths.get(mediaDriverContext.aeronDirectoryName()));
-        systemTestWatcher.dataCollector().add(archiveDir.toPath());
     }
 
     @AfterEach

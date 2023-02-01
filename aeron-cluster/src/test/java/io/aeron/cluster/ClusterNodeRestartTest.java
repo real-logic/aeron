@@ -57,7 +57,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({InterruptingTestCallback.class, HideStdErrExtension.class})
-public class ClusterNodeRestartTest
+class ClusterNodeRestartTest
 {
     private static final long CATALOG_CAPACITY = 1024 * 1024;
     private static final int MESSAGE_LENGTH = SIZE_OF_INT;
@@ -75,18 +75,21 @@ public class ClusterNodeRestartTest
     private final CountDownLatch terminationLatch = new CountDownLatch(1);
 
     @BeforeEach
-    public void before()
+    void before()
     {
         launchClusteredMediaDriver(true);
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
-        CloseHelper.closeAll(clusteredMediaDriver.consensusModule(), aeronCluster, container, clusteredMediaDriver);
-
-        if (null != clusteredMediaDriver)
+        if (null == clusteredMediaDriver)
         {
+            CloseHelper.closeAll(aeronCluster, container);
+        }
+        else
+        {
+            CloseHelper.closeAll(clusteredMediaDriver.consensusModule(), aeronCluster, container, clusteredMediaDriver);
             clusteredMediaDriver.consensusModule().context().deleteDirectory();
             clusteredMediaDriver.archive().context().deleteDirectory();
             clusteredMediaDriver.mediaDriver().context().deleteDirectory();
@@ -96,7 +99,7 @@ public class ClusterNodeRestartTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldRestartServiceWithReplay()
+    void shouldRestartServiceWithReplay()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
         final AtomicLong restartServiceMsgCount = new AtomicLong(0);
@@ -120,7 +123,7 @@ public class ClusterNodeRestartTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldRestartServiceWithReplayAndContinue()
+    void shouldRestartServiceWithReplayAndContinue()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
 
@@ -146,7 +149,7 @@ public class ClusterNodeRestartTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldRestartServiceFromEmptySnapshot()
+    void shouldRestartServiceFromEmptySnapshot()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
 
@@ -173,7 +176,7 @@ public class ClusterNodeRestartTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldRestartServiceFromSnapshot()
+    void shouldRestartServiceFromSnapshot()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
 
@@ -206,7 +209,7 @@ public class ClusterNodeRestartTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldRestartServiceFromSnapshotWithFurtherLog()
+    void shouldRestartServiceFromSnapshotWithFurtherLog()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
 
@@ -242,7 +245,7 @@ public class ClusterNodeRestartTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldTakeMultipleSnapshots()
+    void shouldTakeMultipleSnapshots()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
         launchService(serviceMsgCount);
@@ -267,7 +270,7 @@ public class ClusterNodeRestartTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog()
+    void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
 
@@ -304,7 +307,7 @@ public class ClusterNodeRestartTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldTriggerRescheduledTimerAfterReplay()
+    void shouldTriggerRescheduledTimerAfterReplay()
     {
         final AtomicLong triggeredTimersCount = new AtomicLong();
 
@@ -328,7 +331,7 @@ public class ClusterNodeRestartTest
 
     @Test
     @InterruptAfter(20)
-    public void shouldRestartServiceTwiceWithInvalidSnapshotAndFurtherLog()
+    void shouldRestartServiceTwiceWithInvalidSnapshotAndFurtherLog()
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
 
@@ -383,7 +386,7 @@ public class ClusterNodeRestartTest
     @Test
     @InterruptAfter(20)
     @IgnoreStdErr
-    public void shouldRestartServiceAfterShutdownWithInvalidatedSnapshot() throws InterruptedException
+    void shouldRestartServiceAfterShutdownWithInvalidatedSnapshot() throws InterruptedException
     {
         final AtomicLong serviceMsgCount = new AtomicLong(0);
 

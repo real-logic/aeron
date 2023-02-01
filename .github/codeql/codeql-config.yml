@@ -13,6 +13,8 @@ query-filters:
   - exclude:
       id: java/uncaught-number-format-exception
   - exclude:
+      id: java/missing-case-in-switch
+  - exclude:
       id: cpp/unsigned-comparison-zero
   - exclude:
       id: cpp/poorly-documented-function

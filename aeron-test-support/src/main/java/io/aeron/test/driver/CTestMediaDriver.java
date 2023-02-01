@@ -394,7 +394,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         else if (null != multicastFlowControlSupplier)
         {
             throw new RuntimeException("No equivalent C multicast flow control strategy for: " +
-                multicastFlowControlSupplier.getClass().getName());
+                multicastFlowControlSupplier.getClass());
         }
 
         final FlowControlSupplier unicastFlowControlSupplier = context.unicastFlowControlSupplier();
@@ -406,7 +406,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         else if (null != unicastFlowControlSupplier)
         {
             throw new RuntimeException("No equivalent C unicast flow control strategy for: " +
-                multicastFlowControlSupplier.getClass().getName());
+                unicastFlowControlSupplier.getClass());
         }
     }
 

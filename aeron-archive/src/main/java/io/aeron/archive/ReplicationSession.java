@@ -22,6 +22,7 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
+import org.agrona.Strings;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CountedErrorHandler;
 
@@ -107,7 +108,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         this.replicationId = replicationId;
         this.srcRecordingId = srcRecordingId;
         this.dstRecordingId = dstRecordingId;
-        this.liveDestination = "".equals(liveDestination) ? null : liveDestination;
+        this.liveDestination = Strings.isEmpty(liveDestination) ? null : liveDestination;
         this.replicationChannel = replicationChannel;
         this.fileIoMaxLength = fileIoMaxLength;
         this.aeron = context.aeron();

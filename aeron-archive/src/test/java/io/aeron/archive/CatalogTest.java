@@ -377,15 +377,14 @@ class CatalogTest
         }
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     void shouldFixTimestampAndPositionAfterFailureSamePage() throws Exception
     {
         final long newRecordingId = newRecording();
 
-        new File(archiveDir, segmentFileName(newRecordingId, 0)).createNewFile();
-        new File(archiveDir, segmentFileName(newRecordingId, SEGMENT_LENGTH)).createNewFile();
-        new File(archiveDir, segmentFileName(newRecordingId, 2 * SEGMENT_LENGTH)).createNewFile();
+        assertTrue(new File(archiveDir, segmentFileName(newRecordingId, 0)).createNewFile());
+        assertTrue(new File(archiveDir, segmentFileName(newRecordingId, SEGMENT_LENGTH)).createNewFile());
+        assertTrue(new File(archiveDir, segmentFileName(newRecordingId, 2 * SEGMENT_LENGTH)).createNewFile());
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 3 * SEGMENT_LENGTH));
 
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
@@ -1407,10 +1406,12 @@ class CatalogTest
     {
         final StringBuilder buff = new StringBuilder(prefix.length() + suffix.length() * times);
         buff.append(prefix);
+
         for (int i = 0; i < times; i++)
         {
             buff.append(suffix);
         }
+
         return buff.toString();
     }
 }

@@ -52,6 +52,7 @@ import static org.agrona.BitUtil.align;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 class SenderTest
@@ -155,7 +156,7 @@ class SenderTest
             new NetworkPublicationThreadLocals(),
             false);
 
-        senderCommandQueue.offer(() -> sender.onNewNetworkPublication(publication));
+        assertTrue(senderCommandQueue.offer(() -> sender.onNewNetworkPublication(publication)));
     }
 
     @AfterEach

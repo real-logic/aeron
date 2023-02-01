@@ -71,9 +71,9 @@ class ChannelValidationTests
     private void launch()
     {
         driver = TestMediaDriver.launch(context, watcher);
-        aeron = Aeron.connect();
         watcher.dataCollector().add(driver.context().aeronDirectory());
         watcher.ignoreErrorsMatching((s) -> true);
+        aeron = Aeron.connect();
     }
 
     @AfterEach

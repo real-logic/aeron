@@ -196,7 +196,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 {
                     mediaDriverTestUtil.testFailed();
                 }
-                catch (final Exception t)
+                catch (final Throwable t)
                 {
                     error = setOrUpdateError(error, t);
                 }
@@ -207,7 +207,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 {
                     CloseHelper.closeAll(closeables);
                 }
-                catch (final Exception t)
+                catch (final Throwable t)
                 {
                     error = setOrUpdateError(error, t);
                 }
@@ -216,7 +216,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 {
                     mediaDriverTestUtil.testSuccessful();
                 }
-                catch (final Exception t)
+                catch (final Throwable t)
                 {
                     error = setOrUpdateError(error, t);
                 }
@@ -357,7 +357,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         {
             CloseHelper.closeAll(closeables);
         }
-        catch (final Exception t)
+        catch (final Throwable t)
         {
             error = setOrUpdateError(error, t);
         }
@@ -366,7 +366,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         {
             dataCollector.dumpData(test);
         }
-        catch (final Exception t)
+        catch (final Throwable t)
         {
             error = setOrUpdateError(error, t);
         }
@@ -380,7 +380,10 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             return newError;
         }
 
-        existingError.addSuppressed(newError);
+        if (null != newError)
+        {
+            existingError.addSuppressed(newError);
+        }
         return existingError;
     }
 

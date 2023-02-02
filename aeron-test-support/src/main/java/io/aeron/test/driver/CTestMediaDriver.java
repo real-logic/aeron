@@ -458,8 +458,7 @@ public final class CTestMediaDriver implements TestMediaDriver
     {
         try
         {
-            CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
-            return true;
+            return CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
         }
         catch (final Exception ex)
         {

@@ -834,20 +834,6 @@ project(':aeron-samples') {
         sign publishing.publications.aeronSamples
     }
 
-    tasks.withType(Test) {
-        ext.agentFilename = {
-            project.file("../aeron-agent/build/libs/aeron-agent-${aeronVersion}.jar").absolutePath
-        }
-
-        jvmArgs '-javaagent:' + agentFilename()
-        systemProperty "aeron.event.cluster.log", "all"
-        systemProperty "aeron.event.cluster.log.disable", "CANVASS_POSITION,APPEND_POSITION,COMMIT_POSITION"
-        systemProperty "aeron.event.archive.log", "all"
-        systemProperty "aeron.debug.timeout", "3600s"
-        systemProperty "aeron.event.log.reader.classname", "io.aeron.agent.CollectingEventLogReaderAgent"
-        systemProperty "aeron.fallback.logger", "no_op"
-    }
-
     task asciidoctorGithub(type: io.aeron.build.AsciidoctorPreprocessTask) {
         versionText = aeronVersion
     }

@@ -138,7 +138,7 @@ allprojects {
         mavenCentral()
     }
 
-    configurations.all {
+    configurations.configureEach {
         resolutionStrategy {
             failOnVersionConflict()
 
@@ -175,24 +175,24 @@ subprojects {
 
     checkstyle.toolVersion = "${checkstyleVersion}"
 
-    tasks.withType(Sign) {
+    tasks.withType(Sign).configureEach {
         onlyIf {
             isReleaseVersion && gradle.taskGraph.hasTask(tasks.publish)
         }
     }
 
-    tasks.withType(Jar) {
+    tasks.withType(Jar).configureEach {
         enabled = true
         includeEmptyDirs = false
     }
 
-    tasks.withType(JavaCompile) {
+    tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
         options.deprecation = true
         options.compilerArgs.addAll(['-Xlint:all', '-Werror']) // Enable all warnings and treat them as errors
     }
 
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
         if (buildJavaVersion >= 9) {
             jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/java.util.zip=ALL-UNNAMED')
@@ -226,8 +226,9 @@ subprojects {
         javaLauncher.set(toolchainLauncher)
     }
 
-    task slowTest(type: Test, group: 'verification') {
-        dependsOn ":aeron-agent:jar"
+    tasks.register('slowTest', Test) {
+        group 'verification'
+        dependsOn ':aeron-agent:jar'
 
         maxParallelForks = 1
         useJUnitPlatform {
@@ -239,15 +240,16 @@ subprojects {
         }
 
         jvmArgs '-javaagent:' + agentFilename()
-        systemProperty "aeron.event.cluster.log", "all"
-        systemProperty "aeron.event.cluster.log.disable", "CANVASS_POSITION,APPEND_POSITION,COMMIT_POSITION"
-        systemProperty "aeron.debug.timeout", "3600s"
-        systemProperty "aeron.event.log.reader.classname", "io.aeron.agent.CollectingEventLogReaderAgent"
-        systemProperty "aeron.fallback.logger", "no_op"
+        systemProperty 'aeron.event.cluster.log', 'all'
+        systemProperty 'aeron.event.cluster.log.disable', 'CANVASS_POSITION,APPEND_POSITION,COMMIT_POSITION'
+        systemProperty 'aeron.debug.timeout', '3600s'
+        systemProperty 'aeron.event.log.reader.classname', 'io.aeron.agent.CollectingEventLogReaderAgent'
+        systemProperty 'aeron.fallback.logger', 'no_op'
     }
 
-    task bindingsTest(type: Test, group: 'verification') {
-        dependsOn ":aeron-agent:jar"
+    tasks.register('bindingsTest', Test) {
+        group 'verification'
+        dependsOn ':aeron-agent:jar'
 
         maxParallelForks = 1
         useJUnitPlatform {
@@ -259,13 +261,14 @@ subprojects {
         }
 
         jvmArgs '-javaagent:' + agentFilename()
-        systemProperty "aeron.event.cluster.log", "all"
-        systemProperty "aeron.event.cluster.log.disable", "CANVASS_POSITION"
-        systemProperty "aeron.debug.timeout", "3600s"
-        systemProperty "aeron.event.log.reader.classname", "io.aeron.agent.CollectingEventLogReaderAgent"
+        systemProperty 'aeron.event.cluster.log', 'all'
+        systemProperty 'aeron.event.cluster.log.disable', 'CANVASS_POSITION'
+        systemProperty 'aeron.debug.timeout', '3600s'
+        systemProperty 'aeron.event.log.reader.classname', 'io.aeron.agent.CollectingEventLogReaderAgent'
     }
 
-    task topologyTest(type: Test, group: 'verification') {
+    tasks.register('topologyTest', Test) {
+        group 'verification'
         maxParallelForks = 1
         useJUnitPlatform {
             includeTags 'topology'
@@ -296,7 +299,8 @@ subprojects {
         }
     }
 
-    task testJar(type: Jar, dependsOn: testClasses) {
+    tasks.register('testJar', Jar) {
+        dependsOn 'testClasses'
         archiveClassifier.set("test-${project.archivesBaseName}")
         from sourceSets.test.output
     }
@@ -472,7 +476,7 @@ project(':aeron-archive') {
         }
     }
 
-    task generateCodecs(type: JavaExec) {
+    tasks.register('generateCodecs', JavaExec) {
         def codecsFile = 'src/main/resources/archive/aeron-archive-codecs.xml'
         def markCodecsFile = 'src/main/resources/archive/aeron-archive-mark-codecs.xml'
         def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
@@ -490,7 +494,7 @@ project(':aeron-archive') {
         args = [codecsFile, markCodecsFile]
     }
 
-    task generateV6Codecs(type: JavaExec) {
+    tasks.register('generateV6Codecs', JavaExec) {
         def codecsFile = 'src/main/resources/archive/aeron-archive-codecs.xml'
         def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
 
@@ -510,7 +514,7 @@ project(':aeron-archive') {
     }
 
     def generatedCppDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated")
-    task generateCppCodecs(type: JavaExec) {
+    tasks.register('generateCppCodecs', JavaExec) {
         mainClass.set('uk.co.real_logic.sbe.SbeTool')
         classpath = configurations.codecGeneration
         systemProperties(
@@ -522,10 +526,10 @@ project(':aeron-archive') {
         args = ['src/main/resources/archive/aeron-archive-codecs.xml']
     }
 
-    compileJava.dependsOn compileGeneratedJava
-    compileGeneratedJava.dependsOn generateCodecs
-    compileTestJava.dependsOn compileGeneratedTestJava
-    compileGeneratedTestJava.dependsOn generateV6Codecs
+    compileJava.dependsOn 'compileGeneratedJava'
+    compileGeneratedJava.dependsOn 'generateCodecs'
+    compileTestJava.dependsOn 'compileGeneratedTestJava'
+    compileGeneratedTestJava.dependsOn 'generateV6Codecs'
 
     jar {
         from sourceSets.generated.output
@@ -546,7 +550,8 @@ project(':aeron-archive') {
         """
     }
 
-    task sourcesJar(type: Jar, dependsOn: generateCodecs) {
+    tasks.register('sourcesJar', Jar) {
+        dependsOn 'generateCodecs'
         archiveClassifier.set('sources')
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
@@ -614,7 +619,7 @@ project(':aeron-cluster') {
         }
     }
 
-    task generateCodecs(type: JavaExec) {
+    tasks.register('generateCodecs', JavaExec) {
         def codecsFile = 'src/main/resources/cluster/aeron-cluster-codecs.xml'
         def markCodecsFile = 'src/main/resources/cluster/aeron-cluster-mark-codecs.xml'
         def sbeFile = 'src/main/resources/cluster/fpl/sbe.xsd'
@@ -654,7 +659,8 @@ project(':aeron-cluster') {
         """
     }
 
-    task sourcesJar(type: Jar, dependsOn: generateCodecs) {
+    tasks.register('sourcesJar', Jar) {
+        dependsOn 'generateCodecs'
         archiveClassifier.set('sources')
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
@@ -737,7 +743,8 @@ project(':aeron-agent') {
 
     jar.finalizedBy shadowJar
 
-    task sourcesJar(type: Jar, dependsOn: [':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs']) {
+    tasks.register('sourcesJar', Jar) {
+        dependsOn ':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs'
         archiveClassifier.set('sources')
         from files(
             aeronClientProject.sourceSets.main.allSource,
@@ -759,7 +766,8 @@ project(':aeron-agent') {
 
     javadoc.dependsOn ':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs'
 
-    task javadocJar(type: Jar, dependsOn: javadoc) {
+    tasks.register('javadocJar', Jar) {
+        dependsOn 'javadoc'
         archiveClassifier.set('javadoc')
         from javadoc.destinationDir
     }
@@ -835,31 +843,31 @@ project(':aeron-samples') {
     }
 
     tasks.named('test').configure {
-        dependsOn ":aeron-agent:jar"
+        dependsOn ':aeron-agent:jar'
 
         ext.agentFilename = {
             project.file("../aeron-agent/build/libs/aeron-agent-${aeronVersion}.jar").absolutePath
         }
 
         jvmArgs '-javaagent:' + agentFilename()
-        systemProperty "aeron.event.cluster.log", "all"
-        systemProperty "aeron.event.cluster.log.disable", "CANVASS_POSITION,APPEND_POSITION,COMMIT_POSITION"
-        systemProperty "aeron.event.archive.log", "all"
-        systemProperty "aeron.debug.timeout", "3600s"
-        systemProperty "aeron.event.log.reader.classname", "io.aeron.agent.CollectingEventLogReaderAgent"
-        systemProperty "aeron.fallback.logger", "no_op"
+        systemProperty 'aeron.event.cluster.log', 'all'
+        systemProperty 'aeron.event.cluster.log.disable', 'CANVASS_POSITION,APPEND_POSITION,COMMIT_POSITION'
+        systemProperty 'aeron.event.archive.log', 'all'
+        systemProperty 'aeron.debug.timeout', '3600s'
+        systemProperty 'aeron.event.log.reader.classname', 'io.aeron.agent.CollectingEventLogReaderAgent'
+        systemProperty 'aeron.fallback.logger', 'no_op'
     }
 
-    task asciidoctorGithub(type: io.aeron.build.AsciidoctorPreprocessTask) {
+    tasks.register('asciidoctorGithub', io.aeron.build.AsciidoctorPreprocessTask) {
         versionText = aeronVersion
     }
 
-    task removeWikiDirectory(type: Delete) {
+    tasks.register('removeWikiDirectory', Delete) {
         delete "${buildDir}/tmp/tutorialPublish"
     }
 
-    task tutorialPublish(type: io.aeron.build.TutorialPublishTask) {
-        dependsOn(removeWikiDirectory, asciidoctorGithub)
+    tasks.register('tutorialPublish', io.aeron.build.TutorialPublishTask) {
+        dependsOn 'removeWikiDirectory', 'asciidoctorGithub'
         apiKey = project.hasProperty('aeron.ci.apiKey') ? project.property('aeron.ci.apiKey') : ''
         source = asciidoctorGithub.target
         remoteName = project.hasProperty('aeron.ci.remoteName') ? project.property('aeron.ci.remoteName') : 'origin'
@@ -887,7 +895,7 @@ project(':aeron-system-tests') {
         }
     }
 
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
         systemProperty('java.net.preferIPv4Stack', 'true')
         systemProperty('aeron.fallback.logger', 'no_op')
         systemProperty('aeron.test.system.aeronmd.path', System.getProperty('aeron.test.system.aeronmd.path'))
@@ -900,7 +908,7 @@ project(':aeron-system-tests') {
     }
 
     shadowJar {
-        archiveClassifier.set("tests")
+        archiveClassifier.set('tests')
         from sourceSets.test.output
         configurations = [project.configurations.testRuntimeClasspath]
     }
@@ -967,7 +975,8 @@ project(':aeron-all') {
 
     jar.finalizedBy shadowJar
 
-    task sourcesJar(type: Jar, dependsOn: [':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs']) {
+    tasks.register('sourcesJar', Jar) {
+        dependsOn ':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs'
         archiveClassifier.set('sources')
         from files(
             aeronClientProject.sourceSets.main.allSource,
@@ -991,7 +1000,8 @@ project(':aeron-all') {
 
     javadoc.dependsOn ':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs'
 
-    task javadocJar(type: Jar, dependsOn: javadoc) {
+    tasks.register('javadocJar', Jar) {
+        dependsOn 'javadoc'
         archiveClassifier.set('javadoc')
         from javadoc.destinationDir
     }
@@ -1021,13 +1031,13 @@ project(':aeron-all') {
     }
 }
 
-task testReport(type: TestReport) {
+tasks.register('testReport', TestReport) {
     destinationDirectory = file("${buildDir}/reports/allTests")
     // Include the results from the `test` task in all sub-projects
     testResults.setFrom(subprojects*.test)
 }
 
-task copyTestLogs(type: Copy) {
+tasks.register('copyTestLogs', Copy) {
     from '.'
     include '**/build/test-output/**'
     include '**/*.log'
@@ -1041,7 +1051,8 @@ task copyTestLogs(type: Copy) {
     includeEmptyDirs = false
 }
 
-task tarTestLogs(type: Tar, dependsOn: copyTestLogs) {
+tasks.register('tarTestLogs', Tar) {
+    dependsOn tasks.named('copyTestLogs')
     archiveBaseName.set('test_logs')
     from 'build/test_logs'
     compression Compression.BZIP2
@@ -1053,7 +1064,7 @@ def isNonStable = { String version ->
     return !stableKeyword && !(version ==~ regex)
 }
 
-tasks.named("dependencyUpdates").configure {
+tasks.named('dependencyUpdates').configure {
     // Reject all non stable versions
     rejectVersionIf {
         isNonStable(it.candidate.version)

@@ -46,15 +46,20 @@ class NodeStateFileTest
     void shouldCreateIfCreateNewTrueAndFileDoesNotExist(@TempDir final File clusterDir) throws IOException
     {
         assertEquals(0, Objects.requireNonNull(clusterDir.list()).length);
-        new NodeStateFile(clusterDir, true, syncLevel);
-        assertTrue(new File(clusterDir, NodeStateFile.FILENAME).exists());
+        try (NodeStateFile ignore = new NodeStateFile(clusterDir, true, syncLevel))
+        {
+            Objects.requireNonNull(ignore);
+            assertTrue(new File(clusterDir, NodeStateFile.FILENAME).exists());
+        }
     }
 
     @Test
     void shouldHaveNullCandidateTermIdOnInitialCreation(@TempDir final File clusterDir) throws IOException
     {
-        final NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel);
-        assertEquals(Aeron.NULL_VALUE, nodeStateFile.candidateTerm().candidateTermId());
+        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
+        {
+            assertEquals(Aeron.NULL_VALUE, nodeStateFile.candidateTerm().candidateTermId());
+        }
     }
 
     @Test

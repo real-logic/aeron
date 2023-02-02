@@ -66,7 +66,6 @@ import java.nio.MappedByteBuffer;
  *     &lt;Node State Header&gt;
  *     &lt;Candidate Term Id&gt;
  * </pre>
- * </p>
  */
 public class NodeStateFile implements AutoCloseable
 {

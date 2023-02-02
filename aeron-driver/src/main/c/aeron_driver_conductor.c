@@ -956,9 +956,9 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
 
         if (client->client_id == link->client_id)
         {
+            aeron_driver_conductor_unlink_all_subscribable(conductor, link);
             aeron_udp_channel_delete(link->spy_channel);
             link->spy_channel = NULL;
-            aeron_driver_conductor_unlink_all_subscribable(conductor, link);
 
             aeron_array_fast_unordered_remove(
                 (uint8_t *)conductor->spy_subscriptions.array, sizeof(aeron_subscription_link_t), i, last_index);
@@ -4283,7 +4283,10 @@ int aeron_driver_conductor_on_remove_receive_spy_destination(
         {
             aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
             aeron_driver_conductor_subscription_link_notify_unavailable_images(conductor, link);
+
             aeron_driver_conductor_unlink_all_subscribable(conductor, link);
+            aeron_udp_channel_delete(link->spy_channel);
+            link->spy_channel = NULL;
 
             aeron_array_fast_unordered_remove(
                 (uint8_t *)conductor->spy_subscriptions.array, sizeof(aeron_subscription_link_t), i, last_index);

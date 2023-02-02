@@ -504,14 +504,12 @@ public final class Archive implements AutoCloseable
         public static final String ARCHIVE_ID_PROP_NAME = "aeron.archive.id";
 
         /**
-         * Is control channel enabled.
+         * Is control channel enabled. Defaults to {@code true}.
+         * <p>
+         * If set to anything other than {@code true} then control channel is disabled, i.e. the Archive will run in
+         * IPC-only mode.
          */
         public static final String CONTROL_CHANNEL_ENABLED_PROP_NAME = "aeron.archive.control.channel.enabled";
-
-        /**
-         * Control channel enabled for an archive which defaults to {@code true}.
-         */
-        public static final boolean CONTROL_CHANNEL_ENABLED_DEFAULT = true;
 
         /**
          * Update interval in ms for archive mark file.
@@ -881,8 +879,7 @@ public final class Archive implements AutoCloseable
          */
         public static boolean controlChannelEnabled()
         {
-            final String propValue = System.getProperty(
-                CONTROL_CHANNEL_ENABLED_PROP_NAME, Boolean.toString(CONTROL_CHANNEL_ENABLED_DEFAULT));
+            final String propValue = System.getProperty(CONTROL_CHANNEL_ENABLED_PROP_NAME, "true");
             return "true".equals(propValue);
         }
     }

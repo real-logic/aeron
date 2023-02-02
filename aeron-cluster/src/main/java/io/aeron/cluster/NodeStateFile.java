@@ -226,7 +226,7 @@ public class NodeStateFile implements AutoCloseable
                 SimpleOpenFramingHeaderDecoder.BLOCK_LENGTH,
                 SimpleOpenFramingHeaderDecoder.SCHEMA_VERSION);
 
-            final long messageLength = simpleOpenFramingHeaderDecoder.messageLength();
+            final int messageLength = (int)simpleOpenFramingHeaderDecoder.messageLength();
             final int messagePosition = position + simpleOpenFramingHeaderDecoder.sbeBlockLength();
 
             messageHeaderDecoder.wrap(buffer, messagePosition);

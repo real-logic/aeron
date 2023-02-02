@@ -108,6 +108,8 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     public void outputFiles(final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
     {
         mediaDriverTestUtil.outputFiles(aeronDirectoryName, stdoutFile, stderrFile);
+        dataCollector.add(stdoutFile);
+        dataCollector.add(stderrFile);
     }
 
     public void exitCode(final String aeronDirectoryName, final int exitValue)
@@ -163,6 +165,14 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             try
             {
                 mediaDriverTestUtil.afterTestExecution(context);
+            }
+            catch (final Throwable t)
+            {
+                error = setOrUpdateError(error, t);
+            }
+
+            try
+            {
                 final MutableInteger count = new MutableInteger();
                 final StringBuilder errors = new StringBuilder();
                 filterErrors(count, errors);
@@ -182,12 +192,34 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                     NANOSECONDS.toMillis(endTimeNs - startTimeNs) + " ms, cause: " + error);
                 final Throwable terminateError = reportAndTerminate(test);
                 error = setOrUpdateError(error, terminateError);
-                mediaDriverTestUtil.testFailed();
+                try
+                {
+                    mediaDriverTestUtil.testFailed();
+                }
+                catch (final Exception t)
+                {
+                    error = setOrUpdateError(error, t);
+                }
             }
             else
             {
-                CloseHelper.closeAll(closeables);
-                mediaDriverTestUtil.testSuccessful();
+                try
+                {
+                    CloseHelper.closeAll(closeables);
+                }
+                catch (final Exception t)
+                {
+                    error = setOrUpdateError(error, t);
+                }
+
+                try
+                {
+                    mediaDriverTestUtil.testSuccessful();
+                }
+                catch (final Exception t)
+                {
+                    error = setOrUpdateError(error, t);
+                }
             }
         }
         finally

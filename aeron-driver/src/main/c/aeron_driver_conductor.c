@@ -3073,6 +3073,10 @@ int aeron_driver_conductor_link_subscribable(
 
                 result = 0;
             }
+            else
+            {
+                aeron_counters_manager_free(&conductor->counters_manager, counter_id);
+            }
         }
     }
 

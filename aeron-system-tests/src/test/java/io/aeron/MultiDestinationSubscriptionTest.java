@@ -21,12 +21,15 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.test.*;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SlowTest;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
-import org.agrona.IoUtil;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
@@ -35,8 +38,9 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
@@ -64,8 +68,9 @@ class MultiDestinationSubscriptionTest
     private static final int NUM_MESSAGES_PER_TERM = 64;
     private static final int MESSAGE_LENGTH =
         (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
-    private static final String ROOT_DIR = CommonContext.getAeronDirectoryName() + File.separator;
 
+    @TempDir
+    private Path tempDir;
     private final MediaDriver.Context driverContextA = new MediaDriver.Context();
     private final MediaDriver.Context driverContextB = new MediaDriver.Context();
 
@@ -86,7 +91,7 @@ class MultiDestinationSubscriptionTest
 
     private void launch(final ErrorHandler errorHandler)
     {
-        final String baseDirA = ROOT_DIR + "A";
+        final String baseDirA = tempDir.resolve("A").toString();
 
         buffer.putInt(0, 1);
 
@@ -102,7 +107,7 @@ class MultiDestinationSubscriptionTest
 
     private void launchSecond()
     {
-        final String baseDirB = ROOT_DIR + "B";
+        final String baseDirB = tempDir.resolve("B").toString();
 
         driverContextB
             .errorHandler(Tests::onError)
@@ -118,7 +123,6 @@ class MultiDestinationSubscriptionTest
     void closeEverything()
     {
         CloseHelper.closeAll(clientA, clientB, driverA, driverB);
-        IoUtil.delete(new File(ROOT_DIR), true);
     }
 
     @Test

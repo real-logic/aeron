@@ -1801,13 +1801,16 @@ public final class AeronCluster implements AutoCloseable
         {
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
+                final boolean isConnected = null != egressSubscription && egressSubscription.isConnected();
+                final String endpointPort =
+                    null != egressSubscription ? egressSubscription.tryResolveChannelEndpointPort() : "<unknown>";
                 final TimeoutException ex = new TimeoutException(
                     "cluster connect timeout: step=" + step +
                     " ingressChannel=" + ctx.ingressChannel() +
                     " ingressEndpoints=" + ctx.ingressEndpoints() +
                     " ingressPublication=" + ingressPublication +
-                    " egress.isConnected=" + egressSubscription.isConnected() +
-                    " responseChannel=" + egressSubscription.tryResolveChannelEndpointPort());
+                    " egress.isConnected=" + isConnected +
+                    " responseChannel=" + endpointPort);
 
                 for (final MemberIngress member : memberByIdMap.values())
                 {

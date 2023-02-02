@@ -118,9 +118,9 @@ public class CubicCongestionControl implements CongestionControl
             errorHandler = context.errorHandler();
             mtu = senderMtuLength;
 
-            final int initialWindowLength = 0 != udpChannel.receiverWindowLength() ?
+            final int receiverWindowLength = 0 != udpChannel.receiverWindowLength() ?
                 udpChannel.receiverWindowLength() : context.initialWindowLength();
-            maxWindowLength = Configuration.receiverWindowLength(termLength, initialWindowLength);
+            maxWindowLength = Configuration.receiverWindowLength(termLength, receiverWindowLength);
 
             maxCwnd = maxWindowLength / mtu;
             cwnd = Math.min(INITCWND, maxCwnd);

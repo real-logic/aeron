@@ -47,7 +47,7 @@ public class BasicAuctionClusterClient implements EgressListener
     private final int numOfBids;
     private final int bidIntervalMs;
 
-    private long correlationId = 0;
+    private long nextCorrelationId = 0;
     private long lastBidSeen = 100;
 
     /**
@@ -160,7 +160,7 @@ public class BasicAuctionClusterClient implements EgressListener
     // tag::publish[]
     private long sendBid(final AeronCluster aeronCluster, final long price)
     {
-        final long correlationId = this.correlationId++;
+        final long correlationId = nextCorrelationId++;
         actionBidBuffer.putLong(CORRELATION_ID_OFFSET, correlationId);            // <1>
         actionBidBuffer.putLong(CUSTOMER_ID_OFFSET, customerId);
         actionBidBuffer.putLong(PRICE_OFFSET, price);

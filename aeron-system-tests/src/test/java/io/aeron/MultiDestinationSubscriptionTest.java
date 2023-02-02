@@ -102,6 +102,7 @@ class MultiDestinationSubscriptionTest
             .threadingMode(ThreadingMode.SHARED);
 
         driverA = TestMediaDriver.launch(driverContextA, testWatcher);
+        testWatcher.dataCollector().add(driverA.context().aeronDirectory());
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextA.aeronDirectoryName()));
     }
 
@@ -116,6 +117,7 @@ class MultiDestinationSubscriptionTest
             .threadingMode(ThreadingMode.SHARED);
 
         driverB = TestMediaDriver.launch(driverContextB, testWatcher);
+        testWatcher.dataCollector().add(driverB.context().aeronDirectory());
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextB.aeronDirectoryName()));
     }
 

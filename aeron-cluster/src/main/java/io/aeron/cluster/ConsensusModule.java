@@ -3660,6 +3660,7 @@ public final class ConsensusModule implements AutoCloseable
         public void close()
         {
             CloseHelper.close(countedErrorHandler, recordingLog);
+            CloseHelper.close(countedErrorHandler, nodeStateFile);
             CloseHelper.close(countedErrorHandler, markFile);
             if (errorHandler instanceof AutoCloseable)
             {

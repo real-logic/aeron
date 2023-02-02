@@ -19,7 +19,9 @@ import io.aeron.Aeron;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.node.*;
 import io.aeron.cluster.service.ClusterMarkFile;
+import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.SemanticVersion;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -103,34 +105,82 @@ public class NodeStateFile implements AutoCloseable
     {
         this.clusterDir = clusterDir;
         this.fileSyncLevel = fileSyncLevel;
-        final File nodeStateFile = new File(clusterDir, NodeStateFile.FILENAME);
-        if (!nodeStateFile.exists())
+        final UnsafeBuffer buffer;
+        MappedByteBuffer mappedFile = null;
+
+        try
         {
-            if (!createNew)
+            final File nodeStateFile = new File(clusterDir, NodeStateFile.FILENAME);
+            if (!nodeStateFile.exists())
             {
-                throw new IOException("NodeStateFile does not exist and createNew=false");
+                if (!createNew)
+                {
+                    throw new IOException("NodeStateFile does not exist and createNew=false");
+                }
+
+                mappedFile = IoUtil.mapNewFile(nodeStateFile, MINIMUM_FILE_LENGTH);
+                buffer = new UnsafeBuffer(mappedFile, 0, mappedFile.capacity());
+
+                initialiseEncodersAndDecodersOnCreation(
+                    buffer,
+                    nodeStateHeaderDecoder,
+                    nodeStateHeaderEncoder,
+                    simpleOpenFramingHeaderDecoder,
+                    simpleOpenFramingHeaderEncoder,
+                    messageHeaderDecoder,
+                    messageHeaderEncoder,
+                    candidateTermDecoder,
+                    candidateTermEncoder);
+
+                candidateTermIdOffset =
+                    candidateTermDecoder.offset() + CandidateTermDecoder.candidateTermIdEncodingOffset();
+
+                candidateTermEncoder
+                    .logPosition(Aeron.NULL_VALUE)
+                    .timestamp(Aeron.NULL_VALUE);
+                buffer.putLongVolatile(candidateTermIdOffset, Aeron.NULL_VALUE);
+            }
+            else
+            {
+                mappedFile = IoUtil.mapExistingFile(nodeStateFile, "NodeState");
+                buffer = new UnsafeBuffer(mappedFile, 0, mappedFile.capacity());
+
+                loadInitialState(
+                    buffer,
+                    nodeStateHeaderDecoder,
+                    nodeStateHeaderEncoder,
+                    candidateTermDecoder,
+                    candidateTermEncoder,
+                    simpleOpenFramingHeaderDecoder,
+                    messageHeaderDecoder);
+
+                candidateTermIdOffset =
+                    candidateTermDecoder.offset() + CandidateTermDecoder.candidateTermIdEncodingOffset();
             }
 
-            this.mappedFile = IoUtil.mapNewFile(nodeStateFile, MINIMUM_FILE_LENGTH);
-            this.buffer = new UnsafeBuffer(mappedFile, 0, mappedFile.capacity());
-            initialiseEncodersAndDecodersOnCreation();
-            candidateTermIdOffset =
-                candidateTermDecoder.offset() + CandidateTermDecoder.candidateTermIdEncodingOffset();
-            updateCandidateTermId(Aeron.NULL_VALUE, Aeron.NULL_VALUE, Aeron.NULL_VALUE);
+            syncFile(mappedFile);
         }
-        else
+        catch (final IOException | RuntimeException ex)
         {
-            this.mappedFile = IoUtil.mapExistingFile(nodeStateFile, "NodeState");
-            this.buffer = new UnsafeBuffer(mappedFile, 0, mappedFile.capacity());
-            loadInitialState();
-            candidateTermIdOffset =
-                candidateTermDecoder.offset() + CandidateTermDecoder.candidateTermIdEncodingOffset();
+            if (null != mappedFile)
+            {
+                IoUtil.unmap(mappedFile);
+            }
+            throw ex;
         }
 
-        syncFile();
+        this.mappedFile = mappedFile;
+        this.buffer = buffer;
     }
 
-    private void loadInitialState()
+    private static void loadInitialState(
+        final MutableDirectBuffer buffer,
+        final NodeStateHeaderDecoder nodeStateHeaderDecoder,
+        final NodeStateHeaderEncoder nodeStateHeaderEncoder,
+        final CandidateTermDecoder candidateTermDecoder,
+        final CandidateTermEncoder candidateTermEncoder,
+        final SimpleOpenFramingHeaderDecoder simpleOpenFramingHeaderDecoder,
+        final MessageHeaderDecoder messageHeaderDecoder)
     {
         nodeStateHeaderDecoder.wrap(
             buffer, 0, NodeStateHeaderDecoder.BLOCK_LENGTH, NodeStateHeaderDecoder.SCHEMA_VERSION);
@@ -145,7 +195,11 @@ public class NodeStateFile implements AutoCloseable
         }
 
         final int nodeStateOffset = scanForMessageTypeOffset(
-            nodeStateHeaderEncoder.sbeBlockLength(), CandidateTermDecoder.TEMPLATE_ID);
+            nodeStateHeaderEncoder.sbeBlockLength(),
+            CandidateTermDecoder.TEMPLATE_ID,
+            buffer,
+            simpleOpenFramingHeaderDecoder,
+            messageHeaderDecoder);
         if (Aeron.NULL_VALUE == nodeStateOffset)
         {
             throw new IllegalStateException("failed to find CandidateTerm entry");
@@ -155,7 +209,12 @@ public class NodeStateFile implements AutoCloseable
         candidateTermEncoder.wrap(buffer, nodeStateOffset);
     }
 
-    private int scanForMessageTypeOffset(final int startPosition, final int templateId)
+    private static int scanForMessageTypeOffset(
+        final int startPosition,
+        final int templateId,
+        final DirectBuffer buffer,
+        final SimpleOpenFramingHeaderDecoder simpleOpenFramingHeaderDecoder,
+        final MessageHeaderDecoder messageHeaderDecoder)
     {
         int position = startPosition;
 
@@ -182,7 +241,16 @@ public class NodeStateFile implements AutoCloseable
         return Aeron.NULL_VALUE;
     }
 
-    private void initialiseEncodersAndDecodersOnCreation()
+    private static void initialiseEncodersAndDecodersOnCreation(
+        final MutableDirectBuffer buffer,
+        final NodeStateHeaderDecoder nodeStateHeaderDecoder,
+        final NodeStateHeaderEncoder nodeStateHeaderEncoder,
+        final SimpleOpenFramingHeaderDecoder simpleOpenFramingHeaderDecoder,
+        final SimpleOpenFramingHeaderEncoder simpleOpenFramingHeaderEncoder,
+        final MessageHeaderDecoder messageHeaderDecoder,
+        final MessageHeaderEncoder messageHeaderEncoder,
+        final CandidateTermDecoder candidateTermDecoder,
+        final CandidateTermEncoder candidateTermEncoder)
     {
         nodeStateHeaderEncoder.wrap(buffer, 0);
         nodeStateHeaderDecoder.wrap(
@@ -232,7 +300,7 @@ public class NodeStateFile implements AutoCloseable
             .logPosition(logPosition)
             .timestamp(timestampMs);
         buffer.putLongVolatile(candidateTermIdOffset, candidateTermId);
-        syncFile();
+        syncFile(mappedFile);
     }
 
     /**
@@ -305,7 +373,7 @@ public class NodeStateFile implements AutoCloseable
         }
     }
 
-    private void syncFile()
+    private void syncFile(final MappedByteBuffer mappedFile)
     {
         if (0 < fileSyncLevel)
         {

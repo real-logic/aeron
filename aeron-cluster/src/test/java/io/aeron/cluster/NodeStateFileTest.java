@@ -88,7 +88,14 @@ class NodeStateFileTest
             ClusterMarkFile.MAJOR_VERSION + 1, ClusterMarkFile.MINOR_VERSION, ClusterMarkFile.PATCH_VERSION);
         forceVersion(clusterDir, invalidVersion);
 
-        assertThrows(ClusterException.class, () -> new NodeStateFile(clusterDir, false, syncLevel));
+        try (NodeStateFile ignore = new NodeStateFile(clusterDir, false, syncLevel))
+        {
+            Objects.requireNonNull(ignore);
+            fail("ClusterException should have been thrown");
+        }
+        catch (final ClusterException ignore)
+        {
+        }
     }
 
     @Test
@@ -113,9 +120,20 @@ class NodeStateFileTest
 
     private void forceVersion(final File clusterDir, final int semanticVersion)
     {
-        final MappedByteBuffer buffer = IoUtil.mapExistingFile(
-            new File(clusterDir, NodeStateFile.FILENAME), "test node state file");
-        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(buffer);
-        unsafeBuffer.putInt(NodeStateHeaderEncoder.versionEncodingOffset(), semanticVersion);
+        MappedByteBuffer buffer = null;
+        try
+        {
+            buffer = IoUtil.mapExistingFile(
+                new File(clusterDir, NodeStateFile.FILENAME), "test node state file");
+            final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(buffer);
+            unsafeBuffer.putInt(NodeStateHeaderEncoder.versionEncodingOffset(), semanticVersion);
+        }
+        finally
+        {
+            if (null != buffer)
+            {
+                IoUtil.unmap(buffer);
+            }
+        }
     }
 }

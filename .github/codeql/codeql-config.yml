@@ -3,6 +3,12 @@ name: "Aeron CodeQL Scanning"
 queries:
   - uses: security-and-quality
 
+paths-ignore:
+  - '**/thirdparty/**'
+  - '**/generated/**'
+  - '**/generated-src/**'
+  - '**/generated-test/**'
+
 query-filters:
   - exclude:
       id: java/unused-reference-type

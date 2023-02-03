@@ -212,7 +212,6 @@ private:
 
     inline void state(State state)
     {
-        //std::cout << (int)m_state << " -> " << (int)state << std::endl;
         m_state = state;
     }
 

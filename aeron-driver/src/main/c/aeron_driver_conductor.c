@@ -2959,7 +2959,6 @@ void aeron_driver_conductor_on_close(void *clientd)
     }
     aeron_free(conductor->publication_images.array);
 
-    // Free remaining end_of_life_entries.
     aeron_deque_close(&conductor->end_of_life_queue);
 
     aeron_system_counters_close(&conductor->system_counters);
@@ -3219,7 +3218,6 @@ int aeron_driver_conductor_on_add_network_publication(
         return -1;
     }
 
-    // From here on the udp_channel is owned by the endpoint.
     aeron_send_channel_endpoint_t *endpoint = aeron_driver_conductor_get_or_add_send_channel_endpoint(
         conductor, udp_channel, correlation_id);
     if (NULL == endpoint)
@@ -3234,8 +3232,6 @@ int aeron_driver_conductor_on_add_network_publication(
         return -1;
     }
 
-    // If we've found an existing endpoint, capture the supplied
-    // tag and free the supplied channel and use the channel from the existing endpoint.
     int64_t tag_id = udp_channel->tag_id;
     if (endpoint->conductor_fields.udp_channel != udp_channel)
     {
@@ -3560,7 +3556,6 @@ int aeron_driver_conductor_on_add_network_subscription(
         return -1;
     }
 
-    // From here on the udp_channel is owned by the endpoint.
     aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_get_or_add_receive_channel_endpoint(
         conductor, udp_channel, correlation_id);
     if (NULL == endpoint)
@@ -3575,7 +3570,6 @@ int aeron_driver_conductor_on_add_network_subscription(
         return -1;
     }
 
-    // If we found an existing endpoint, free the channel. Channel is no longer required beyond this point.
     if (endpoint->conductor_fields.udp_channel != udp_channel)
     {
         aeron_udp_channel_delete(udp_channel);
@@ -3785,7 +3779,7 @@ int aeron_driver_conductor_on_add_send_destination(
 
     if (NULL != endpoint)
     {
-        aeron_uri_t *uri = NULL; // Ownership is transferred to destination, no need to close...
+        aeron_uri_t *uri = NULL;
         const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
 
         if (aeron_driver_conductor_validate_destination_uri_prefix(command_uri, command->channel_length, "send") < 0)
@@ -4202,7 +4196,7 @@ int aeron_driver_conductor_on_add_receive_network_destination(
         goto error_cleanup;
     }
 
-    udp_channel = NULL; // Ownership passed to the receive_destination;
+    udp_channel = NULL;
 
     aeron_driver_receiver_proxy_on_add_destination(conductor->context->receiver_proxy, endpoint, destination);
     aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);

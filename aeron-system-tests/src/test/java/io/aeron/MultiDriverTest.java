@@ -22,15 +22,17 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
-import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
@@ -51,11 +53,12 @@ class MultiDriverTest
     private static final int MESSAGE_LENGTH =
         (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
     private static final String ROOT_DIR = SystemUtil.tmpDirName() + "aeron-system-tests" + File.separator;
-
+    @RegisterExtension
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
     private Aeron clientA;
     private Aeron clientB;
-    private MediaDriver driverA;
-    private MediaDriver driverB;
+    private TestMediaDriver driverA;
+    private TestMediaDriver driverB;
     private Publication publication;
     private Subscription subscriptionA;
     private Subscription subscriptionB;
@@ -86,8 +89,10 @@ class MultiDriverTest
             .aeronDirectoryName(baseDirB)
             .threadingMode(THREADING_MODE);
 
-        driverA = MediaDriver.launch(driverAContext);
-        driverB = MediaDriver.launch(driverBContext);
+        driverA = TestMediaDriver.launch(driverAContext, testWatcher);
+        testWatcher.dataCollector().add(driverA.context().aeronDirectory());
+        driverB = TestMediaDriver.launch(driverBContext, testWatcher);
+        testWatcher.dataCollector().add(driverB.context().aeronDirectory());
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverAContext.aeronDirectoryName()));
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverBContext.aeronDirectoryName()));
     }
@@ -96,7 +101,6 @@ class MultiDriverTest
     void after()
     {
         CloseHelper.closeAll(clientA, clientB, driverA, driverB);
-        IoUtil.delete(new File(ROOT_DIR), true);
     }
 
     @Test

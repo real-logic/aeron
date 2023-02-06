@@ -56,9 +56,12 @@ jobs:
       - name: filter-sarif
         uses: advanced-security/filter-sarif@v1
         with:
-          # filter out all test files unless they contain a sql-injection vulnerability
+          # Filter out generated and third party code.
           patterns: |
+            -**/thirdparty/**
+            -**/generated/**
             -**/generated-src/**
+            -**/generated-test/**
           input: sarif-results/${{ matrix.language }}.sarif
           output: sarif-results/${{ matrix.language }}.sarif
 

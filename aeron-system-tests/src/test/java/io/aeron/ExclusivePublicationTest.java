@@ -33,9 +33,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -80,12 +82,13 @@ class ExclusivePublicationTest
     private Aeron aeron;
 
     @BeforeEach
-    void setUp()
+    void setUp(final @TempDir Path tempDir)
     {
-        driver = TestMediaDriver.launch(driverContext, testWatcher);
+        driver = TestMediaDriver.launch(
+            driverContext.aeronDirectoryName(tempDir.resolve("driver").toString()), testWatcher);
         testWatcher.dataCollector().add(driver.context().aeronDirectory());
 
-        aeron = Aeron.connect();
+        aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
     }
 
     @AfterEach

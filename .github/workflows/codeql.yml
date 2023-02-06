@@ -62,6 +62,7 @@ jobs:
             -**/generated/**
             -**/generated-src/**
             -**/generated-test/**
+            -**/_deps/**
           input: sarif-results/${{ matrix.language }}.sarif
           output: sarif-results/${{ matrix.language }}.sarif
 

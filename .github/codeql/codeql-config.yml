@@ -30,3 +30,5 @@ query-filters:
       id: cpp/unused-static-variable
   - exclude:
       id: cpp/long-switch
+#  - exclude:
+#      id: java/iterator-implements-iterable

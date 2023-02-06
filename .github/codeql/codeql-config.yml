@@ -3,11 +3,15 @@ name: "Aeron CodeQL Scanning"
 queries:
   - uses: security-and-quality
 
-#query-filters:
-#  - exclude:
-#      id: java/unused-reference-type
+query-filters:
   - exclude:
       id: java/missing-override-annotation
+  - exclude:
+      id: cpp/poorly-documented-function
+  - exclude:
+      id: cpp/unused-static-variable
+#  - exclude:
+#      id: java/unused-reference-type
 #  - exclude:
 #      id: java/unused-parameter
 #  - exclude:
@@ -16,12 +20,8 @@ queries:
 #      id: java/missing-case-in-switch
 #  - exclude:
 #      id: cpp/unsigned-comparison-zero
-  - exclude:
-      id: cpp/poorly-documented-function
 #  - exclude:
 #      id: cpp/trivial-switch
-  - exclude:
-      id: cpp/unused-static-variable
 #  - exclude:
 #      id: cpp/long-switch
 #  - exclude:

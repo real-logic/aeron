@@ -13,8 +13,7 @@ RUN yum install -y centos-release-scl && \
     yum install -y "devtoolset-${GCC_VERSION}-gcc" "devtoolset-${GCC_VERSION}-gcc-c++" make
 
 # Install Java
-RUN rpm --import http://repos.azulsystems.com/RPM-GPG-KEY-azulsystems && \
-    curl -o /etc/yum.repos.d/zulu.repo http://repos.azulsystems.com/rhel/zulu.repo && \
+RUN yum install -y https://cdn.azul.com/zulu/bin/zulu-repo-1.0.0-1.noarch.rpm && \
     yum install --disableplugin=subscription-manager -y zulu-8
 
 # Install CMake

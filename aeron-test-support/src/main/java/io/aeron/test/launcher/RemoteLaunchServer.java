@@ -238,44 +238,46 @@ public class RemoteLaunchServer
                     throw new IllegalStateException("Should not happen");
                 }
 
-                final ObjectInputStream requestIn = new ObjectInputStream(Channels.newInputStream(connectionChannel));
-                while (!Thread.currentThread().isInterrupted())
+                try (ObjectInputStream in = new ObjectInputStream(Channels.newInputStream(connectionChannel)))
                 {
-                    final Object o = requestIn.readObject();
-                    if (o instanceof String[])
+                    while (!Thread.currentThread().isInterrupted())
                     {
-                        final State state = currentState.get();
-                        switch (state)
+                        final Object o = in.readObject();
+                        if (o instanceof String[])
                         {
-                            case CREATED:
-                                break;
+                            final State state = currentState.get();
+                            switch (state)
+                            {
+                                case CREATED:
+                                    break;
 
-                            case PENDING:
-                                if (!currentState.compareAndSet(State.PENDING, State.STARTING))
-                                {
+                                case PENDING:
+                                    if (!currentState.compareAndSet(State.PENDING, State.STARTING))
+                                    {
+                                        return;
+                                    }
+                                    currentState.set(startProcess((String[])o));
+                                    break;
+
+                                case STARTING:
+                                    throw new IllegalStateException("Should not happen");
+
+                                case RUNNING:
+                                    // Allow submission of more commands???
+                                    break;
+
+                                case CLOSING:
                                     return;
-                                }
-                                currentState.set(startProcess((String[])o));
-                                break;
-
-                            case STARTING:
-                                throw new IllegalStateException("Should not happen");
-
-                            case RUNNING:
-                                // Allow submission of more commands???
-                                break;
-
-                            case CLOSING:
-                                return;
+                            }
                         }
-                    }
-                    else
-                    {
-                        if (currentState.compareAndSet(State.RUNNING, State.CLOSING) && null != process)
+                        else
                         {
-                            responseReader.markClosed();
-                            CloseHelper.close(connectionChannel);
-                            process.destroy();
+                            if (currentState.compareAndSet(State.RUNNING, State.CLOSING) && null != process)
+                            {
+                                responseReader.markClosed();
+                                CloseHelper.close(connectionChannel);
+                                process.destroy();
+                            }
                         }
                     }
                 }

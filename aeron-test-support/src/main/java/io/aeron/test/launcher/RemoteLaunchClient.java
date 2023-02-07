@@ -17,12 +17,12 @@ package io.aeron.test.launcher;
 
 import io.aeron.driver.Configuration;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 
@@ -59,9 +59,15 @@ public final class RemoteLaunchClient implements AutoCloseable
 
     public SocketChannel execute(final boolean usingBlockingIo, final String... command) throws IOException
     {
-        final ObjectOutputStream out = new ObjectOutputStream(Channels.newOutputStream(clientChannel));
-        out.writeObject(command);
-        out.flush();
+        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try (ObjectOutputStream out = new ObjectOutputStream(byteArrayOutputStream))
+        {
+            out.writeObject(command);
+        }
+
+        final ByteBuffer buffer = ByteBuffer.allocateDirect(byteArrayOutputStream.size());
+        buffer.put(byteArrayOutputStream.toByteArray());
+        clientChannel.write(buffer);
 
         clientChannel.configureBlocking(usingBlockingIo);
 

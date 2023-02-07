@@ -10,8 +10,7 @@ RUN adduser --uid $USER_ID --system --gid $GROUP_ID athena
 RUN yum install --disableplugin=subscription-manager -y gcc gcc-c++ cmake make
 
 # Install Java
-RUN rpm --import https://www.azul.com/wp-content/uploads/2021/05/0xB1998361219BD9C9.txt && \
-    curl -o /etc/yum.repos.d/zulu.repo http://repos.azulsystems.com/rhel/zulu.repo && \
+RUN yum install -y https://cdn.azul.com/zulu/bin/zulu-repo-1.0.0-1.noarch.rpm && \
     yum install --disableplugin=subscription-manager -y zulu-8
 
 ENV JAVA_HOME=/usr/lib/jvm/zulu-8 \

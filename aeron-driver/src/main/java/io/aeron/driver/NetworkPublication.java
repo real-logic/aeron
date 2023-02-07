@@ -976,6 +976,9 @@ public final class NetworkPublication
                     state = State.DONE;
                 }
                 break;
+
+            case DONE:
+                break;
         }
     }
 

@@ -13,7 +13,7 @@ RUN yum install -y centos-release-scl && \
     yum install -y "devtoolset-${GCC_VERSION}-gcc" "devtoolset-${GCC_VERSION}-gcc-c++" make
 
 # Install Java
-RUN rpm --import http://repos.azulsystems.com/RPM-GPG-KEY-azulsystems && \
+RUN rpm --import https://www.azul.com/wp-content/uploads/2021/05/0xB1998361219BD9C9.txt && \
     curl -o /etc/yum.repos.d/zulu.repo http://repos.azulsystems.com/rhel/zulu.repo && \
     yum install --disableplugin=subscription-manager -y zulu-8
 

@@ -315,7 +315,15 @@ public final class UdpChannel
         }
         else
         {
-            return Integer.parseInt(offsetStr); //codeql
+            try
+            {
+                return Integer.parseInt(offsetStr);
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new IllegalArgumentException(
+                    "timestamp offset must be a valid integer or the 'reserved' keyword", ex);
+            }
         }
     }
 

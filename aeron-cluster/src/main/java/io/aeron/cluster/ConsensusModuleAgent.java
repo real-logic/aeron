@@ -3000,6 +3000,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
         if (0 == activeMembers.length && null != ctx.clusterConsensusEndpoints())
         {
+            System.err.println("WARNING: Dynamic join is deprecated and will be removed in a later release.");
             return new DynamicJoin(ctx.clusterConsensusEndpoints(), archive, consensusPublisher, ctx, this);
         }
 

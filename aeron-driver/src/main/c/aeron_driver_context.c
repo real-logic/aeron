@@ -978,14 +978,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         getenv(AERON_DRIVER_RESOURCE_FREE_LIMIT_ENV_VAR),
         (uint32_t)_context->resource_free_limit,
         1,
-        UINT32_MAX);
+        INT32_MAX);
 
     _context->resource_free_queue_length = aeron_config_parse_uint32(
         AERON_DRIVER_RESOURCE_FREE_QUEUE_LENGTH_ENV_VAR,
         getenv(AERON_DRIVER_RESOURCE_FREE_QUEUE_LENGTH_ENV_VAR),
         (uint32_t)_context->resource_free_queue_length,
         16,
-        UINT32_MAX);
+        INT32_MAX);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;

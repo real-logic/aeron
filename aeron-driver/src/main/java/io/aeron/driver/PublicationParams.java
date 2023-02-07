@@ -133,9 +133,7 @@ final class PublicationParams
         final String tagParam = channelUri.entityTag();
         if (null != tagParam)
         {
-            final long entityTag = Long.parseLong(tagParam);
-            validateEntityTag(entityTag, driverConductor, channelUri);
-            this.entityTag = entityTag;
+            this.entityTag = parseEntityTag(tagParam, driverConductor, channelUri);
         }
     }
 
@@ -382,9 +380,19 @@ final class PublicationParams
         spiesSimulateConnection = null != sscStr ? "true".equals(sscStr) : ctx.spiesSimulateConnection();
     }
 
-    private static void validateEntityTag(
-        final long entityTag, final DriverConductor driverConductor, final ChannelUri channelUri)
+    private static long parseEntityTag(
+        final String tagParam, final DriverConductor driverConductor, final ChannelUri channelUri)
     {
+        final long entityTag;
+        try
+        {
+            entityTag = Long.parseLong(tagParam);
+        }
+        catch (final NumberFormatException ex)
+        {
+            throw new IllegalArgumentException("invalid entity tag, must be a number", ex);
+        }
+
         if (INVALID_TAG == entityTag)
         {
             throw new IllegalArgumentException(INVALID_TAG + " tag is reserved: channel=" + channelUri);
@@ -402,6 +410,8 @@ final class PublicationParams
             throw new IllegalArgumentException(entityTag + " entityTag already in use: existingChannel=" +
                 ipcPublication.channel() + " channel=" + channelUri);
         }
+
+        return entityTag;
     }
 
     public String toString()

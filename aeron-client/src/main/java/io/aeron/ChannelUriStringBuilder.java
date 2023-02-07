@@ -547,7 +547,14 @@ public final class ChannelUriStringBuilder
         }
         else
         {
-            return ttl(Integer.valueOf(ttlValue));
+            try
+            {
+                return ttl(Integer.valueOf(ttlValue));
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new IllegalArgumentException("'ttl' must be a value integer", ex);
+            }
         }
     }
 
@@ -715,7 +722,14 @@ public final class ChannelUriStringBuilder
         }
         else
         {
-            return initialTermId(Integer.valueOf(initialTermIdValue));
+            try
+            {
+                return initialTermId(Integer.valueOf(initialTermIdValue));
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new IllegalArgumentException("'initial-term-id' must be a valid integer", ex);
+            }
         }
     }
 
@@ -761,7 +775,14 @@ public final class ChannelUriStringBuilder
         }
         else
         {
-            return termId(Integer.valueOf(termIdValue));
+            try
+            {
+                return termId(Integer.valueOf(termIdValue));
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new IllegalArgumentException("'term-id' must be a valid integer", ex);
+            }
         }
     }
 
@@ -820,7 +841,14 @@ public final class ChannelUriStringBuilder
         }
         else
         {
-            return termOffset(Integer.valueOf(termOffsetValue));
+            try
+            {
+                return termOffset(Integer.valueOf(termOffsetValue));
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new IllegalArgumentException("'term-offset' must be a valid integer", ex);
+            }
         }
     }
 
@@ -867,7 +895,14 @@ public final class ChannelUriStringBuilder
             else
             {
                 isSessionIdTagged(false);
-                sessionId(Integer.valueOf(sessionIdStr));
+                try
+                {
+                    sessionId(Integer.valueOf(sessionIdStr));
+                }
+                catch (final NumberFormatException ex)
+                {
+                    throw new IllegalArgumentException("'session-id' must be a valid integer", ex);
+                }
             }
         }
         else
@@ -1447,7 +1482,14 @@ public final class ChannelUriStringBuilder
         }
         else
         {
-            return groupTag(Long.valueOf(groupTagValue));
+            try
+            {
+                return groupTag(Long.valueOf(groupTagValue));
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new IllegalArgumentException("'gtag' must be a valid long value", ex);
+            }
         }
     }
 

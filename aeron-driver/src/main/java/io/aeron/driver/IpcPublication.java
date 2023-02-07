@@ -313,6 +313,9 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                 reachedEndOfLife = true;
                 state = State.DONE;
                 break;
+
+            case DONE:
+                break;
         }
     }
 

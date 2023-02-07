@@ -67,6 +67,7 @@ public final class RemoteLaunchClient implements AutoCloseable
 
         final ByteBuffer buffer = ByteBuffer.allocateDirect(byteArrayOutputStream.size());
         buffer.put(byteArrayOutputStream.toByteArray());
+        buffer.flip();
         clientChannel.write(buffer);
 
         clientChannel.configureBlocking(usingBlockingIo);

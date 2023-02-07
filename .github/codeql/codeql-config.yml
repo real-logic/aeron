@@ -10,19 +10,15 @@ query-filters:
       id: cpp/poorly-documented-function
   - exclude:
       id: cpp/unused-static-variable
-#  - exclude:
-#      id: java/unused-reference-type
-#  - exclude:
-#      id: java/unused-parameter
+  - exclude:
+      id: java/unused-reference-type
+  - exclude:
+      id: java/unused-parameter
+  - exclude:
+      id: cpp/trivial-switch
+  - exclude:
+      id: cpp/long-switch
 #  - exclude:
 #      id: java/uncaught-number-format-exception
 #  - exclude:
 #      id: java/missing-case-in-switch
-#  - exclude:
-#      id: cpp/unsigned-comparison-zero
-#  - exclude:
-#      id: cpp/trivial-switch
-#  - exclude:
-#      id: cpp/long-switch
-#  - exclude:
-#      id: java/iterator-implements-iterable

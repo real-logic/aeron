@@ -227,6 +227,9 @@ public class ClusterLoggingAgentTest
                     }
                     break;
                 }
+
+                default:
+                    break;
             }
         }
     }

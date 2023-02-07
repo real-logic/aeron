@@ -309,6 +309,9 @@ class Election
                     case LEADER_REPLAY:
                         publishNewLeadershipTerm(follower, logLeadershipTermId, ctx.clusterClock().time());
                         break;
+
+                    default:
+                        break;
                 }
             }
             else if (logLeadershipTermId > this.leadershipTermId)
@@ -318,6 +321,9 @@ class Election
                     case LEADER_LOG_REPLICATION:
                     case LEADER_READY:
                         throw new ClusterEvent("potential new election in progress");
+
+                    default:
+                        break;
                 }
             }
         }

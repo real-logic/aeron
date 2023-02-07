@@ -112,16 +112,10 @@ public final class ControlTransportPoller extends UdpTransportPoller
      */
     public SelectionKey registerForRead(final UdpChannelTransport transport)
     {
-        return registerForRead((SendChannelEndpoint)transport);
+        return registerChannelForRead((SendChannelEndpoint)transport);
     }
 
-    /**
-     * Register transport for reading with the poller for control messages.
-     *
-     * @param transport to register.
-     * @return {@link SelectionKey} for registration to cancel.
-     */
-    public SelectionKey registerForRead(final SendChannelEndpoint transport)
+    private SelectionKey registerChannelForRead(final SendChannelEndpoint transport)
     {
         SelectionKey key = null;
         try

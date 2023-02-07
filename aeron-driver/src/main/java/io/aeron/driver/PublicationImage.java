@@ -838,6 +838,10 @@ public final class PublicationImage
                     state = State.DONE;
                 }
                 break;
+
+            case DONE:
+            case INIT:
+                break;
         }
     }
 

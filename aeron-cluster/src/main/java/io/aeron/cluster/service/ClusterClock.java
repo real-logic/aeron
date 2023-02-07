@@ -93,9 +93,10 @@ public interface ClusterClock
 
             case NANOSECONDS:
                 return ClusterTimeUnit.NANOS;
-        }
 
-        throw new IllegalArgumentException("unsupported time unit: " + timeUnit);
+            default:
+                throw new IllegalArgumentException("unsupported time unit: " + timeUnit);
+        }
     }
 
     /**

@@ -1969,7 +1969,10 @@ public final class ConsensusModule implements AutoCloseable
          * @param endpoints which are to be contacted for joining the cluster.
          * @return this for a fluent API.
          * @see Configuration#CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME
+         * @deprecated the dynamic join feature that uses this configuration in order to join the cluster is now
+         * deprecated and will be removed in a later release.
          */
+        @Deprecated
         public Context clusterConsensusEndpoints(final String endpoints)
         {
             this.clusterConsensusEndpoints = endpoints;
@@ -1981,7 +1984,10 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @return members of the cluster to attempt to request to join from.
          * @see Configuration#CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME
+         * @deprecated the dynamic join feature that uses this configuration in order to join the cluster is now
+         * deprecated and will be removed in a later release.
          */
+        @Deprecated
         public String clusterConsensusEndpoints()
         {
             return clusterConsensusEndpoints;

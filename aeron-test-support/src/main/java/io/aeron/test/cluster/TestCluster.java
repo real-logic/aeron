@@ -322,6 +322,7 @@ public final class TestCluster implements AutoCloseable
         return startDynamicNode(index, cleanStart, serviceSupplier);
     }
 
+    @SuppressWarnings("deprecation")
     public TestNode startDynamicNode(
         final int index, final boolean cleanStart, final IntFunction<TestNode.TestService[]> serviceSupplier)
     {
@@ -354,8 +355,8 @@ public final class TestCluster implements AutoCloseable
             .replicationChannel(REPLICATION_CHANNEL);
 
         context.consensusModuleContext
-            .clusterMemberId(NULL_VALUE) //
-            .clusterMembers("")          //
+            .clusterMemberId(NULL_VALUE)
+            .clusterMembers("")
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .memberEndpoints(clusterMembersEndpoints[index])
             .clusterDir(new File(baseDirName, "consensus-module"))
@@ -381,6 +382,7 @@ public final class TestCluster implements AutoCloseable
         return startDynamicNodeConsensusEndpoints(index, cleanStart, serviceSupplier);
     }
 
+    @SuppressWarnings("deprecation")
     public TestNode startDynamicNodeConsensusEndpoints(
         final int index, final boolean cleanStart, final IntFunction<TestNode.TestService[]> serviceSupplier)
     {

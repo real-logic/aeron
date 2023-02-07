@@ -2996,6 +2996,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return RecoveryState.allocate(aeron, leadershipTermId, 0, 0, ctx.clusterId());
     }
 
+    @SuppressWarnings("deprecation")
     private DynamicJoin requiresDynamicJoin()
     {
         if (0 == activeMembers.length && null != ctx.clusterConsensusEndpoints())

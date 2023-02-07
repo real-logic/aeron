@@ -18,7 +18,5 @@ query-filters:
       id: cpp/trivial-switch
   - exclude:
       id: cpp/long-switch
-#  - exclude:
-#      id: java/uncaught-number-format-exception
-#  - exclude:
-#      id: java/missing-case-in-switch
+  - exclude:
+      id: cpp/integer-used-for-enum

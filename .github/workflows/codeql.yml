@@ -63,6 +63,9 @@ jobs:
             -**/generated-src/**
             -**/generated-test/**
             -**/_deps/**
+            -**/aeron-samples/**:java/uncaught-number-format-exception
+            -**/*Test.java:java/uncaught-number-format-exception
+            -**/*Tool.java:java/uncaught-number-format-exception
           input: sarif-results/${{ matrix.language }}.sarif
           output: sarif-results/${{ matrix.language }}.sarif
 

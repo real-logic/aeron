@@ -113,6 +113,10 @@ final class ServiceSnapshotLoader implements ControlledFragmentHandler
                         }
                         isDone = true;
                         return Action.BREAK;
+
+                    case SECTION:
+                    case NULL_VAL:
+                        break;
                 }
                 break;
 

@@ -258,6 +258,11 @@ public final class ReplayMerge implements AutoCloseable
                     workCount += attemptLiveJoin(nowMs);
                     checkProgress(nowMs);
                     break;
+
+                case MERGED:
+                case CLOSED:
+                case FAILED:
+                    break;
             }
         }
         catch (final Exception ex)

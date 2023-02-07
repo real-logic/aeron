@@ -2007,6 +2007,10 @@ public final class AeronCluster implements AutoCloseable
 
                     case AUTHENTICATION_REJECTED:
                         throw new AuthenticationException(egressPoller.detail());
+
+                    case CLOSED:
+                    case NULL_VAL:
+                        break;
                 }
             }
         }

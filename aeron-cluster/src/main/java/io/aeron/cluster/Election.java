@@ -1280,6 +1280,9 @@ class Election
                 case FOLLOWER_REPLAY:
                     consensusModuleAgent.role(Cluster.Role.FOLLOWER);
                     break;
+
+                default:
+                    break;
             }
 
             state = newState;

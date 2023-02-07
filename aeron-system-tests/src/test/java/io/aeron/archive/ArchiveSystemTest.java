@@ -490,14 +490,6 @@ class ArchiveSystemTest
         await(complete);
     }
 
-    private void prepAndSendMessages(final Subscription recordingEvents, final ExclusivePublication publication)
-    {
-        final CountDownLatch complete = new CountDownLatch(1);
-        prepMessagesAndListener(recordingEvents, complete);
-        publishDataToBeRecorded(publication);
-        await(complete);
-    }
-
     private void await(final CountDownLatch latch)
     {
         try

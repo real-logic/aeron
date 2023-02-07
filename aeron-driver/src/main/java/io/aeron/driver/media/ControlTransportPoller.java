@@ -132,21 +132,13 @@ public final class ControlTransportPoller extends UdpTransportPoller
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public void cancelRead(final UdpChannelTransport transport)
-    {
-        cancelRead((SendChannelEndpoint)transport);
-    }
-
-    /**
      * Cancel a previous read registration.
      *
      * @param transport to be cancelled and removed.
      */
-    public void cancelRead(final SendChannelEndpoint transport)
+    public void cancelRead(final UdpChannelTransport transport)
     {
-        transports = ArrayUtil.remove(transports, transport);
+        transports = ArrayUtil.remove(transports, (SendChannelEndpoint)transport);
     }
 
     /**

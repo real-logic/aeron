@@ -161,8 +161,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
         timeOfLastActivityNs = cachedNanoClock.nanoTime();
         receiverId = threadLocals.nextReceiverId();
 
-        final String groupTagValue = udpChannel.channelUri().get(CommonContext.GROUP_TAG_PARAM_NAME);
-        groupTag = null == groupTagValue ? context.receiverGroupTag() : Long.valueOf(groupTagValue);
+        this.groupTag = (null == udpChannel.groupTag()) ? context.receiverGroupTag() : udpChannel.groupTag();
 
         multiRcvDestination = udpChannel.isManualControlMode() ? new MultiRcvDestination() : null;
         currentControlAddress = udpChannel.localControl();

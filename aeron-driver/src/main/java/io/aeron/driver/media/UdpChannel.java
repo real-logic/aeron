@@ -73,6 +73,7 @@ public final class UdpChannel
     private final ChannelUri channelUri;
     private final int channelReceiveTimestampOffset;
     private final int channelSendTimestampOffset;
+    private final Long groupTag;
 
     private UdpChannel(final Context context)
     {
@@ -99,6 +100,7 @@ public final class UdpChannel
         receiverWindowLength = context.receiverWindowLength;
         channelReceiveTimestampOffset = context.channelReceiveTimestampOffset;
         channelSendTimestampOffset = context.channelSendTimestampOffset;
+        groupTag = context.groupTag;
     }
 
     /**
@@ -289,6 +291,9 @@ public final class UdpChannel
             context.channelSendTimestampOffset(
                 parseTimestampOffset(channelUri, CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME));
 
+            final Long groupTag = parseOptionalLong(channelUri, GROUP_TAG_PARAM_NAME);
+            context.groupTag(groupTag);
+
             return new UdpChannel(context);
         }
         catch (final Exception ex)
@@ -310,7 +315,25 @@ public final class UdpChannel
         }
         else
         {
-            return Integer.parseInt(offsetStr);
+            return Integer.parseInt(offsetStr); //codeql
+        }
+    }
+
+    private static Long parseOptionalLong(final ChannelUri channelUri, final String paramName)
+    {
+        final String longAsString = channelUri.get(paramName);
+        if (null == longAsString)
+        {
+            return null;
+        }
+
+        try
+        {
+            return Long.valueOf(longAsString);
+        }
+        catch (final NumberFormatException ex)
+        {
+            throw new IllegalArgumentException("'" + paramName + "' does not contain a valid long value", ex);
         }
     }
 
@@ -803,6 +826,17 @@ public final class UdpChannel
         return channelSendTimestampOffset;
     }
 
+    /**
+     * Group tag specified for this channel or null if not specified.
+     *
+     * @return group tag for the channel
+     */
+    public Long groupTag()
+    {
+        return groupTag;
+    }
+
+
     private static InetSocketAddress getMulticastControlAddress(final InetSocketAddress endpointAddress)
         throws UnknownHostException
     {
@@ -976,6 +1010,7 @@ public final class UdpChannel
         ChannelUri channelUri;
         int channelReceiveTimestampOffset;
         int channelSendTimestampOffset;
+        private Long groupTag = null;
 
         Context uriStr(final String uri)
         {
@@ -1124,6 +1159,11 @@ public final class UdpChannel
         {
             this.channelSendTimestampOffset = timestampOffset;
             return this;
+        }
+
+        public void groupTag(final Long groupTag)
+        {
+            this.groupTag = groupTag;
         }
     }
 }

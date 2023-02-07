@@ -571,6 +571,20 @@ class UdpChannelTest
             DataHeaderFlyweight.HEADER_LENGTH + UdpChannel.RESERVED_VALUE_MESSAGE_OFFSET);
     }
 
+    @Test
+    void invalidGroupTagThrowsException()
+    {
+        assertThrows(
+            InvalidChannelException.class, () -> UdpChannel.parse("aeron:udp?endpoint=localhost:8080|gtag=foo"));
+    }
+
+    @Test
+    void validGroupTagAvailable()
+    {
+        final UdpChannel channel = UdpChannel.parse("aeron:udp?endpoint=localhost:8080|gtag=1234");
+        assertEquals(1234L, channel.groupTag());
+    }
+
     private static Matcher<NetworkInterface> supportsMulticastOrIsLoopback()
     {
         return new NetworkInterfaceTypeSafeMatcher();

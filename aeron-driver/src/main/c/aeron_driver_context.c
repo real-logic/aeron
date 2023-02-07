@@ -55,7 +55,7 @@ uint64_t aeron_config_parse_uint64(const char *name, const char *str, uint64_t d
     {
         errno = 0;
         char *end_ptr = NULL;
-        uint64_t value = strtoull(str, NULL, 0);
+        uint64_t value = strtoull(str, &end_ptr, 0);
 
         if ((0 == value && 0 != errno) || end_ptr == str)
         {
@@ -94,16 +94,6 @@ int32_t aeron_config_parse_int32(const char *name, const char *str, int32_t def,
     return result;
 }
 
-uint32_t aeron_config_parse_uint32(const char *name, const char *str, int32_t def, int32_t min, int32_t max)
-{
-    return (uint32_t)aeron_config_parse_int32(
-        name,
-        str,
-        (def < 0 ? 0 : def),
-        (min < 0 ? 0 : min),
-        (max < 0 ? 0 : max));
-}
-
 int64_t aeron_config_parse_int64(const char *name, const char *str, int64_t def, int64_t min, int64_t max)
 {
     int64_t result = def;
@@ -125,6 +115,11 @@ int64_t aeron_config_parse_int64(const char *name, const char *str, int64_t def,
     }
 
     return result;
+}
+
+uint32_t aeron_config_parse_uint32(const char *name, const char *str, uint32_t def, uint32_t min, uint32_t max)
+{
+    return (uint32_t)aeron_config_parse_int64(name, str, def, min, max);
 }
 
 uint64_t aeron_config_parse_size64(const char *name, const char *str, uint64_t def, uint64_t min, uint64_t max)
@@ -962,21 +957,21 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->sender_io_vector_capacity = aeron_config_parse_uint32(
         AERON_SENDER_IO_VECTOR_CAPACITY_ENV_VAR,
         getenv(AERON_SENDER_IO_VECTOR_CAPACITY_ENV_VAR),
-        (int32_t)_context->sender_io_vector_capacity,
+        _context->sender_io_vector_capacity,
         1,
         AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX);
 
     _context->network_publication_max_messages_per_send = aeron_config_parse_uint32(
         AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND_ENV_VAR,
         getenv(AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND_ENV_VAR),
-        (int32_t)_context->network_publication_max_messages_per_send,
+        _context->network_publication_max_messages_per_send,
         1,
         AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND);
 
     _context->resource_free_limit = aeron_config_parse_uint32(
         AERON_DRIVER_RESOURCE_FREE_LIMIT_ENV_VAR,
         getenv(AERON_DRIVER_RESOURCE_FREE_LIMIT_ENV_VAR),
-        (uint32_t)_context->resource_free_limit,
+        _context->resource_free_limit,
         1,
         INT32_MAX);
 

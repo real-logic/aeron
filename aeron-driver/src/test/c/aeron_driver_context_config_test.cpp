@@ -165,3 +165,19 @@ TEST_F(DriverContextConfigTest, shouldValidateMaxMessagesPerSendBuffers)
     EXPECT_EQ(MAX_VALUE, aeron_driver_context_get_network_publication_max_messages_per_send(context));
     aeron_driver_context_close(context);
 }
+
+TEST_F(DriverContextConfigTest, shouldHandleValuesOutsideOfUint32Range)
+{
+    aeron_driver_context_t *context;
+
+    const char *uint32_max_plus_one = "4294967296";
+    aeron_env_set(AERON_DRIVER_RESOURCE_FREE_LIMIT_ENV_VAR, uint32_max_plus_one);
+    EXPECT_EQ(0, aeron_driver_context_init(&context));
+    EXPECT_EQ(INT32_MAX, aeron_driver_context_get_resource_free_limit(context));
+    aeron_driver_context_close(context);
+
+    aeron_env_set(AERON_DRIVER_RESOURCE_FREE_LIMIT_ENV_VAR, "-1");
+    EXPECT_EQ(0, aeron_driver_context_init(&context));
+    EXPECT_EQ(1, aeron_driver_context_get_resource_free_limit(context));
+    aeron_driver_context_close(context);
+}

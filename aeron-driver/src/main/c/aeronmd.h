@@ -828,10 +828,6 @@ uint32_t aeron_driver_context_get_network_publication_max_messages_per_send(aero
 int aeron_driver_context_set_resource_free_limit(aeron_driver_context_t *context, uint32_t value);
 uint32_t aeron_driver_context_get_resource_free_limit(aeron_driver_context_t *context);
 
-#define AERON_DRIVER_RESOURCE_FREE_QUEUE_LENGTH_ENV_VAR "AERON_DRIVER_RESOURCE_FREE_QUEUE_LENGTH"
-int aeron_driver_context_set_resource_free_queue_length(aeron_driver_context_t *context, uint32_t value);
-uint32_t aeron_driver_context_get_resource_free_queue_length(aeron_driver_context_t *context);
-
 #define AERON_CONDUCTOR_CPU_AFFINITY_ENV_VAR "AERON_CONDUCTOR_CPU_AFFINITY"
 #define AERON_RECEIVER_CPU_AFFINITY_ENV_VAR "AERON_RECEIVER_CPU_AFFINITY"
 #define AERON_SENDER_CPU_AFFINITY_ENV_VAR "AERON_SENDER_CPU_AFFINITY"

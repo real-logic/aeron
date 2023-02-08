@@ -400,8 +400,8 @@ public final class ConsensusModule implements AutoCloseable
         public static final String CLUSTER_MEMBERS_PROP_NAME = "aeron.cluster.members";
 
         /**
-         * Property name for the comma separated list of cluster consensus endpoints used for adding passive
-         * followers as well as dynamic join of a cluster.
+         * Property name for the comma separated list of cluster consensus endpoints used for dynamic join, cluster
+         * backup and cluster standby nodes.
          */
         public static final String CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME = "aeron.cluster.consensus.endpoints";
 

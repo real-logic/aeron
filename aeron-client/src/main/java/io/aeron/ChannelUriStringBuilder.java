@@ -197,17 +197,14 @@ public final class ChannelUriStringBuilder
             throw new IllegalStateException("either 'endpoint' or 'control' must be specified for UDP.");
         }
 
-        int count = 0;
-        count += null == initialTermId ? 0 : 1;
-        count += null == termId ? 0 : 1;
-        count += null == termOffset ? 0 : 1;
-
-        if (count > 0)
+        final boolean anyNonNull = null != initialTermId || null != termId || null != termOffset;
+        final boolean anyNull = null == initialTermId || null == termId || null == termOffset;
+        if (anyNonNull)
         {
-            if (count < 3)
+            if (anyNull)
             {
                 throw new IllegalStateException(
-                    "if any of then a complete set of 'initialTermId', 'termId', and 'termOffset' must be provided");
+                    "either all or none of the parameters ['initialTermId', 'termId', 'termOffset'] must be provided");
             }
 
             if (termId - initialTermId < 0)

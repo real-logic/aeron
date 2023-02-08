@@ -166,4 +166,12 @@ final class ClientProxy
     {
         transmitter.transmit(msgTypeId, buffer, index, length);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "ClientProxy{}";
+    }
 }

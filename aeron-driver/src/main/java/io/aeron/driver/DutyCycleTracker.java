@@ -69,4 +69,14 @@ public class DutyCycleTracker extends DutyCycleTrackerFields
     public void reportMeasurement(final long durationNs)
     {
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "DutyCycleTracker{" +
+            "timeOfLastUpdateNs=" + timeOfLastUpdateNs +
+            '}';
+    }
 }

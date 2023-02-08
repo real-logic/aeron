@@ -459,4 +459,14 @@ public final class DriverProxy
 
         return false;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "DriverProxy{" +
+            "clientId=" + clientId +
+            '}';
+    }
 }

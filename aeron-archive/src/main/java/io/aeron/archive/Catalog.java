@@ -1334,4 +1334,23 @@ final class Catalog implements AutoCloseable
 
         return true;
     }
+
+    public String toString()
+    {
+        return "Catalog{" +
+            "forceWrites=" + forceWrites +
+            ", forceMetadata=" + forceMetadata +
+            ", isClosed=" + isClosed +
+            ", catalogFile=" + catalogFile +
+            ", archiveDir=" + archiveDir +
+            ", epochClock=" + epochClock +
+            ", checksum=" + checksum +
+            ", alignment=" + alignment +
+            ", firstRecordingDescriptorOffset=" + firstRecordingDescriptorOffset +
+            ", catalogChannel=" + catalogChannel +
+            ", capacity=" + capacity +
+            ", nextRecordingId=" + nextRecordingId +
+            ", nextRecordingDescriptorOffset=" + nextRecordingDescriptorOffset +
+            '}';
+    }
 }

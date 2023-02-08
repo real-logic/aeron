@@ -365,4 +365,14 @@ public class ArchiveMarkFile implements AutoCloseable
                 " does not match software: " + MAJOR_VERSION);
         }
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "ArchiveMarkFile{" +
+            "markFile=" + markFile +
+            '}';
+    }
 }

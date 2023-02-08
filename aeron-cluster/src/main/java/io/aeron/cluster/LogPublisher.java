@@ -400,4 +400,14 @@ final class LogPublisher
         final TimeUnit timeUnit)
     {
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "LogPublisher{" +
+            "destinationChannel='" + destinationChannel + '\'' +
+            '}';
+    }
 }

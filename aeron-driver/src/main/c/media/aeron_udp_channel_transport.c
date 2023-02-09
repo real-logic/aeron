@@ -473,7 +473,7 @@ static int aeron_udp_channel_transport_send_connected(
         *bytes_sent = 0;
         char addr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
         aeron_format_source_identity(addr, sizeof(addr), transport->connected_address);
-        AERON_APPEND_ERR("message->msg_name=%s", addr);
+        AERON_APPEND_ERR("address=%s", addr);
         return -1;
     }
     else
@@ -504,7 +504,7 @@ static int aeron_udp_channel_transport_send_unconnected(
     {
         char addr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
         aeron_format_source_identity(addr, sizeof(addr), address);
-        AERON_APPEND_ERR("message->msg_name=%s", addr);
+        AERON_APPEND_ERR("address=%s", addr);
         return -1;
     }
     else
@@ -542,15 +542,15 @@ static int aeron_udp_channel_transport_sendv(
     int num_sent = sendmmsg(transport->fd, msg, msg_i, 0);
     if (num_sent < 0)
     {
-        if (EAGAIN == errno || EWOULDBLOCK == errno || EINTR == errno || ECONNREFUSED == errno)
+        if (EAGAIN == errno || EWOULDBLOCK == errno || ECONNREFUSED == errno || EINTR == errno)
         {
             return 0;
         }
         else
         {
-            char address_str[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
-            aeron_format_source_identity(address_str, AERON_NETUTIL_FORMATTED_MAX_LENGTH, address);
-            AERON_SET_ERR(errno, "%s", "failed to sendmmsg");
+            char addr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
+            aeron_format_source_identity(addr, sizeof(addr), address);
+            AERON_SET_ERR(errno, "%s: address=%s", "failed to sendmmsg", addr);
             return -1;
         }
     }

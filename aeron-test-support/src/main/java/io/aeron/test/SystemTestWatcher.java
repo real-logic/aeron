@@ -35,7 +35,7 @@ import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
-import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opentest4j.TestAbortedException;
 
@@ -57,7 +57,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecutionCallback, AfterEachCallback,
-    BeforeTestExecutionCallback
+    BeforeEachCallback
 {
     private static final String CLUSTER_TERMINATION_EXCEPTION = ClusterTerminationException.class.getName();
     private static final String UNKNOWN_HOST_EXCEPTION = UnknownHostException.class.getName();
@@ -143,7 +143,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         this.skipDeleteOnFailure = skipDeleteOnFailure;
     }
 
-    public void beforeTestExecution(final ExtensionContext context) throws Exception
+    public void beforeEach(final ExtensionContext context)
     {
         startTimeNs = System.nanoTime();
     }

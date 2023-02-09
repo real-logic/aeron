@@ -227,6 +227,8 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             deleteAllLocations(error);
             if (null != error)
             {
+                System.out.println("*** Complete stack trace: ");
+                error.printStackTrace(System.out);
                 LangUtil.rethrowUnchecked(error);
             }
         }
@@ -424,7 +426,8 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 final UnsafeBuffer toDriverBuffer = createToDriverBuffer(mappedByteBuffer, metaDataBuffer);
                 final int driveHeartbeatOffset = toDriverBuffer.capacity() - RingBufferDescriptor.TRAILER_LENGTH +
                     RingBufferDescriptor.CONSUMER_HEARTBEAT_OFFSET;
-                System.out.printf("%27s: %d%n", "driverHeartbeatMs", toDriverBuffer.getLong(driveHeartbeatOffset));
+                System.out.printf("%27s: %s%n", "driverHeartbeatMs",
+                    driveHeartbeatOffset < 0 ? "N/A" : toDriverBuffer.getLong(driveHeartbeatOffset));
                 System.out.println("---------------------------------------------------------------------------------");
 
                 checkVersion(cncVersion);

@@ -469,9 +469,17 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
 
 ssize_t aeron_send(aeron_socket_t fd, const void *buf, size_t len, int flags)
 {
-    const DWORD size = send(fd, (const char *)buf, (int)len, flags);
+    DWORD size = 0;
+    const int result = WSASend(
+        fd,
+        (LPWSABUF)buf,
+        1,
+        &size,
+        (DWORD)flags,
+        NULL,
+        NULL);
 
-    if (SOCKET_ERROR == size)
+    if (SOCKET_ERROR == result)
     {
         const int err = WSAGetLastError();
         if (WSATRY_AGAIN == err || WSAEWOULDBLOCK == err || WSAECONNREFUSED == err || WSAEINTR == err)
@@ -480,7 +488,7 @@ ssize_t aeron_send(aeron_socket_t fd, const void *buf, size_t len, int flags)
         }
         else
         {
-            AERON_SET_ERR_WIN(err, "WSASendTo(fd=%d,...)", fd);
+            AERON_SET_ERR_WIN(err, "WSASend(fd=%d,...)", fd);
             return -1;
         }
     }
@@ -496,7 +504,7 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
         (LPWSABUF)msghdr->msg_iov,
         msghdr->msg_iovlen,
         &size,
-        msghdr->msg_flags,
+        (DWORD)flags,
         (const struct sockaddr *)msghdr->msg_name,
         msghdr->msg_namelen,
         NULL,

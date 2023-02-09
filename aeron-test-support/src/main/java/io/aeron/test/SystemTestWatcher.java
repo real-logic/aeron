@@ -408,16 +408,12 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                     "%27s: %d%n", "toDriverBufferLength", metaDataBuffer.getInt(toDriverBufferLengthOffset(0)));
                 System.out.printf(
                     "%27s: %d%n", "toClientsBufferLength", metaDataBuffer.getInt(toClientsBufferLengthOffset(0)));
-                System.out.printf(
-                    "%27s: %d%n",
-                    "counterMetaDataBufferLength",
-                    metaDataBuffer.getInt(countersMetaDataBufferLengthOffset(0)));
-                System.out.printf(
-                    "%27s: %d%n",
-                    "counterValuesBufferLength",
-                    metaDataBuffer.getInt(countersValuesBufferLengthOffset(0)));
-                System.out.printf(
-                    "%27s: %d%n", "errorLogBufferLength", metaDataBuffer.getInt(errorLogBufferLengthOffset(0)));
+                final int counterMetaDataBufferLength = metaDataBuffer.getInt(countersMetaDataBufferLengthOffset(0));
+                System.out.printf("%27s: %d%n", "counterMetaDataBufferLength", counterMetaDataBufferLength);
+                final int counterValuesBufferLength = metaDataBuffer.getInt(countersValuesBufferLengthOffset(0));
+                System.out.printf("%27s: %d%n", "counterValuesBufferLength", counterValuesBufferLength);
+                final int errorLogBufferLength = metaDataBuffer.getInt(errorLogBufferLengthOffset(0));
+                System.out.printf("%27s: %d%n", "errorLogBufferLength", errorLogBufferLength);
                 System.out.printf(
                     "%27s: %d%n", "clientLivenessTimeoutNs", metaDataBuffer.getLong(clientLivenessTimeoutOffset(0)));
                 System.out.printf(
@@ -430,25 +426,30 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                     driveHeartbeatOffset < 0 ? "N/A" : toDriverBuffer.getLong(driveHeartbeatOffset));
                 System.out.println("---------------------------------------------------------------------------------");
 
-                checkVersion(cncVersion);
+                if (counterMetaDataBufferLength > 0 && counterValuesBufferLength > 0)
+                {
+                    final CountersReader countersReader = new CountersReader(
+                        createCountersMetaDataBuffer(mappedByteBuffer, metaDataBuffer),
+                        createCountersValuesBuffer(mappedByteBuffer, metaDataBuffer));
+                    countersReader.forEach(
+                        (counterId, typeId, keyBuffer, label) ->
+                        {
+                            final long value = countersReader.getCounterValue(counterId);
+                            System.out.format("%3d: %,20d - %s%n", counterId, value, label);
+                        }
+                    );
+                    System.out.println(
+                        "---------------------------------------------------------------------------------");
+                }
 
-                final CountersReader countersReader = new CountersReader(
-                    createCountersMetaDataBuffer(mappedByteBuffer, metaDataBuffer),
-                    createCountersValuesBuffer(mappedByteBuffer, metaDataBuffer));
-                countersReader.forEach(
-                    (counterId, typeId, keyBuffer, label) ->
-                    {
-                        final long value = countersReader.getCounterValue(counterId);
-                        System.out.format("%3d: %,20d - %s%n", counterId, value, label);
-                    }
-                );
-                System.out.println("---------------------------------------------------------------------------------");
-
-                final AtomicBuffer buffer =
-                    createErrorLogBuffer(mappedByteBuffer, metaDataBuffer);
-                System.out.printf("%nCommand `n Control Errors%n");
-                final int distinctErrorCount = ErrorLogReader.read(buffer, this::printObservationCallback);
-                System.out.format("%d distinct errors observed.%n", distinctErrorCount);
+                if (errorLogBufferLength > 0)
+                {
+                    final AtomicBuffer buffer =
+                        createErrorLogBuffer(mappedByteBuffer, metaDataBuffer);
+                    System.out.printf("%nCommand `n Control Errors%n");
+                    final int distinctErrorCount = ErrorLogReader.read(buffer, this::printObservationCallback);
+                    System.out.format("%d distinct errors observed.%n", distinctErrorCount);
+                }
             }
             catch (final Throwable t)
             {

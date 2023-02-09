@@ -879,8 +879,7 @@ public final class Archive implements AutoCloseable
          */
         public static boolean controlChannelEnabled()
         {
-            final String propValue = System.getProperty(CONTROL_CHANNEL_ENABLED_PROP_NAME, "true");
-            return "true".equals(propValue);
+            return "true".equals(System.getProperty(CONTROL_CHANNEL_ENABLED_PROP_NAME, "true"));
         }
     }
 

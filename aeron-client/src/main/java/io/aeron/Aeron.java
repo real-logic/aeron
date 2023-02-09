@@ -415,8 +415,8 @@ public class Aeron implements AutoCloseable
     /**
      * Add a new {@link Subscription} for subscribing to messages from publishers.
      *
-     * @param channel                 for receiving the messages known to the media layer.
-     * @param streamId                within the channel scope.
+     * @param channel  for receiving the messages known to the media layer.
+     * @param streamId within the channel scope.
      * @return the registration id of the subscription which can be used to get the added subscription.
      * @see Aeron#addSubscription(String, int)
      * @see Aeron#getSubscription(long)
@@ -1586,20 +1586,22 @@ public class Aeron implements AutoCloseable
 
         private void connectToDriver()
         {
-            final long deadlineMs = epochClock.time() + driverTimeoutMs();
+            final EpochClock clock = epochClock;
+            final long deadlineMs = clock.time() + driverTimeoutMs();
             final File cncFile = cncFile();
 
             while (null == toDriverBuffer)
             {
-                cncByteBuffer = waitForFileMapping(cncFile, epochClock, deadlineMs);
+                cncByteBuffer = waitForFileMapping(cncFile, clock, deadlineMs);
                 cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
 
                 int cncVersion;
                 while (0 == (cncVersion = cncMetaDataBuffer.getIntVolatile(CncFileDescriptor.cncVersionOffset(0))))
                 {
-                    if (epochClock.time() > deadlineMs)
+                    if (clock.time() > deadlineMs)
                     {
-                        throw new DriverTimeoutException("CnC file is created but not initialised");
+                        throw new DriverTimeoutException("CnC file is created but not initialised: " +
+                            cncFile.getAbsolutePath());
                     }
 
                     sleep(Configuration.AWAITING_IDLE_SLEEP_MS);
@@ -1627,7 +1629,7 @@ public class Aeron implements AutoCloseable
 
                 while (0 == ringBuffer.consumerHeartbeatTime())
                 {
-                    if (epochClock.time() > deadlineMs)
+                    if (clock.time() > deadlineMs)
                     {
                         throw new DriverTimeoutException("no driver heartbeat detected");
                     }
@@ -1635,7 +1637,7 @@ public class Aeron implements AutoCloseable
                     sleep(Configuration.AWAITING_IDLE_SLEEP_MS);
                 }
 
-                final long timeMs = epochClock.time();
+                final long timeMs = clock.time();
                 if (ringBuffer.consumerHeartbeatTime() < (timeMs - driverTimeoutMs()))
                 {
                     if (timeMs > deadlineMs)
@@ -1654,60 +1656,49 @@ public class Aeron implements AutoCloseable
                 toDriverBuffer = ringBuffer;
             }
         }
-    }
 
-    @SuppressWarnings("try")
-    private static MappedByteBuffer waitForFileMapping(final File file, final EpochClock clock, final long deadlineMs)
-    {
-        while (true)
+        @SuppressWarnings("try")
+        private static MappedByteBuffer waitForFileMapping(
+            final File file, final EpochClock clock, final long deadlineMs)
         {
-            while (!file.exists() || file.length() < CncFileDescriptor.META_DATA_LENGTH)
+            while (true)
             {
-                if (clock.time() > deadlineMs)
-                {
-                    throw new DriverTimeoutException("CnC file not created: " + file.getAbsolutePath());
-                }
-
-                sleep(Configuration.IDLE_SLEEP_MS);
-            }
-
-            try (FileChannel fileChannel = FileChannel.open(file.toPath(), READ, WRITE))
-            {
-                final long fileSize = fileChannel.size();
-                if (fileSize < CncFileDescriptor.META_DATA_LENGTH)
+                while (!file.exists() || file.length() < CncFileDescriptor.META_DATA_LENGTH)
                 {
                     if (clock.time() > deadlineMs)
                     {
-                        throw new DriverTimeoutException("CnC file is created but not populated");
+                        throw new DriverTimeoutException("CnC file not created: " + file.getAbsolutePath());
                     }
 
-                    fileChannel.close();
                     sleep(Configuration.IDLE_SLEEP_MS);
-                    continue;
                 }
 
-                return fileChannel.map(READ_WRITE, 0, fileSize);
-            }
-            catch (final NoSuchFileException ignore)
-            {
-            }
-            catch (final IOException ex)
-            {
-                throw new AeronException("cannot open CnC file", ex);
-            }
-        }
-    }
+                try (FileChannel fileChannel = FileChannel.open(file.toPath(), READ, WRITE))
+                {
+                    final long fileSize = fileChannel.size();
+                    if (fileSize < CncFileDescriptor.META_DATA_LENGTH)
+                    {
+                        if (clock.time() > deadlineMs)
+                        {
+                            throw new DriverTimeoutException("CnC file is created but not populated: " +
+                                file.getAbsolutePath());
+                        }
 
-    static void sleep(final long durationMs)
-    {
-        try
-        {
-            Thread.sleep(durationMs);
-        }
-        catch (final InterruptedException ex)
-        {
-            Thread.currentThread().interrupt();
-            throw new AeronException("unexpected interrupt", ex);
+                        fileChannel.close();
+                        sleep(Configuration.IDLE_SLEEP_MS);
+                        continue;
+                    }
+
+                    return fileChannel.map(READ_WRITE, 0, fileSize);
+                }
+                catch (final NoSuchFileException ignore)
+                {
+                }
+                catch (final IOException ex)
+                {
+                    throw new AeronException("cannot open CnC file: " + file.getAbsolutePath(), ex);
+                }
+            }
         }
     }
 }

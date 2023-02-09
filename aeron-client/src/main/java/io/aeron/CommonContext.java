@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.DriverTimeoutException;
 import org.agrona.*;
@@ -38,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
-import static io.aeron.Aeron.sleep;
 import static io.aeron.CncFileDescriptor.cncVersionOffset;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
@@ -1016,6 +1016,19 @@ public class CommonContext implements Cloneable
                 loggingErrorHandler.onError(throwable);
                 userErrorHandler.onError(throwable);
             };
+        }
+    }
+
+    static void sleep(final long durationMs)
+    {
+        try
+        {
+            Thread.sleep(durationMs);
+        }
+        catch (final InterruptedException ex)
+        {
+            Thread.currentThread().interrupt();
+            throw new AeronException("unexpected interrupt", ex);
         }
     }
 }

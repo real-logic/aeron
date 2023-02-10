@@ -223,7 +223,7 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Set the prefix for taking an addition action such as spying on an outgoing publication with "aeron-spy".
+     * Set the prefix for taking an additional action such as spying on an outgoing publication with "aeron-spy".
      *
      * @param prefix to be applied to the URI before the scheme.
      * @return this for a fluent API.

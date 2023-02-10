@@ -187,7 +187,8 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             if (null != error)
             {
                 final String test = context.getTestClass().map(Class::getName).orElse("unknown") + "-" +
-                    context.getTestMethod().map(Method::getName).orElse("unknown");
+                    context.getTestMethod().map(Method::getName).orElse("unknown") + "(" +
+                    context.getDisplayName() + ")";
                 System.out.println("*** " + test + " failed in " +
                     NANOSECONDS.toMillis(endTimeNs - startTimeNs) + " ms, cause: " + error);
                 final Throwable terminateError = reportAndTerminate(test);

@@ -691,13 +691,15 @@ public final class ClusterBackupAgent implements Agent
                 backupArchive,
                 clusterArchive.context().controlRequestStreamId(),
                 clusterArchive.context().controlRequestChannel(),
-                replicationUri.toString());
+                replicationUri.toString(),
+                ctx.replicationProgressTimeoutNs(),
+                ctx.replicationProgressIntervalNs());
 
             snapshotsToRetrieve.forEach(multiSnapshotReplication::addSnapshot);
             workCount++;
         }
 
-        workCount += multiSnapshotReplication.poll();
+        workCount += multiSnapshotReplication.poll(TimeUnit.MILLISECONDS.toNanos(nowMs));
         workCount += pollBackupArchiveEvents();
         timeOfLastProgressMs = nowMs;
 

@@ -25,8 +25,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.RecordingSignal.REPLICATE_END;
 import static io.aeron.archive.codecs.RecordingSignal.SYNC;
 import static io.aeron.archive.status.RecordingPos.NULL_RECORDING_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class MultiSnapshotReplicationTest
@@ -35,6 +34,7 @@ class MultiSnapshotReplicationTest
     private final String srcChannel = "aeron:udp?endpoint=coming_from:8888";
     private final String replicationChannel = "aeron:udp?endpoint=going_to:8888";
     private final int srcStreamId = 892374;
+    private final long nowNs = 1_000_000_000;
 
     @Test
     void shouldReplicateTwoSnapshots()
@@ -59,7 +59,7 @@ class MultiSnapshotReplicationTest
         multiSnapshotReplication.addSnapshot(snapshots.get(0));
         multiSnapshotReplication.addSnapshot(snapshots.get(1));
 
-        assertEquals(1, multiSnapshotReplication.poll());
+        assertEquals(1, multiSnapshotReplication.poll(nowNs));
         verify(archive).replicate(
             snapshots.get(0).recordingId,
             NULL_RECORDING_ID,
@@ -69,18 +69,18 @@ class MultiSnapshotReplicationTest
             null,
             replicationChannel);
 
-        multiSnapshotReplication.poll();
+        multiSnapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
 
         multiSnapshotReplication.onSignal(replicationId0, newRecordingId0, 23423, SYNC);
-        multiSnapshotReplication.poll();
+        multiSnapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
 
         multiSnapshotReplication.onSignal(replicationId0, newRecordingId0, 23423, REPLICATE_END);
-        multiSnapshotReplication.poll();
+        multiSnapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
 
-        multiSnapshotReplication.poll();
+        multiSnapshotReplication.poll(nowNs);
         verify(archive).replicate(
             snapshots.get(1).recordingId,
             NULL_RECORDING_ID,
@@ -90,15 +90,15 @@ class MultiSnapshotReplicationTest
             null,
             replicationChannel);
 
-        multiSnapshotReplication.poll();
+        multiSnapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
 
         multiSnapshotReplication.onSignal(replicationId1, newRecordingId1, 23423, SYNC);
-        multiSnapshotReplication.poll();
+        multiSnapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
 
         multiSnapshotReplication.onSignal(replicationId1, newRecordingId1, 23423, REPLICATE_END);
-        multiSnapshotReplication.poll();
+        multiSnapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
 
         assertTrue(multiSnapshotReplication.isComplete());
@@ -107,12 +107,12 @@ class MultiSnapshotReplicationTest
         assertEquals(-1, multiSnapshotReplication.snapshotsRetrieved().get(1).serviceId);
         assertEquals(newRecordingId1, multiSnapshotReplication.snapshotsRetrieved().get(1).recordingId);
 
-        multiSnapshotReplication.poll();
+        multiSnapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
     }
 
     @Test
-    void shouldRetryFailedReplications()
+    void shouldNotBeCompleteIfNotSynced()
     {
         final long replicationId0 = 89374;
         final long replicationId1 = 89375;
@@ -131,31 +131,13 @@ class MultiSnapshotReplicationTest
         multiSnapshotReplication.addSnapshot(snapshots.get(0));
         multiSnapshotReplication.addSnapshot(snapshots.get(1));
 
-        multiSnapshotReplication.poll();
+        multiSnapshotReplication.poll(nowNs);
         verify(archive).replicate(
             eq(snapshots.get(0).recordingId), anyLong(), anyLong(), anyInt(), any(), any(), any());
 
-        multiSnapshotReplication.poll();
+        multiSnapshotReplication.poll(nowNs);
         multiSnapshotReplication.onSignal(replicationId0, snapshots.get(0).recordingId, 23423, REPLICATE_END);
-        multiSnapshotReplication.poll();
-        verify(archive, times(2)).replicate(
-            eq(snapshots.get(0).recordingId), anyLong(), anyLong(), anyInt(), any(), any(), any());
-
-        multiSnapshotReplication.onSignal(replicationId0, snapshots.get(0).recordingId, 23423, SYNC);
-        multiSnapshotReplication.onSignal(replicationId0, snapshots.get(0).recordingId, 23423, REPLICATE_END);
-        multiSnapshotReplication.poll();
-
-        multiSnapshotReplication.poll();
-        verify(archive).replicate(
-            eq(snapshots.get(1).recordingId), anyLong(), anyLong(), anyInt(), any(), any(), any());
-
-        multiSnapshotReplication.onSignal(replicationId1, snapshots.get(1).recordingId, 23423, SYNC);
-        multiSnapshotReplication.onSignal(replicationId1, snapshots.get(1).recordingId, 23423, REPLICATE_END);
-        multiSnapshotReplication.poll();
-
-        assertTrue(multiSnapshotReplication.isComplete());
-        assertEquals(snapshots.get(0).recordingId, multiSnapshotReplication.snapshotsRetrieved().get(0).recordingId);
-        assertEquals(snapshots.get(1).recordingId, multiSnapshotReplication.snapshotsRetrieved().get(1).recordingId);
+        assertFalse(multiSnapshotReplication.isComplete());
     }
 
     @Test
@@ -174,13 +156,13 @@ class MultiSnapshotReplicationTest
             archive, srcStreamId, srcChannel, replicationChannel);
         snapshots.forEach(multiSnapshotReplication::addSnapshot);
 
-        multiSnapshotReplication.poll();
+        multiSnapshotReplication.poll(nowNs);
 
         verify(archive).replicate(
             anyLong(), anyLong(), anyLong(), anyInt(), any(), any(), any());
 
         multiSnapshotReplication.close();
-        verify(archive).stopReplication(anyLong());
+        verify(archive).tryStopReplication(anyLong());
 
         multiSnapshotReplication.close();
         verifyNoMoreInteractions(archive);

@@ -81,7 +81,7 @@ class Election
     private final ConsensusPublisher consensusPublisher;
     private final ConsensusModule.Context ctx;
     private final ConsensusModuleAgent consensusModuleAgent;
-    private LogReplication logReplication = null;
+    private RecordingReplication logReplication = null;
     private long replicationCommitPosition = 0;
     private long replicationDeadlineNs = 0;
     private long replicationTermBaseLogPosition;

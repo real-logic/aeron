@@ -544,6 +544,8 @@ public final class ClusterBackup implements AutoCloseable
         private ClusterBackupEventsListener eventsListener;
         private CredentialsSupplier credentialsSupplier;
         private String sourceType = Configuration.clusterBackupSourceType();
+        private long replicationProgressTimeoutNs = ConsensusModule.Configuration.replicationProgressTimeoutNs();
+        private long replicationProgressIntervalNs = ConsensusModule.Configuration.replicationProgressIntervalNs();
 
         /**
          * Perform a shallow copy of the object.
@@ -598,6 +600,11 @@ public final class ClusterBackup implements AutoCloseable
             if (null == epochClock)
             {
                 epochClock = SystemEpochClock.INSTANCE;
+            }
+
+            if (Aeron.NULL_VALUE == replicationProgressIntervalNs)
+            {
+                replicationProgressIntervalNs = Math.max(replicationProgressTimeoutNs / 10, 1);
             }
 
             if (null == markFile)
@@ -1667,6 +1674,55 @@ public final class ClusterBackup implements AutoCloseable
         public SourceType sourceType()
         {
             return SourceType.valueOf(sourceType);
+        }
+
+        /**
+         * Timeout when no progress it detected when performing an archive replication (typically for snapshots).
+         *
+         * @param timeoutNs timeout in nanoseconds
+         * @return this for a fluent API.
+         * @see ConsensusModule.Configuration#replicationProgressTimeoutNs()
+         */
+        public Context replicationProgressTimeoutNs(final long timeoutNs)
+        {
+            this.replicationProgressIntervalNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout when no progress it detected when performing an archive replication (typically for snapshots).
+         *
+         * @return timeout in nanoseconds.
+         * @see ConsensusModule.Configuration#replicationProgressTimeoutNs()
+         */
+        public long replicationProgressTimeoutNs()
+        {
+            return replicationProgressTimeoutNs;
+        }
+
+        /**
+         * Interval between checks for replication progress.  Defaults to {@link Context#replicationProgressTimeoutNs()}
+         * divided by <code>10</code>.
+         *
+         * @param intervalNs timeout in nanoseconds
+         * @return this for a fluent API.
+         * @see ConsensusModule.Configuration#replicationProgressIntervalNs()
+         */
+        public Context replicationProgressIntervalNs(final long intervalNs)
+        {
+            this.replicationProgressIntervalNs = intervalNs;
+            return this;
+        }
+
+        /**
+         * Interval between checks for replication progress.
+         *
+         * @return timeout in nanoseconds.
+         * @see ConsensusModule.Configuration#replicationProgressIntervalNs()
+         */
+        public long replicationProgressIntervalNs()
+        {
+            return replicationProgressIntervalNs;
         }
 
         /**

@@ -15,25 +15,19 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingSignal;
-import io.aeron.archive.status.RecordingPos;
+import org.agrona.CloseHelper;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import java.util.concurrent.TimeUnit;
 
 class MultiSnapshotReplication implements AutoCloseable
 {
-    private final AeronArchive archive;
-    private final int srcControlStreamId;
-    private final String srcControlChannel;
-    private final String replicationChannel;
     private final ArrayList<RecordingLog.Snapshot> snapshotsPending = new ArrayList<>();
-    private final ArrayList<RecordingLog.Snapshot> snapshotsRetrieved = new ArrayList<>();
-    private int snapshotCursor = 0;
-    private SnapshotReplication snapshotReplication = null;
+    private final MultipleRecordingReplication multipleRecordingReplication;
 
     MultiSnapshotReplication(
         final AeronArchive archive,
@@ -41,68 +35,65 @@ class MultiSnapshotReplication implements AutoCloseable
         final String srcControlChannel,
         final String replicationChannel)
     {
-        this.archive = archive;
-        this.srcControlStreamId = srcControlStreamId;
-        this.srcControlChannel = srcControlChannel;
-        this.replicationChannel = replicationChannel;
+        this(
+            archive,
+            srcControlStreamId,
+            srcControlChannel,
+            replicationChannel,
+            TimeUnit.SECONDS.toNanos(10),
+            TimeUnit.SECONDS.toNanos(1));
+    }
+
+    MultiSnapshotReplication(
+        final AeronArchive archive,
+        final int srcControlStreamId,
+        final String srcControlChannel,
+        final String replicationChannel,
+        final long replicationProgressTimeoutNs,
+        final long replicationProgressIntervalNs)
+    {
+        multipleRecordingReplication = new MultipleRecordingReplication(
+            archive,
+            srcControlStreamId,
+            srcControlChannel,
+            replicationChannel,
+            replicationProgressTimeoutNs,
+            replicationProgressIntervalNs);
     }
 
     void addSnapshot(final RecordingLog.Snapshot snapshot)
     {
         snapshotsPending.add(snapshot);
+        multipleRecordingReplication.addRecording(snapshot.recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE);
     }
 
-    int poll()
+    int poll(final long nowNs)
     {
-        if (isComplete())
-        {
-            return 0;
-        }
-
-        int workDone = 0;
-        if (null == snapshotReplication)
-        {
-            replicateCurrentSnapshot(true);
-            workDone++;
-        }
-        else
-        {
-            if (snapshotReplication.isDone())
-            {
-                if (snapshotReplication.isComplete())
-                {
-                    final RecordingLog.Snapshot pending = snapshotsPending.get(snapshotCursor);
-                    snapshotsRetrieved.add(retrievedSnapshot(pending, snapshotReplication.recordingId()));
-                    snapshotCursor++;
-                    snapshotReplication = null;
-                }
-                else
-                {
-                    replicateCurrentSnapshot(false);
-                }
-                workDone++;
-            }
-        }
-
-        return workDone;
+        return multipleRecordingReplication.poll(nowNs);
     }
 
     void onSignal(final long correlationId, final long recordingId, final long position, final RecordingSignal signal)
     {
-        if (null != snapshotReplication)
-        {
-            snapshotReplication.onSignal(correlationId, recordingId, position, signal);
-        }
+        multipleRecordingReplication.onSignal(correlationId, recordingId, position, signal);
     }
 
     boolean isComplete()
     {
-        return snapshotCursor >= snapshotsPending.size();
+        return multipleRecordingReplication.isComplete();
     }
 
     List<RecordingLog.Snapshot> snapshotsRetrieved()
     {
-        return snapshotsRetrieved;
+        final ArrayList<RecordingLog.Snapshot> snapshots = new ArrayList<>();
+        for (int i = 0, n = snapshotsPending.size(); i < n; i++)
+        {
+            final RecordingLog.Snapshot pendingSnapshot = snapshotsPending.get(i);
+            final long dstRecordingId = multipleRecordingReplication.completedDstRecordingId(
+                pendingSnapshot.recordingId);
+            snapshots.add(retrievedSnapshot(pendingSnapshot, dstRecordingId));
+        }
+
+        return snapshots;
     }
 
     static RecordingLog.Snapshot retrievedSnapshot(final RecordingLog.Snapshot pending, final long recordingId)
@@ -121,24 +112,6 @@ class MultiSnapshotReplication implements AutoCloseable
      */
     public void close()
     {
-        if (null != snapshotReplication)
-        {
-            snapshotReplication.close(archive);
-            snapshotReplication = null;
-        }
-    }
-
-    private void replicateCurrentSnapshot(final boolean isNew)
-    {
-        final long replicationId = archive.replicate(
-            snapshotsPending.get(snapshotCursor).recordingId,
-            RecordingPos.NULL_RECORDING_ID,
-            NULL_POSITION,
-            srcControlStreamId,
-            srcControlChannel,
-            null,
-            replicationChannel);
-
-        snapshotReplication = new SnapshotReplication(replicationId, isNew);
+        CloseHelper.close(multipleRecordingReplication);
     }
 }

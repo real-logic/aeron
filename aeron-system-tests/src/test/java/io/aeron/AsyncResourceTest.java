@@ -132,10 +132,10 @@ class AsyncResourceTest
         }
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @InterruptAfter(10)
     @MethodSource("resourcesAddAndGet")
-    void shouldDetectInvalidUri(final Resource resource)
+    void shouldDetectInvalidUri(final String name, final Resource resource)
     {
         final MutableReference<Throwable> mockClientErrorHandler = new MutableReference<>();
         final Aeron.Context clientCtx = new Aeron.Context()
@@ -249,41 +249,47 @@ class AsyncResourceTest
     private static Stream<Arguments> resourcesAddAndGet()
     {
         return Stream.of(
-            Arguments.of(new Resource()
-            {
-                public long add(final Aeron aeron, final String channel, final int streamId)
+            Arguments.of(
+                "asyncAddPublication",
+                new Resource()
                 {
-                    return aeron.asyncAddPublication(channel, streamId);
-                }
+                    public long add(final Aeron aeron, final String channel, final int streamId)
+                    {
+                        return aeron.asyncAddPublication(channel, streamId);
+                    }
 
-                public Object get(final Aeron aeron, final long registrationId)
+                    public Object get(final Aeron aeron, final long registrationId)
+                    {
+                        return aeron.getPublication(registrationId);
+                    }
+                }),
+            Arguments.of(
+                "asyncAddExclusivePublication",
+                new Resource()
                 {
-                    return aeron.getPublication(registrationId);
-                }
-            }),
-            Arguments.of(new Resource()
-            {
-                public long add(final Aeron aeron, final String channel, final int streamId)
-                {
-                    return aeron.asyncAddExclusivePublication(channel, streamId);
-                }
+                    public long add(final Aeron aeron, final String channel, final int streamId)
+                    {
+                        return aeron.asyncAddExclusivePublication(channel, streamId);
+                    }
 
-                public Object get(final Aeron aeron, final long registrationId)
+                    public Object get(final Aeron aeron, final long registrationId)
+                    {
+                        return aeron.getExclusivePublication(registrationId);
+                    }
+                }),
+            Arguments.of(
+                "asyncAddSubscription",
+                new Resource()
                 {
-                    return aeron.getExclusivePublication(registrationId);
-                }
-            }),
-            Arguments.of(new Resource()
-            {
-                public long add(final Aeron aeron, final String channel, final int streamId)
-                {
-                    return aeron.asyncAddSubscription(channel, streamId);
-                }
+                    public long add(final Aeron aeron, final String channel, final int streamId)
+                    {
+                        return aeron.asyncAddSubscription(channel, streamId);
+                    }
 
-                public Object get(final Aeron aeron, final long registrationId)
-                {
-                    return aeron.getSubscription(registrationId);
-                }
-            }));
+                    public Object get(final Aeron aeron, final long registrationId)
+                    {
+                        return aeron.getSubscription(registrationId);
+                    }
+                }));
     }
 }

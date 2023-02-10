@@ -48,7 +48,7 @@ inline int aeron_int64_counter_map_init(
     size_t capacity = (size_t)aeron_find_next_power_of_two((int32_t)initial_capacity);
 
     map->load_factor = load_factor;
-    map->resize_threshold = (size_t)(load_factor * capacity);
+    map->resize_threshold = (size_t)(load_factor * (float)capacity);
     map->entries = NULL;
     map->entries_length = 2 * capacity;
     map->initial_value = initial_value;
@@ -112,7 +112,7 @@ inline int aeron_int64_counter_map_rehash(aeron_int64_counter_map_t *map, size_t
 
     map->entries = tmp_entries;
     map->entries_length = new_entries_length;
-    map->resize_threshold = (size_t)((new_entries_length / 2) * map->load_factor);
+    map->resize_threshold = (size_t)(((float)new_entries_length / 2) * map->load_factor);
 
     return 0;
 }

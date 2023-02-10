@@ -60,7 +60,7 @@ inline int aeron_int64_to_tagged_ptr_hash_map_init(
     size_t capacity = (size_t)aeron_find_next_power_of_two((int32_t)initial_capacity);
 
     map->load_factor = load_factor;
-    map->resize_threshold = (size_t)(load_factor * capacity);
+    map->resize_threshold = (size_t)(load_factor * (float)capacity);
     map->keys = NULL;
     map->entries = NULL;
     map->capacity = capacity;
@@ -95,7 +95,7 @@ inline void aeron_int64_to_tagged_ptr_hash_map_delete(aeron_int64_to_tagged_ptr_
 inline int aeron_int64_to_tagged_ptr_hash_map_rehash(aeron_int64_to_tagged_ptr_hash_map_t *map, size_t new_capacity)
 {
     size_t mask = new_capacity - 1;
-    map->resize_threshold = (size_t)(new_capacity * map->load_factor);
+    map->resize_threshold = (size_t)((float)new_capacity * map->load_factor);
 
     int64_t *tmp_keys;
     aeron_int64_to_tagged_ptr_entry_t *tmp_entries;

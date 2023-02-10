@@ -72,7 +72,7 @@ inline int aeron_str_to_ptr_hash_map_init(aeron_str_to_ptr_hash_map_t *map, size
     size_t capacity = (size_t)aeron_find_next_power_of_two((int32_t)initial_capacity);
 
     map->load_factor = load_factor;
-    map->resize_threshold = (size_t)(load_factor * capacity);
+    map->resize_threshold = (size_t)(load_factor * (float)capacity);
     map->keys = NULL;
     map->values = NULL;
     map->capacity = capacity;
@@ -109,7 +109,7 @@ inline void aeron_str_to_ptr_hash_map_delete(aeron_str_to_ptr_hash_map_t *map)
 inline int aeron_str_to_ptr_hash_map_rehash(aeron_str_to_ptr_hash_map_t *map, size_t new_capacity)
 {
     size_t mask = new_capacity - 1;
-    map->resize_threshold = (size_t)(new_capacity * map->load_factor);
+    map->resize_threshold = (size_t)((float)new_capacity * map->load_factor);
 
     aeron_str_to_ptr_hash_map_key_t *tmp_keys;
     void **tmp_values;

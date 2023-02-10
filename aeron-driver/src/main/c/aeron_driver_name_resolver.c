@@ -437,7 +437,7 @@ static int aeron_driver_name_resolver_from_sockaddr(
     struct sockaddr_storage *addr, aeron_name_resolver_cache_addr_t *cache_addr)
 {
     int result = -1;
-    if (addr->ss_family == AF_INET6)
+    if (AF_INET6 == addr->ss_family)
     {
         struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
         cache_addr->res_type = AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD;
@@ -445,7 +445,7 @@ static int aeron_driver_name_resolver_from_sockaddr(
         memcpy(cache_addr->address, &addr_in6->sin6_addr, sizeof(addr_in6->sin6_addr));
         result = 0;
     }
-    else if (addr->ss_family == AF_INET)
+    else if (AF_INET == addr->ss_family)
     {
         struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
         cache_addr->res_type = AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
@@ -463,7 +463,7 @@ static int aeron_driver_name_resolver_from_sockaddr(
 
 static uint16_t aeron_driver_name_resolver_get_port(aeron_driver_name_resolver_t *resolver)
 {
-    uint16_t port = resolver->local_socket_addr.ss_family == AF_INET6 ?
+    uint16_t port = AF_INET6 == resolver->local_socket_addr.ss_family ?
         ((struct sockaddr_in6 *)&resolver->local_socket_addr)->sin6_port :
         ((struct sockaddr_in *)&resolver->local_socket_addr)->sin_port;
 
@@ -780,7 +780,8 @@ static int aeron_driver_name_resolver_do_send(
     {
         char buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = { 0 };
         aeron_format_source_identity(buffer, AERON_NETUTIL_FORMATTED_MAX_LENGTH, neighbor_address);
-        AERON_APPEND_ERR("Failed to send resolution frames to neighbor: %s", buffer);
+        AERON_APPEND_ERR("Failed to send resolution frames to neighbor: %s (protocol_family=%i)",
+            buffer, neighbor_address->ss_family);
     }
 
     return send_result;
@@ -980,7 +981,7 @@ static int aeron_driver_name_resolver_timeout_neighbors(aeron_driver_name_resolv
             resolver->neighbor_removed_func(&entry->socket_addr);
 
             aeron_array_fast_unordered_remove(
-                (uint8_t *)resolver->neighbors.array, sizeof(aeron_name_resolver_cache_entry_t), i, last_index);
+                (uint8_t *)resolver->neighbors.array, sizeof(aeron_driver_name_resolver_neighbor_t), i, last_index);
             resolver->neighbors.length--;
             last_index--;
             num_removed++;
@@ -1079,7 +1080,7 @@ int aeron_driver_name_resolver_resolve(
 {
     aeron_driver_name_resolver_t *driver_resolver = resolver->state;
 
-    const int8_t res_type = sock_addr->ss_family == AF_INET6 ?
+    const int8_t res_type = AF_INET6 == sock_addr->ss_family ?
         AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD : AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
 
     aeron_name_resolver_cache_entry_t *cache_entry;

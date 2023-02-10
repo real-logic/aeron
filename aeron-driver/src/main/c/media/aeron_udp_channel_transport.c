@@ -473,7 +473,7 @@ static int aeron_udp_channel_transport_send_connected(
         *bytes_sent = 0;
         char addr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
         aeron_format_source_identity(addr, sizeof(addr), transport->connected_address);
-        AERON_APPEND_ERR("address=%s", addr);
+        AERON_APPEND_ERR("address=%s (protocol_family=%i)", addr, transport->connected_address->ss_family);
         return -1;
     }
     else
@@ -550,7 +550,7 @@ static int aeron_udp_channel_transport_sendv(
         {
             char addr[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
             aeron_format_source_identity(addr, sizeof(addr), address);
-            AERON_SET_ERR(errno, "%s: address=%s", "failed to sendmmsg", addr);
+            AERON_SET_ERR(errno, "%s: address=%s (protocol_family=%i)", "failed to sendmmsg", addr, address->ss_family);
             return -1;
         }
     }

@@ -75,13 +75,13 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
         return -1;
     }
 
-    if (info->ai_family == AF_INET)
+    if (AF_INET == info->ai_family)
     {
         memcpy(sockaddr, info->ai_addr, sizeof(struct sockaddr_in));
         sockaddr->ss_family = AF_INET;
         result = 0;
     }
-    else if (info->ai_family == AF_INET6)
+    else if (AF_INET6 == info->ai_family)
     {
         memcpy(sockaddr, info->ai_addr, sizeof(struct sockaddr_in6));
         sockaddr->ss_family = AF_INET6;

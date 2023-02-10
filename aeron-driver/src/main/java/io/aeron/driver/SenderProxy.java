@@ -44,6 +44,17 @@ final class SenderProxy
         this.failCount = failCount;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "SenderProxy{" +
+            "threadingMode=" + threadingMode +
+            ", failCount=" + failCount +
+            '}';
+    }
+
     boolean isApplyingBackpressure()
     {
         return commandQueue.remainingCapacity() < 1;

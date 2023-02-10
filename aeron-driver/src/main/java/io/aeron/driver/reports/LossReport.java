@@ -167,6 +167,17 @@ public final class LossReport
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "LossReport{" +
+            "nextRecordOffset=" + nextRecordOffset +
+            ", buffer=" + buffer +
+            '}';
+    }
+
+    /**
      * Report entry for a specific stream. Once an entry has been created it can then be used repeatably
      * to capture the aggregate loss on a stream.
      */

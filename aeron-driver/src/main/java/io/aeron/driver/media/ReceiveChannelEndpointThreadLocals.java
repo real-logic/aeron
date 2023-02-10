@@ -158,4 +158,14 @@ public final class ReceiveChannelEndpointThreadLocals
     {
         return nextReceiverId++;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "ReceiveChannelEndpointThreadLocals{" +
+            "nextReceiverId=" + nextReceiverId +
+            '}';
+    }
 }

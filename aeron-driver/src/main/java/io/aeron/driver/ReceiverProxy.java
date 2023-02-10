@@ -46,6 +46,17 @@ final class ReceiverProxy
         this.failCount = failCount;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "ReceiverProxy{" +
+            "threadingMode=" + threadingMode +
+            ", failCount=" + failCount +
+            '}';
+    }
+
     void receiver(final Receiver receiver)
     {
         this.receiver = receiver;

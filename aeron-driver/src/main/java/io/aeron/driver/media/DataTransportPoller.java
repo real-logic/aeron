@@ -234,6 +234,14 @@ public final class DataTransportPoller extends UdpTransportPoller
         return bytesReceived;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "DataTransportPoller{}";
+    }
+
     static class ChannelAndTransport
     {
         final ReceiveChannelEndpoint channelEndpoint;

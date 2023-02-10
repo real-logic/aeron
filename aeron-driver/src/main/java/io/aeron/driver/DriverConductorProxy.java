@@ -145,6 +145,17 @@ public final class DriverConductorProxy
         return threadingMode;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "DriverConductorProxy{" +
+            "threadingMode=" + threadingMode +
+            ", failCount=" + failCount +
+            '}';
+    }
+
     void driverConductor(final DriverConductor driverConductor)
     {
         this.driverConductor = driverConductor;

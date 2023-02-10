@@ -155,6 +155,14 @@ public final class ControlTransportPoller extends UdpTransportPoller
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "ControlTransportPoller{}";
+    }
+
     private int poll(final SendChannelEndpoint channelEndpoint)
     {
         int bytesReceived = 0;

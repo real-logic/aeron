@@ -24,7 +24,7 @@ import java.util.EnumMap;
 /**
  * Aggregate entry point for managing counters of system status.
  */
-public class SystemCounters implements AutoCloseable
+public final class SystemCounters implements AutoCloseable
 {
     private final EnumMap<SystemCounterDescriptor, AtomicCounter> counterByDescriptorMap =
         new EnumMap<>(SystemCounterDescriptor.class);
@@ -59,5 +59,15 @@ public class SystemCounters implements AutoCloseable
     public void close()
     {
         CloseHelper.closeAll(counterByDescriptorMap.values());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "SystemCounters{" +
+            "counterByDescriptorMap=" + counterByDescriptorMap +
+            '}';
     }
 }

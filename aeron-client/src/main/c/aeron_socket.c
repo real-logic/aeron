@@ -477,7 +477,7 @@ ssize_t aeron_send(aeron_socket_t fd, const void *buf, size_t len, int flags)
             return 0;
         }
 
-        AERON_SET_ERR_WIN(err, "WSASendTo(fd=%d,...)", fd);
+        AERON_SET_ERR_WIN(err, "send(fd=%d,...)", fd);
         return -1;
     }
 

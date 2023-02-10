@@ -3109,15 +3109,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    LogReplication newLogReplication(
+    RecordingReplication newLogReplication(
         final String leaderArchiveEndpoint, final long leaderRecordingId, final long stopPosition, final long nowNs)
     {
-        return new LogReplication(
+        return new RecordingReplication(
             archive,
             leaderRecordingId,
             logRecordingId,
             stopPosition,
             ChannelUri.createDestinationUri(ctx.leaderArchiveControlChannel(), leaderArchiveEndpoint),
+            archive.context().controlRequestStreamId(),
             ctx.replicationChannel(),
             ctx.leaderHeartbeatTimeoutNs(),
             ctx.leaderHeartbeatIntervalNs(),

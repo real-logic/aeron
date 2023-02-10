@@ -683,7 +683,7 @@ public class ElectionTest
         final ClusterMember thisMember = clusterMembers[1];
         final ClusterMember liveLeader = clusterMembers[0];
         final int leaderId = liveLeader.id();
-        final LogReplication logReplication = mock(LogReplication.class);
+        final RecordingReplication logReplication = mock(RecordingReplication.class);
 
         when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
         when(consensusModuleAgent.prepareForNewLeadership(anyLong(), anyLong())).thenReturn(term1BaseLogPosition);
@@ -796,7 +796,7 @@ public class ElectionTest
         final ClusterMember thisMember = clusterMembers[1];
         final ClusterMember liveLeader = clusterMembers[0];
         final int leaderId = liveLeader.id();
-        final LogReplication logReplication = mock(LogReplication.class);
+        final RecordingReplication logReplication = mock(RecordingReplication.class);
 
         when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
         when(consensusModuleAgent.prepareForNewLeadership(anyLong(), anyLong())).thenReturn(term1BaseLogPosition);
@@ -875,7 +875,7 @@ public class ElectionTest
         final ClusterMember thisMember = clusterMembers[1];
         final ClusterMember liveLeader = clusterMembers[0];
         final int leaderId = liveLeader.id();
-        final LogReplication logReplication = mock(LogReplication.class);
+        final RecordingReplication logReplication = mock(RecordingReplication.class);
 
         when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
         when(consensusModuleAgent.prepareForNewLeadership(anyLong(), anyLong())).thenReturn(term1BaseLogPosition);
@@ -938,7 +938,7 @@ public class ElectionTest
         final ClusterMember thisMember = clusterMembers[1];
         final ClusterMember liveLeader = clusterMembers[0];
         final int leaderId = liveLeader.id();
-        final LogReplication logReplication = mock(LogReplication.class);
+        final RecordingReplication logReplication = mock(RecordingReplication.class);
 
         when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
         when(consensusModuleAgent.prepareForNewLeadership(anyLong(), anyLong())).thenReturn(0L);
@@ -1111,7 +1111,7 @@ public class ElectionTest
         final ClusterMember thisMember = clusterMembers[1];
         final ClusterMember liveLeader = clusterMembers[0];
         final int leaderId = liveLeader.id();
-        final LogReplication logReplication = mock(LogReplication.class);
+        final RecordingReplication logReplication = mock(RecordingReplication.class);
 
         when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
 
@@ -1189,7 +1189,7 @@ public class ElectionTest
         final ClusterMember thisMember = clusterMembers[1];
         final ClusterMember liveLeader = clusterMembers[0];
         final int leaderId = liveLeader.id();
-        final LogReplication logReplication = mock(LogReplication.class);
+        final RecordingReplication logReplication = mock(RecordingReplication.class);
 
         when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
 
@@ -1264,7 +1264,7 @@ public class ElectionTest
         final ClusterMember thisMember = clusterMembers[1];
         final ClusterMember liveLeader = clusterMembers[0];
         final int leaderId = liveLeader.id();
-        final LogReplication logReplication = mock(LogReplication.class);
+        final RecordingReplication logReplication = mock(RecordingReplication.class);
 
         when(consensusModuleAgent.role()).thenReturn(Cluster.Role.FOLLOWER);
 

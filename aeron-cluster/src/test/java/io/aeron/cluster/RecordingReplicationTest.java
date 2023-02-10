@@ -32,13 +32,14 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class LogReplicationTest
+class RecordingReplicationTest
 {
     private static final long SRC_RECORDING_ID = 1;
     private static final long DST_RECORDING_ID = 2;
     private static final long REPLICATION_ID = 4;
 
     private static final String ENDPOINT = "localhost:20123";
+    private static final int SRC_STREAM_ID = 982734;
     private static final String REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final long PROGRESS_CHECK_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
     private static final long PROGRESS_CHECK_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
@@ -66,17 +67,19 @@ class LogReplicationTest
 
     @ParameterizedTest
     @EnumSource(value = RecordingSignal.class, mode = EnumSource.Mode.EXCLUDE, names = { "DELETE", "NULL_VAL" })
-    void shouldBeDoneWhenRecordingPositionMatchesStopPositionRegardlessOfSignal(final RecordingSignal recordingSignal)
+    void shouldBeDoneWhenRecordingPositionMatchesStopPositionOrReplicationHasEnded(
+        final RecordingSignal recordingSignal)
     {
         final long stopPosition = 982734;
         final long nowNs = 0;
 
-        final LogReplication logReplication = new LogReplication(
+        final RecordingReplication logReplication = new RecordingReplication(
             aeronArchive,
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
+            SRC_STREAM_ID,
             REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
@@ -105,12 +108,13 @@ class LogReplicationTest
         final long stopPosition = 982734;
         final long nowNs = 0;
 
-        final LogReplication logReplication = new LogReplication(
+        final RecordingReplication logReplication = new RecordingReplication(
             aeronArchive,
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
+            SRC_STREAM_ID,
             REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
@@ -129,12 +133,13 @@ class LogReplicationTest
         final long stopPosition = 982734;
         final long nowNs = 0;
 
-        final LogReplication logReplication = new LogReplication(
+        final RecordingReplication logReplication = new RecordingReplication(
             aeronArchive,
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
+            SRC_STREAM_ID,
             REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
@@ -153,12 +158,13 @@ class LogReplicationTest
         final long stopPosition = 982734;
         final long nowNs = 0;
 
-        final LogReplication logReplication = new LogReplication(
+        final RecordingReplication logReplication = new RecordingReplication(
             aeronArchive,
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
+            SRC_STREAM_ID,
             REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
@@ -170,39 +176,18 @@ class LogReplicationTest
     }
 
     @Test
-    void shouldFailIfRecordingMovesPastStopPosition()
-    {
-        final long stopPosition = 982734;
-        final long nowNs = 0;
-
-        final LogReplication logReplication = new LogReplication(
-            aeronArchive,
-            SRC_RECORDING_ID,
-            DST_RECORDING_ID,
-            stopPosition,
-            ENDPOINT,
-            REPLICATION_CHANNEL,
-            PROGRESS_CHECK_TIMEOUT_NS,
-            PROGRESS_CHECK_INTERVAL_NS,
-            nowNs);
-
-        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition + 1, RecordingSignal.STOP);
-
-        assertThrows(ClusterException.class, () -> logReplication.isDone(0));
-    }
-
-    @Test
     void shouldPollForProgressAndFailIfNotProgressing()
     {
         final long stopPosition = 982734;
         final long t0 = 20L;
 
-        final LogReplication logReplication = new LogReplication(
+        final RecordingReplication logReplication = new RecordingReplication(
             aeronArchive,
             SRC_RECORDING_ID,
             DST_RECORDING_ID,
             stopPosition,
             ENDPOINT,
+            SRC_STREAM_ID,
             REPLICATION_CHANNEL,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,

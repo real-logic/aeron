@@ -25,7 +25,7 @@ import org.agrona.concurrent.status.CountersReader;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
-final class LogReplication
+final class RecordingReplication implements AutoCloseable
 {
     private final long replicationId;
     private final long stopPosition;
@@ -42,13 +42,15 @@ final class LogReplication
     private RecordingSignal lastRecordingSignal = RecordingSignal.NULL_VAL;
 
     private boolean isStopped = false;
+    private boolean isSynced = false;
 
-    LogReplication(
+    RecordingReplication(
         final AeronArchive archive,
         final long srcRecordingId,
         final long dstRecordingId,
         final long stopPosition,
         final String srcArchiveChannel,
+        final int srcControlStreamId,
         final String replicationChannel,
         final long progressCheckTimeoutNs,
         final long progressCheckIntervalNs,
@@ -65,7 +67,7 @@ final class LogReplication
             srcRecordingId,
             dstRecordingId,
             stopPosition,
-            archive.context().controlRequestStreamId(),
+            srcControlStreamId,
             srcArchiveChannel,
             null,
             replicationChannel);
@@ -73,47 +75,59 @@ final class LogReplication
 
     boolean isDone(final long nowNs)
     {
-        if (position == stopPosition && isStopped)
+        try
         {
-            return true;
-        }
-
-        if (position > stopPosition)
-        {
-            throw new ClusterException("log replication has progressed past stopPosition: " + this);
-        }
-
-        if (nowNs >= progressCheckDeadlineNs)
-        {
-            progressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
-
-            if (NULL_COUNTER_ID != recordingPositionCounterId)
+            if (isStopped && (isSynced || position == stopPosition))
             {
-                final CountersReader counters = archive.context().aeron().countersReader();
-                final long recordingPosition = counters.getCounterValue(recordingPositionCounterId);
+                return true;
+            }
 
-                if (RecordingPos.isActive(counters, recordingPositionCounterId, recordingId) &&
-                    recordingPosition > position)
+            if (nowNs >= progressCheckDeadlineNs)
+            {
+                progressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
+
+                if (NULL_COUNTER_ID != recordingPositionCounterId)
                 {
-                    position = recordingPosition;
-                    progressDeadlineNs = nowNs + progressCheckTimeoutNs;
+                    final CountersReader counters = archive.context().aeron().countersReader();
+                    final long recordingPosition = counters.getCounterValue(recordingPositionCounterId);
+
+                    if (RecordingPos.isActive(counters, recordingPositionCounterId, recordingId) &&
+                        recordingPosition > position)
+                    {
+                        position = recordingPosition;
+                        progressDeadlineNs = nowNs + progressCheckTimeoutNs;
+                    }
                 }
             }
-        }
 
-        if (nowNs >= progressDeadlineNs)
+            if (nowNs >= progressDeadlineNs)
+            {
+                if (NULL_POSITION == stopPosition || position < stopPosition)
+                {
+                    throw new ClusterException(
+                        "log replication has not progressed: " + this, AeronException.Category.WARN);
+                }
+                else
+                {
+                    throw new ClusterException("log replication failed to stop: " + this);
+                }
+            }
+
+            return false;
+        }
+        catch (final ClusterException ex)
         {
-            if (position < stopPosition)
+            try
             {
-                throw new ClusterException("log replication has not progressed: " + this, AeronException.Category.WARN);
+                close();
             }
-            else
+            catch (final ClusterException ex1)
             {
-                throw new ClusterException("log replication failed to stop: " + this);
+                ex.addSuppressed(ex1);
             }
-        }
 
-        return false;
+            throw ex;
+        }
     }
 
     long position()
@@ -126,7 +140,15 @@ final class LogReplication
         return recordingId;
     }
 
-    void close()
+    long stopPosition()
+    {
+        return stopPosition;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void close()
     {
         if (!isStopped)
         {
@@ -150,6 +172,10 @@ final class LogReplication
             {
                 final CountersReader counters = archive.context().aeron().countersReader();
                 recordingPositionCounterId = RecordingPos.findCounterIdByRecording(counters, recordingId);
+            }
+            else if (RecordingSignal.SYNC == signal)
+            {
+                isSynced = true;
             }
             else if (RecordingSignal.REPLICATE_END == signal)
             {

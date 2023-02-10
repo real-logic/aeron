@@ -799,6 +799,23 @@ public final class ConsensusModule implements AutoCloseable
             "aeron.cluster.consensus.module.agent.role.name";
 
         /**
+         * Property name for replication progress timeout.
+         */
+        public static final String CLUSTER_REPLICATION_PROGRESS_TIMEOUT_PROP_NAME =
+            "aeron.cluster.replication.progress.timeout";
+
+        /**
+         * Default timeout for replication progress in nanoseconds.
+         */
+        public static final long CLUSTER_REPLICATION_PROGRESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+
+        /**
+         * Property name for replication progress interval.
+         */
+        public static final String CLUSTER_REPLICATION_PROGRESS_INTERVAL_PROP_NAME =
+            "aeron.cluster.replication.progress.interval";
+
+        /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
          * {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME} if set.
          *
@@ -1243,6 +1260,30 @@ public final class ConsensusModule implements AutoCloseable
         public static String agentRoleName()
         {
             return System.getProperty(CLUSTER_CONSENSUS_MODULE_AGENT_ROLE_NAME_PROP_NAME);
+        }
+
+        /**
+         * The amount of time to wait to time out an archive replication when progress has stalled.
+         *
+         * @return system property {@link #CLUSTER_REPLICATION_PROGRESS_TIMEOUT_PROP_NAME} or
+         * {@link #CLUSTER_REPLICATION_PROGRESS_TIMEOUT_DEFAULT_NS}.
+         */
+        public static long replicationProgressTimeoutNs()
+        {
+            return SystemUtil.getDurationInNanos(
+                CLUSTER_REPLICATION_PROGRESS_TIMEOUT_PROP_NAME, CLUSTER_REPLICATION_PROGRESS_TIMEOUT_DEFAULT_NS);
+        }
+
+
+        /**
+         * Interval between checks for progress on an archive replication.
+         *
+         * @return system property {@link #CLUSTER_REPLICATION_PROGRESS_INTERVAL_PROP_NAME} or {@link Aeron#NULL_VALUE}
+         * if not set.
+         */
+        public static long replicationProgressIntervalNs()
+        {
+            return SystemUtil.getDurationInNanos(CLUSTER_REPLICATION_PROGRESS_INTERVAL_PROP_NAME, Aeron.NULL_VALUE);
         }
     }
 

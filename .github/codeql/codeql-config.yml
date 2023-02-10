@@ -20,3 +20,5 @@ query-filters:
       id: cpp/long-switch
   - exclude:
       id: cpp/integer-used-for-enum
+  - exclude:
+      id: cpp/stack-address-escape

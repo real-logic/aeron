@@ -18,9 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
-import io.aeron.test.SlowTest;
-import io.aeron.test.SystemTestWatcher;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -29,6 +27,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -45,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 @SuppressWarnings("try")
+@ExtendWith(InterruptingTestCallback.class)
 class AsyncResourceTest
 {
     private static final int STREAM_ID = 7777;
@@ -73,7 +73,7 @@ class AsyncResourceTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     void shouldAddAsyncPublications()
     {
         final Aeron.Context clientCtx = new Aeron.Context()
@@ -107,7 +107,7 @@ class AsyncResourceTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     void shouldAsyncRemovePublication()
     {
         final Aeron.Context clientCtx = new Aeron.Context()
@@ -133,7 +133,7 @@ class AsyncResourceTest
     }
 
     @ParameterizedTest
-    @Timeout(10)
+    @InterruptAfter(10)
     @MethodSource("resourcesAddAndGet")
     void shouldDetectInvalidUri(final Resource resource)
     {
@@ -203,7 +203,7 @@ class AsyncResourceTest
     }
 
     @Test
-    @Timeout(10)
+    @InterruptAfter(10)
     void shouldAddAsyncSubscriptions()
     {
         final Aeron.Context clientCtx = new Aeron.Context()

@@ -16,9 +16,11 @@
 package io.aeron.driver;
 
 import io.aeron.CommonContext;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.Tests;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
-@Timeout(10)
+@ExtendWith(InterruptingTestCallback.class)
 class TerminateDriverTest
 {
     @Test
@@ -57,6 +59,7 @@ class TerminateDriverTest
     }
 
     @Test
+    @InterruptAfter(10)
     void shouldNotCallTerminationHookUponInvalidRequest()
     {
         final AtomicBoolean hasTerminatedByHook = new AtomicBoolean(false);

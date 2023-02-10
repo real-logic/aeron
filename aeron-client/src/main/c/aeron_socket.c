@@ -453,7 +453,7 @@ ssize_t aeron_recvmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
     if (SOCKET_ERROR == result)
     {
         const int err = WSAGetLastError();
-        if (WSAEWOULDBLOCK == err || WSAECONNRESET == err)
+        if (WSAEWOULDBLOCK == err || WSAEINTR == err || WSAECONNRESET == err)
         {
             return 0;
         }
@@ -472,7 +472,7 @@ ssize_t aeron_send(aeron_socket_t fd, const void *buf, size_t len, int flags)
     if (SOCKET_ERROR == size)
     {
         const int err = WSAGetLastError();
-        if (WSAEWOULDBLOCK == err || WSAECONNREFUSED == err)
+        if (WSAEWOULDBLOCK == err || WSAEINTR == err)
         {
             return 0;
         }
@@ -501,7 +501,7 @@ ssize_t aeron_sendmsg(aeron_socket_t fd, struct msghdr *msghdr, int flags)
     if (SOCKET_ERROR == result)
     {
         const int err = WSAGetLastError();
-        if (WSAEWOULDBLOCK == err)
+        if (WSAEWOULDBLOCK == err || WSAEINTR == err)
         {
             return 0;
         }

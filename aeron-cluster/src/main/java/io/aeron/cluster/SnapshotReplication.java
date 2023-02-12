@@ -15,78 +15,103 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingSignal;
-import io.aeron.archive.status.RecordingPos;
-import io.aeron.cluster.client.ClusterException;
+import org.agrona.CloseHelper;
 
-final class SnapshotReplication
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+class SnapshotReplication implements AutoCloseable
 {
-    private final long replicationId;
-    private long recordingId = RecordingPos.NULL_RECORDING_ID;
-    private boolean isDone = false;
-    private boolean hasSync = false;
-    private final boolean isNew;
+    private final ArrayList<RecordingLog.Snapshot> snapshotsPending = new ArrayList<>();
+    private final MultipleRecordingReplication multipleRecordingReplication;
 
-    SnapshotReplication(final long replicationId, final boolean isNew)
+    SnapshotReplication(
+        final AeronArchive archive,
+        final int srcControlStreamId,
+        final String srcControlChannel,
+        final String replicationChannel)
     {
-        this.replicationId = replicationId;
-        this.isNew = isNew;
+        this(
+            archive,
+            srcControlStreamId,
+            srcControlChannel,
+            replicationChannel,
+            TimeUnit.SECONDS.toNanos(10),
+            TimeUnit.SECONDS.toNanos(1));
     }
 
-    void close(final AeronArchive archive)
+    SnapshotReplication(
+        final AeronArchive archive,
+        final int srcControlStreamId,
+        final String srcControlChannel,
+        final String replicationChannel,
+        final long replicationProgressTimeoutNs,
+        final long replicationProgressIntervalNs)
     {
-        if (!isDone)
-        {
-            try
-            {
-                archive.stopReplication(replicationId);
-            }
-            catch (final Exception ignore)
-            {
-            }
-        }
+        multipleRecordingReplication = new MultipleRecordingReplication(
+            archive,
+            srcControlStreamId,
+            srcControlChannel,
+            replicationChannel,
+            replicationProgressTimeoutNs,
+            replicationProgressIntervalNs);
     }
 
-    long recordingId()
+    void addSnapshot(final RecordingLog.Snapshot snapshot)
     {
-        return recordingId;
+        snapshotsPending.add(snapshot);
+        multipleRecordingReplication.addRecording(snapshot.recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE);
     }
 
-    boolean isComplete()
+    int poll(final long nowNs)
     {
-        return hasSync;
-    }
-
-    boolean isDone()
-    {
-        return isDone;
+        return multipleRecordingReplication.poll(nowNs);
     }
 
     void onSignal(final long correlationId, final long recordingId, final long position, final RecordingSignal signal)
     {
-        if (correlationId == replicationId)
-        {
-            if (RecordingPos.NULL_RECORDING_ID != recordingId)
-            {
-                this.recordingId = recordingId;
-            }
+        multipleRecordingReplication.onSignal(correlationId, recordingId, position, signal);
+    }
 
-            if (RecordingSignal.EXTEND == signal)
-            {
-                if (isNew && 0 != position)
-                {
-                    throw new ClusterException("expected new extend signal at 0: position=" + position);
-                }
-            }
-            else if (RecordingSignal.SYNC == signal)
-            {
-                hasSync = true;
-            }
-            else if (RecordingSignal.REPLICATE_END == signal)
-            {
-                isDone = true;
-            }
+    boolean isComplete()
+    {
+        return multipleRecordingReplication.isComplete();
+    }
+
+    List<RecordingLog.Snapshot> snapshotsRetrieved()
+    {
+        final ArrayList<RecordingLog.Snapshot> snapshots = new ArrayList<>();
+        for (int i = 0, n = snapshotsPending.size(); i < n; i++)
+        {
+            final RecordingLog.Snapshot pendingSnapshot = snapshotsPending.get(i);
+            final long dstRecordingId = multipleRecordingReplication.completedDstRecordingId(
+                pendingSnapshot.recordingId);
+            snapshots.add(retrievedSnapshot(pendingSnapshot, dstRecordingId));
         }
+
+        return snapshots;
+    }
+
+    static RecordingLog.Snapshot retrievedSnapshot(final RecordingLog.Snapshot pending, final long recordingId)
+    {
+        return new RecordingLog.Snapshot(
+            recordingId,
+            pending.leadershipTermId,
+            pending.termBaseLogPosition,
+            pending.logPosition,
+            pending.timestamp,
+            pending.serviceId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void close()
+    {
+        CloseHelper.close(multipleRecordingReplication);
     }
 }

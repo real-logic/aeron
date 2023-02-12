@@ -20,7 +20,6 @@ import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingSignal;
-import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -29,6 +28,7 @@ import java.util.ArrayList;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 final class DynamicJoin
 {
@@ -56,7 +56,7 @@ final class DynamicJoin
     private State state = State.INIT;
     private ClusterMember[] clusterMembers;
     private ClusterMember leaderMember;
-    private SnapshotReplication snapshotReplication;
+    private RecordingReplication snapshotReplication;
     private Counter recoveryStateCounter;
     private long timeOfLastActivityNs = 0;
     private long correlationId = NULL_VALUE;
@@ -89,7 +89,7 @@ final class DynamicJoin
         CloseHelper.closeAll(countedErrorHandler, consensusPublication);
         if (null != snapshotReplication)
         {
-            snapshotReplication.close(localArchive);
+            CloseHelper.close(snapshotReplication);
         }
     }
 
@@ -123,7 +123,7 @@ final class DynamicJoin
                 break;
 
             case SNAPSHOT_RETRIEVE:
-                workCount += snapshotRetrieve();
+                workCount += snapshotRetrieve(nowNs);
                 break;
 
             case SNAPSHOT_LOAD:
@@ -277,30 +277,33 @@ final class DynamicJoin
         return 0;
     }
 
-    private int snapshotRetrieve()
+    private int snapshotRetrieve(final long nowNs)
     {
         int workCount = 0;
 
         if (null == snapshotReplication)
         {
-            final long replicationId = localArchive.replicate(
+            snapshotReplication = new RecordingReplication(
+                localArchive,
                 leaderSnapshots.get(snapshotCursor).recordingId,
-                RecordingPos.NULL_RECORDING_ID,
-                AeronArchive.NULL_LENGTH,
-                ctx.archiveContext().controlRequestStreamId(),
+                NULL_VALUE,
+                NULL_POSITION,
                 leaderArchiveControlRequestChannel(),
-                null,
-                ctx.replicationChannel());
+                ctx.archiveContext().controlRequestStreamId(),
+                ctx.replicationChannel(),
+                ctx.leaderHeartbeatTimeoutNs(),
+                ctx.leaderHeartbeatIntervalNs(),
+                nowNs);
 
-            snapshotReplication = new SnapshotReplication(replicationId, true);
             workCount++;
         }
         else
         {
             workCount += consensusModuleAgent.pollArchiveEvents();
-            if (snapshotReplication.isDone())
+            snapshotReplication.poll(nowNs);
+            if (snapshotReplication.hasReplicationEnded())
             {
-                if (snapshotReplication.isComplete())
+                if (snapshotReplication.hasSynced())
                 {
                     consensusModuleAgent.retrievedSnapshot(
                         snapshotReplication.recordingId(), leaderSnapshots.get(snapshotCursor));
@@ -315,16 +318,18 @@ final class DynamicJoin
                 }
                 else
                 {
-                    final long replicationId = localArchive.replicate(
+                    snapshotReplication = new RecordingReplication(
+                        localArchive,
                         leaderSnapshots.get(snapshotCursor).recordingId,
-                        snapshotReplication.recordingId(),
-                        AeronArchive.NULL_LENGTH,
-                        ctx.archiveContext().controlRequestStreamId(),
+                        NULL_VALUE,
+                        NULL_POSITION,
                         leaderArchiveControlRequestChannel(),
-                        null,
-                        ctx.replicationChannel());
+                        ctx.archiveContext().controlRequestStreamId(),
+                        ctx.replicationChannel(),
+                        ctx.leaderHeartbeatTimeoutNs(),
+                        ctx.leaderHeartbeatIntervalNs(),
+                        nowNs);
 
-                    snapshotReplication = new SnapshotReplication(replicationId, false);
                     workCount++;
                 }
             }

@@ -112,7 +112,7 @@ public final class ClusterBackupAgent implements Agent
     private AeronArchive.AsyncConnect clusterArchiveAsyncConnect;
     private AeronArchive clusterArchive;
 
-    private MultiSnapshotReplication multiSnapshotReplication;
+    private SnapshotReplication snapshotReplication;
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
     private final Subscription consensusSubscription;
@@ -210,7 +210,7 @@ public final class ClusterBackupAgent implements Agent
                 }
             }
 
-            CloseHelper.close(multiSnapshotReplication);
+            CloseHelper.close(snapshotReplication);
 
             if (!ctx.ownsAeronClient())
             {
@@ -336,8 +336,8 @@ public final class ClusterBackupAgent implements Agent
         snapshotsRetrieved.clear();
         fragmentAssembler.clear();
 
-        CloseHelper.close(multiSnapshotReplication);
-        multiSnapshotReplication = null;
+        CloseHelper.close(snapshotReplication);
+        snapshotReplication = null;
 
         if (NULL_VALUE != liveLogRecordingSubscriptionId)
         {
@@ -683,11 +683,11 @@ public final class ClusterBackupAgent implements Agent
             return null == clusterArchive ? clusterArchiveAsyncConnect.step() - step : 1;
         }
 
-        if (null == multiSnapshotReplication)
+        if (null == snapshotReplication)
         {
             final ChannelUri replicationUri = ChannelUri.parse(ctx.catchupChannel());
             replicationUri.put(ENDPOINT_PARAM_NAME, ctx.catchupEndpoint());
-            multiSnapshotReplication = new MultiSnapshotReplication(
+            snapshotReplication = new SnapshotReplication(
                 backupArchive,
                 clusterArchive.context().controlRequestStreamId(),
                 clusterArchive.context().controlRequestChannel(),
@@ -695,20 +695,20 @@ public final class ClusterBackupAgent implements Agent
                 ctx.replicationProgressTimeoutNs(),
                 ctx.replicationProgressIntervalNs());
 
-            snapshotsToRetrieve.forEach(multiSnapshotReplication::addSnapshot);
+            snapshotsToRetrieve.forEach(snapshotReplication::addSnapshot);
             workCount++;
         }
 
-        workCount += multiSnapshotReplication.poll(TimeUnit.MILLISECONDS.toNanos(nowMs));
+        workCount += snapshotReplication.poll(TimeUnit.MILLISECONDS.toNanos(nowMs));
         workCount += pollBackupArchiveEvents();
         timeOfLastProgressMs = nowMs;
 
-        if (multiSnapshotReplication.isComplete())
+        if (snapshotReplication.isComplete())
         {
-            snapshotsRetrieved.addAll(multiSnapshotReplication.snapshotsRetrieved());
+            snapshotsRetrieved.addAll(snapshotReplication.snapshotsRetrieved());
 
-            multiSnapshotReplication.close();
-            multiSnapshotReplication = null;
+            snapshotReplication.close();
+            snapshotReplication = null;
 
             state(LIVE_LOG_RECORD, nowMs);
             workCount++;
@@ -1013,9 +1013,9 @@ public final class ClusterBackupAgent implements Agent
                         throw ex;
                     }
                 }
-                else if (RecordingSignalEventDecoder.TEMPLATE_ID == templateId && null != multiSnapshotReplication)
+                else if (RecordingSignalEventDecoder.TEMPLATE_ID == templateId && null != snapshotReplication)
                 {
-                    multiSnapshotReplication.onSignal(
+                    snapshotReplication.onSignal(
                         poller.correlationId(),
                         poller.recordingId(),
                         poller.recordingPosition(),

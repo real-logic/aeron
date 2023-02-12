@@ -878,7 +878,8 @@ class Election
         else
         {
             workCount += consensusModuleAgent.pollArchiveEvents();
-            final boolean replicationDone = logReplication.isDone(nowNs);
+            logReplication.poll(nowNs);
+            final boolean replicationDone = logReplication.hasReplicationEnded() && logReplication.hasStopped();
             // Log replication runs concurrently, calling this after the check for completion ensures that the
             // last position at the end of the leadership is published as an appendPosition event.
             workCount += publishFollowerReplicationPosition(nowNs);

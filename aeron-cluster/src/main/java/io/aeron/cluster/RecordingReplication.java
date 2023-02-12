@@ -41,8 +41,9 @@ final class RecordingReplication implements AutoCloseable
     private final AeronArchive archive;
     private RecordingSignal lastRecordingSignal = RecordingSignal.NULL_VAL;
 
-    private boolean isStopped = false;
-    private boolean isSynced = false;
+    private boolean hasReplicationEnded = false;
+    private boolean hasSynced = false;
+    private boolean hasStopped = false;
 
     RecordingReplication(
         final AeronArchive archive,
@@ -73,31 +74,19 @@ final class RecordingReplication implements AutoCloseable
             replicationChannel);
     }
 
-    boolean isDone(final long nowNs)
+    int poll(final long nowNs)
     {
+        int workCount = 0;
         try
         {
-            if (isStopped && (isSynced || position == stopPosition))
-            {
-                return true;
-            }
-
             if (nowNs >= progressCheckDeadlineNs)
             {
                 progressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
-
-                if (NULL_COUNTER_ID != recordingPositionCounterId)
+                if (pollDstRecordingPosition())
                 {
-                    final CountersReader counters = archive.context().aeron().countersReader();
-                    final long recordingPosition = counters.getCounterValue(recordingPositionCounterId);
-
-                    if (RecordingPos.isActive(counters, recordingPositionCounterId, recordingId) &&
-                        recordingPosition > position)
-                    {
-                        position = recordingPosition;
-                        progressDeadlineNs = nowNs + progressCheckTimeoutNs;
-                    }
+                    progressDeadlineNs = nowNs + progressCheckTimeoutNs;
                 }
+                workCount++;
             }
 
             if (nowNs >= progressDeadlineNs)
@@ -113,7 +102,7 @@ final class RecordingReplication implements AutoCloseable
                 }
             }
 
-            return false;
+            return workCount;
         }
         catch (final ClusterException ex)
         {
@@ -145,16 +134,31 @@ final class RecordingReplication implements AutoCloseable
         return stopPosition;
     }
 
+    boolean hasReplicationEnded()
+    {
+        return hasReplicationEnded;
+    }
+
+    boolean hasSynced()
+    {
+        return hasSynced;
+    }
+
+    boolean hasStopped()
+    {
+        return hasStopped;
+    }
+
     /**
      * {@inheritDoc}
      */
     public void close()
     {
-        if (!isStopped)
+        if (!hasReplicationEnded)
         {
             try
             {
-                isStopped = true;
+                hasReplicationEnded = true;
                 archive.tryStopReplication(replicationId);
             }
             catch (final Exception ex)
@@ -175,11 +179,19 @@ final class RecordingReplication implements AutoCloseable
             }
             else if (RecordingSignal.SYNC == signal)
             {
-                isSynced = true;
+                hasSynced = true;
             }
             else if (RecordingSignal.REPLICATE_END == signal)
             {
-                isStopped = true;
+                hasReplicationEnded = true;
+            }
+            else if (RecordingSignal.STOP == signal)
+            {
+                if (NULL_POSITION != position)
+                {
+                    this.position = position;
+                }
+                hasStopped = true;
             }
             else if (RecordingSignal.DELETE == signal)
             {
@@ -196,6 +208,24 @@ final class RecordingReplication implements AutoCloseable
         }
     }
 
+    private boolean pollDstRecordingPosition()
+    {
+        if (NULL_COUNTER_ID != recordingPositionCounterId)
+        {
+            final CountersReader counters = archive.context().aeron().countersReader();
+            final long recordingPosition = counters.getCounterValue(recordingPositionCounterId);
+
+            if (RecordingPos.isActive(counters, recordingPositionCounterId, recordingId) &&
+                recordingPosition > position)
+            {
+                position = recordingPosition;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public String toString()
     {
         return "LogReplication{" +
@@ -204,7 +234,7 @@ final class RecordingReplication implements AutoCloseable
             ", recordingId=" + recordingId +
             ", position=" + position +
             ", stopPosition=" + stopPosition +
-            ", stopped=" + isStopped +
+            ", stopped=" + hasReplicationEnded +
             ", lastRecordingSignal=" + lastRecordingSignal +
             ", progressDeadlineNs=" + progressDeadlineNs +
             ", progressCheckDeadlineNs=" + progressCheckDeadlineNs +

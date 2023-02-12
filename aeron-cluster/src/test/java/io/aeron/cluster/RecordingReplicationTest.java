@@ -29,6 +29,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -65,10 +66,7 @@ class RecordingReplicationTest
             .thenReturn(REPLICATION_ID);
     }
 
-    @ParameterizedTest
-    @EnumSource(value = RecordingSignal.class, mode = EnumSource.Mode.EXCLUDE, names = { "DELETE", "NULL_VAL" })
-    void shouldBeDoneWhenRecordingPositionMatchesStopPositionOrReplicationHasEnded(
-        final RecordingSignal recordingSignal)
+    void shouldIndicateAppropriateStatesAsSignalsAreReceived()
     {
         final long stopPosition = 982734;
         final long nowNs = 0;
@@ -85,20 +83,20 @@ class RecordingReplicationTest
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
 
-        assertFalse(logReplication.isDone(nowNs));
+        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, NULL_POSITION, RecordingSignal.REPLICATE_END);
+        assertTrue(logReplication.hasReplicationEnded());
+        assertFalse(logReplication.hasSynced());
+        assertFalse(logReplication.hasStopped());
 
-        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition - 1, recordingSignal);
-        assertFalse(logReplication.isDone(nowNs));
+        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, NULL_POSITION, RecordingSignal.STOP);
+        assertTrue(logReplication.hasReplicationEnded());
+        assertFalse(logReplication.hasSynced());
+        assertTrue(logReplication.hasStopped());
 
-        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition, recordingSignal);
-        if (RecordingSignal.REPLICATE_END == recordingSignal)
-        {
-            assertTrue(logReplication.isDone(nowNs));
-        }
-        else
-        {
-            assertFalse(logReplication.isDone(nowNs));
-        }
+        logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, NULL_POSITION, RecordingSignal.SYNC);
+        assertTrue(logReplication.hasReplicationEnded());
+        assertTrue(logReplication.hasSynced());
+        assertTrue(logReplication.hasStopped());
     }
 
     @ParameterizedTest
@@ -121,7 +119,8 @@ class RecordingReplicationTest
             nowNs);
 
         logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, stopPosition, recordingSignal);
-        assertFalse(logReplication.isDone(nowNs));
+        logReplication.poll(nowNs);
+        assertFalse(logReplication.hasReplicationEnded());
 
         logReplication.close();
         verify(aeronArchive).tryStopReplication(REPLICATION_ID);
@@ -194,15 +193,12 @@ class RecordingReplicationTest
             t0);
 
         logReplication.onSignal(REPLICATION_ID, DST_RECORDING_ID, 0, RecordingSignal.EXTEND);
-
-        assertFalse(logReplication.isDone(t0));
-
-        assertFalse(logReplication.isDone(t0 + (PROGRESS_CHECK_INTERVAL_NS - 1)));
-
-        assertFalse(logReplication.isDone(t0 + PROGRESS_CHECK_INTERVAL_NS));
+        logReplication.poll(t0);
+        logReplication.poll(t0 + (PROGRESS_CHECK_INTERVAL_NS - 1));
+        logReplication.poll(t0 + PROGRESS_CHECK_INTERVAL_NS);
 
         assertThrows(
             ClusterException.class,
-            () -> logReplication.isDone(t0 + PROGRESS_CHECK_INTERVAL_NS + PROGRESS_CHECK_TIMEOUT_NS));
+            () -> logReplication.poll(t0 + PROGRESS_CHECK_INTERVAL_NS + PROGRESS_CHECK_TIMEOUT_NS));
     }
 }

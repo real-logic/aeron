@@ -73,14 +73,25 @@ class MultipleRecordingReplication implements AutoCloseable
         }
         else
         {
-            if (recordingReplication.isDone(nowNs))
+            recordingReplication.poll(nowNs);
+            if (recordingReplication.hasReplicationEnded())
             {
-                final RecordingInfo pending = recordingsPending.get(recordingCursor);
-                recordingsCompleted.put(pending.srcRecordingId, recordingReplication.recordingId());
-                recordingCursor++;
+                if (recordingReplication.hasSynced())
+                {
+                    final RecordingInfo pending = recordingsPending.get(recordingCursor);
+                    recordingsCompleted.put(pending.srcRecordingId, recordingReplication.recordingId());
+                    recordingCursor++;
 
-                CloseHelper.close(recordingReplication);
-                recordingReplication = null;
+                    CloseHelper.close(recordingReplication);
+                    recordingReplication = null;
+                }
+                else
+                {
+                    CloseHelper.close(recordingReplication);
+                    recordingReplication = null;
+
+                    replicateCurrentSnapshot(nowNs);
+                }
 
                 workDone++;
             }

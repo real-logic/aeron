@@ -72,7 +72,7 @@ public class NodeStateFile implements AutoCloseable
     public static final String FILENAME = "node-state.dat";
     private static final int MINIMUM_FILE_LENGTH =
         NodeStateHeaderDecoder.BLOCK_LENGTH +
-        SimpleOpenFramingHeaderDecoder.BLOCK_LENGTH +
+        FramingHeaderDecoder.BLOCK_LENGTH +
         MessageHeaderDecoder.ENCODED_LENGTH +
         CandidateTermDecoder.BLOCK_LENGTH;
     private final CandidateTerm candidateTerm = new CandidateTerm();
@@ -81,8 +81,8 @@ public class NodeStateFile implements AutoCloseable
     private int fileSyncLevel;
     private final NodeStateHeaderDecoder nodeStateHeaderDecoder = new NodeStateHeaderDecoder();
     private final NodeStateHeaderEncoder nodeStateHeaderEncoder = new NodeStateHeaderEncoder();
-    private final SimpleOpenFramingHeaderDecoder simpleOpenFramingHeaderDecoder = new SimpleOpenFramingHeaderDecoder();
-    private final SimpleOpenFramingHeaderEncoder simpleOpenFramingHeaderEncoder = new SimpleOpenFramingHeaderEncoder();
+    private final FramingHeaderDecoder simpleOpenFramingHeaderDecoder = new FramingHeaderDecoder();
+    private final FramingHeaderEncoder simpleOpenFramingHeaderEncoder = new FramingHeaderEncoder();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final CandidateTermDecoder candidateTermDecoder = new CandidateTermDecoder();
@@ -178,7 +178,7 @@ public class NodeStateFile implements AutoCloseable
         final NodeStateHeaderEncoder nodeStateHeaderEncoder,
         final CandidateTermDecoder candidateTermDecoder,
         final CandidateTermEncoder candidateTermEncoder,
-        final SimpleOpenFramingHeaderDecoder simpleOpenFramingHeaderDecoder,
+        final FramingHeaderDecoder simpleOpenFramingHeaderDecoder,
         final MessageHeaderDecoder messageHeaderDecoder)
     {
         nodeStateHeaderDecoder.wrap(
@@ -212,7 +212,7 @@ public class NodeStateFile implements AutoCloseable
         final int startPosition,
         final int templateId,
         final DirectBuffer buffer,
-        final SimpleOpenFramingHeaderDecoder simpleOpenFramingHeaderDecoder,
+        final FramingHeaderDecoder simpleOpenFramingHeaderDecoder,
         final MessageHeaderDecoder messageHeaderDecoder)
     {
         int position = startPosition;
@@ -222,8 +222,8 @@ public class NodeStateFile implements AutoCloseable
             simpleOpenFramingHeaderDecoder.wrap(
                 buffer,
                 position,
-                SimpleOpenFramingHeaderDecoder.BLOCK_LENGTH,
-                SimpleOpenFramingHeaderDecoder.SCHEMA_VERSION);
+                FramingHeaderDecoder.BLOCK_LENGTH,
+                FramingHeaderDecoder.SCHEMA_VERSION);
 
             final int messageLength = (int)simpleOpenFramingHeaderDecoder.messageLength();
             final int messagePosition = position + simpleOpenFramingHeaderDecoder.sbeBlockLength();
@@ -244,8 +244,8 @@ public class NodeStateFile implements AutoCloseable
         final MutableDirectBuffer buffer,
         final NodeStateHeaderDecoder nodeStateHeaderDecoder,
         final NodeStateHeaderEncoder nodeStateHeaderEncoder,
-        final SimpleOpenFramingHeaderDecoder simpleOpenFramingHeaderDecoder,
-        final SimpleOpenFramingHeaderEncoder simpleOpenFramingHeaderEncoder,
+        final FramingHeaderDecoder simpleOpenFramingHeaderDecoder,
+        final FramingHeaderEncoder simpleOpenFramingHeaderEncoder,
         final MessageHeaderDecoder messageHeaderDecoder,
         final MessageHeaderEncoder messageHeaderEncoder,
         final CandidateTermDecoder candidateTermDecoder,
@@ -263,8 +263,8 @@ public class NodeStateFile implements AutoCloseable
         simpleOpenFramingHeaderDecoder.wrap(
             buffer,
             firstFramingHeaderOffset,
-            SimpleOpenFramingHeaderDecoder.BLOCK_LENGTH,
-            SimpleOpenFramingHeaderDecoder.SCHEMA_VERSION);
+            FramingHeaderDecoder.BLOCK_LENGTH,
+            FramingHeaderDecoder.SCHEMA_VERSION);
 
         simpleOpenFramingHeaderEncoder.encodingType(CandidateTermDecoder.SCHEMA_ID);
 
@@ -274,7 +274,7 @@ public class NodeStateFile implements AutoCloseable
             buffer, firstFramingHeaderOffset + simpleOpenFramingHeaderEncoder.sbeBlockLength(), messageHeaderDecoder);
 
         simpleOpenFramingHeaderEncoder.messageLength(
-            SimpleOpenFramingHeaderEncoder.BLOCK_LENGTH +
+            FramingHeaderEncoder.BLOCK_LENGTH +
             MessageHeaderEncoder.ENCODED_LENGTH +
             candidateTermEncoder.encodedLength());
     }

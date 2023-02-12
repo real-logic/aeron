@@ -28,10 +28,6 @@ Codec for the persistent local state of a cluster node.
             <type name="length"         primitiveType="uint32" maxValue="1073741824"/>
             <type name="varData"        primitiveType="uint8" length="0"/>
         </composite>
-        <composite name="sofh">
-            <type name="messageLength" primitiveType="uint32"/>
-            <type name="encodingType" primitiveType="uint32"/>
-        </composite>
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
     </types>
 

@@ -924,6 +924,7 @@ project(':aeron-test-support') {
         api project(':aeron-cluster')
         api project(':aeron-samples')
         api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+        api "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
         implementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 

@@ -19,13 +19,11 @@ import io.aeron.CommonContext;
 import io.aeron.archive.ArchiveMarkFile;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterTerminationException;
+import io.aeron.samples.LogInspector;
 import io.aeron.samples.SamplesUtil;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.driver.DriverOutputConsumer;
-import org.agrona.CloseHelper;
-import org.agrona.IoUtil;
-import org.agrona.LangUtil;
-import org.agrona.SemanticVersion;
+import org.agrona.*;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.SystemEpochClock;
@@ -37,20 +35,22 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.opentest4j.TestAbortedException;
 
 import java.io.File;
 import java.lang.reflect.Method;
 import java.net.UnknownHostException;
 import java.nio.MappedByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static io.aeron.CncFileDescriptor.*;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -59,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecutionCallback, AfterEachCallback,
     BeforeEachCallback
 {
+    public static final Pattern PARAMETERISED_TEST_INDEX_PATTERN = Pattern.compile("\\[([0-9]+)\\].*");
     private static final String CLUSTER_TERMINATION_EXCEPTION = ClusterTerminationException.class.getName();
     private static final String UNKNOWN_HOST_EXCEPTION = UnknownHostException.class.getName();
     private static final String ATS_GCM_DECRYPT_ERROR =
@@ -186,12 +187,33 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
             if (null != error)
             {
-                final String test = context.getTestClass().map(Class::getName).orElse("unknown") + "-" +
-                    context.getTestMethod().map(Method::getName).orElse("unknown") + "(" +
-                    context.getDisplayName() + ")";
-                System.out.println("*** " + test + " failed in " +
+                final String testMethod = context.getTestClass().map(Class::getName).orElse("unknown") + "-" +
+                    context.getTestMethod().map(Method::getName).orElse("unknown");
+                final String testName;
+                final String directoryName;
+                if (context.getTestMethod().map(m -> m.getAnnotation(ParameterizedTest.class)).isPresent())
+                {
+                    testName = testMethod + "(" + context.getDisplayName() + ")";
+                    final Matcher matcher = PARAMETERISED_TEST_INDEX_PATTERN.matcher(context.getDisplayName());
+                    if (matcher.matches())
+                    {
+                        directoryName = testMethod + "_" + matcher.group(1);
+                    }
+                    else
+                    {
+                        directoryName = testMethod + "_" + uniqueNameHash(context.getUniqueId());
+                    }
+                }
+                else
+                {
+                    testName = testMethod + "()";
+                    directoryName = testMethod;
+                }
+
+                System.out.println(
+                    "*** " + testName + " failed in " +
                     NANOSECONDS.toMillis(endTimeNs - startTimeNs) + " ms, cause: " + error);
-                final Throwable terminateError = reportAndTerminate(test);
+                final Throwable terminateError = reportAndTerminate(directoryName);
                 error = setOrUpdateError(error, terminateError);
                 try
                 {
@@ -232,6 +254,21 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 error.printStackTrace(System.out);
                 LangUtil.rethrowUnchecked(error);
             }
+        }
+    }
+
+    private static String uniqueNameHash(final String testUniqueId)
+    {
+        try
+        {
+            final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            final DirectBuffer digest = new UnsafeBuffer(messageDigest.digest(
+                testUniqueId.getBytes(StandardCharsets.UTF_8)));
+            return new String(LogInspector.bytesToHex(digest, 0, digest.capacity()));
+        }
+        catch (final NoSuchAlgorithmException ex)
+        {
+            throw new IllegalStateException(ex);
         }
     }
 
@@ -347,7 +384,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             encodedException);
     }
 
-    private Throwable reportAndTerminate(final String test)
+    private Throwable reportAndTerminate(final String directoryName)
     {
         Throwable error = setOrUpdateError(null, printCncInfo(dataCollector.cncFiles()));
         error = setOrUpdateError(error, printArchiveMarkFileErrors(dataCollector.archiveMarkFiles()));
@@ -367,7 +404,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
         try
         {
-            dataCollector.dumpData(test);
+            dataCollector.dumpData(directoryName);
         }
         catch (final Throwable t)
         {

@@ -21,16 +21,28 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 
+import java.util.concurrent.atomic.AtomicLong;
+
+import static io.aeron.AeronCounters.DRIVER_RECEIVER_HWM_TYPE_ID;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -38,20 +50,30 @@ class MultiSubscriberTest
 {
     private static final String CHANNEL_1 = "aeron:udp?endpoint=localhost:24325|fruit=banana";
     private static final String CHANNEL_2 = "aeron:udp?endpoint=localhost:24325|fruit=apple";
+    private static final String CHANNEL_3 = "aeron:udp?endpoint=localhost:24326|fruit=apple";
     private static final int STREAM_ID = 1001;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
 
-    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+    @RegisterExtension
+    final SystemTestWatcher watcher = new SystemTestWatcher();
+
+    private final MediaDriver.Context context = new MediaDriver.Context()
         .errorHandler(Tests::onError)
-        .threadingMode(ThreadingMode.SHARED));
+        .threadingMode(ThreadingMode.SHARED);
+    private final TestMediaDriver driver = TestMediaDriver.launch(context, watcher);
 
     private final Aeron aeron = Aeron.connect();
+
+    @BeforeEach
+    void setUp()
+    {
+        watcher.dataCollector().add(driver.context().aeronDirectory());
+    }
 
     @AfterEach
     void after()
     {
         CloseHelper.closeAll(aeron, driver);
-        driver.context().deleteDirectory();
     }
 
     @Test
@@ -96,6 +118,52 @@ class MultiSubscriberTest
 
             verifyData(srcBuffer, mockFragmentHandlerOne);
             verifyData(srcBuffer, mockFragmentHandlerTwo);
+        }
+    }
+
+    @Test
+    @InterruptAfter(5)
+    void shouldReportDifferentUriForEachSubscription()
+    {
+        final AtomicLong subAImageCorrelationId = new AtomicLong(-1);
+        final AtomicLong subBImageCorrelationId = new AtomicLong(-1);
+        final String channel = "aeron:udp?endpoint=localhost:24325";
+        final String channelA = channel + "|reliable=false";
+        final String channelB = channel + "|reliable=true";
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Publication publication1 = aeron.addPublication(channel, STREAM_ID);
+            Publication publication2 = aeron.addPublication(channel, STREAM_ID + 1);
+            Subscription subA = aeron.addSubscription(
+                channelA,
+                STREAM_ID,
+                image -> subAImageCorrelationId.set(image.correlationId()),
+                image -> {});
+            Subscription subB = aeron.addSubscription(
+                channelB,
+                STREAM_ID + 1,
+                image -> subBImageCorrelationId.set(image.correlationId()),
+                image -> {}))
+        {
+            Tests.awaitConnected(publication1);
+            Tests.awaitConnected(publication2);
+            Tests.awaitConnected(subA);
+            Tests.awaitConnected(subB);
+
+            while (-1 == subAImageCorrelationId.get() && -1 == subBImageCorrelationId.get())
+            {
+                Tests.yield();
+            }
+
+            final int counterIdA = aeron.countersReader()
+                .findByTypeIdAndRegistrationId(DRIVER_RECEIVER_HWM_TYPE_ID, subAImageCorrelationId.get());
+            assertNotEquals(-1, counterIdA);
+            assertThat(aeron.countersReader().getCounterLabel(counterIdA), containsString(channelA));
+
+            final int counterIdB = aeron.countersReader()
+                .findByTypeIdAndRegistrationId(DRIVER_RECEIVER_HWM_TYPE_ID, subBImageCorrelationId.get());
+            assertNotEquals(-1, counterIdB);
+            assertThat(aeron.countersReader().getCounterLabel(counterIdB), containsString(channelB));
         }
     }
 

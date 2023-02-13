@@ -622,6 +622,7 @@ project(':aeron-cluster') {
     tasks.register('generateCodecs', JavaExec) {
         def codecsFile = 'src/main/resources/cluster/aeron-cluster-codecs.xml'
         def markCodecsFile = 'src/main/resources/cluster/aeron-cluster-mark-codecs.xml'
+        def nodeStateCodecsFile = 'src/main/resources/cluster/aeron-cluster-node-state-codecs.xml'
         def sbeFile = 'src/main/resources/cluster/fpl/sbe.xsd'
 
         inputs.files(codecsFile, markCodecsFile, sbeFile)
@@ -634,7 +635,7 @@ project(':aeron-cluster') {
             'sbe.target.language': 'Java',
             'sbe.validation.xsd': sbeFile,
             'sbe.validation.stop.on.error': 'true')
-        args = [codecsFile, markCodecsFile]
+        args = [codecsFile, markCodecsFile, nodeStateCodecsFile]
     }
 
     compileJava.dependsOn compileGeneratedJava

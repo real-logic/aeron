@@ -40,6 +40,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -1269,6 +1270,7 @@ public final class ConsensusModule implements AutoCloseable
         private File clusterDir;
         private RecordingLog recordingLog;
         private ClusterMarkFile markFile;
+        private NodeStateFile nodeStateFile;
         private int fileSyncLevel = Archive.Configuration.fileSyncLevel();
 
         private int appVersion = SemanticVersion.compose(0, 0, 1);
@@ -1435,6 +1437,24 @@ public final class ConsensusModule implements AutoCloseable
                     errorBufferLength,
                     epochClock,
                     LIVENESS_TIMEOUT_MS);
+            }
+
+            if (null == nodeStateFile)
+            {
+                try
+                {
+                    nodeStateFile = new NodeStateFile(clusterDir, true, fileSyncLevel());
+                }
+                catch (final IOException ex)
+                {
+                    throw new ClusterException("unable to create node-state file", ex);
+                }
+            }
+
+            if (Aeron.NULL_VALUE == nodeStateFile.candidateTerm().candidateTermId() &&
+                Aeron.NULL_VALUE != markFile.candidateTermId())
+            {
+                nodeStateFile.updateCandidateTermId(markFile.candidateTermId(), Aeron.NULL_VALUE, epochClock.time());
             }
 
             if (null == errorLog)
@@ -3493,6 +3513,22 @@ public final class ConsensusModule implements AutoCloseable
             return markFile;
         }
 
+        Context nodeStateFile(final NodeStateFile nodeStateFile)
+        {
+            this.nodeStateFile = nodeStateFile;
+            return this;
+        }
+
+        /**
+         * The {@link NodeStateFile} that is used by the consensus module.
+         *
+         * @return node state file.
+         */
+        public NodeStateFile nodeStateFile()
+        {
+            return nodeStateFile;
+        }
+
         /**
          * Set the error buffer length in bytes to use.
          *
@@ -3624,6 +3660,7 @@ public final class ConsensusModule implements AutoCloseable
         public void close()
         {
             CloseHelper.close(countedErrorHandler, recordingLog);
+            CloseHelper.close(countedErrorHandler, nodeStateFile);
             CloseHelper.close(countedErrorHandler, markFile);
             if (errorHandler instanceof AutoCloseable)
             {

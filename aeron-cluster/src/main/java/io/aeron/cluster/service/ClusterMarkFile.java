@@ -181,7 +181,8 @@ public final class ClusterMarkFile implements AutoCloseable
             {
                 if (SemanticVersion.major(version) != MAJOR_VERSION)
                 {
-                    throw new ClusterException("mark file major version " + SemanticVersion.major(version) +
+                    throw new ClusterException(
+                        "mark file major version " + SemanticVersion.major(version) +
                         " does not match software: " + MAJOR_VERSION);
                 }
             },
@@ -244,42 +245,6 @@ public final class ClusterMarkFile implements AutoCloseable
     public long candidateTermId()
     {
         return buffer.getLongVolatile(MarkFileHeaderDecoder.candidateTermIdEncodingOffset());
-    }
-
-    /**
-     * Record the fact that a node is aware of an election, so it can survive a restart.
-     *
-     * @param candidateTermId to record that a vote has taken place.
-     * @param fileSyncLevel   as defined by cluster file sync level.
-     */
-    public void candidateTermId(final long candidateTermId, final int fileSyncLevel)
-    {
-        buffer.putLongVolatile(MarkFileHeaderEncoder.candidateTermIdEncodingOffset(), candidateTermId);
-        if (fileSyncLevel > 0)
-        {
-            markFile.mappedByteBuffer().force();
-        }
-    }
-
-    /**
-     * Record the fact that a node is aware of an election, so it can survive a restart.
-     *
-     * @param candidateTermId to record that a vote has taken place.
-     * @param fileSyncLevel   as defined by cluster file sync level.
-     * @return the max of the existing and proposed candidateTermId.
-     */
-    public long proposeMaxCandidateTermId(final long candidateTermId, final int fileSyncLevel)
-    {
-        final long existingCandidateTermId = buffer.getLongVolatile(
-            MarkFileHeaderEncoder.candidateTermIdEncodingOffset());
-
-        if (candidateTermId > existingCandidateTermId)
-        {
-            candidateTermId(candidateTermId, fileSyncLevel);
-            return candidateTermId;
-        }
-
-        return existingCandidateTermId;
     }
 
     /**

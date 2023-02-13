@@ -52,6 +52,8 @@ public class ElectionTest
     private final Image logImage = mock(Image.class);
     private final RecordingLog recordingLog = mock(RecordingLog.class);
     private final ClusterMarkFile clusterMarkFile = mock(ClusterMarkFile.class);
+    private final NodeStateFile nodeStateFile = mock(NodeStateFile.class);
+    private final NodeStateFile.CandidateTerm candidateTerm = mock(NodeStateFile.CandidateTerm.class);
     private final ConsensusPublisher consensusPublisher = mock(ConsensusPublisher.class);
     private final ConsensusModuleAgent consensusModuleAgent = mock(ConsensusModuleAgent.class);
     private final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
@@ -62,10 +64,12 @@ public class ElectionTest
         .aeron(aeron)
         .recordingLog(recordingLog)
         .clusterClock(clock)
+        .epochClock(clock)
         .random(new Random())
         .electionStateCounter(electionStateCounter)
         .commitPositionCounter(commitPositionCounter)
         .clusterMarkFile(clusterMarkFile)
+        .nodeStateFile(nodeStateFile)
         .countedErrorHandler(countedErrorHandler);
 
     @BeforeEach
@@ -76,9 +80,10 @@ public class ElectionTest
         when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
         when(consensusModuleAgent.addLogPublication(anyLong())).thenReturn(LOG_SESSION_ID);
         when(subscription.imageBySessionId(anyInt())).thenReturn(logImage);
+        when(nodeStateFile.candidateTerm()).thenReturn(candidateTerm);
 
-        when(clusterMarkFile.candidateTermId()).thenAnswer((invocation) -> markFileCandidateTermId.get());
-        when(clusterMarkFile.proposeMaxCandidateTermId(anyLong(), anyInt())).thenAnswer(
+        when(candidateTerm.candidateTermId()).thenAnswer((invocation) -> markFileCandidateTermId.get());
+        when(nodeStateFile.proposeMaxCandidateTermId(anyLong(), anyLong(), anyLong())).thenAnswer(
             (invocation) ->
             {
                 final long candidateTermId = invocation.getArgument(0);

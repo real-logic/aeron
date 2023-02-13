@@ -78,7 +78,7 @@ public class NodeStateFile implements AutoCloseable
     private final CandidateTerm candidateTerm = new CandidateTerm();
     private final MappedByteBuffer mappedFile;
     private final File clusterDir;
-    private int fileSyncLevel;
+    private final int fileSyncLevel;
     private final NodeStateHeaderDecoder nodeStateHeaderDecoder = new NodeStateHeaderDecoder();
     private final NodeStateHeaderEncoder nodeStateHeaderEncoder = new NodeStateHeaderEncoder();
     private final FramingHeaderDecoder simpleOpenFramingHeaderDecoder = new FramingHeaderDecoder();

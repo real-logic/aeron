@@ -51,7 +51,6 @@ class IpcPublicationTest
     private DriverProxy driverProxy;
     private DriverConductor driverConductor;
 
-    @SuppressWarnings("unchecked")
     @BeforeEach
     void setUp()
     {

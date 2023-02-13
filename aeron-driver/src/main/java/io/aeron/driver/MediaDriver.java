@@ -1540,7 +1540,8 @@ public final class MediaDriver implements AutoCloseable
          * <p>
          * The default can be overridden with a channel param.
          *
-         * @return true if subscriptions should be considered a group member, false if not, or depends on endpoint.
+         * @return FORCE_TRUE if subscriptions should be considered a group member, FORCE_FALSE if not, or depends
+         * on endpoint.
          * @see Configuration#GROUP_RECEIVER_CONSIDERATION_PROP_NAME
          * @see CommonContext#GROUP_PARAM_NAME
          */

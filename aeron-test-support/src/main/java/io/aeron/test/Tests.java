@@ -750,7 +750,7 @@ public class Tests
             this.out = out;
         }
 
-        public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs) throws IOException
+        public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
         {
             pad(indent, out);
             out.println("[" + dir.toAbsolutePath() + "]");
@@ -784,12 +784,12 @@ public class Tests
             }
         }
 
-        public FileVisitResult visitFileFailed(final Path file, final IOException exc) throws IOException
+        public FileVisitResult visitFileFailed(final Path file, final IOException exc)
         {
             return FileVisitResult.CONTINUE;
         }
 
-        public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException
+        public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
         {
             indent -= 2;
             return FileVisitResult.CONTINUE;

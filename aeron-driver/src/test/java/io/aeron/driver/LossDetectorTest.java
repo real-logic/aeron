@@ -66,7 +66,7 @@ class LossDetectorTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private final LossHandler lossHandler = mock(LossHandler.class);
-    private LossDetector lossDetector = new LossDetector(DELAY_GENERATOR, lossHandler);;
+    private LossDetector lossDetector = new LossDetector(DELAY_GENERATOR, lossHandler);
     private long currentTime = 0;
 
     {

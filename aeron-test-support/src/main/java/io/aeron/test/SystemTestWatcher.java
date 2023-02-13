@@ -84,7 +84,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     private Predicate<String> logFilter = TEST_CLUSTER_DEFAULT_LOG_FILTER;
     private DataCollector dataCollector = new DataCollector();
-    private ArrayList<AutoCloseable> closeables = new ArrayList<>();
+    private final ArrayList<AutoCloseable> closeables = new ArrayList<>();
     private boolean skipDeleteOnFailure = false;
     private long startTimeNs;
     private long endTimeNs;

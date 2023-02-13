@@ -7,7 +7,7 @@ dependencies {
     implementation 'org.eclipse.jgit:org.eclipse.jgit:5.13.1.202206130422-r'
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     configure(options) {
         options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked' // examples
     }

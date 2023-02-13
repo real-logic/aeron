@@ -34,10 +34,9 @@ import static io.aeron.logbuffer.LogBufferDescriptor.termLength;
 
 class ImageRangeTest
 {
-    @SuppressWarnings("JUnitMalformedDeclaration")
     @ParameterizedTest
     @ValueSource(booleans = { true, false })
-    void shouldHandleAllPossibleOffsets(final boolean useSpareFiles, final @TempDir File baseDir)
+    void shouldHandleAllPossibleOffsets(final boolean useSparseFiles, final @TempDir File baseDir)
     {
         final int termBufferLength = 65536;
         final int filePageSize = 4096;
@@ -47,7 +46,7 @@ class ImageRangeTest
         try (
             FileStoreLogFactory fileStoreLogFactory = new FileStoreLogFactory(
                 baseDir.getAbsolutePath(), filePageSize, false, 0, new RethrowingErrorHandler());
-            RawLog rawLog = fileStoreLogFactory.newImage(0, termBufferLength, useSpareFiles))
+            RawLog rawLog = fileStoreLogFactory.newImage(0, termBufferLength, useSparseFiles))
         {
             initialTermId(rawLog.metaData(), 0);
             mtuLength(rawLog.metaData(), 1408);

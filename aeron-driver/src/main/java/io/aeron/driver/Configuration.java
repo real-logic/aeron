@@ -866,7 +866,7 @@ public final class Configuration
     /**
      * Should subscriptions should be considered a group member or individual connection, e.g. multicast vs unicast.
      *
-     * @return true if subscriptions should be considered a group member or false if individual.
+     * @return FORCE_TRUE if subscriptions should be considered a group member or false if individual.
      * @see #GROUP_RECEIVER_CONSIDERATION_PROP_NAME
      */
     public static CommonContext.InferableBoolean receiverGroupConsideration()

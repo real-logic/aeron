@@ -193,7 +193,7 @@ public final class ClusterBackup implements AutoCloseable
         /**
          * Receive data from any node that is not the leader.
          */
-        FOLLOWER;
+        FOLLOWER
     }
 
 

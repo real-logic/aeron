@@ -4538,7 +4538,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     aeron_subscription_link_t subscription_link = conductor->network_subscriptions.array[0];
     for (size_t i = 0; i < conductor->network_subscriptions.length; i++)
     {
-        if (aeron_subscription_link_matches_allowing_wildcard(&conductor->network_subscriptions.array[i], endpoint, command->stream_id, command->session_id))
+        if (aeron_subscription_link_matches_allowing_wildcard(
+            &conductor->network_subscriptions.array[i], endpoint, command->stream_id, command->session_id))
         {
             subscription_link = conductor->network_subscriptions.array[i];
             break;

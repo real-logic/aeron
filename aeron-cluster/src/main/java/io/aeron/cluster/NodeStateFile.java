@@ -17,6 +17,8 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.codecs.ClusterMembersDecoder;
+import io.aeron.cluster.codecs.ClusterMembersEncoder;
 import io.aeron.cluster.codecs.node.*;
 import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.DirectBuffer;
@@ -81,6 +83,8 @@ public class NodeStateFile implements AutoCloseable
     private final int fileSyncLevel;
     private final NodeStateHeaderDecoder nodeStateHeaderDecoder = new NodeStateHeaderDecoder();
     private final NodeStateHeaderEncoder nodeStateHeaderEncoder = new NodeStateHeaderEncoder();
+    private final ClusterMembersEncoder clusterMembersEncoder = new ClusterMembersEncoder();
+    private final ClusterMembersDecoder clusterMembersDecoder = new ClusterMembersDecoder();
     private final FramingHeaderDecoder simpleOpenFramingHeaderDecoder = new FramingHeaderDecoder();
     private final FramingHeaderEncoder simpleOpenFramingHeaderEncoder = new FramingHeaderEncoder();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -333,6 +337,19 @@ public class NodeStateFile implements AutoCloseable
         return candidateTerm;
     }
 
+    public ClusterMembers clusterMembers()
+    {
+        return null;
+    }
+
+    public void updateClusterMembers(
+        final int clusterMemberId,
+        final long highClusterMemberId,
+        final String clusterMembers)
+    {
+
+    }
+
     /**
      * Wrapper class for the candidate term.
      */
@@ -370,6 +387,11 @@ public class NodeStateFile implements AutoCloseable
         {
             return candidateTermDecoder.logPosition();
         }
+    }
+
+    public final class ClusterMembers
+    {
+
     }
 
     private void syncFile(final MappedByteBuffer mappedFile)

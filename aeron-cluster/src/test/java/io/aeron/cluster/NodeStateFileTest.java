@@ -152,22 +152,45 @@ class NodeStateFileTest
         final long candidateTermId = 832234;
         final long timestampMs = 324234;
         final long logPosition = 8923423;
-        final int clusterMemberId = 32;
-        final long highClusterMemberId = 65;
-        final String clusterMembers =
+        final long leadershipTermId = 82734982734L;
+        final int memberId = 32;
+        final int highClusterMemberId = 65;
+        final String longClusterMembers =
             "0,host0:20000,host0:20001,host0:20002,host0:220003,host0:20004|" +
             "1,host1:20000,host1:20001,host1:20002,host1:220003,host1:20004|" +
             "2,host2:20000,host2:20001,host2:20002,host2:220003,host2:20004|";
+        final String shortClusterMembers =
+            "0,host0:20000,host0:20001,host0:20002,host0:220003,host0:20004|";
 
         try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
         {
-            nodeStateFile.updateCandidateTermId(1, 2, 3);
-            nodeStateFile.updateClusterMembers(clusterMemberId, highClusterMemberId, clusterMembers);
+            nodeStateFile.updateCandidateTermId(candidateTermId, logPosition, timestampMs);
+            nodeStateFile.updateClusterMembers(leadershipTermId, memberId, highClusterMemberId, longClusterMembers);
         }
 
         try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
         {
-            assertNull(nodeStateFile.clusterMembers());
+            assertEquals(candidateTermId, nodeStateFile.candidateTerm().candidateTermId());
+            assertEquals(timestampMs, nodeStateFile.candidateTerm().timestamp());
+            assertEquals(logPosition, nodeStateFile.candidateTerm().logPosition());
+
+            assertNotNull(nodeStateFile.clusterMembers());
+            assertEquals(memberId, nodeStateFile.clusterMembers().memberId());
+            assertEquals(highClusterMemberId, nodeStateFile.clusterMembers().highClusterMemberId());
+            assertEquals(longClusterMembers, nodeStateFile.clusterMembers().clusterMembers());
+        }
+
+        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
+        {
+            nodeStateFile.updateClusterMembers(leadershipTermId, memberId, highClusterMemberId, shortClusterMembers);
+        }
+
+        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
+        {
+            assertNotNull(nodeStateFile.clusterMembers());
+            assertEquals(memberId, nodeStateFile.clusterMembers().memberId());
+            assertEquals(highClusterMemberId, nodeStateFile.clusterMembers().highClusterMemberId());
+            assertEquals(shortClusterMembers, nodeStateFile.clusterMembers().clusterMembers());
         }
     }
 

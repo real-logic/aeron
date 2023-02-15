@@ -455,10 +455,21 @@ public class NodeStateFile implements AutoCloseable
         return clusterMembers;
     }
 
+    /**
+     * Update the cluster members entry with the supplied values.  This is a slow operation as the cluster members entry
+     * is a dynamically sized record.  To work correctly it will need to move all the trailing records in the file so
+     * that they line up correctly.  After updating the file it will rescan to ensure all of the cached decoders have
+     * the correct offsets.
+     *
+     * @param leadershipTermId      leadership where the new set of cluster members reached consensus.
+     * @param memberId              current member id.
+     * @param highMemberId          high member id.
+     * @param clusterMembers        list of all the members in the cluster with the associated endpoints.
+     */
     public void updateClusterMembers(
         final long leadershipTermId,
         final int memberId,
-        final int highClusterMemberId,
+        final int highMemberId,
         final String clusterMembers)
     {
         final MutableDirectBuffer tempBuffer = new UnsafeBuffer(new byte[MINIMUM_FILE_LENGTH]);
@@ -468,7 +479,7 @@ public class NodeStateFile implements AutoCloseable
         clusterMembersEncoder
             .leadershipTermId(leadershipTermId)
             .memberId(memberId)
-            .highMemberId(highClusterMemberId)
+            .highMemberId(highMemberId)
             .clusterMembers(clusterMembers);
         final int newFrameLength = framingHeaderEncoder.encodedLength() + messageHeaderEncoder.encodedLength() +
             clusterMembersEncoder.encodedLength();
@@ -581,21 +592,42 @@ public class NodeStateFile implements AutoCloseable
      */
     public final class ClusterMembers
     {
+        /**
+         * This node's cluster member id.
+         *
+         * @return this node's cluster member id.
+         */
         public int memberId()
         {
             return clusterMembersDecoder.memberId();
         }
 
-        public int highClusterMemberId()
+        /**
+         * High member id.
+         * @return high member id.
+         */
+        public int highMemberId()
         {
             return clusterMembersDecoder.highMemberId();
         }
 
+        /**
+         * Leadership term when the new set of cluster members reached consensus.
+         *
+         * @return id of the leadership term.
+         */
         public long leadershipTermId()
         {
             return clusterMembersDecoder.leadershipTermId();
         }
 
+        /**
+         * List of the cluster members along with their associated endpoints in the format specified by
+         * {@link ConsensusModule.Configuration#CLUSTER_MEMBERS_PROP_NAME}.
+         *
+         * @return cluster members list.
+         * @see ConsensusModule.Configuration#CLUSTER_MEMBERS_PROP_NAME
+         */
         public String clusterMembers()
         {
             return clusterMembersDecoder.clusterMembers();

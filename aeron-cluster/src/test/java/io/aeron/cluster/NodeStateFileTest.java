@@ -176,7 +176,7 @@ class NodeStateFileTest
 
             assertNotNull(nodeStateFile.clusterMembers());
             assertEquals(memberId, nodeStateFile.clusterMembers().memberId());
-            assertEquals(highClusterMemberId, nodeStateFile.clusterMembers().highClusterMemberId());
+            assertEquals(highClusterMemberId, nodeStateFile.clusterMembers().highMemberId());
             assertEquals(longClusterMembers, nodeStateFile.clusterMembers().clusterMembers());
         }
 
@@ -189,7 +189,7 @@ class NodeStateFileTest
         {
             assertNotNull(nodeStateFile.clusterMembers());
             assertEquals(memberId, nodeStateFile.clusterMembers().memberId());
-            assertEquals(highClusterMemberId, nodeStateFile.clusterMembers().highClusterMemberId());
+            assertEquals(highClusterMemberId, nodeStateFile.clusterMembers().highMemberId());
             assertEquals(shortClusterMembers, nodeStateFile.clusterMembers().clusterMembers());
         }
     }

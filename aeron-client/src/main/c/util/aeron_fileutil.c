@@ -586,6 +586,8 @@ typedef struct aeron_raw_log_size_pool_stct
     size_t max_capacity;
     // the minimum number of logbuffers we should aim to have preallocated
     size_t minimum_reserve;
+
+    bool disabled;
 }
 aeron_raw_log_pool_t;
 
@@ -607,6 +609,12 @@ int aeron_mapped_tmp_raw_log_create(aeron_mapped_tmp_raw_log_t* tmp_raw_log, uin
 {
     char path[AERON_MAX_PATH];
     int path_length = aeron_tmp_logbuffer_location(path, sizeof(path), g_log_pools.aeron_dir, g_log_pools.next_id++);
+
+    const uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, g_log_pools.file_page_size);
+    if (aeron_usable_fs_space(g_log_pools.aeron_dir) < log_length)
+    {
+        return -1;
+    }
 
     aeron_alloc((void**)&tmp_raw_log->path, path_length+1);
     strncpy(tmp_raw_log->path, path, path_length+1);
@@ -641,6 +649,7 @@ void aeron_raw_log_pools_add_pool(aeron_raw_log_pool_config_t pool_config)
     pool->used = 0;
     pool->max_capacity = pool_config.initial_capacity;
     pool->minimum_reserve = pool_config.minimum_reserve;
+    pool->disabled = false;
     aeron_alloc((void**)&pool->pool, sizeof(aeron_mapped_tmp_raw_log_t) * pool->len);
 }
 
@@ -720,14 +729,24 @@ bool aeron_raw_log_pools_take(
 
 void aeron_raw_log_pool_refill(aeron_raw_log_pool_t* pool)
 {
+    if (pool->disabled)
+        return;
+
     bool minReserveNotMet = pool->len < pool->minimum_reserve;
     // This happens when buffers are taken from the pool, and are then not used.
     bool initialPoolNeedsReplaced = (pool->len + pool->used) < pool->max_capacity;
 
     if (minReserveNotMet || initialPoolNeedsReplaced)
     {
-        if (aeron_mapped_tmp_raw_log_create(&pool->pool[pool->len], pool->term_length) == 0)
-            pool->len++;
+        if (aeron_mapped_tmp_raw_log_create(&pool->pool[pool->len], pool->term_length) != 0)
+        {
+            const uint64_t log_length = aeron_logbuffer_compute_log_length(pool->term_length, g_log_pools.file_page_size);
+            pool->disabled = true;
+            // Maybe I should error here?
+            return;
+        }
+
+        pool->len++;
     } 
 }
 

@@ -1568,6 +1568,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 {
                     clusterMemberJoined(memberId, newMembers);
                 }
+
+                ctx.nodeStateFile().updateClusterMembers(leadershipTermId, memberId, highMemberId, clusterMembers);
             }
             else if (ChangeType.QUIT == changeType)
             {

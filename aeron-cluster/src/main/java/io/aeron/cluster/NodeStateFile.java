@@ -52,14 +52,11 @@ import static org.agrona.concurrent.UnsafeBuffer.ALIGNMENT;
  *  <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                       Framing Header                          |
- *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                       Message Header                          |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                       Message Body (Variable                ...
+ *  |                       Message Body (Variable)               ...
  *  ...                                                             |
  *  +---------------------------------------------------------------+
  * </pre>
@@ -67,7 +64,9 @@ import static org.agrona.concurrent.UnsafeBuffer.ALIGNMENT;
  *     The current structure contains:
  * <pre>
  *     &lt;Node State Header&gt;
- *     &lt;Candidate Term Id&gt;
+ *     &lt;Candidate Term&gt;
+ *     &lt;Cluster Members&gt;
+ *     &lt;Node State Footer&gt;
  * </pre>
  */
 public class NodeStateFile implements AutoCloseable

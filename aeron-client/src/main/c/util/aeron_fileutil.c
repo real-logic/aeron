@@ -740,7 +740,6 @@ void aeron_raw_log_pool_refill(aeron_raw_log_pool_t* pool)
     {
         if (aeron_mapped_tmp_raw_log_create(&pool->pool[pool->len], pool->term_length) != 0)
         {
-            const uint64_t log_length = aeron_logbuffer_compute_log_length(pool->term_length, g_log_pools.file_page_size);
             pool->disabled = true;
             // Maybe I should error here?
             return;

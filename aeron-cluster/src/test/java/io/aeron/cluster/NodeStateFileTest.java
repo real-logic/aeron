@@ -147,6 +147,21 @@ class NodeStateFileTest
     }
 
     @Test
+    void shouldHandleReloadOfEmptyFile(@TempDir final File clusterDir) throws IOException
+    {
+        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
+        {
+            Objects.requireNonNull(nodeStateFile);
+        }
+
+        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
+        {
+            assertEquals(Aeron.NULL_VALUE, nodeStateFile.candidateTerm().candidateTermId());
+            assertNull(nodeStateFile.clusterMembers());
+        }
+    }
+
+    @Test
     void shouldShouldPersistClusterMembers(@TempDir final File clusterDir) throws IOException
     {
         final long candidateTermId = 832234;

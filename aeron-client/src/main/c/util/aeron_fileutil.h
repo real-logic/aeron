@@ -103,7 +103,7 @@ typedef int (*aeron_raw_log_close_func_t)(aeron_mapped_raw_log_t *, const char *
 typedef bool (*aeron_raw_log_free_func_t)(aeron_mapped_raw_log_t *, const char *filename);
 
 void aeron_raw_log_pools_add_pool(aeron_raw_log_pool_config_t pool_config);
-int aeron_raw_log_pools_init(char* aeron_dir, size_t file_page_size);
+int aeron_raw_log_pools_init(char* aeron_dir, size_t file_page_size, bool perform_storage_checks);
 int aeron_raw_log_pools_destroy(void);
 
 void aeron_raw_log_pools_refill(void);

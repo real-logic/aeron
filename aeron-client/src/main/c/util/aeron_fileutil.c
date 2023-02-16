@@ -598,6 +598,7 @@ typedef struct aeron_raw_log_pools_stct
     int64_t next_id;
     char *aeron_dir;
     size_t file_page_size;
+    bool perform_storage_checks;
 }
 aeron_raw_log_pools_t;
 
@@ -610,8 +611,7 @@ int aeron_mapped_tmp_raw_log_create(aeron_mapped_tmp_raw_log_t* tmp_raw_log, uin
     char path[AERON_MAX_PATH];
     int path_length = aeron_tmp_logbuffer_location(path, sizeof(path), g_log_pools.aeron_dir, g_log_pools.next_id++);
 
-    const uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, g_log_pools.file_page_size);
-    if (aeron_usable_fs_space(g_log_pools.aeron_dir) < log_length)
+    if (g_log_pools.perform_storage_checks && aeron_usable_fs_space(g_log_pools.aeron_dir) < aeron_logbuffer_compute_log_length(term_length, g_log_pools.file_page_size))
     {
         return -1;
     }
@@ -653,10 +653,11 @@ void aeron_raw_log_pools_add_pool(aeron_raw_log_pool_config_t pool_config)
     aeron_alloc((void**)&pool->pool, sizeof(aeron_mapped_tmp_raw_log_t) * pool->len);
 }
 
-int aeron_raw_log_pools_init(char* aeron_dir, size_t file_page_size)
+int aeron_raw_log_pools_init(char* aeron_dir, size_t file_page_size, bool perform_storage_checks)
 {
     g_log_pools.aeron_dir = aeron_dir;
     g_log_pools.file_page_size = file_page_size;
+    g_log_pools.perform_storage_checks = perform_storage_checks;
 
     for (size_t pools_i = 0; pools_i < g_log_pools.len; pools_i++)
     {

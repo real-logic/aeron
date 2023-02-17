@@ -210,7 +210,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         environment.put("AERON_FLOW_CONTROL_GROUP_TAG", String.valueOf(context.flowControlGroupTag()));
         environment.put(
             "AERON_FLOW_CONTROL_GROUP_MIN_SIZE", String.valueOf(context.flowControlGroupMinSize()));
-        environment.put("AERON_PRINT_CONFIGURATION", Boolean.toString(context.printConfigurationOnStart()));
+        environment.put("AERON_PRINT_CONFIGURATION", "true");
 
         if (null != context.resolverName())
         {

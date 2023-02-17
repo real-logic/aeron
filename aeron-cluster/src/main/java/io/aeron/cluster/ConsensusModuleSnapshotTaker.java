@@ -34,7 +34,6 @@ class ConsensusModuleSnapshotTaker
     private final ClusterSessionEncoder clusterSessionEncoder = new ClusterSessionEncoder();
     private final TimerEncoder timerEncoder = new TimerEncoder();
     private final ConsensusModuleEncoder consensusModuleEncoder = new ConsensusModuleEncoder();
-    private final ClusterMembersEncoder clusterMembersEncoder = new ClusterMembersEncoder();
 
     private final PendingMessageTrackerEncoder pendingMessageTrackerEncoder = new PendingMessageTrackerEncoder();
 
@@ -129,35 +128,6 @@ class ConsensusModuleSnapshotTaker
         }
     }
 
-    void snapshotClusterMembers(final int memberId, final int highMemberId, final String clusterMembers)
-    {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersEncoder.BLOCK_LENGTH +
-            ClusterMembersEncoder.clusterMembersHeaderLength() + clusterMembers.length();
-        if (length <= publication.maxPayloadLength())
-        {
-            idleStrategy.reset();
-            while (true)
-            {
-                final long result = publication.tryClaim(length, bufferClaim);
-                if (result > 0)
-                {
-                    encodeClusterMembers(
-                        memberId, highMemberId, clusterMembers, bufferClaim.buffer(), bufferClaim.offset());
-                    bufferClaim.commit();
-                    break;
-                }
-
-                checkResultAndIdle(result);
-            }
-        }
-        else
-        {
-            final int offset = 0;
-            encodeClusterMembers(memberId, highMemberId, clusterMembers, offerBuffer, offset);
-            offer(offerBuffer, offset, length);
-        }
-    }
-
     void snapshot(final PendingServiceMessageTracker tracker)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + PendingMessageTrackerEncoder.BLOCK_LENGTH;
@@ -198,17 +168,4 @@ class ConsensusModuleSnapshotTaker
             .responseChannel(responseChannel);
     }
 
-    private void encodeClusterMembers(
-        final int memberId,
-        final int highMemberId,
-        final String clusterMembers,
-        final MutableDirectBuffer buffer,
-        final int offset)
-    {
-        clusterMembersEncoder
-            .wrapAndApplyHeader(buffer, offset, messageHeaderEncoder)
-            .memberId(memberId)
-            .highMemberId(highMemberId)
-            .clusterMembers(clusterMembers);
-    }
 }

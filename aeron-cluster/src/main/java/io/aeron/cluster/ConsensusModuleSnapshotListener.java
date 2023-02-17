@@ -33,9 +33,6 @@ interface ConsensusModuleSnapshotListener
         int offset,
         int length);
 
-    void onLoadClusterMembers(
-        int memberId, int highMemberId, String clusterMembers, DirectBuffer buffer, int offset, int length);
-
     void onLoadPendingMessage(long clusterSessionId, DirectBuffer buffer, int offset, int length);
 
     void onLoadClusterSession(

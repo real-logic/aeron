@@ -44,9 +44,9 @@ import static org.agrona.concurrent.UnsafeBuffer.ALIGNMENT;
  *  +---------------------------------------------------------------+
  *  </pre>
  *  <p>
- *      Entry.  All messages must be laid so that the message body has an 8-byte alignment.  Fields with the message
- *      body that required volatile accesses must be aligned to an 8 byte boundary.  The framing header and message
- *      header are 8-bytes long to aid with this.
+ *      Entry.  All records must be laid so that the body has an 8-byte alignment.  Fields with the that requires
+ *      volatile accesses must be aligned to an 8 byte boundary.  The message header is 8-bytes long to aid with this.
+ *      Records are padded to an 8-byte boundary before the next record.
  *  </p>
  *  <pre>
  *   0                   1                   2                   3

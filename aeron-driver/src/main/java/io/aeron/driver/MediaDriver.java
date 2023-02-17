@@ -3924,6 +3924,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    conductorDutyCycleTracker=" + conductorDutyCycleTracker +
                 "\n    senderDutyCycleTracker=" + senderDutyCycleTracker +
                 "\n    receiverDutyCycleTracker=" + receiverDutyCycleTracker +
+                "\n    resourceFreeLimit=" + resourceFreeLimit +
                 "\n}";
         }
     }

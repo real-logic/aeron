@@ -583,7 +583,7 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(
         fpout, "\n    network_publication_max_messages_per_send=%" PRIu64,
         (uint64_t)context->network_publication_max_messages_per_send);
-    fprintf(fpout, "\n    resource_free_limit=%" PRIu64, (uint64_t)context->resource_free_limit);
+    fprintf(fpout, "\n    resource_free_limit=%" PRIu32, context->resource_free_limit);
     fprintf(fpout, "\n    conductor_cpu_affinity_no=%" PRId32, context->conductor_cpu_affinity_no);
     fprintf(fpout, "\n    receiver_cpu_affinity_no=%" PRId32, context->receiver_cpu_affinity_no);
     fprintf(fpout, "\n    sender_cpu_affinity_no=%" PRId32, context->sender_cpu_affinity_no);

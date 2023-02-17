@@ -115,14 +115,14 @@ public class NodeStateFile implements AutoCloseable
                 buffer = new UnsafeBuffer(mappedFile, 0, mappedFile.capacity());
                 buffer.verifyAlignment();
 
-                initialiseEncodersAndDecodersOnCreation(
+                initialiseDecodersOnCreation(
                     buffer,
                     nodeStateHeaderDecoder,
                     messageHeaderDecoder,
                     candidateTermDecoder,
                     clusterMembersDecoder);
 
-                candidateTermIdOffset = calculateAndValidateCandidateTermIdOffset();
+                candidateTermIdOffset = calculateAndVerifyCandidateTermIdOffset();
                 buffer.putLongVolatile(candidateTermIdOffset, Aeron.NULL_VALUE);
             }
             else
@@ -148,7 +148,7 @@ public class NodeStateFile implements AutoCloseable
         this.buffer = buffer;
     }
 
-    private int calculateAndValidateCandidateTermIdOffset()
+    private int calculateAndVerifyCandidateTermIdOffset()
     {
         final int candidateTermIdOffset;
         candidateTermIdOffset =
@@ -222,46 +222,7 @@ public class NodeStateFile implements AutoCloseable
         clusterMembersDecoder.wrapAndApplyHeader(buffer, clusterMembersOffset, messageHeaderDecoder);
     }
 
-    private static int scanForMessageTypeOffset(
-        final int startPosition,
-        final int templateId,
-        final DirectBuffer buffer,
-        final MessageHeaderDecoder messageHeaderDecoder)
-    {
-        verifyAlignment(startPosition);
-        int position = startPosition;
-
-        while (position < buffer.capacity())
-        {
-            messageHeaderDecoder.wrap(buffer, position);
-
-            final int messageLength = messageHeaderDecoder.frameLength();
-
-            if (templateId == messageHeaderDecoder.templateId())
-            {
-                return position;
-            }
-            else if (NodeStateFooterEncoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
-            {
-                return Aeron.NULL_VALUE;
-            }
-
-            if (messageLength < 0)
-            {
-                throw new IllegalStateException("Message length < 0, file corrupt?");
-            }
-            else if (0 == messageLength)
-            {
-                return Aeron.NULL_VALUE;
-            }
-
-            position += align(messageLength, ALIGNMENT);
-        }
-
-        return Aeron.NULL_VALUE;
-    }
-
-    private static void initialiseEncodersAndDecodersOnCreation(
+    private static void initialiseDecodersOnCreation(
         final MutableDirectBuffer buffer,
         final NodeStateHeaderDecoder nodeStateHeaderDecoder,
         final MessageHeaderDecoder messageHeaderDecoder,
@@ -455,7 +416,7 @@ public class NodeStateFile implements AutoCloseable
             clusterMembersDecoder,
             messageHeaderDecoder);
 
-        candidateTermIdOffset = calculateAndValidateCandidateTermIdOffset();
+        candidateTermIdOffset = calculateAndVerifyCandidateTermIdOffset();
     }
 
     static void moveTrailingRecords(
@@ -480,6 +441,45 @@ public class NodeStateFile implements AutoCloseable
                 buffer.putLong(dstOffset + i, buffer.getLong(srcOffset + i));
             }
         }
+    }
+
+    private static int scanForMessageTypeOffset(
+        final int startPosition,
+        final int templateId,
+        final DirectBuffer buffer,
+        final MessageHeaderDecoder messageHeaderDecoder)
+    {
+        verifyAlignment(startPosition);
+        int position = startPosition;
+
+        while (position < buffer.capacity())
+        {
+            messageHeaderDecoder.wrap(buffer, position);
+
+            final int messageLength = messageHeaderDecoder.frameLength();
+
+            if (templateId == messageHeaderDecoder.templateId())
+            {
+                return position;
+            }
+            else if (NodeStateFooterEncoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
+            {
+                return Aeron.NULL_VALUE;
+            }
+
+            if (messageLength < 0)
+            {
+                throw new IllegalStateException("Message length < 0, file corrupt?");
+            }
+            else if (0 == messageLength)
+            {
+                return Aeron.NULL_VALUE;
+            }
+
+            position += align(messageLength, ALIGNMENT);
+        }
+
+        return Aeron.NULL_VALUE;
     }
 
     /**

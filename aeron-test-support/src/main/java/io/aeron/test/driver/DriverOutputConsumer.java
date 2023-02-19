@@ -24,7 +24,7 @@ public interface DriverOutputConsumer
     {
     }
 
-    default void exitCode(String aeronDirectoryName, int exitValue)
+    default void exitCode(String aeronDirectoryName, int exitValue, String exitMessage)
     {
     }
 

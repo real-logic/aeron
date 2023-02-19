@@ -46,7 +46,10 @@ class MediaDriverTestUtil
                     try
                     {
                         System.out.println();
-                        System.out.println("Media Driver: " + aeronDirectoryName + ", exit code: " + files.exitValue);
+                        System.out.println(
+                            "Media Driver: " + aeronDirectoryName +
+                            ", exit code: " + files.exitValue +
+                            " (" + files.exitMessage + ")");
                         System.out.println();
                         Tests.printDirectoryContents(aeronDirectoryName, System.out);
                         System.out.println();
@@ -112,9 +115,9 @@ class MediaDriverTestUtil
         outputFilesByAeronDirectoryName.put(aeronDirectoryName, new ProcessDetails(stdoutFile, stderrFile));
     }
 
-    public void exitCode(final String aeronDirectoryName, final int exitValue)
+    public void exitCode(final String aeronDirectoryName, final int exitValue, final String exitMessage)
     {
-        outputFilesByAeronDirectoryName.get(aeronDirectoryName).exitValue(exitValue);
+        outputFilesByAeronDirectoryName.get(aeronDirectoryName).exitValue(exitValue, exitMessage);
     }
 
     public void environmentVariables(final String aeronDirectoryName, final Map<String, String> environment)
@@ -133,6 +136,7 @@ class MediaDriverTestUtil
         private final File stderr;
         private final File stdout;
         private int exitValue;
+        private String exitMessage;
         private Map<String, String> environment;
 
         ProcessDetails(final File stdout, final File stderr)
@@ -141,9 +145,10 @@ class MediaDriverTestUtil
             this.stdout = stdout;
         }
 
-        public void exitValue(final int exitValue)
+        public void exitValue(final int exitValue, final String exitMessage)
         {
             this.exitValue = exitValue;
+            this.exitMessage = exitMessage;
         }
 
         public void environment(final Map<String, String> environment)

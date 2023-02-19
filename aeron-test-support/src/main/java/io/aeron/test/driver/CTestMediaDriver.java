@@ -108,10 +108,11 @@ public final class CTestMediaDriver implements TestMediaDriver
 
         try
         {
-            final int exitCode = terminateDriver();
+            final ExitStatus exitStatus = terminateDriver();
             if (null != driverOutputConsumer)
             {
-                driverOutputConsumer.exitCode(context.aeronDirectoryName(), exitCode);
+                driverOutputConsumer.exitCode(
+                    context.aeronDirectoryName(), exitStatus.exitCode, exitStatus.exitMessage);
             }
         }
         catch (final Exception ex)
@@ -416,12 +417,33 @@ public final class CTestMediaDriver implements TestMediaDriver
             null : C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_TYPE.get(flowControlSupplier.getClass());
     }
 
-    private int terminateDriver()
+    private static final class ExitStatus
+    {
+        private final int exitCode;
+        private final String exitMessage;
+
+        private ExitStatus(final int exitCode, final String exitMessage)
+        {
+            this.exitCode = exitCode;
+            this.exitMessage = exitMessage;
+        }
+    }
+
+    private ExitStatus terminateDriver()
     {
         boolean isInterrupted = false;
         boolean requestTermination = true;
         try
         {
+            try
+            {
+                final int exitCode = aeronMediaDriverProcess.exitValue();
+                return new ExitStatus(exitCode, "Process exited early");
+            }
+            catch (final IllegalThreadStateException ignore)
+            {
+            }
+
             while (true)
             {
                 isInterrupted |= Thread.interrupted();
@@ -432,12 +454,13 @@ public final class CTestMediaDriver implements TestMediaDriver
                         requestTermination = false;
                         if (requestDriverTermination() && aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS))
                         {
-                            return aeronMediaDriverProcess.exitValue();
+                            return new ExitStatus(aeronMediaDriverProcess.exitValue(), "Process shutdown cleanly");
                         }
                     }
 
                     aeronMediaDriverProcess.destroyForcibly().waitFor(5, TimeUnit.SECONDS);
-                    return aeronMediaDriverProcess.exitValue();
+                    final int exitCode = aeronMediaDriverProcess.exitValue();
+                    return new ExitStatus(exitCode, "Process destroyed forcibly");
                 }
                 catch (final InterruptedException ex)
                 {

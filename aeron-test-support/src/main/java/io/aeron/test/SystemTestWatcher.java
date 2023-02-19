@@ -113,9 +113,9 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         dataCollector.add(stderrFile);
     }
 
-    public void exitCode(final String aeronDirectoryName, final int exitValue)
+    public void exitCode(final String aeronDirectoryName, final int exitValue, final String exitMessage)
     {
-        mediaDriverTestUtil.exitCode(aeronDirectoryName, exitValue);
+        mediaDriverTestUtil.exitCode(aeronDirectoryName, exitValue, exitMessage);
     }
 
     public void environmentVariables(final String aeronDirectoryName, final Map<String, String> environment)

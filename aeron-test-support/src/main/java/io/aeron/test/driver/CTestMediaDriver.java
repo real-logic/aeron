@@ -438,7 +438,16 @@ public final class CTestMediaDriver implements TestMediaDriver
             try
             {
                 final int exitCode = aeronMediaDriverProcess.exitValue();
-                return new ExitStatus(exitCode, "Process exited early");
+                String exitMessage = "Process exited early";
+                if (!SystemUtil.isWindows())
+                {
+                    final int exitSignal = (0x7F & exitCode); // Essentially the same on Linux and MacOS.
+                    if (0 != exitSignal)
+                    {
+                        exitMessage += " - signal " + exitSignal;
+                    }
+                }
+                return new ExitStatus(exitCode, exitMessage);
             }
             catch (final IllegalThreadStateException ignore)
             {

@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
-GCC_VERSION=$1
 if [ -z ${GCC_VERSION} ];
-then echo "No GCC version provided!";
+then
+  echo "No GCC version provided!";
   exit 1;
+else
+  echo "GCC_VERSION=${GCC_VERSION}"
 fi
 
 SOURCE_DIR="$(pwd)"

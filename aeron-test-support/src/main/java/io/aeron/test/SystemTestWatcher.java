@@ -261,7 +261,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     {
         try
         {
-            final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            final MessageDigest messageDigest = MessageDigest.getInstance("SHA3-256");
             final DirectBuffer digest = new UnsafeBuffer(messageDigest.digest(
                 testUniqueId.getBytes(StandardCharsets.UTF_8)));
             return new String(LogInspector.bytesToHex(digest, 0, digest.capacity()));

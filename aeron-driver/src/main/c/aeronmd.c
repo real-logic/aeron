@@ -34,23 +34,23 @@
 #include "util/aeron_strutil.h"
 #include "util/aeron_error.h"
 
-volatile bool running = true;
+volatile int exit_status = AERON_NULL_VALUE;
 
 void sigint_handler(int signal)
 {
-    AERON_PUT_ORDERED(running, false);
+    AERON_PUT_ORDERED(exit_status, signal);
 }
 
 void termination_hook(void *state)
 {
-    AERON_PUT_ORDERED(running, false);
+    AERON_PUT_ORDERED(exit_status, EXIT_SUCCESS);
 }
 
 inline bool is_running(void)
 {
-    bool result;
-    AERON_GET_VOLATILE(result, running);
-    return result;
+    int result;
+    AERON_GET_VOLATILE(result, exit_status);
+    return (AERON_NULL_VALUE == result);
 }
 
 int set_property(void *clientd, const char *name, const char *value)
@@ -60,7 +60,6 @@ int set_property(void *clientd, const char *name, const char *value)
 
 int main(int argc, char **argv)
 {
-    int status = EXIT_FAILURE;
     aeron_driver_context_t *context = NULL;
     aeron_driver_t *driver = NULL;
 
@@ -77,7 +76,7 @@ int main(int argc, char **argv)
                 if (aeron_properties_parse_line(&state, optarg, strlen(optarg), set_property, NULL) < 0)
                 {
                     fprintf(stderr, "malformed define: %s\n", optarg);
-                    exit(status);
+                    exit(EXIT_FAILURE);
                 }
                 break;
             }
@@ -91,7 +90,7 @@ int main(int argc, char **argv)
 
             default:
                 fprintf(stderr, "Usage: %s [-v][-Dname=value]\n", argv[0]);
-                exit(status);
+                exit(EXIT_FAILURE);
         }
     }
 
@@ -100,7 +99,7 @@ int main(int argc, char **argv)
         if (aeron_properties_load(argv[i]) < 0)
         {
             fprintf(stderr, "ERROR: loading properties from %s (%d) %s\n", argv[i], aeron_errcode(), aeron_errmsg());
-            exit(status);
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -109,30 +108,35 @@ int main(int argc, char **argv)
     if (aeron_driver_context_init(&context) < 0)
     {
         fprintf(stderr, "ERROR: context init (%d) %s\n", aeron_errcode(), aeron_errmsg());
+        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
         goto cleanup;
     }
 
     if (aeron_driver_context_set_driver_termination_hook(context, termination_hook, NULL) < 0)
     {
         fprintf(stderr, "ERROR: context set termination hook (%d) %s\n", aeron_errcode(), aeron_errmsg());
+        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
         goto cleanup;
     }
 
     if (aeron_driver_context_set_agent_on_start_function(context, aeron_set_thread_affinity_on_start, context))
     {
         fprintf(stderr, "ERROR: unable to set on_start function(%d) %s\n", aeron_errcode(), aeron_errmsg());
+        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
         goto cleanup;
     }
 
     if (aeron_driver_init(&driver, context) < 0)
     {
         fprintf(stderr, "ERROR: driver init (%d) %s\n", aeron_errcode(), aeron_errmsg());
+        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
         goto cleanup;
     }
 
     if (aeron_driver_start(driver, true) < 0)
     {
         fprintf(stderr, "ERROR: driver start (%d) %s\n", aeron_errcode(), aeron_errmsg());
+        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
         goto cleanup;
     }
 
@@ -147,14 +151,16 @@ cleanup:
     if (0 != aeron_driver_close(driver))
     {
         fprintf(stderr, "ERROR: driver close (%d) %s\n", aeron_errcode(), aeron_errmsg());
+        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
     }
 
     if (0 != aeron_driver_context_close(context))
     {
         fprintf(stderr, "ERROR: driver context close (%d) %s\n", aeron_errcode(), aeron_errmsg());
+        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
     }
 
-    return status;
+    return exit_status;
 }
 
 extern bool is_running(void);

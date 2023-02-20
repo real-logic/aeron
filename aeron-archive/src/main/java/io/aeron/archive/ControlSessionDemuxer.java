@@ -985,7 +985,9 @@ class ControlSessionDemuxer implements Session, FragmentHandler
         }
         else
         {
-            conductor.logWarning("control request for unknown controlSessionId=" + controlSessionId +
+            conductor.logWarning("control request for unknown session:" +
+                " controlSessionId=" + controlSessionId +
+                " templateId=" + templateId +
                 " source=" + image.sourceIdentity());
         }
 

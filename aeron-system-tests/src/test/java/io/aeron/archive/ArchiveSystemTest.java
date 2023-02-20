@@ -76,7 +76,7 @@ class ArchiveSystemTest
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
-    private long controlSessionId;
+    private long controlSessionId = -1;
     private String publishUri;
     private Aeron client;
     private Archive archive;

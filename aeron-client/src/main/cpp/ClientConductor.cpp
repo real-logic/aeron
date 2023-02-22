@@ -938,14 +938,14 @@ void ClientConductor::onAvailableImage(
                 getLogBuffers(correlationId, logFilename, entry.m_channel),
                 m_errorHandler);
 
-            CallbackGuard callbackGuard(m_isInCallback);
-            entry.m_onAvailableImageHandler(*image);
-
             Image::array_t oldImageArray = subscription->addImage(image);
             if (nullptr != oldImageArray)
             {
                 lingerResource(m_epochClock(), oldImageArray);
             }
+
+            CallbackGuard callbackGuard(m_isInCallback);
+            entry.m_onAvailableImageHandler(*image);
         }
     }
 }

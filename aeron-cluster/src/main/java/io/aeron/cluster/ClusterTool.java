@@ -52,7 +52,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -635,9 +634,9 @@ public class ClusterTool
             try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
             {
                 final String aeronDirectoryName = markFile.decoder().aeronDirectory();
-                final AtomicLong nodeRoleCounter = new AtomicLong(-1);
-                final AtomicLong electionStateCounter = new AtomicLong(-1);
-                final AtomicLong moduleStateCounter = new AtomicLong(-1);
+                final MutableLong nodeRoleCounter = new MutableLong(-1);
+                final MutableLong electionStateCounter = new MutableLong(-1);
+                final MutableLong moduleStateCounter = new MutableLong(-1);
 
                 try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName)))
                 {

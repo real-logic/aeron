@@ -366,6 +366,8 @@ final class ClientConductor implements Agent
                 sourceIdentity,
                 correlationId);
 
+            subscription.addImage(image);
+
             final AvailableImageHandler handler = subscription.availableImageHandler();
             if (null != handler)
             {
@@ -383,8 +385,6 @@ final class ClientConductor implements Agent
                     isInCallback = false;
                 }
             }
-
-            subscription.addImage(image);
         }
     }
 

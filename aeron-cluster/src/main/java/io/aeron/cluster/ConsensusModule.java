@@ -3753,7 +3753,7 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Start up the consensus module using presupplied state skipping the recovery process.  Internal use only.
+         * Start up the consensus module using pre-supplied state skipping the recovery process. Internal use only.
          *
          * @param bootstrapState to initialize the consensus module.
          * @return this for a fluent API.
@@ -3912,7 +3912,7 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    logPublisher=" + logPublisher +
                 "\n    isLogMdc=" + isLogMdc +
                 "\n    cycleThresholdNs=" + cycleThresholdNs +
-                "\n    dutyCyleTracker=" + dutyCycleTracker +
+                "\n    dutyCycleTracker=" + dutyCycleTracker +
                 "\n}";
         }
     }

@@ -324,7 +324,7 @@ public class ClusterTool
     public static void recoveryPlan(final PrintStream out, final File clusterDir, final int serviceCount)
     {
         try (AeronArchive archive = AeronArchive.connect();
-             RecordingLog recordingLog = new RecordingLog(clusterDir, false))
+            RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
             out.println(recordingLog.createRecoveryPlan(archive, serviceCount, Aeron.NULL_VALUE));
         }
@@ -497,10 +497,10 @@ public class ClusterTool
                 {
                     out.println(
                         "currentTimeNs=" + clusterMembership.currentTimeNs +
-                            ", leaderMemberId=" + clusterMembership.leaderMemberId +
-                            ", memberId=" + clusterMembership.memberId +
-                            ", activeMembers=" + clusterMembership.activeMembers +
-                            ", passiveMembers=" + clusterMembership.passiveMembers);
+                        ", leaderMemberId=" + clusterMembership.leaderMemberId +
+                        ", memberId=" + clusterMembership.memberId +
+                        ", activeMembers=" + clusterMembership.activeMembers +
+                        ", passiveMembers=" + clusterMembership.passiveMembers);
                 }
                 else
                 {
@@ -635,9 +635,9 @@ public class ClusterTool
             try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
             {
                 final String aeronDirectoryName = markFile.decoder().aeronDirectory();
-                AtomicLong nodeRoleCounter = new AtomicLong(-1);
-                AtomicLong electionStateCounter = new AtomicLong(-1);
-                AtomicLong moduleStateCounter = new AtomicLong(-1);
+                final AtomicLong nodeRoleCounter = new AtomicLong(-1);
+                final AtomicLong electionStateCounter = new AtomicLong(-1);
+                final AtomicLong moduleStateCounter = new AtomicLong(-1);
 
                 try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName)))
                 {
@@ -783,10 +783,10 @@ public class ClusterTool
         };
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(controlProperties.aeronDirectoryName));
-             ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(
-                 controlProperties.controlChannel, controlProperties.consensusModuleStreamId));
-             ClusterControlAdapter clusterControlAdapter = new ClusterControlAdapter(aeron.addSubscription(
-                 controlProperties.controlChannel, controlProperties.serviceStreamId), listener))
+            ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(
+                controlProperties.controlChannel, controlProperties.consensusModuleStreamId));
+            ClusterControlAdapter clusterControlAdapter = new ClusterControlAdapter(aeron.addSubscription(
+                controlProperties.controlChannel, controlProperties.serviceStreamId), listener))
         {
             id.set(aeron.nextCorrelationId());
             if (consensusModuleProxy.clusterMembersQuery(id.get()))
@@ -846,8 +846,8 @@ public class ClusterTool
         final int consensusModuleStreamId = markFile.decoder().consensusModuleStreamId();
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
-             ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(
-                 aeron.addPublication(controlChannel, consensusModuleStreamId)))
+            ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(
+                aeron.addPublication(controlChannel, consensusModuleStreamId)))
         {
             if (consensusModuleProxy.removeMember(memberId, isPassive ? BooleanType.TRUE : BooleanType.FALSE))
             {
@@ -995,7 +995,7 @@ public class ClusterTool
             .controlResponseChannel("aeron:ipc");
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(properties.aeronDirectoryName));
-             AeronArchive archive = AeronArchive.connect(archiveCtx.aeron(aeron)))
+            AeronArchive archive = AeronArchive.connect(archiveCtx.aeron(aeron)))
         {
             final String channel = AERON_CLUSTER_TOOL_REPLAY_CHANNEL;
             final int streamId = AERON_CLUSTER_TOOL_REPLAY_STREAM_ID;
@@ -1433,25 +1433,25 @@ public class ClusterTool
     {
         System.out.format(
             "Usage: <cluster-dir> <command> [options]%n" +
-                "                         describe: prints out all descriptors in the mark file.%n" +
-                "                              pid: prints PID of cluster component.%n" +
-                "                    recovery-plan: [service count] prints recovery plan of cluster component.%n" +
-                "                    recording-log: prints recording log of cluster component.%n" +
-                "               sort-recording-log: reorders entries in the recording log to match the order in memory.%n" +
-                " seed-recording-log-from-snapshot: creates a new recording log based on the latest valid snapshot.%n" +
-                "                           errors: prints Aeron and cluster component error logs.%n" +
-                "                     list-members: prints leader memberId, active members and passive members lists.%n" +
-                "                    remove-member: [memberId] requests removal of a member by memberId.%n" +
-                "                   remove-passive: [memberId] requests removal of a passive member by memberId.%n" +
-                "                     backup-query: [delay] get, or set, time of next backup query.%n" +
-                "       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.%n" +
-                "                         snapshot: triggers a snapshot on the leader.%n" +
-                "                          suspend: suspends appending to the log.%n" +
-                "                           resume: resumes appending to the log.%n" +
-                "                         shutdown: initiates an orderly stop of the cluster with a snapshot.%n" +
-                "                            abort: stops the cluster without a snapshot.%n" +
-                "      describe-latest-cm-snapshot: prints the contents of the latest valid consensus module snapshot.%n" +
-                "                        is-leader: returns zero if the cluster node is leader, non-zero if not.%n");
+            "                         describe: prints out all descriptors in the mark file.%n" +
+            "                              pid: prints PID of cluster component.%n" +
+            "                    recovery-plan: [service count] prints recovery plan of cluster component.%n" +
+            "                    recording-log: prints recording log of cluster component.%n" +
+            "               sort-recording-log: reorders entries in the recording log to match the order in memory.%n" +
+            " seed-recording-log-from-snapshot: creates a new recording log based on the latest valid snapshot.%n" +
+            "                           errors: prints Aeron and cluster component error logs.%n" +
+            "                     list-members: prints leader memberId, active members and passive members lists.%n" +
+            "                    remove-member: [memberId] requests removal of a member by memberId.%n" +
+            "                   remove-passive: [memberId] requests removal of a passive member by memberId.%n" +
+            "                     backup-query: [delay] get, or set, time of next backup query.%n" +
+            "       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.%n" +
+            "                         snapshot: triggers a snapshot on the leader.%n" +
+            "                          suspend: suspends appending to the log.%n" +
+            "                           resume: resumes appending to the log.%n" +
+            "                         shutdown: initiates an orderly stop of the cluster with a snapshot.%n" +
+            "                            abort: stops the cluster without a snapshot.%n" +
+            "      describe-latest-cm-snapshot: prints the contents of the latest valid consensus module snapshot.%n" +
+            "                        is-leader: returns zero if the cluster node is leader, non-zero if not.%n");
         System.out.flush();
     }
 }

@@ -20,6 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.BooleanType;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
+import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterNodeControlProperties;
 import io.aeron.cluster.service.ConsensusModuleProxy;
@@ -84,6 +85,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  *                         shutdown: initiates an orderly stop of the cluster with a snapshot.
  *                            abort: stops the cluster without a snapshot.
  *      describe-latest-cm-snapshot: prints the contents of the latest valid consensus module snapshot.
+ *                        is-leader: returns zero if the cluster node is leader, non-zero if not
  * </pre>
  */
 public class ClusterTool
@@ -228,6 +230,10 @@ public class ClusterTool
 
             case "invalidate-latest-snapshot":
                 invalidateLatestSnapshot(System.out, clusterDir);
+                break;
+
+            case "is-leader":
+                System.exit(isLeader(System.out, clusterDir));
                 break;
 
             case "snapshot":
@@ -610,6 +616,66 @@ public class ClusterTool
             printTypeAndActivityTimestamp(out, serviceMarkFile);
             out.println(serviceMarkFile.decoder());
             serviceMarkFile.close();
+        }
+    }
+
+    /**
+     * Determine if the given node is a leader
+     *
+     * @param out        to print the output to.
+     * @param clusterDir where the cluster is running.
+     * @return           0 if the node is an active leader in a closed election, 1 if not,
+     *                   -1 if the mark file does not exist.
+     */
+    public static int isLeader(final PrintStream out, final File clusterDir)
+    {
+        if (markFileExists(clusterDir))
+        {
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+            {
+                final String aeronDirectoryName = markFile.decoder().aeronDirectory();
+                final MutableLong nodeRoleCounter = new MutableLong(-1);
+                final MutableLong electionStateCounter = new MutableLong(-1);
+                final MutableLong moduleStateCounter = new MutableLong(-1);
+
+                try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName)))
+                {
+                    final CountersReader countersReader = aeron.countersReader();
+
+                    countersReader.forEach(
+                        (counterId, typeId, keyBuffer, label) ->
+                        {
+                            if (ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID == typeId)
+                            {
+                                nodeRoleCounter.set(countersReader.getCounterValue(counterId));
+                            }
+                            else if (ConsensusModule.Configuration.ELECTION_STATE_TYPE_ID == typeId)
+                            {
+                                electionStateCounter.set(countersReader.getCounterValue(counterId));
+                            }
+                            else if (ConsensusModule.Configuration.CONSENSUS_MODULE_STATE_TYPE_ID == typeId)
+                            {
+                                moduleStateCounter.set(countersReader.getCounterValue(counterId));
+                            }
+                        });
+                }
+
+                if (nodeRoleCounter.get() == Cluster.Role.LEADER.code() &&
+                    electionStateCounter.get() == ElectionState.CLOSED.code() &&
+                    moduleStateCounter.get() == ConsensusModule.State.ACTIVE.code())
+                {
+                    return 0;
+                }
+                else
+                {
+                    return 1;
+                }
+            }
+        }
+        else
+        {
+            out.println(ClusterMarkFile.FILENAME + " does not exist.");
+            return -1;
         }
     }
 
@@ -1383,7 +1449,8 @@ public class ClusterTool
             "                           resume: resumes appending to the log.%n" +
             "                         shutdown: initiates an orderly stop of the cluster with a snapshot.%n" +
             "                            abort: stops the cluster without a snapshot.%n" +
-            "      describe-latest-cm-snapshot: prints the contents of the latest valid consensus module snapshot.%n");
+            "      describe-latest-cm-snapshot: prints the contents of the latest valid consensus module snapshot.%n" +
+            "                        is-leader: returns zero if the cluster node is leader, non-zero if not.%n");
         System.out.flush();
     }
 }

@@ -237,23 +237,23 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
             tryStopLogRecording();
 
+            final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
+            logPublisher.disconnect(errorHandler);
+
             if (!ctx.ownsAeronClient())
             {
-                logPublisher.disconnect(ctx.countedErrorHandler());
-                logAdapter.disconnect(ctx.countedErrorHandler());
-
-                final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
-                for (final ClusterSession session : sessionByIdMap.values())
-                {
-                    session.close(aeron, errorHandler);
-                }
-
-                CloseHelper.close(errorHandler, ingressAdapter);
+                logAdapter.disconnect(errorHandler);
                 ClusterMember.closeConsensusPublications(errorHandler, activeMembers);
+                CloseHelper.close(errorHandler, ingressAdapter);
                 CloseHelper.close(errorHandler, consensusAdapter);
                 CloseHelper.close(errorHandler, serviceProxy);
                 CloseHelper.close(errorHandler, consensusModuleAdapter);
                 CloseHelper.close(errorHandler, archive);
+
+                for (final ClusterSession session : sessionByIdMap.values())
+                {
+                    session.close(aeron, errorHandler);
+                }
             }
 
             state(ConsensusModule.State.CLOSED);

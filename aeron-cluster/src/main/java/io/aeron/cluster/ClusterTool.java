@@ -234,7 +234,7 @@ public class ClusterTool
                 break;
 
             case "is-leader":
-                isLeader(System.out, clusterDir);
+                System.exit(isLeader(System.out, clusterDir));
                 break;
 
             case "snapshot":
@@ -625,7 +625,8 @@ public class ClusterTool
      *
      * @param out        to print the output to.
      * @param clusterDir where the cluster is running.
-     * @return 0 if the node is an active leader in a closed election, 1 if not, -1 if the mark file does not exist.
+     * @return           0 if the node is an active leader in a closed election, 1 if not,
+     *                   -1 if the mark file does not exist.
      */
     public static int isLeader(final PrintStream out, final File clusterDir)
     {

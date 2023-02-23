@@ -10,13 +10,13 @@ fi
 
 SOURCE_DIR="$(pwd)"
 
-docker build --tag centos7-aeron \
+docker build --tag rocky8-aeron \
   --build-arg USER_ID="$(id -u)" \
   --build-arg GROUP_ID="$(id -g)" \
   --build-arg GCC_VERSION="${GCC_VERSION}" \
-  "${SOURCE_DIR}/cppbuild/centos"
+  "${SOURCE_DIR}/cppbuild/rocky"
 
 docker run --rm --shm-size=1G --network host \
   --volume="${SOURCE_DIR}":/opt/aeron \
   --volume="$(realpath ~/.gradle)":/home/athena/.gradle \
-  centos7-aeron
+  rocky8-aeron

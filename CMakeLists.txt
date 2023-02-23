@@ -15,6 +15,10 @@
 #
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 cmake_policy(VERSION 3.14)
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+    set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
+endif()
 
 include(FetchContent)
 
@@ -242,8 +246,7 @@ if (AERON_TESTS)
     FetchContent_Declare(
         gmock
         URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.12.1.zip
-        URL_MD5 2648d4138129812611cf6b6b4b497a3b
-        DOWNLOAD_EXTRACT_TIMESTAMP false)
+        URL_MD5 2648d4138129812611cf6b6b4b497a3b)
 
     FetchContent_MakeAvailable(gmock)
 endif ()
@@ -257,10 +260,7 @@ if (AERON_BUILD_SAMPLES)
     FetchContent_Declare(
         hdr_histogram
         URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.6.zip
-        URL_MD5 5477a84c26109d057cb2a3169bd70610
-        DOWNLOAD_EXTRACT_TIMESTAMP false
-    )
-
+        URL_MD5 5477a84c26109d057cb2a3169bd70610)
 
     FetchContent_GetProperties(hdr_histogram)
     if(NOT hdr_histogram_POPULATED)

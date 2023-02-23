@@ -504,7 +504,7 @@ public final class Archive implements AutoCloseable
         public static final String ARCHIVE_ID_PROP_NAME = "aeron.archive.id";
 
         /**
-         * Is control channel enabled. Defaults to {@code true}.
+         * Is network (UDP) control channel enabled. Defaults to {@code true}.
          * <p>
          * If set to anything other than {@code true} then control channel is disabled, i.e. the Archive will run in
          * IPC-only mode.
@@ -872,9 +872,9 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Should the control channel be enabled.
+         * Should the network (UDP) control channel be enabled.
          *
-         * @return {@code true} if the control channel to be enabled.
+         * @return {@code true} if the network control channel to be enabled.
          * @see #CONTROL_CHANNEL_ENABLED_PROP_NAME
          */
         public static boolean controlChannelEnabled()
@@ -1596,7 +1596,7 @@ public final class Archive implements AutoCloseable
         /**
          * Set if the UDP control channel should be enabled.
          *
-         * @param controlChannelEnabled indication of if the recording events channel should be enabled.
+         * @param controlChannelEnabled indication of if the network control channel should be enabled.
          * @return this for a fluent API.
          * @see Configuration#CONTROL_CHANNEL_ENABLED_PROP_NAME
          */

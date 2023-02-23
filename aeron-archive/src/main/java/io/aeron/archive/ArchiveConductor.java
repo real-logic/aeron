@@ -162,6 +162,7 @@ abstract class ArchiveConductor
         {
             controlSubscription = null;
         }
+
         localControlSubscription = aeron.addSubscription(
             ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
     }

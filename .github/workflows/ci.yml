@@ -317,7 +317,7 @@ jobs:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Build
-        run: cppbuild/centos-docker-build ${{ matrix.version }}
+        run: GCC_VERSION=9 cppbuild/centos-docker-build ${{ matrix.version }}
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

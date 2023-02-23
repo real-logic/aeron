@@ -319,7 +319,7 @@ public class ArchiveMarkFile implements AutoCloseable
         final int headerLength =
             MarkFileHeaderEncoder.BLOCK_LENGTH +
             (4 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
-            ctx.controlChannel().length() +
+            (null != ctx.controlChannel() ? ctx.controlChannel().length() : 0) +
             ctx.localControlChannel().length() +
             (null != ctx.recordingEventsChannel() ? ctx.recordingEventsChannel().length() : 0) +
             ctx.aeronDirectoryName().length();

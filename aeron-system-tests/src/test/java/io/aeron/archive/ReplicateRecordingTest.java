@@ -48,6 +48,7 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.CommonContext.generateRandomDirName;
 import static io.aeron.archive.ArchiveSystemTests.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -1054,6 +1055,106 @@ class ReplicateRecordingTest
         // extend recording will overwrite the stopTimestamp
         assertNotEquals(srcRecording.stopTimestamp(), replicatedRecording.stopTimestamp());
         assertNotEquals(dstRecording.stopTimestamp(), replicatedRecording.stopTimestamp());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = { true, false })
+    @InterruptAfter(10)
+    void shouldReplicateLiveRecordingAndMergeIntoADestinationIpcOnlyArchive(final boolean useParams)
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        CloseHelper.closeAll(dstAeronArchive, dstAeron, dstArchive, dstDriver);
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+        dstDriver = TestMediaDriver.launch(new MediaDriver.Context()
+                .aeronDirectoryName(generateRandomDirName())
+                .termBufferSparseFile(true)
+                .threadingMode(ThreadingMode.SHARED)
+                .spiesSimulateConnection(true)
+                .timerIntervalNs(TIMER_INTERVAL_NS)
+                .dirDeleteOnStart(true),
+            systemTestWatcher);
+        systemTestWatcher.dataCollector().add(dstDriver.context().aeronDirectory());
+
+        dstAeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(dstDriver.aeronDirectoryName()));
+
+        dstArchive = Archive.launch(new Archive.Context()
+            .catalogCapacity(CATALOG_CAPACITY)
+            .aeronDirectoryName(dstDriver.aeronDirectoryName())
+            .controlChannel(null)
+            .controlChannelEnabled(false)
+            .localControlChannel(IPC_CHANNEL)
+            .localControlStreamId(4444)
+            .archiveClientContext(
+                new AeronArchive.Context().controlResponseChannel("aeron:udp?endpoint=localhost:0"))
+            .recordingEventsEnabled(false)
+            .replicationChannel("aeron:udp?endpoint=localhost:0")
+            .deleteArchiveOnStart(true)
+            .archiveDir(new File(SystemUtil.tmpDirName(), "ipc-archive"))
+            .fileSyncLevel(0)
+            .threadingMode(ArchiveThreadingMode.SHARED));
+        systemTestWatcher.dataCollector().add(dstArchive.context().archiveDir());
+
+        dstAeronArchive = AeronArchive.connect(new AeronArchive.Context()
+            .controlRequestChannel(dstArchive.context().localControlChannel())
+            .controlRequestStreamId(dstArchive.context().localControlStreamId())
+            .controlResponseChannel(IPC_CHANNEL)
+            .controlResponseStreamId(5555)
+            .idleStrategy(YieldingIdleStrategy.INSTANCE)
+            .aeron(dstAeron));
+
+        dstRecordingSignalConsumer = injectRecordingSignalConsumer(dstAeronArchive);
+
+        srcRecordingSignalConsumer.reset();
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+        {
+            awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, RecordingSignal.START);
+            final long signaledRecordingId = srcRecordingSignalConsumer.recordingId;
+            final CountersReader srcCounters = srcAeron.countersReader();
+            final int counterId = Tests.awaitRecordingCounterId(srcCounters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
+            assertEquals(srcRecordingId, signaledRecordingId);
+
+            offer(publication, messageCount, messagePrefix);
+            Tests.awaitPosition(srcCounters, counterId, publication.position());
+
+            dstRecordingSignalConsumer.reset();
+            if (useParams)
+            {
+                dstAeronArchive.replicate(
+                    srcRecordingId,
+                    SRC_CONTROL_STREAM_ID,
+                    SRC_CONTROL_REQUEST_CHANNEL,
+                    new ReplicationParams().liveDestination(LIVE_CHANNEL));
+            }
+            else
+            {
+                dstAeronArchive.replicate(
+                    srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, LIVE_CHANNEL);
+            }
+
+            offer(publication, messageCount, messagePrefix);
+
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+            final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.MERGE);
+
+            final CountersReader dstCounters = dstAeron.countersReader();
+            final int dstCounterId =
+                RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
+
+            offer(publication, messageCount, messagePrefix);
+            Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
+        }
+
+        srcRecordingSignalConsumer.reset();
+        srcAeronArchive.stopRecording(subscriptionId);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
     }
 
     private void readRecordingIntoBuffer(final long srcRecordingId, final ExpandableArrayBuffer srcRecordingData)

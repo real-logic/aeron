@@ -50,7 +50,7 @@ endif ()
 
 unset(STANDALONE_BUILD)
 
-include(ExternalProject)
+#include(ExternalProject)
 
 # CMAKE_OSX_ARCHITECTURES can be set to arm64 or x86_64 (or both) to make a specific architecture version. Requires
 # CMake 3.21. Must be set before project(), etc.
@@ -242,7 +242,8 @@ if (AERON_TESTS)
     FetchContent_Declare(
         gmock
         URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.12.1.zip
-        URL_MD5 2648d4138129812611cf6b6b4b497a3b)
+        URL_MD5 2648d4138129812611cf6b6b4b497a3b
+        DOWNLOAD_EXTRACT_TIMESTAMP false)
 
     FetchContent_MakeAvailable(gmock)
 endif ()
@@ -257,6 +258,7 @@ if (AERON_BUILD_SAMPLES)
         hdr_histogram
         URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.6.zip
         URL_MD5 5477a84c26109d057cb2a3169bd70610
+        DOWNLOAD_EXTRACT_TIMESTAMP false
     )
 
 

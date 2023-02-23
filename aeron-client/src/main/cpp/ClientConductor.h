@@ -446,13 +446,14 @@ private:
 
         if (nowMs > (m_timeOfLastKeepaliveMs + KEEPALIVE_TIMEOUT_MS))
         {
-            if (nowMs > (m_driverProxy.timeOfLastDriverKeepalive() + m_driverTimeoutMs))
+            
+            int64_t lastKeepaliveMs = m_driverProxy.timeOfLastDriverKeepalive();
+            if (nowMs > (lastKeepaliveMs + m_driverTimeoutMs))
             {
                 m_driverActive = false;
 
-                int64_t age = m_driverProxy.timeOfLastDriverKeepalive() + m_driverTimeoutMs;
                 DriverTimeoutException exception(
-                    "MediaDriver keepalive: age=" + std::to_string(age) +
+                    "MediaDriver keepalive: age=" + std::to_string(nowMs - lastKeepaliveMs) +
                     "ms > timeout=" + std::to_string(m_driverTimeoutMs) + "ms", SOURCEINFO);
                 m_errorHandler(exception);
             }

@@ -84,6 +84,7 @@ final class ArchiveEventDissector
     private static final PurgeRecordingRequestDecoder PURGE_RECORDING_REQUEST_DECODER =
         new PurgeRecordingRequestDecoder();
     private static final ControlResponseDecoder CONTROL_RESPONSE_DECODER = new ControlResponseDecoder();
+    private static final RecordingSignalEventDecoder RECORDING_SIGNAL_EVENT_DECODER = new RecordingSignalEventDecoder();
 
     private ArchiveEventDissector()
     {
@@ -435,6 +436,27 @@ final class ArchiveEventDissector
             .append(" errorMessage=");
 
         CONTROL_RESPONSE_DECODER.getErrorMessage(builder);
+    }
+
+    static void dissectRecordingSignal(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int encodedLength = dissectLogHeader(CONTEXT, RECORDING_SIGNAL, buffer, offset, builder);
+
+        HEADER_DECODER.wrap(buffer, offset + encodedLength);
+        encodedLength += MessageHeaderDecoder.ENCODED_LENGTH;
+
+        RECORDING_SIGNAL_EVENT_DECODER.wrap(
+            buffer,
+            offset + encodedLength,
+            HEADER_DECODER.blockLength(),
+            HEADER_DECODER.version());
+
+        builder.append(": controlSessionId=").append(RECORDING_SIGNAL_EVENT_DECODER.controlSessionId())
+            .append(" correlationId=").append(RECORDING_SIGNAL_EVENT_DECODER.correlationId())
+            .append(" recordingId=").append(RECORDING_SIGNAL_EVENT_DECODER.recordingId())
+            .append(" subscriptionId=").append(RECORDING_SIGNAL_EVENT_DECODER.subscriptionId())
+            .append(" position=").append(RECORDING_SIGNAL_EVENT_DECODER.position())
+            .append(" signal=").append(RECORDING_SIGNAL_EVENT_DECODER.signal());
     }
 
     static void dissectReplicationSessionStateChange(

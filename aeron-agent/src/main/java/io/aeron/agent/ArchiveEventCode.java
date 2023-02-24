@@ -91,7 +91,10 @@ public enum ArchiveEventCode implements EventCode
 
     CMD_IN_PURGE_RECORDING(38, PurgeRecordingRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
-    CMD_IN_REPLICATE2(39, ReplicateRequest2Decoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest);
+    CMD_IN_REPLICATE2(39, ReplicateRequest2Decoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+
+    RECORDING_SIGNAL(40, RecordingSignalEventDecoder.TEMPLATE_ID,
+        (event, buffer, offset, builder) -> dissectRecordingSignal(buffer, offset, builder));
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final ArchiveEventCode[] EVENT_CODE_BY_ID;

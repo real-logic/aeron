@@ -81,11 +81,24 @@ public final class ArchiveEventLogger
      * Log an outgoing control response from the archive.
      *
      * @param buffer containing the encoded response.
+     * @param offset at which response message begins.
      * @param length of the response in the buffer.
      */
-    public void logControlResponse(final DirectBuffer buffer, final int length)
+    public void logControlResponse(final DirectBuffer buffer, final int offset, final int length)
     {
-        log(CMD_OUT_RESPONSE, buffer, 0, length);
+        log(CMD_OUT_RESPONSE, buffer, offset, length);
+    }
+
+    /**
+     * Log the {@link io.aeron.archive.codecs.RecordingSignal} being send.
+     *
+     * @param buffer containing the encoded response.
+     * @param offset at which response message begins.
+     * @param length of the response in the buffer.
+     */
+    public void logRecordingSignal(final DirectBuffer buffer, final int offset, final int length)
+    {
+        log(RECORDING_SIGNAL, buffer, offset, length);
     }
 
     /**

@@ -37,11 +37,18 @@ class ControlInterceptor
     static class ControlResponse
     {
         @Advice.OnMethodEnter
-        static void sendResponseHook(
-            @Advice.Argument(1) final DirectBuffer buffer,
-            @Advice.Argument(2) final int length)
+        static void logSendResponse(final DirectBuffer buffer, final int offset, final int length)
         {
-            LOGGER.logControlResponse(buffer, length);
+            LOGGER.logControlResponse(buffer, offset, length);
+        }
+    }
+
+    static class RecordingSignal
+    {
+        @Advice.OnMethodEnter
+        static void logSendSignal(final DirectBuffer buffer, final int offset, final int length)
+        {
+            LOGGER.logRecordingSignal(buffer, offset, length);
         }
     }
 }

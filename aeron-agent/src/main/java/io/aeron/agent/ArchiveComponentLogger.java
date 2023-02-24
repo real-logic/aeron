@@ -78,7 +78,14 @@ public class ArchiveComponentLogger implements ComponentLogger
             CMD_OUT_RESPONSE,
             "ControlResponseProxy",
             ControlInterceptor.ControlResponse.class,
-            "sendResponseHook");
+            "logSendResponse");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            RECORDING_SIGNAL,
+            "ControlResponseProxy",
+            ControlInterceptor.RecordingSignal.class,
+            "logSendSignal");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,

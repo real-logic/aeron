@@ -63,6 +63,31 @@ class ArchiveEventDissectorTest
     }
 
     @Test
+    void recordingSignal()
+    {
+        internalEncodeLogHeader(buffer, 0, 88, 99, () -> 2_250_000_000L);
+        final RecordingSignalEventEncoder encoder = new RecordingSignalEventEncoder();
+        encoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
+            .controlSessionId(49)
+            .correlationId(-100)
+            .recordingId(42)
+            .subscriptionId(15)
+            .position(234723197419023749L)
+            .signal(RecordingSignal.DELETE);
+
+        dissectRecordingSignal(buffer, 0, builder);
+
+        assertEquals("[2.250000] " + CONTEXT + ": " + RECORDING_SIGNAL.name() + " [88/99]: " +
+            "controlSessionId=49" +
+            " correlationId=-100" +
+            " recordingId=42" +
+            " subscriptionId=15" +
+            " position=234723197419023749" +
+            " signal=DELETE",
+            builder.toString());
+    }
+
+    @Test
     void controlRequestConnect()
     {
         internalEncodeLogHeader(buffer, 0, 32, 64, () -> 5_600_000_000L);

@@ -122,7 +122,23 @@ class ControlResponseProxy
             .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
             .errorMessage(errorMessage);
 
-        return sendResponseHook(session, buffer, MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength());
+        final int length = MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength();
+        final int offset = 0;
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = session.controlPublication().offer(buffer, offset, length);
+            if (result > 0)
+            {
+                logSendResponse(buffer, offset, length);
+                return true;
+            }
+
+            checkResult(session, result);
+        }
+        while (--attempts > 0);
+
+        return false;
     }
 
     boolean sendChallenge(
@@ -149,19 +165,19 @@ class ControlResponseProxy
         final RecordingSignal recordingSignal,
         final Publication controlPublication)
     {
-        final int messageLength = MESSAGE_HEADER_LENGTH + RecordingSignalEventEncoder.BLOCK_LENGTH;
+        final int length = MESSAGE_HEADER_LENGTH + RecordingSignalEventEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = controlPublication.tryClaim(messageLength, bufferClaim);
+            final long result = controlPublication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
                 final MutableDirectBuffer buffer = bufferClaim.buffer();
-                final int bufferOffset = bufferClaim.offset();
+                final int offset = bufferClaim.offset();
 
                 recordingSignalEventEncoder
-                    .wrapAndApplyHeader(buffer, bufferOffset, messageHeaderEncoder)
+                    .wrapAndApplyHeader(buffer, offset, messageHeaderEncoder)
                     .controlSessionId(controlSessionId)
                     .correlationId(correlationId)
                     .recordingId(recordingId)
@@ -170,17 +186,14 @@ class ControlResponseProxy
                     .signal(recordingSignal);
 
                 bufferClaim.commit();
+
+                logSendSignal(buffer, offset, length);
                 return true;
             }
         }
         while (--attempts > 0);
 
         return false;
-    }
-
-    private boolean sendResponseHook(final ControlSession session, final DirectBuffer buffer, final int length)
-    {
-        return send(session, buffer, length);
     }
 
     private boolean send(final ControlSession session, final DirectBuffer buffer, final int length)
@@ -221,5 +234,13 @@ class ControlResponseProxy
             session.abort();
             throw new ArchiveException("response publication at max position: " + session);
         }
+    }
+
+    private void logSendResponse(final DirectBuffer buffer, final int offset, final int length)
+    {
+    }
+
+    private void logSendSignal(final DirectBuffer buffer, final int offset, final int length)
+    {
     }
 }

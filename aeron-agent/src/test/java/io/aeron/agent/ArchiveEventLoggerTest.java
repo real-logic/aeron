@@ -102,17 +102,38 @@ class ArchiveEventLoggerTest
     @Test
     void logControlResponse()
     {
+        final int offset = 4;
         final int length = 64;
-        srcBuffer.setMemory(0, length, (byte)1);
+        srcBuffer.setMemory(0, offset, (byte)255);
+        srcBuffer.setMemory(offset, length, (byte)1);
         final int recordOffset = HEADER_LENGTH * 5;
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
 
-        logger.logControlResponse(srcBuffer, length);
+        logger.logControlResponse(srcBuffer, offset, length);
 
         verifyLogHeader(logBuffer, recordOffset, CMD_OUT_RESPONSE.toEventCodeId(), length, length);
         for (int i = 0; i < length; i++)
         {
             assertEquals((byte)1, logBuffer.getByte(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + i)));
+        }
+    }
+
+    @Test
+    void logRecordingSignal()
+    {
+        final int offset = 10;
+        final int length = 31;
+        srcBuffer.setMemory(0, offset, (byte)255);
+        srcBuffer.setMemory(offset, length, (byte)3);
+        final int recordOffset = HEADER_LENGTH * 7;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+
+        logger.logRecordingSignal(srcBuffer, offset, length);
+
+        verifyLogHeader(logBuffer, recordOffset, RECORDING_SIGNAL.toEventCodeId(), length, length);
+        for (int i = 0; i < length; i++)
+        {
+            assertEquals((byte)3, logBuffer.getByte(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + i)));
         }
     }
 

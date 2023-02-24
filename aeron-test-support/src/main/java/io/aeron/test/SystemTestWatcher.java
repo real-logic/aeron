@@ -19,7 +19,6 @@ import io.aeron.CommonContext;
 import io.aeron.archive.ArchiveMarkFile;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterTerminationException;
-import io.aeron.samples.LogInspector;
 import io.aeron.samples.SamplesUtil;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.driver.DriverOutputConsumer;
@@ -42,10 +41,7 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.net.UnknownHostException;
 import java.nio.MappedByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Predicate;
@@ -59,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecutionCallback, AfterEachCallback,
     BeforeEachCallback
 {
-    public static final Pattern PARAMETERISED_TEST_INDEX_PATTERN = Pattern.compile("\\[([0-9]+)\\].*");
+    public static final Pattern PARAMETERISED_TEST_INDEX_PATTERN = Pattern.compile("\\[([0-9]+)].*");
     private static final String CLUSTER_TERMINATION_EXCEPTION = ClusterTerminationException.class.getName();
     private static final String UNKNOWN_HOST_EXCEPTION = UnknownHostException.class.getName();
     private static final String ATS_GCM_DECRYPT_ERROR =
@@ -85,7 +81,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     private Predicate<String> logFilter = TEST_CLUSTER_DEFAULT_LOG_FILTER;
     private DataCollector dataCollector = new DataCollector();
     private final ArrayList<AutoCloseable> closeables = new ArrayList<>();
-    private boolean skipDeleteOnFailure = false;
     private long startTimeNs;
     private long endTimeNs;
 
@@ -139,11 +134,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         this.logFilter = (s) -> true;
     }
 
-    public void skipDeleteOnFailure(final boolean skipDeleteOnFailure)
-    {
-        this.skipDeleteOnFailure = skipDeleteOnFailure;
-    }
-
     public void beforeEach(final ExtensionContext context)
     {
         startTimeNs = System.nanoTime();
@@ -159,7 +149,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     {
         Thread.interrupted(); // clean the interrupted flag
         Throwable error = context.getExecutionException()
-            .filter(t -> !(t instanceof TestAbortedException))
+            .filter((t) -> !(t instanceof TestAbortedException))
             .orElse(null);
         try
         {
@@ -191,7 +181,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                     context.getTestMethod().map(Method::getName).orElse("unknown");
                 final String testName;
                 final String directoryName;
-                if (context.getTestMethod().map(m -> m.getAnnotation(ParameterizedTest.class)).isPresent())
+                if (context.getTestMethod().map((m) -> m.getAnnotation(ParameterizedTest.class)).isPresent())
                 {
                     testName = testMethod + "(" + context.getDisplayName() + ")";
                     final Matcher matcher = PARAMETERISED_TEST_INDEX_PATTERN.matcher(context.getDisplayName());
@@ -201,7 +191,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                     }
                     else
                     {
-                        directoryName = testMethod + "_" + uniqueNameHash(context.getUniqueId());
+                        directoryName = testMethod + "_" + System.nanoTime() + context.getUniqueId();
                     }
                 }
                 else
@@ -254,21 +244,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 error.printStackTrace(System.out);
                 LangUtil.rethrowUnchecked(error);
             }
-        }
-    }
-
-    private static String uniqueNameHash(final String testUniqueId)
-    {
-        try
-        {
-            final MessageDigest messageDigest = MessageDigest.getInstance("SHA3-256");
-            final DirectBuffer digest = new UnsafeBuffer(messageDigest.digest(
-                testUniqueId.getBytes(StandardCharsets.UTF_8)));
-            return new String(LogInspector.bytesToHex(digest, 0, digest.capacity()));
-        }
-        catch (final NoSuchAlgorithmException ex)
-        {
-            throw new IllegalStateException(ex);
         }
     }
 
@@ -545,7 +520,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     private void deleteAllLocations(final Throwable error)
     {
-        if (null != error && skipDeleteOnFailure)
+        if (null != error)
         {
             return;
         }

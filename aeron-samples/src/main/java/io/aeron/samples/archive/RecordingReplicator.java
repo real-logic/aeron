@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ReplicationParams;
 import io.aeron.archive.codecs.RecordingSignal;
+import org.agrona.Strings;
 
 import java.util.Scanner;
 
@@ -39,8 +40,8 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
  * <p>
  * Configuration properties:
  * <ul>
- *     <li>{@link #SOURCE_RECORDING_ID_PROP_NAME} - required, specifies id of the source recording to be replicated.</li>
- *     <li>{@link #DESTINATION_RECORDING_ID_PROP_NAME} - optional, specifies id of the destination recording to be
+ *     <li>{@link #SOURCE_RECORDING_ID_PROP_NAME} - required, specifies id of source recording to be replicated.</li>
+ *     <li>{@link #DESTINATION_RECORDING_ID_PROP_NAME} - optional, specifies id of destination recording to be
  *     replaced. If omitted or set to {@link Aeron#NULL_VALUE} then the new recording will be created in the destination
  *     Archive.</li>
  *     <li>{@link #SOURCE_ARCHIVE_CONTROL_REQUEST_CHANNEL} - required, specifies the control request channel of the
@@ -257,14 +258,14 @@ public final class RecordingReplicator
                 replicationChannel);
 
             final long newRecordingId = replicator.replicate();
-            System.out.println("Source recording=" + srcRecordingId + " replicated to the destination recording=" +
+            System.out.println("Source recordingId=" + srcRecordingId + " replicated to the destination recordingId=" +
                 newRecordingId + ".");
         }
     }
 
     private static String trimToNull(final String value)
     {
-        if (null == value || value.isEmpty())
+        if (Strings.isEmpty(value))
         {
             return null;
         }

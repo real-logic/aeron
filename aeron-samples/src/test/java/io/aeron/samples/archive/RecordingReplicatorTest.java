@@ -72,7 +72,6 @@ class RecordingReplicatorTest
     private Archive dstArchive;
     private AeronArchive srcAeronArchive;
     private AeronArchive dstAeronArchive;
-    private final BufferClaim bufferClaim = new BufferClaim();
 
     @BeforeEach
     void setup(@TempDir final Path tempDir)
@@ -100,6 +99,7 @@ class RecordingReplicatorTest
 
         srcArchive = Archive.launch(new Archive.Context()
             .threadingMode(ArchiveThreadingMode.SHARED)
+            .recordingEventsEnabled(false)
             .aeronDirectoryName(srcMediaDriver.aeronDirectoryName())
             .archiveDir(tempDir.resolve("src-archive").toFile())
             .controlChannel(SRC_ARCHIVE_CONTROL_CHANNEL)
@@ -109,6 +109,7 @@ class RecordingReplicatorTest
 
         dstArchive = Archive.launch(new Archive.Context()
             .threadingMode(ArchiveThreadingMode.SHARED)
+            .recordingEventsEnabled(false)
             .aeronDirectoryName(dstMediaDriver.aeronDirectoryName())
             .archiveDir(tempDir.resolve("dst-archive").toFile())
             .controlChannel(DST_ARCHIVE_CONTROL_CHANNEL)
@@ -207,6 +208,7 @@ class RecordingReplicatorTest
             final CountersReader counters = aeronArchive.context().aeron().countersReader();
             final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+            final BufferClaim bufferClaim = new BufferClaim();
 
             for (int i = 0; i < numMessages; i++)
             {

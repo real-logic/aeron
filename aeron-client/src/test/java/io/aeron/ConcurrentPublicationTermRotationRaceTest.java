@@ -17,10 +17,8 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SlowTest;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;
@@ -31,6 +29,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -48,15 +47,18 @@ class ConcurrentPublicationTermRotationRaceTest
     private static final int NUM_PUBLISHERS = Math.max(Math.min(Runtime.getRuntime().availableProcessors() / 2, 8), 4);
     private static final int NUM_MESSAGES = NUM_PUBLISHERS * 50_000;
     private static final int ITERATIONS = 200;
-    private MediaDriver mediaDriver;
+    private TestMediaDriver mediaDriver;
     private Aeron aeron;
+    @RegisterExtension
+    private final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
     void setup()
     {
         final String aeronDir = CommonContext.AERON_DIR_PROP_DEFAULT + "-concurrent-publication";
-        mediaDriver = MediaDriver.launch(
-            new MediaDriver.Context().dirDeleteOnStart(true).aeronDirectoryName(aeronDir));
+        mediaDriver = TestMediaDriver.launch(
+            new MediaDriver.Context().dirDeleteOnStart(true).aeronDirectoryName(aeronDir), systemTestWatcher);
+        systemTestWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());
         aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDir));
     }
 

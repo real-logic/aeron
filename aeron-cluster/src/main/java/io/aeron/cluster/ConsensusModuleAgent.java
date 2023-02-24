@@ -239,10 +239,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
             final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
             logPublisher.disconnect(errorHandler);
+            CloseHelper.close(logAdapter.subscription());
 
             if (!ctx.ownsAeronClient())
             {
-                logAdapter.disconnect(errorHandler);
                 ClusterMember.closeConsensusPublications(errorHandler, activeMembers);
                 CloseHelper.close(errorHandler, ingressAdapter);
                 CloseHelper.close(errorHandler, consensusAdapter);

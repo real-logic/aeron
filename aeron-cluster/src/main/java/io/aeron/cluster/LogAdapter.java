@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.BufferBuilder;
 import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.ClusterClock;
@@ -69,6 +70,11 @@ final class LogAdapter implements ControlledFragmentHandler
     {
         disconnect(errorHandler);
         logPosition = Math.min(logPosition, maxLogPosition);
+    }
+
+    Subscription subscription()
+    {
+        return null == image ? null : image.subscription();
     }
 
     ConsensusModuleAgent consensusModuleAgent()

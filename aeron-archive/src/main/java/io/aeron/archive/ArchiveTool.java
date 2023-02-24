@@ -267,11 +267,11 @@ public class ArchiveTool
         }
         else if (args.length == 2 && "max-entries".equals(args[1]))
         {
-            out.println(maxEntries(archiveDir));
+            out.println("max-entries is deprecated please use capacity.");
         }
         else if (args.length == 3 && "max-entries".equals(args[1]))
         {
-            out.println(maxEntries(archiveDir, Long.parseLong(args[2])));
+            out.println("max-entries is deprecated please use capacity.");
         }
         else if (args.length == 2 && "migrate".equals(args[1]))
         {
@@ -316,7 +316,7 @@ public class ArchiveTool
      * @param archiveDir containing the {@link Catalog}.
      * @return the maximum number of entries supported by a {@link Catalog}.
      * @see #capacity(File)
-     * @deprecated Use {@link #capacity} instead.
+     * @deprecated Use {@link #capacity(File)} instead.
      */
     @Deprecated
     public static int maxEntries(final File archiveDir)

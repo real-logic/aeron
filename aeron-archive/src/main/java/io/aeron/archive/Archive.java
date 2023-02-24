@@ -930,7 +930,6 @@ public final class Archive implements AutoCloseable
         private long conductorCycleThresholdNs = Configuration.conductorCycleThresholdNs();
         private long recorderCycleThresholdNs = Configuration.recorderCycleThresholdNs();
         private long replayerCycleThresholdNs = Configuration.replayerCycleThresholdNs();
-        private long maxCatalogEntries = Configuration.maxCatalogEntries();
         private long catalogCapacity = Configuration.catalogCapacity();
         private long lowStorageSpaceThreshold = Configuration.lowStorageSpaceThreshold();
         private int segmentFileLength = Configuration.segmentFileLength();
@@ -2955,6 +2954,8 @@ public final class Archive implements AutoCloseable
         /**
          * Maximum number of catalog entries for the Archive.
          *
+         * <b>Note: </b> This method has no effect.
+         *
          * @param maxCatalogEntries for the archive.
          * @return this for a fluent API.
          * @see #catalogCapacity(long)
@@ -2964,12 +2965,13 @@ public final class Archive implements AutoCloseable
         @Deprecated
         public Context maxCatalogEntries(final long maxCatalogEntries)
         {
-            this.maxCatalogEntries = maxCatalogEntries;
             return this;
         }
 
         /**
          * Maximum number of catalog entries for the Archive.
+         *
+         * <b>Note: </b> This method is not used.
          *
          * @return maximum number of catalog entries for the Archive.
          * @see #catalogCapacity()
@@ -2979,7 +2981,7 @@ public final class Archive implements AutoCloseable
         @Deprecated
         public long maxCatalogEntries()
         {
-            return maxCatalogEntries;
+            return -1;
         }
 
         /**
@@ -3287,7 +3289,7 @@ public final class Archive implements AutoCloseable
                 "\n    replicationChannel='" + replicationChannel + '\'' +
                 "\n    connectTimeoutNs=" + connectTimeoutNs +
                 "\n    replayLingerTimeoutNs=" + replayLingerTimeoutNs +
-                "\n    maxCatalogEntries=" + maxCatalogEntries +
+                "\n    maxCatalogEntries=" + -1 +
                 "\n    catalogCapacity=" + catalogCapacity +
                 "\n    lowStorageSpaceThreshold=" + lowStorageSpaceThreshold +
                 "\n    segmentFileLength=" + segmentFileLength +

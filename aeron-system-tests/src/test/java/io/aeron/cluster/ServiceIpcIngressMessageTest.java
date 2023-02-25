@@ -57,7 +57,7 @@ class ServiceIpcIngressMessageTest
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
 
-        cluster.awaitLeader();
+        cluster.awaitLeaderAndClosedElection();
         cluster.connectClient();
         final int messageLength = cluster.msgBuffer().putStringWithoutLengthAscii(
             0, ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG);
@@ -88,7 +88,7 @@ class ServiceIpcIngressMessageTest
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;
 
-        TestNode oldLeader = cluster.awaitLeader();
+        TestNode oldLeader = cluster.awaitLeaderAndClosedElection();
         cluster.connectClient();
         final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
 
@@ -103,7 +103,7 @@ class ServiceIpcIngressMessageTest
 
         cluster.stopNode(oldLeader);
 
-        final TestNode newLeader = cluster.awaitLeader(oldLeader.index());
+        final TestNode newLeader = cluster.awaitLeaderAndClosedElection(oldLeader.index());
         final TestNode follower = cluster.node(3 - oldLeader.index() - newLeader.index());
         assertEquals(Cluster.Role.FOLLOWER, follower.role());
         cluster.reconnectClient();
@@ -138,7 +138,7 @@ class ServiceIpcIngressMessageTest
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;
 
-        TestNode oldLeader = cluster.awaitLeader();
+        TestNode oldLeader = cluster.awaitLeaderAndClosedElection();
         cluster.connectClient();
         final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
 
@@ -153,7 +153,7 @@ class ServiceIpcIngressMessageTest
 
         oldLeader.stopServiceContainers(); // stop services to cause a new election
 
-        final TestNode newLeader = cluster.awaitLeader(oldLeader.index());
+        final TestNode newLeader = cluster.awaitLeaderAndClosedElection(oldLeader.index());
         final TestNode follower = cluster.node(3 - oldLeader.index() - newLeader.index());
         assertEquals(Cluster.Role.FOLLOWER, follower.role());
         cluster.awaitNodeState(oldLeader, node -> Cluster.Role.FOLLOWER == node.role());
@@ -189,7 +189,7 @@ class ServiceIpcIngressMessageTest
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;
 
-        cluster.awaitLeader();
+        cluster.awaitLeaderAndClosedElection();
         cluster.connectClient();
         final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
 
@@ -204,7 +204,7 @@ class ServiceIpcIngressMessageTest
 
         cluster.stopAllNodes();
         cluster.restartAllNodes(false);
-        cluster.awaitLeader();
+        cluster.awaitLeaderAndClosedElection();
 
         cluster.reconnectClient();
         for (int i = 0; i < 20; i++)
@@ -233,7 +233,7 @@ class ServiceIpcIngressMessageTest
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;
 
-        final TestNode leader = cluster.awaitLeader();
+        final TestNode leader = cluster.awaitLeaderAndClosedElection();
         cluster.connectClient();
         final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
 
@@ -265,7 +265,7 @@ class ServiceIpcIngressMessageTest
 
         cluster.stopAllNodes();
         cluster.restartAllNodes(false);
-        final TestNode newLeader = cluster.awaitLeader();
+        final TestNode newLeader = cluster.awaitLeaderAndClosedElection();
         final TestNode.MessageTrackingService newLeaderTrackingService =
             (TestNode.MessageTrackingService)newLeader.services()[0];
         assertEquals(clientMessagesBeforeRestart, newLeaderTrackingService.clientMessages());

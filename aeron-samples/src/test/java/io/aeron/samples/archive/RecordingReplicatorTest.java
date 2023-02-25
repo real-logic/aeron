@@ -30,6 +30,7 @@ import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -66,8 +67,8 @@ class RecordingReplicatorTest
     private static final int TERM_BUFFER_LENGTH = 128 * 1024;
     @RegisterExtension
     private final SystemTestWatcher testWatcher = new SystemTestWatcher();
-    private MediaDriver srcMediaDriver;
-    private MediaDriver dstMediaDriver;
+    private TestMediaDriver srcMediaDriver;
+    private TestMediaDriver dstMediaDriver;
     private Archive srcArchive;
     private Archive dstArchive;
     private AeronArchive srcAeronArchive;
@@ -76,17 +77,18 @@ class RecordingReplicatorTest
     @BeforeEach
     void setup(@TempDir final Path tempDir)
     {
-        srcMediaDriver = MediaDriver.launch(new MediaDriver.Context()
+        srcMediaDriver = TestMediaDriver.launch(new MediaDriver.Context()
             .aeronDirectoryName(tempDir.resolve("src-driver").toString())
             .termBufferSparseFile(true)
             .threadingMode(ThreadingMode.SHARED)
             .ipcTermBufferLength(TERM_BUFFER_LENGTH)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .spiesSimulateConnection(true)
-            .dirDeleteOnStart(true));
+            .dirDeleteOnStart(true),
+            testWatcher);
         testWatcher.dataCollector().add(srcMediaDriver.context().aeronDirectory());
 
-        dstMediaDriver = MediaDriver.launch(new MediaDriver.Context()
+        dstMediaDriver = TestMediaDriver.launch(new MediaDriver.Context()
             .spiesSimulateConnection(true)
             .aeronDirectoryName(tempDir.resolve("dst-driver").toString())
             .termBufferSparseFile(true)
@@ -94,7 +96,8 @@ class RecordingReplicatorTest
             .ipcTermBufferLength(TERM_BUFFER_LENGTH)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .spiesSimulateConnection(true)
-            .dirDeleteOnStart(true));
+            .dirDeleteOnStart(true),
+            testWatcher);
         testWatcher.dataCollector().add(dstMediaDriver.context().aeronDirectory());
 
         srcArchive = Archive.launch(new Archive.Context()
@@ -140,7 +143,7 @@ class RecordingReplicatorTest
 
     @ParameterizedTest
     @ValueSource(ints = { 0, 9 })
-    @InterruptAfter(10)
+    @InterruptAfter(30)
     void replicateAsNewRecording(final int srcMessageCount)
     {
         createRecording(srcAeronArchive, IPC_CHANNEL, 555, 3);
@@ -162,7 +165,7 @@ class RecordingReplicatorTest
 
     @ParameterizedTest
     @ValueSource(ints = { 0, 7, 21 })
-    @InterruptAfter(10)
+    @InterruptAfter(30)
     void replicateOverAnExistingRecording(final int srcMessageCount)
     {
         createRecording(srcAeronArchive, IPC_CHANNEL, 555, 1);

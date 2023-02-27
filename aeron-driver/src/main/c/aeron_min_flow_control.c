@@ -33,7 +33,7 @@
 
 typedef struct aeron_min_flow_control_strategy_receiver_stct
 {
-    uint8_t padding_before[AERON_CACHE_LINE_LENGTH - sizeof(int64_t)];
+    uint8_t padding_before[AERON_CACHE_LINE_LENGTH];
     int64_t last_position;
     int64_t last_position_plus_window;
     int64_t time_of_last_status_message_ns;
@@ -41,7 +41,7 @@ typedef struct aeron_min_flow_control_strategy_receiver_stct
     int32_t session_id;
     int32_t stream_id;
     bool eos_flagged;
-    uint8_t padding_after[AERON_CACHE_LINE_LENGTH - (3 * sizeof(int64_t))];
+    uint8_t padding_after[AERON_CACHE_LINE_LENGTH];
 }
 aeron_min_flow_control_strategy_receiver_t;
 
@@ -443,8 +443,8 @@ int aeron_tagged_flow_control_strategy_supplier_init(
 
     state->channel = channel;
 
-    state->receiver_timeout_ns = options.timeout_ns.is_present ?
-        options.timeout_ns.value : context->flow_control.receiver_timeout_ns;
+    state->receiver_timeout_ns = (int64_t)(options.timeout_ns.is_present ?
+        options.timeout_ns.value : context->flow_control.receiver_timeout_ns);
     state->group_min_size = options.group_min_size.is_present ?
         options.group_min_size.value : context->flow_control.group_min_size;
     state->group_tag = options.group_tag.is_present ? options.group_tag.value : context->flow_control.group_tag;

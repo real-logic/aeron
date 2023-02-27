@@ -38,6 +38,7 @@ aeron_udp_destination_entry_t;
 
 typedef struct aeron_udp_destination_tracker_stct
 {
+    uint8_t padding_before[AERON_CACHE_LINE_LENGTH];
     struct aeron_udp_destination_tracker_destinations_stct
     {
         aeron_udp_destination_entry_t *array;
@@ -51,7 +52,9 @@ typedef struct aeron_udp_destination_tracker_stct
     int64_t destination_timeout_ns;
     aeron_udp_channel_data_paths_t *data_paths;
     volatile int64_t *num_destinations_addr;
+
     int round_robin_index;
+    uint8_t padding_after[AERON_CACHE_LINE_LENGTH];
 }
 aeron_udp_destination_tracker_t;
 

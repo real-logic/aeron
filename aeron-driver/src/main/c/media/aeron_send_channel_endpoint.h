@@ -63,7 +63,7 @@ typedef struct aeron_send_channel_endpoint_stct
     struct sockaddr_storage current_data_addr;
     aeron_clock_cache_t *cached_clock;
     int64_t time_of_last_sm_ns;
-    uint8_t padding[AERON_CACHE_LINE_LENGTH - sizeof(int64_t)];
+    uint8_t padding[AERON_CACHE_LINE_LENGTH];
 }
 aeron_send_channel_endpoint_t;
 

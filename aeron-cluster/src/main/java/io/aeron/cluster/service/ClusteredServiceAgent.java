@@ -175,12 +175,13 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
                 }
             }
 
+            CloseHelper.close(errorHandler, logAdapter);
+
             if (!ctx.ownsAeronClient() && !aeron.isClosed())
             {
-                disconnectEgress(errorHandler);
-                CloseHelper.close(errorHandler, logAdapter);
                 CloseHelper.close(errorHandler, serviceAdapter);
                 CloseHelper.close(errorHandler, consensusModuleProxy);
+                disconnectEgress(errorHandler);
             }
         }
 
@@ -199,8 +200,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         {
             if (checkForClockTick(nowNs))
             {
-                pollServiceAdapter();
-                workCount += 1;
+                workCount += pollServiceAdapter();
             }
 
             if (null != logAdapter.image())
@@ -1045,9 +1045,11 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         return false;
     }
 
-    private void pollServiceAdapter()
+    private int pollServiceAdapter()
     {
-        serviceAdapter.poll();
+        int workCount = 0;
+
+        workCount += serviceAdapter.poll();
 
         if (null != activeLogEvent && null == logAdapter.image())
         {
@@ -1081,6 +1083,8 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
                 requestedAckPosition = NULL_POSITION;
             }
         }
+
+        return workCount;
     }
 
     private void terminate(final boolean isTerminationExpected)

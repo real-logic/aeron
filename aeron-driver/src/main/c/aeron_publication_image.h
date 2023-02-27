@@ -36,12 +36,14 @@ aeron_publication_image_state_t;
 
 typedef struct aeron_publication_image_connection_stct
 {
+    uint8_t padding_before[AERON_CACHE_LINE_LENGTH];
     struct sockaddr_storage resolved_control_address_for_implicit_unicast_channels;
     aeron_receive_destination_t *destination;  // Not owned.
     struct sockaddr_storage *control_addr;     // Not owned.
     bool is_eos;
     int64_t time_of_last_activity_ns;
     int64_t time_of_last_frame_ns;
+    uint8_t padding_after[AERON_CACHE_LINE_LENGTH];
 }
 aeron_publication_image_connection_t;
 

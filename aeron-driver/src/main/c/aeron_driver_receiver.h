@@ -130,9 +130,4 @@ int aeron_driver_receiver_add_pending_setup(
     int32_t stream_id,
     struct sockaddr_storage *control_addr);
 
-inline size_t aeron_driver_receiver_num_images(aeron_driver_receiver_t *receiver)
-{
-    return receiver->images.length;
-}
-
 #endif //AERON_DRIVER_RECEIVER_H

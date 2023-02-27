@@ -599,6 +599,4 @@ int aeron_driver_receiver_add_pending_setup(
     return ensure_capacity_result;
 }
 
-extern size_t aeron_driver_receiver_num_images(aeron_driver_receiver_t *receiver);
-
 extern void aeron_driver_receiver_log_error(aeron_driver_receiver_t *receiver);

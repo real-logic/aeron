@@ -71,6 +71,15 @@ typedef struct aeron_network_publication_stct
     aeron_flow_control_strategy_t *flow_control;
     aeron_clock_cache_t *cached_clock;
 
+    uint8_t sender_fields_pad_lhs[AERON_CACHE_LINE_LENGTH];
+    bool has_initial_connection;
+    bool track_sender_limits;
+    int64_t time_of_last_data_or_heartbeat_ns;
+    size_t current_messages_per_send;
+    int64_t status_message_deadline_ns;
+    int64_t time_of_last_setup_ns;
+    uint8_t sender_fields_pad_rhs[AERON_CACHE_LINE_LENGTH];
+
     char *log_file_name;
     int64_t term_buffer_length;
     int64_t term_window_length;
@@ -78,9 +87,7 @@ typedef struct aeron_network_publication_stct
     int64_t linger_timeout_ns;
     int64_t unblock_timeout_ns;
     int64_t connection_timeout_ns;
-    int64_t time_of_last_data_or_heartbeat_ns;
-    int64_t time_of_last_setup_ns;
-    int64_t status_message_deadline_ns;
+
     int64_t tag;
     int32_t session_id;
     int32_t stream_id;
@@ -92,17 +99,14 @@ typedef struct aeron_network_publication_stct
     size_t position_bits_to_shift;
     size_t mtu_length;
     size_t max_messages_per_send;
-    size_t current_messages_per_send;
-    bool is_exclusive;
     bool spies_simulate_connection;
     bool signal_eos;
     bool is_setup_elicited;
-    bool has_initial_connection;
+    bool is_exclusive;
     volatile bool has_receivers;
     volatile bool has_spies;
     volatile bool is_connected;
     volatile bool is_end_of_stream;
-    bool track_sender_limits;
     volatile bool has_sender_released;
     volatile bool has_received_sm_eos;
     aeron_raw_log_close_func_t raw_log_close_func;

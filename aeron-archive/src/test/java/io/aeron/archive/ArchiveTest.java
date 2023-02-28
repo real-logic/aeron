@@ -18,7 +18,9 @@ package io.aeron.archive;
 import io.aeron.Aeron;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
+import io.aeron.Image;
 import io.aeron.Publication;
+import io.aeron.Subscription;
 import io.aeron.archive.Archive.Context;
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.AeronArchive;
@@ -29,6 +31,7 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -39,18 +42,24 @@ import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.YieldingIdleStrategy;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileStore;
 import java.util.ArrayList;
@@ -65,6 +74,9 @@ import static io.aeron.archive.ArchiveThreadingMode.SHARED;
 import static io.aeron.archive.Catalog.MIN_CAPACITY;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static org.agrona.BitUtil.align;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.Mockito.mock;
@@ -74,6 +86,11 @@ import static org.mockito.Mockito.when;
 @SuppressWarnings("try")
 class ArchiveTest
 {
+    private static final FragmentHandler NO_OP_FRAGMENT_HANDLER = (buffer, offset, length, header) ->
+    {
+        // No-op
+    };
+
     @Test
     void shouldGenerateRecordingName()
     {
@@ -589,9 +606,123 @@ class ArchiveTest
         }
     }
 
+    @Test
+    @Disabled
+    @InterruptAfter(10)
+    void shouldReplayPaddingGreaterThanMaxMessageLengthDueToFragmentationNearEndOfTerm() throws IOException
+    {
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .threadingMode(ThreadingMode.SHARED);
+        final Aeron.Context aeronCtx = new Aeron.Context()
+            .aeronDirectoryName(driverCtx.aeronDirectoryName());
+        final Archive.Context archiveCtx = TestContexts.localhostArchive()
+            .deleteArchiveOnStart(true)
+            .threadingMode(SHARED);
+
+        try (ArchivingMediaDriver archivingDriver = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
+            Aeron aeron = Aeron.connect(aeronCtx);
+            AeronArchive archive = AeronArchive.connect(TestContexts.localhostAeronArchive()))
+        {
+            final long recordingId;
+            final long finalPubPos;
+            final long finalSubPos;
+
+            final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
+
+            final String channel = new ChannelUriStringBuilder()
+                .media(CommonContext.IPC_MEDIA)
+                .termLength(256 * 1024)
+                .build();
+
+            try (Publication publication = archive.addRecordedExclusivePublication(channel, 1))
+            {
+                int counterId;
+                final int sessionId = publication.sessionId();
+                final CountersReader countersReader = aeron.countersReader();
+
+                while (Aeron.NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(countersReader, sessionId)))
+                {
+                    Tests.yield();
+                }
+
+                recordingId = RecordingPos.getRecordingId(countersReader, counterId);
+
+                final UnsafeBuffer smallMessage = new UnsafeBuffer(new byte[0]);
+                final int maxMessageLength = publication.maxMessageLength();
+                final int requiredLength = calculateFragmentedMessageLength(publication, maxMessageLength);
+                while (publication.position() + requiredLength <= publication.termBufferLength())
+                {
+                    if (publication.offer(smallMessage) < 0)
+                    {
+                        idleStrategy.idle();
+                        Tests.checkInterruptStatus();
+                    }
+                }
+
+                final UnsafeBuffer bigFragmentedMessage = new UnsafeBuffer(new byte[maxMessageLength]);
+                while (publication.offer(bigFragmentedMessage) < 0)
+                {
+                    idleStrategy.idle();
+                    Tests.checkInterruptStatus();
+                }
+
+                finalPubPos = publication.position();
+            }
+
+            try (Subscription subscription = archive.replay(recordingId, 0, Aeron.NULL_VALUE, channel, 2))
+            {
+                while (subscription.imageCount() == 0)
+                {
+                    idleStrategy.idle();
+                    Tests.checkInterruptStatus();
+                }
+
+                final Image image = subscription.imageAtIndex(0);
+                final AtomicCounter errorCounter = archivingDriver.archive().context().errorCounter();
+
+                while (!image.isClosed() && !image.isEndOfStream())
+                {
+                    final int fragmentCount = image.poll(NO_OP_FRAGMENT_HANDLER, 10);
+                    idleStrategy.idle(fragmentCount);
+
+                    if (fragmentCount == 0 && errorCounter.get() > 0)
+                    {
+                        try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+                            PrintStream outStream = new PrintStream(byteStream))
+                        {
+                            ArchiveTool.printErrors(outStream, archivingDriver.archive().context().archiveDir());
+                            fail(byteStream.toString(StandardCharsets.UTF_8.name()));
+                        }
+                    }
+                }
+
+                finalSubPos = image.position();
+            }
+
+            assertEquals(finalPubPos, finalSubPos);
+        }
+        finally
+        {
+            archiveCtx.deleteDirectory();
+            driverCtx.deleteDirectory();
+        }
+    }
+
+    private static int calculateFragmentedMessageLength(final Publication publication, final int maxMessageLength)
+    {
+        final int maxPayloadLength = publication.maxPayloadLength();
+        final int numMaxPayloads = maxMessageLength / maxPayloadLength;
+        final int remainingPayload = maxMessageLength % maxPayloadLength;
+        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
+        return (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+    }
+
     private static Catalog openCatalog(final String archiveDirectoryName)
     {
-        final IntConsumer intConsumer = (version) -> {};
+        final IntConsumer intConsumer = (version) ->
+        {
+        };
         return new Catalog(
             new File(archiveDirectoryName),
             new SystemEpochClock(),

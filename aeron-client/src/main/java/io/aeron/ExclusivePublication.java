@@ -435,9 +435,13 @@ public final class ExclusivePublication extends ExclusivePublicationValues
      */
     public long appendPadding(final int length)
     {
-        checkMaxMessageLength(length);
-        long newPosition = CLOSED;
+        if (length > maxRequiredLength)
+        {
+            throw new IllegalArgumentException(
+                "padding message exceeds maxRequiredLength of " + maxRequiredLength + ", length=" + length);
+        }
 
+        long newPosition = CLOSED;
         if (!isClosed)
         {
             final long limit = positionLimit.getVolatile();
@@ -634,10 +638,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int numMaxPayloads = length / maxPayloadLength;
-        final int remainingPayload = length % maxPayloadLength;
-        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
-        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final int requiredLength = calculateRequiredLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + requiredLength;
@@ -743,10 +744,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final ReservedValueSupplier reservedValueSupplier)
     {
         final int length = lengthOne + lengthTwo;
-        final int numMaxPayloads = length / maxPayloadLength;
-        final int remainingPayload = length % maxPayloadLength;
-        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
-        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final int requiredLength = calculateRequiredLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + requiredLength;
@@ -871,10 +869,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int numMaxPayloads = length / maxPayloadLength;
-        final int remainingPayload = length % maxPayloadLength;
-        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
-        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final int requiredLength = calculateRequiredLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + requiredLength;

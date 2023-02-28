@@ -49,7 +49,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -607,7 +606,6 @@ class ArchiveTest
     }
 
     @Test
-    @Disabled
     @InterruptAfter(10)
     void shouldReplayPaddingGreaterThanMaxMessageLengthDueToFragmentationNearEndOfTerm() throws IOException
     {

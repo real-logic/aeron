@@ -391,10 +391,7 @@ public final class ConcurrentPublication extends Publication
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int numMaxPayloads = length / maxPayloadLength;
-        final int remainingPayload = length % maxPayloadLength;
-        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
-        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final int requiredLength = calculateRequiredLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, requiredLength);
@@ -506,10 +503,7 @@ public final class ConcurrentPublication extends Publication
         final ReservedValueSupplier reservedValueSupplier)
     {
         final int length = lengthOne + lengthTwo;
-        final int numMaxPayloads = length / maxPayloadLength;
-        final int remainingPayload = length % maxPayloadLength;
-        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
-        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final int requiredLength = calculateRequiredLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, requiredLength);
@@ -640,10 +634,7 @@ public final class ConcurrentPublication extends Publication
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int numMaxPayloads = length / maxPayloadLength;
-        final int remainingPayload = length % maxPayloadLength;
-        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
-        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final int requiredLength = calculateRequiredLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, requiredLength);

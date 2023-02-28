@@ -47,21 +47,20 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     private static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
 
     private final long registrationId;
+    private final long tag;
     private final long unblockTimeoutNs;
     private final long untetheredWindowLimitTimeoutNs;
     private final long untetheredRestingTimeoutNs;
     private final String channel;
-    private final long tag;
     private final int sessionId;
     private final int streamId;
-    private final int tripGain;
-    private final int termBufferLength;
-    private final int termWindowLength;
-    private final int positionBitsToShift;
-    private final int initialTermId;
     private final int startingTermId;
     private final int startingTermOffset;
-    private final ErrorHandler errorHandler;
+    private final int positionBitsToShift;
+    private final int termBufferLength;
+    private final int termWindowLength;
+    private final int initialTermId;
+    private final int tripGain;
     private long tripLimit;
     private long consumerPosition;
     private long lastConsumerPosition;
@@ -72,13 +71,14 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     private final boolean isExclusive;
     private State state = State.ACTIVE;
     private final UnsafeBuffer[] termBuffers;
-    private final ArrayList<UntetheredSubscription> untetheredSubscriptions = new ArrayList<>();
-    private ReadablePosition[] subscriberPositions = EMPTY_POSITIONS;
     private final Position publisherPos;
     private final Position publisherLimit;
     private final UnsafeBuffer metaDataBuffer;
+    private ReadablePosition[] subscriberPositions = EMPTY_POSITIONS;
+    private final ArrayList<UntetheredSubscription> untetheredSubscriptions = new ArrayList<>();
     private final RawLog rawLog;
     private final AtomicCounter unblockedPublications;
+    private final ErrorHandler errorHandler;
 
     IpcPublication(
         final long registrationId,

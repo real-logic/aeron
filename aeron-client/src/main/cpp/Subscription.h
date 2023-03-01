@@ -221,12 +221,12 @@ public:
 
         for (std::size_t i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += imageArray[i]->poll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += imageArray[i]->poll(std::forward<F>(fragmentHandler), fragmentLimit - fragmentsRead);
         }
 
         for (std::size_t i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += imageArray[i]->poll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += imageArray[i]->poll(std::forward<F>(fragmentHandler), fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;
@@ -263,12 +263,12 @@ public:
 
         for (std::size_t i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += imageArray[i]->controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += imageArray[i]->controlledPoll(std::forward<F>(fragmentHandler), fragmentLimit - fragmentsRead);
         }
 
         for (std::size_t i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += imageArray[i]->controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += imageArray[i]->controlledPoll(std::forward<F>(fragmentHandler), fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;
@@ -291,7 +291,7 @@ public:
 
         for (std::size_t i = 0; i < length; i++)
         {
-            bytesConsumed += imageArray[i]->blockPoll(blockHandler, blockLengthLimit);
+            bytesConsumed += imageArray[i]->blockPoll(std::forward<F>(blockHandler), blockLengthLimit);
         }
 
         return bytesConsumed;

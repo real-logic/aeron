@@ -1685,7 +1685,7 @@ public final class ClusterBackup implements AutoCloseable
          */
         public Context replicationProgressTimeoutNs(final long timeoutNs)
         {
-            this.replicationProgressIntervalNs = timeoutNs;
+            this.replicationProgressTimeoutNs = timeoutNs;
             return this;
         }
 

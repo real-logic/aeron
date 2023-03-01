@@ -70,6 +70,16 @@ static inline int32_t aeron_handle_end_of_log_condition(
     return -2;
 }
 
+static inline size_t compute_framed_length(size_t length, size_t max_payload_length)
+{
+    const size_t num_max_payloads = length / max_payload_length;
+    const size_t remaining_payload = length % max_payload_length;
+    const size_t last_frame_length = (remaining_payload > 0) ?
+        AERON_ALIGN(remaining_payload + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT) : 0;
+
+    return (num_max_payloads * (max_payload_length + AERON_DATA_HEADER_LENGTH)) + last_frame_length;
+}
+
 static inline int32_t aeron_append_unfragmented_message(
     aeron_mapped_buffer_t *term_buffer,
     volatile int64_t *term_tail_counter,
@@ -126,15 +136,10 @@ static inline int32_t aeron_append_fragmented_message(
     int32_t session_id,
     int32_t stream_id)
 {
-    const size_t num_max_payloads = length / max_payload_length;
-    const size_t remaining_payload = length % max_payload_length;
-    const size_t last_frame_length = (remaining_payload > 0) ?
-        AERON_ALIGN(remaining_payload + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT) : 0;
-    const size_t required_length =
-        (num_max_payloads * (max_payload_length + AERON_DATA_HEADER_LENGTH)) + last_frame_length;
+    const size_t framed_length = compute_framed_length(length, max_payload_length);
     const int32_t term_length = (int32_t)term_buffer->length;
 
-    int32_t resulting_offset = term_offset + (int32_t)required_length;
+    int32_t resulting_offset = term_offset + (int32_t)framed_length;
     aeron_put_raw_tail_ordered(term_tail_counter, term_id, resulting_offset);
 
     if (resulting_offset > term_length)
@@ -250,15 +255,10 @@ static inline int32_t aeron_append_fragmented_messagev(
     int32_t session_id,
     int32_t stream_id)
 {
-    const size_t num_max_payloads = length / max_payload_length;
-    const size_t remaining_payload = length % max_payload_length;
-    const size_t last_frame_length = (remaining_payload > 0) ?
-        AERON_ALIGN(remaining_payload + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT) : 0;
-    const size_t required_length =
-        (num_max_payloads * (max_payload_length + AERON_DATA_HEADER_LENGTH)) + last_frame_length;
+    const size_t framed_length = compute_framed_length(length, max_payload_length);
     const int32_t term_length = (int32_t)term_buffer->length;
 
-    int32_t resulting_offset = term_offset + (int32_t)required_length;
+    int32_t resulting_offset = term_offset + (int32_t)framed_length;
     aeron_put_raw_tail_ordered(term_tail_counter, term_id, resulting_offset);
 
     if (resulting_offset > term_length)

@@ -717,6 +717,16 @@ private:
         }
     }
 
+    inline static util::index_t computeFramedLength(const util::index_t length, const util::index_t maxPayloadLength)
+    {
+        const int numMaxPayloads = length / maxPayloadLength;
+        const util::index_t remainingPayload = length % maxPayloadLength;
+        const util::index_t lastFrameLength = remainingPayload > 0 ?
+            util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
+
+        return (numMaxPayloads * (maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
+    }
+
     inline static std::int64_t packTail(std::int32_t termId, std::int32_t termOffset)
     {
         return (termId * ((INT64_C(1) << 32))) | uint32_t(termOffset);
@@ -778,16 +788,10 @@ private:
         util::index_t maxPayloadLength,
         const on_reserved_value_supplier_t &reservedValueSupplier)
     {
-        const int numMaxPayloads = length / maxPayloadLength;
-        const util::index_t remainingPayload = length % maxPayloadLength;
-        const util::index_t lastFrameLength = remainingPayload > 0 ?
-            util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
-        const util::index_t requiredLength =
-            (numMaxPayloads * (maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
-
+        const util::index_t framedLength = computeFramedLength(length, m_maxPayloadLength);
         const std::int32_t termLength = termBuffer.capacity();
 
-        std::int32_t resultingOffset = m_termOffset + requiredLength;
+        std::int32_t resultingOffset = m_termOffset + framedLength;
         m_logMetaDataBuffer.putInt64Ordered(tailCounterOffset, packTail(m_termId, resultingOffset));
 
         if (resultingOffset > termLength)
@@ -884,16 +888,10 @@ private:
         util::index_t maxPayloadLength,
         const on_reserved_value_supplier_t &reservedValueSupplier)
     {
-        const int numMaxPayloads = length / maxPayloadLength;
-        const util::index_t remainingPayload = length % maxPayloadLength;
-        const util::index_t lastFrameLength = (remainingPayload > 0) ?
-            util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
-        const util::index_t requiredLength =
-            (numMaxPayloads * (maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
-
+        const util::index_t framedLength = computeFramedLength(length, m_maxPayloadLength);
         const std::int32_t termLength = termBuffer.capacity();
 
-        std::int32_t resultingOffset = m_termOffset + requiredLength;
+        std::int32_t resultingOffset = m_termOffset + framedLength;
         m_logMetaDataBuffer.putInt64Ordered(tailCounterOffset, packTail(m_termId, resultingOffset));
 
         if (resultingOffset > termLength)

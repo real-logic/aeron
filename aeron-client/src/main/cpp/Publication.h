@@ -659,6 +659,36 @@ private:
     std::shared_ptr<LogBuffers> m_logBuffers;
     HeaderWriter m_headerWriter;
 
+    inline void checkMaxMessageLength(const util::index_t length) const
+    {
+        if (AERON_COND_EXPECT((length > m_maxMessageLength), false))
+        {
+            throw aeron::util::IllegalArgumentException(
+                "message exceeds maxMessageLength=" + std::to_string(m_maxMessageLength) +
+                    ", length=" + std::to_string(length), SOURCEINFO);
+        }
+    }
+
+    inline void checkPayloadLength(const util::index_t length) const
+    {
+        if (AERON_COND_EXPECT((length > m_maxPayloadLength), false))
+        {
+            throw aeron::util::IllegalArgumentException(
+                "message exceeds maxPayloadLength=" + std::to_string(m_maxPayloadLength) +
+                    ", length=" + std::to_string(length), SOURCEINFO);
+        }
+    }
+
+    inline static util::index_t computeFramedLength(const util::index_t length, const util::index_t maxPayloadLength)
+    {
+        const int numMaxPayloads = length / maxPayloadLength;
+        const util::index_t remainingPayload = length % maxPayloadLength;
+        const util::index_t lastFrameLength = remainingPayload > 0 ?
+            util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
+
+        return (numMaxPayloads * (maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
+    }
+
     inline std::int64_t claim(
         AtomicBuffer &termBuffer,
         const util::index_t tailCounterOffset,
@@ -777,18 +807,13 @@ private:
         util::index_t length,
         const on_reserved_value_supplier_t &reservedValueSupplier)
     {
-        const int numMaxPayloads = length / m_maxPayloadLength;
-        const util::index_t remainingPayload = length % m_maxPayloadLength;
-        const util::index_t lastFrameLength = (remainingPayload > 0) ?
-            util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
-        const util::index_t requiredLength =
-            (numMaxPayloads * (m_maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
-        const std::int64_t rawTail = m_logMetaDataBuffer.getAndAddInt64(tailCounterOffset, requiredLength);
+        const util::index_t framedLength = computeFramedLength(length, m_maxPayloadLength);
+        const std::int64_t rawTail = m_logMetaDataBuffer.getAndAddInt64(tailCounterOffset, framedLength);
         const std::int32_t termLength = termBuffer.capacity();
         const std::int32_t termOffset = LogBufferDescriptor::termOffset(rawTail, termLength);
         const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
 
-        const std::int32_t resultingOffset = termOffset + requiredLength;
+        const std::int32_t resultingOffset = termOffset + framedLength;
         const std::int64_t position = LogBufferDescriptor::computePosition(
             termId, resultingOffset, m_positionBitsToShift, m_initialTermId);
         if (resultingOffset > termLength)
@@ -844,18 +869,13 @@ private:
         util::index_t length,
         const on_reserved_value_supplier_t &reservedValueSupplier)
     {
-        const int numMaxPayloads = length / m_maxPayloadLength;
-        const util::index_t remainingPayload = length % m_maxPayloadLength;
-        const util::index_t lastFrameLength = remainingPayload > 0 ?
-            util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
-        const util::index_t requiredLength =
-            (numMaxPayloads * (m_maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
-        const std::int64_t rawTail = m_logMetaDataBuffer.getAndAddInt64(tailCounterOffset, requiredLength);
+        const util::index_t framedLength = computeFramedLength(length, m_maxPayloadLength);
+        const std::int64_t rawTail = m_logMetaDataBuffer.getAndAddInt64(tailCounterOffset, framedLength);
         const std::int32_t termLength = termBuffer.capacity();
         const std::int32_t termOffset = LogBufferDescriptor::termOffset(rawTail, termLength);
         const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
 
-        const std::int32_t resultingOffset = termOffset + requiredLength;
+        const std::int32_t resultingOffset = termOffset + framedLength;
         const std::int64_t position = LogBufferDescriptor::computePosition(
             termId, resultingOffset, m_positionBitsToShift, m_initialTermId);
         if (resultingOffset > termLength)
@@ -960,26 +980,6 @@ private:
         }
 
         return NOT_CONNECTED;
-    }
-
-    inline void checkMaxMessageLength(const util::index_t length) const
-    {
-        if (AERON_COND_EXPECT((length > m_maxMessageLength), false))
-        {
-            throw aeron::util::IllegalArgumentException(
-                "message exceeds maxMessageLength=" + std::to_string(m_maxMessageLength) +
-                ", length=" + std::to_string(length), SOURCEINFO);
-        }
-    }
-
-    inline void checkPayloadLength(const util::index_t length) const
-    {
-        if (AERON_COND_EXPECT((length > m_maxPayloadLength), false))
-        {
-            throw aeron::util::IllegalArgumentException(
-                "message exceeds maxPayloadLength=" + std::to_string(m_maxPayloadLength) +
-                ", length=" + std::to_string(length), SOURCEINFO);
-        }
     }
 };
 

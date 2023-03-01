@@ -54,22 +54,22 @@ typedef struct aeron_ipc_publication_stct
     }
     conductor_fields;
 
-    int32_t channel_length;
-    char *channel;
-
-    char *log_file_name;
+    size_t position_bits_to_shift;
     int64_t term_window_length;
     int64_t trip_gain;
     int64_t unblock_timeout_ns;
+    int32_t initial_term_id;
+    bool is_exclusive;
     int64_t tag;
     int32_t session_id;
     int32_t stream_id;
-    int32_t initial_term_id;
     int32_t starting_term_id;
     size_t starting_term_offset;
+    int32_t channel_length;
+    char *channel;
     size_t log_file_name_length;
-    size_t position_bits_to_shift;
-    bool is_exclusive;
+    char *log_file_name;
+
     aeron_raw_log_close_func_t raw_log_close_func;
     aeron_raw_log_free_func_t raw_log_free_func;
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;

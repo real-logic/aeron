@@ -1556,6 +1556,12 @@ public final class Archive implements AutoCloseable
             return archiveDirChannel;
         }
 
+        Context archiveDirChannel(final FileChannel archiveDirChannel)
+        {
+            this.archiveDirChannel = archiveDirChannel;
+            return this;
+        }
+
         /**
          * Set the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating
          * with a remote archive for replication.
@@ -3153,13 +3159,6 @@ public final class Archive implements AutoCloseable
         {
             CloseHelper.close(countedErrorHandler, archiveDirChannel);
             CloseHelper.close(countedErrorHandler, catalog);
-            CloseHelper.close(countedErrorHandler, markFile);
-
-            CloseHelper.quietClose(errorCounter);
-            if (errorHandler instanceof AutoCloseable)
-            {
-                CloseHelper.quietClose((AutoCloseable)errorHandler);
-            }
 
             if (ownsAeronClient)
             {
@@ -3177,7 +3176,14 @@ public final class Archive implements AutoCloseable
                 closeDutyCycleCounters(conductorDutyCycleTracker);
                 closeDutyCycleCounters(recorderDutyCycleTracker);
                 closeDutyCycleCounters(replayerDutyCycleTracker);
+                CloseHelper.close(errorCounter);
             }
+
+            if (errorHandler instanceof AutoCloseable)
+            {
+                CloseHelper.close((AutoCloseable)errorHandler);
+            }
+            CloseHelper.close(markFile);
         }
 
         private void closeDutyCycleCounters(final DutyCycleTracker dutyCycleTracker)

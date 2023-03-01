@@ -20,12 +20,15 @@ import io.aeron.AeronCounters;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.test.TestContexts;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -36,8 +39,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -53,8 +60,7 @@ import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
 import static org.agrona.concurrent.status.CountersReader.RECORD_UNUSED;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class ArchiveContextTest
 {
@@ -714,6 +720,186 @@ class ArchiveContextTest
         assertEquals(responseChannel, context.archiveClientContext().controlResponseChannel());
     }
 
+    @Test
+    void closeOrderWhenArchiveOwnsAeronClient() throws Exception
+    {
+        final Aeron aeron = mock(Aeron.class);
+        final ArchiveMarkFile archiveMarkFile = mock(ArchiveMarkFile.class);
+        final FileChannel archiveDirChannel = mock(FileChannel.class);
+        final Exception fileChannelException = throwingClose(archiveDirChannel, new IOException("file close"));
+        final Catalog catalog = mock(Catalog.class);
+        final Exception catalogException = throwingClose(catalog, new IllegalStateException("catalog"));
+        final Counter controlSessionsCounter = mock(Counter.class);
+        final AtomicCounter errorCounter = mock(AtomicCounter.class);
+        final ErrorHandler errorHandler = mock(ErrorHandler.class, withSettings().extraInterfaces(AutoCloseable.class));
+        final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
+        context.aeron(aeron).ownsAeronClient(true);
+        context.archiveMarkFile(archiveMarkFile);
+        context.archiveDirChannel(archiveDirChannel);
+        context.catalog(catalog);
+        context.errorHandler(errorHandler);
+        context.countedErrorHandler(countedErrorHandler);
+        context.controlSessionsCounter(controlSessionsCounter);
+        context.errorCounter(errorCounter);
+
+        context.close();
+
+        final InOrder inOrder = inOrder(
+            aeron,
+            archiveMarkFile,
+            archiveDirChannel,
+            catalog,
+            errorHandler,
+            countedErrorHandler,
+            controlSessionsCounter,
+            errorCounter);
+        inOrder.verify(archiveDirChannel).close();
+        inOrder.verify(countedErrorHandler).onError(fileChannelException);
+        inOrder.verify(catalog).close();
+        inOrder.verify(countedErrorHandler).onError(catalogException);
+        inOrder.verify(aeron).close();
+        inOrder.verify((AutoCloseable)errorHandler).close();
+        inOrder.verify(archiveMarkFile).close();
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @SuppressWarnings("MethodLength")
+    @Test
+    void closeOrderWhenAeronClientIsNotOwned() throws Exception
+    {
+        final Aeron aeron = mock(Aeron.class);
+        final ArchiveMarkFile archiveMarkFile = mock(ArchiveMarkFile.class);
+        final FileChannel archiveDirChannel = mock(FileChannel.class);
+        final Exception fileChannelException = throwingClose(archiveDirChannel, new IOException("file close"));
+        final Catalog catalog = mock(Catalog.class);
+        final Exception catalogException = throwingClose(catalog, new IllegalStateException("catalog"));
+        final Counter controlSessionsCounter = mock(Counter.class);
+        final Exception controlSessionsCounterException = throwingClose(
+            controlSessionsCounter, new UnsupportedOperationException("controlSessionsCounter"));
+        final Counter totalWriteBytesCounter = mock(Counter.class);
+        final Exception totalWriteBytesCounterException = throwingClose(
+            totalWriteBytesCounter, new IllegalStateException("totalWriteBytesCounter"));
+        final Counter totalWriteTimeCounter = mock(Counter.class);
+        final Exception totalWriteTimeCounterException = throwingClose(
+            totalWriteTimeCounter, new IllegalStateException("totalWriteTimeCounter"));
+        final Counter maxWriteTimeCounter = mock(Counter.class);
+        final Exception maxWriteTimeCounterException = throwingClose(
+            maxWriteTimeCounter, new NumberFormatException("maxWriteTimeCounter"));
+        final Counter totalReadBytesCounter = mock(Counter.class);
+        final Exception totalReadBytesCounterException = throwingClose(
+            totalReadBytesCounter, new NumberFormatException("totalReadBytesCounter"));
+        final Counter totalReadTimeCounter = mock(Counter.class);
+        final Exception totalReadTimeCounterException = throwingClose(
+            totalReadTimeCounter, new NoSuchMethodException("totalReadTimeCounter"));
+        final Counter maxReadTimeCounter = mock(Counter.class);
+        final Exception maxReadTimeCounterException = throwingClose(
+            maxReadTimeCounter, new ConfigurationException("maxReadTimeCounter"));
+        final AtomicCounter errorCounter = mock(AtomicCounter.class);
+        final AtomicCounter conductorDutyCycleTrackerMaxCycleTime = mock(AtomicCounter.class);
+        final Exception conductorDutyCycleTrackerMaxCycleTimeException = throwingClose(
+            conductorDutyCycleTrackerMaxCycleTime, new NoSuchFileException("conductorDutyCycleTrackerMaxCycleTime"));
+        final AtomicCounter conductorDutyCycleTrackerCycleTimeThresholdExceededCount = mock(AtomicCounter.class);
+        final Exception conductorDutyCycleTrackerCycleTimeThresholdExceededCountException = throwingClose(
+            conductorDutyCycleTrackerCycleTimeThresholdExceededCount,
+            new NoSuchFileException("conductorDutyCycleTrackerMaxCycleTime"));
+        final AtomicCounter recorderDutyCycleTrackerMaxCycleTime = mock(AtomicCounter.class);
+        final Exception recorderDutyCycleTrackerMaxCycleTimeException = throwingClose(
+            recorderDutyCycleTrackerMaxCycleTime,
+            new UnsupportedOperationException("recorderDutyCycleTrackerMaxCycleTimeException"));
+        final AtomicCounter recorderDutyCycleTrackerCycleTimeThresholdExceededCount = mock(AtomicCounter.class);
+        final Exception recorderDutyCycleTrackerCycleTimeThresholdExceededCountException = throwingClose(
+            recorderDutyCycleTrackerCycleTimeThresholdExceededCount,
+            new UnsupportedOperationException("recorderDutyCycleTrackerCycleTimeThresholdExceededCount"));
+        final AtomicCounter replayerDutyCycleTrackerMaxCycleTime = mock(AtomicCounter.class);
+        final Exception replayerDutyCycleTrackerMaxCycleTimeException = throwingClose(
+            replayerDutyCycleTrackerMaxCycleTime,
+            new UnsupportedOperationException("replayerDutyCycleTrackerMaxCycleTime"));
+        final AtomicCounter replayerDutyCycleTrackerCycleTimeThresholdExceededCount = mock(AtomicCounter.class);
+        final Exception replayerDutyCycleTrackerCycleTimeThresholdExceededCountException = throwingClose(
+            replayerDutyCycleTrackerCycleTimeThresholdExceededCount,
+            new UnsupportedOperationException("replayerDutyCycleTrackerCycleTimeThresholdExceededCount"));
+        final ErrorHandler errorHandler = mock(ErrorHandler.class, withSettings().extraInterfaces(AutoCloseable.class));
+        final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
+        context.aeron(aeron);
+        context.archiveMarkFile(archiveMarkFile);
+        context.archiveDirChannel(archiveDirChannel);
+        context.catalog(catalog);
+        context.errorHandler(errorHandler);
+        context.errorCounter(errorCounter);
+        context.countedErrorHandler(countedErrorHandler);
+        context.controlSessionsCounter(controlSessionsCounter);
+        context.totalWriteBytesCounter(totalWriteBytesCounter);
+        context.totalWriteTimeCounter(totalWriteTimeCounter);
+        context.maxWriteTimeCounter(maxWriteTimeCounter);
+        context.totalReadBytesCounter(totalReadBytesCounter);
+        context.totalReadTimeCounter(totalReadTimeCounter);
+        context.maxReadTimeCounter(maxReadTimeCounter);
+        context.conductorDutyCycleTracker(new DutyCycleStallTracker(
+            conductorDutyCycleTrackerMaxCycleTime, conductorDutyCycleTrackerCycleTimeThresholdExceededCount, 1));
+        context.recorderDutyCycleTracker(new DutyCycleStallTracker(
+            recorderDutyCycleTrackerMaxCycleTime, recorderDutyCycleTrackerCycleTimeThresholdExceededCount, 1));
+        context.replayerDutyCycleTracker(new DutyCycleStallTracker(
+            replayerDutyCycleTrackerMaxCycleTime, replayerDutyCycleTrackerCycleTimeThresholdExceededCount, 1));
+
+        context.close();
+
+        final InOrder inOrder = inOrder(
+            aeron,
+            archiveMarkFile,
+            archiveDirChannel,
+            catalog,
+            errorHandler,
+            countedErrorHandler,
+            controlSessionsCounter,
+            totalWriteBytesCounter,
+            totalWriteTimeCounter,
+            maxWriteTimeCounter,
+            totalReadBytesCounter,
+            totalReadTimeCounter,
+            maxReadTimeCounter,
+            conductorDutyCycleTrackerMaxCycleTime,
+            conductorDutyCycleTrackerCycleTimeThresholdExceededCount,
+            recorderDutyCycleTrackerMaxCycleTime,
+            recorderDutyCycleTrackerCycleTimeThresholdExceededCount,
+            replayerDutyCycleTrackerMaxCycleTime,
+            replayerDutyCycleTrackerCycleTimeThresholdExceededCount,
+            errorCounter);
+        inOrder.verify(archiveDirChannel).close();
+        inOrder.verify(countedErrorHandler).onError(fileChannelException);
+        inOrder.verify(catalog).close();
+        inOrder.verify(countedErrorHandler).onError(catalogException);
+        inOrder.verify(controlSessionsCounter).close();
+        inOrder.verify(countedErrorHandler).onError(controlSessionsCounterException);
+        inOrder.verify(totalWriteBytesCounter).close();
+        inOrder.verify(countedErrorHandler).onError(totalWriteBytesCounterException);
+        inOrder.verify(totalWriteTimeCounter).close();
+        inOrder.verify(countedErrorHandler).onError(totalWriteTimeCounterException);
+        inOrder.verify(maxWriteTimeCounter).close();
+        inOrder.verify(countedErrorHandler).onError(maxWriteTimeCounterException);
+        inOrder.verify(totalReadBytesCounter).close();
+        inOrder.verify(countedErrorHandler).onError(totalReadBytesCounterException);
+        inOrder.verify(totalReadTimeCounter).close();
+        inOrder.verify(countedErrorHandler).onError(totalReadTimeCounterException);
+        inOrder.verify(maxReadTimeCounter).close();
+        inOrder.verify(countedErrorHandler).onError(maxReadTimeCounterException);
+        inOrder.verify(conductorDutyCycleTrackerMaxCycleTime).close();
+        inOrder.verify(countedErrorHandler).onError(conductorDutyCycleTrackerMaxCycleTimeException);
+        inOrder.verify(conductorDutyCycleTrackerCycleTimeThresholdExceededCount).close();
+        inOrder.verify(countedErrorHandler).onError(conductorDutyCycleTrackerCycleTimeThresholdExceededCountException);
+        inOrder.verify(recorderDutyCycleTrackerMaxCycleTime).close();
+        inOrder.verify(countedErrorHandler).onError(recorderDutyCycleTrackerMaxCycleTimeException);
+        inOrder.verify(recorderDutyCycleTrackerCycleTimeThresholdExceededCount).close();
+        inOrder.verify(countedErrorHandler).onError(recorderDutyCycleTrackerCycleTimeThresholdExceededCountException);
+        inOrder.verify(replayerDutyCycleTrackerMaxCycleTime).close();
+        inOrder.verify(countedErrorHandler).onError(replayerDutyCycleTrackerMaxCycleTimeException);
+        inOrder.verify(replayerDutyCycleTrackerCycleTimeThresholdExceededCount).close();
+        inOrder.verify(countedErrorHandler).onError(replayerDutyCycleTrackerCycleTimeThresholdExceededCountException);
+        inOrder.verify(errorCounter).close();
+        inOrder.verify((AutoCloseable)errorHandler).close();
+        inOrder.verify(archiveMarkFile).close();
+        inOrder.verifyNoMoreInteractions();
+    }
+
     private Counter mockArchiveCounter(
         final long archiveId, final int typeId, final int id, final ArgumentCaptor<DirectBuffer> tempBuffer)
     {
@@ -750,5 +936,11 @@ class ArchiveContextTest
         {
             return false;
         }
+    }
+
+    private static Exception throwingClose(final AutoCloseable resource, final Exception exception) throws Exception
+    {
+        doThrow(exception).when(resource).close();
+        return exception;
     }
 }

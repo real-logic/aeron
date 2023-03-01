@@ -2959,7 +2959,7 @@ public final class Archive implements AutoCloseable
 
         /**
          * Maximum number of catalog entries for the Archive.
-         *
+         * <p>
          * <b>Note: </b> This method has no effect.
          *
          * @param maxCatalogEntries for the archive.
@@ -2976,7 +2976,7 @@ public final class Archive implements AutoCloseable
 
         /**
          * Maximum number of catalog entries for the Archive.
-         *
+         * <p>
          * <b>Note: </b> This method is not used.
          *
          * @return maximum number of catalog entries for the Archive.

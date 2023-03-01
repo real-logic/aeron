@@ -109,6 +109,7 @@ final class Catalog implements AutoCloseable
     static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
     @Deprecated
     static final int DEFAULT_RECORD_LENGTH = 1024;
+    static final int DEFAULT_ALIGNMENT = 1024;
     static final long MAX_CATALOG_LENGTH = Integer.MAX_VALUE;
     static final long DEFAULT_CAPACITY = 1024 * 1024;
     static final long MIN_CAPACITY = CatalogHeaderDecoder.BLOCK_LENGTH;
@@ -303,8 +304,8 @@ final class Catalog implements AutoCloseable
             }
             else
             {
-                this.alignment = DEFAULT_RECORD_LENGTH;
-                firstRecordingDescriptorOffset = DEFAULT_RECORD_LENGTH;
+                this.alignment = DEFAULT_ALIGNMENT;
+                firstRecordingDescriptorOffset = DEFAULT_ALIGNMENT;
             }
 
             buildIndex(writable);

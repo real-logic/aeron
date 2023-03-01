@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 
 /**
- * An extensible list of information relating to a specific cluster node.  Used to track persistent state that is node
+ * An extensible list of information relating to a specific cluster node. Used to track persistent state that is node
  * specific and shouldn't be present in the snapshot.  E.g. candidateTermId.
  * <p>
  *     The structure consists of a node header at the beginning of the file followed by n entries that use the
@@ -288,7 +288,8 @@ public class NodeStateFile implements AutoCloseable
     }
 
     /**
-     * Set the current candidate term id with associated information
+     * Set the current candidate term id with associated information.
+     *
      * @param candidateTermId   current candidate term id
      * @param logPosition       log position where the term id change occurred
      * @param timestampMs       timestamp of the candidate term id change
@@ -303,7 +304,8 @@ public class NodeStateFile implements AutoCloseable
     }
 
     /**
-     * Set the current candidate term id with associated information
+     * Set the current candidate term id with associated information.
+     *
      * @param candidateTermId   current candidate term id
      * @param logPosition       log position where the term id change occurred
      * @param timestampMs       timestamp of the candidate term id change
@@ -344,6 +346,7 @@ public class NodeStateFile implements AutoCloseable
 
         /**
          * Gets the current candidateTermId.
+         *
          * @return the candidateTermId
          */
         public long candidateTermId()
@@ -362,7 +365,7 @@ public class NodeStateFile implements AutoCloseable
         }
 
         /**
-         * Get the log position of the latest candidateTermId update
+         * Get the log position of the latest candidateTermId update.
          *
          * @return log position.
          */

@@ -551,7 +551,7 @@ class ArchiveTest
 
     @Test
     @InterruptAfter(10)
-    void shouldRunWithControlChannelDisabled() throws IOException
+    void shouldRunWithControlChannelDisabled()
     {
         final int streamId = 7;
         final String channel = "aeron:ipc";

@@ -88,7 +88,7 @@ public abstract class Publication implements AutoCloseable
     final int streamId;
     final int sessionId;
     final int maxMessageLength;
-    final int maxRequiredLength;
+    final int maxFramedLength;
     final int initialTermId;
     final int maxPayloadLength;
     final int positionBitsToShift;
@@ -118,7 +118,7 @@ public abstract class Publication implements AutoCloseable
         this.termBufferLength = logBuffers.termLength();
         this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termBufferLength);
         this.maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
-        this.maxRequiredLength = calculateRequiredLength(maxMessageLength, maxPayloadLength);
+        this.maxFramedLength = computeFramedLength(maxMessageLength, maxPayloadLength);
         this.maxPossiblePosition = termBufferLength * (1L << 31);
         this.conductor = clientConductor;
         this.channel = channel;
@@ -140,14 +140,6 @@ public abstract class Publication implements AutoCloseable
             final int tailCounterOffset = TERM_TAIL_COUNTERS_OFFSET + (i * SIZE_OF_LONG);
             logMetaDataBuffer.boundsCheck(tailCounterOffset, SIZE_OF_LONG);
         }
-    }
-
-    static int calculateRequiredLength(final int length, final int maxPayloadLength)
-    {
-        final int numMaxPayloads = length / maxPayloadLength;
-        final int remainingPayload = length % maxPayloadLength;
-        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
-        return (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
     }
 
     /**
@@ -687,14 +679,13 @@ public abstract class Publication implements AutoCloseable
         }
     }
 
-    final void checkMaxRequiredLength(final int length)
+    static int computeFramedLength(final int length, final int maxPayloadLength)
     {
-        final int maxRequiredLength = calculateRequiredLength(maxMessageLength, maxPayloadLength);
-        if (length > maxRequiredLength)
-        {
-            throw new IllegalArgumentException(
-                "message exceeds maxRequiredLength of " + maxRequiredLength + ", length=" + length);
-        }
+        final int numMaxPayloads = length / maxPayloadLength;
+        final int remainingPayload = length % maxPayloadLength;
+        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
+
+        return (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
     }
 
     static int validateAndComputeLength(final int lengthOne, final int lengthTwo)

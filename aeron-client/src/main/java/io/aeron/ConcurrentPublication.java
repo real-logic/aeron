@@ -391,14 +391,14 @@ public final class ConcurrentPublication extends Publication
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int requiredLength = calculateRequiredLength(length, maxPayloadLength);
+        final int framedLength = computeFramedLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
-        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, requiredLength);
+        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, framedLength);
         final int termId = termId(rawTail);
         final int termOffset = termOffset(rawTail, termLength);
 
-        final int resultingOffset = termOffset + requiredLength;
+        final int resultingOffset = termOffset + framedLength;
         final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
         if (resultingOffset > termLength)
         {
@@ -503,14 +503,14 @@ public final class ConcurrentPublication extends Publication
         final ReservedValueSupplier reservedValueSupplier)
     {
         final int length = lengthOne + lengthTwo;
-        final int requiredLength = calculateRequiredLength(length, maxPayloadLength);
+        final int framedLength = computeFramedLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
-        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, requiredLength);
+        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, framedLength);
         final int termId = termId(rawTail);
         final int termOffset = termOffset(rawTail, termLength);
 
-        final int resultingOffset = termOffset + requiredLength;
+        final int resultingOffset = termOffset + framedLength;
         final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
         if (resultingOffset > termLength)
         {
@@ -634,14 +634,14 @@ public final class ConcurrentPublication extends Publication
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int requiredLength = calculateRequiredLength(length, maxPayloadLength);
+        final int framedLength = computeFramedLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
-        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, requiredLength);
+        final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, framedLength);
         final int termId = termId(rawTail);
         final int termOffset = termOffset(rawTail, termLength);
 
-        final int resultingOffset = termOffset + requiredLength;
+        final int resultingOffset = termOffset + framedLength;
         final long position = computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
         if (resultingOffset > termLength)
         {

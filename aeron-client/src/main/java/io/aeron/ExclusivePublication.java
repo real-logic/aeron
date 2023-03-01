@@ -426,19 +426,19 @@ public final class ExclusivePublication extends ExclusivePublicationValues
     }
 
     /**
-     * Append a padding record log of a given length to make up the log to a position.
+     * Append a padding record to log of a given length to make up the log to a position.
      *
      * @param length of the range to claim, in bytes.
      * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
      * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
-     * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}.
+     * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength() framed}.
      */
     public long appendPadding(final int length)
     {
-        if (length > maxRequiredLength)
+        if (length > maxFramedLength)
         {
             throw new IllegalArgumentException(
-                "padding message exceeds maxRequiredLength of " + maxRequiredLength + ", length=" + length);
+                "padding exceeds maxFramedLength of " + maxFramedLength + ", length=" + length);
         }
 
         long newPosition = CLOSED;
@@ -638,10 +638,10 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int requiredLength = calculateRequiredLength(length, maxPayloadLength);
+        final int framedLength = computeFramedLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
-        int resultingOffset = termOffset + requiredLength;
+        int resultingOffset = termOffset + framedLength;
         logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
 
         if (resultingOffset > termLength)
@@ -744,10 +744,10 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final ReservedValueSupplier reservedValueSupplier)
     {
         final int length = lengthOne + lengthTwo;
-        final int requiredLength = calculateRequiredLength(length, maxPayloadLength);
+        final int framedLength = computeFramedLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
-        int resultingOffset = termOffset + requiredLength;
+        int resultingOffset = termOffset + framedLength;
         logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
 
         if (resultingOffset > termLength)
@@ -869,10 +869,10 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int requiredLength = calculateRequiredLength(length, maxPayloadLength);
+        final int framedLength = computeFramedLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
-        int resultingOffset = termOffset + requiredLength;
+        int resultingOffset = termOffset + framedLength;
         logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
 
         if (resultingOffset > termLength)

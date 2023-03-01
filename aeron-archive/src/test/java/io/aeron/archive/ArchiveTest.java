@@ -85,10 +85,7 @@ import static org.mockito.Mockito.when;
 @SuppressWarnings("try")
 class ArchiveTest
 {
-    private static final FragmentHandler NO_OP_FRAGMENT_HANDLER = (buffer, offset, length, header) ->
-    {
-        // No-op
-    };
+    private static final FragmentHandler NO_OP_FRAGMENT_HANDLER = (buffer, offset, length, header) -> {};
 
     @Test
     void shouldGenerateRecordingName()

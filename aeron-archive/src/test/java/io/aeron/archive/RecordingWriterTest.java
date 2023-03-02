@@ -71,7 +71,7 @@ class RecordingWriterTest
     {
         final Image image = mockImage(0L);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null, null);
+            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null);
         final File segmentFile = segmentFile(1, 0);
         assertFalse(segmentFile.exists());
 
@@ -94,7 +94,7 @@ class RecordingWriterTest
 
         final Image image = mockImage(0L);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(notADirectory), null, null, null);
+            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(notADirectory), null);
 
         assertThrows(IOException.class, recordingWriter::init);
     }
@@ -104,7 +104,7 @@ class RecordingWriterTest
     {
         final Image image = mockImage(0L);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null, null);
+            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null);
         recordingWriter.init();
 
         recordingWriter.close();
@@ -124,9 +124,7 @@ class RecordingWriterTest
             SEGMENT_LENGTH,
             image,
             new Context().archiveDir(archiveDir),
-            new MutableLong(),
-            new MutableLong(),
-            new MutableLong());
+            mock(ArchiveConductor.Recorder.class));
 
         assertThrows(
             NullPointerException.class,
@@ -139,7 +137,7 @@ class RecordingWriterTest
         final Image image = mockImage(0L);
         final RecordingWriter recordingWriter = new RecordingWriter(
             1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir)
-            .nanoClock(SystemNanoClock.INSTANCE), new MutableLong(), new MutableLong(), new MutableLong());
+            .nanoClock(SystemNanoClock.INSTANCE), mock(ArchiveConductor.Recorder.class));
         recordingWriter.init();
 
         assertFalse(Thread.interrupted());
@@ -164,12 +162,10 @@ class RecordingWriterTest
         final Image image = mockImage(0L);
         final NanoClock clock = mock(NanoClock.class);
         when(clock.nanoTime()).thenReturn(3L, 150L, 200L, 999L);
-        final MutableLong totalBytesWritten = new MutableLong();
-        final MutableLong totalWriteTimeNs = new MutableLong();
-        final MutableLong maxWriteTimeNs = new MutableLong();
+        final ArchiveConductor.Recorder mockRecorder = mock(ArchiveConductor.Recorder.class);
         final RecordingWriter recordingWriter = new RecordingWriter(
             1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir)
-            .nanoClock(clock), totalBytesWritten, totalWriteTimeNs, maxWriteTimeNs);
+            .nanoClock(clock), mockRecorder);
         recordingWriter.init();
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(128));
         frameType(termBuffer, 0, HDR_TYPE_DATA);
@@ -182,9 +178,8 @@ class RecordingWriterTest
 
         recordingWriter.close();
 
-        assertEquals(128, totalBytesWritten.get());
-        assertEquals(147, totalWriteTimeNs.get());
-        assertEquals(147, maxWriteTimeNs.get());
+        verify(mockRecorder).bytesWritten(128);
+        verify(mockRecorder).writeTimeNs(147);
 
         final File segmentFile = segmentFile(1, 0);
         assertTrue(segmentFile.exists());
@@ -213,9 +208,7 @@ class RecordingWriterTest
             SEGMENT_LENGTH,
             image,
             new Context().archiveDir(archiveDir).nanoClock(SystemNanoClock.INSTANCE),
-            new MutableLong(),
-            new MutableLong(),
-            new MutableLong());
+            mock(ArchiveConductor.Recorder.class));
         recordingWriter.init();
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(1024));
         frameType(termBuffer, 0, HDR_TYPE_PAD);
@@ -254,14 +247,12 @@ class RecordingWriterTest
         final Image image = mockImage(0L);
         final NanoClock clock = mock(NanoClock.class);
         final MutableLong time = new MutableLong(100);
-        doAnswer(invocation ->
+        doAnswer((invocation) ->
             time.addAndGet(BitUtil.isEven(time.get()) ? 111 : 224)).when(clock).nanoTime();
-        final MutableLong totalBytesWritten = new MutableLong();
-        final MutableLong totalWriteTimeNs = new MutableLong();
-        final MutableLong maxWriteTimeNs = new MutableLong();
+        final ArchiveConductor.Recorder mockRecorder = mock(ArchiveConductor.Recorder.class);
         final RecordingWriter recordingWriter = new RecordingWriter(
             13, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir)
-            .nanoClock(clock), totalBytesWritten, totalWriteTimeNs, maxWriteTimeNs);
+            .nanoClock(clock), mockRecorder);
         recordingWriter.init();
 
         final byte[] data1 = new byte[992];
@@ -285,10 +276,6 @@ class RecordingWriterTest
 
         recordingWriter.onBlock(termBuffer, 0, 192, -1, -1);
         recordingWriter.close();
-
-        assertEquals(262336, totalBytesWritten.get());
-        assertEquals(57568, totalWriteTimeNs.get());
-        assertEquals(224, maxWriteTimeNs.get());
 
         final File segmentFile1 = segmentFile(13, 0);
         assertTrue(segmentFile1.exists());
@@ -325,7 +312,7 @@ class RecordingWriterTest
             .nanoClock(SystemNanoClock.INSTANCE);
 
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, ctx, new MutableLong(), new MutableLong(), new MutableLong());
+            1, 0, SEGMENT_LENGTH, image, ctx, mock(ArchiveConductor.Recorder.class));
 
         recordingWriter.init();
 
@@ -377,7 +364,7 @@ class RecordingWriterTest
             .recordChecksum(crc32())
             .nanoClock(SystemNanoClock.INSTANCE);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, ctx, new MutableLong(), new MutableLong(), new MutableLong());
+            1, 0, SEGMENT_LENGTH, image, ctx, mock(ArchiveConductor.Recorder.class));
 
         recordingWriter.init();
 

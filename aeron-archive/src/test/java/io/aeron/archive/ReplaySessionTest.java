@@ -27,7 +27,6 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.NanoClock;
@@ -80,13 +79,6 @@ class ReplaySessionTest
     private final ArchiveConductor mockArchiveConductor = mock(ArchiveConductor.class);
     private final Counter recordingPositionCounter = mock(Counter.class);
     private final UnsafeBuffer replayBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
-
-    private final MutableLong totalWriteBytes = new MutableLong();
-    private final MutableLong totalWriteTimeNs = new MutableLong();
-    private final MutableLong maxWriteTimeNs = new MutableLong();
-    private final MutableLong totalReadBytes = new MutableLong();
-    private final MutableLong totalReadTimeNs = new MutableLong();
-    private final MutableLong maxReadTimeNs = new MutableLong();
     private int messageCounter = 0;
     private int offerBlockOffset = 0;
 
@@ -147,9 +139,7 @@ class ReplaySessionTest
             SEGMENT_LENGTH,
             mockImage,
             context,
-            totalWriteBytes,
-            totalWriteTimeNs,
-            maxWriteTimeNs);
+            mock(ArchiveConductor.Recorder.class));
 
         writer.init();
 
@@ -271,9 +261,6 @@ class ReplaySessionTest
             assertThat(messageCounter, is(1));
 
             validateFrame(termBuffer, 0, FRAME_LENGTH, 0, UNFRAGMENTED, sessionId, streamId);
-            assertEquals(3072, totalReadBytes.get());
-            assertEquals(2560, totalReadTimeNs.get());
-            assertEquals(2560, maxReadTimeNs.get());
             assertTrue(replaySession.isDone());
         }
     }
@@ -381,9 +368,7 @@ class ReplaySessionTest
             SEGMENT_LENGTH,
             mockImage,
             context,
-            totalWriteBytes,
-            totalWriteTimeNs,
-            maxWriteTimeNs);
+            mock(ArchiveConductor.Recorder.class));
 
         writer.init();
 
@@ -493,9 +478,7 @@ class ReplaySessionTest
             SEGMENT_LENGTH,
             mockImage,
             context,
-            totalWriteBytes,
-            totalWriteTimeNs,
-            maxWriteTimeNs);
+            mock(ArchiveConductor.Recorder.class));
 
         writer.init();
 
@@ -614,9 +597,7 @@ class ReplaySessionTest
             SEGMENT_LENGTH,
             mockImage,
             context,
-            totalWriteBytes,
-            totalWriteTimeNs,
-            maxWriteTimeNs);
+            mock(ArchiveConductor.Recorder.class));
 
         writer.init();
 
@@ -670,7 +651,6 @@ class ReplaySessionTest
 
             verify(mockReplayPub, never()).appendPadding(anyInt());
         }
-
     }
 
     private void recordFragment(
@@ -758,9 +738,7 @@ class ReplaySessionTest
             recordingSummary,
             recordingPositionCounter,
             checksum,
-            totalReadBytes,
-            totalReadTimeNs,
-            maxReadTimeNs);
+            mock(ArchiveConductor.Replayer.class));
     }
 
     static void validateFrame(

@@ -24,7 +24,6 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.NanoClock;
@@ -93,9 +92,7 @@ class ReplaySession implements Session, AutoCloseable
     private final CachedEpochClock epochClock;
 
     private final NanoClock nanoClock;
-    final MutableLong totalReadBytes;
-    final MutableLong totalReadTimeNs;
-    final MutableLong maxReadTimeNs;
+    final ArchiveConductor.Replayer replayer;
     private final File archiveDir;
     private final Catalog catalog;
     private final Counter limitPosition;
@@ -124,9 +121,7 @@ class ReplaySession implements Session, AutoCloseable
         final RecordingSummary recordingSummary,
         final Counter replayLimitPosition,
         final Checksum checksum,
-        final MutableLong totalReadBytes,
-        final MutableLong totalReadTimeNs,
-        final MutableLong maxReadTimeNs)
+        final ArchiveConductor.Replayer replayer)
     {
         this.controlSession = controlSession;
         this.sessionId = replaySessionId;
@@ -147,9 +142,7 @@ class ReplaySession implements Session, AutoCloseable
         this.checksum = checksum;
         this.startPosition = recordingSummary.startPosition;
         this.stopPosition = null == limitPosition ? recordingSummary.stopPosition : limitPosition.get();
-        this.totalReadBytes = totalReadBytes;
-        this.totalReadTimeNs = totalReadTimeNs;
-        this.maxReadTimeNs = maxReadTimeNs;
+        this.replayer = replayer;
 
         final long fromPosition = position == NULL_POSITION ? startPosition : position;
         final long maxLength = null == limitPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
@@ -430,9 +423,8 @@ class ReplaySession implements Session, AutoCloseable
                 }
 
                 final long readTimeNs = nanoClock.nanoTime() - startNs;
-                totalReadBytes.getAndAdd(bytesRead);
-                totalReadTimeNs.getAndAdd(readTimeNs);
-                maxReadTimeNs.set(Math.max(readTimeNs, maxReadTimeNs.get()));
+                replayer.bytesRead(bytesRead);
+                replayer.readTimeNs(readTimeNs);
 
                 if (batchOffset > 0)
                 {

@@ -23,7 +23,6 @@ import io.aeron.logbuffer.BlockHandler;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -65,9 +64,7 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
     private final NanoClock nanoClock;
     private final Archive.Context ctx;
 
-    private final MutableLong totalBytesWritten;
-    private final MutableLong totalWriteTimeNs;
-    private final MutableLong maxWriteTimeNs;
+    private final ArchiveConductor.Recorder recorder;
 
     private long segmentBasePosition;
     private int segmentOffset;
@@ -81,9 +78,7 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
         final int segmentLength,
         final Image image,
         final Archive.Context ctx,
-        final MutableLong totalBytesWritten,
-        final MutableLong totalWriteTimeNs,
-        final MutableLong maxWriteTimeNs)
+        final ArchiveConductor.Recorder recorder)
     {
         this.recordingId = recordingId;
         this.archiveDirChannel = ctx.archiveDirChannel();
@@ -98,9 +93,7 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
         checksum = ctx.recordChecksum();
         nanoClock = ctx.nanoClock();
         this.ctx = ctx;
-        this.totalBytesWritten = totalBytesWritten;
-        this.totalWriteTimeNs = totalWriteTimeNs;
-        this.maxWriteTimeNs = maxWriteTimeNs;
+        this.recorder = recorder;
 
         final int termLength = image.termBufferLength();
         final long joinPosition = image.joinPosition();
@@ -147,9 +140,8 @@ final class RecordingWriter implements BlockHandler, AutoCloseable
             }
 
             final long writeTimeNs = nanoClock.nanoTime() - startNs;
-            totalBytesWritten.getAndAdd(dataLength);
-            totalWriteTimeNs.getAndAdd(writeTimeNs);
-            maxWriteTimeNs.set(Math.max(maxWriteTimeNs.get(), writeTimeNs));
+            recorder.bytesWritten(dataLength);
+            recorder.writeTimeNs(writeTimeNs);
 
             segmentOffset += length;
             if (segmentOffset >= segmentLength)

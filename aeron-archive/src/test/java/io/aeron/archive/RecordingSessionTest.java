@@ -25,7 +25,6 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -67,11 +66,6 @@ class RecordingSessionTest
     private final Counter mockPosition = mock(Counter.class);
     private final Image image = mockImage(mockSubscription());
     private final File archiveDir = ArchiveTests.makeTestDirectory();
-
-    private final MutableLong totalBytesWritten = new MutableLong();
-    private final MutableLong totalWriteTimeNs = new MutableLong();
-    private final MutableLong maxWriteTimeNs = new MutableLong();
-
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
     private Path termFilePath;
@@ -148,9 +142,7 @@ class RecordingSessionTest
             context,
             CONTROL_SESSION,
             false,
-            totalBytesWritten,
-            totalWriteTimeNs,
-            maxWriteTimeNs);
+            mock(ArchiveConductor.Recorder.class));
 
         assertEquals(RECORDING_ID, session.sessionId());
 
@@ -177,10 +169,6 @@ class RecordingSessionTest
 
         assertNotEquals(0, session.doWork(), "Expect some work");
         assertNotEquals(0, session.doWork(), "Expect some work");
-
-        assertEquals(RECORDED_BLOCK_LENGTH * 2, totalBytesWritten.get());
-        assertEquals(10, totalWriteTimeNs.get());
-        assertEquals(8, maxWriteTimeNs.get());
 
         final File segmentFile = new File(archiveDir, segmentFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());

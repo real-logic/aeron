@@ -33,7 +33,6 @@ import org.agrona.*;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2LongCounterMap;
 import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.collections.MutableLong;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
@@ -738,9 +737,7 @@ abstract class ArchiveConductor
             recordingSummary,
             replayLimitPosition,
             ctx.replayChecksum(),
-            replayer.totalReadBytes,
-            replayer.totalReadTimeNs,
-            replayer.maxReadTimeNs);
+            replayer);
 
         replaySessionByIdMap.put(replaySessionId, replaySession);
         replayer.addSession(replaySession);
@@ -1667,9 +1664,7 @@ abstract class ArchiveConductor
             ctx,
             controlSession,
             autoStop,
-            recorder.totalWriteBytes,
-            recorder.totalWriteTimeNs,
-            recorder.maxWriteTimeNs);
+            recorder);
 
         controlSession.sendSignal(
             correlationId,
@@ -1730,9 +1725,7 @@ abstract class ArchiveConductor
                 ctx,
                 controlSession,
                 autoStop,
-                recorder.totalWriteBytes,
-                recorder.totalWriteTimeNs,
-                recorder.maxWriteTimeNs);
+                recorder);
 
             catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
             controlSession.sendSignal(
@@ -2145,9 +2138,9 @@ abstract class ArchiveConductor
 
     abstract static class Recorder extends SessionWorker<RecordingSession>
     {
-        final MutableLong totalWriteBytes = new MutableLong();
-        final MutableLong totalWriteTimeNs = new MutableLong();
-        final MutableLong maxWriteTimeNs = new MutableLong();
+        private long totalWriteBytes;
+        private long totalWriteTimeNs;
+        private long maxWriteTimeNs;
         private final Counter totalWriteBytesCounter;
         private final Counter totalWriteTimeCounter;
         private final Counter maxWriteTimeCounter;
@@ -2160,24 +2153,40 @@ abstract class ArchiveConductor
             maxWriteTimeCounter = context.maxWriteTimeCounter();
         }
 
+        final void bytesWritten(final long bytes)
+        {
+            totalWriteBytes += bytes;
+        }
+
+        final void writeTimeNs(final long nanos)
+        {
+            totalWriteTimeNs += nanos;
+
+            if (nanos > maxWriteTimeNs)
+            {
+                maxWriteTimeNs = nanos;
+            }
+        }
+
         public int doWork()
         {
             final int workCount = super.doWork();
             if (workCount > 0)
             {
-                totalWriteBytesCounter.setOrdered(totalWriteBytes.get());
-                totalWriteTimeCounter.setOrdered(totalWriteTimeNs.get());
-                maxWriteTimeCounter.setOrdered(maxWriteTimeNs.get());
+                totalWriteBytesCounter.setOrdered(totalWriteBytes);
+                totalWriteTimeCounter.setOrdered(totalWriteTimeNs);
+                maxWriteTimeCounter.setOrdered(maxWriteTimeNs);
             }
+
             return workCount;
         }
     }
 
     abstract static class Replayer extends SessionWorker<ReplaySession>
     {
-        final MutableLong totalReadBytes = new MutableLong();
-        final MutableLong totalReadTimeNs = new MutableLong();
-        final MutableLong maxReadTimeNs = new MutableLong();
+        private long totalReadBytes;
+        private long totalReadTimeNs;
+        private long maxReadTimeNs;
         private final Counter totalReadBytesCounter;
         private final Counter totalReadTimeCounter;
         private final Counter maxReadTimeCounter;
@@ -2190,15 +2199,31 @@ abstract class ArchiveConductor
             maxReadTimeCounter = context.maxReadTimeCounter();
         }
 
+        final void bytesRead(final long bytes)
+        {
+            totalReadBytes += bytes;
+        }
+
+        final void readTimeNs(final long nanos)
+        {
+            totalReadTimeNs += nanos;
+
+            if (nanos > maxReadTimeNs)
+            {
+                maxReadTimeNs = nanos;
+            }
+        }
+
         public int doWork()
         {
             final int workCount = super.doWork();
             if (workCount > 0)
             {
-                totalReadBytesCounter.setOrdered(totalReadBytes.get());
-                totalReadTimeCounter.setOrdered(totalReadTimeNs.get());
-                maxReadTimeCounter.setOrdered(maxReadTimeNs.get());
+                totalReadBytesCounter.setOrdered(totalReadBytes);
+                totalReadTimeCounter.setOrdered(totalReadTimeNs);
+                maxReadTimeCounter.setOrdered(maxReadTimeNs);
             }
+
             return workCount;
         }
     }

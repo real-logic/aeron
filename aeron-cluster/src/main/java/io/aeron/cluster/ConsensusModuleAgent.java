@@ -448,40 +448,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         pendingServiceMessageTrackers[0].loadState(nextServiceSessionId, logServiceSessionId, pendingMessageCapacity);
     }
 
-    public void onLoadClusterMembers(
-        final int memberId,
-        final int highMemberId,
-        final String members,
-        final DirectBuffer buffer,
-        final int offset,
-        final int length)
-    {
-        if (null == dynamicJoin && !ctx.clusterMembersIgnoreSnapshot())
-        {
-            if (NULL_VALUE == this.memberId)
-            {
-                this.memberId = memberId;
-                ctx.clusterMarkFile().memberId(memberId);
-            }
-
-            if (ClusterMember.EMPTY_MEMBERS == activeMembers)
-            {
-                activeMembers = ClusterMember.parse(members);
-                this.highMemberId = Math.max(ClusterMember.highMemberId(activeMembers), highMemberId);
-                rankedPositions = new long[ClusterMember.quorumThreshold(activeMembers.length)];
-                thisMember = clusterMemberByIdMap.get(memberId);
-
-                ClusterMember.addConsensusPublications(
-                    activeMembers,
-                    thisMember,
-                    ctx.consensusChannel(),
-                    ctx.consensusStreamId(),
-                    aeron,
-                    ctx.countedErrorHandler());
-            }
-        }
-    }
-
     public void onLoadPendingMessageTracker(
         final long nextServiceSessionId,
         final long logServiceSessionId,
@@ -1590,6 +1556,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             {
                 election.onMembershipChange(activeMembers, changeType, memberId, logPosition);
             }
+
+            ctx.nodeStateFile().updateClusterMembers(leadershipTermId, memberId, highMemberId, clusterMembers);
         }
     }
 
@@ -3377,7 +3345,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final PendingServiceMessageTracker trackerOne = pendingServiceMessageTrackers[0];
         snapshotTaker.snapshotConsensusModuleState(
             nextSessionId, trackerOne.nextServiceSessionId(), trackerOne.logServiceSessionId(), trackerOne.size());
-        snapshotTaker.snapshotClusterMembers(memberId, highMemberId, ClusterMember.encodeAsString(activeMembers));
 
         for (int i = 0, size = sessions.size(); i < size; i++)
         {

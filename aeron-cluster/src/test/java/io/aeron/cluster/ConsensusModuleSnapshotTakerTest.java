@@ -43,7 +43,6 @@ class ConsensusModuleSnapshotTakerTest
     private final PendingMessageTrackerDecoder pendingMessageTrackerDecoder = new PendingMessageTrackerDecoder();
     private final TimerDecoder timerDecoder = new TimerDecoder();
     private final ClusterSessionDecoder clusterSessionDecoder = new ClusterSessionDecoder();
-    private final ClusterMembersDecoder clusterMembersDecoder = new ClusterMembersDecoder();
     private final ExclusivePublication publication = mock(ExclusivePublication.class);
     private final IdleStrategy idleStrategy = mock(IdleStrategy.class);
 
@@ -214,69 +213,6 @@ class ConsensusModuleSnapshotTakerTest
         assertEquals(clusterSession.closeReason(), clusterSessionDecoder.closeReason());
         assertEquals(clusterSession.responseStreamId(), clusterSessionDecoder.responseStreamId());
         assertEquals(responseChannel, clusterSessionDecoder.responseChannel());
-    }
-
-    @Test
-    void snapshotClusterMembersShouldUseTryClaimIfDataFitsIntoMaxPayloadSize()
-    {
-        final int offset = 120;
-        final int memberId = 2;
-        final int highMemberId = 8;
-        final String clusterMembers = "0,ingress:port,consensus:port,log:port,catchup:port,archive:port|" +
-            "1,ingress:port,consensus:port,log:port,catchup:port,archive:port|" +
-            "2,ingress:port,consensus:port,log:port,catchup:port,archive:port";
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersEncoder.BLOCK_LENGTH +
-            ClusterMembersEncoder.clusterMembersHeaderLength() + clusterMembers.length();
-        when(publication.maxPayloadLength()).thenReturn(length);
-        when(publication.tryClaim(eq(length), any()))
-            .thenReturn(ADMIN_ACTION)
-            .thenAnswer(mockTryClaim(offset));
-
-        snapshotTaker.snapshotClusterMembers(memberId, highMemberId, clusterMembers);
-
-        final InOrder inOrder = inOrder(idleStrategy, publication);
-        inOrder.verify(publication).maxPayloadLength();
-        inOrder.verify(idleStrategy).reset();
-        inOrder.verify(publication).tryClaim(anyInt(), any());
-        inOrder.verify(idleStrategy).idle();
-        inOrder.verify(publication).tryClaim(anyInt(), any());
-        inOrder.verifyNoMoreInteractions();
-
-        clusterMembersDecoder.wrapAndApplyHeader(buffer, offset + HEADER_LENGTH, messageHeaderDecoder);
-        assertEquals(memberId, clusterMembersDecoder.memberId());
-        assertEquals(highMemberId, clusterMembersDecoder.highMemberId());
-        assertEquals(clusterMembers, clusterMembersDecoder.clusterMembers());
-    }
-
-    @Test
-    void snapshotClusterMembersShouldUseOfferIfDataDoesNotFitIntoMaxPayloadSize()
-    {
-        final int memberId = 2;
-        final int highMemberId = 8;
-        final String clusterMembers = "0,ingress:port,consensus:port,log:port,catchup:port,archive:port|" +
-            "1,ingress:port,consensus:port,log:port,catchup:port,archive:port|" +
-            "2,ingress:port,consensus:port,log:port,catchup:port,archive:port";
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersEncoder.BLOCK_LENGTH +
-            ClusterMembersEncoder.clusterMembersHeaderLength() + clusterMembers.length();
-        when(publication.maxPayloadLength()).thenReturn(40);
-        when(publication.offer(any(), eq(0), eq(length)))
-            .thenReturn(BACK_PRESSURED)
-            .thenAnswer(mockOffer());
-
-        snapshotTaker.snapshotClusterMembers(memberId, highMemberId, clusterMembers);
-
-        final InOrder inOrder = inOrder(idleStrategy, publication);
-        inOrder.verify(publication).maxPayloadLength();
-        inOrder.verify(idleStrategy).reset();
-        inOrder.verify(publication).offer(any(), anyInt(), anyInt());
-        inOrder.verify(idleStrategy).idle();
-        inOrder.verify(publication).offer(any(), anyInt(), anyInt());
-        inOrder.verifyNoMoreInteractions();
-
-        clusterMembersDecoder.wrapAndApplyHeader(buffer, 0, messageHeaderDecoder);
-        assertEquals(memberId, clusterMembersDecoder.memberId());
-        assertEquals(highMemberId, clusterMembersDecoder.highMemberId());
-        assertEquals(clusterMembers, clusterMembersDecoder.clusterMembers());
     }
 
     private Answer<Long> mockTryClaim(final int offset)

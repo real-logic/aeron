@@ -177,19 +177,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                 break;
 
             case ClusterMembersDecoder.TEMPLATE_ID:
-                clusterMembersDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                listener.onLoadClusterMembers(
-                    clusterMembersDecoder.memberId(),
-                    clusterMembersDecoder.highMemberId(),
-                    clusterMembersDecoder.clusterMembers(),
-                    buffer,
-                    offset,
-                    length);
+                // Ignored
                 break;
 
             case PendingMessageTrackerDecoder.TEMPLATE_ID:

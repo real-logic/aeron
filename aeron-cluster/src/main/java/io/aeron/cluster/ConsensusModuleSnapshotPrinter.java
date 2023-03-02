@@ -58,20 +58,6 @@ class ConsensusModuleSnapshotPrinter implements ConsensusModuleSnapshotListener
             " pendingMessageCapacity=" + pendingMessageCapacity);
     }
 
-    public void onLoadClusterMembers(
-        final int memberId,
-        final int highMemberId,
-        final String clusterMembers,
-        final DirectBuffer buffer,
-        final int offset,
-        final int length)
-    {
-        out.println("Cluster Members:" +
-            " memberId=" + memberId +
-            " highMemberId=" + highMemberId +
-            " clusterMembers=" + clusterMembers);
-    }
-
     public void onLoadPendingMessage(
         final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
     {

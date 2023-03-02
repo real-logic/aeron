@@ -601,16 +601,6 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         {
         }
 
-        public void onLoadClusterMembers(
-            final int memberId,
-            final int highMemberId,
-            final String clusterMembers,
-            final DirectBuffer buffer,
-            final int offset,
-            final int length)
-        {
-        }
-
         public void onLoadPendingMessage(
             final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
         {

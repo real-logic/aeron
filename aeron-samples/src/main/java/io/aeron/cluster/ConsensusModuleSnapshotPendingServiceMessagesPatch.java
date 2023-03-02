@@ -324,16 +324,6 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
             maxClusterSessionId = max(maxClusterSessionId, clusterSessionId);
         }
 
-        public void onLoadClusterMembers(
-            final int memberId,
-            final int highMemberId,
-            final String clusterMembers,
-            final DirectBuffer buffer,
-            final int offset,
-            final int length)
-        {
-        }
-
         public void onLoadClusterSession(
             final long clusterSessionId,
             final long correlationId,
@@ -421,17 +411,6 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
                 .nextServiceSessionId(targetNextServiceSessionId);
 
             writeToSnapshot(tempBuffer, 0, length);
-        }
-
-        public void onLoadClusterMembers(
-            final int memberId,
-            final int highMemberId,
-            final String clusterMembers,
-            final DirectBuffer buffer,
-            final int offset,
-            final int length)
-        {
-            writeToSnapshot(buffer, offset, length);
         }
 
         public void onLoadPendingMessage(

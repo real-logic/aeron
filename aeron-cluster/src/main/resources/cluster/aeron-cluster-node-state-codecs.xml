@@ -15,6 +15,8 @@ Codec for the persistent local state of a cluster node.
             <type name="templateId"     primitiveType="uint16"/>
             <type name="schemaId"       primitiveType="uint16"/>
             <type name="version"        primitiveType="uint16"/>
+            <type name="frameLength"    primitiveType="int32"/>
+            <type name="padding"   primitiveType="int32"/>
         </composite>
         <composite name="groupSizeEncoding" description="Repeating group dimensions.">
             <type name="blockLength"    primitiveType="uint16"/>
@@ -33,6 +35,7 @@ Codec for the persistent local state of a cluster node.
 
     <sbe:message name="nodeStateHeader" id="300">
         <field name="version" id="1" type="int32"/>
+        <field name="padding" id="2" type="int32"/>
     </sbe:message>
 
     <sbe:message name="candidateTerm" id="301">
@@ -41,9 +44,15 @@ Codec for the persistent local state of a cluster node.
         <field name="logPosition"       id="3" type="int64"/>
     </sbe:message>
 
-    <sbe:message name="FramingHeader" id="302">
-        <field name="messageLength" id="1" type="uint32"/>
-        <field name="encodingType"  id="2" type="uint32"/>
+    <sbe:message name="ClusterMembers"
+                 id="303"
+                 description="Serialised state of Cluster Members.">
+        <field name="leadershipTermId"         id="1" type="int64"/>
+        <field name="memberId"                 id="2" type="int32"/>
+        <field name="highMemberId"             id="3" type="int32"/>
+        <data  name="clusterMembers"           id="4" type="varAsciiEncoding"/>
     </sbe:message>
+
+    <sbe:message name="nodeStateFooter" id="304"/>
 
 </sbe:messageSchema>

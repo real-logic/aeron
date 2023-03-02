@@ -3,7 +3,7 @@
                    package="io.aeron.cluster.codecs.mark"
                    id="110"
                    version="0"
-                   semanticVersion="5.2"
+                   semanticVersion="5.3"
                    description="Codecs for Mark file of an Aeron Cluster."
                    byteOrder="littleEndian">
     <types>

@@ -8,7 +8,7 @@ Codec for the persistent local state of a cluster node.
                    id="112"
                    version="10"
                    semanticVersion="5.3"
-                   description="Message Codecs for communicating with, and within, an Aeron Cluster.">
+                   description="Message Codecs for the persistent state of a node in Aeron Cluster.">
     <types>
         <composite name="messageHeader" description="Message identifiers and length of message root.">
             <type name="blockLength"    primitiveType="uint16"/>
@@ -16,7 +16,7 @@ Codec for the persistent local state of a cluster node.
             <type name="schemaId"       primitiveType="uint16"/>
             <type name="version"        primitiveType="uint16"/>
             <type name="frameLength"    primitiveType="int32"/>
-            <type name="padding"   primitiveType="int32"/>
+            <type name="padding"        primitiveType="int32"/>
         </composite>
         <composite name="groupSizeEncoding" description="Repeating group dimensions.">
             <type name="blockLength"    primitiveType="uint16"/>
@@ -25,10 +25,6 @@ Codec for the persistent local state of a cluster node.
         <composite name="varAsciiEncoding" description="Variable length ASCII string header.">
             <type name="length"         primitiveType="uint32" maxValue="1073741824"/>
             <type name="varData"        primitiveType="uint8" length="0" characterEncoding="US-ASCII"/>
-        </composite>
-        <composite name="varDataEncoding" description="Variable length data blob header.">
-            <type name="length"         primitiveType="uint32" maxValue="1073741824"/>
-            <type name="varData"        primitiveType="uint8" length="0"/>
         </composite>
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
     </types>

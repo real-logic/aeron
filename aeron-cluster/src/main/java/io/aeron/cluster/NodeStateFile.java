@@ -31,7 +31,7 @@ import static org.agrona.concurrent.UnsafeBuffer.ALIGNMENT;
 
 /**
  * An extensible list of information relating to a specific cluster node. Used to track persistent state that is node
- * specific and shouldn't be present in the snapshot.  E.g. candidateTermId.
+ * specific and shouldn't be present in the snapshot. E.g. candidateTermId.
  * <p>
  *     The structure consists of a node header at the beginning of the file followed by n entries that use the
  *     standard open framing header, followed by the message header, and finally the body.
@@ -44,9 +44,9 @@ import static org.agrona.concurrent.UnsafeBuffer.ALIGNMENT;
  *  +---------------------------------------------------------------+
  *  </pre>
  *  <p>
- *      Entry.  All records must be laid so that the body has an 8-byte alignment.  Fields with the that requires
- *      volatile accesses must be aligned to an 8 byte boundary.  The message header is 8-bytes long to aid with this.
- *      Records are padded to an 8-byte boundary before the next record.
+ *      Entry. All records must be laid out so that the body has an 8-byte alignment. Fields that require volatile
+ *      accesses must be aligned to an 8-byte boundary. The message header is 8-bytes long to aid with this.
+ *      Records are padded to a 8-byte boundary before the next record.
  *  </p>
  *  <pre>
  *   0                   1                   2                   3
@@ -75,7 +75,6 @@ public class NodeStateFile implements AutoCloseable
     private final CandidateTerm candidateTerm = new CandidateTerm();
     private final ClusterMembers clusterMembers = new ClusterMembers();
     private final MappedByteBuffer mappedFile;
-    private final File clusterDir;
     private final int fileSyncLevel;
     private final NodeStateHeaderDecoder nodeStateHeaderDecoder = new NodeStateHeaderDecoder();
     private final ClusterMembersDecoder clusterMembersDecoder = new ClusterMembersDecoder();
@@ -96,7 +95,6 @@ public class NodeStateFile implements AutoCloseable
      */
     public NodeStateFile(final File clusterDir, final boolean createNew, final int fileSyncLevel) throws IOException
     {
-        this.clusterDir = clusterDir;
         this.fileSyncLevel = fileSyncLevel;
         final UnsafeBuffer buffer;
         MappedByteBuffer mappedFile = null;
@@ -151,8 +149,7 @@ public class NodeStateFile implements AutoCloseable
     private int calculateAndVerifyCandidateTermIdOffset()
     {
         final int candidateTermIdOffset;
-        candidateTermIdOffset =
-            candidateTermDecoder.offset() + CandidateTermDecoder.candidateTermIdEncodingOffset();
+        candidateTermIdOffset = candidateTermDecoder.offset() + CandidateTermDecoder.candidateTermIdEncodingOffset();
         verifyAlignment(candidateTermIdOffset);
         return candidateTermIdOffset;
     }
@@ -268,7 +265,7 @@ public class NodeStateFile implements AutoCloseable
         final NodeStateFooterEncoder nodeStateFooterEncoder = new NodeStateFooterEncoder();
         nodeStateFooterEncoder.wrapAndApplyHeader(buffer, footerOffset, messageHeaderEncoder);
         messageHeaderEncoder
-            .frameLength(MessageHeaderEncoder.ENCODED_LENGTH + nodeStateFooterEncoder.encodedLength()); // Fixed length
+            .frameLength(MessageHeaderEncoder.ENCODED_LENGTH + nodeStateFooterEncoder.encodedLength());
     }
 
     /**
@@ -282,9 +279,9 @@ public class NodeStateFile implements AutoCloseable
     /**
      * Set the current candidate term id with associated information.
      *
-     * @param candidateTermId   current candidate term id
-     * @param logPosition       log position where the term id change occurred
-     * @param timestampMs       timestamp of the candidate term id change
+     * @param candidateTermId current candidate term id.
+     * @param logPosition    log position where the term id change occurred.
+     * @param timestampMs    timestamp of the candidate term id change.
      */
     public void updateCandidateTermId(final long candidateTermId, final long logPosition, final long timestampMs)
     {
@@ -297,9 +294,9 @@ public class NodeStateFile implements AutoCloseable
     /**
      * Set the current candidate term id with associated information.
      *
-     * @param candidateTermId   current candidate term id
-     * @param logPosition       log position where the term id change occurred
-     * @param timestampMs       timestamp of the candidate term id change
+     * @param candidateTermId current candidate term id.
+     * @param logPosition     log position where the term id change occurred.
+     * @param timestampMs     timestamp of the candidate term id change.
      * @return the new candidate term id.
      */
     public long proposeMaxCandidateTermId(final long candidateTermId, final long logPosition, final long timestampMs)
@@ -343,15 +340,15 @@ public class NodeStateFile implements AutoCloseable
     }
 
     /**
-     * Update the cluster members entry with the supplied values.  This is a slow operation as the cluster members entry
-     * is a dynamically sized record.  To work correctly it will need to move all the trailing records in the file so
-     * that they line up correctly.  After updating the file it will rescan to ensure all of the cached decoders have
+     * Update the cluster members entry with the supplied values. This is a slow operation as the cluster members entry
+     * is a dynamically sized record. To work correctly it will need to move all the trailing records in the file so
+     * that they line up correctly. After updating the file it will rescan to ensure all the cached decoders have
      * the correct offsets.
      *
-     * @param leadershipTermId      leadership where the new set of cluster members reached consensus.
-     * @param memberId              current member id.
-     * @param highMemberId          high member id.
-     * @param clusterMembers        list of all the members in the cluster with the associated endpoints.
+     * @param leadershipTermId leadership where the new set of cluster members reached consensus.
+     * @param memberId         current member id.
+     * @param highMemberId     high member id.
+     * @param clusterMembers   list of all the members in the cluster with the associated endpoints.
      */
     public void updateClusterMembers(
         final long leadershipTermId,
@@ -496,7 +493,7 @@ public class NodeStateFile implements AutoCloseable
         /**
          * Gets the current candidateTermId.
          *
-         * @return the candidateTermId
+         * @return the candidateTermId.
          */
         public long candidateTermId()
         {
@@ -541,6 +538,7 @@ public class NodeStateFile implements AutoCloseable
 
         /**
          * High member id.
+         *
          * @return high member id.
          */
         public int highMemberId()

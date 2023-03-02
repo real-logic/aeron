@@ -99,8 +99,8 @@
         - Keep alive messages should be sent when insufficient ingress messages are sent to keep the session open.
 
     3. Session Close
-        - A cluster session can be closed with a CloseSessionRequest
-        - If the session is not explicitly closed then it will timeout if the connection becomes unavailable.
+        - A cluster session can be closed with a CloseSessionRequest.
+        - If the session is not explicitly closed then it will close following a timeout when the connection goes away.
 
     Cluster Authentication Protocol
     ===============================

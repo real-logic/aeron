@@ -71,7 +71,7 @@ public final class CountersAnswer implements Answer<Counter>
      * Aeron instance).
      *
      * @param countersManager delegate to pass addCounter requests to.
-     * @return an Answer that will use the supplied counters manager.
+     * @return an Answer that will use the supplied {@link CountersManager}.
      */
     public static CountersAnswer mapTo(final CountersManager countersManager)
     {

@@ -1204,7 +1204,7 @@ public class Aeron implements AutoCloseable
          * during the callback for poll operations such as {@link Subscription#poll(FragmentHandler, int)}.
          * <p>
          * The error handler can be reset after {@link Aeron#connect()} and the latest version will always be used
-         * so that the boot-strapping process can be performed such as replacing the default one with a
+         * so that the bootstrapping process can be performed such as replacing the default one with a
          * {@link CountedErrorHandler}.
          *
          * @param errorHandler Method to handle objects of type Throwable.

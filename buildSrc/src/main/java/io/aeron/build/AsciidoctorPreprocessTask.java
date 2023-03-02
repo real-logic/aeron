@@ -57,7 +57,7 @@ public class AsciidoctorPreprocessTask extends DefaultTask
     /**
      * Base directory containing the samples code.
      *
-     * @return base samples directory.
+     * @return base directory for samples.
      */
     @Input
     public String getSampleBaseDir()
@@ -68,7 +68,7 @@ public class AsciidoctorPreprocessTask extends DefaultTask
     /**
      * Directory containing the samples source code.
      *
-     * @return sources within the samples directory.
+     * @return sources within the directory for samples.
      */
     @Input
     public String getSampleSourceDir()

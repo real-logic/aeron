@@ -504,12 +504,12 @@ public final class ClusterEventLogger
     }
 
     /**
-     * The append position received by the leader from a follower.
+     * The Append position received by the leader from a follower.
      *
      * @param memberId         of the current cluster node.
      * @param leadershipTermId the current leadership term id.
      * @param logPosition      the current position in the log.
-     * @param followerMemberId follower member sending the append position.
+     * @param followerMemberId follower member sending the Append position.
      * @param flags            applied to append position by follower.
      */
     public void logOnAppendPosition(

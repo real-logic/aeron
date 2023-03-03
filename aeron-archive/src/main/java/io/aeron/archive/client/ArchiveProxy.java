@@ -555,7 +555,7 @@ public final class ArchiveProxy
     }
 
     /**
-     * Stop any existing replay sessions for recording Id or all replay sessions regardless of recording Id.
+     * Stop any existing replay sessions for recording id or all replay sessions regardless of recording id.
      *
      * @param recordingId      that should be stopped.
      * @param correlationId    for this request.

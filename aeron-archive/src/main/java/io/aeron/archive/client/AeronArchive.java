@@ -1156,7 +1156,7 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Stop all replay sessions for a given recording Id or all replays in general.
+     * Stop all replay sessions for a given recording id or all replays in general.
      *
      * @param recordingId to stop replay for or {@link Aeron#NULL_VALUE} for all replays.
      */

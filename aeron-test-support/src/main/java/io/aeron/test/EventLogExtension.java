@@ -22,7 +22,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import java.lang.reflect.Method;
 
 /**
- * JUnit extension used to start and reset the CollectingEventLogReaderAgent.
+ * JUnit framework extension used to start and reset the CollectingEventLogReaderAgent.
  */
 public class EventLogExtension implements BeforeEachCallback, AfterEachCallback
 {

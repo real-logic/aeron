@@ -381,7 +381,7 @@ public final class ChannelUriStringBuilder
     /**
      * Set the control address:port pair for dynamically joining a multi-destination-cast publication.
      *
-     * @param controlEndpoint for joining a MDC control socket.
+     * @param controlEndpoint for joining MDC control socket.
      * @return this for a fluent API.
      * @see CommonContext#MDC_CONTROL_PARAM_NAME
      */

@@ -934,30 +934,49 @@ abstract class ArchiveConductor
             final long segmentBasePosition = segmentFileBasePosition(
                 startPosition, position, termLength, segmentLength);
             final int segmentOffset = (int)(position - segmentBasePosition);
-            final ArrayDeque<String> files = new ArrayDeque<>();
 
-            if (segmentOffset > 0)
+            catalog.stopPosition(recordingId, position);
+
+            final ArrayDeque<String> files = new ArrayDeque<>();
+            if (startPosition == position)
             {
-                if (stopPosition != position)
+                final String prefix = recordingId + "-";
+                final String[] recordingFiles = archiveDir.list();
+                if (null != recordingFiles)
                 {
-                    final File file = new File(archiveDir, segmentFileName(recordingId, segmentBasePosition));
-                    if (!eraseRemainingSegment(
-                        correlationId, controlSession, position, segmentLength, segmentOffset, termLength, file))
+                    for (final String file : recordingFiles)
                     {
-                        return;
+                        if (file.startsWith(prefix) &&
+                            (file.endsWith(RECORDING_SEGMENT_SUFFIX) || file.endsWith(DELETE_SUFFIX)))
+                        {
+                            files.addLast(file);
+                        }
                     }
                 }
             }
             else
             {
-                files.addLast(segmentFileName(recordingId, segmentBasePosition));
-            }
+                if (segmentOffset > 0)
+                {
+                    if (stopPosition != position)
+                    {
+                        final File file = new File(archiveDir, segmentFileName(recordingId, segmentBasePosition));
+                        if (!eraseRemainingSegment(
+                            correlationId, controlSession, position, segmentLength, segmentOffset, termLength, file))
+                        {
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    files.addLast(segmentFileName(recordingId, segmentBasePosition));
+                }
 
-            catalog.stopPosition(recordingId, position);
-
-            for (long p = segmentBasePosition + segmentLength; p <= stopPosition; p += segmentLength)
-            {
-                files.addLast(segmentFileName(recordingId, p));
+                for (long p = segmentBasePosition + segmentLength; p <= stopPosition; p += segmentLength)
+                {
+                    files.addLast(segmentFileName(recordingId, p));
+                }
             }
 
             deleteSegments(correlationId, recordingId, controlSession, files);

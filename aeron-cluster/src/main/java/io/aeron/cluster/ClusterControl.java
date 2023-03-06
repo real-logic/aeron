@@ -75,7 +75,12 @@ public class ClusterControl
         /**
          * Abort processing and terminate the cluster without taking a snapshot.
          */
-        ABORT(6);
+        ABORT(6),
+
+        /**
+         * Trigger a snapshot that will only occur on a cluster standby.
+         */
+        BACKGROUND_SNAPSHOT(7);
 
         private final int code;
 

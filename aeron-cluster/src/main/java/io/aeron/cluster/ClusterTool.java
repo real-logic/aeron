@@ -80,6 +80,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  *                     backup-query: [delay] get, or set, time of next backup query.
  *       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.
  *                         snapshot: triggers a snapshot on the leader.
+ *                 standby-snapshot: triggers a snapshot on cluster standby nodes.
  *                          suspend: suspends appending to the log.
  *                           resume: resumes reading from the log.
  *                         shutdown: initiates an orderly stop of the cluster with a snapshot.
@@ -238,6 +239,10 @@ public class ClusterTool
 
             case "snapshot":
                 exitWithErrorOnFailure(snapshot(clusterDir, System.out));
+                break;
+
+            case "standby-snapshot":
+                exitWithErrorOnFailure(standbySnapshot(clusterDir, System.out));
                 break;
 
             case "suspend":
@@ -1061,6 +1066,24 @@ public class ClusterTool
     }
 
     /**
+     * Instruct the cluster to take a snapshot on appropriately configured cluster standby nodes.
+     *
+     * @param clusterDir where the consensus module is running.
+     * @param out        to print the result of the operation.
+     * @return true is the operation was successfully requested.
+     */
+    public static boolean standbySnapshot(final File clusterDir, final PrintStream out)
+    {
+        return toggleClusterState(
+            out,
+            clusterDir,
+            ConsensusModule.State.ACTIVE,
+            ClusterControl.ToggleState.BACKGROUND_SNAPSHOT,
+            true,
+            TimeUnit.SECONDS.toMillis(30));
+    }
+
+    /**
      * Instruct the cluster to suspend operation.
      *
      * @param clusterDir where the consensus module is running.
@@ -1445,6 +1468,7 @@ public class ClusterTool
             "                     backup-query: [delay] get, or set, time of next backup query.%n" +
             "       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.%n" +
             "                         snapshot: triggers a snapshot on the leader.%n" +
+            "                 standby-snapshot: triggers a snapshot on cluster standby nodes.%n" +
             "                          suspend: suspends appending to the log.%n" +
             "                           resume: resumes appending to the log.%n" +
             "                         shutdown: initiates an orderly stop of the cluster with a snapshot.%n" +

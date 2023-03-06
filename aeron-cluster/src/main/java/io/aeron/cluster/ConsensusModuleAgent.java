@@ -70,6 +70,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     static final long SLOW_TICK_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(10);
     static final short APPEND_POSITION_FLAG_NONE = 0;
     static final short APPEND_POSITION_FLAG_CATCHUP = 1;
+    static final int CLUSTER_ACTION_FLAGS_DEFAULT = 0;
+    static final int CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT = 1;
 
     private final long sessionTimeoutNs;
     private final long leaderHeartbeatIntervalNs;
@@ -1440,7 +1442,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    void onReplayClusterAction(final long leadershipTermId, final ClusterAction action)
+    void onReplayClusterAction(final long leadershipTermId, final ClusterAction action, final int flags)
     {
         if (leadershipTermId == this.leadershipTermId)
         {
@@ -1452,7 +1454,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             {
                 state(ConsensusModule.State.ACTIVE);
             }
-            else if (ClusterAction.SNAPSHOT == action)
+            else if (ClusterAction.SNAPSHOT == action && CLUSTER_ACTION_FLAGS_DEFAULT == flags)
             {
                 state(ConsensusModule.State.SNAPSHOT);
             }
@@ -2476,6 +2478,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 }
                 break;
 
+            case BACKGROUND_SNAPSHOT:
+                if (ConsensusModule.State.ACTIVE == state)
+                {
+                    appendAction(ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT);
+                    ClusterControl.ToggleState.reset(controlToggle);
+                }
+                break;
+
             case SHUTDOWN:
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT))
                 {
@@ -2512,7 +2522,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
     private boolean appendAction(final ClusterAction action)
     {
-        return logPublisher.appendClusterAction(leadershipTermId, clusterClock.time(), action);
+        return appendAction(action, CLUSTER_ACTION_FLAGS_DEFAULT);
+    }
+
+    private boolean appendAction(final ClusterAction action, final int flags)
+    {
+        return logPublisher.appendClusterAction(leadershipTermId, clusterClock.time(), action, flags);
     }
 
     private int processPendingSessions(

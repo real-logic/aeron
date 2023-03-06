@@ -289,10 +289,11 @@ final class LogAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                final int flags = ClusterActionRequestDecoder.flagsNullValue() != clusterActionRequestDecoder.flags() ?
+                    clusterActionRequestDecoder.flags() : ConsensusModuleAgent.CLUSTER_ACTION_FLAGS_DEFAULT;
+
                 consensusModuleAgent.onReplayClusterAction(
-                    clusterActionRequestDecoder.leadershipTermId(),
-                    clusterActionRequestDecoder.action(),
-                    clusterActionRequestDecoder.flags());
+                    clusterActionRequestDecoder.leadershipTermId(), clusterActionRequestDecoder.action(), flags);
                 return Action.BREAK;
         }
 

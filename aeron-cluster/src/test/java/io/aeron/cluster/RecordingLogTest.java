@@ -887,6 +887,21 @@ class RecordingLogTest
             entry.toString());
     }
 
+    @Test
+    void shouldDetermineIfSnapshotIsInvalid()
+    {
+        final RecordingLog.Entry validSnapshot = new RecordingLog.Entry(
+            42, 5, 1024, 701, 1_000_000_000_000L, 16, ENTRY_TYPE_SNAPSHOT, true, 2);
+        final RecordingLog.Entry invalidSnapshot = new RecordingLog.Entry(
+            42, 5, 1024, 701, 1_000_000_000_000L, 16, ENTRY_TYPE_SNAPSHOT, false, 2);
+        final RecordingLog.Entry term = new RecordingLog.Entry(
+            42, 5, 1024, 701, 1_000_000_000_000L, 16, ENTRY_TYPE_TERM, true, 2);
+
+        assertFalse(RecordingLog.isInvalidSnapshot(validSnapshot));
+        assertTrue(RecordingLog.isInvalidSnapshot(invalidSnapshot));
+        assertFalse(RecordingLog.isInvalidSnapshot(term));
+    }
+
     private static void addRecordingLogEntry(
         final ArrayList<RecordingLog.Entry> entries, final int serviceId, final int recordingId, final int entryType)
     {

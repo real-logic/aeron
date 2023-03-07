@@ -1411,7 +1411,8 @@ public class ClusterTool
             {
                 final Path newRecordingLog = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME + ".tmp");
                 Files.deleteIfExists(newRecordingLog);
-                final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(RecordingLog.ENTRY_LENGTH).order(LITTLE_ENDIAN);
+                final ByteBuffer byteBuffer = ByteBuffer
+                    .allocateDirect(RecordingLog.MAX_ENTRY_LENGTH).order(LITTLE_ENDIAN);
                 final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
                 try (FileChannel fileChannel = FileChannel.open(newRecordingLog, CREATE_NEW, WRITE))
                 {
@@ -1419,13 +1420,13 @@ public class ClusterTool
                     for (final RecordingLog.Entry e : entries)
                     {
                         RecordingLog.writeEntryToBuffer(e, buffer);
-                        byteBuffer.limit(RecordingLog.ENTRY_LENGTH).position(0);
+                        byteBuffer.limit(e.length()).position(0);
 
-                        if (RecordingLog.ENTRY_LENGTH != fileChannel.write(byteBuffer, position))
+                        if (e.length() != fileChannel.write(byteBuffer, position))
                         {
                             throw new ClusterException("failed to write recording");
                         }
-                        position += RecordingLog.ENTRY_LENGTH;
+                        position += e.length();
                     }
                 }
                 finally

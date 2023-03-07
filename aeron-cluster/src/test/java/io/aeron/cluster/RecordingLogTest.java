@@ -61,7 +61,7 @@ class RecordingLogTest
     void shouldAppendAndThenReloadLatestSnapshot()
     {
         final RecordingLog.Entry entry = new RecordingLog.Entry(
-            1, 3, 2, 777, 4, NULL_VALUE, ENTRY_TYPE_SNAPSHOT, true, 0);
+            1, 3, 2, 777, 4, NULL_VALUE, ENTRY_TYPE_SNAPSHOT, null, true, 0);
 
         try (RecordingLog recordingLog = new RecordingLog(tempDir, true))
         {
@@ -219,12 +219,12 @@ class RecordingLogTest
         try (RecordingLog recordingLog = new RecordingLog(tempDir, true))
         {
             final RecordingLog.Entry entryOne = new RecordingLog.Entry(
-                1L, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, true, 0);
+                1L, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, null, true, 0);
             recordingLog.appendTerm(
                 entryOne.recordingId, entryOne.leadershipTermId, entryOne.termBaseLogPosition, entryOne.timestamp);
 
             final RecordingLog.Entry entryTwo = new RecordingLog.Entry(
-                1L, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, true, 0);
+                1L, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, null, true, 0);
             recordingLog.appendTerm(
                 entryTwo.recordingId, entryTwo.leadershipTermId, entryTwo.termBaseLogPosition, entryTwo.timestamp);
 
@@ -450,19 +450,19 @@ class RecordingLogTest
             recordingLog.appendSnapshot(9, 1L, 500, 999L, 0, 42);
 
             final List<RecordingLog.Entry> entries = recordingLog.entries();
-            assertEquals(new RecordingLog.Entry(8, 1, 500, 998, 0, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, true, 11),
+            assertEquals(new RecordingLog.Entry(8, 1, 500, 998, 0, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, null, true, 11),
                 entries.get(6));
-            assertEquals(new RecordingLog.Entry(9, 1, 500, 999, 0, 42, ENTRY_TYPE_SNAPSHOT, true, 12),
+            assertEquals(new RecordingLog.Entry(9, 1, 500, 999, 0, 42, ENTRY_TYPE_SNAPSHOT, null, true, 12),
                 entries.get(7));
-            assertEquals(new RecordingLog.Entry(4, 1, 500, 999, 0, 0, ENTRY_TYPE_SNAPSHOT, false, 6),
+            assertEquals(new RecordingLog.Entry(4, 1, 500, 999, 0, 0, ENTRY_TYPE_SNAPSHOT, null, false, 6),
                 entries.get(8));
-            assertEquals(new RecordingLog.Entry(5, 1, 500, 999, 0, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, false, 7),
+            assertEquals(new RecordingLog.Entry(5, 1, 500, 999, 0, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, null, false, 7),
                 entries.get(9));
-            assertEquals(new RecordingLog.Entry(7, 1, 501, 999, 0, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, true, 10),
+            assertEquals(new RecordingLog.Entry(7, 1, 501, 999, 0, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, null, true, 10),
                 entries.get(10));
-            assertEquals(new RecordingLog.Entry(10, 2, 1000, NULL_POSITION, 5, NULL_VALUE, ENTRY_TYPE_TERM, true, 8),
+            assertEquals(new RecordingLog.Entry(10, 2, 1000, NULL_POSITION, 5, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 8),
                 entries.get(11));
-            assertEquals(new RecordingLog.Entry(6, 2, 500, 999, 0, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, true, 9),
+            assertEquals(new RecordingLog.Entry(6, 2, 500, 999, 0, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, null, true, 9),
                 entries.get(12));
             final RecordingLog.Entry latestSnapshot = recordingLog.getLatestSnapshot(SERVICE_ID);
             assertNotNull(latestSnapshot);
@@ -474,10 +474,10 @@ class RecordingLogTest
     void shouldAppendTermWithLeadershipTermIdOutOfOrder()
     {
         final List<RecordingLog.Entry> sortedEntries = asList(
-            new RecordingLog.Entry(0, 0, 0, 700, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 0),
-            new RecordingLog.Entry(0, 1, 700, 2048, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 3),
-            new RecordingLog.Entry(0, 2, 2048, 5000, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 1),
-            new RecordingLog.Entry(0, 3, 5000, NULL_POSITION, 100, NULL_VALUE, ENTRY_TYPE_TERM, true, 2));
+            new RecordingLog.Entry(0, 0, 0, 700, 0, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 0),
+            new RecordingLog.Entry(0, 1, 700, 2048, 0, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 3),
+            new RecordingLog.Entry(0, 2, 2048, 5000, 0, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 1),
+            new RecordingLog.Entry(0, 3, 5000, NULL_POSITION, 100, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 2));
 
         try (RecordingLog recordingLog = new RecordingLog(tempDir, true))
         {
@@ -506,12 +506,12 @@ class RecordingLogTest
     void shouldAppendSnapshotWithLeadershipTermIdOutOfOrder()
     {
         final List<RecordingLog.Entry> sortedEntries = asList(
-            new RecordingLog.Entry(3, 1, 0, 200, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 0),
-            new RecordingLog.Entry(10, 1, 0, 56, 42, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, true, 1),
-            new RecordingLog.Entry(3, 2, 200, 2048, 555, NULL_VALUE, ENTRY_TYPE_TERM, true, 2),
-            new RecordingLog.Entry(11, 2, 200, 250, 100, 1, ENTRY_TYPE_SNAPSHOT, true, 4),
-            new RecordingLog.Entry(100, 2, 200, 250, 100, 0, ENTRY_TYPE_SNAPSHOT, true, 5),
-            new RecordingLog.Entry(3, 3, 2048, NULL_POSITION, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 3));
+            new RecordingLog.Entry(3, 1, 0, 200, 0, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 0),
+            new RecordingLog.Entry(10, 1, 0, 56, 42, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, null, true, 1),
+            new RecordingLog.Entry(3, 2, 200, 2048, 555, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 2),
+            new RecordingLog.Entry(11, 2, 200, 250, 100, 1, ENTRY_TYPE_SNAPSHOT, null, true, 4),
+            new RecordingLog.Entry(100, 2, 200, 250, 100, 0, ENTRY_TYPE_SNAPSHOT, null, true, 5),
+            new RecordingLog.Entry(3, 3, 2048, NULL_POSITION, 0, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 3));
 
         try (RecordingLog recordingLog = new RecordingLog(tempDir, true))
         {
@@ -614,19 +614,19 @@ class RecordingLogTest
     void entriesInTheRecordingLogShouldBeSorted()
     {
         final List<RecordingLog.Entry> sortedList = new ArrayList<>();
-        sortedList.add(new RecordingLog.Entry(0, 0, 0, 90, 0, NULL_VALUE, ENTRY_TYPE_TERM, true, 0));
-        sortedList.add(new RecordingLog.Entry(0, 1, 100, 1_000_000, 10, NULL_VALUE, ENTRY_TYPE_TERM, false, 1));
-        sortedList.add(new RecordingLog.Entry(0, 1, 90, 400, 9, NULL_VALUE, ENTRY_TYPE_TERM, true, 8));
-        sortedList.add(new RecordingLog.Entry(0, 1, 111, 222, 12, 1, ENTRY_TYPE_SNAPSHOT, false, 2));
-        sortedList.add(new RecordingLog.Entry(0, 1, 111, 222, 12, 0, ENTRY_TYPE_SNAPSHOT, false, 4));
-        sortedList.add(new RecordingLog.Entry(0, 1, 111, 222, 12, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, false, 3));
-        sortedList.add(new RecordingLog.Entry(0, 1, 0, 777, 42, 2, ENTRY_TYPE_SNAPSHOT, true, 11));
-        sortedList.add(new RecordingLog.Entry(0, 2, 1_000_000, 500, 1_000_000, NULL_VALUE, ENTRY_TYPE_TERM, false, 6));
-        sortedList.add(new RecordingLog.Entry(0, 2, 400, 500, 20, NULL_VALUE, ENTRY_TYPE_TERM, true, 7));
-        sortedList.add(new RecordingLog.Entry(0, 2, 400, 1400, 200, 1, ENTRY_TYPE_SNAPSHOT, false, 10));
-        sortedList.add(new RecordingLog.Entry(0, 2, 400, 1400, 200, 0, ENTRY_TYPE_SNAPSHOT, true, 12));
-        sortedList.add(new RecordingLog.Entry(0, 2, 400, 1400, 200, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, true, 9));
-        sortedList.add(new RecordingLog.Entry(0, 3, 500, NULL_VALUE, 30, NULL_VALUE, ENTRY_TYPE_TERM, true, 5));
+        sortedList.add(new RecordingLog.Entry(0, 0, 0, 90, 0, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 0));
+        sortedList.add(new RecordingLog.Entry(0, 1, 100, 1_000_000, 10, NULL_VALUE, ENTRY_TYPE_TERM, null, false, 1));
+        sortedList.add(new RecordingLog.Entry(0, 1, 90, 400, 9, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 8));
+        sortedList.add(new RecordingLog.Entry(0, 1, 111, 222, 12, 1, ENTRY_TYPE_SNAPSHOT, null, false, 2));
+        sortedList.add(new RecordingLog.Entry(0, 1, 111, 222, 12, 0, ENTRY_TYPE_SNAPSHOT, null, false, 4));
+        sortedList.add(new RecordingLog.Entry(0, 1, 111, 222, 12, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, null, false, 3));
+        sortedList.add(new RecordingLog.Entry(0, 1, 0, 777, 42, 2, ENTRY_TYPE_SNAPSHOT, null, true, 11));
+        sortedList.add(new RecordingLog.Entry(0, 2, 1_000_000, 500, 1_000_000, NULL_VALUE, ENTRY_TYPE_TERM, null, false, 6));
+        sortedList.add(new RecordingLog.Entry(0, 2, 400, 500, 20, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 7));
+        sortedList.add(new RecordingLog.Entry(0, 2, 400, 1400, 200, 1, ENTRY_TYPE_SNAPSHOT, null, false, 10));
+        sortedList.add(new RecordingLog.Entry(0, 2, 400, 1400, 200, 0, ENTRY_TYPE_SNAPSHOT, null, true, 12));
+        sortedList.add(new RecordingLog.Entry(0, 2, 400, 1400, 200, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, null, true, 9));
+        sortedList.add(new RecordingLog.Entry(0, 3, 500, NULL_VALUE, 30, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 5));
 
         try (RecordingLog recordingLog = new RecordingLog(tempDir, true))
         {
@@ -818,8 +818,7 @@ class RecordingLogTest
     }
 
     @Test
-    void shouldBackFillPriorTerm(
-        @TempDir final Path tempDir)
+    void shouldBackFillPriorTerm(@TempDir final Path tempDir)
     {
         final long initialLogLeadershipTermId = 0;
         final long initialTermBaseLogPosition = 0;
@@ -880,7 +879,7 @@ class RecordingLogTest
     void entryToString()
     {
         final RecordingLog.Entry entry = new RecordingLog.Entry(
-            42, 5, 1024, 701, 1_000_000_000_000L, 16, ENTRY_TYPE_SNAPSHOT, true, 2);
+            42, 5, 1024, 701, 1_000_000_000_000L, 16, ENTRY_TYPE_SNAPSHOT, null, true, 2);
         assertEquals(
             "Entry{recordingId=42, leadershipTermId=5, termBaseLogPosition=1024, logPosition=701, " +
             "timestamp=1000000000000, serviceId=16, type=SNAPSHOT, isValid=true, entryIndex=2}",
@@ -891,21 +890,37 @@ class RecordingLogTest
     void shouldDetermineIfSnapshotIsInvalid()
     {
         final RecordingLog.Entry validSnapshot = new RecordingLog.Entry(
-            42, 5, 1024, 701, 1_000_000_000_000L, 16, ENTRY_TYPE_SNAPSHOT, true, 2);
+            42, 5, 1024, 701, 1_000_000_000_000L, 16, ENTRY_TYPE_SNAPSHOT, null, true, 2);
         final RecordingLog.Entry invalidSnapshot = new RecordingLog.Entry(
-            42, 5, 1024, 701, 1_000_000_000_000L, 16, ENTRY_TYPE_SNAPSHOT, false, 2);
+            42, 5, 1024, 701, 1_000_000_000_000L, 16, ENTRY_TYPE_SNAPSHOT, null, false, 2);
         final RecordingLog.Entry term = new RecordingLog.Entry(
-            42, 5, 1024, 701, 1_000_000_000_000L, 16, ENTRY_TYPE_TERM, true, 2);
+            42, 5, 1024, 701, 1_000_000_000_000L, 16, ENTRY_TYPE_TERM, null, true, 2);
 
         assertFalse(RecordingLog.isInvalidSnapshot(validSnapshot));
         assertTrue(RecordingLog.isInvalidSnapshot(invalidSnapshot));
         assertFalse(RecordingLog.isInvalidSnapshot(term));
     }
 
+    @Test
+    void shouldInsertRemoteSnapshotInRecordingLog(@TempDir final File tempDir)
+    {
+        final RecordingLog log = new RecordingLog(tempDir, true);
+
+        log.appendSnapshot(1, 1, 0, 1000, 1_000_000_000L, SERVICE_ID);
+        log.appendSnapshot(2, 1, 0, 1000, 1_000_000_000L, 0);
+
+        log.appendRemoteSnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost.aeron.io:20002");
+        log.appendRemoteSnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost.aeron.io:20002");
+
+        log.appendSnapshot(5, 3, 2000, 3000, 1_000_000_000L, SERVICE_ID);
+        log.appendSnapshot(6, 3, 2000, 3000, 1_000_000_000L, 0);
+
+    }
+
     private static void addRecordingLogEntry(
         final ArrayList<RecordingLog.Entry> entries, final int serviceId, final int recordingId, final int entryType)
     {
         entries.add(new RecordingLog.Entry(
-            recordingId, 1, 1440, 2880, 0L, serviceId, entryType, true, entries.size()));
+            recordingId, 1, 1440, 2880, 0L, serviceId, entryType, null, true, entries.size()));
     }
 }

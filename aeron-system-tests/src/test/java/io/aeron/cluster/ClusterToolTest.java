@@ -249,7 +249,7 @@ class ClusterToolTest
                     entry.timestamp,
                     entry.serviceId,
                     entry.type,
-                    entry.isValid,
+                    null, entry.isValid,
                     i));
             }
         }
@@ -353,7 +353,7 @@ class ClusterToolTest
                     entry.timestamp,
                     entry.serviceId,
                     entry.type,
-                    entry.isValid,
+                    null, entry.isValid,
                     i - 2));
             }
         }

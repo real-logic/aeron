@@ -433,7 +433,7 @@ public class ClusterTool
                         entry.timestamp,
                         entry.serviceId,
                         entry.type,
-                        entry.isValid,
+                        null, entry.isValid,
                         NULL_VALUE));
                     serviceId++;
                 }

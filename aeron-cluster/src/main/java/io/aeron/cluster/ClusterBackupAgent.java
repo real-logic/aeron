@@ -515,7 +515,7 @@ public final class ClusterBackupAgent implements Agent
                     NULL_TIMESTAMP,
                     NULL_VALUE,
                     RecordingLog.ENTRY_TYPE_TERM,
-                    true,
+                    null, true,
                     -1);
             }
 
@@ -531,7 +531,7 @@ public final class ClusterBackupAgent implements Agent
                     NULL_TIMESTAMP,
                     NULL_VALUE,
                     RecordingLog.ENTRY_TYPE_TERM,
-                    true,
+                    null, true,
                     -1);
             }
 

@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.cluster.client.ClusterException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -27,10 +28,14 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
+import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_REMOTE_SNAPSHOT;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_SNAPSHOT;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_TERM;
 import static java.util.Arrays.asList;
@@ -38,6 +43,7 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -904,17 +910,138 @@ class RecordingLogTest
     @Test
     void shouldInsertRemoteSnapshotInRecordingLog(@TempDir final File tempDir)
     {
-        final RecordingLog log = new RecordingLog(tempDir, true);
+        try (RecordingLog log = new RecordingLog(tempDir, true))
+        {
+            log.appendSnapshot(1, 1, 0, 1000, 1_000_000_000L, SERVICE_ID);
+            log.appendSnapshot(2, 1, 0, 1000, 1_000_000_000L, 0);
 
-        log.appendSnapshot(1, 1, 0, 1000, 1_000_000_000L, SERVICE_ID);
-        log.appendSnapshot(2, 1, 0, 1000, 1_000_000_000L, 0);
+            log.appendRemoteSnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost.aeron.io:20002");
+            log.appendRemoteSnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost.aeron.io:20002");
 
-        log.appendRemoteSnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost.aeron.io:20002");
-        log.appendRemoteSnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost.aeron.io:20002");
+            log.appendSnapshot(5, 3, 2000, 3000, 1_000_000_000L, SERVICE_ID);
+            log.appendSnapshot(6, 3, 2000, 3000, 1_000_000_000L, 0);
+        }
 
-        log.appendSnapshot(5, 3, 2000, 3000, 1_000_000_000L, SERVICE_ID);
-        log.appendSnapshot(6, 3, 2000, 3000, 1_000_000_000L, 0);
+        try (RecordingLog log = new RecordingLog(tempDir, false))
+        {
+            assertLogEntry(log, 1, ENTRY_TYPE_SNAPSHOT, null);
+            assertLogEntry(log, 2, ENTRY_TYPE_SNAPSHOT, null);
+            assertLogEntry(log, 3, ENTRY_TYPE_REMOTE_SNAPSHOT, "remotehost.aeron.io:20002");
+            assertLogEntry(log, 4, ENTRY_TYPE_REMOTE_SNAPSHOT, "remotehost.aeron.io:20002");
+            assertLogEntry(log, 5, ENTRY_TYPE_SNAPSHOT, null);
+            assertLogEntry(log, 6, ENTRY_TYPE_SNAPSHOT, null);
+        }
+    }
 
+    @Test
+    void shouldNotIncludeRemoteSnapshotInRecoveryPlan(@TempDir final File tempDir)
+    {
+        try (RecordingLog log = new RecordingLog(tempDir, true))
+        {
+            log.appendSnapshot(1, 1, 0, 1000, 1_000_000_000L, SERVICE_ID);
+            log.appendSnapshot(2, 1, 0, 1000, 1_000_000_000L, 0);
+
+            log.appendRemoteSnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost.aeron.io:20002");
+            log.appendRemoteSnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost.aeron.io:20002");
+        }
+
+        final AeronArchive mockArchive = mock(AeronArchive.class);
+        mockExtent(mockArchive, 1);
+        mockExtent(mockArchive, 2);
+        mockExtent(mockArchive, 3);
+        mockExtent(mockArchive, 4);
+
+        try (RecordingLog log = new RecordingLog(tempDir, false))
+        {
+            final RecordingLog.RecoveryPlan recoveryPlan = log.createRecoveryPlan(mockArchive, 1, NULL_VALUE);
+
+            assertEquals(2, recoveryPlan.snapshots.size());
+            assertTrue(recoveryPlan.snapshots.stream().anyMatch((s) -> s.recordingId == 1));
+            assertTrue(recoveryPlan.snapshots.stream().anyMatch((s) -> s.recordingId == 2));
+        }
+    }
+
+    @Test
+    void shouldGetLatestRemoteSnapshotsGroupedByEndpoint(@TempDir final File tempDir)
+    {
+        try (RecordingLog log = new RecordingLog(tempDir, true))
+        {
+            log.appendSnapshot(1, 1, 0, 1000, 1_000_000_000L, SERVICE_ID);
+            log.appendSnapshot(2, 1, 0, 1000, 1_000_000_000L, 0);
+
+            log.appendRemoteSnapshot(5, 2, 500, 800, 1_000_000_000L, SERVICE_ID, "remotehost0.aeron.io:20002");
+            log.appendRemoteSnapshot(6, 2, 500, 800, 1_000_000_000L, 0, "remotehost0.aeron.io:20002");
+
+            log.appendRemoteSnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost0.aeron.io:20002");
+            log.appendRemoteSnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost0.aeron.io:20002");
+
+            log.appendRemoteSnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost1.aeron.io:20002");
+            log.appendRemoteSnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost1.aeron.io:20002");
+
+            log.appendRemoteSnapshot(10, 2, 3000, 4000, 1_000_000_000L, 0, "remotehost0.aeron.io:20002");
+            log.appendRemoteSnapshot(11, 2, 3000, 4000, 1_000_000_000L, 0, "remotehost1.aeron.io:20002");
+        }
+
+        try (RecordingLog log = new RecordingLog(tempDir, false))
+        {
+            assertLogEntry(log, 1, ENTRY_TYPE_SNAPSHOT, null);
+            assertLogEntry(log, 2, ENTRY_TYPE_SNAPSHOT, null);
+            assertLogEntry(log, 3, ENTRY_TYPE_REMOTE_SNAPSHOT, "remotehost0.aeron.io:20002");
+            assertLogEntry(log, 4, ENTRY_TYPE_REMOTE_SNAPSHOT, "remotehost0.aeron.io:20002");
+            assertLogEntry(log, 3, ENTRY_TYPE_REMOTE_SNAPSHOT, "remotehost1.aeron.io:20002");
+            assertLogEntry(log, 4, ENTRY_TYPE_REMOTE_SNAPSHOT, "remotehost1.aeron.io:20002");
+
+            final int serviceCount = 1;
+            final Map<String, List<RecordingLog.Entry>> remoteSnapshots = log.latestRemoteSnapshots(serviceCount);
+            assertNotNull(remoteSnapshots);
+
+            assertEquals(2, remoteSnapshots.get("remotehost0.aeron.io:20002").size());
+            assertEquals(2, remoteSnapshots.get("remotehost1.aeron.io:20002").size());
+        }
+    }
+
+    private void mockExtent(final AeronArchive mockArchive, final long recordingId)
+    {
+        when(mockArchive.listRecording(eq(recordingId), any())).thenAnswer(
+            invocation ->
+            {
+                final RecordingDescriptorConsumer consumer = invocation.getArgument(
+                    1, RecordingDescriptorConsumer.class);
+
+                consumer.onRecordingDescriptor(
+                    recordingId + 1_000_000,
+                    recordingId + 2_000_000,
+                    recordingId,
+                    0,
+                    0,
+                    0,
+                    50_000,
+                    0,
+                    128 * 1024 * 1024,
+                    256 * 1024,
+                    1408,
+                    0,
+                    0,
+                    "",
+                    "",
+                    "");
+
+                return 1;
+            });
+    }
+
+    private static void assertLogEntry(
+        final RecordingLog log,
+        final long recordingId,
+        final int type,
+        final String endpoint)
+    {
+        final Predicate<RecordingLog.Entry> entryPredicate = (entry) ->
+            entry.recordingId == recordingId &&
+            entry.type == type &&
+            Objects.equals(entry.archiveEndpoint, endpoint);
+
+        assertTrue(log.entries().stream().anyMatch(entryPredicate));
     }
 
     private static void addRecordingLogEntry(

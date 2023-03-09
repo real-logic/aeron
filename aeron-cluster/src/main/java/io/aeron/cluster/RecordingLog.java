@@ -27,6 +27,7 @@ import org.agrona.Strings;
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.MutableReference;
+import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -37,8 +38,12 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.TreeMap;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -81,6 +86,12 @@ import static org.agrona.BitUtil.*;
  *  |                  Service ID when a Snapshot                   |
  *  +---------------------------------------------------------------+
  *  |R|               Entry Type (Log or Snapshot)                  |
+ *  +---------------------------------------------------------------+
+ *  |                 Archive Endpoint (length)                     |
+ *  +---------------------------------------------------------------+
+ *  |                 Archive Endpoint (length)                     |
+ *  |                    Archive Endpoint                         ...
+ *  ...                     (variable)                              |
  *  +---------------------------------------------------------------+
  *  |                                                               |
  *  |                                                              ...
@@ -232,7 +243,10 @@ public final class RecordingLog implements AutoCloseable
          */
         public int length()
         {
-            return align(ENDPOINT_LENGTH_OFFSET, CACHE_LINE_LENGTH);
+            final int unalignedLength = (ENTRY_TYPE_REMOTE_SNAPSHOT == type) ?
+                ENDPOINT_OFFSET + SIZE_OF_INT + archiveEndpoint.length() : ENDPOINT_OFFSET;
+
+            return align(unalignedLength, CACHE_LINE_LENGTH);
         }
 
         private void position(final long position)
@@ -672,15 +686,14 @@ public final class RecordingLog implements AutoCloseable
     /**
      * The offset at which the endpoint of the remote snapshot is held.
      */
-    public static final int ENDPOINT_LENGTH_OFFSET = ENTRY_TYPE_OFFSET + SIZE_OF_INT;
+    public static final int ENDPOINT_OFFSET = ENTRY_TYPE_OFFSET + SIZE_OF_INT;
 
     private static final int MAX_ENDPOINT_LENGTH = SIZE_OF_INT + 255 + 6;
 
     /**
      * Maximum possible entry length. Include the entry plus a variable length endpoint string.
      */
-    public static final int MAX_ENTRY_LENGTH = BitUtil.align(
-        ENDPOINT_LENGTH_OFFSET + MAX_ENDPOINT_LENGTH, CACHE_LINE_LENGTH);
+    public static final int MAX_ENTRY_LENGTH = BitUtil.align(ENDPOINT_OFFSET + MAX_ENDPOINT_LENGTH, CACHE_LINE_LENGTH);
 
     private static final Comparator<Entry> ENTRY_COMPARATOR =
         (Entry e1, Entry e2) ->
@@ -1195,7 +1208,8 @@ public final class RecordingLog implements AutoCloseable
                 termBaseLogPosition,
                 logPosition,
                 timestamp,
-                serviceId, RECORDING_LOG_FILE_NAME);
+                serviceId,
+                null);
         }
     }
 
@@ -1208,6 +1222,7 @@ public final class RecordingLog implements AutoCloseable
      * @param logPosition         within the current term or accumulated length for the log.
      * @param timestamp           at which the snapshot was taken.
      * @param serviceId           for which the snapshot is recorded.
+     * @param archiveEndpoint     endpoint for the archive where
      */
     public void appendRemoteSnapshot(
         final long recordingId,
@@ -1216,11 +1231,11 @@ public final class RecordingLog implements AutoCloseable
         final long logPosition,
         final long timestamp,
         final int serviceId,
-        final String endpoint)
+        final String archiveEndpoint)
     {
         validateRecordingId(recordingId);
 
-        if (Strings.isEmpty(endpoint))
+        if (Strings.isEmpty(archiveEndpoint))
         {
             throw new ClusterException("Remote snapshots must has a valid endpoint");
         }
@@ -1236,7 +1251,7 @@ public final class RecordingLog implements AutoCloseable
                 logPosition,
                 timestamp,
                 serviceId,
-                endpoint);
+                archiveEndpoint);
         }
     }
 
@@ -1338,6 +1353,51 @@ public final class RecordingLog implements AutoCloseable
     }
 
     /**
+     * Return a collection of the most recent remote snapshots grouped by the archiveEndpoint where the snapshot is
+     * stored.
+     *
+     * @param serviceCount      to ensure that we have a complete set of snapshots.
+     * @return                  collection of snapshots.
+     */
+    public Map<String, List<Entry>> latestRemoteSnapshots(final int serviceCount)
+    {
+        final Map<String, List<Entry>> latestRemoteSnapshots = new Object2ObjectHashMap<>();
+        final Map<String, NavigableMap<Long, List<Entry>>> remoteSnapshots = new Object2ObjectHashMap<>();
+
+        for (int i = entriesCache.size() - 1; i >= 0; i--)
+        {
+            final Entry entry = entriesCache.get(i);
+            if (ENTRY_TYPE_REMOTE_SNAPSHOT == entry.type)
+            {
+                remoteSnapshots.computeIfAbsent(entry.archiveEndpoint, (s) -> new TreeMap<>())
+                    .computeIfAbsent(entry.logPosition, (l) -> new ArrayList<>())
+                    .add(entry);
+            }
+        }
+
+        remoteSnapshots.forEach(
+            (k, v) ->
+            {
+                while (!v.isEmpty())
+                {
+                    final Map.Entry<Long, List<Entry>> lastEntry = v.lastEntry();
+                    final int snapshotCount = serviceCount + 1;
+                    if (lastEntry.getValue().size() == snapshotCount)
+                    {
+                        latestRemoteSnapshots.put(k, lastEntry.getValue());
+                        break;
+                    }
+                    else
+                    {
+                        v.remove(lastEntry.getKey());
+                    }
+                }
+            });
+
+        return latestRemoteSnapshots;
+    }
+
+    /**
      * {@inheritDoc}
      */
     public String toString()
@@ -1409,6 +1469,10 @@ public final class RecordingLog implements AutoCloseable
         buffer.putLong(TIMESTAMP_OFFSET, entry.timestamp, LITTLE_ENDIAN);
         buffer.putInt(SERVICE_ID_OFFSET, entry.serviceId, LITTLE_ENDIAN);
         buffer.putInt(ENTRY_TYPE_OFFSET, entry.type, LITTLE_ENDIAN);
+        if (!Strings.isEmpty(entry.archiveEndpoint))
+        {
+            buffer.putStringAscii(ENDPOINT_OFFSET, entry.archiveEndpoint);
+        }
     }
 
     static boolean isValidSnapshot(final Entry entry)
@@ -1537,7 +1601,8 @@ public final class RecordingLog implements AutoCloseable
                     timestamp,
                     serviceId,
                     ENTRY_TYPE_SNAPSHOT,
-                    null, true,
+                    null,
+                    true,
                     entry.position,
                     entry.entryIndex);
 
@@ -1701,7 +1766,8 @@ public final class RecordingLog implements AutoCloseable
                 buffer.getLong(consumed + TIMESTAMP_OFFSET, LITTLE_ENDIAN),
                 buffer.getInt(consumed + SERVICE_ID_OFFSET, LITTLE_ENDIAN),
                 type,
-                null, isValid,
+                (ENTRY_TYPE_REMOTE_SNAPSHOT == type) ? buffer.getStringAscii(consumed + ENDPOINT_OFFSET) : null,
+                isValid,
                 position,
                 nextEntryIndex);
 

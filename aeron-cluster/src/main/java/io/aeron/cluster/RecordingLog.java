@@ -145,7 +145,7 @@ public final class RecordingLog implements AutoCloseable
         /**
          * Endpoint for an archive where a remote snapshot is located.
          */
-        public final String endpoint;
+        public final String archiveEndpoint;
 
         private long position;
 
@@ -159,7 +159,7 @@ public final class RecordingLog implements AutoCloseable
          * @param timestamp           of this entry.
          * @param serviceId           service id for snapshot.
          * @param type                of the entry as a log of a term or a snapshot.
-         * @param endpoint            archive where the snapshot is located, if
+         * @param archiveEndpoint            archive where the snapshot is located, if
          *                            <code>entryType == ENTRY_TYPE_REMOTE_SNAPSHOT</code>.
          * @param isValid             indicates if the entry is valid, {@link RecordingLog#invalidateEntry(long, int)}
          *                            marks it invalid.
@@ -176,7 +176,7 @@ public final class RecordingLog implements AutoCloseable
             final long timestamp,
             final int serviceId,
             final int type,
-            final String endpoint,
+            final String archiveEndpoint,
             final boolean isValid,
             final long position,
             final int entryIndex)
@@ -188,12 +188,12 @@ public final class RecordingLog implements AutoCloseable
             this.timestamp = timestamp;
             this.serviceId = serviceId;
             this.type = type;
-            this.endpoint = endpoint;
+            this.archiveEndpoint = archiveEndpoint;
             this.position = position;
             this.entryIndex = entryIndex;
             this.isValid = isValid;
 
-            if (ENTRY_TYPE_REMOTE_SNAPSHOT == type && Strings.isEmpty(endpoint))
+            if (ENTRY_TYPE_REMOTE_SNAPSHOT == type && Strings.isEmpty(archiveEndpoint))
             {
                 throw new ClusterException("Remote snapshots must has a valid endpoint");
             }
@@ -207,7 +207,7 @@ public final class RecordingLog implements AutoCloseable
             final long timestamp,
             final int serviceId,
             final int type,
-            final String endpoint,
+            final String archiveEndpoint,
             final boolean isValid,
             final int entryIndex)
         {
@@ -219,7 +219,7 @@ public final class RecordingLog implements AutoCloseable
                 timestamp,
                 serviceId,
                 type,
-                endpoint,
+                archiveEndpoint,
                 isValid,
                 NULL_VALUE,
                 entryIndex);
@@ -250,7 +250,7 @@ public final class RecordingLog implements AutoCloseable
                 timestamp,
                 serviceId,
                 type,
-                endpoint,
+                archiveEndpoint,
                 false,
                 position,
                 entryIndex);
@@ -266,7 +266,7 @@ public final class RecordingLog implements AutoCloseable
                 timestamp,
                 serviceId,
                 type,
-                endpoint,
+                archiveEndpoint,
                 isValid,
                 position,
                 entryIndex);

@@ -29,6 +29,7 @@ import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.StatusMessageFlyweight;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
@@ -51,7 +52,6 @@ import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongConsumer;
@@ -105,7 +105,7 @@ class DriverConductorTest
     private static final long PUBLICATION_LINGER_TIMEOUT_NS = PUBLICATION_LINGER_DEFAULT_NS;
     private static final int MTU_LENGTH = MTU_LENGTH_DEFAULT;
 
-    private final ByteBuffer conductorBuffer = ByteBuffer.allocate(CONDUCTOR_BUFFER_LENGTH_DEFAULT);
+    private final ByteBuffer conductorBuffer = ByteBuffer.allocateDirect(CONDUCTOR_BUFFER_LENGTH_DEFAULT);
     private final UnsafeBuffer counterKeyAndLabel = new UnsafeBuffer(new byte[BUFFER_LENGTH]);
 
     private final RingBuffer toDriverCommands = new ManyToOneRingBuffer(new UnsafeBuffer(conductorBuffer));
@@ -144,10 +144,7 @@ class DriverConductorTest
         counterKeyAndLabel.putInt(COUNTER_KEY_OFFSET, 42);
         counterKeyAndLabel.putStringAscii(COUNTER_LABEL_OFFSET, COUNTER_LABEL);
 
-        final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocate(BUFFER_LENGTH));
-        final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(
-            ByteBuffer.allocate(Configuration.countersMetadataBufferLength(BUFFER_LENGTH)));
-        spyCountersManager = spy(new CountersManager(metaDataBuffer, counterBuffer, StandardCharsets.US_ASCII));
+        spyCountersManager = spy(Tests.newCountersMananger(BUFFER_LENGTH));
         spySystemCounters = spy(new SystemCounters(spyCountersManager));
 
         when(spySystemCounters.get(SystemCounterDescriptor.ERRORS)).thenReturn(mockErrorCounter);
@@ -180,7 +177,6 @@ class DriverConductorTest
             .congestControlSupplier(Configuration.congestionControlSupplier())
             .toDriverCommands(toDriverCommands)
             .clientProxy(mockClientProxy)
-            .countersValuesBuffer(counterBuffer)
             .systemCounters(spySystemCounters)
             .receiverProxy(receiverProxy)
             .senderProxy(senderProxy)

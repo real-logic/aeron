@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
+import io.aeron.test.Tests;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersManager;
@@ -29,7 +30,6 @@ import org.mockito.InOrder;
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.COUNTER_LENGTH;
-import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.*;
@@ -66,8 +66,7 @@ class ArchiveCountersTest
     @CsvSource({ "5,8", "42,-10", "-19, 61312936129398123" })
     void findReturnsNullValueIfCounterNotFound(final int typeId, final long archiveId)
     {
-        final CountersManager countersManager = new CountersManager(
-            new UnsafeBuffer(new byte[2 * METADATA_LENGTH]), new UnsafeBuffer(new byte[2 * COUNTER_LENGTH]));
+        final CountersManager countersManager = Tests.newCountersMananger(2 * COUNTER_LENGTH);
         assertEquals(1, countersManager.maxCounterId());
         countersManager.allocate(
             "test",
@@ -83,8 +82,7 @@ class ArchiveCountersTest
     @Test
     void findReturnsFirstMatchingCounter()
     {
-        final CountersManager countersManager = new CountersManager(
-            new UnsafeBuffer(new byte[8 * METADATA_LENGTH]), new UnsafeBuffer(new byte[8 * COUNTER_LENGTH]));
+        final CountersManager countersManager = Tests.newCountersMananger(8 * COUNTER_LENGTH);
         final int typeId = 7;
         final long archiveId = Long.MIN_VALUE / 13;
         countersManager.allocate(

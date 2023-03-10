@@ -33,6 +33,7 @@ import static io.aeron.agent.DriverEventEncoder.untetheredSubscriptionStateChang
 import static io.aeron.agent.DriverEventLogger.toEventCodeId;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteBuffer.allocate;
+import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.fill;
 import static org.agrona.BitUtil.*;
@@ -44,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class DriverEventLoggerTest
 {
     private static final int CAPACITY = 32 * 1024;
-    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocate(CAPACITY + TRAILER_LENGTH));
+    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocateDirect(CAPACITY + TRAILER_LENGTH));
     private final DriverEventLogger logger = new DriverEventLogger(new ManyToOneRingBuffer(logBuffer));
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocate(MAX_EVENT_LENGTH * 3));
 

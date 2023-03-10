@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.protocol.StatusMessageFlyweight;
+import io.aeron.test.Tests;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.junit.jupiter.api.Test;
@@ -24,8 +25,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,13 +37,8 @@ class MinMulticastFlowControlTest
     private static final int COUNTERS_BUFFER_LENGTH = 16 * 1024;
 
     private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[8192]);
-    private final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocate(COUNTERS_BUFFER_LENGTH));
-    private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(
-        ByteBuffer.allocate(Configuration.countersMetadataBufferLength(COUNTERS_BUFFER_LENGTH)));
-
     private final MinMulticastFlowControl flowControl = new MinMulticastFlowControl();
-    private final CountersManager countersManager = new CountersManager(
-        metaDataBuffer, counterBuffer, StandardCharsets.US_ASCII);
+    private final CountersManager countersManager = Tests.newCountersMananger(COUNTERS_BUFFER_LENGTH);
 
     private static Stream<Arguments> validUris()
     {

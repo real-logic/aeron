@@ -32,6 +32,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 
 import static io.aeron.CommonContext.FALLBACK_LOGGER_PROP_NAME;
+import static java.nio.ByteBuffer.allocateDirect;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Mockito.*;
@@ -126,7 +127,7 @@ class CommonContextTest
     {
         final File markFile = tempDir.resolve("mark.dat").toFile();
         final DistinctErrorLog errorLog =
-            new DistinctErrorLog(new UnsafeBuffer(new byte[10 * 1024]), SystemEpochClock.INSTANCE);
+            new DistinctErrorLog(new UnsafeBuffer(allocateDirect(10 * 1024)), SystemEpochClock.INSTANCE);
         assertTrue(errorLog.record(new Exception("Just to test")));
         final PrintStream logger = mock(PrintStream.class);
         final String errorFilePrefix = "my-file-";

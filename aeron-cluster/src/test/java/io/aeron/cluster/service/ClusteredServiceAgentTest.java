@@ -24,6 +24,7 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.driver.DutyCycleTracker;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.test.CountersAnswer;
+import io.aeron.test.Tests;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
@@ -85,8 +86,7 @@ class ClusteredServiceAgentTest
         final ArgumentCaptor<UnavailableCounterHandler> captor =
             ArgumentCaptor.forClass(UnavailableCounterHandler.class);
         final ClusterMarkFile markFile = mock(ClusterMarkFile.class);
-        final CountersManager countersManager = new CountersManager(
-            new UnsafeBuffer(new byte[64 * 1024]), new UnsafeBuffer(new byte[16 * 1024]));
+        final CountersManager countersManager = Tests.newCountersMananger(64 * 1024);
 
         when(aeron.addCounter(anyInt(), any(), anyInt(), anyInt(), any(), anyInt(), anyInt()))
             .then(CountersAnswer.mapTo(countersManager));

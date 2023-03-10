@@ -45,7 +45,7 @@ def toolchainLauncher = javaToolchains.launcherFor {
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
-def agronaVersion = '1.17.1'
+def agronaVersion = '1.18.0-SNAPSHOT'
 def agronaVersionRange = '[1.17.1,2.0[' // allow any release >= 1.17.1 and < 2.0.0
 def sbeVersion = '1.27.0'
 def checkstyleVersion = '9.3'
@@ -221,7 +221,8 @@ subprojects {
             'aeron.timer.interval': '100ms',
             'aeron.dir.delete.on.start': 'true',
             'aeron.term.buffer.sparse.file': 'true',
-            'aeron.perform.storage.checks': 'false')
+            'aeron.perform.storage.checks': 'false',
+            'agrona.strict.alignment.checks': 'true')
 
         javaLauncher.set(toolchainLauncher)
     }

@@ -225,6 +225,11 @@ public final class NetworkPublication
         this.senderBpe = senderBpe;
 
         termBuffers = rawLog.termBuffers();
+        for (final UnsafeBuffer termBuffer : termBuffers)
+        {
+            termBuffer.verifyAlignment();
+        }
+
         sendBuffers = rawLog.sliceTerms();
         errorHandler = ctx.errorHandler();
 

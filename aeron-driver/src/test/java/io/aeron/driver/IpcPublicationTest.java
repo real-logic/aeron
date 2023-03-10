@@ -20,6 +20,7 @@ import io.aeron.DriverProxy;
 import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.Tests;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
@@ -30,7 +31,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,13 +55,9 @@ class IpcPublicationTest
     void setUp()
     {
         final RingBuffer toDriverCommands = new ManyToOneRingBuffer(new UnsafeBuffer(
-            ByteBuffer.allocate(Configuration.CONDUCTOR_BUFFER_LENGTH_DEFAULT)));
+            ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH_DEFAULT)));
 
-        final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocate(BUFFER_LENGTH));
-        final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(
-            ByteBuffer.allocate(Configuration.countersMetadataBufferLength(BUFFER_LENGTH)));
-        final CountersManager countersManager = new CountersManager(
-            metaDataBuffer, counterBuffer, StandardCharsets.US_ASCII);
+        final CountersManager countersManager = Tests.newCountersMananger(BUFFER_LENGTH);
         final SystemCounters systemCounters = new SystemCounters(countersManager);
 
         final SenderProxy senderProxy = mock(SenderProxy.class);
@@ -86,8 +82,6 @@ class IpcPublicationTest
             .threadingMode(ThreadingMode.DEDICATED)
             .conductorDutyCycleTracker(new DutyCycleTracker());
 
-        ctx.countersValuesBuffer(counterBuffer);
-
         driverProxy = new DriverProxy(toDriverCommands, CLIENT_ID);
         driverConductor = new DriverConductor(ctx);
         driverConductor.onStart();
@@ -96,7 +90,8 @@ class IpcPublicationTest
         driverConductor.doWork();
 
         ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID);
-        publisherLimit = new UnsafeBufferPosition(counterBuffer, ipcPublication.publisherLimitId());
+        publisherLimit = new UnsafeBufferPosition(
+            (UnsafeBuffer)countersManager.valuesBuffer(), ipcPublication.publisherLimitId());
     }
 
     @Test

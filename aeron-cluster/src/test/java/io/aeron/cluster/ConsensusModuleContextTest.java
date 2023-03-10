@@ -32,10 +32,10 @@ import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.security.DefaultAuthenticatorSupplier;
 import io.aeron.security.SessionProxy;
 import io.aeron.test.TestContexts;
+import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AgentInvoker;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.junit.jupiter.api.AfterEach;
@@ -63,8 +63,7 @@ class ConsensusModuleContextTest
     File clusterDir;
 
     private ConsensusModule.Context context;
-    private final CountersManager countersManager = new CountersManager(
-        new UnsafeBuffer(new byte[64 * 1024]), new UnsafeBuffer(new byte[16 * 1024]));
+    private final CountersManager countersManager = Tests.newCountersMananger(16 * 1024);
     private long registrationId = 0;
 
     @BeforeEach

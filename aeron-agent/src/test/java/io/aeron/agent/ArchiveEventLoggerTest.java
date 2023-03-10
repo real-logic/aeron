@@ -33,7 +33,7 @@ import static io.aeron.agent.ArchiveEventLogger.CONTROL_REQUEST_EVENTS;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.archive.codecs.MessageHeaderEncoder.ENCODED_LENGTH;
-import static java.nio.ByteBuffer.allocate;
+import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.*;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.*;
@@ -45,7 +45,7 @@ import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 class ArchiveEventLoggerTest
 {
     private static final int CAPACITY = align(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH) * 8;
-    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocate(CAPACITY + TRAILER_LENGTH));
+    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocateDirect(CAPACITY + TRAILER_LENGTH));
     private final ArchiveEventLogger logger = new ArchiveEventLogger(new ManyToOneRingBuffer(logBuffer));
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[MAX_EVENT_LENGTH * 3]);
 
@@ -60,8 +60,10 @@ class ArchiveEventLoggerTest
     @EnumSource(
         value = ArchiveEventCode.class,
         mode = EXCLUDE,
-        names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
-            "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE" })
+        names = {
+            "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
+            "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE"
+        })
     void logControlRequest(final ArchiveEventCode eventCode)
     {
         ArchiveComponentLogger.ENABLED_EVENTS.add(eventCode);

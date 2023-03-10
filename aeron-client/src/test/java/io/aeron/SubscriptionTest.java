@@ -20,6 +20,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.LocalSocketAddressStatus;
+import io.aeron.test.Tests;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -32,7 +33,6 @@ import java.nio.ByteBuffer;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.status.ChannelEndpointStatus.*;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -57,10 +57,8 @@ class SubscriptionTest
     private final AvailableImageHandler availableImageHandlerMock = mock(AvailableImageHandler.class);
     private final UnavailableImageHandler unavailableImageHandlerMock = mock(UnavailableImageHandler.class);
 
-    private final UnsafeBuffer valuesBuffer = new UnsafeBuffer(ByteBuffer.allocate(16 * 1024));
-    private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocate(64 * 1024));
     private final UnsafeBuffer tempBuffer = new UnsafeBuffer(ByteBuffer.allocate(1024));
-    private final CountersManager countersManager = new CountersManager(metaDataBuffer, valuesBuffer, US_ASCII);
+    private final CountersManager countersManager = Tests.newCountersMananger(16 * 1024);
 
     private Subscription subscription;
 

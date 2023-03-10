@@ -95,6 +95,6 @@ public class TestLogFactory implements LogFactory
 
     private static UnsafeBuffer newLogBuffer(final int termBufferLength)
     {
-        return new UnsafeBuffer(ByteBuffer.allocate(termBufferLength));
+        return new UnsafeBuffer(ByteBuffer.allocateDirect(termBufferLength));
     }
 }

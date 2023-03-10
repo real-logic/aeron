@@ -19,14 +19,17 @@ import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.driver.Configuration;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
@@ -38,6 +41,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -730,6 +734,13 @@ public class Tests
         final PrintStream out) throws IOException
     {
         Files.walkFileTree(path, new PrintingFileVisitor(out));
+    }
+
+    public static CountersManager newCountersMananger(final int dataLength)
+    {
+        return new CountersManager(
+            new UnsafeBuffer(ByteBuffer.allocateDirect(Configuration.countersMetadataBufferLength(dataLength))),
+            new UnsafeBuffer(ByteBuffer.allocateDirect(dataLength)));
     }
 
     private static void pad(final int indent, final PrintStream out)

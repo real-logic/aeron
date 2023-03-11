@@ -97,7 +97,6 @@ class ReplaySession implements Session, AutoCloseable
     private final Catalog catalog;
     private final Counter limitPosition;
     private final UnsafeBuffer replayBuffer;
-    private final int mtuLength;
     private FileChannel fileChannel;
     private File segmentFile;
     private State state = State.INIT;
@@ -130,7 +129,6 @@ class ReplaySession implements Session, AutoCloseable
         this.segmentLength = recordingSummary.segmentFileLength;
         this.termLength = recordingSummary.termBufferLength;
         this.streamId = recordingSummary.streamId;
-        this.mtuLength = recordingSummary.mtuLength;
         this.epochClock = epochClock;
         this.nanoClock = nanoClock;
         this.archiveDir = archiveDir;
@@ -173,8 +171,7 @@ class ReplaySession implements Session, AutoCloseable
         replayPosition = fromPosition;
         replayLimit = fromPosition + replayLength;
 
-        final String segmentFileName = segmentFileName(recordingId, segmentFileBasePosition);
-        segmentFile = new File(archiveDir, segmentFileName);
+        segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFileBasePosition));
 
         controlSession.sendOkResponse(correlationId, replaySessionId, controlResponseProxy);
         connectDeadlineMs = epochClock.time() + connectTimeoutMs;
@@ -300,12 +297,6 @@ class ReplaySession implements Session, AutoCloseable
 
     private int init() throws IOException
     {
-        if (replayBuffer.capacity() < mtuLength)
-        {
-            onError("fileIoMaxLength is less than mtuLength");
-            return 0;
-        }
-
         if (null == fileChannel)
         {
             if (!segmentFile.exists())

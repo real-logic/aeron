@@ -656,6 +656,21 @@ abstract class ArchiveConductor
             replayPosition = position;
         }
 
+        if (fileIoMaxLength > 0 && fileIoMaxLength < recordingSummary.mtuLength)
+        {
+            final String msg = "fileIoMaxLength=" + fileIoMaxLength + " < mtuLength=" + recordingSummary.mtuLength;
+            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
+            return;
+        }
+        else if (ctx.replayBuffer().capacity() < recordingSummary.mtuLength)
+        {
+            final int replayBufferCapacity = ctx.replayBuffer().capacity();
+            final String msg = "replayBufferCapacity=" + replayBufferCapacity +
+                " < mtuLength=" + recordingSummary.mtuLength;
+            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
+            return;
+        }
+
         final ChannelUri channelUri = ChannelUri.parse(replayChannel);
         final ChannelUriStringBuilder channelBuilder = strippedChannelBuilder(channelUri)
             .initialPosition(replayPosition, recordingSummary.initialTermId, recordingSummary.termBufferLength)

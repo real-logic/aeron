@@ -24,6 +24,7 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.security.Authenticator;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.ArrayDeque;
@@ -62,7 +63,9 @@ final class ControlSession implements Session
     private final ControlResponseProxy controlResponseProxy;
     private final Authenticator authenticator;
     private final ControlSessionProxy controlSessionProxy;
-    private final ArrayDeque<BooleanSupplier> queuedResponses = new ArrayDeque<>(8);
+    private final ArrayDeque<BooleanSupplier> syncResponseQueue = new ArrayDeque<>(8);
+    private final ManyToOneConcurrentLinkedQueue<BooleanSupplier> asyncResponseQueue =
+        new ManyToOneConcurrentLinkedQueue<>();
     private final ControlSessionDemuxer demuxer;
     private final String invalidVersionMessage;
     private State state = State.INIT;
@@ -181,7 +184,7 @@ final class ControlSession implements Session
                 break;
 
             case ACTIVE:
-                workCount += sendQueuedResponses(nowMs);
+                workCount += sendResponses(nowMs);
                 break;
 
             case REJECTED:
@@ -622,11 +625,22 @@ final class ControlSession implements Session
         final String errorMessage,
         final ControlResponseProxy proxy)
     {
-        if (!queuedResponses.isEmpty() ||
+        if (!syncResponseQueue.isEmpty() ||
             !proxy.sendResponse(controlSessionId, correlationId, relevantId, code, errorMessage, this))
         {
             queueResponse(correlationId, relevantId, code, errorMessage);
         }
+    }
+
+    void asyncSendReplayOkResponse(final long correlationId, final long replaySessionId)
+    {
+        asyncResponseQueue.offer(() -> controlResponseProxy.sendResponse(
+            controlSessionId,
+            correlationId,
+            replaySessionId,
+            OK,
+            null,
+            this));
     }
 
     void attemptErrorResponse(final long correlationId, final String errorMessage, final ControlResponseProxy proxy)
@@ -658,7 +672,7 @@ final class ControlSession implements Session
         final long position,
         final RecordingSignal recordingSignal)
     {
-        if (!queuedResponses.isEmpty() || !controlResponseProxy.sendSignal(
+        if (!syncResponseQueue.isEmpty() || !controlResponseProxy.sendSignal(
             controlSessionId,
             correlationId,
             recordingId,
@@ -669,7 +683,7 @@ final class ControlSession implements Session
         {
             if (controlPublication.isConnected())
             {
-                queuedResponses.offer(() -> controlResponseProxy.sendSignal(
+                syncResponseQueue.offer(() -> controlResponseProxy.sendSignal(
                     controlSessionId,
                     correlationId,
                     recordingId,
@@ -706,7 +720,7 @@ final class ControlSession implements Session
     private void queueResponse(
         final long correlationId, final long relevantId, final ControlResponseCode code, final String message)
     {
-        queuedResponses.offer(() -> controlResponseProxy.sendResponse(
+        syncResponseQueue.offer(() -> controlResponseProxy.sendResponse(
             controlSessionId,
             correlationId,
             relevantId,
@@ -824,7 +838,7 @@ final class ControlSession implements Session
         return workCount;
     }
 
-    private int sendQueuedResponses(final long nowMs)
+    private int sendResponses(final long nowMs)
     {
         int workCount = 0;
 
@@ -834,11 +848,11 @@ final class ControlSession implements Session
         }
         else
         {
-            if (!queuedResponses.isEmpty())
+            if (!syncResponseQueue.isEmpty())
             {
-                if (queuedResponses.peekFirst().getAsBoolean())
+                if (syncResponseQueue.peekFirst().getAsBoolean())
                 {
-                    queuedResponses.pollFirst();
+                    syncResponseQueue.pollFirst();
                     activityDeadlineMs = Aeron.NULL_VALUE;
                     workCount++;
                 }
@@ -849,6 +863,27 @@ final class ControlSession implements Session
                 else if (hasNoActivity(nowMs))
                 {
                     state(State.INACTIVE);
+                    return workCount;
+                }
+            }
+
+            final BooleanSupplier response = asyncResponseQueue.peek();
+            if (null != response)
+            {
+                if (response.getAsBoolean())
+                {
+                    asyncResponseQueue.poll();
+                    activityDeadlineMs = Aeron.NULL_VALUE;
+                    workCount++;
+                }
+                else if (Aeron.NULL_VALUE == activityDeadlineMs)
+                {
+                    activityDeadlineMs = nowMs + connectTimeoutMs;
+                }
+                else if (hasNoActivity(nowMs))
+                {
+                    state(State.INACTIVE);
+                    return workCount;
                 }
             }
         }

@@ -173,7 +173,6 @@ class ReplaySession implements Session, AutoCloseable
 
         segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFileBasePosition));
 
-        controlSession.sendOkResponse(correlationId, replaySessionId, controlResponseProxy);
         connectDeadlineMs = epochClock.time() + connectTimeoutMs;
     }
 
@@ -328,6 +327,8 @@ class ReplaySession implements Session, AutoCloseable
                         return 0;
                     }
                 }
+
+                controlSession.asyncSendReplayOkResponse(correlationId, sessionId);
             }
         }
 

@@ -1008,6 +1008,35 @@ class RecordingLogTest
         }
     }
 
+    @Test
+    void shouldInvalidateLatestSnapshotIgnoringRemoteSnapshots(@TempDir final File tempDir)
+    {
+        try (RecordingLog log = new RecordingLog(tempDir, true))
+        {
+            log.appendTerm(1, 0, 0, 1_000_000_000L);
+
+            log.appendSnapshot(2, 0, 0, 1000, 1_000_000_000L, SERVICE_ID);
+            log.appendSnapshot(3, 0, 0, 1000, 1_000_000_000L, 0);
+
+            log.appendSnapshot(4, 0, 2, 2000, 1_000_000_000L, SERVICE_ID);
+            log.appendSnapshot(5, 0, 2, 2000, 1_000_000_000L, 0);
+
+            log.appendRemoteSnapshot(15, 0, 500, 800, 1_000_000_000L, SERVICE_ID, "remotehost0.aeron.io:20002");
+            log.appendRemoteSnapshot(16, 0, 500, 800, 1_000_000_000L, 0, "remotehost0.aeron.io:20002");
+        }
+
+        try (RecordingLog log = new RecordingLog(tempDir, false))
+        {
+            assertEquals(4, requireNonNull(log.getLatestSnapshot(SERVICE_ID)).recordingId);
+            final Map<String, List<RecordingLog.Entry>> preInvalidate = log.latestRemoteSnapshots(2);
+
+            log.invalidateLatestSnapshot();
+
+            assertEquals(2, requireNonNull(log.getLatestSnapshot(SERVICE_ID)).recordingId);
+            assertEquals(preInvalidate, log.latestRemoteSnapshots(2));
+        }
+    }
+
     private void mockExtent(final AeronArchive mockArchive, final long recordingId)
     {
         when(mockArchive.listRecording(eq(recordingId), any())).thenAnswer(

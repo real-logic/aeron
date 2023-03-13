@@ -342,6 +342,9 @@ public final class RecordingLog implements AutoCloseable
          */
         public String toString()
         {
+            final String archiveEndpointEntry = ENTRY_TYPE_REMOTE_SNAPSHOT == type ?
+                ", archiveEndpoint=" + archiveEndpoint : "";
+
             return "Entry{" +
                 "recordingId=" + recordingId +
                 ", leadershipTermId=" + leadershipTermId +
@@ -352,6 +355,7 @@ public final class RecordingLog implements AutoCloseable
                 ", type=" + typeAsString(type) +
                 ", isValid=" + isValid +
                 ", entryIndex=" + entryIndex +
+                archiveEndpointEntry +
                 '}';
         }
     }
@@ -1415,6 +1419,8 @@ public final class RecordingLog implements AutoCloseable
                 return "TERM";
             case ENTRY_TYPE_SNAPSHOT:
                 return "SNAPSHOT";
+            case ENTRY_TYPE_REMOTE_SNAPSHOT:
+                return "REMOTE_SNAPSHOT";
             default:
                 return "UNKNOWN";
         }

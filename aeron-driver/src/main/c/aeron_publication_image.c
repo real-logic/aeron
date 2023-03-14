@@ -921,10 +921,9 @@ void aeron_publication_image_on_time_event(
                 image->conductor_fields.state = AERON_PUBLICATION_IMAGE_STATE_LINGER;
                 image->conductor_fields.time_of_last_state_change_ns = now_ns;
 
-                aeron_driver_conductor_image_transition_to_linger(conductor, image);
-
                 aeron_receive_channel_endpoint_dec_image_ref_count(image->endpoint);
                 aeron_driver_receiver_proxy_on_remove_publication_image(conductor->context->receiver_proxy, image);
+                aeron_driver_conductor_image_transition_to_linger(conductor, image);
 
                 aeron_receive_channel_endpoint_try_remove_endpoint(image->endpoint);
             }

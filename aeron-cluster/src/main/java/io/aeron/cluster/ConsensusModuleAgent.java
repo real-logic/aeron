@@ -1191,6 +1191,25 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
+    void onRemoteSnapshot(
+        final long recordingId,
+        final long leadershipTermId,
+        final long termBaseLogPosition,
+        final long logPosition,
+        final long timestamp,
+        final long serviceId,
+        final String archiveEndpoint)
+    {
+        System.out.println(
+            "recordingId = " + recordingId +
+            ", leadershipTermId = " + leadershipTermId +
+            ", termBaseLogPosition = " + termBaseLogPosition +
+            ", logPosition = " + logPosition +
+            ", timestamp = " + timestamp +
+            ", serviceId = " + serviceId +
+            ", archiveEndpoint = " + archiveEndpoint);
+    }
+
     void state(final ConsensusModule.State newState)
     {
         if (newState != state)

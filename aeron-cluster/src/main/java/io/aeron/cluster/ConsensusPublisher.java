@@ -24,6 +24,8 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.ExpandableArrayBuffer;
 
+import java.util.List;
+
 final class ConsensusPublisher
 {
     private static final int SEND_ATTEMPTS = 3;
@@ -50,6 +52,8 @@ final class ConsensusPublisher
     private final BackupResponseEncoder backupResponseEncoder = new BackupResponseEncoder();
     private final HeartbeatRequestEncoder heartbeatRequestEncoder = new HeartbeatRequestEncoder();
     private final HeartbeatResponseEncoder heartbeatResponseEncoder = new HeartbeatResponseEncoder();
+    private final ChallengeResponseEncoder challengeResponseEncoder = new ChallengeResponseEncoder();
+    private final RemoteSnapshotEncoder remoteSnapshotEncoder = new RemoteSnapshotEncoder();
 
     void canvassPosition(
         final ExclusivePublication publication,
@@ -687,7 +691,7 @@ final class ConsensusPublisher
         return sendPublication(publication, buffer, length);
     }
 
-    public boolean heartbeatResponse(final ClusterSession session)
+    boolean heartbeatResponse(final ClusterSession session)
     {
         heartbeatResponseEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -697,21 +701,49 @@ final class ConsensusPublisher
         return sendSession(session, buffer, length);
     }
 
-    public boolean challengeResponse(
+    boolean challengeResponse(
         final ExclusivePublication publication,
         final long nextCorrelationId,
         final long clusterSessionId,
         final byte[] encodedChallengeResponse)
     {
-        final ChallengeResponseEncoder encoder = new ChallengeResponseEncoder()
+        challengeResponseEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(nextCorrelationId)
             .clusterSessionId(clusterSessionId)
             .putEncodedCredentials(encodedChallengeResponse, 0, encodedChallengeResponse.length);
 
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + challengeResponseEncoder.encodedLength();
 
         return sendPublication(publication, buffer, length);
+    }
+
+    boolean remoteSnapshotsTaken(final ExclusivePublication publication, final List<RecordingLog.Entry> snapshots)
+    {
+        final int snapshotsLength = snapshots.size();
+        final RemoteSnapshotEncoder remoteSnapshotEncoder = this.remoteSnapshotEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder);
+
+        final RemoteSnapshotEncoder.SnapshotsEncoder snapshotsEncoder = remoteSnapshotEncoder
+            .snapshotsCount(snapshotsLength);
+
+        for (int i = 0; i < snapshotsLength; i++)
+        {
+            final RecordingLog.Entry entry = snapshots.get(i);
+            snapshotsEncoder
+                .next()
+                .recordingId(entry.recordingId)
+                .leadershipTermId(entry.leadershipTermId)
+                .termBaseLogPosition(entry.termBaseLogPosition)
+                .logPosition(entry.logPosition)
+                .timestamp(entry.timestamp)
+                .serviceId(entry.serviceId)
+                .archiveEndpoint(entry.archiveEndpoint);
+        }
+
+        final int encodedLength = MessageHeaderEncoder.ENCODED_LENGTH + remoteSnapshotEncoder.encodedLength();
+
+        return sendPublication(publication, buffer, encodedLength);
     }
 
     private static void checkResult(final long result)

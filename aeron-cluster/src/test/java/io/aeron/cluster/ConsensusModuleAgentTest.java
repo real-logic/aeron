@@ -40,7 +40,6 @@ import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.NoOpIdleStrategy;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +62,6 @@ import static io.aeron.cluster.ConsensusModuleAgent.SLOW_TICK_INTERVAL_NS;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
 import static java.lang.Boolean.TRUE;
 import static org.agrona.concurrent.status.CountersReader.COUNTER_LENGTH;
-import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -82,8 +80,7 @@ public class ConsensusModuleAgentTest
     private final ExclusivePublication mockExclusivePublication = mock(ExclusivePublication.class);
     private final Counter mockTimedOutClientCounter = mock(Counter.class);
     private final LongConsumer mockTimeConsumer = mock(LongConsumer.class);
-    private final CountersManager countersManager = new CountersManager(
-        new UnsafeBuffer(new byte[2 * METADATA_LENGTH]), new UnsafeBuffer(new byte[2 * COUNTER_LENGTH]));
+    private final CountersManager countersManager = Tests.newCountersMananger(2 * COUNTER_LENGTH);
     private long registrationId = 20;
 
     private final ConsensusModule.Context ctx = TestContexts.localhostConsensusModule()

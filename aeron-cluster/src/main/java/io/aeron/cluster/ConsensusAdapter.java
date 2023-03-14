@@ -25,6 +25,8 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayUtil;
 
+import java.util.Iterator;
+
 class ConsensusAdapter implements FragmentHandler, AutoCloseable
 {
     static final int FRAGMENT_LIMIT = 10;
@@ -385,8 +387,12 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                for (final RemoteSnapshotDecoder.SnapshotsDecoder remoteSnapshot : remoteSnapshotDecoder.snapshots())
+                final Iterator<RemoteSnapshotDecoder.SnapshotsDecoder> iterator =
+                    remoteSnapshotDecoder.snapshots().iterator();
+
+                while (iterator.hasNext())
                 {
+                    final RemoteSnapshotDecoder.SnapshotsDecoder remoteSnapshot = iterator.next();
                     consensusModuleAgent.onRemoteSnapshot(
                         remoteSnapshot.recordingId(),
                         remoteSnapshot.leadershipTermId(),
@@ -394,7 +400,8 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                         remoteSnapshot.logPosition(),
                         remoteSnapshot.timestamp(),
                         remoteSnapshot.serviceId(),
-                        remoteSnapshot.archiveEndpoint());
+                        remoteSnapshot.archiveEndpoint(),
+                        !iterator.hasNext());
                 }
             }
 

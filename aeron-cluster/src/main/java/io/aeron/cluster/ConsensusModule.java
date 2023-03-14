@@ -49,6 +49,7 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
+import static io.aeron.AeronCounters.CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID;
 import static io.aeron.AeronCounters.validateCounterTypeId;
 import static io.aeron.CommonContext.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
@@ -822,6 +823,12 @@ public final class ConsensusModule implements AutoCloseable
             "aeron.cluster.replication.progress.interval";
 
         /**
+         * Property name of enabling the acceptance of standby snapshots
+         */
+        public static final String CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME =
+            "aeron.cluster.accept.standby.snapshots";
+
+        /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
          * {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME} if set.
          *
@@ -1293,6 +1300,16 @@ public final class ConsensusModule implements AutoCloseable
         {
             return SystemUtil.getDurationInNanos(CLUSTER_REPLICATION_PROGRESS_INTERVAL_PROP_NAME, Aeron.NULL_VALUE);
         }
+
+        /**
+         * If this node should accept snapshots from standby nodes.
+         *
+         * @return value from property {@link #CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME} or false if not set.
+         */
+        public static boolean acceptStandbySnapshots()
+        {
+            return Boolean.getBoolean(CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME);
+        }
     }
 
     /**
@@ -1387,6 +1404,7 @@ public final class ConsensusModule implements AutoCloseable
         private Counter controlToggle;
         private Counter snapshotCounter;
         private Counter timedOutClientCounter;
+        private Counter standbySnapshotCounter;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
 
@@ -1401,6 +1419,7 @@ public final class ConsensusModule implements AutoCloseable
         private boolean useAgentInvoker = false;
         private ConsensusModuleStateExport boostrapState = null;
         private NameResolver nameResolver;
+        private boolean acceptStandbySnapshots = Configuration.acceptStandbySnapshots();
 
         /**
          * Perform a shallow copy of the object.
@@ -1635,6 +1654,21 @@ public final class ConsensusModule implements AutoCloseable
                     aeron, buffer, "Cluster timed out client count", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, clusterId);
             }
             validateCounterTypeId(aeron, timedOutClientCounter, CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID);
+
+            // TODO: Disable with configuration... (Mike)
+            if (acceptStandbySnapshots)
+            {
+                if (null == standbySnapshotCounter)
+                {
+                    standbySnapshotCounter = ClusterCounters.allocate(
+                        aeron,
+                        buffer,
+                        "Cluster standby snapshots received",
+                        CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID,
+                        clusterId);
+                }
+                validateCounterTypeId(aeron, standbySnapshotCounter, CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID);
+            }
 
             if (null == dutyCycleTracker)
             {
@@ -3688,6 +3722,56 @@ public final class ConsensusModule implements AutoCloseable
         public Context nameResolver(final NameResolver nameResolver)
         {
             this.nameResolver = nameResolver;
+            return this;
+        }
+
+        /**
+         * Indicate whether this node should accept snapshots from standby nodes
+         *
+         * @return <code>true</code> if this node should accept snapshots from standby nodes, <code>false</code>
+         * otherwise.
+         * @see Configuration#CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME
+         * @see Configuration#acceptStandbySnapshots()
+         */
+        public boolean acceptStandbySnapshots()
+        {
+            return acceptStandbySnapshots;
+        }
+
+        /**
+         * Indicate whether this node should accept snapshots from standby nodes
+         *
+         * @param acceptStandbySnapshots <code>true</code> if this node should accept snapshots from standby nodes,
+         *                               <code>false</code> otherwise.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME
+         * @see Configuration#acceptStandbySnapshots()
+         */
+        public ConsensusModule.Context acceptStandbySnapshots(final boolean acceptStandbySnapshots)
+        {
+            this.acceptStandbySnapshots = acceptStandbySnapshots;
+            return this;
+        }
+
+        /**
+         * Get the counter used to track standby snapshots accepted by this node.
+         *
+         * @return the counter for standby snapshots.
+         */
+        public Counter standbySnapshotCounter()
+        {
+            return standbySnapshotCounter;
+        }
+
+        /**
+         * Set the counter used to track standby snapshots accepted by this node.
+         *
+         * @param standbySnapshotCounter the counter for standby snapshots.
+         * @return this for a fluentAPI.
+         */
+        public Context standbySnapshotCounter(final Counter standbySnapshotCounter)
+        {
+            this.standbySnapshotCounter = standbySnapshotCounter;
             return this;
         }
 

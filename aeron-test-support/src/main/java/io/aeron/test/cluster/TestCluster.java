@@ -154,6 +154,7 @@ public final class TestCluster implements AutoCloseable
     private int archiveSegmentFileLength;
     private IntHashSet byHostInvalidInitialResolutions;
     private IntHashSet byMemberInvalidInitialResolutions;
+    private boolean acceptStandbySnapshots;
 
     private TestCluster(
         final int staticMemberCount,
@@ -319,6 +320,7 @@ public final class TestCluster implements AutoCloseable
             .authenticatorSupplier(authenticationSupplier)
             .authorisationServiceSupplier(authorisationServiceSupplier)
             .timerServiceSupplier(timerServiceSupplier)
+            .acceptStandbySnapshots(acceptStandbySnapshots)
             .deleteDirOnStart(cleanStart);
 
         nodes[index] = new TestNode(context, dataCollector);
@@ -381,6 +383,7 @@ public final class TestCluster implements AutoCloseable
             .authenticatorSupplier(authenticationSupplier)
             .authorisationServiceSupplier(authorisationServiceSupplier)
             .timerServiceSupplier(timerServiceSupplier)
+            .acceptStandbySnapshots(acceptStandbySnapshots)
             .deleteDirOnStart(cleanStart);
 
         nodes[index] = new TestNode(context, dataCollector);
@@ -445,6 +448,7 @@ public final class TestCluster implements AutoCloseable
             .authenticatorSupplier(authenticationSupplier)
             .authorisationServiceSupplier(authorisationServiceSupplier)
             .timerServiceSupplier(timerServiceSupplier)
+            .acceptStandbySnapshots(acceptStandbySnapshots)
             .deleteDirOnStart(cleanStart);
 
         nodes[index] = new TestNode(context, dataCollector);
@@ -507,6 +511,7 @@ public final class TestCluster implements AutoCloseable
             .authenticatorSupplier(authenticationSupplier)
             .authorisationServiceSupplier(authorisationServiceSupplier)
             .timerServiceSupplier(timerServiceSupplier)
+            .acceptStandbySnapshots(acceptStandbySnapshots)
             .deleteDirOnStart(false);
 
         nodes[index] = new TestNode(context, dataCollector);
@@ -644,6 +649,7 @@ public final class TestCluster implements AutoCloseable
             .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
             .authorisationServiceSupplier(authorisationServiceSupplier)
             .timerServiceSupplier(timerServiceSupplier)
+            .acceptStandbySnapshots(acceptStandbySnapshots)
             .deleteDirOnStart(false);
 
         backupNode = null;
@@ -1297,7 +1303,53 @@ public final class TestCluster implements AutoCloseable
 
     public void awaitSnapshotCount(final TestNode node, final long value)
     {
+        awaitCounter(node, value, node.consensusModule().context().snapshotCounter());
+    }
+
+    public long getSnapshotCount(final TestNode node)
+    {
         final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
+
+        if (snapshotCounter.isClosed())
+        {
+            throw new IllegalStateException("counter is unexpectedly closed");
+        }
+
+        return snapshotCounter.get();
+    }
+
+    public void awaitStandbySnapshotCount(final long value)
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node && !node.isClosed())
+            {
+                awaitStandbySnapshotCount(node, value);
+            }
+        }
+    }
+
+    public void awaitStandbySnapshotCount(final TestNode node, final long value)
+    {
+        awaitCounter(node, value, requireNonNull(
+            node.consensusModule().context().standbySnapshotCounter(), "node not configured for standby snapshots"));
+    }
+
+    public long getStandbySnapshotCount(final TestNode node)
+    {
+        final Counter snapshotCounter = requireNonNull(
+            node.consensusModule().context().standbySnapshotCounter(), "node not configured for standby snapshots");
+
+        if (snapshotCounter.isClosed())
+        {
+            throw new IllegalStateException("counter is unexpectedly closed");
+        }
+
+        return snapshotCounter.get();
+    }
+
+    private static void awaitCounter(final TestNode node, final long value, final Counter snapshotCounter)
+    {
         final Supplier<String> msg = () -> "node=" + node.index() +
             " role=" + node.role() +
             " expected=" + value +
@@ -1316,18 +1368,6 @@ public final class TestCluster implements AutoCloseable
 
             Tests.yieldingIdle(msg);
         }
-    }
-
-    public long getSnapshotCount(final TestNode node)
-    {
-        final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
-
-        if (snapshotCounter.isClosed())
-        {
-            throw new IllegalStateException("counter is unexpectedly closed");
-        }
-
-        return snapshotCounter.get();
     }
 
     public long logPosition()
@@ -1992,6 +2032,7 @@ public final class TestCluster implements AutoCloseable
         private final IntHashSet byHostInvalidInitialResolutions = new IntHashSet();
         private final IntHashSet byMemberInvalidInitialResolutions = new IntHashSet();
         private int archiveSegmentFileLength = TestCluster.SEGMENT_FILE_LENGTH;
+        private boolean acceptStandbySnapshots = false;
 
         public Builder withStaticNodes(final int nodeCount)
         {
@@ -2070,6 +2111,12 @@ public final class TestCluster implements AutoCloseable
             return this;
         }
 
+        public Builder withStandbySnapshots(final boolean acceptStandbySnapshots)
+        {
+            this.acceptStandbySnapshots = acceptStandbySnapshots;
+            return this;
+        }
+
         public TestCluster start()
         {
             return start(nodeCount);
@@ -2097,6 +2144,7 @@ public final class TestCluster implements AutoCloseable
             testCluster.timerServiceSupplier(timerServiceSupplier);
             testCluster.segmentFileLength(archiveSegmentFileLength);
             testCluster.invalidInitialResolutions(byHostInvalidInitialResolutions, byMemberInvalidInitialResolutions);
+            testCluster.acceptStandbySnapshots(acceptStandbySnapshots);
 
             try
             {
@@ -2137,6 +2185,11 @@ public final class TestCluster implements AutoCloseable
     {
         this.byHostInvalidInitialResolutions = byHostInvalidInitialResolutions;
         this.byMemberInvalidInitialResolutions = byMemberInvalidInitialResolutions;
+    }
+
+    private void acceptStandbySnapshots(final boolean acceptStandbySnapshots)
+    {
+        this.acceptStandbySnapshots = acceptStandbySnapshots;
     }
 
     public static DriverOutputConsumer clientDriverOutputConsumer(final DataCollector dataCollector)

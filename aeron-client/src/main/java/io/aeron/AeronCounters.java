@@ -239,6 +239,11 @@ public final class AeronCounters
     public static final int CLUSTER_SNAPSHOT_COUNTER_TYPE_ID = 205;
 
     /**
+     * Counter type for count of standby snapshots received.
+     */
+    public static final int CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID = 232;
+
+    /**
      * Type id for election state counter.
      */
     public static final int CLUSTER_ELECTION_STATE_TYPE_ID = 207;

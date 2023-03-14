@@ -1197,17 +1197,33 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final long termBaseLogPosition,
         final long logPosition,
         final long timestamp,
-        final long serviceId,
-        final String archiveEndpoint)
+        final int serviceId,
+        final String archiveEndpoint,
+        final boolean endOfGroup)
     {
-        System.out.println(
-            "recordingId = " + recordingId +
-            ", leadershipTermId = " + leadershipTermId +
-            ", termBaseLogPosition = " + termBaseLogPosition +
-            ", logPosition = " + logPosition +
-            ", timestamp = " + timestamp +
-            ", serviceId = " + serviceId +
-            ", archiveEndpoint = " + archiveEndpoint);
+        if (!ctx.acceptStandbySnapshots())
+        {
+            return;
+        }
+
+        logStandbySnapshot(
+            memberId,
+            recordingId,
+            leadershipTermId,
+            termBaseLogPosition,
+            logPosition,
+            timestamp,
+            serviceId,
+            archiveEndpoint,
+            endOfGroup);
+
+        recordingLog.appendRemoteSnapshot(
+            recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId, archiveEndpoint);
+
+        if (endOfGroup)
+        {
+            ctx.standbySnapshotCounter().increment();
+        }
     }
 
     void state(final ConsensusModule.State newState)
@@ -2210,6 +2226,19 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final long leadershipTermId,
         final int followerMemberId,
         final int protocolVersion)
+    {
+    }
+
+    private void logStandbySnapshot(
+        final int memberId,
+        final long recordingLog,
+        final long leadershipTermId,
+        final long termBaseLogPosition,
+        final long logPosition,
+        final long timestamp,
+        final int serviceId,
+        final String archiveEndpoint,
+        final boolean endOfGroup)
     {
     }
 

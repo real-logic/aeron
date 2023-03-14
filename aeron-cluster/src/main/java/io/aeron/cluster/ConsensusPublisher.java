@@ -718,7 +718,10 @@ final class ConsensusPublisher
         return sendPublication(publication, buffer, length);
     }
 
-    boolean remoteSnapshotsTaken(final ExclusivePublication publication, final List<RecordingLog.Entry> snapshots)
+    boolean remoteSnapshotsTaken(
+        final ExclusivePublication publication,
+        final List<RecordingLog.Entry> snapshots,
+        final String archiveEndpoint)
     {
         final int snapshotsLength = snapshots.size();
         final RemoteSnapshotEncoder remoteSnapshotEncoder = this.remoteSnapshotEncoder
@@ -738,7 +741,7 @@ final class ConsensusPublisher
                 .logPosition(entry.logPosition)
                 .timestamp(entry.timestamp)
                 .serviceId(entry.serviceId)
-                .archiveEndpoint(entry.archiveEndpoint);
+                .archiveEndpoint(archiveEndpoint);
         }
 
         final int encodedLength = MessageHeaderEncoder.ENCODED_LENGTH + remoteSnapshotEncoder.encodedLength();

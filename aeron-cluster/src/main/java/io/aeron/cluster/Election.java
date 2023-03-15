@@ -686,7 +686,8 @@ class Election
             return workCount;
         }
 
-        final long deadlineNs = isExtendedCanvass ? timeOfLastStateChangeNs + ctx.startupCanvassTimeoutNs() :
+        final long deadlineNs = isExtendedCanvass ?
+            timeOfLastStateChangeNs + ctx.startupCanvassTimeoutNs() :
             consensusModuleAgent.timeOfLastLeaderUpdateNs() + ctx.leaderHeartbeatTimeoutNs();
 
         if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember) ||
@@ -719,9 +720,7 @@ class Election
     {
         int workCount = 0;
 
-        if (ClusterMember.hasUnanimousVotes(clusterMembers, candidateTermId) ||
-            (nowNs >= (consensusModuleAgent.timeOfLastLeaderUpdateNs() + ctx.electionTimeoutNs()) &&
-            ClusterMember.hasQuorumVotes(clusterMembers, candidateTermId)))
+        if (ClusterMember.hasUnanimousVote(clusterMembers, candidateTermId))
         {
             leaderMember = thisMember;
             leadershipTermId = candidateTermId;
@@ -730,7 +729,17 @@ class Election
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.electionTimeoutNs()))
         {
-            state(CANVASS, nowNs);
+            if (ClusterMember.hasQuorumVote(clusterMembers, candidateTermId))
+            {
+                leaderMember = thisMember;
+                leadershipTermId = candidateTermId;
+                state(LEADER_LOG_REPLICATION, nowNs);
+            }
+            else
+            {
+                state(CANVASS, nowNs);
+            }
+
             workCount++;
         }
         else

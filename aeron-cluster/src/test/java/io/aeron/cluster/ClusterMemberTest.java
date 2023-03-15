@@ -169,7 +169,7 @@ public class ClusterMemberTest
             newMember(5).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertTrue(hasQuorumVotes(members, candidateTermId));
+        assertTrue(hasQuorumVote(members, candidateTermId));
     }
 
     @Test
@@ -183,7 +183,7 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertFalse(hasQuorumVotes(members, candidateTermId));
+        assertFalse(hasQuorumVote(members, candidateTermId));
     }
 
     @Test
@@ -197,7 +197,7 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId + 5).vote(Boolean.TRUE)
         };
 
-        assertFalse(hasQuorumVotes(members, candidateTermId));
+        assertFalse(hasQuorumVote(members, candidateTermId));
     }
 
     @Test
@@ -211,7 +211,7 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.FALSE)
         };
 
-        assertFalse(hasUnanimousVotes(members, candidateTermId));
+        assertFalse(hasUnanimousVote(members, candidateTermId));
     }
 
     @Test
@@ -225,7 +225,7 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertFalse(hasUnanimousVotes(members, candidateTermId));
+        assertFalse(hasUnanimousVote(members, candidateTermId));
     }
 
     @Test
@@ -239,7 +239,7 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertFalse(hasUnanimousVotes(members, candidateTermId));
+        assertFalse(hasUnanimousVote(members, candidateTermId));
     }
 
     @Test
@@ -253,7 +253,7 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertTrue(hasUnanimousVotes(members, candidateTermId));
+        assertTrue(hasUnanimousVote(members, candidateTermId));
     }
 
     @ParameterizedTest

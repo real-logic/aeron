@@ -977,13 +977,13 @@ public final class ClusterMember
     }
 
     /**
-     * Has all the members voted positively.
+     * Has all votes been counted for a unanimous candidate.
      *
      * @param clusterMembers  to check for votes.
      * @param candidateTermId for the vote.
      * @return {@code true} if all members voted positively.
      */
-    public static boolean hasUnanimousVotes(final ClusterMember[] clusterMembers, final long candidateTermId)
+    public static boolean hasUnanimousVote(final ClusterMember[] clusterMembers, final long candidateTermId)
     {
         for (final ClusterMember member : clusterMembers)
         {
@@ -1003,7 +1003,7 @@ public final class ClusterMember
      * @param candidateTermId for the vote.
      * @return {@code true} if sufficient positive votes being counted for a majority and no negative votes.
      */
-    public static boolean hasQuorumVotes(final ClusterMember[] clusterMembers, final long candidateTermId)
+    public static boolean hasQuorumVote(final ClusterMember[] clusterMembers, final long candidateTermId)
     {
         int votes = 0;
         for (final ClusterMember member : clusterMembers)

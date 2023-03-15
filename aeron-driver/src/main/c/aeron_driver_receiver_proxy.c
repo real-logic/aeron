@@ -258,17 +258,43 @@ void aeron_driver_receiver_proxy_on_remove_cool_down(
     int32_t session_id,
     int32_t stream_id)
 {
-    aeron_command_remove_cool_down_t cmd =
+    aeron_command_on_remove_with_state_t cmd =
         {
-            .base = { .func = aeron_driver_receiver_on_remove_cool_down, .item = NULL },
+            .base = { .func = aeron_driver_receiver_on_remove_with_state, .item = NULL },
             .endpoint = endpoint,
             .session_id = session_id,
-            .stream_id = stream_id
+            .stream_id = stream_id,
+            .state = AERON_DATA_PACKET_DISPATCHER_IMAGE_COOL_DOWN
         };
 
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
-        aeron_driver_receiver_on_remove_cool_down(receiver_proxy->receiver, &cmd);
+        aeron_driver_receiver_on_remove_with_state(receiver_proxy->receiver, &cmd);
+    }
+    else
+    {
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
+    }
+}
+
+void aeron_driver_receiver_proxy_on_remove_init_in_progress(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t session_id,
+    int32_t stream_id)
+{
+    aeron_command_on_remove_with_state_t cmd =
+        {
+            .base = { .func = aeron_driver_receiver_on_remove_with_state, .item = NULL },
+            .endpoint = endpoint,
+            .session_id = session_id,
+            .stream_id = stream_id,
+            .state = AERON_DATA_PACKET_DISPATCHER_IMAGE_INIT_IN_PROGRESS
+        };
+
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
+    {
+        aeron_driver_receiver_on_remove_with_state(receiver_proxy->receiver, &cmd);
     }
     else
     {

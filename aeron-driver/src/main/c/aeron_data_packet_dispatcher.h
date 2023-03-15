@@ -116,7 +116,7 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
     int32_t stream_id,
     int32_t session_id);
 
-inline int aeron_data_packet_dispatcher_remove_with_state(
+inline void aeron_data_packet_dispatcher_remove_matching_state(
     aeron_data_packet_dispatcher_t *dispatcher,
     int32_t session_id,
     int32_t stream_id,
@@ -132,24 +132,23 @@ inline int aeron_data_packet_dispatcher_remove_with_state(
         aeron_int64_to_tagged_ptr_hash_map_get(&stream_interest->image_by_session_id_map, session_id, &tag, NULL);
         if (image_state == tag)
         {
-            aeron_int64_to_tagged_ptr_hash_map_remove(&stream_interest->image_by_session_id_map, session_id, NULL, NULL);
+            aeron_int64_to_tagged_ptr_hash_map_remove(
+                &stream_interest->image_by_session_id_map, session_id, NULL, NULL);
         }
     }
-
-    return 0;
 }
 
-inline int aeron_data_packet_dispatcher_remove_pending_setup(
+inline void aeron_data_packet_dispatcher_remove_pending_setup(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id)
 {
-    return aeron_data_packet_dispatcher_remove_with_state(
+    aeron_data_packet_dispatcher_remove_matching_state(
         dispatcher, session_id, stream_id, AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME);
 }
 
-inline int aeron_data_packet_dispatcher_remove_cool_down(
+inline void aeron_data_packet_dispatcher_remove_cool_down(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id)
 {
-    return aeron_data_packet_dispatcher_remove_with_state(
+    aeron_data_packet_dispatcher_remove_matching_state(
         dispatcher, session_id, stream_id, AERON_DATA_PACKET_DISPATCHER_IMAGE_COOL_DOWN);
 }
 

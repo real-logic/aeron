@@ -118,7 +118,7 @@ void aeron_driver_receiver_on_remove_destination(void *clientd, void *item);
 void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item);
 void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item);
 
-void aeron_driver_receiver_on_remove_with_state(void *clientd, void *item);
+void aeron_driver_receiver_on_remove_matching_state(void *clientd, void *item);
 
 void aeron_driver_receiver_on_resolution_change(void *clientd, void *item);
 

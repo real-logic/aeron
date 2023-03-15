@@ -104,7 +104,7 @@ typedef struct aeron_command_publication_image_stct
 }
 aeron_command_publication_image_t;
 
-typedef struct aeron_command_on_remove_with_state_stct
+typedef struct aeron_command_on_remove_matching_state_stct
 {
     aeron_command_base_t base;
     void *endpoint;
@@ -112,7 +112,7 @@ typedef struct aeron_command_on_remove_with_state_stct
     int32_t stream_id;
     uint32_t state;
 }
-aeron_command_on_remove_with_state_t;
+aeron_command_on_remove_matching_state_t;
 
 void aeron_driver_receiver_proxy_on_add_publication_image(
     aeron_driver_receiver_proxy_t *receiver_proxy,

@@ -360,7 +360,7 @@ TEST_F(DataPacketDispatcherTest, shouldNotIgnoreDataAndSetupAfterImageRemovedAnd
     ASSERT_EQ(0, aeron_data_packet_dispatcher_add_subscription(m_dispatcher, stream_id));
     ASSERT_EQ(0, aeron_data_packet_dispatcher_add_publication_image(m_dispatcher, image));
     ASSERT_EQ(0, aeron_data_packet_dispatcher_remove_publication_image(m_dispatcher, image));
-    ASSERT_EQ(0, aeron_data_packet_dispatcher_remove_cool_down(m_dispatcher, session_id, stream_id));
+    aeron_data_packet_dispatcher_remove_cool_down(m_dispatcher, session_id, stream_id);
 
     aeron_data_header_t *data_header = dataPacket(data_buffer, stream_id, session_id);
     size_t len = sizeof(aeron_data_header_t) + 8;

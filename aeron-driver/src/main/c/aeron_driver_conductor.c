@@ -4493,14 +4493,15 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     if (aeron_receiver_channel_endpoint_validate_sender_mtu_length(
         endpoint, (size_t)command->mtu_length, initial_window_length, conductor->context) < 0)
     {
-        AERON_APPEND_ERR("%s", "");
+        AERON_APPEND_ERR("stream_id=%d session_id=%d", command->stream_id, command->session_id);
         goto error_cleanup;
     }
 
     if (!aeron_driver_conductor_has_network_subscription_interest(
         conductor, endpoint, command->stream_id, command->session_id))
     {
-        aeron_driver_receiver_proxy_on_remove_init_in_progress(conductor->context->receiver_proxy, endpoint, command->session_id, command->stream_id);
+        aeron_driver_receiver_proxy_on_remove_init_in_progress(
+            conductor->context->receiver_proxy, endpoint, command->session_id, command->stream_id);
         return;
     }
 
@@ -4508,6 +4509,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->publication_images, aeron_publication_image_entry_t)
     if (ensure_capacity_result < 0)
     {
+        AERON_APPEND_ERR("stream_id=%d session_id=%d", command->stream_id, command->session_id);
         goto error_cleanup;
     }
 
@@ -4532,6 +4534,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         conductor->context,
         &conductor->counters_manager) < 0)
     {
+        AERON_APPEND_ERR("stream_id=%d session_id=%d", command->stream_id, command->session_id);
         goto error_cleanup;
     }
 
@@ -4554,6 +4557,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         &conductor->counters_manager, registration_id, command->session_id, command->stream_id, uri_length, uri);
     if (rcv_hwm_position.counter_id < 0)
     {
+        AERON_APPEND_ERR("stream_id=%d session_id=%d", command->stream_id, command->session_id);
         goto error_cleanup;
     }
 
@@ -4563,6 +4567,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     if (rcv_pos_position.counter_id < 0)
     {
         aeron_counters_manager_free(&conductor->counters_manager, rcv_hwm_position.counter_id);
+        AERON_APPEND_ERR("stream_id=%d session_id=%d", command->stream_id, command->session_id);
         goto error_cleanup;
     }
 
@@ -4605,6 +4610,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     {
         aeron_counters_manager_free(&conductor->counters_manager, rcv_hwm_position.counter_id);
         aeron_counters_manager_free(&conductor->counters_manager, rcv_pos_position.counter_id);
+        AERON_APPEND_ERR("stream_id=%d session_id=%d", command->stream_id, command->session_id);
         goto error_cleanup;
     }
 
@@ -4635,6 +4641,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
             image->log_file_name_length,
             image->log_file_name) < 0)
         {
+            AERON_APPEND_ERR("stream_id=%d session_id=%d", command->stream_id, command->session_id);
             goto error_cleanup;
         }
     }
@@ -4643,9 +4650,9 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     return;
 
 error_cleanup:
-    AERON_APPEND_ERR("%s %d %d", "Failed aeron_driver_conductor_on_create_publication_image for", command->stream_id, command->session_id);
     aeron_driver_conductor_log_error(conductor);
-    aeron_driver_receiver_proxy_on_remove_init_in_progress(conductor->context->receiver_proxy, endpoint, command->session_id, command->stream_id);
+    aeron_driver_receiver_proxy_on_remove_init_in_progress(
+        conductor->context->receiver_proxy, endpoint, command->session_id, command->stream_id);
 }
 
 void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)

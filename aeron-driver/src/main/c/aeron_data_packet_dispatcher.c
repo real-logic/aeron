@@ -534,13 +534,13 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
         dispatcher->receiver, endpoint, destination, session_id, stream_id, NULL);
 }
 
-extern int aeron_data_packet_dispatcher_remove_with_state(
+extern void aeron_data_packet_dispatcher_remove_matching_state(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id, uint32_t image_state);
 
-extern int aeron_data_packet_dispatcher_remove_pending_setup(
+extern void aeron_data_packet_dispatcher_remove_pending_setup(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);
 
-extern int aeron_data_packet_dispatcher_remove_cool_down(
+extern void aeron_data_packet_dispatcher_remove_cool_down(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);
 
 extern bool aeron_data_packet_dispatcher_should_elicit_setup_message(aeron_data_packet_dispatcher_t *dispatcher);

@@ -230,16 +230,16 @@ int aeron_receive_channel_endpoint_add_pending_setup_destination(
     aeron_driver_receiver_t *receiver,
     aeron_receive_destination_t *destination);
 
-inline int aeron_receive_channel_endpoint_on_remove_pending_setup(
+inline void aeron_receive_channel_endpoint_on_remove_pending_setup(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id)
 {
-    return aeron_data_packet_dispatcher_remove_pending_setup(&endpoint->dispatcher, session_id, stream_id);
+    aeron_data_packet_dispatcher_remove_pending_setup(&endpoint->dispatcher, session_id, stream_id);
 }
 
-static inline int aeron_receive_channel_endpoint_on_remove_with_state(
+static inline void aeron_receive_channel_endpoint_on_remove_matching_state(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id, uint32_t image_state)
 {
-    return aeron_data_packet_dispatcher_remove_with_state(&endpoint->dispatcher, session_id, stream_id, image_state);
+    aeron_data_packet_dispatcher_remove_matching_state(&endpoint->dispatcher, session_id, stream_id, image_state);
 }
 
 inline void aeron_receive_channel_endpoint_receiver_release(aeron_receive_channel_endpoint_t *endpoint)

@@ -962,7 +962,7 @@ int aeron_receive_channel_endpoint_add_pending_setup(
     return 0;
 }
 
-extern int aeron_receive_channel_endpoint_on_remove_pending_setup(
+extern void aeron_receive_channel_endpoint_on_remove_pending_setup(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id);
 
 extern int aeron_receive_channel_endpoint_on_remove_cool_down(

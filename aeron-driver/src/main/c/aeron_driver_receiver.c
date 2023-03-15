@@ -213,12 +213,8 @@ int aeron_driver_receiver_do_work(void *clientd)
         {
             if (!entry->is_periodic)
             {
-                if (aeron_receive_channel_endpoint_on_remove_pending_setup(
-                    entry->endpoint, entry->session_id, entry->stream_id) < 0)
-                {
-                    AERON_APPEND_ERR("%s", "receiver pending setups");
-                    aeron_driver_receiver_log_error(receiver);
-                }
+                aeron_receive_channel_endpoint_on_remove_pending_setup(
+                    entry->endpoint, entry->session_id, entry->stream_id);
 
                 aeron_array_fast_unordered_remove(
                     (uint8_t *)receiver->pending_setups.array,
@@ -527,17 +523,12 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
     aeron_publication_image_receiver_release(image);
 }
 
-void aeron_driver_receiver_on_remove_with_state(void *clientd, void *item)
+void aeron_driver_receiver_on_remove_matching_state(void *clientd, void *item)
 {
-    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
-    aeron_command_on_remove_with_state_t *cmd = (aeron_command_on_remove_with_state_t *)item;
+    aeron_command_on_remove_matching_state_t *cmd = (aeron_command_on_remove_matching_state_t *)item;
     aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
 
-    if (aeron_receive_channel_endpoint_on_remove_with_state(endpoint, cmd->session_id, cmd->stream_id, cmd->state) < 0)
-    {
-        AERON_APPEND_ERR("%s", "receiver on_remove_cool_down");
-        aeron_driver_receiver_log_error(receiver);
-    }
+    aeron_receive_channel_endpoint_on_remove_matching_state(endpoint, cmd->session_id, cmd->stream_id, cmd->state);
 }
 
 void aeron_driver_receiver_on_resolution_change(void *clientd, void *item)

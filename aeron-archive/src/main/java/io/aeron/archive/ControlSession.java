@@ -634,13 +634,16 @@ final class ControlSession implements Session
 
     void asyncSendReplayOkResponse(final long correlationId, final long replaySessionId)
     {
-        asyncResponseQueue.offer(() -> controlResponseProxy.sendResponse(
+        if (!asyncResponseQueue.offer(() -> controlResponseProxy.sendResponse(
             controlSessionId,
             correlationId,
             replaySessionId,
             OK,
             null,
-            this));
+            this)))
+        {
+            throw new IllegalStateException("failed to offer async replay response");
+        }
     }
 
     void attemptErrorResponse(final long correlationId, final String errorMessage, final ControlResponseProxy proxy)

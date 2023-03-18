@@ -350,6 +350,31 @@ class ClusterTest
     }
 
     @Test
+    @InterruptAfter(20)
+    void shouldElectNewLeaderAfterGracefulLeaderClose()
+    {
+        cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+        cluster.connectClient();
+
+        final int messageCount = 10;
+        cluster.sendAndAwaitMessages(messageCount);
+
+        leader.gracefulClose();
+
+        final TestNode newLeader = cluster.awaitLeader();
+        cluster.awaitNewLeadershipEvent(1);
+        assertNotEquals(newLeader.index(), leader.index());
+
+        cluster.stopNode(leader);
+
+        cluster.sendMessages(messageCount);
+        cluster.awaitServicesMessageCount(messageCount * 2);
+    }
+
+    @Test
     @InterruptAfter(10)
     void shouldHandleClusterStartWhereMostNamesBecomeResolvableDuringElection()
     {

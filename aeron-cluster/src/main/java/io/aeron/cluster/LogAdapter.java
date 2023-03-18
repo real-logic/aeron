@@ -107,6 +107,11 @@ final class LogAdapter implements ControlledFragmentHandler
         return null == image || image.isClosed();
     }
 
+    boolean isLogEndOfStream()
+    {
+        return null != image && image.isEndOfStream();
+    }
+
     Image image()
     {
         return image;

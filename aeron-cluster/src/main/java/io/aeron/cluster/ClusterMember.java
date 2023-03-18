@@ -977,35 +977,51 @@ public final class ClusterMember
     }
 
     /**
-     * Has all votes been counted for a unanimous candidate.
+     * Is a member considered unanimously to be leader after voting.
+     * <p>
+     * If a leader has been gracefully closed then it is not included in the membership for considering a unanimous
+     * position but will be considered in the membership for quorum.
      *
-     * @param clusterMembers  to check for votes.
-     * @param candidateTermId for the vote.
+     * @param clusterMembers         to check for votes.
+     * @param candidateTermId        for the vote.
+     * @param gracefulClosedLeaderId id of a leader if gracefully closed otherwise {@link Aeron#NULL_VALUE}.
      * @return {@code true} if all members voted positively.
      */
-    public static boolean hasUnanimousVote(final ClusterMember[] clusterMembers, final long candidateTermId)
+    public static boolean isUnanimousLeader(
+        final ClusterMember[] clusterMembers, final long candidateTermId, final int gracefulClosedLeaderId)
     {
+        int votes = 0;
+
         for (final ClusterMember member : clusterMembers)
         {
+            if (member.id == gracefulClosedLeaderId)
+            {
+                continue;
+            }
+
             if (candidateTermId != member.candidateTermId || !Boolean.TRUE.equals(member.vote))
             {
                 return false;
             }
+
+            votes++;
         }
 
-        return true;
+        return votes >= ClusterMember.quorumThreshold(clusterMembers.length);
     }
 
     /**
-     * Has sufficient positive votes being counted for a majority and no negative votes.
+     * Is this member considered leader by a quorum of members by having positive votes being counted for a majority
+     * and no negative votes.
      *
      * @param clusterMembers  to check for votes.
      * @param candidateTermId for the vote.
      * @return {@code true} if sufficient positive votes being counted for a majority and no negative votes.
      */
-    public static boolean hasQuorumVote(final ClusterMember[] clusterMembers, final long candidateTermId)
+    public static boolean isQuorumLeader(final ClusterMember[] clusterMembers, final long candidateTermId)
     {
         int votes = 0;
+
         for (final ClusterMember member : clusterMembers)
         {
             if (candidateTermId == member.candidateTermId)
@@ -1094,23 +1110,37 @@ public final class ClusterMember
     }
 
     /**
-     * Has the member achieved a unanimous view to be a suitable candidate in an election.
+     * Is the member considered a candidate by a unanimous view to be a suitable candidate in an election.
+     * <p>
+     * If a leader has been gracefully closed then it is not included in the membership for considering a unanimous
+     * position but will be considered in the membership for quorum.
      *
-     * @param clusterMembers to compare the candidate against.
-     * @param candidate      for leadership.
+     * @param clusterMembers         to compare the candidate against.
+     * @param candidate              for leadership.
+     * @param gracefulClosedLeaderId id of a leader if gracefully closed otherwise {@link Aeron#NULL_VALUE}.
      * @return true if the candidate is suitable otherwise false.
      */
-    public static boolean isUnanimousCandidate(final ClusterMember[] clusterMembers, final ClusterMember candidate)
+    public static boolean isUnanimousCandidate(
+        final ClusterMember[] clusterMembers, final ClusterMember candidate, final int gracefulClosedLeaderId)
     {
+        int possibleVotes = 0;
+
         for (final ClusterMember member : clusterMembers)
         {
+            if (member.id == gracefulClosedLeaderId)
+            {
+                continue;
+            }
+
             if (NULL_POSITION == member.logPosition || compareLog(candidate, member) < 0)
             {
                 return false;
             }
+
+            possibleVotes++;
         }
 
-        return true;
+        return possibleVotes >= ClusterMember.quorumThreshold(clusterMembers.length);
     }
 
     /**
@@ -1123,6 +1153,7 @@ public final class ClusterMember
     public static boolean isQuorumCandidate(final ClusterMember[] clusterMembers, final ClusterMember candidate)
     {
         int possibleVotes = 0;
+
         for (final ClusterMember member : clusterMembers)
         {
             if (NULL_POSITION == member.logPosition || compareLog(candidate, member) < 0)

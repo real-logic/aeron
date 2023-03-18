@@ -693,6 +693,7 @@ public class ElectionTest
 
         final Election followerElection = new Election(
             true,
+            NULL_VALUE,
             term0Id,
             term1BaseLogPosition,
             term1BaseLogPosition,
@@ -807,6 +808,7 @@ public class ElectionTest
 
         final Election election = new Election(
             true,
+            NULL_VALUE,
             term1Id,
             term1BaseLogPosition,
             term1BaseLogPosition,
@@ -887,6 +889,7 @@ public class ElectionTest
 
         final Election election = new Election(
             true,
+            NULL_VALUE,
             term1Id,
             term1BaseLogPosition,
             term1BaseLogPosition,
@@ -950,6 +953,7 @@ public class ElectionTest
 
         final Election election = new Election(
             true,
+            NULL_VALUE,
             0,
             0,
             0,
@@ -1064,6 +1068,7 @@ public class ElectionTest
 
         final Election election = new Election(
             true,
+            NULL_VALUE,
             1,
             followerLogPosition,
             followerLogPosition,
@@ -1122,6 +1127,7 @@ public class ElectionTest
 
         final Election election = new Election(
             true,
+            NULL_VALUE,
             0,
             0,
             0,
@@ -1201,6 +1207,7 @@ public class ElectionTest
 
         final Election election = new Election(
             false,
+            NULL_VALUE,
             initialLeadershipTermId,
             initialTermBaseLogPosition,
             snapshotLogPosition,
@@ -1277,6 +1284,7 @@ public class ElectionTest
 
         final Election election = new Election(
             true,
+            NULL_VALUE,
             0,
             0,
             0,
@@ -1365,6 +1373,7 @@ public class ElectionTest
 
         final Election election = new Election(
             true,
+            NULL_VALUE,
             leadershipTermId,
             leaderLogPosition,
             leaderLogPosition,
@@ -1463,6 +1472,7 @@ public class ElectionTest
 
         return new Election(
             isStartup,
+            NULL_VALUE,
             logLeadershipTermId,
             logPosition,
             logPosition,
@@ -1487,6 +1497,7 @@ public class ElectionTest
 
         return new Election(
             true,
+            NULL_VALUE,
             logLeadershipTermId,
             logPosition,
             logPosition,

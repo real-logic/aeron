@@ -86,9 +86,11 @@ class Election
     private long replicationDeadlineNs = 0;
     private long replicationTermBaseLogPosition;
     private long lastPublishedCommitPosition;
+    private int gracefulClosedLeaderId;
 
     Election(
         final boolean isNodeStartup,
+        final int gracefulClosedLeaderId,
         final long leadershipTermId,
         final long termBaseLogPosition,
         final long logPosition,
@@ -102,6 +104,7 @@ class Election
     {
         this.isNodeStartup = isNodeStartup;
         this.isExtendedCanvass = isNodeStartup;
+        this.gracefulClosedLeaderId = gracefulClosedLeaderId;
         this.logPosition = logPosition;
         this.appendPosition = appendPosition;
         this.logLeadershipTermId = leadershipTermId;
@@ -292,6 +295,11 @@ class Election
             return;
         }
 
+        if (followerMemberId == gracefulClosedLeaderId)
+        {
+            gracefulClosedLeaderId = NULL_VALUE;
+        }
+
         final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
         if (null != follower && thisMember.id() != followerMemberId)
         {
@@ -418,6 +426,11 @@ class Election
         if (null == leader || (leaderMemberId == thisMember.id() && leadershipTermId == this.leadershipTermId))
         {
             return;
+        }
+
+        if (leaderMemberId == gracefulClosedLeaderId)
+        {
+            gracefulClosedLeaderId = NULL_VALUE;
         }
 
         if (((FOLLOWER_BALLOT == state || CANDIDATE_BALLOT == state) && leadershipTermId == candidateTermId) ||
@@ -690,7 +703,7 @@ class Election
             timeOfLastStateChangeNs + ctx.startupCanvassTimeoutNs() :
             consensusModuleAgent.timeOfLastLeaderUpdateNs() + ctx.leaderHeartbeatTimeoutNs();
 
-        if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember) ||
+        if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember, gracefulClosedLeaderId) ||
             (nowNs >= deadlineNs && ClusterMember.isQuorumCandidate(clusterMembers, thisMember)))
         {
             final long delayNs = (long)(ctx.random().nextDouble() * (ctx.electionTimeoutNs() >> 1));
@@ -720,7 +733,7 @@ class Election
     {
         int workCount = 0;
 
-        if (ClusterMember.hasUnanimousVote(clusterMembers, candidateTermId))
+        if (ClusterMember.isUnanimousLeader(clusterMembers, candidateTermId, gracefulClosedLeaderId))
         {
             leaderMember = thisMember;
             leadershipTermId = candidateTermId;
@@ -729,7 +742,7 @@ class Election
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.electionTimeoutNs()))
         {
-            if (ClusterMember.hasQuorumVote(clusterMembers, candidateTermId))
+            if (ClusterMember.isQuorumLeader(clusterMembers, candidateTermId))
             {
                 leaderMember = thisMember;
                 leadershipTermId = candidateTermId;

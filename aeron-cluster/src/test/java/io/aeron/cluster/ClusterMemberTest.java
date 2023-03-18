@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -85,6 +86,7 @@ public class ClusterMemberTest
     @Test
     void isUnanimousCandidateReturnFalseIfThereIsAMemberWithoutLogPosition()
     {
+        final int gracefulClosedLeaderId = Aeron.NULL_VALUE;
         final ClusterMember candidate = newMember(4, 100, 1000);
         final ClusterMember[] members = new ClusterMember[]
         {
@@ -93,12 +95,13 @@ public class ClusterMemberTest
             newMember(3, 1, 1)
         };
 
-        assertFalse(isUnanimousCandidate(members, candidate));
+        assertFalse(isUnanimousCandidate(members, candidate, gracefulClosedLeaderId));
     }
 
     @Test
     void isUnanimousCandidateReturnFalseIfThereIsAMemberWithMoreUpToDateLog()
     {
+        final int gracefulClosedLeaderId = Aeron.NULL_VALUE;
         final ClusterMember candidate = newMember(4, 10, 800);
         final ClusterMember[] members = new ClusterMember[]
         {
@@ -107,12 +110,27 @@ public class ClusterMemberTest
             newMember(3, 11, 1000)
         };
 
-        assertFalse(isUnanimousCandidate(members, candidate));
+        assertFalse(isUnanimousCandidate(members, candidate, gracefulClosedLeaderId));
+    }
+
+    @Test
+    void isUnanimousCandidateReturnFalseIfLeaderClosesGracefully()
+    {
+        final int gracefulClosedLeaderId = 1;
+        final ClusterMember candidate = newMember(2, 2, 100);
+        final ClusterMember[] members = new ClusterMember[]
+        {
+            newMember(1, 2, 100),
+            newMember(2, 2, 100),
+        };
+
+        assertFalse(isUnanimousCandidate(members, candidate, gracefulClosedLeaderId));
     }
 
     @Test
     void isUnanimousCandidateReturnTrueIfTheCandidateHasTheMostUpToDateLog()
     {
+        final int gracefulClosedLeaderId = Aeron.NULL_VALUE;
         final ClusterMember candidate = newMember(2, 10, 800);
         final ClusterMember[] members = new ClusterMember[]
         {
@@ -121,7 +139,7 @@ public class ClusterMemberTest
             newMember(30, 10, 800)
         };
 
-        assertTrue(isUnanimousCandidate(members, candidate));
+        assertTrue(isUnanimousCandidate(members, candidate, gracefulClosedLeaderId));
     }
 
     @Test
@@ -157,7 +175,7 @@ public class ClusterMemberTest
     }
 
     @Test
-    void hasQuorumVotesReturnsTrueWhenQuorumIsReached()
+    void isQuorumLeaderReturnsTrueWhenQuorumIsReached()
     {
         final int candidateTermId = -5;
         final ClusterMember[] members = new ClusterMember[]
@@ -169,11 +187,11 @@ public class ClusterMemberTest
             newMember(5).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertTrue(hasQuorumVote(members, candidateTermId));
+        assertTrue(isQuorumLeader(members, candidateTermId));
     }
 
     @Test
-    void hasQuorumVotesReturnsFalseIfAtLeastOneNegativeVoteIsDetected()
+    void isQuorumLeaderReturnsFalseIfAtLeastOneNegativeVoteIsDetected()
     {
         final int candidateTermId = 8;
         final ClusterMember[] members = new ClusterMember[]
@@ -183,11 +201,11 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertFalse(hasQuorumVote(members, candidateTermId));
+        assertFalse(isQuorumLeader(members, candidateTermId));
     }
 
     @Test
-    void hasQuorumVotesReturnsFalseWhenQuorumIsNotReached()
+    void isQuorumLeaderReturnsFalseWhenQuorumIsNotReached()
     {
         final int candidateTermId = 2;
         final ClusterMember[] members = new ClusterMember[]
@@ -197,13 +215,14 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId + 5).vote(Boolean.TRUE)
         };
 
-        assertFalse(hasQuorumVote(members, candidateTermId));
+        assertFalse(isQuorumLeader(members, candidateTermId));
     }
 
     @Test
-    void hasUnanimousVotesReturnsFalseIfThereIsAtLeastOneNegativeVoteForAGivenCandidateTerm()
+    void isUnanimousLeaderReturnsFalseIfThereIsAtLeastOneNegativeVoteForAGivenCandidateTerm()
     {
         final int candidateTermId = 42;
+        final int gracefulClosedLeaderId = Aeron.NULL_VALUE;
         final ClusterMember[] members = new ClusterMember[]
         {
             newMember(1).candidateTermId(candidateTermId).vote(Boolean.TRUE),
@@ -211,13 +230,28 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.FALSE)
         };
 
-        assertFalse(hasUnanimousVote(members, candidateTermId));
+        assertFalse(isUnanimousLeader(members, candidateTermId, gracefulClosedLeaderId));
     }
 
     @Test
-    void hasUnanimousVotesReturnsFalseIfNotAllNodesVotedPositively()
+    void isUnanimousLeaderReturnsFalseIfLeaderClosesGracefully()
+    {
+        final int candidateTermId = 7;
+        final int gracefulClosedLeaderId = 1;
+        final ClusterMember[] members = new ClusterMember[]
+        {
+            newMember(1).candidateTermId(candidateTermId).vote(Boolean.TRUE),
+            newMember(2).candidateTermId(candidateTermId).vote(Boolean.TRUE),
+        };
+
+        assertFalse(isUnanimousLeader(members, candidateTermId, gracefulClosedLeaderId));
+    }
+
+    @Test
+    void isUnanimousLeaderReturnsFalseIfNotAllNodesVotedPositively()
     {
         final int candidateTermId = 2;
+        final int gracefulClosedLeaderId = Aeron.NULL_VALUE;
         final ClusterMember[] members = new ClusterMember[]
         {
             newMember(1).candidateTermId(candidateTermId).vote(Boolean.TRUE),
@@ -225,13 +259,14 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertFalse(hasUnanimousVote(members, candidateTermId));
+        assertFalse(isUnanimousLeader(members, candidateTermId, gracefulClosedLeaderId));
     }
 
     @Test
-    void hasUnanimousVotesReturnsFalseIfNotAllNodesHadTheExpectedCandidateTermId()
+    void isUnanimousLeaderReturnsFalseIfNotAllNodesHadTheExpectedCandidateTermId()
     {
         final int candidateTermId = 2;
+        final int gracefulClosedLeaderId = Aeron.NULL_VALUE;
         final ClusterMember[] members = new ClusterMember[]
         {
             newMember(1).candidateTermId(candidateTermId).vote(Boolean.TRUE),
@@ -239,13 +274,14 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertFalse(hasUnanimousVote(members, candidateTermId));
+        assertFalse(isUnanimousLeader(members, candidateTermId, gracefulClosedLeaderId));
     }
 
     @Test
-    void hasUnanimousVotesReturnsTrueIfAllNodesVotedWithTrue()
+    void isUnanimousLeaderReturnsTrueIfAllNodesVotedWithTrue()
     {
         final int candidateTermId = 42;
+        final int gracefulClosedLeaderId = Aeron.NULL_VALUE;
         final ClusterMember[] members = new ClusterMember[]
         {
             newMember(1).candidateTermId(candidateTermId).vote(Boolean.TRUE),
@@ -253,7 +289,7 @@ public class ClusterMemberTest
             newMember(3).candidateTermId(candidateTermId).vote(Boolean.TRUE)
         };
 
-        assertTrue(hasUnanimousVote(members, candidateTermId));
+        assertTrue(isUnanimousLeader(members, candidateTermId, gracefulClosedLeaderId));
     }
 
     @ParameterizedTest

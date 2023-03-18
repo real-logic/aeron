@@ -200,6 +200,11 @@ public final class TestNode implements AutoCloseable
         return isClosed;
     }
 
+    public void gracefulClose()
+    {
+        CloseHelper.closeAll(consensusModule, () -> CloseHelper.closeAll(containers));
+    }
+
     public Cluster.Role role()
     {
         final Counter roleCounter = consensusModule.context().clusterNodeRoleCounter();

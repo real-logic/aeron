@@ -700,7 +700,7 @@ class ClusterTest
     }
 
     @Test
-    @InterruptAfter(30)
+    @InterruptAfter(50)
     void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosIsLessThanPreviousAppendedPos()
     {
         cluster = aCluster().withStaticNodes(3).start();

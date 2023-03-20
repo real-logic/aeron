@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.ChannelUri;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingSignal;
+import org.agrona.CloseHelper;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.status.RecordingPos.NULL_RECORDING_ID;
 
-class StandbySnapshotReplicator
+class StandbySnapshotReplicator implements AutoCloseable
 {
     private final AeronArchive archive;
     private final RecordingLog recordingLog;
@@ -57,15 +58,18 @@ class StandbySnapshotReplicator
     }
 
     static StandbySnapshotReplicator newInstance(
-        final AeronArchive archive,
+        final AeronArchive.Context archiveCtx,
         final RecordingLog recordingLog,
         final int serviceCount,
         final String archiveControlChannel,
         final int archiveControlStreamId,
         final String replicationChannel)
     {
-        return new StandbySnapshotReplicator(
+        final AeronArchive archive = AeronArchive.connect(archiveCtx.clone());
+        final StandbySnapshotReplicator standbySnapshotReplicator = new StandbySnapshotReplicator(
             archive, recordingLog, serviceCount, archiveControlChannel, archiveControlStreamId, replicationChannel);
+        archive.context().recordingSignalConsumer(standbySnapshotReplicator::onSignal);
+        return standbySnapshotReplicator;
     }
 
     int poll(final long nowNs)
@@ -104,6 +108,7 @@ class StandbySnapshotReplicator
         }
 
         workCount += recordingReplication.poll(nowNs);
+        archive.pollForRecordingSignals();
 
         if (recordingReplication.isComplete())
         {
@@ -132,11 +137,22 @@ class StandbySnapshotReplicator
         return isComplete;
     }
 
-    void onSignal(final long correlationId, final long recordingId, final long position, final RecordingSignal signal)
+    void onSignal(
+        final long controlSessionId,
+        final long correlationId,
+        final long recordingId,
+        final long subscriptionId,
+        final long position,
+        final RecordingSignal signal)
     {
         if (null != recordingReplication)
         {
             recordingReplication.onSignal(correlationId, recordingId, position, signal);
         }
+    }
+
+    public void close()
+    {
+        CloseHelper.quietClose(archive);
     }
 }

@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingSignal;
 import org.agrona.collections.Long2LongHashMap;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
@@ -50,10 +51,17 @@ class StandbySnapshotReplicatorTest
     private final String archiveControlChannel = "aeron:udp?endpoint=invalid:6666";
     private final int archiveControlStreamId = 98734;
     private final String replicationChannel = "aeron:udp?endpoint=host0:0";
+    private final AeronArchive.Context ctx = new AeronArchive.Context();
 
     private final AeronArchive mockArchive = mock(AeronArchive.class);
     private final MultipleRecordingReplication mockMultipleRecordingReplication = mock(
         MultipleRecordingReplication.class);
+
+    @BeforeEach
+    void setUp()
+    {
+        when(mockArchive.context()).thenReturn(ctx);
+    }
 
     @TempDir
     private File clusterDir;
@@ -87,15 +95,17 @@ class StandbySnapshotReplicatorTest
             final long nowNs = 2_000_000_000L;
 
             try (MockedStatic<MultipleRecordingReplication> staticMockReplication = mockStatic(
-                MultipleRecordingReplication.class))
+                MultipleRecordingReplication.class);
+                MockedStatic<AeronArchive> staticMockArchive = mockStatic(AeronArchive.class))
             {
                 staticMockReplication
                     .when(() -> MultipleRecordingReplication.newInstance(
                         any(), anyInt(), any(), any(), anyLong(), anyLong()))
                     .thenReturn(mockMultipleRecordingReplication);
+                staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
 
                 final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
-                    mockArchive,
+                    ctx,
                     recordingLog,
                     serviceCount,
                     archiveControlChannel,
@@ -103,8 +113,10 @@ class StandbySnapshotReplicatorTest
                     replicationChannel);
 
                 when(mockMultipleRecordingReplication.isComplete()).thenReturn(true);
+
                 assertNotEquals(0, standbySnapshotReplicator.poll(nowNs));
                 assertTrue(standbySnapshotReplicator.isComplete());
+                verify(mockArchive).pollForRecordingSignals();
 
                 staticMockReplication.verify(() -> MultipleRecordingReplication.newInstance(
                     eq(mockArchive),
@@ -139,7 +151,8 @@ class StandbySnapshotReplicatorTest
     {
         try (RecordingLog recordingLog = new RecordingLog(clusterDir, true);
             MockedStatic<MultipleRecordingReplication> staticMockReplication = mockStatic(
-                MultipleRecordingReplication.class))
+                MultipleRecordingReplication.class);
+            MockedStatic<AeronArchive> staticMockArchive = mockStatic(AeronArchive.class))
         {
             recordingLog.appendRemoteSnapshot(1, 0, 0, 1000, 1_000_000_000L, SERVICE_ID, endpoint0);
             recordingLog.appendRemoteSnapshot(2, 0, 0, 1000, 1_000_000_000L, 0, endpoint0);
@@ -148,9 +161,10 @@ class StandbySnapshotReplicatorTest
                 .when(() -> MultipleRecordingReplication.newInstance(
                     any(), anyInt(), any(), any(), anyLong(), anyLong()))
                 .thenReturn(mockMultipleRecordingReplication);
+            staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
 
             final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
-                mockArchive,
+                ctx,
                 recordingLog,
                 1,
                 archiveControlChannel,
@@ -158,7 +172,8 @@ class StandbySnapshotReplicatorTest
                 replicationChannel);
 
             standbySnapshotReplicator.poll(0);
-            standbySnapshotReplicator.onSignal(11, 23, 37, RecordingSignal.START);
+            verify(mockArchive).pollForRecordingSignals();
+            standbySnapshotReplicator.onSignal(2, 11, 23, 29, 37, RecordingSignal.START);
 
             verify(mockMultipleRecordingReplication).onSignal(11, 23, 37, RecordingSignal.START);
         }

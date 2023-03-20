@@ -61,6 +61,7 @@ class ReplicateRecordingTest
 {
     private static final int SRC_CONTROL_STREAM_ID = AeronArchive.Configuration.CONTROL_STREAM_ID_DEFAULT;
     private static final String SRC_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8090";
+    private static final String INVALID_SRC_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:18090";
     private static final String SRC_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String DST_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8095";
     private static final String DST_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:0";
@@ -1155,6 +1156,28 @@ class ReplicateRecordingTest
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
         awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+    }
+
+    @Test
+    void shouldHandleInvalidSrcEndpoint()
+    {
+        try
+        {
+            dstAeronArchive.replicate(
+                NULL_VALUE,
+                SRC_CONTROL_STREAM_ID,
+                INVALID_SRC_CONTROL_REQUEST_CHANNEL,
+                new ReplicationParams());
+
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+        }
+        catch (final ArchiveException ex)
+        {
+            assertEquals(ArchiveException.REPLICATION_CONNECTION_FAILURE, ex.errorCode());
+            return;
+        }
+
+        fail("expected archive exception");
     }
 
     private void readRecordingIntoBuffer(final long srcRecordingId, final ExpandableArrayBuffer srcRecordingData)

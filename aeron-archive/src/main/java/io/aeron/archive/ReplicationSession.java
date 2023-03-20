@@ -20,6 +20,7 @@ import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
 import org.agrona.Strings;
@@ -354,21 +355,31 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         else
         {
             final int step = asyncConnect.step();
-            final AeronArchive archive = asyncConnect.poll();
-
-            if (null == archive)
+            try
             {
-                if (asyncConnect.step() != step)
+                final AeronArchive archive = asyncConnect.poll();
+
+                if (null == archive)
                 {
+                    if (asyncConnect.step() != step)
+                    {
+                        workCount += 1;
+                    }
+                }
+                else
+                {
+                    srcArchive = archive;
+                    asyncConnect = null;
+                    state(State.REPLICATE_DESCRIPTOR);
                     workCount += 1;
                 }
             }
-            else
+            catch (final AeronException ex)
             {
-                srcArchive = archive;
-                asyncConnect = null;
-                state(State.REPLICATE_DESCRIPTOR);
-                workCount += 1;
+                state(State.DONE);
+                error(
+                    "Replication connection failed=" + ex.getMessage(),
+                    ArchiveException.REPLICATION_CONNECTION_FAILURE);
             }
         }
 

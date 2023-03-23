@@ -115,7 +115,7 @@ class ClusterTest
         final TestNode leader = cluster.awaitLeader();
 
         cluster.connectClient();
-        cluster.awaitActiveSessionCount(cluster.followers().get(0), 1);
+        cluster.awaitActiveSessionCount(1);
 
         cluster.stopNode(leader);
         cluster.awaitNewLeadershipEvent(1);
@@ -581,7 +581,7 @@ class ClusterTest
 
     @Test
     @InterruptAfter(90)
-    void shouldRecoverAfterTwoLeadersNodesFailAndComeBackUpAtSameTime()
+    void shouldRecoverAfterTwoLeaderNodesFailAndComeBackUpAtSameTime()
     {
         cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -592,12 +592,10 @@ class ClusterTest
         cluster.connectClient();
         cluster.sendMessages(sufficientMessageCountForReplay);
         cluster.awaitResponseMessageCount(sufficientMessageCountForReplay);
+        cluster.awaitServicesMessageCount(sufficientMessageCountForReplay);
         cluster.closeClient();
 
-        cluster.awaitActiveSessionCount(firstLeader, 0);
-        cluster.awaitActiveSessionCount(cluster.followers().get(0), 0);
-        cluster.awaitActiveSessionCount(cluster.followers().get(1), 0);
-
+        cluster.awaitActiveSessionCount(0);
         cluster.stopNode(firstLeader);
 
         final TestNode secondLeader = cluster.awaitLeader();

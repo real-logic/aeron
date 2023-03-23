@@ -175,7 +175,7 @@ public final class TestNode implements AutoCloseable
     {
         if (1 != services.length)
         {
-            throw new IllegalStateException("111 service count expected=1 actual=" + services.length);
+            throw new IllegalStateException("service count expected=1 actual=" + services.length);
         }
 
         return services[0];

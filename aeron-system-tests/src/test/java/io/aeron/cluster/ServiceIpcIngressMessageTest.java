@@ -244,6 +244,7 @@ class ServiceIpcIngressMessageTest
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
+
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
         TestNode.MessageTrackingService.delaySessionMessageProcessing(false);

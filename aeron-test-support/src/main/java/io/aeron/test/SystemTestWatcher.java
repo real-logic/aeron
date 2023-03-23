@@ -167,8 +167,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 final MutableInteger count = new MutableInteger();
                 final StringBuilder errors = new StringBuilder();
                 filterErrors(count, errors);
-                assertEquals(
-                    0, count.get(), () -> "Errors observed in " + context.getDisplayName() + ":\n" + errors);
+                assertEquals(0, count.get(), () -> "Errors observed in " + context.getDisplayName() + ":\n" + errors);
             }
             catch (final Throwable t)
             {
@@ -385,6 +384,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         {
             error = setOrUpdateError(error, t);
         }
+
         return error;
     }
 
@@ -399,6 +399,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         {
             existingError.addSuppressed(newError);
         }
+
         return existingError;
     }
 
@@ -445,7 +446,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                         createCountersMetaDataBuffer(mappedByteBuffer, metaDataBuffer),
                         createCountersValuesBuffer(mappedByteBuffer, metaDataBuffer));
                     countersReader.forEach(
-                        (counterId, typeId, keyBuffer, label) ->
+                        (counterId, label) ->
                         {
                             final long value = countersReader.getCounterValue(counterId);
                             System.out.format("%3d: %,20d - %s%n", counterId, value, label);
@@ -473,6 +474,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 IoUtil.unmap(mappedByteBuffer);
             }
         }
+
         return error;
     }
 
@@ -494,6 +496,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 error = setOrUpdateError(error, t);
             }
         }
+
         return error;
     }
 

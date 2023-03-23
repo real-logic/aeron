@@ -350,18 +350,21 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
                         assertEquals(logServiceSessionId + 1 + numPendingMessages, nextServiceSessionId);
                         break;
                     }
+
                     case "NextServiceSessionId":
                     {
                         assertEquals(Long.parseLong(baseNextServiceSessionId), nextServiceSessionId);
                         assertEquals(nextServiceSessionId - 1 - numPendingMessages, logServiceSessionId);
                         break;
                     }
+
                     case "MaxClusterSessionId":
                     {
                         assertEquals(clusterSessionIdUpperBound - numPendingMessages, logServiceSessionId);
                         assertEquals(clusterSessionIdUpperBound + 1, nextServiceSessionId);
                         break;
                     }
+
                     default:
                     {
                         fail("unknown mode: " + mode);
@@ -491,14 +494,17 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
                     case 0:
                         clusterSessionId = clusterSessionIdLowerBound;
                         break;
+
                     case 1:
                         clusterSessionId = clusterSessionIdUpperBound;
                         break;
+
                     default:
                         clusterSessionId = ThreadLocalRandom.current()
                             .nextLong(clusterSessionIdLowerBound + 1, clusterSessionIdUpperBound);
                         break;
                 }
+
                 sessionMessageHeaderEncoder
                     .wrapAndApplyHeader(snapshotBuffer, offset, messageHeaderEncoder)
                     .clusterSessionId(clusterSessionId);
@@ -527,6 +533,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
                 }
             }
         }
+
         return segmentFiles;
     }
 

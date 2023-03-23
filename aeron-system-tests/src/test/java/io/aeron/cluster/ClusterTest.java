@@ -278,17 +278,15 @@ class ClusterTest
         systemTestWatcher.cluster(cluster).ignoreErrorsMatching(UNKNOWN_HOST_FILTER);
 
         final TestNode originalLeader = cluster.awaitLeader();
-        cluster.connectClient();
 
         final int messageCount = 10;
-
+        cluster.connectClient();
         cluster.sendAndAwaitMessages(messageCount);
 
         cluster.disableNameResolution(originalLeader.hostname());
         cluster.stopNode(originalLeader);
 
-        cluster.awaitLeader();
-
+        cluster.awaitNewLeadershipEvent(1);
         cluster.sendAndAwaitMessages(messageCount, 2 * messageCount);
     }
 
@@ -302,10 +300,9 @@ class ClusterTest
         systemTestWatcher.cluster(cluster).ignoreErrorsMatching(UNKNOWN_HOST_FILTER);
 
         cluster.awaitLeader();
-        cluster.connectClient();
 
         final int messageCount = 10;
-
+        cluster.connectClient();
         cluster.sendAndAwaitMessages(messageCount);
 
         cluster.restoreNameResolution(initiallyUnresolvableNodeId);
@@ -330,7 +327,6 @@ class ClusterTest
         cluster.stopNode(followerOne);
 
         final int messageCount = 10;
-
         cluster.connectClient();
         cluster.sendAndAwaitMessages(messageCount);
 
@@ -370,8 +366,7 @@ class ClusterTest
 
         cluster.stopNode(leader);
 
-        cluster.sendMessages(messageCount);
-        cluster.awaitServicesMessageCount(messageCount * 2);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 2);
     }
 
     @Test
@@ -402,11 +397,9 @@ class ClusterTest
         systemTestWatcher.cluster(cluster);
 
         final TestNode originalLeader = cluster.awaitLeader();
-        cluster.connectClient();
 
         final int preFailureMessageCount = 10;
-        final int postFailureMessageCount = 7;
-
+        cluster.connectClient();
         cluster.sendAndAwaitMessages(preFailureMessageCount);
 
         assertEquals(originalLeader.index(), cluster.client().leaderMemberId());
@@ -417,6 +410,7 @@ class ClusterTest
         cluster.awaitNewLeadershipEvent(1);
         assertEquals(newLeader.index(), cluster.client().leaderMemberId());
 
+        final int postFailureMessageCount = 7;
         cluster.sendMessages(postFailureMessageCount);
         cluster.awaitResponseMessageCount(preFailureMessageCount + postFailureMessageCount);
 
@@ -463,8 +457,7 @@ class ClusterTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
     }
 
     @Test
@@ -590,9 +583,7 @@ class ClusterTest
 
         final int sufficientMessageCountForReplay = 1_000_000;
         cluster.connectClient();
-        cluster.sendMessages(sufficientMessageCountForReplay);
-        cluster.awaitResponseMessageCount(sufficientMessageCountForReplay);
-        cluster.awaitServicesMessageCount(sufficientMessageCountForReplay);
+        cluster.sendAndAwaitMessages(sufficientMessageCountForReplay);
         cluster.closeClient();
 
         cluster.awaitActiveSessionCount(0);
@@ -734,10 +725,7 @@ class ClusterTest
         awaitElectionClosed(oldLeader);
 
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
     }
 
     @Test
@@ -1058,9 +1046,7 @@ class ClusterTest
 
         int messageCount = 2;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.takeSnapshot(leader);
         final int memberCount = 3;

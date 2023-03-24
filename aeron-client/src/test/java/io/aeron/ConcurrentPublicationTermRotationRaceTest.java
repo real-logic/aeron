@@ -22,7 +22,6 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.LangUtil;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.LongHashSet;
 import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.AfterEach;
@@ -96,25 +95,10 @@ class ConcurrentPublicationTermRotationRaceTest
             final ArrayList<MessagePublisher> publishers = new ArrayList<>();
             for (int i = 0; i < NUM_PUBLISHERS; i++)
             {
-                final MessagePublisher publisher;
-                if ((i & 1) == 0)
-                {
-                    publisher = new OfferMessagePublisher(
-                        publication,
-                        8160,
-                        "offer-" + i,
-                        startLatch,
-                        errors);
-                }
-                else
-                {
-                    publisher = new TryClaimMessagePublisher(
-                        publication,
-                        7777,
-                        "try-claim",
-                        startLatch,
-                        errors);
-                }
+                final MessagePublisher publisher = (i & 1) == 0 ?
+                new OfferMessagePublisher(publication, 8160, "offer-" + i, startLatch, errors) :
+                new TryClaimMessagePublisher(publication, 7777, "try-claim", startLatch, errors);
+
                 publishers.add(publisher);
                 threadIds.add(publisher.getId());
                 publisher.start();
@@ -124,7 +108,7 @@ class ConcurrentPublicationTermRotationRaceTest
             startLatch.await();
 
             final MutableInteger msgCount = new MutableInteger();
-            final FragmentAssembler fragmentHandler = new FragmentAssembler(
+            final ImageFragmentAssembler fragmentHandler = new ImageFragmentAssembler(
                 (buffer, offset, length, header) ->
                 {
                     final long threadId = buffer.getLong(offset, LITTLE_ENDIAN);
@@ -134,9 +118,12 @@ class ConcurrentPublicationTermRotationRaceTest
             final Supplier<String> errorMessageSupplier = () -> "missing messages: expected=" + NUM_MESSAGES +
                 ", sent=" + publishers.stream().mapToLong(p -> p.sendCount).sum() +
                 ", received=" + msgCount;
+
+            final Image image = subscription.imageAtIndex(0);
+
             while (msgCount.get() < NUM_MESSAGES)
             {
-                if (0 == subscription.poll(fragmentHandler, Integer.MAX_VALUE))
+                if (0 == image.poll(fragmentHandler, 10))
                 {
                     final Throwable err = errors.get();
                     if (null != err)
@@ -187,6 +174,7 @@ class ConcurrentPublicationTermRotationRaceTest
 
                 final long threadId = getId();
                 final int numMessages = NUM_MESSAGES / NUM_PUBLISHERS;
+
                 for (int i = 0; i < numMessages; i++)
                 {
                     long result;
@@ -257,9 +245,7 @@ class ConcurrentPublicationTermRotationRaceTest
             final long result = publication.tryClaim(size, bufferClaim);
             if (result > 0)
             {
-                final MutableDirectBuffer buffer = bufferClaim.buffer();
-                final int offset = bufferClaim.offset();
-                buffer.putLong(offset, payload, LITTLE_ENDIAN);
+                bufferClaim.buffer().putLong(bufferClaim.offset(), payload, LITTLE_ENDIAN);
                 bufferClaim.commit();
             }
 

@@ -111,7 +111,7 @@ class CreateReplayPublicationSession implements Session
             }
             catch (final Exception ex)
             {
-                isDone = false;
+                isDone = true;
                 final String msg = "failed to create replay publication: " + ex.getMessage();
                 controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
                 throw ex;

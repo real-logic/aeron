@@ -172,7 +172,6 @@ class ReplaySession implements Session, AutoCloseable
         replayLimit = fromPosition + replayLength;
 
         segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFileBasePosition));
-
         connectDeadlineMs = epochClock.time() + connectTimeoutMs;
     }
 

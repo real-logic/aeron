@@ -26,12 +26,13 @@ class CreateReplayPublicationSession implements Session
     private final long replayPosition;
     private final long replayLength;
     private long publicationRegistrationId;
+    private final int fileIoMaxLength;
     private boolean isDone = false;
     private final Aeron aeron;
     private final Counter limitPositionCounter;
     private final ControlSession controlSession;
+    private final ControlResponseProxy controlResponseProxy;
     private final ArchiveConductor conductor;
-    private final int fileIoMaxLength;
 
     CreateReplayPublicationSession(
         final long correlationId,
@@ -43,6 +44,7 @@ class CreateReplayPublicationSession implements Session
         final Counter limitPositionCounter,
         final Aeron aeron,
         final ControlSession controlSession,
+        final ControlResponseProxy controlResponseProxy,
         final ArchiveConductor conductor)
     {
         this.correlationId = correlationId;
@@ -54,6 +56,7 @@ class CreateReplayPublicationSession implements Session
         this.limitPositionCounter = limitPositionCounter;
         this.aeron = aeron;
         this.controlSession = controlSession;
+        this.controlResponseProxy = controlResponseProxy;
         this.conductor = conductor;
     }
 
@@ -101,7 +104,19 @@ class CreateReplayPublicationSession implements Session
 
         if (!isDone)
         {
-            final ExclusivePublication publication = aeron.getExclusivePublication(publicationRegistrationId);
+            final ExclusivePublication publication;
+            try
+            {
+                publication = aeron.getExclusivePublication(publicationRegistrationId);
+            }
+            catch (final Exception ex)
+            {
+                isDone = false;
+                final String msg = "failed to create replay publication: " + ex.getMessage();
+                controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+                throw ex;
+            }
+
             if (null != publication)
             {
                 publicationRegistrationId = Aeron.NULL_VALUE;

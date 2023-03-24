@@ -136,8 +136,8 @@ class RecordingSession implements Session
 
         if (State.INACTIVE == state)
         {
-            recordingWriter.close();
             state(State.STOPPED);
+            recordingWriter.close();
             workCount++;
 
             if (null != recordingEventsProxy)

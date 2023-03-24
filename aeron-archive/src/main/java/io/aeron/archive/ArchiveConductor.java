@@ -682,26 +682,18 @@ abstract class ArchiveConductor
         final String lingerValue = channelUri.get(CommonContext.LINGER_PARAM_NAME);
         channelBuilder.linger(null != lingerValue ? Long.parseLong(lingerValue) : ctx.replayLingerTimeoutNs());
 
-        try
-        {
-            addSession(new CreateReplayPublicationSession(
-                correlationId,
-                recordingId,
-                replayPosition,
-                length,
-                aeron.asyncAddExclusivePublication(channelBuilder.build(), replayStreamId),
-                fileIoMaxLength,
-                limitPosition,
-                aeron,
-                controlSession,
-                this));
-        }
-        catch (final Exception ex)
-        {
-            final String msg = "failed to create replay publication - " + ex;
-            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
-            throw ex;
-        }
+        addSession(new CreateReplayPublicationSession(
+            correlationId,
+            recordingId,
+            replayPosition,
+            length,
+            aeron.asyncAddExclusivePublication(channelBuilder.build(), replayStreamId),
+            fileIoMaxLength,
+            limitPosition,
+            aeron,
+            controlSession,
+            controlResponseProxy,
+            this));
     }
 
     void newReplaySession(

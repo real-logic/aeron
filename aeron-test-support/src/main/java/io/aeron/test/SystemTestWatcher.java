@@ -450,8 +450,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                         {
                             final long value = countersReader.getCounterValue(counterId);
                             System.out.format("%3d: %,20d - %s%n", counterId, value, label);
-                        }
-                    );
+                        });
                     System.out.println(
                         "---------------------------------------------------------------------------------");
                 }

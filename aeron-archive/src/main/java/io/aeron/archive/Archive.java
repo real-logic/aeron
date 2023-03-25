@@ -953,7 +953,8 @@ public final class Archive implements AutoCloseable
         private AuthenticatorSupplier authenticatorSupplier;
         private AuthorisationServiceSupplier authorisationServiceSupplier;
         private Counter controlSessionsCounter;
-
+        private Counter recordingSessionCounter;
+        private Counter replaySessionCounter;
         private int errorBufferLength = Configuration.errorBufferLength();
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
@@ -1347,6 +1348,28 @@ public final class Archive implements AutoCloseable
                     aeron, tempBuffer, ARCHIVE_CONTROL_SESSIONS_TYPE_ID, "Archive Control Sessions", archiveId);
             }
             validateCounterTypeId(aeron, controlSessionsCounter, ARCHIVE_CONTROL_SESSIONS_TYPE_ID);
+
+            if (null == recordingSessionCounter)
+            {
+                recordingSessionCounter = ArchiveCounters.allocate(
+                    aeron,
+                    tempBuffer,
+                    ARCHIVE_RECORDING_SESSION_COUNT_TYPE_ID,
+                    "Archive Recording Sessions",
+                    archiveId);
+            }
+            validateCounterTypeId(aeron, recordingSessionCounter, ARCHIVE_RECORDING_SESSION_COUNT_TYPE_ID);
+
+            if (null == replaySessionCounter)
+            {
+                replaySessionCounter = ArchiveCounters.allocate(
+                    aeron,
+                    tempBuffer,
+                    ARCHIVE_REPLAY_SESSION_COUNT_TYPE_ID,
+                    "Archive Replay Sessions",
+                    archiveId);
+            }
+            validateCounterTypeId(aeron, replaySessionCounter, ARCHIVE_REPLAY_SESSION_COUNT_TYPE_ID);
 
             if (null == maxWriteTimeCounter)
             {
@@ -2591,6 +2614,50 @@ public final class Archive implements AutoCloseable
         }
 
         /**
+         * Get the counter used to track the count of concurrent recording sessions.
+         *
+         * @return the counter used to track the count of concurrent recording sessions.
+         */
+        public Counter recordingSessionCounter()
+        {
+            return recordingSessionCounter;
+        }
+
+        /**
+         * Set the counter used to track the count of concurrent recording sessions.
+         *
+         * @param counter used to track the count of concurrent recording sessions.
+         * @return this for a fluent API.
+         */
+        public Context recordingSessionCounter(final Counter counter)
+        {
+            this.recordingSessionCounter = counter;
+            return this;
+        }
+
+        /**
+         * Get the counter used to track the count of concurrent replay sessions.
+         *
+         * @return the counter used to track the count of concurrent replay sessions.
+         */
+        public Counter replaySessionCounter()
+        {
+            return replaySessionCounter;
+        }
+
+        /**
+         * Set the counter used to track the count of concurrent replay sessions.
+         *
+         * @param counter used to track the count of concurrent replay sessions.
+         * @return this for a fluent API.
+         */
+        public Context replaySessionCounter(final Counter counter)
+        {
+            this.replaySessionCounter = counter;
+            return this;
+        }
+
+        /**
          * Get the counter used to track the total number of bytes written by the recorder.
          *
          * @return the counter used to track the total number of bytes written by the recorder.
@@ -3167,6 +3234,8 @@ public final class Archive implements AutoCloseable
             else
             {
                 CloseHelper.close(countedErrorHandler, controlSessionsCounter);
+                CloseHelper.close(countedErrorHandler, recordingSessionCounter);
+                CloseHelper.close(countedErrorHandler, replaySessionCounter);
                 CloseHelper.close(countedErrorHandler, totalWriteBytesCounter);
                 CloseHelper.close(countedErrorHandler, totalWriteTimeCounter);
                 CloseHelper.close(countedErrorHandler, maxWriteTimeCounter);
@@ -3190,8 +3259,7 @@ public final class Archive implements AutoCloseable
         {
             if (dutyCycleTracker instanceof DutyCycleStallTracker)
             {
-                final DutyCycleStallTracker dutyCycleStallTracker =
-                    (DutyCycleStallTracker)dutyCycleTracker;
+                final DutyCycleStallTracker dutyCycleStallTracker = (DutyCycleStallTracker)dutyCycleTracker;
                 CloseHelper.close(countedErrorHandler, dutyCycleStallTracker.maxCycleTime());
                 CloseHelper.close(countedErrorHandler, dutyCycleStallTracker.cycleTimeThresholdExceededCount());
             }
@@ -3313,6 +3381,8 @@ public final class Archive implements AutoCloseable
                 "\n    epochClock=" + epochClock +
                 "\n    authenticatorSupplier=" + authenticatorSupplier +
                 "\n    controlSessionsCounter=" + controlSessionsCounter +
+                "\n    recordingSessionCounter=" + recordingSessionCounter +
+                "\n    replaySessionCounter=" + replaySessionCounter +
                 "\n    errorBufferLength=" + errorBufferLength +
                 "\n    errorHandler=" + errorHandler +
                 "\n    errorCounter=" + errorCounter +

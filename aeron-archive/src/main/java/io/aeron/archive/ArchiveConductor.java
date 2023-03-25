@@ -748,6 +748,7 @@ abstract class ArchiveConductor
 
         replaySessionByIdMap.put(replaySessionId, replaySession);
         replayer.addSession(replaySession);
+        ctx.replaySessionCounter().incrementOrdered();
     }
 
     void startBoundedReplay(
@@ -1116,6 +1117,7 @@ abstract class ArchiveConductor
                 closeAndRemoveRecordingSubscription(subscription);
             }
             closeSession(session);
+            ctx.recordingSessionCounter().decrementOrdered();
         }
     }
 
@@ -1135,6 +1137,7 @@ abstract class ArchiveConductor
 
         replaySessionByIdMap.remove(session.sessionId());
         closeSession(session);
+        ctx.replaySessionCounter().decrementOrdered();
     }
 
     void replicate(
@@ -1702,6 +1705,7 @@ abstract class ArchiveConductor
         subscriptionRefCountMap.incrementAndGet(image.subscription().registrationId());
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);
+        ctx.recordingSessionCounter().incrementOrdered();
     }
 
     private void extendRecordingSession(
@@ -1760,6 +1764,7 @@ abstract class ArchiveConductor
             subscriptionRefCountMap.incrementAndGet(subscriptionId);
             recordingSessionByIdMap.put(recordingId, session);
             recorder.addSession(session);
+            ctx.recordingSessionCounter().incrementOrdered();
         }
         catch (final Exception ex)
         {

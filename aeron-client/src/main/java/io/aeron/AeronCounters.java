@@ -196,6 +196,16 @@ public final class AeronCounters
      */
     public static final int ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID = 110;
 
+    /**
+     * The type id of the {@link Counter} used for tracking the count of active recording sessions.
+     */
+    public static final int ARCHIVE_RECORDING_SESSION_COUNT_TYPE_ID = 111;
+
+    /**
+     * The type id of the {@link Counter} used for tracking the count of active replay sessions.
+     */
+    public static final int ARCHIVE_REPLAY_SESSION_COUNT_TYPE_ID = 112;
+
     // Cluster counters
 
     /**

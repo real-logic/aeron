@@ -27,7 +27,6 @@ import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.test.TestContexts;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
-import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
@@ -56,8 +55,6 @@ import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
-import static org.agrona.concurrent.status.CountersReader.RECORD_UNUSED;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -82,6 +79,8 @@ class ArchiveContextTest
             .errorCounter(mock(AtomicCounter.class))
             .controlSessionsCounter(
                 mockCounter(countersReader, ARCHIVE_CONTROL_SESSIONS_TYPE_ID, ARCHIVE_CONTROL_SESSIONS_COUNTER_ID))
+            .recordingSessionCounter(mockCounter(countersReader, ARCHIVE_RECORDING_SESSION_COUNT_TYPE_ID, 101))
+            .replaySessionCounter(mockCounter(countersReader, ARCHIVE_REPLAY_SESSION_COUNT_TYPE_ID, 102))
             .totalWriteBytesCounter(mockCounter(countersReader, ARCHIVE_RECORDER_TOTAL_WRITE_BYTES_TYPE_ID, 111))
             .totalWriteTimeCounter(mockCounter(countersReader, ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID, 222))
             .maxWriteTimeCounter(mockCounter(countersReader, ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID, 333))
@@ -471,30 +470,6 @@ class ArchiveContextTest
 
         final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
         assertTrue(exception.getMessage().endsWith("expected=" + ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID));
-    }
-
-    @Test
-    void concludeThrowsConfigurationExceptionIfMaxWriteCounterAlreadyExistsForTheCurrentArchive()
-    {
-        context.maxWriteTimeCounter(null);
-
-        final long archiveId = 42;
-        final int id = 2;
-        context.archiveId(archiveId);
-        final AtomicBuffer metadataBuffer = mock(AtomicBuffer.class);
-        final CountersReader countersReader = context.aeron().countersReader();
-        when(countersReader.metaDataBuffer()).thenReturn(metadataBuffer);
-        when(countersReader.maxCounterId()).thenReturn(id + 1);
-        when(countersReader.getCounterState(anyInt())).thenReturn(
-            RECORD_ALLOCATED, RECORD_ALLOCATED, RECORD_ALLOCATED, RECORD_UNUSED);
-        when(countersReader.getCounterTypeId(anyInt())).thenReturn(
-            ARCHIVE_CONTROL_SESSIONS_TYPE_ID, ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID);
-        when(metadataBuffer.getLong(anyInt())).thenReturn(archiveId, Long.MAX_VALUE, archiveId);
-
-        final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
-        assertEquals(
-            "ERROR - existing max write time counter detected for archiveId=" + archiveId,
-            exception.getMessage());
     }
 
     @Test

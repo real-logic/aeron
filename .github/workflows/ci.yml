@@ -434,7 +434,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '13', '14', '15' ]
+        version: [ '13', '14', '15', '16' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}

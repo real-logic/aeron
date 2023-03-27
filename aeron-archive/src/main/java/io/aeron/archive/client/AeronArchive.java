@@ -2187,11 +2187,14 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Migrate segments from a source recording and attach them to the beginning of a destination recording.
+     * Migrate segments from a source recording and attach them to the beginning or end of a destination recording.
      * <p>
      * The source recording must match the destination recording for segment length, term length, mtu length,
-     * stream id, plus the stop position and term id of the source must join with the start position of the
-     * destination and be on a segment boundary.
+     * stream id. The source recording must join to the destination recording on a segment boundary and without gaps,
+     * i.e., the stop position and term id of one must match the start position and term id of the other.
+     * <p>
+     * The source recording must be stopped. The destination recording must be stopped if migrating segments
+     * to the end of the destination recording.
      * <p>
      * The source recording will be effectively truncated back to its start position after the migration.
      *

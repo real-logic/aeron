@@ -178,4 +178,9 @@ class StandbySnapshotReplicatorTest
             verify(mockMultipleRecordingReplication).onSignal(11, 23, 37, RecordingSignal.START);
         }
     }
+
+    @Test
+    void shouldHandleE()
+    {
+    }
 }

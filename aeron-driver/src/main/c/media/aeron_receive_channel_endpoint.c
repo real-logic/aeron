@@ -846,8 +846,10 @@ void aeron_receive_channel_endpoint_check_for_re_resolution(
         {
             const char *endpoint_name = destination->conductor_fields.udp_channel->uri.params.udp.control;
             struct sockaddr_storage *addr = &destination->current_control_addr;
+            int64_t registration_id = endpoint->conductor_fields.managed_resource.registration_id;
+
             aeron_driver_conductor_proxy_on_re_resolve_control(
-                conductor_proxy, endpoint_name, endpoint, destination, addr);
+                conductor_proxy, endpoint_name, registration_id, destination, addr);
             aeron_receive_destination_update_last_activity_ns(destination, now_ns);
         }
     }

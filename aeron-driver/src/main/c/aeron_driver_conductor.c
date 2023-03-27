@@ -1435,6 +1435,44 @@ void aeron_driver_conductor_on_check_managed_resources(
         conductor, conductor->lingering_resources, aeron_linger_resource_entry_t, now_ns, now_ms)
 }
 
+int aeron_driver_conductor_find_active_send_channel_endpoint(
+    aeron_driver_conductor_t *conductor,
+    int64_t registration_id,
+    aeron_send_channel_endpoint_t **endpoint)
+{
+    for (int last_index = (int)conductor->send_channel_endpoints.length - 1, i = last_index; i >= 0; i--)
+    {
+        aeron_send_channel_endpoint_t *candidate_endpoint = conductor->send_channel_endpoints.array[i].endpoint;
+        if (registration_id == candidate_endpoint->conductor_fields.managed_resource.registration_id &&
+            AERON_SEND_CHANNEL_ENDPOINT_STATUS_ACTIVE == candidate_endpoint->conductor_fields.status)
+        {
+            *endpoint = candidate_endpoint;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int aeron_driver_conductor_find_active_receive_channel_endpoint(
+    aeron_driver_conductor_t *conductor,
+    int64_t registration_id,
+    aeron_receive_channel_endpoint_t **endpoint)
+{
+    for (int last_index = (int)conductor->receive_channel_endpoints.length - 1, i = last_index; i >= 0; i--)
+    {
+        aeron_receive_channel_endpoint_t *candidate_endpoint = conductor->receive_channel_endpoints.array[i].endpoint;
+        if (registration_id == candidate_endpoint->conductor_fields.managed_resource.registration_id &&
+            AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE == candidate_endpoint->conductor_fields.status)
+        {
+            *endpoint = candidate_endpoint;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     aeron_driver_conductor_t *conductor,
     aeron_client_t *client,
@@ -4686,6 +4724,13 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
     aeron_command_re_resolve_t *cmd = item;
     struct sockaddr_storage resolved_addr;
     memset(&resolved_addr, 0, sizeof(resolved_addr));
+    aeron_send_channel_endpoint_t *endpoint = NULL;
+
+    if (0 == aeron_driver_conductor_find_active_send_channel_endpoint(
+        conductor, cmd->endpoint_registration_id, &endpoint))
+    {
+        return;
+    }
 
     if (aeron_name_resolver_resolve_host_and_port(
         &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_addr) < 0)
@@ -4698,7 +4743,7 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
     if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
     {
         aeron_driver_sender_proxy_on_resolution_change(
-            conductor->context->sender_proxy, cmd->endpoint_name, cmd->endpoint, &resolved_addr);
+            conductor->context->sender_proxy, cmd->endpoint_name, endpoint, &resolved_addr);
     }
 
 cleanup:
@@ -4711,6 +4756,13 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
     aeron_command_re_resolve_t *cmd = item;
     struct sockaddr_storage resolved_addr;
     memset(&resolved_addr, 0, sizeof(resolved_addr));
+    aeron_receive_channel_endpoint_t *endpoint;
+
+    if (0 == aeron_driver_conductor_find_active_receive_channel_endpoint(
+        conductor, cmd->endpoint_registration_id, &endpoint))
+    {
+        return;
+    }
 
     if (aeron_name_resolver_resolve_host_and_port(
         &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_CONTROL_KEY, true, &resolved_addr) < 0)
@@ -4723,7 +4775,7 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
     if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
     {
         aeron_driver_receiver_proxy_on_resolution_change(
-            conductor->context->receiver_proxy, cmd->endpoint_name, cmd->endpoint, cmd->destination, &resolved_addr);
+            conductor->context->receiver_proxy, cmd->endpoint_name, endpoint, cmd->destination, &resolved_addr);
     }
 }
 

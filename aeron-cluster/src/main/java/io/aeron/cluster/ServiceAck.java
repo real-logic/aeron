@@ -63,12 +63,14 @@ final class ServiceAck
 
             if (serviceAck.ackId != ackId)
             {
-                throw new ClusterException(ackId + " ack out of sequence " + serviceAck);
+                throw new ClusterException(
+                    "ack out of sequence, expected=" + ackId + "/" + logPosition + " received=" + serviceAck);
             }
 
             if (serviceAck.logPosition != logPosition)
             {
-                throw new ClusterException(logPosition + " log position out of sequence " + serviceAck);
+                throw new ClusterException(
+                    "logPosition out of sequence, expected=" + ackId + "/" + logPosition + " received=" + serviceAck);
             }
         }
 

@@ -68,6 +68,16 @@ import static org.agrona.SystemUtil.*;
 public final class ConsensusModule implements AutoCloseable
 {
     /**
+     * Default set of flags when taking a snapshot
+     */
+    public static final int CLUSTER_ACTION_FLAGS_DEFAULT = 0;
+
+    /**
+     * Flag for a snapshot taken on a standby node.
+     */
+    public static final int CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT = 1;
+
+    /**
      * Possible states for the {@link ConsensusModule}.
      * These will be reflected in the {@link Context#moduleStateCounter()} counter.
      */

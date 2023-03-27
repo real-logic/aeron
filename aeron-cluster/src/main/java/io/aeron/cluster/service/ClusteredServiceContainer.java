@@ -455,6 +455,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String CLUSTER_IDLE_STRATEGY_PROP_NAME = "aeron.cluster.idle.strategy";
 
         /**
+         * Property to configure if this node should take standby snapshots. The default for this property is
+         * <code>false</code>.
+         */
+        public static final String STANDBY_SNAPSHOT_ENABLED_PROP_NAME = "aeron.cluster.standby.snapshot.enabled";
+
+        /**
          * Create a supplier of {@link IdleStrategy}s that will use the system property.
          *
          * @param controllableStatus if a {@link org.agrona.concurrent.ControllableIdleStrategy} is required.
@@ -526,6 +532,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static long cycleThresholdNs()
         {
             return getDurationInNanos(CYCLE_THRESHOLD_PROP_NAME, CYCLE_THRESHOLD_DEFAULT_NS);
+        }
+
+        /**
+         * Get the configuration value to determine if this node should take standby snapshots be enabled.
+         *
+         * @return configuration value for standby snapshots being enabled.
+         */
+        public static boolean standbySnapshotEnabled()
+        {
+            return Boolean.getBoolean(STANDBY_SNAPSHOT_ENABLED_PROP_NAME);
         }
 
         /**
@@ -605,6 +621,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private boolean isRespondingService = Configuration.isRespondingService();
         private int logFragmentLimit = Configuration.logFragmentLimit();
         private long cycleThresholdNs = Configuration.cycleThresholdNs();
+        private boolean standbySnapshotEnabled = Configuration.standbySnapshotEnabled();
 
         private CountDownLatch abortLatch;
         private ThreadFactory threadFactory;
@@ -1667,6 +1684,32 @@ public final class ClusteredServiceContainer implements AutoCloseable
             {
                 IoUtil.delete(clusterDir, false);
             }
+        }
+
+        /**
+         * Indicates if this node should take standby snapshots
+         *
+         * @return <code>true</code> if this should take standby snapshots, <code>false</code> otherwise.
+         * @see ClusteredServiceContainer.Configuration#STANDBY_SNAPSHOT_ENABLED_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#standbySnapshotEnabled()
+         */
+        public boolean standbySnapshotEnabled()
+        {
+            return standbySnapshotEnabled;
+        }
+
+        /**
+         * Indicates if this node should take standby snapshots
+         *
+         * @param standbySnapshotEnabled if this node should take standby snapshots.
+         * @return this for a fluent API.
+         * @see ClusteredServiceContainer.Configuration#STANDBY_SNAPSHOT_ENABLED_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#standbySnapshotEnabled()
+         */
+        public ClusteredServiceContainer.Context standbySnapshotEnabled(final boolean standbySnapshotEnabled)
+        {
+            this.standbySnapshotEnabled = standbySnapshotEnabled;
+            return this;
         }
 
         /**

@@ -57,7 +57,7 @@ import static io.aeron.AeronCounters.CLUSTER_CONSENSUS_MODULE_STATE_TYPE_ID;
 import static io.aeron.AeronCounters.CLUSTER_CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.cluster.ClusterControl.ToggleState.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_LIMIT_MSG;
-import static io.aeron.cluster.ConsensusModuleAgent.CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT;
+import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT;
 import static io.aeron.cluster.ConsensusModuleAgent.SLOW_TICK_INTERVAL_NS;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
 import static java.lang.Boolean.TRUE;

@@ -60,6 +60,8 @@ import static io.aeron.archive.client.ArchiveException.UNKNOWN_REPLAY;
 import static io.aeron.archive.client.ReplayMerge.LIVE_ADD_MAX_WINDOW;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
+import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT;
+import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_DEFAULT;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
@@ -70,8 +72,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     static final long SLOW_TICK_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(10);
     static final short APPEND_POSITION_FLAG_NONE = 0;
     static final short APPEND_POSITION_FLAG_CATCHUP = 1;
-    static final int CLUSTER_ACTION_FLAGS_DEFAULT = 0;
-    static final int CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT = 1;
 
     private final long sessionTimeoutNs;
     private final long leaderHeartbeatIntervalNs;

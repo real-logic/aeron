@@ -40,11 +40,13 @@ import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;
 import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
 import static io.aeron.agent.ClusterEventCode.REPLAY_NEW_LEADERSHIP_TERM;
 import static io.aeron.agent.ClusterEventCode.REQUEST_VOTE;
+import static io.aeron.agent.ClusterEventCode.SERVICE_ACK;
 import static io.aeron.agent.ClusterEventCode.STATE_CHANGE;
 import static io.aeron.agent.ClusterEventCode.STOP_CATCHUP;
 import static io.aeron.agent.ClusterEventCode.TERMINATION_ACK;
 import static io.aeron.agent.ClusterEventCode.TERMINATION_POSITION;
 import static io.aeron.agent.ClusterEventCode.TRUNCATE_LOG_ENTRY;
+import static io.aeron.agent.ClusterEventEncoder.serviceAckLength;
 import static io.aeron.agent.ClusterEventEncoder.terminationAckLength;
 import static io.aeron.agent.ClusterEventEncoder.terminationPositionLength;
 import static io.aeron.agent.ClusterEventEncoder.canvassPositionLength;
@@ -771,6 +773,47 @@ class ClusterEventLoggerTest
 
         final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: TERMINATION_ACK " +
             "\\[24/24]: memberId=222 logLeadershipTermId=96 logPosition=128 senderMemberId=982374";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
+
+    @Test
+    void logServiceAck()
+    {
+        final int memberId = 222;
+        final long logPosition = 128L;
+        final long timestamp = 98273423L;
+        final long ackId = 98234L;
+        final long relevantId = 8998L;
+        final int serviceId = 982374;
+        final int offset = 64;
+        final TimeUnit timeUnit = MILLISECONDS;
+
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        logger.logServiceAck(memberId, logPosition, timestamp, timeUnit, ackId, relevantId, serviceId);
+
+        verifyLogHeader(
+            logBuffer,
+            offset,
+            SERVICE_ACK.toEventCodeId(),
+            serviceAckLength(timeUnit),
+            serviceAckLength(timeUnit));
+
+        final int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+        assertEquals(logPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
+        assertEquals(timestamp, logBuffer.getLong(index + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(ackId, logBuffer.getLong(index + (2 * SIZE_OF_LONG), LITTLE_ENDIAN));
+        assertEquals(relevantId, logBuffer.getLong(index + (3 * SIZE_OF_LONG), LITTLE_ENDIAN));
+        assertEquals(memberId, logBuffer.getInt(index + (4 * SIZE_OF_LONG), LITTLE_ENDIAN));
+        assertEquals(serviceId, logBuffer.getInt(index + SIZE_OF_INT + (4 * SIZE_OF_LONG), LITTLE_ENDIAN));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectServiceAck(
+            SERVICE_ACK, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: SERVICE_ACK " +
+            "\\[56/56]: memberId=222 logPosition=128 timestamp=98273423 timeUnit=MILLISECONDS " +
+            "ackId=98234 relevantId=8998 serviceId=982374";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }

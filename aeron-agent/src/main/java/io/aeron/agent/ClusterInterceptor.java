@@ -315,4 +315,20 @@ class ClusterInterceptor
         }
     }
 
+    static class ServiceAck
+    {
+        @Advice.OnMethodEnter
+        static void logOnServiceAck(
+            final int memberId,
+            final long logPosition,
+            final long timestamp,
+            final TimeUnit timeUnit,
+            final long ackId,
+            final long relevantId,
+            final int serviceId)
+        {
+            LOGGER.logServiceAck(memberId, logPosition, timestamp, timeUnit, ackId, relevantId, serviceId);
+        }
+    }
+
 }

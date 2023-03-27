@@ -746,4 +746,54 @@ public final class ClusterEventLogger
             }
         }
     }
+
+    /**
+     * Log an ack received from a cluster service.
+     *
+     * @param memberId      memberId receiving the ack.
+     * @param logPosition   position in the log when the ack was sent.
+     * @param timestamp     timestamp when the ack was sent.
+     * @param timeUnit      time unit used for the timestamp.
+     * @param ackId         id of the ack.
+     * @param relevantId    associated id used in the ack, e.g. recordingId for snapshot acks.
+     * @param serviceId     the id of the service that sent the ack.
+     */
+    public void logServiceAck(
+        final int memberId,
+        final long logPosition,
+        final long timestamp,
+        final TimeUnit timeUnit,
+        final long ackId,
+        final long relevantId,
+        final int serviceId)
+    {
+        final int length = ClusterEventEncoder.serviceAckLength(timeUnit);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(SERVICE_ACK.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                ClusterEventEncoder.encodeServiceAck(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    memberId,
+                    logPosition,
+                    timestamp,
+                    timeUnit,
+                    ackId,
+                    relevantId,
+                    serviceId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
 }

@@ -578,7 +578,6 @@ final class ClusterEventEncoder
         encodingBuffer.putInt(bodyOffset + bodyLength, memberId, LITTLE_ENDIAN);
         bodyLength += SIZE_OF_INT;
 
-
         return logHeaderLength + bodyLength;
     }
 
@@ -612,6 +611,51 @@ final class ClusterEventEncoder
 
         encodingBuffer.putInt(bodyOffset + bodyLength, senderMemberId, LITTLE_ENDIAN);
         bodyLength += SIZE_OF_INT;
+
+        return logHeaderLength + bodyLength;
+    }
+
+    static int serviceAckLength(final TimeUnit timeUnit)
+    {
+        return (2 * SIZE_OF_INT) + (4 * SIZE_OF_LONG) + (SIZE_OF_INT + enumName(timeUnit).length());
+    }
+
+    public static int encodeServiceAck(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final int memberId,
+        final long logPosition,
+        final long timestamp,
+        final TimeUnit timeUnit,
+        final long ackId,
+        final long relevantId,
+        final int serviceId)
+    {
+        final int logHeaderLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int bodyOffset = offset + logHeaderLength;
+        int bodyLength = 0;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, logPosition, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, timestamp, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, ackId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, relevantId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, memberId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, serviceId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+
+        bodyLength += encodingBuffer.putStringAscii(bodyOffset + bodyLength, enumName(timeUnit), LITTLE_ENDIAN);
 
         return logHeaderLength + bodyLength;
     }

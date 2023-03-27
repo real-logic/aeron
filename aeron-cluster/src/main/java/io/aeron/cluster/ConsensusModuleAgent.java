@@ -1335,6 +1335,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     void onServiceAck(
         final long logPosition, final long timestamp, final long ackId, final long relevantId, final int serviceId)
     {
+        logOnServiceAck(
+            this.memberId, logPosition, timestamp, clusterClock.timeUnit(), ackId, relevantId, serviceId);
+
         captureServiceAck(logPosition, ackId, relevantId, serviceId);
 
         if (ServiceAck.hasReached(logPosition, serviceAckId, serviceAckQueues))
@@ -2210,6 +2213,17 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final long logLeadershipTermId,
         final long logPosition,
         final int senderMemberId)
+    {
+    }
+
+    private static void logOnServiceAck(
+        final int memberId,
+        final long logPosition,
+        final long timestamp,
+        final TimeUnit timeUnit,
+        final long ackId,
+        final long relevantId,
+        final int serviceId)
     {
     }
 

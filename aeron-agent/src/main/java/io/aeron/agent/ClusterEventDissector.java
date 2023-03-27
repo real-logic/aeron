@@ -505,4 +505,36 @@ final class ClusterEventDissector
         builder.append(" senderMemberId=").append(senderMemberId);
 
     }
+
+    public static void dissectServiceAck(
+        final ClusterEventCode eventCode,
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, eventCode, buffer, absoluteOffset, builder);
+
+        final long logPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long timestamp = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long ackId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long relevantId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long memberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+        final long serviceId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+
+        builder.append(": memberId=").append(memberId);
+        builder.append(" logPosition=").append(logPosition);
+        builder.append(" timestamp=").append(timestamp);
+        builder.append(" timeUnit=");
+        buffer.getStringAscii(absoluteOffset, builder, LITTLE_ENDIAN);
+        builder.append(" ackId=").append(ackId);
+        builder.append(" relevantId=").append(relevantId);
+        builder.append(" serviceId=").append(serviceId);
+    }
 }

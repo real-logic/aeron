@@ -242,6 +242,30 @@ TEST_F(Int64ToTaggedPtrHashMapTest, shouldNotRemoveIfEmptyMap)
     ASSERT_EQ(called, 0u);
 }
 
+TEST_F(Int64ToTaggedPtrHashMapTest, removeIfWorksWhenChainCompactionBringsElementsToEndOfMap)
+{
+    ASSERT_EQ(aeron_int64_to_tagged_ptr_hash_map_init(&m_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
+
+    // Check our indices have the same hash, to ensure chained entries will wrap from 15->0
+    ASSERT_EQ(aeron_hash(-243406781, 15), 15);
+    ASSERT_EQ(aeron_hash(-333209241, 15), 15);
+
+    EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, -243406781, 0, NULL), 0);
+    EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, -333209241, 0, NULL), 0);
+
+
+    size_t called = 0;
+    remove_if(
+        [&](int64_t, uint32_t, void*)
+        {
+            called++;
+            return true;
+        });
+
+    ASSERT_EQ(called, 2u);
+    ASSERT_EQ(m_map.size, 0u);
+}
+
 TEST_F(Int64ToTaggedPtrHashMapTest, shouldRemoveIfNonEmptyMap)
 {
     int value0 = 42;

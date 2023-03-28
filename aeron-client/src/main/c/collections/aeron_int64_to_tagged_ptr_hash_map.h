@@ -293,7 +293,7 @@ inline void aeron_int64_to_tagged_ptr_hash_map_remove_if(
     size_t remaining = map->size;
     int64_t index = (int64_t)map->capacity - 1;
 
-    while (0 < remaining && 0 <= index)
+    while (0 < remaining)
     {
         if (AERON_INT64_TO_TAGGED_PTR_VALUE_PRESENT == map->entries[index].internal_flags)
         {
@@ -306,6 +306,7 @@ inline void aeron_int64_to_tagged_ptr_hash_map_remove_if(
         }
 
         --index;
+        if (index == -1) index = (int64_t)map->capacity - 1;
     }
 }
 

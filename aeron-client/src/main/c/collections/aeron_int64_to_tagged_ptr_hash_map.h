@@ -290,23 +290,20 @@ inline void aeron_int64_to_tagged_ptr_hash_map_for_each(
 inline void aeron_int64_to_tagged_ptr_hash_map_remove_if(
     aeron_int64_to_tagged_ptr_hash_map_t *map, aeron_int64_to_tagged_ptr_hash_map_predicate_func_t func, void *clientd)
 {
-    size_t remaining = map->size;
-    int64_t index = (int64_t)map->capacity - 1;
+    size_t index = 0;
 
-    while (0 < remaining)
+    while (index < map->capacity)
     {
+        bool removed = false;
         if (AERON_INT64_TO_TAGGED_PTR_VALUE_PRESENT == map->entries[index].internal_flags)
         {
             if (func(clientd, map->keys[index], map->entries[index].tag, map->entries[index].value))
             {
-                aeron_int64_to_tagged_ptr_hash_map_remove(map, map->keys[index], NULL, NULL);
+                removed = aeron_int64_to_tagged_ptr_hash_map_remove(map, map->keys[index], NULL, NULL);
             }
-
-            --remaining;
         }
 
-        --index;
-        if (index == -1) index = (int64_t)map->capacity - 1;
+        if (!removed) ++index;
     }
 }
 

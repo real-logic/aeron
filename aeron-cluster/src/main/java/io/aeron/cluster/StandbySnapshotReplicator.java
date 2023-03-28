@@ -75,10 +75,19 @@ class StandbySnapshotReplicator implements AutoCloseable
     int poll(final long nowNs)
     {
         int workCount = 0;
+
         if (null == recordingReplication)
         {
+            workCount++;
+
             final Map<String, List<RecordingLog.Entry>> snapshotsByEndpoint = recordingLog.latestRemoteSnapshots(
                 serviceCount);
+
+            if (snapshotsByEndpoint.isEmpty())
+            {
+                isComplete = true;
+                return workCount;
+            }
 
             final List<List<RecordingLog.Entry>> snapshotsOrderedByLogPosition = new ArrayList<>(
                 snapshotsByEndpoint.values());

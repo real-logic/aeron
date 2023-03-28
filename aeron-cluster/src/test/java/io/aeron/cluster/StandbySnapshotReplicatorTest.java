@@ -180,7 +180,29 @@ class StandbySnapshotReplicatorTest
     }
 
     @Test
-    void shouldHandleE()
+    void shouldHandleNoStandbySnapshots()
     {
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true);
+            MockedStatic<MultipleRecordingReplication> staticMockReplication = mockStatic(
+                MultipleRecordingReplication.class);
+            MockedStatic<AeronArchive> staticMockArchive = mockStatic(AeronArchive.class))
+        {
+            staticMockReplication
+                .when(() -> MultipleRecordingReplication.newInstance(
+                    any(), anyInt(), any(), any(), anyLong(), anyLong()))
+                .thenReturn(mockMultipleRecordingReplication);
+            staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
+
+            final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
+                ctx,
+                recordingLog,
+                1,
+                archiveControlChannel,
+                archiveControlStreamId,
+                replicationChannel);
+
+            standbySnapshotReplicator.poll(0);
+            assertTrue(standbySnapshotReplicator.isComplete());
+        }
     }
 }

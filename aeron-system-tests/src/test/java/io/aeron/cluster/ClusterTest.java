@@ -40,6 +40,7 @@ import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.MutableBoolean;
@@ -2018,6 +2019,27 @@ class ClusterTest
         cluster.awaitResponseMessageCount(2);
 
         cluster.awaitTimerEventCount(1);
+    }
+
+    @Test
+    void shouldHandleReplayAfterShutdown()
+    {
+        cluster = aCluster().withStaticNodes(1).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+        cluster.connectClient();
+        cluster.sendAndAwaitMessages(10);
+
+        leader.container().close(); // Will cause shutdown in consensus module
+        Tests.sleep(1_000);
+
+        CloseHelper.quietCloseAll(leader.consensusModule(), leader.archive(), leader.mediaDriver());
+
+        cluster.startStaticNode(0, false);
+        cluster.awaitLeader();
+        cluster.reconnectClient();
+        cluster.sendAndAwaitMessages(10);
     }
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)

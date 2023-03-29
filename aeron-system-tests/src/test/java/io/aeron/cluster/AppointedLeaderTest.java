@@ -64,7 +64,6 @@ class AppointedLeaderTest
         assertEquals(Cluster.Role.LEADER, leader.role());
 
         cluster.connectClient();
-
         cluster.sendAndAwaitMessages(10);
     }
 }

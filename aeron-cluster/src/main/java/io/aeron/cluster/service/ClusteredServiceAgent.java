@@ -1013,15 +1013,6 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         if (nowNs - lastSlowTickNs > ONE_MILLISECOND_NS)
         {
             lastSlowTickNs = nowNs;
-            final long nowMs = epochClock.time();
-
-            if (null != commitPosition && commitPosition.isClosed())
-            {
-                ctx.errorLog().record(new AeronEvent(
-                    "commit-pos counter unexpectedly closed, terminating", AeronException.Category.WARN));
-
-                throw new ClusterTerminationException(true);
-            }
 
             if (null != aeronAgentInvoker)
             {
@@ -1033,6 +1024,15 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
                 }
             }
 
+            if (null != commitPosition && commitPosition.isClosed())
+            {
+                ctx.errorLog().record(new AeronEvent(
+                    "commit-pos counter unexpectedly closed, terminating", AeronException.Category.WARN));
+
+                throw new ClusterTerminationException(true);
+            }
+
+            final long nowMs = epochClock.time();
             if (nowMs >= markFileUpdateDeadlineMs)
             {
                 markFileUpdateDeadlineMs = nowMs + MARK_FILE_UPDATE_INTERVAL_MS;

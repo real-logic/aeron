@@ -276,33 +276,36 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         final MutableLong mutableLogServiceSessionId = new MutableLong();
         final MutableInteger consensusModuleStateOffset = new MutableInteger();
         final IntArrayList pendingMessageOffsets = new IntArrayList();
-        readSnapshotRecording(leader, leaderSnapshot.recordingId, new NoOpConsensusModuleSnapshotListener()
-        {
-            public void onLoadConsensusModuleState(
-                final long nextSessionId,
-                final long nextServiceSessionId,
-                final long logServiceSessionId,
-                final int pendingMessageCapacity,
-                final DirectBuffer buffer,
-                final int offset,
-                final int length)
+        readSnapshotRecording(
+            leader,
+            leaderSnapshot.recordingId,
+            new NoOpConsensusModuleSnapshotListener()
             {
-                mutableNextSessionId.set(nextSessionId);
-                mutableNextServiceSessionId.set(nextServiceSessionId);
-                mutableLogServiceSessionId.set(logServiceSessionId);
-                consensusModuleStateOffset.set(offset);
-                assertEquals(MessageHeaderDecoder.ENCODED_LENGTH + ConsensusModuleDecoder.BLOCK_LENGTH, length);
-            }
+                public void onLoadConsensusModuleState(
+                    final long nextSessionId,
+                    final long nextServiceSessionId,
+                    final long logServiceSessionId,
+                    final int pendingMessageCapacity,
+                    final DirectBuffer buffer,
+                    final int offset,
+                    final int length)
+                {
+                    mutableNextSessionId.set(nextSessionId);
+                    mutableNextServiceSessionId.set(nextServiceSessionId);
+                    mutableLogServiceSessionId.set(logServiceSessionId);
+                    consensusModuleStateOffset.set(offset);
+                    assertEquals(MessageHeaderDecoder.ENCODED_LENGTH + ConsensusModuleDecoder.BLOCK_LENGTH, length);
+                }
 
-            public void onLoadPendingMessage(
-                final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
-            {
-                pendingMessageOffsets.addInt(offset);
-                assertEquals(
-                    MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH + SIZE_OF_INT,
-                    length);
-            }
-        });
+                public void onLoadPendingMessage(
+                    final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
+                {
+                    pendingMessageOffsets.addInt(offset);
+                    assertEquals(
+                        MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH + SIZE_OF_INT,
+                        length);
+                }
+            });
         assertNotEquals(0, consensusModuleStateOffset.get());
         final int numPendingMessages = pendingMessageOffsets.size();
         assertNotEquals(0, numPendingMessages);
@@ -327,61 +330,64 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
 
         final MutableBoolean onLoadConsensusModuleState = new MutableBoolean();
         final MutableInteger onLoadPendingMessageCount = new MutableInteger();
-        readSnapshotRecording(leader, leaderSnapshot.recordingId, new NoOpConsensusModuleSnapshotListener()
-        {
-            long nextClusterSessionId;
-
-            public void onLoadConsensusModuleState(
-                final long nextSessionId,
-                final long nextServiceSessionId,
-                final long logServiceSessionId,
-                final int pendingMessageCapacity,
-                final DirectBuffer buffer,
-                final int offset,
-                final int length)
+        readSnapshotRecording(
+            leader,
+            leaderSnapshot.recordingId,
+            new NoOpConsensusModuleSnapshotListener()
             {
-                assertEquals(expectedNextSessionId, nextSessionId);
+                long nextClusterSessionId;
 
-                switch (mode)
+                public void onLoadConsensusModuleState(
+                    final long nextSessionId,
+                    final long nextServiceSessionId,
+                    final long logServiceSessionId,
+                    final int pendingMessageCapacity,
+                    final DirectBuffer buffer,
+                    final int offset,
+                    final int length)
                 {
-                    case "LogServiceSessionId":
+                    assertEquals(expectedNextSessionId, nextSessionId);
+
+                    switch (mode)
                     {
-                        assertEquals(Long.parseLong(baseLogServiceSessionId), logServiceSessionId);
-                        assertEquals(logServiceSessionId + 1 + numPendingMessages, nextServiceSessionId);
-                        break;
+                        case "LogServiceSessionId":
+                        {
+                            assertEquals(Long.parseLong(baseLogServiceSessionId), logServiceSessionId);
+                            assertEquals(logServiceSessionId + 1 + numPendingMessages, nextServiceSessionId);
+                            break;
+                        }
+
+                        case "NextServiceSessionId":
+                        {
+                            assertEquals(Long.parseLong(baseNextServiceSessionId), nextServiceSessionId);
+                            assertEquals(nextServiceSessionId - 1 - numPendingMessages, logServiceSessionId);
+                            break;
+                        }
+
+                        case "MaxClusterSessionId":
+                        {
+                            assertEquals(clusterSessionIdUpperBound - numPendingMessages, logServiceSessionId);
+                            assertEquals(clusterSessionIdUpperBound + 1, nextServiceSessionId);
+                            break;
+                        }
+
+                        default:
+                        {
+                            fail("unknown mode: " + mode);
+                        }
                     }
 
-                    case "NextServiceSessionId":
-                    {
-                        assertEquals(Long.parseLong(baseNextServiceSessionId), nextServiceSessionId);
-                        assertEquals(nextServiceSessionId - 1 - numPendingMessages, logServiceSessionId);
-                        break;
-                    }
-
-                    case "MaxClusterSessionId":
-                    {
-                        assertEquals(clusterSessionIdUpperBound - numPendingMessages, logServiceSessionId);
-                        assertEquals(clusterSessionIdUpperBound + 1, nextServiceSessionId);
-                        break;
-                    }
-
-                    default:
-                    {
-                        fail("unknown mode: " + mode);
-                    }
+                    nextClusterSessionId = logServiceSessionId + 1;
+                    onLoadConsensusModuleState.set(true);
                 }
 
-                nextClusterSessionId = logServiceSessionId + 1;
-                onLoadConsensusModuleState.set(true);
-            }
-
-            public void onLoadPendingMessage(
-                final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
-            {
-                assertEquals(nextClusterSessionId++, clusterSessionId, "Invalid pending message header!");
-                onLoadPendingMessageCount.increment();
-            }
-        });
+                public void onLoadPendingMessage(
+                    final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
+                {
+                    assertEquals(nextClusterSessionId++, clusterSessionId, "Invalid pending message header!");
+                    onLoadPendingMessageCount.increment();
+                }
+            });
         assertTrue(onLoadConsensusModuleState.get());
         assertEquals(numPendingMessages, onLoadPendingMessageCount.get());
 
@@ -395,6 +401,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
 
         cluster.stopAllNodes();
         cluster.restartAllNodes(false);
+        cluster.awaitLeader();
         cluster.connectClient();
 
         for (int i = 0; i < 10; i++)
@@ -469,8 +476,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
 
         final ArrayList<File> segmentFiles = listSegmentFiles(leader, leaderSnapshot.recordingId);
         assertEquals(1, segmentFiles.size());
-        final MappedByteBuffer mappedByteBuffer = IoUtil.mapExistingFile(
-            segmentFiles.get(0), "snapshot file");
+        final MappedByteBuffer mappedByteBuffer = IoUtil.mapExistingFile(segmentFiles.get(0), "snapshot file");
         try
         {
             final UnsafeBuffer snapshotBuffer = new UnsafeBuffer(mappedByteBuffer);
@@ -486,29 +492,30 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
             // Now randomize clusterSessionId of every pending service message
             final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
             final MutableInteger count = new MutableInteger();
-            pendingMessageOffsets.forEachInt((offset) ->
-            {
-                final long clusterSessionId;
-                switch (count.getAndIncrement())
+            pendingMessageOffsets.forEachInt(
+                (offset) ->
                 {
-                    case 0:
-                        clusterSessionId = clusterSessionIdLowerBound;
-                        break;
+                    final long clusterSessionId;
+                    switch (count.getAndIncrement())
+                    {
+                        case 0:
+                            clusterSessionId = clusterSessionIdLowerBound;
+                            break;
 
-                    case 1:
-                        clusterSessionId = clusterSessionIdUpperBound;
-                        break;
+                        case 1:
+                            clusterSessionId = clusterSessionIdUpperBound;
+                            break;
 
-                    default:
-                        clusterSessionId = ThreadLocalRandom.current()
-                            .nextLong(clusterSessionIdLowerBound + 1, clusterSessionIdUpperBound);
-                        break;
-                }
+                        default:
+                            clusterSessionId = ThreadLocalRandom.current()
+                                .nextLong(clusterSessionIdLowerBound + 1, clusterSessionIdUpperBound);
+                            break;
+                    }
 
-                sessionMessageHeaderEncoder
-                    .wrapAndApplyHeader(snapshotBuffer, offset, messageHeaderEncoder)
-                    .clusterSessionId(clusterSessionId);
-            });
+                    sessionMessageHeaderEncoder
+                        .wrapAndApplyHeader(snapshotBuffer, offset, messageHeaderEncoder)
+                        .clusterSessionId(clusterSessionId);
+                });
         }
         finally
         {

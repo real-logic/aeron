@@ -107,9 +107,7 @@ class DynamicMembershipTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServiceMessageCount(leader, messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
@@ -147,8 +145,7 @@ class DynamicMembershipTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
@@ -205,11 +202,8 @@ class DynamicMembershipTest
 
         final TestNode leader = cluster.awaitLeader();
 
-        // Ensure all members are connected to the log.
         cluster.connectClient();
-        cluster.sendMessages(1);
-        cluster.awaitResponseMessageCount(1);
-        cluster.awaitServicesMessageCount(1);
+        cluster.sendAndAwaitMessages(1);
 
         final TestNode follower = cluster.followers().get(0);
 
@@ -346,9 +340,7 @@ class DynamicMembershipTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.stopNode(dynamicMember);
         final TestNode staticMember = cluster.startStaticNodeFromDynamicNode(3);
@@ -368,9 +360,7 @@ class DynamicMembershipTest
         final TestNode leader0 = cluster.awaitLeader();
 
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
         cluster.takeSnapshot(leader0);
         cluster.awaitSnapshotCount(1);
 
@@ -380,9 +370,7 @@ class DynamicMembershipTest
         awaitElectionClosed(cluster.node(leader0.index()));
 
         cluster.reconnectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(2 * messageCount);
-        cluster.awaitServicesMessageCount(2 * messageCount);
+        cluster.sendAndAwaitMessages(messageCount, 2 * messageCount);
 
         cluster.stopNode(leader1);
         cluster.awaitLeader();
@@ -390,9 +378,7 @@ class DynamicMembershipTest
         awaitElectionClosed(cluster.node(leader1.index()));
 
         cluster.reconnectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(3 * messageCount);
-        cluster.awaitServicesMessageCount(3 * messageCount);
+        cluster.sendAndAwaitMessages(messageCount, 3 * messageCount);
 
         final TestNode dynamicMember = cluster.startDynamicNode(3, true);
         cluster.awaitServiceMessageCount(dynamicMember, 3 * messageCount);
@@ -412,8 +398,7 @@ class DynamicMembershipTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.takeSnapshot(staticLeader);
         cluster.awaitSnapshotCount(1);
@@ -497,8 +482,7 @@ class DynamicMembershipTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.takeSnapshot(staticLeader);
         cluster.awaitSnapshotCount(1);
@@ -598,9 +582,7 @@ class DynamicMembershipTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.stopNode(leader0);
         final TestNode leader1 = cluster.awaitLeader();
@@ -632,9 +614,7 @@ class DynamicMembershipTest
 
         final int messageCount = 10;
         cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-        cluster.awaitServicesMessageCount(messageCount);
+        cluster.sendAndAwaitMessages(messageCount);
 
         cluster.stopNode(leader0);
         final TestNode leader1 = cluster.awaitLeader();
@@ -644,18 +624,14 @@ class DynamicMembershipTest
         cluster.awaitSnapshotCount(1);
 
         cluster.reconnectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(2 * messageCount);
-        cluster.awaitServicesMessageCount(2 * messageCount);
+        cluster.sendAndAwaitMessages(messageCount, 2 * messageCount);
 
         cluster.stopNode(leader1);
         final TestNode leader2 = cluster.awaitLeader();
         awaitElectionClosed(cluster.startStaticNode(leader1.index(), false));
 
         cluster.reconnectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(3 * messageCount);
-        cluster.awaitServicesMessageCount(3 * messageCount);
+        cluster.sendAndAwaitMessages(messageCount, 3 * messageCount);
 
         final TestNode follower = cluster.followers().get(0);
         follower.isTerminationExpected(true);

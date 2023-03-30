@@ -250,8 +250,8 @@ TEST_F(Int64ToTaggedPtrHashMapTest, removeIfWorksWhenChainCompactionBringsElemen
     ASSERT_EQ(aeron_hash(-243406781, 15), 15);
     ASSERT_EQ(aeron_hash(-333209241, 15), 15);
 
-    EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, -243406781, 0, NULL), 0);
-    EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, -333209241, 0, NULL), 0);
+    EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, -243406781, 0, nullptr), 0);
+    EXPECT_EQ(aeron_int64_to_tagged_ptr_hash_map_put(&m_map, -333209241, 0, nullptr), 0);
 
 
     size_t called = 0;

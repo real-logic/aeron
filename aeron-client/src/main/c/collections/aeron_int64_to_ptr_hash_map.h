@@ -248,7 +248,7 @@ inline void aeron_int64_to_ptr_hash_map_for_each(
 {
     for (size_t i = 0; i < map->capacity; i++)
     {
-        if (map->values[i] != NULL)
+        if (NULL != map->values[i])
         {
             func(clientd, map->keys[i], map->values[i]);
         }
@@ -258,22 +258,27 @@ inline void aeron_int64_to_ptr_hash_map_for_each(
 inline void aeron_int64_to_ptr_hash_map_remove_if(
     aeron_int64_to_ptr_hash_map_t *map, aeron_int64_to_ptr_hash_map_predicate_func_t func, void *clientd)
 {
-    size_t index = 0;
+    size_t i = 0;
+    size_t remaining = map->size;
 
-    while (index < map->capacity)
+    while (i < map->capacity && remaining > 0)
     {
-        bool removed = false;
-        if (map->values[index] != NULL)
+        bool is_removed = false;
+        if (NULL != map->values[i])
         {
-            if (func(clientd, map->keys[index], map->values[index]))
+            if (func(clientd, map->keys[i], map->values[i]))
             {
-                removed = NULL != aeron_int64_to_ptr_hash_map_remove(map, map->keys[index]);
+                is_removed = NULL != aeron_int64_to_ptr_hash_map_remove(map, map->keys[i]);
             }
         }
 
-        if (!removed)
+        if (is_removed)
         {
-            ++index;
+            --remaining;
+        }
+        else
+        {
+            ++i;
         }
     }
 }

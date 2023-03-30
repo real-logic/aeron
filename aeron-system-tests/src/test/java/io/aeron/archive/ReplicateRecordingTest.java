@@ -21,12 +21,10 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.samples.archive.RecordingDescriptor;
 import io.aeron.samples.archive.RecordingDescriptorCollector;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SystemTestWatcher;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
@@ -54,6 +52,7 @@ import static io.aeron.archive.ArchiveSystemTests.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -81,8 +80,6 @@ class ReplicateRecordingTest
     private Archive srcArchive;
     private TestMediaDriver dstDriver;
     private Archive dstArchive;
-    private Aeron srcAeron;
-    private Aeron dstAeron;
     private AeronArchive srcAeronArchive;
     private AeronArchive dstAeronArchive;
     private TestRecordingSignalConsumer srcRecordingSignalConsumer;
@@ -144,27 +141,19 @@ class ReplicateRecordingTest
         dstArchive = Archive.launch(dstArchiveCtx);
         systemTestWatcher.dataCollector().add(dstArchiveCtx.archiveDir());
 
-        srcAeron = Aeron.connect(
-            new Aeron.Context()
-                .aeronDirectoryName(srcAeronDirectoryName));
-
-        dstAeron = Aeron.connect(
-            new Aeron.Context()
-                .aeronDirectoryName(dstAeronDirectoryName));
-
         srcAeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
                 .idleStrategy(YieldingIdleStrategy.INSTANCE)
                 .controlRequestChannel(SRC_CONTROL_REQUEST_CHANNEL)
                 .controlResponseChannel(SRC_CONTROL_RESPONSE_CHANNEL)
-                .aeron(srcAeron));
+                .aeronDirectoryName(srcAeronDirectoryName));
 
         dstAeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
                 .idleStrategy(YieldingIdleStrategy.INSTANCE)
                 .controlRequestChannel(DST_CONTROL_REQUEST_CHANNEL)
                 .controlResponseChannel(DST_CONTROL_RESPONSE_CHANNEL)
-                .aeron(dstAeron));
+                .aeronDirectoryName(dstAeronDirectoryName));
 
         srcRecordingSignalConsumer = injectRecordingSignalConsumer(srcAeronArchive);
         dstRecordingSignalConsumer = injectRecordingSignalConsumer(dstAeronArchive);
@@ -176,8 +165,6 @@ class ReplicateRecordingTest
         CloseHelper.closeAll(
             srcAeronArchive,
             dstAeronArchive,
-            srcAeron,
-            dstAeron,
             srcArchive,
             dstArchive,
             dstDriver,
@@ -209,7 +196,7 @@ class ReplicateRecordingTest
         catch (final ArchiveException ex)
         {
             assertEquals(ArchiveException.UNKNOWN_RECORDING, ex.errorCode());
-            assertTrue(ex.getMessage().endsWith(Long.toString(unknownId)));
+            assertThat(ex.getMessage(), endsWith(Long.toString(unknownId)));
             return;
         }
 
@@ -252,6 +239,7 @@ class ReplicateRecordingTest
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
 
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
             final CountersReader counters = srcAeron.countersReader();
@@ -297,6 +285,7 @@ class ReplicateRecordingTest
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
 
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
             final CountersReader counters = srcAeron.countersReader();
@@ -342,6 +331,7 @@ class ReplicateRecordingTest
         long position = 0;
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
 
         for (int i = 0; i < 2; i++)
         {
@@ -408,6 +398,7 @@ class ReplicateRecordingTest
         final long srcRecordingId;
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
 
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
@@ -439,9 +430,8 @@ class ReplicateRecordingTest
                 dstRecordingId,
                 RecordingSignal.EXTEND);
 
-            final CountersReader dstCounters = dstAeron.countersReader();
-            final int dstCounterId =
-                RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
+            final CountersReader dstCounters = dstAeronArchive.context().aeron().countersReader();
+            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
             Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
 
             offer(publication, messageCount, messagePrefix);
@@ -467,6 +457,7 @@ class ReplicateRecordingTest
         final long srcRecordingId;
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
 
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
@@ -535,6 +526,7 @@ class ReplicateRecordingTest
         final long srcRecordingId;
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
 
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
@@ -562,7 +554,7 @@ class ReplicateRecordingTest
             final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
 
-            final CountersReader dstCounters = dstAeron.countersReader();
+            final CountersReader dstCounters = dstArchive.context().aeron().countersReader();
             int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
             Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
 
@@ -611,6 +603,7 @@ class ReplicateRecordingTest
         final long srcRecordingId;
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
 
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
@@ -676,6 +669,7 @@ class ReplicateRecordingTest
         final long srcRecordingId;
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
 
         srcRecordingSignalConsumer.reset();
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
@@ -712,9 +706,8 @@ class ReplicateRecordingTest
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.MERGE);
 
-            final CountersReader dstCounters = dstAeron.countersReader();
-            final int dstCounterId =
-                RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
+            final CountersReader dstCounters = dstArchive.context().aeron().countersReader();
+            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
 
             offer(publication, messageCount, messagePrefix);
             Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
@@ -736,6 +729,7 @@ class ReplicateRecordingTest
         final long dstRecordingId;
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
 
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
@@ -763,9 +757,8 @@ class ReplicateRecordingTest
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.MERGE);
 
-            final CountersReader dstCounters = dstAeron.countersReader();
-            final int dstCounterId =
-                RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
+            final CountersReader dstCounters = dstArchive.context().aeron().countersReader();
+            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
 
             offer(publication, messageCount, messagePrefix);
             Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
@@ -784,6 +777,8 @@ class ReplicateRecordingTest
     @InterruptAfter(10)
     void shouldReplicateLiveRecordingAndMergeWhileFollowingWithTaggedSubscription(final boolean useParams)
     {
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
+        final Aeron dstAeron = dstAeronArchive.context().aeron();
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
         final long srcRecordingId;
@@ -839,8 +834,7 @@ class ReplicateRecordingTest
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.MERGE);
 
             final CountersReader dstCounters = dstAeron.countersReader();
-            final int dstCounterId =
-                RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
+            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
 
             offer(publication, messageCount, messagePrefix);
             consume(taggedSubscription, messageCount, messagePrefix);
@@ -854,7 +848,6 @@ class ReplicateRecordingTest
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
         awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
-
         awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
     }
 
@@ -878,6 +871,7 @@ class ReplicateRecordingTest
         final long srcRecordingId;
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
 
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
@@ -932,6 +926,7 @@ class ReplicateRecordingTest
         final long srcRecordingId;
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
 
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
@@ -1067,7 +1062,7 @@ class ReplicateRecordingTest
         final int messageCount = 10;
         final long srcRecordingId;
 
-        CloseHelper.closeAll(dstAeronArchive, dstAeron, dstArchive, dstDriver);
+        CloseHelper.closeAll(dstAeronArchive, dstArchive, dstDriver);
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
 
@@ -1080,8 +1075,6 @@ class ReplicateRecordingTest
                 .dirDeleteOnStart(true),
             systemTestWatcher);
         systemTestWatcher.dataCollector().add(dstDriver.context().aeronDirectory());
-
-        dstAeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(dstDriver.aeronDirectoryName()));
 
         dstArchive = Archive.launch(new Archive.Context()
             .catalogCapacity(CATALOG_CAPACITY)
@@ -1106,9 +1099,10 @@ class ReplicateRecordingTest
             .controlResponseChannel(IPC_CHANNEL)
             .controlResponseStreamId(5555)
             .idleStrategy(YieldingIdleStrategy.INSTANCE)
-            .aeron(dstAeron));
+            .aeronDirectoryName(dstDriver.aeronDirectoryName()));
 
         dstRecordingSignalConsumer = injectRecordingSignalConsumer(dstAeronArchive);
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
 
         srcRecordingSignalConsumer.reset();
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
@@ -1145,9 +1139,8 @@ class ReplicateRecordingTest
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.MERGE);
 
-            final CountersReader dstCounters = dstAeron.countersReader();
-            final int dstCounterId =
-                RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
+            final CountersReader dstCounters = dstArchive.context().aeron().countersReader();
+            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
 
             offer(publication, messageCount, messagePrefix);
             Tests.awaitPosition(dstCounters, dstCounterId, publication.position());
@@ -1159,6 +1152,8 @@ class ReplicateRecordingTest
     }
 
     @Test
+    @SlowTest
+    @InterruptAfter(30)
     void shouldHandleInvalidSrcEndpoint()
     {
         try
@@ -1196,16 +1191,16 @@ class ReplicateRecordingTest
 
             // Assumes session specific subscription used for replay.
             final Image image = replay.imageAtIndex(0);
+            final FragmentHandler fragmentHandler =
+                (buffer, offset, len, header) ->
+                {
+                    srcRecordingData.putBytes(position.get(), buffer, offset, len);
+                    position.addAndGet(len);
+                };
 
             while (!image.isEndOfStream())
             {
-                image.poll(
-                    (buffer, offset, len, header) ->
-                    {
-                        srcRecordingData.putBytes(position.get(), buffer, offset, len);
-                        position.addAndGet(len);
-                    },
-                    10);
+                image.poll(fragmentHandler, 10);
             }
         }
     }

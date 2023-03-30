@@ -17,8 +17,6 @@ package io.aeron.driver.media;
 
 import io.aeron.CommonContext;
 import io.aeron.driver.DriverConductorProxy;
-import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayUtil;
 
 import java.io.IOException;
@@ -34,15 +32,23 @@ final class MultiRcvDestination
 
     private ReceiveDestinationTransport[] transports = EMPTY_TRANSPORTS;
 
-    void close(final ErrorHandler errorHandler, final DataTransportPoller poller)
+    void closeTransports(final DataTransportPoller poller)
     {
         for (final ReceiveDestinationTransport transport : transports)
         {
-            CloseHelper.close(errorHandler, transport);
+            transport.closeTransport();
             if (null != poller)
             {
                 poller.selectNowWithoutProcessing();
             }
+        }
+    }
+
+    void closeIndicators(final DriverConductorProxy conductorProxy)
+    {
+        for (final ReceiveDestinationTransport transport : transports)
+        {
+            conductorProxy.closeReceiveDestinationIndicators(transport);
         }
     }
 

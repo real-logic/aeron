@@ -271,15 +271,29 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     }
 
     /**
-     * Close the {@link MultiRcvDestination} if present and associated {@link DataTransportPoller}.
+     * Close transports for {@link MultiRcvDestination} if present.
      *
-     * @param poller associated with the {@link MultiRcvDestination} if present.
+     * @param poller associated with the {@link MultiRcvDestination} if present to be used for selecting without
+     *              processing.
      */
-    public void closeMultiRcvDestination(final DataTransportPoller poller)
+    public void closeMultiRcvDestinationTransports(final DataTransportPoller poller)
     {
         if (null != multiRcvDestination)
         {
-            multiRcvDestination.close(errorHandler, poller);
+            multiRcvDestination.closeTransports(poller);
+        }
+    }
+
+    /**
+     * Close the {@link MultiRcvDestination} indicators.
+     *
+     * @param conductorProxy for sending back counters to be closed.
+     */
+    public void closeMultiRcvDestinationIndicators(final DriverConductorProxy conductorProxy)
+    {
+        if (null != multiRcvDestination)
+        {
+            multiRcvDestination.closeIndicators(conductorProxy);
         }
     }
 

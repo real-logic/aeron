@@ -110,19 +110,19 @@ public final class DriverConductorProxy
     }
 
     /**
-     * Close a receive destination.
+     * Close a receive destination indicators.
      *
-     * @param destinationTransport to be closed
+     * @param destinationTransport to have its indicators closed.
      */
-    public void closeReceiveDestination(final ReceiveDestinationTransport destinationTransport)
+    public void closeReceiveDestinationIndicators(final ReceiveDestinationTransport destinationTransport)
     {
         if (notConcurrent())
         {
-            driverConductor.closeReceiveDestination(destinationTransport);
+            driverConductor.closeReceiveDestinationIndicators(destinationTransport);
         }
         else
         {
-            offer(() -> driverConductor.closeReceiveDestination(destinationTransport));
+            offer(() -> driverConductor.closeReceiveDestinationIndicators(destinationTransport));
         }
     }
 

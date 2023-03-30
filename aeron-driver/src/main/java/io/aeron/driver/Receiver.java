@@ -227,8 +227,9 @@ public final class Receiver implements Agent
             }
         }
 
-        channelEndpoint.closeMultiRcvDestination(dataTransportPoller);
+        channelEndpoint.closeMultiRcvDestinationTransports(dataTransportPoller);
         channelEndpoint.close();
+        channelEndpoint.closeMultiRcvDestinationIndicators(conductorProxy);
     }
 
     void onRemoveCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
@@ -279,7 +280,7 @@ public final class Receiver implements Agent
                 }
             }
 
-            conductorProxy.closeReceiveDestination(transport);
+            conductorProxy.closeReceiveDestinationIndicators(transport);
         }
     }
 

@@ -160,11 +160,18 @@ public final class ReceiveDestinationTransport extends ReceiveDestinationTranspo
     }
 
     /**
+     * Close indicator counters associated with the transport.
+     */
+    public void closeIndicators()
+    {
+        CloseHelper.close(localSocketAddressIndicator);
+    }
+
+    /**
      * {@inheritDoc}
      */
     public void close()
     {
-        CloseHelper.close(localSocketAddressIndicator);
         super.close();
     }
 

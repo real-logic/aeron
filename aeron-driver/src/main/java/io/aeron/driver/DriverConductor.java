@@ -1153,9 +1153,9 @@ public final class DriverConductor implements Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    void closeReceiveDestination(final ReceiveDestinationTransport destinationTransport)
+    void closeReceiveDestinationIndicators(final ReceiveDestinationTransport destinationTransport)
     {
-        CloseHelper.close(destinationTransport);
+        destinationTransport.closeIndicators();
     }
 
     void onTerminateDriver(final DirectBuffer tokenBuffer, final int tokenOffset, final int tokenLength)

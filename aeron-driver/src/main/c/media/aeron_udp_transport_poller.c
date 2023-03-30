@@ -143,6 +143,7 @@ int aeron_udp_transport_poller_remove(aeron_udp_transport_poller_t *poller, aero
             sizeof(aeron_udp_channel_transport_entry_t),
             (size_t)index,
             (size_t)last_index);
+        poller->transports.length--;
 
 #if defined(HAVE_EPOLL)
         aeron_array_fast_unordered_remove(
@@ -170,7 +171,6 @@ int aeron_udp_transport_poller_remove(aeron_udp_transport_poller_t *poller, aero
             (size_t)index,
             (size_t)last_index);
 #endif
-        poller->transports.length--;
     }
 
     return 0;

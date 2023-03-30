@@ -36,10 +36,13 @@ final class MultiRcvDestination
     {
         for (final ReceiveDestinationTransport transport : transports)
         {
-            transport.closeTransport();
-            if (null != poller)
+            if (null != transport)
             {
-                poller.selectNowWithoutProcessing();
+                transport.closeTransport();
+                if (null != poller)
+                {
+                    poller.selectNowWithoutProcessing();
+                }
             }
         }
     }
@@ -48,7 +51,10 @@ final class MultiRcvDestination
     {
         for (final ReceiveDestinationTransport transport : transports)
         {
-            conductorProxy.closeReceiveDestinationIndicators(transport);
+            if (null != transport)
+            {
+                conductorProxy.closeReceiveDestinationIndicators(transport);
+            }
         }
     }
 

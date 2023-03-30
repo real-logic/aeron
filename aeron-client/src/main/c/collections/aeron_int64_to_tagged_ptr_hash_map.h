@@ -303,7 +303,10 @@ inline void aeron_int64_to_tagged_ptr_hash_map_remove_if(
             }
         }
 
-        if (!removed) ++index;
+        if (!removed)
+        {
+            ++index;
+        }
     }
 }
 

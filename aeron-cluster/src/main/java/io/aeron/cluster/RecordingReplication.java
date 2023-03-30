@@ -22,6 +22,7 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.exceptions.AeronException;
 import org.agrona.concurrent.status.CountersReader;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
@@ -33,7 +34,7 @@ final class RecordingReplication implements AutoCloseable
     private final long progressCheckIntervalNs;
 
     private int recordingPositionCounterId = NULL_COUNTER_ID;
-    private long recordingId;
+    private long recordingId = NULL_VALUE;
     private long position = NULL_POSITION;
 
     private long progressDeadlineNs;
@@ -77,6 +78,12 @@ final class RecordingReplication implements AutoCloseable
     int poll(final long nowNs)
     {
         int workCount = 0;
+
+        if (hasReplicationEnded)
+        {
+            return workCount;
+        }
+
         try
         {
             if (nowNs >= progressCheckDeadlineNs)
@@ -93,12 +100,11 @@ final class RecordingReplication implements AutoCloseable
             {
                 if (NULL_POSITION == stopPosition || position < stopPosition)
                 {
-                    throw new ClusterException(
-                        "log replication has not progressed: " + this, AeronException.Category.WARN);
+                    throw new ClusterException("log replication has not progressed", AeronException.Category.WARN);
                 }
                 else
                 {
-                    throw new ClusterException("log replication failed to stop: " + this);
+                    throw new ClusterException("log replication failed to stop");
                 }
             }
 
@@ -127,11 +133,6 @@ final class RecordingReplication implements AutoCloseable
     long recordingId()
     {
         return recordingId;
-    }
-
-    long stopPosition()
-    {
-        return stopPosition;
     }
 
     boolean hasReplicationEnded()
@@ -198,8 +199,12 @@ final class RecordingReplication implements AutoCloseable
                 throw new ClusterException("recording was deleted during replication: " + this);
             }
 
-            this.recordingId = recordingId;
             this.lastRecordingSignal = signal;
+
+            if (NULL_VALUE != recordingId)
+            {
+                this.recordingId = recordingId;
+            }
 
             if (NULL_POSITION != position)
             {
@@ -228,18 +233,21 @@ final class RecordingReplication implements AutoCloseable
 
     public String toString()
     {
-        return "LogReplication{" +
+        return "RecordingReplication{" +
             "replicationId=" + replicationId +
+            ", stopPosition=" + stopPosition +
+            ", progressCheckTimeoutNs=" + progressCheckTimeoutNs +
+            ", progressCheckIntervalNs=" + progressCheckIntervalNs +
             ", recordingPositionCounterId=" + recordingPositionCounterId +
             ", recordingId=" + recordingId +
             ", position=" + position +
-            ", stopPosition=" + stopPosition +
-            ", stopped=" + hasReplicationEnded +
-            ", lastRecordingSignal=" + lastRecordingSignal +
             ", progressDeadlineNs=" + progressDeadlineNs +
             ", progressCheckDeadlineNs=" + progressCheckDeadlineNs +
-            ", progressCheckTimeoutNs=" + progressCheckTimeoutNs +
-            ", progressCheckIntervalNs=" + progressCheckIntervalNs +
+            ", archive=" + archive +
+            ", lastRecordingSignal=" + lastRecordingSignal +
+            ", hasReplicationEnded=" + hasReplicationEnded +
+            ", hasSynced=" + hasSynced +
+            ", hasStopped=" + hasStopped +
             '}';
     }
 }

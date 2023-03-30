@@ -40,7 +40,7 @@ static aeron_system_counter_t system_counters[] =
         { "Invalid packets", AERON_SYSTEM_COUNTER_INVALID_PACKETS },
         { "Errors", AERON_SYSTEM_COUNTER_ERRORS },
         { "Short sends", AERON_SYSTEM_COUNTER_SHORT_SENDS },
-        { "Failed attempt to free log buffers", AERON_SYSTEM_COUNTER_FREE_FAILS },
+        { "Failed attempts to free log buffers", AERON_SYSTEM_COUNTER_FREE_FAILS },
         { "Sender flow control limits, i.e. back-pressure events", AERON_SYSTEM_COUNTER_SENDER_FLOW_CONTROL_LIMITS },
         { "Unblocked Publications", AERON_SYSTEM_COUNTER_UNBLOCKED_PUBLICATIONS },
         { "Unblocked Control Commands", AERON_SYSTEM_COUNTER_UNBLOCKED_COMMANDS },
@@ -70,7 +70,7 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
     if (NULL == counters || NULL == manager)
     {
         AERON_SET_ERR(
-            EINVAL, "counters = %s, manager = %s", NULL == counters ? "NULL" : "OK", NULL == manager ? "NULL" : "OK");
+            EINVAL, "counters=%s, manager=%s", NULL == counters ? "NULL" : "OK", NULL == manager ? "NULL" : "OK");
         return -1;
     }
 

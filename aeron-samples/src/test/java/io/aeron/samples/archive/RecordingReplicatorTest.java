@@ -66,7 +66,7 @@ class RecordingReplicatorTest
         "aeron:udp?alias=dst-replication-channel|endpoint=localhost:9999";
     private static final int TERM_BUFFER_LENGTH = 128 * 1024;
     @RegisterExtension
-    private final SystemTestWatcher testWatcher = new SystemTestWatcher();
+    final SystemTestWatcher testWatcher = new SystemTestWatcher();
     private TestMediaDriver srcMediaDriver;
     private TestMediaDriver dstMediaDriver;
     private Archive srcArchive;

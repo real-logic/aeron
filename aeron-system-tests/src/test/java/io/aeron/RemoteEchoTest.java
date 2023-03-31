@@ -77,7 +77,7 @@ class RemoteEchoTest
     }
 
     @RegisterExtension
-    private final RandomWatcher randomWatcher = new RandomWatcher(18604930465192L);
+    final RandomWatcher randomWatcher = new RandomWatcher(18604930465192L);
 
     @BeforeAll
     static void beforeAll() throws IOException

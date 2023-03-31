@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 public class DriverSpaceTest
 {
     @RegisterExtension
-    private final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
     private Path aeronDir;
     private Path publicationsDir;
 

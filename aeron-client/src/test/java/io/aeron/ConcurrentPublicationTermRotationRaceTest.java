@@ -49,7 +49,7 @@ class ConcurrentPublicationTermRotationRaceTest
     private TestMediaDriver mediaDriver;
     private Aeron aeron;
     @RegisterExtension
-    private final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
     void setup()

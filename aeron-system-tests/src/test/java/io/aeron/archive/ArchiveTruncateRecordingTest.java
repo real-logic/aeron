@@ -76,7 +76,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 class ArchiveTruncateRecordingTest
 {
     @RegisterExtension
-    private final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
     private final FragmentAssembler fragmentHandler = new FragmentAssembler((buffer, offset, length, header) -> {});
     private TestMediaDriver driver;
     private Archive archive;

@@ -4755,7 +4755,6 @@ void aeron_driver_conductor_on_receive_endpoint_removed(void *clientd, void *ite
 
 void aeron_driver_conductor_on_release_resource(void *clientd, void *item)
 {
-    aeron_driver_conductor_t *conductor = clientd;
     aeron_command_release_resource_t *cmd = item;
     void *managed_resource = cmd->base.item;
     aeron_driver_conductor_resource_type_t resource_type = cmd->resource_type;

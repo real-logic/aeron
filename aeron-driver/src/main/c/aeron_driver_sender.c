@@ -254,7 +254,8 @@ void aeron_driver_sender_on_remove_endpoint(void *clientd, void *command)
         aeron_driver_sender_log_error(sender);
     }
 
-    aeron_send_channel_endpoint_sender_release(endpoint);
+    aeron_driver_conductor_proxy_on_release_resource(
+        sender->context->conductor_proxy, endpoint, AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_SEND_CHANNEL_ENDPOINT);
 }
 
 void aeron_driver_sender_on_add_publication(void *clientd, void *command)

@@ -185,3 +185,28 @@ void aeron_driver_conductor_proxy_on_receive_endpoint_removed(
         aeron_driver_conductor_proxy_offer(conductor_proxy, &cmd, sizeof(cmd));
     }
 }
+
+void aeron_driver_conductor_proxy_on_release_resource(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    void *managed_resource,
+    aeron_driver_conductor_resource_type_t resource_type)
+{
+    aeron_command_release_resource_t cmd =
+        {
+            .base =
+                {
+                    .func = aeron_driver_conductor_on_release_resource,
+                    .item = managed_resource
+                },
+            .resource_type = resource_type
+        };
+
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
+    {
+        aeron_driver_conductor_on_release_resource(conductor_proxy->conductor, &cmd);
+    }
+    else
+    {
+        aeron_driver_conductor_proxy_offer(conductor_proxy, &cmd, sizeof(cmd));
+    }
+}

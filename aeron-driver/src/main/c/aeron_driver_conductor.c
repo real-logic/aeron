@@ -4686,6 +4686,12 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
     aeron_command_re_resolve_t *cmd = item;
     struct sockaddr_storage resolved_addr;
     memset(&resolved_addr, 0, sizeof(resolved_addr));
+    aeron_send_channel_endpoint_t *endpoint = cmd->endpoint;
+
+    if (AERON_SEND_CHANNEL_ENDPOINT_STATUS_ACTIVE != endpoint->conductor_fields.status)
+    {
+        return;
+    }
 
     if (aeron_name_resolver_resolve_host_and_port(
         &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_addr) < 0)
@@ -4698,7 +4704,7 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
     if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
     {
         aeron_driver_sender_proxy_on_resolution_change(
-            conductor->context->sender_proxy, cmd->endpoint_name, cmd->endpoint, &resolved_addr);
+            conductor->context->sender_proxy, cmd->endpoint_name, endpoint, &resolved_addr);
     }
 
 cleanup:
@@ -4746,6 +4752,35 @@ void aeron_driver_conductor_on_receive_endpoint_removed(void *clientd, void *ite
         aeron_receive_channel_endpoint_receiver_release(endpoint);
     }
 }
+
+void aeron_driver_conductor_on_release_resource(void *clientd, void *item)
+{
+    aeron_driver_conductor_t *conductor = clientd;
+    aeron_command_release_resource_t *cmd = item;
+    void *managed_resource = cmd->base.item;
+    aeron_driver_conductor_resource_type_t resource_type = cmd->resource_type;
+
+    switch (resource_type)
+    {
+        case AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_CLIENT:
+            break;
+        case AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_IPC_PUBLICATION:
+            break;
+        case AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_NETWORK_PUBLICATION:
+            break;
+        case AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_SEND_CHANNEL_ENDPOINT:
+        {
+            aeron_send_channel_endpoint_sender_release(managed_resource);
+            break;
+        }
+        case AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_PUBLICATION_IMAGE:
+            break;
+        case AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_LINGER_RESOURCE:
+            break;
+    }
+
+}
+
 
 extern void aeron_driver_subscribable_null_hook(void *clientd, volatile int64_t *value_addr);
 

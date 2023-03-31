@@ -19,6 +19,17 @@
 
 #include "aeron_driver_context.h"
 
+typedef enum aeron_driver_conductor_resource_type_en
+{
+    AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_CLIENT,
+    AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_IPC_PUBLICATION,
+    AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_NETWORK_PUBLICATION,
+    AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_SEND_CHANNEL_ENDPOINT,
+    AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_PUBLICATION_IMAGE,
+    AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_LINGER_RESOURCE
+}
+aeron_driver_conductor_resource_type_t;
+
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 
 typedef struct aeron_driver_conductor_proxy_stct
@@ -65,6 +76,13 @@ typedef struct aeron_command_delete_destination_stct
 }
 aeron_command_delete_destination_t;
 
+struct aeron_command_release_resource_stct
+{
+    aeron_command_base_t base;
+    aeron_driver_conductor_resource_type_t resource_type;
+};
+typedef struct aeron_command_release_resource_stct aeron_command_release_resource_t;
+
 void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     int32_t session_id,
@@ -104,5 +122,10 @@ void aeron_conductor_proxy_on_delete_send_destination(
 void aeron_driver_conductor_proxy_on_receive_endpoint_removed(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     void *endpoint);
+
+void aeron_driver_conductor_proxy_on_release_resource(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    void *managed_resource,
+    aeron_driver_conductor_resource_type_t resource_type);
 
 #endif //AERON_DRIVER_CONDUCTOR_PROXY_H

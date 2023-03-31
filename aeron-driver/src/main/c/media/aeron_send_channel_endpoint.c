@@ -469,10 +469,9 @@ int aeron_send_channel_endpoint_check_for_re_resolution(
         now_ns > (endpoint->time_of_last_sm_ns + AERON_SEND_CHANNEL_ENDPOINT_DESTINATION_TIMEOUT_NS))
     {
         const char *endpoint_name = endpoint->conductor_fields.udp_channel->uri.params.udp.endpoint;
-        int64_t endpoint_registration_id = endpoint->conductor_fields.managed_resource.registration_id;
 
         aeron_driver_conductor_proxy_on_re_resolve_endpoint(
-            conductor_proxy, endpoint_name, endpoint_registration_id, &endpoint->current_data_addr);
+            conductor_proxy, endpoint_name, endpoint, &endpoint->current_data_addr);
     }
 
     return 0;

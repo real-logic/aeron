@@ -354,11 +354,8 @@ void aeron_udp_destination_tracker_check_for_re_resolution(
             {
                 assert(NULL != destination->uri);
 
-                int64_t endpoint_registration_id = endpoint->conductor_fields.managed_resource.registration_id;
-                const char *endpoint_name = destination->uri->params.udp.endpoint;
-
                 aeron_driver_conductor_proxy_on_re_resolve_endpoint(
-                    conductor_proxy, endpoint_name, endpoint_registration_id, &destination->addr);
+                    conductor_proxy, destination->uri->params.udp.endpoint, endpoint, &destination->addr);
                 destination->time_of_last_activity_ns = now_ns;
             }
         }

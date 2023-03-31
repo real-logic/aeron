@@ -79,7 +79,7 @@ void aeron_driver_conductor_proxy_on_re_resolve(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     void (*resolve_func)(void *, void *),
     const char *endpoint_name,
-    int64_t endpoint_registration_id,
+    void *endpoint,
     void *destination,
     struct sockaddr_storage *existing_addr)
 {
@@ -87,7 +87,7 @@ void aeron_driver_conductor_proxy_on_re_resolve(
         {
             .base = { .func = resolve_func, .item = NULL },
             .endpoint_name = endpoint_name,
-            .endpoint_registration_id = endpoint_registration_id,
+            .endpoint = endpoint,
             .destination = destination,
         };
     memcpy(&cmd.existing_addr, existing_addr, sizeof(cmd.existing_addr));
@@ -105,17 +105,17 @@ void aeron_driver_conductor_proxy_on_re_resolve(
 void aeron_driver_conductor_proxy_on_re_resolve_endpoint(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     const char *endpoint_name,
-    int64_t endpoint_registration_id,
+    void *endpoint,
     struct sockaddr_storage *existing_addr)
 {
     aeron_driver_conductor_proxy_on_re_resolve(
-        conductor_proxy, aeron_driver_conductor_on_re_resolve_endpoint, endpoint_name, endpoint_registration_id, NULL, existing_addr);
+        conductor_proxy, aeron_driver_conductor_on_re_resolve_endpoint, endpoint_name, endpoint, NULL, existing_addr);
 }
 
 void aeron_driver_conductor_proxy_on_re_resolve_control(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     const char *endpoint_name,
-    int64_t endpoint_registration_id,
+    void *endpoint,
     void *destination,
     struct sockaddr_storage *existing_addr)
 {
@@ -123,7 +123,7 @@ void aeron_driver_conductor_proxy_on_re_resolve_control(
         conductor_proxy,
         aeron_driver_conductor_on_re_resolve_control,
         endpoint_name,
-        endpoint_registration_id,
+        endpoint,
         destination,
         existing_addr);
 }

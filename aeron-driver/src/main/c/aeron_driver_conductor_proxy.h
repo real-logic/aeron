@@ -51,7 +51,7 @@ typedef struct aeron_command_re_resolve_stct
 {
     aeron_command_base_t base;
     const char *endpoint_name;
-    int64_t endpoint_registration_id;
+    void *endpoint;
     void *destination;
     struct sockaddr_storage existing_addr;
 }
@@ -82,13 +82,13 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
 void aeron_driver_conductor_proxy_on_re_resolve_endpoint(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     const char *endpoint_name,
-    int64_t endpoint_registration_id,
+    void *endpoint,
     struct sockaddr_storage *existing_addr);
 
 void aeron_driver_conductor_proxy_on_re_resolve_control(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     const char *endpoint_name,
-    int64_t endpoint_registration_id,
+    void *endpoint,
     void *destination,
     struct sockaddr_storage *existing_addr);
 

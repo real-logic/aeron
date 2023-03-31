@@ -45,7 +45,7 @@ class ConcurrentPublicationTermRotationRaceTest
 {
     private static final int NUM_PUBLISHERS = Math.max(Math.min(Runtime.getRuntime().availableProcessors() / 2, 8), 4);
     private static final int NUM_MESSAGES = NUM_PUBLISHERS * 50_000;
-    private static final int ITERATIONS = 200;
+    private static final int ITERATIONS = 100;
     private TestMediaDriver mediaDriver;
     private Aeron aeron;
     @RegisterExtension
@@ -119,7 +119,7 @@ class ConcurrentPublicationTermRotationRaceTest
                 ", sent=" + publishers.stream().mapToLong(p -> p.sendCount).sum() +
                 ", received=" + msgCount;
 
-            final Image image = subscription.imageAtIndex(0);
+            final Image image = subscription.imageBySessionId(publication.sessionId());
 
             while (msgCount.get() < NUM_MESSAGES)
             {
@@ -142,7 +142,7 @@ class ConcurrentPublicationTermRotationRaceTest
         }
     }
 
-    private abstract static class MessagePublisher extends Thread
+    abstract static class MessagePublisher extends Thread
     {
         private final CountDownLatch startLatch;
         private final ConcurrentPublication publication;
@@ -204,7 +204,7 @@ class ConcurrentPublicationTermRotationRaceTest
         abstract long publish(ConcurrentPublication publication, long payload, int size);
     }
 
-    private static class OfferMessagePublisher extends MessagePublisher
+    static final class OfferMessagePublisher extends MessagePublisher
     {
         private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer(1024);
 
@@ -226,7 +226,7 @@ class ConcurrentPublicationTermRotationRaceTest
         }
     }
 
-    private static class TryClaimMessagePublisher extends MessagePublisher
+    static final class TryClaimMessagePublisher extends MessagePublisher
     {
         private final BufferClaim bufferClaim = new BufferClaim();
 

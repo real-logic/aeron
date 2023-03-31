@@ -103,7 +103,7 @@ class DynamicMembershipTest
         cluster = aCluster().withStaticNodes(3).withDynamicNodes(1).start();
         systemTestWatcher.cluster(cluster);
 
-        final TestNode leader = cluster.awaitLeader();
+        cluster.awaitLeader();
 
         final int messageCount = 10;
         cluster.connectClient();

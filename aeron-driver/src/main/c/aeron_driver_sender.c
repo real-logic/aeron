@@ -325,7 +325,8 @@ void aeron_driver_sender_on_remove_publication(void *clientd, void *command)
         aeron_driver_sender_log_error(sender);
     }
 
-    aeron_network_publication_sender_release(publication);
+    aeron_driver_conductor_proxy_on_release_resource(
+        sender->context->conductor_proxy, publication, AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_NETWORK_PUBLICATION);
 }
 
 void aeron_driver_sender_on_add_destination(void *clientd, void *command)

@@ -520,7 +520,8 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
         }
     }
 
-    aeron_publication_image_receiver_release(image);
+    aeron_driver_conductor_proxy_on_release_resource(
+        receiver->context->conductor_proxy, image, AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_PUBLICATION_IMAGE);
 }
 
 void aeron_driver_receiver_on_remove_matching_state(void *clientd, void *item)

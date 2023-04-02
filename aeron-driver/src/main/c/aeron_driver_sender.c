@@ -355,7 +355,7 @@ void aeron_driver_sender_on_remove_destination(void *clientd, void *command)
 
     if (NULL != old_uri)
     {
-        aeron_conductor_proxy_on_delete_send_destination(sender->context->conductor_proxy, old_uri);
+        aeron_driver_conductor_proxy_on_delete_send_destination(sender->context->conductor_proxy, old_uri);
     }
 }
 

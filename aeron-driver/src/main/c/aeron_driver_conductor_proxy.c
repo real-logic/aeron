@@ -148,7 +148,7 @@ void aeron_driver_conductor_proxy_on_delete_receive_destination(
     }
 }
 
-void aeron_conductor_proxy_on_delete_send_destination(
+void aeron_driver_conductor_proxy_on_delete_send_destination(
     aeron_driver_conductor_proxy_t *conductor_proxy, void *removed_uri)
 {
     aeron_command_base_t cmd =

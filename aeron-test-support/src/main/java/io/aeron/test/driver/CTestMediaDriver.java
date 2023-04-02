@@ -197,8 +197,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         environment.put("AERON_PERFORM_STORAGE_CHECKS", Boolean.toString(context.performStorageChecks()));
         if (null != context.threadingMode())
         {
-//             environment.put("AERON_THREADING_MODE", context.threadingMode().name());
-            environment.put("AERON_THREADING_MODE", "DEDICATED");
+            environment.put("AERON_THREADING_MODE", context.threadingMode().name());
         }
         environment.put("AERON_TIMER_INTERVAL", String.valueOf(context.timerIntervalNs()));
         environment.put("AERON_UNTETHERED_RESTING_TIMEOUT", String.valueOf(context.untetheredRestingTimeoutNs()));

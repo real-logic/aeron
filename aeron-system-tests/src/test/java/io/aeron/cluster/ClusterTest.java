@@ -68,6 +68,7 @@ import static io.aeron.test.cluster.TestCluster.aCluster;
 import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
 import static io.aeron.test.cluster.TestCluster.awaitElectionState;
 import static io.aeron.test.cluster.TestCluster.awaitLossOfLeadership;
+import static io.aeron.test.cluster.TestNode.atMost;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -269,6 +270,7 @@ class ClusterTest
         cluster.asyncConnectClient();
 
         cluster.sendAndAwaitMessages(10);
+        cluster.awaitServiceMessagePredicate(cluster.awaitLeader(), atMost(10));
     }
 
     @Test

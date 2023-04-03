@@ -86,6 +86,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -1369,6 +1370,12 @@ public final class TestCluster implements AutoCloseable
         awaitServiceMessageCount(node, service, messageCount);
     }
 
+    public void awaitServiceMessagePredicate(final TestNode node, final IntPredicate countPredicate)
+    {
+        final TestNode.TestService service = node.service();
+        awaitServiceMessagePredicate(node, service, countPredicate);
+    }
+
     private final KeepAlive clientKeepAlive = new KeepAlive();
 
     public void awaitServiceMessageCount(
@@ -1376,6 +1383,14 @@ public final class TestCluster implements AutoCloseable
     {
         clientKeepAlive.init();
         service.awaitServiceMessageCount(messageCount, clientKeepAlive, node);
+    }
+
+    public void awaitServiceMessagePredicate(
+        final TestNode node,
+        final TestNode.TestService service,
+        final IntPredicate countPredicate)
+    {
+        service.awaitServiceMessagePredicate(countPredicate, clientKeepAlive, node);
     }
 
     public void awaitTimerEventCount(final TestNode node, final int expectedTimerEventsCount)

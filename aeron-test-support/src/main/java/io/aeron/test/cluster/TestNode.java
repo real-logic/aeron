@@ -57,6 +57,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntPredicate;
 import java.util.zip.CRC32;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -552,13 +553,26 @@ public final class TestNode implements AutoCloseable
 
         public void awaitServiceMessageCount(final int messageCount, final Runnable keepAlive, final Object node)
         {
-            int count;
-            while ((count = messageCount()) < messageCount)
+            awaitServiceMessagePredicate(atLeast(messageCount), keepAlive, node);
+        }
+
+        public void awaitServiceMessagePredicate(
+            final IntPredicate predicate,
+            final Runnable keepAlive,
+            final Object node)
+        {
+            while (true)
             {
+                final int count = messageCount();
+                if (predicate.test(count))
+                {
+                    return;
+                }
+
                 Thread.yield();
                 if (Thread.interrupted())
                 {
-                    throw new TimeoutException("count=" + count + " awaiting=" + messageCount + " node=" + node);
+                    throw new TimeoutException("count=" + count + " awaiting=" + predicate + " node=" + node);
                 }
 
                 if (hasReceivedUnexpectedMessage())
@@ -969,5 +983,37 @@ public final class TestNode implements AutoCloseable
             ", role=" + role() +
             ", services=" + Arrays.toString(services) +
             '}';
+    }
+
+    public static IntPredicate atLeast(final int count)
+    {
+        return new IntPredicate()
+        {
+            public boolean test(final int value)
+            {
+                return count <= value;
+            }
+
+            public String toString()
+            {
+                return "atLeast(" + count + ")";
+            }
+        };
+    }
+
+    public static IntPredicate atMost(final int count)
+    {
+        return new IntPredicate()
+        {
+            public boolean test(final int value)
+            {
+                return value <= count;
+            }
+
+            public String toString()
+            {
+                return "atMost(" + count + ")";
+            }
+        };
     }
 }

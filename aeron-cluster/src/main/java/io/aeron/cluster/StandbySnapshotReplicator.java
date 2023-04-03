@@ -133,6 +133,7 @@ class StandbySnapshotReplicator implements AutoCloseable
                     entry.timestamp,
                     entry.serviceId);
             }
+            recordingLog.force(0);
 
             recordingReplication = null;
             isComplete = true;

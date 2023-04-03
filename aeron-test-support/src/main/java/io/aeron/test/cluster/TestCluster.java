@@ -1268,8 +1268,10 @@ public final class TestCluster implements AutoCloseable
     public void awaitSnapshotCount(final TestNode node, final long value)
     {
         final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
-        final Supplier<String> msg =
-            () -> "Node=" + node.index() + " expected=" + value + " snapshotCount=" + snapshotCounter.get();
+        final Supplier<String> msg = () -> "node=" + node.index() +
+            " role=" + node.role() +
+            " expected=" + value +
+            " snapshotCount=" + snapshotCounter.get();
         while (true)
         {
             if (snapshotCounter.isClosed())

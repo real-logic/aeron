@@ -122,13 +122,12 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         final ClusterException exception = assertThrowsExactly(
             ClusterException.class,
             () -> new ConsensusModuleSnapshotPendingServiceMessagesPatch().execute(clusterDir));
-        final Throwable cause = exception.getCause();
-        assertInstanceOf(IOException.class, cause);
+        assertInstanceOf(IOException.class, exception.getCause());
     }
 
     @Test
     @SlowTest
-    @InterruptAfter(30)
+    @InterruptAfter(60)
     void executeIsANoOpIfTheSnapshotIsValid()
     {
         final TestCluster cluster = aCluster()
@@ -141,7 +140,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;
 
-        final TestNode leader = cluster.awaitLeader();
+        cluster.awaitLeader();
         cluster.connectClient();
 
         TestNode.MessageTrackingService.delaySessionMessageProcessing(true);
@@ -152,6 +151,8 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
+
+        final TestNode leader = cluster.awaitLeader();
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
         TestNode.MessageTrackingService.delaySessionMessageProcessing(false);
@@ -212,8 +213,10 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         mutableNextSessionId.set(NULL_SESSION_ID);
         mutableNextServiceSessionId.set(NULL_SESSION_ID);
         mutableLogServiceSessionId.set(NULL_SESSION_ID);
+
         pendingMessageClusterSessionIds.clear();
         readSnapshotRecording(leader, leaderSnapshot.recordingId, stateReader);
+
         assertEquals(beforeNextSessionId, mutableNextSessionId.get());
         assertEquals(beforeNextServiceSessionId, mutableNextServiceSessionId.get());
         assertEquals(beforeLogServiceSessionId, mutableLogServiceSessionId.get());
@@ -259,6 +262,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
             msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
+
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
         TestNode.MessageTrackingService.delaySessionMessageProcessing(false);

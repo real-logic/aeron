@@ -154,6 +154,7 @@ public interface ClusteredService
      * @param nowNs which can be used for measuring elapsed time and be used in the same way as
      *              {@link System#nanoTime()}. This is <b>not</b> {@link Cluster#time()}.
      * @return 0 if no work is done otherwise a positive number.
+     * @since 1.40.0
      */
     default int doBackgroundWork(final long nowNs)
     {

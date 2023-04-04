@@ -145,7 +145,7 @@ public class RedirectingNameResolver implements NameResolver
 
         String redirectHost(final String name)
         {
-            final long operation = counter.get();
+            final long operation = null != counter ? counter.get() : USE_INITIAL_RESOLUTION_HOST;
             if (DISABLE_RESOLUTION == operation)
             {
                 return INVALID_HOSTNAME_SENTINEL;

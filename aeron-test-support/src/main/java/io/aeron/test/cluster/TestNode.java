@@ -97,6 +97,7 @@ public final class TestNode implements AutoCloseable
                 .isIpcIngressAllowed(true)
                 .terminationHook(ClusterTests.terminationHook(
                 context.isTerminationExpected, context.hasMemberTerminated));
+
             consensusModule = ConsensusModule.launch(context.consensusModuleContext);
             final File baseDir = context.consensusModuleContext.clusterDir().getParentFile();
             dataCollector.addForCleanup(baseDir);
@@ -967,6 +968,8 @@ public final class TestNode implements AutoCloseable
         Context(final TestService[] services, final String nodeMappings)
         {
             mediaDriverContext.nameResolver(new RedirectingNameResolver(nodeMappings));
+            consensusModuleContext.nameResolver(new RedirectingNameResolver(nodeMappings));
+
             this.services = services;
             hasServiceTerminated = new AtomicBoolean[services.length];
             for (int i = 0; i < services.length; i++)

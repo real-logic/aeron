@@ -120,19 +120,13 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
 
                 recordingSignalCapture.reset();
                 archive.truncateRecording(recordingId, 0);
-                recordingSignalCapture.awaitSignal(archive, recordingId, RecordingSignal.DELETE);
+                recordingSignalCapture.awaitSignalForRecordingId(archive, recordingId, RecordingSignal.DELETE);
+
+                final long replicationId = archive.replicate(
+                    tempRecordingId, recordingId, archive.context().controlRequestStreamId(), IPC_CHANNEL, null);
 
                 recordingSignalCapture.reset();
-                archive.replicate(
-                    tempRecordingId,
-                    recordingId,
-                    archive.context().controlRequestStreamId(),
-                    IPC_CHANNEL,
-                    null);
-
-                recordingSignalCapture.awaitSignal(archive, recordingId, RecordingSignal.EXTEND);
-                recordingSignalCapture.reset();
-                recordingSignalCapture.awaitSignal(archive, recordingId, RecordingSignal.STOP);
+                recordingSignalCapture.awaitSignalForCorrelationId(archive, replicationId, RecordingSignal.SYNC);
 
                 final long replicatedStopPosition = recordingSignalCapture.position();
                 if (stopPosition != replicatedStopPosition)
@@ -143,7 +137,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
 
                 recordingSignalCapture.reset();
                 archive.purgeRecording(tempRecordingId);
-                recordingSignalCapture.awaitSignal(archive, tempRecordingId, RecordingSignal.DELETE);
+                recordingSignalCapture.awaitSignalForRecordingId(archive, tempRecordingId, RecordingSignal.DELETE);
 
                 return true;
             }

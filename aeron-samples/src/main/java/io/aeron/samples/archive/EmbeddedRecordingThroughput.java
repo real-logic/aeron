@@ -179,6 +179,6 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
         recordingSignalCapture.reset();
         aeronArchive.truncateRecording(previousRecordingId, 0L);
 
-        recordingSignalCapture.awaitSignal(aeronArchive, previousRecordingId, RecordingSignal.DELETE);
+        recordingSignalCapture.awaitSignalForRecordingId(aeronArchive, previousRecordingId, RecordingSignal.DELETE);
     }
 }

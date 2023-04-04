@@ -242,7 +242,7 @@ class RecordingReplicatorTest
                 (RecordingSignalCapture)aeronArchive.context().recordingSignalConsumer();
             signalCapture.reset();
             aeronArchive.stopRecording(publication);
-            signalCapture.awaitSignal(aeronArchive, recordingId, RecordingSignal.STOP);
+            signalCapture.awaitSignalForRecordingId(aeronArchive, recordingId, RecordingSignal.STOP);
 
             if (numMessages > 0)
             {

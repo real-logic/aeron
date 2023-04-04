@@ -38,12 +38,12 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  *         ...
  *         recordingSignalCapture.reset();
  *         archive.replicate(srcRecordingId, dstRecordingId, ...);
- *         recordingSignalCapture.awaitSignal(archive, dstRecordingId, RecordingSignal.REPLICATE_END);
+ *
+ *         recordingSignalCapture.awaitSignalForRecordingId(archive, dstRecordingId, RecordingSignal.STOP);
+ *         final long stopPosition = recordingSignalCapture.position();
  *
  *         recordingSignalCapture.reset();
- *         recordingSignalCapture.awaitSignal(archive, dstRecordingId, RecordingSignal.STOP);
- *
- *         final long stopPosition = recordingSignalCapture.position();
+ *         recordingSignalCapture.awaitSignalForRecordingId(archive, dstRecordingId, RecordingSignal.REPLICATE_END);
  *         ...
  *     }
  * }
@@ -86,12 +86,14 @@ public final class RecordingSignalCapture implements RecordingSignalConsumer
     /**
      * Uses {@link AeronArchive#pollForRecordingSignals()} until the specified signal is received.
      *
-     * @param archive        client to poll for signals on.
-     * @param expectedSignal to await.
+     * @param archive               client to poll for signals on.
+     * @param expectedCorrelationId to match the signal.
+     * @param expectedSignal        to await.
      */
-    public void awaitSignal(final AeronArchive archive, final RecordingSignal expectedSignal)
+    public void awaitSignalForCorrelationId(
+        final AeronArchive archive, final long expectedCorrelationId, final RecordingSignal expectedSignal)
     {
-        while (expectedSignal != signal)
+        while (expectedCorrelationId != correlationId || expectedSignal != signal)
         {
             if (0 == archive.pollForRecordingSignals())
             {
@@ -99,6 +101,20 @@ public final class RecordingSignalCapture implements RecordingSignalConsumer
                 if (Thread.currentThread().isInterrupted())
                 {
                     throw new AeronException("unexpected interrupt");
+                }
+            }
+            else
+            {
+                if (expectedCorrelationId == correlationId)
+                {
+                    if (expectedSignal == signal)
+                    {
+                        return;
+                    }
+                    else if (RecordingSignal.REPLICATE_END == signal)
+                    {
+                        throw new AeronException("unexpected end of replication: correlationId=" + correlationId);
+                    }
                 }
             }
         }
@@ -112,7 +128,7 @@ public final class RecordingSignalCapture implements RecordingSignalConsumer
      * @param expectedRecordingId that should be delivered with the signal.
      * @param expectedSignal      to await.
      */
-    public void awaitSignal(
+    public void awaitSignalForRecordingId(
         final AeronArchive archive, final long expectedRecordingId, final RecordingSignal expectedSignal)
     {
         while (expectedRecordingId != recordingId || expectedSignal != signal)
@@ -123,6 +139,20 @@ public final class RecordingSignalCapture implements RecordingSignalConsumer
                 if (Thread.currentThread().isInterrupted())
                 {
                     throw new AeronException("unexpected interrupt");
+                }
+            }
+            else
+            {
+                if (expectedRecordingId == recordingId)
+                {
+                    if (expectedSignal == signal)
+                    {
+                        return;
+                    }
+                    else if (RecordingSignal.REPLICATE_END == signal)
+                    {
+                        throw new AeronException("unexpected end of replication: correlationId=" + correlationId);
+                    }
                 }
             }
         }

@@ -189,31 +189,23 @@ public final class RecordingReplicator
 
             signalCapture.reset();
             aeronArchive.truncateRecording(dstRecordingId, recordingDescriptor.startPosition());
-            signalCapture.awaitSignal(aeronArchive, dstRecordingId, RecordingSignal.DELETE);
+            signalCapture.awaitSignalForRecordingId(aeronArchive, dstRecordingId, RecordingSignal.DELETE);
         }
 
         final ReplicationParams replicationParams = new ReplicationParams()
             .replicationChannel(replicationChannel)
             .dstRecordingId(dstRecordingId);
-        signalCapture.reset();
-        aeronArchive.replicate(srcRecordingId, srcArchiveRequestStreamId, srcArchiveRequestChannel, replicationParams);
-
-        final long targetRecordingId;
-        if (NULL_VALUE == dstRecordingId)
-        {
-            signalCapture.awaitSignal(aeronArchive, RecordingSignal.SYNC);
-            targetRecordingId = signalCapture.recordingId();
-        }
-        else
-        {
-            signalCapture.awaitSignal(aeronArchive, dstRecordingId, RecordingSignal.SYNC);
-            targetRecordingId = dstRecordingId;
-        }
+        final long replicationId = aeronArchive.replicate(
+            srcRecordingId, srcArchiveRequestStreamId, srcArchiveRequestChannel, replicationParams);
 
         signalCapture.reset();
-        signalCapture.awaitSignal(aeronArchive, targetRecordingId, RecordingSignal.REPLICATE_END);
+        signalCapture.awaitSignalForCorrelationId(aeronArchive, replicationId, RecordingSignal.SYNC);
+        final long recordingId = signalCapture.recordingId();
 
-        return targetRecordingId;
+        signalCapture.reset();
+        signalCapture.awaitSignalForCorrelationId(aeronArchive, replicationId, RecordingSignal.REPLICATE_END);
+
+        return recordingId;
     }
 
     /**

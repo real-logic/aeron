@@ -217,6 +217,14 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             {
                 try
                 {
+                    for (final AutoCloseable closeable : closeables)
+                    {
+                        if (closeable instanceof TestCluster)
+                        {
+                            ((TestCluster)closeable).terminationsExpected(true);
+                        }
+                    }
+
                     CloseHelper.closeAll(closeables);
                 }
                 catch (final Throwable t)

@@ -243,7 +243,6 @@ final class RecordingReplication implements AutoCloseable
             ", position=" + position +
             ", progressDeadlineNs=" + progressDeadlineNs +
             ", progressCheckDeadlineNs=" + progressCheckDeadlineNs +
-            ", archive=" + archive +
             ", lastRecordingSignal=" + lastRecordingSignal +
             ", hasReplicationEnded=" + hasReplicationEnded +
             ", hasSynced=" + hasSynced +

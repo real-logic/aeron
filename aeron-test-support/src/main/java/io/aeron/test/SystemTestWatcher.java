@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.opentest4j.AssertionFailedError;
 import org.opentest4j.TestAbortedException;
 
 import java.io.File;
@@ -145,6 +146,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         Thread.interrupted(); // clean the interrupted flag so that it does not prevent cleanup in the tests
     }
 
+    @SuppressWarnings("methodlength")
     public void afterEach(final ExtensionContext context)
     {
         Thread.interrupted(); // clean the interrupted flag
@@ -167,7 +169,17 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 final MutableInteger count = new MutableInteger();
                 final StringBuilder errors = new StringBuilder();
                 filterErrors(count, errors);
-                assertEquals(0, count.get(), () -> "Errors observed in " + context.getDisplayName() + ":\n" + errors);
+
+                if (null == error)
+                {
+                    assertEquals(
+                        0, count.get(), () -> "Errors observed in " + context.getDisplayName() + ":\n" + errors);
+                }
+                else if (0 != count.get())
+                {
+                    error = setOrUpdateError(error, new AssertionFailedError(
+                        "Errors observed in " + context.getDisplayName() + ":\n" + errors));
+                }
             }
             catch (final Throwable t)
             {
@@ -215,16 +227,9 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             }
             else
             {
+                setTerminationExpected();
                 try
                 {
-                    for (final AutoCloseable closeable : closeables)
-                    {
-                        if (closeable instanceof TestCluster)
-                        {
-                            ((TestCluster)closeable).terminationsExpected(true);
-                        }
-                    }
-
                     CloseHelper.closeAll(closeables);
                 }
                 catch (final Throwable t)
@@ -250,6 +255,17 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 System.out.println("*** Complete stack trace: ");
                 error.printStackTrace(System.out);
                 LangUtil.rethrowUnchecked(error);
+            }
+        }
+    }
+
+    private void setTerminationExpected()
+    {
+        for (final AutoCloseable closeable : closeables)
+        {
+            if (closeable instanceof TestCluster)
+            {
+                ((TestCluster)closeable).terminationsExpected(true);
             }
         }
     }

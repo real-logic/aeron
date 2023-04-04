@@ -659,7 +659,7 @@ abstract class ArchiveConductor
         if (fileIoMaxLength > 0 && fileIoMaxLength < recordingSummary.mtuLength)
         {
             final String msg = "fileIoMaxLength=" + fileIoMaxLength + " < mtuLength=" + recordingSummary.mtuLength;
-            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return;
         }
         else if (ctx.replayBuffer().capacity() < recordingSummary.mtuLength)
@@ -667,33 +667,43 @@ abstract class ArchiveConductor
             final int replayBufferCapacity = ctx.replayBuffer().capacity();
             final String msg = "replayBufferCapacity=" + replayBufferCapacity +
                 " < mtuLength=" + recordingSummary.mtuLength;
-            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return;
         }
 
-        final ChannelUri channelUri = ChannelUri.parse(replayChannel);
-        final ChannelUriStringBuilder channelBuilder = strippedChannelBuilder(channelUri)
-            .initialPosition(replayPosition, recordingSummary.initialTermId, recordingSummary.termBufferLength)
-            .ttl(channelUri)
-            .eos(channelUri)
-            .sparse(channelUri)
-            .mtu(recordingSummary.mtuLength);
+        try
+        {
+            final ChannelUri channelUri = ChannelUri.parse(replayChannel);
+            final ChannelUriStringBuilder channelBuilder = strippedChannelBuilder(channelUri)
+                .initialPosition(replayPosition, recordingSummary.initialTermId, recordingSummary.termBufferLength)
+                .ttl(channelUri)
+                .eos(channelUri)
+                .sparse(channelUri)
+                .mtu(recordingSummary.mtuLength);
 
-        final String lingerValue = channelUri.get(CommonContext.LINGER_PARAM_NAME);
-        channelBuilder.linger(null != lingerValue ? Long.parseLong(lingerValue) : ctx.replayLingerTimeoutNs());
+            final String lingerValue = channelUri.get(CommonContext.LINGER_PARAM_NAME);
+            channelBuilder.linger(null != lingerValue ? Long.parseLong(lingerValue) : ctx.replayLingerTimeoutNs());
 
-        addSession(new CreateReplayPublicationSession(
-            correlationId,
-            recordingId,
-            replayPosition,
-            length,
-            aeron.asyncAddExclusivePublication(channelBuilder.build(), replayStreamId),
-            fileIoMaxLength,
-            limitPosition,
-            aeron,
-            controlSession,
-            controlResponseProxy,
-            this));
+            addSession(new CreateReplayPublicationSession(
+                correlationId,
+                recordingId,
+                replayPosition,
+                length,
+                aeron.asyncAddExclusivePublication(channelBuilder.build(), replayStreamId),
+                fileIoMaxLength,
+                limitPosition,
+                aeron,
+                controlSession,
+                controlResponseProxy,
+                this));
+
+        }
+        catch (final Exception ex)
+        {
+            final String msg = "failed to process replayChannel - " + ex.getMessage();
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            throw ex;
+        }
     }
 
     void newReplaySession(

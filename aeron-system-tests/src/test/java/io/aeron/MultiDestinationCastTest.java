@@ -40,6 +40,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -420,6 +421,35 @@ class MultiDestinationCastTest
                 Tests.yieldingIdle(messageSupplierB);
             }
         }
+    }
+
+    @Test
+    void shouldSpyOnDynamicMdcConnectionWithWildcardPortUsingTags()
+    {
+        launch(Tests::onError);
+
+        final long pubTag = clientA.nextCorrelationId();
+
+        final String uri = new ChannelUriStringBuilder("aeron:udp?control=localhost:0|control-mode=dynamic|ssc=true")
+            .tags(pubTag, null)
+            .build();
+
+        final String spyUri = new ChannelUriStringBuilder().prefix(SPY_QUALIFIER)
+            .media("udp")
+            .tags(pubTag, null)
+            .build();
+
+        publication = clientA.addPublication(uri, STREAM_ID);
+        subscriptionA = clientA.addSubscription(spyUri, STREAM_ID);
+
+        Tests.awaitConnected(publication);
+
+        while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+        {
+            Tests.yield();
+        }
+
+        pollForFragment(subscriptionA, fragmentHandlerA);
     }
 
     private static void pollForFragment(final Subscription subscription, final FragmentHandler handler)

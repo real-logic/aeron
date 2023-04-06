@@ -3175,6 +3175,7 @@ public final class MediaDriver implements AutoCloseable
          * @see Configuration#resourceFreeLimit()
          * @see Configuration#RESOURCE_FREE_LIMIT_PROP_NAME
          * @see Configuration#RESOURCE_FREE_LIMIT_DEFAULT
+         * @since 1.41.0
          */
         public Context resourceFreeLimit(final int resourceFreeLimit)
         {
@@ -3186,6 +3187,7 @@ public final class MediaDriver implements AutoCloseable
          * Maximum number of {@link DriverManagedResource}s to free within a single duty cycle within the conductor.
          *
          * @return limit on the number of resources that can be freed.
+         * @since 1.41.0
          */
         public int resourceFreeLimit()
         {

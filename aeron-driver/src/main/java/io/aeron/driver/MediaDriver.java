@@ -640,7 +640,7 @@ public final class MediaDriver implements AutoCloseable
                 validateUnblockTimeout(publicationUnblockTimeoutNs, clientLivenessTimeoutNs, timerIntervalNs);
                 validateUntetheredTimeouts(untetheredWindowLimitTimeoutNs, untetheredRestingTimeoutNs, timerIntervalNs);
 
-                final long cncFileLength = tempAlign(
+                final long cncFileLength = BitUtil.align(
                     (long)END_OF_METADATA_OFFSET +
                     conductorBufferLength +
                     toClientsBufferLength +
@@ -3653,7 +3653,7 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == lossReport)
             {
-                final long pageAlignedLossReportBufferLength = tempAlign(lossReportBufferLength, filePageSize);
+                final long pageAlignedLossReportBufferLength = BitUtil.align(lossReportBufferLength, filePageSize);
                 validateValueRange(
                     pageAlignedLossReportBufferLength,
                     LOSS_REPORT_BUFFER_LENGTH_DEFAULT,
@@ -3787,12 +3787,6 @@ public final class MediaDriver implements AutoCloseable
                     }
                     break;
             }
-        }
-
-        private static long tempAlign(final long length, final int alignment)
-        {
-            // FIXME: Replace with `BitUtil#align(long,long)`
-            return (length + (alignment - 1)) & -alignment;
         }
 
         /**

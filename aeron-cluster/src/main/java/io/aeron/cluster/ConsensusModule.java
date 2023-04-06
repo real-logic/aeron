@@ -800,17 +800,23 @@ public final class ConsensusModule implements AutoCloseable
 
         /**
          * Property name for replication progress timeout.
+         *
+         * @since 1.41.0
          */
         public static final String CLUSTER_REPLICATION_PROGRESS_TIMEOUT_PROP_NAME =
             "aeron.cluster.replication.progress.timeout";
 
         /**
          * Default timeout for replication progress in nanoseconds.
+         *
+         * @since 1.41.0
          */
         public static final long CLUSTER_REPLICATION_PROGRESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Property name for replication progress interval.
+         *
+         * @since 1.41.0
          */
         public static final String CLUSTER_REPLICATION_PROGRESS_INTERVAL_PROP_NAME =
             "aeron.cluster.replication.progress.interval";
@@ -1267,6 +1273,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @return system property {@link #CLUSTER_REPLICATION_PROGRESS_TIMEOUT_PROP_NAME} or
          * {@link #CLUSTER_REPLICATION_PROGRESS_TIMEOUT_DEFAULT_NS}.
+         * @since 1.41.0
          */
         public static long replicationProgressTimeoutNs()
         {
@@ -1280,6 +1287,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @return system property {@link #CLUSTER_REPLICATION_PROGRESS_INTERVAL_PROP_NAME} or {@link Aeron#NULL_VALUE}
          * if not set.
+         * @since 1.41.0
          */
         public static long replicationProgressIntervalNs()
         {

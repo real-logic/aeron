@@ -1396,6 +1396,25 @@ public final class TestCluster implements AutoCloseable
         service.awaitServiceMessagePredicate(countPredicate, clientKeepAlive, node);
     }
 
+    public void awaitLiveAndSnapshotMessageCount(
+        final TestNode node,
+        final TestNode.TestService service,
+        final IntPredicate liveCountPredicate,
+        final IntPredicate snapshotCountPredicate)
+    {
+        clientKeepAlive.init();
+        service.awaitLiveAndSnapshotMessageCount(liveCountPredicate, snapshotCountPredicate, clientKeepAlive, node);
+    }
+
+    public void awaitLiveAndSnapshotMessageCount(
+        final TestNode node,
+        final IntPredicate liveCountPredicate,
+        final IntPredicate snapshotCountPredicate)
+    {
+        final TestNode.TestService service = node.service();
+        awaitLiveAndSnapshotMessageCount(node, service, liveCountPredicate, snapshotCountPredicate);
+    }
+
     public void awaitTimerEventCount(final TestNode node, final int expectedTimerEventsCount)
     {
         final TestNode.TestService service = node.service();

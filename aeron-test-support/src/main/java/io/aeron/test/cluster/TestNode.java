@@ -357,6 +357,8 @@ public final class TestNode implements AutoCloseable
         private volatile Cluster.Role roleChangedTo = null;
         private final AtomicInteger activeSessionCount = new AtomicInteger();
         final AtomicInteger messageCount = new AtomicInteger();
+        final AtomicInteger liveMessageCount = new AtomicInteger();
+        final AtomicInteger snapshotMessageCount = new AtomicInteger();
         final AtomicInteger timerCount = new AtomicInteger();
 
         public TestService index(final int index)
@@ -424,7 +426,12 @@ public final class TestNode implements AutoCloseable
                 activeSessionCount.set(cluster.clientSessions().size());
 
                 final FragmentHandler handler =
-                    (buffer, offset, length, header) -> messageCount.set(buffer.getInt(offset));
+                    (buffer, offset, length, header) ->
+                    {
+                        final int value = buffer.getInt(offset);
+                        messageCount.set(value);
+                        snapshotMessageCount.set(value);
+                    };
 
                 int fragmentCount = 0;
                 while (true)
@@ -498,6 +505,7 @@ public final class TestNode implements AutoCloseable
             }
 
             messageCount.incrementAndGet();
+            liveMessageCount.incrementAndGet();
         }
 
         private void simulateBuggyApplicationCodeThatSkipsServiceMessageOnFollower(
@@ -599,6 +607,38 @@ public final class TestNode implements AutoCloseable
                 if (Thread.interrupted())
                 {
                     throw new TimeoutException("count=" + count + " awaiting=" + predicate + " node=" + node);
+                }
+
+                if (hasReceivedUnexpectedMessage())
+                {
+                    fail("service received unexpected message");
+                }
+
+                keepAlive.run();
+            }
+        }
+
+        public void awaitLiveAndSnapshotMessageCount(
+            final IntPredicate livePredicate,
+            final IntPredicate snapshotPredicate,
+            final Runnable keepAlive,
+            final Object node)
+        {
+            while (true)
+            {
+                final int liveCount = liveMessageCount.get();
+                final int snapshotCount = snapshotMessageCount.get();
+                if (livePredicate.test(liveCount) && snapshotPredicate.test(snapshotCount))
+                {
+                    return;
+                }
+
+                Thread.yield();
+                if (Thread.interrupted())
+                {
+                    throw new TimeoutException(
+                        "liveCount=" + liveCount + " snapshotCount=" + snapshotCount +
+                        " awaitingLive=" + livePredicate + " awaitingSnapshot=" + snapshotPredicate + " node=" + node);
                 }
 
                 if (hasReceivedUnexpectedMessage())

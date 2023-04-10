@@ -60,7 +60,7 @@ import static io.aeron.archive.client.ArchiveException.UNKNOWN_REPLAY;
 import static io.aeron.archive.client.ReplayMerge.LIVE_ADD_MAX_WINDOW;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
-import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT;
+import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT;
 import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_DEFAULT;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
@@ -2527,10 +2527,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 }
                 break;
 
-            case BACKGROUND_SNAPSHOT:
+            case STANDBY_SNAPSHOT:
                 if (ConsensusModule.State.ACTIVE == state)
                 {
-                    appendAction(ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT);
+                    appendAction(ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT);
                     ClusterControl.ToggleState.reset(controlToggle);
                 }
                 break;

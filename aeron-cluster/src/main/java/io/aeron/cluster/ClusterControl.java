@@ -80,7 +80,7 @@ public class ClusterControl
         /**
          * Trigger a snapshot that will only occur on a cluster standby.
          */
-        BACKGROUND_SNAPSHOT(7);
+        STANDBY_SNAPSHOT(7);
 
         private final int code;
 

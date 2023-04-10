@@ -1078,7 +1078,7 @@ public class ClusterTool
             out,
             clusterDir,
             ConsensusModule.State.ACTIVE,
-            ClusterControl.ToggleState.BACKGROUND_SNAPSHOT,
+            ClusterControl.ToggleState.STANDBY_SNAPSHOT,
             true,
             TimeUnit.SECONDS.toMillis(30));
     }

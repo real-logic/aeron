@@ -75,7 +75,7 @@ public final class ConsensusModule implements AutoCloseable
     /**
      * Flag for a snapshot taken on a standby node.
      */
-    public static final int CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT = 1;
+    public static final int CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT = 1;
 
     /**
      * Possible states for the {@link ConsensusModule}.

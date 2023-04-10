@@ -45,7 +45,7 @@ import java.util.function.Consumer;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT;
+import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT;
 import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_DEFAULT;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.*;
@@ -142,7 +142,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(channel, ctx.consensusModuleStreamId()));
         serviceAdapter = new ServiceAdapter(aeron.addSubscription(channel, ctx.serviceStreamId()), this);
         sessionMessageHeaderEncoder.wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder());
-        this.standbySnapshotFlags = ctx.standbySnapshotEnabled() ? CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT :
+        this.standbySnapshotFlags = ctx.standbySnapshotEnabled() ? CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT :
             CLUSTER_ACTION_FLAGS_DEFAULT;
     }
 

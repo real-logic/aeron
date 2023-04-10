@@ -57,7 +57,7 @@ import static io.aeron.AeronCounters.CLUSTER_CONSENSUS_MODULE_STATE_TYPE_ID;
 import static io.aeron.AeronCounters.CLUSTER_CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.cluster.ClusterControl.ToggleState.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_LIMIT_MSG;
-import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT;
+import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT;
 import static io.aeron.cluster.ConsensusModuleAgent.SLOW_TICK_INTERVAL_NS;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
 import static java.lang.Boolean.TRUE;
@@ -365,7 +365,7 @@ public class ConsensusModuleAgentTest
     }
 
     @Test
-    public void shouldPublishLogMessageButNotSnapshotOnBackgroundSnapshot()
+    public void shouldPublishLogMessageButNotSnapshotOnStandbySnapshot()
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
         final Counter stateCounter = newCounter("state counter", CLUSTER_CONSENSUS_MODULE_STATE_TYPE_ID);
@@ -386,7 +386,7 @@ public class ConsensusModuleAgentTest
         agent.role(Cluster.Role.LEADER);
         assertEquals(ConsensusModule.State.ACTIVE.code(), stateCounter.get());
 
-        assertTrue(BACKGROUND_SNAPSHOT.toggle(controlToggle));
+        assertTrue(STANDBY_SNAPSHOT.toggle(controlToggle));
         clock.update(SLOW_TICK_INTERVAL_MS, TimeUnit.MILLISECONDS);
         agent.doWork();
 
@@ -395,9 +395,9 @@ public class ConsensusModuleAgentTest
 
         final InOrder inOrder = Mockito.inOrder(mockLogPublisher);
         inOrder.verify(mockLogPublisher).appendClusterAction(
-            anyLong(), anyLong(), eq(ClusterAction.SNAPSHOT), eq(CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT));
+            anyLong(), anyLong(), eq(ClusterAction.SNAPSHOT), eq(CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT));
 
-        agent.onReplayClusterAction(-1, ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_BACKGROUND_SNAPSHOT);
+        agent.onReplayClusterAction(-1, ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT);
         assertEquals(ConsensusModule.State.ACTIVE.code(), stateCounter.get());
     }
 

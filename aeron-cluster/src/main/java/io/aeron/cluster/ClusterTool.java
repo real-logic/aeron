@@ -1165,17 +1165,8 @@ public class ClusterTool
     {
         try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
-            final List<RecordingLog.Entry> entries = recordingLog.entries();
-            for (int i = entries.size() - 1; i >= 0; i--)
-            {
-                final RecordingLog.Entry e = entries.get(i);
-                if (RecordingLog.isValidSnapshot(e) && ConsensusModule.Configuration.SERVICE_ID == e.serviceId)
-                {
-                    return e;
-                }
-            }
+            return recordingLog.getLatestSnapshot(ConsensusModule.Configuration.SERVICE_ID);
         }
-        return null;
     }
 
     /**

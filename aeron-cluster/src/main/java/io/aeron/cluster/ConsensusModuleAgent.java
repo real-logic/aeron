@@ -282,7 +282,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
             if (null == ctx.boostrapState())
             {
-                resolveStandbySnapshots();
+                replicateStandbySnapshots();
                 recoveryPlan = recoverFromSnapshotAndLog();
             }
             else
@@ -3887,7 +3887,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return recoveryPlan;
     }
 
-    private void resolveStandbySnapshots()
+    private void replicateStandbySnapshots()
     {
         try (StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
             ctx.archiveContext(),

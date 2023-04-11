@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.aeron.archive;
 
 import io.aeron.Aeron;
@@ -65,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class MigrateSegmentsTest
+class MigrateSegmentsTest
 {
     private static final String REPLAY_CHANNEL = "aeron:ipc";
     private static final int REPLAY_STREAM_ID = 1034;
@@ -167,8 +166,8 @@ public class MigrateSegmentsTest
 
         final File archiveDir = archive.context().archiveDir();
 
-        final String[] segmentFiles = archiveDir.list((dir, name) ->
-            name.endsWith(".rec") || name.endsWith(".rec.del"));
+        final String[] segmentFiles = archiveDir.list(
+            (dir, name) -> name.endsWith(".rec") || name.endsWith(".rec.del"));
         assertThat(segmentFiles, arrayContainingInAnyOrder(testCase.expectedSegments(dstRecordingId)));
 
         assertEquals(originalChecksum.getValue(), migratedChecksum.getValue());
@@ -193,9 +192,9 @@ public class MigrateSegmentsTest
         final File archiveDir = archive.context().archiveDir();
         testCase.archiveDirPerturbation().perturb(archiveDir, srcRecordingId, dstRecordingId);
 
-        final ArchiveException exn = assertThrows(ArchiveException.class, () ->
-            aeronArchive.migrateSegments(srcRecordingId, dstRecordingId));
-        final String subErrorMessage = exn.getMessage()
+        final ArchiveException ex = assertThrows(ArchiveException.class,
+            () -> aeronArchive.migrateSegments(srcRecordingId, dstRecordingId));
+        final String subErrorMessage = ex.getMessage()
             .replaceFirst(".* error: ", "")
             .replace(archiveDir.toString(), "${ARCHIVE_DIR}")
             .replace("\\", "/");
@@ -251,8 +250,8 @@ public class MigrateSegmentsTest
             .initialPosition(extendPosition, streamParams.initialTermId(), streamParams.termLength())
             .build();
 
-        final long subscriptionId =
-            aeronArchive.extendRecording(recordingId, channelUri, streamParams.streamId(), SourceLocation.LOCAL);
+        final long subscriptionId = aeronArchive.extendRecording(
+            recordingId, channelUri, streamParams.streamId(), SourceLocation.LOCAL);
 
         try (Publication publication = aeron.addExclusivePublication(channelUri, streamParams.streamId()))
         {
@@ -275,8 +274,8 @@ public class MigrateSegmentsTest
         final long endPosition)
     {
         final long length = endPosition - startPosition;
-        try (Subscription replay = aeronArchive.replay(recordingId, startPosition, length,
-            REPLAY_CHANNEL, REPLAY_STREAM_ID))
+        try (Subscription replay = aeronArchive.replay(
+            recordingId, startPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
         {
             while (replay.hasNoImages())
             {
@@ -285,12 +284,13 @@ public class MigrateSegmentsTest
 
             final Image image = replay.imageAtIndex(0);
 
-            final FragmentAssembler fragmentAssembler = new FragmentAssembler((buffer, offset, msgLength, header) ->
-            {
-                final byte[] data = new byte[msgLength];
-                buffer.getBytes(offset, data);
-                checksum.update(data);
-            });
+            final FragmentAssembler fragmentAssembler = new FragmentAssembler(
+                (buffer, offset, msgLength, header) ->
+                {
+                    final byte[] data = new byte[msgLength];
+                    buffer.getBytes(offset, data);
+                    checksum.update(data);
+                });
 
             while (!image.isEndOfStream() && image.position() < endPosition)
             {
@@ -351,9 +351,11 @@ public class MigrateSegmentsTest
                 aeronArchive.truncateRecording(recordingId, recordingParams.recordedPosition());
                 awaitSignal(aeronArchive, signalConsumer, recordingId, RecordingSignal.DELETE);
                 break;
+
             case ASSERT_EXISTS:
                 assertEmptyFollowingSegmentExists(recordingParams, recordingId, archiveDir);
                 break;
+
             case RENAME_FOR_DELETION:
                 final File segmentFile = assertEmptyFollowingSegmentExists(recordingParams, recordingId, archiveDir);
                 final String normalFileName = Archive.segmentFileName(recordingId, recordingParams.recordedPosition());
@@ -365,8 +367,10 @@ public class MigrateSegmentsTest
                     fail("failed to rename segment file.");
                 }
                 break;
+
             case LEAVE_ALONE:
                 break;
+
             default:
                 fail("unsupported kind of following segment.");
                 break;
@@ -417,13 +421,15 @@ public class MigrateSegmentsTest
 
         test.expectedMigratedSegmentCount(2);
 
-        test.expectedSegments(dstRecordingId -> new String[] {
+        final SegmentFileExpectation segmentFileExpectation = (dstRecordingId) -> new String[]
+        {
             Archive.segmentFileName(dstRecordingId, 0),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 2),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 3),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 4)
-        });
+        };
+        test.expectedSegments(segmentFileExpectation);
 
         return test;
     }
@@ -450,12 +456,14 @@ public class MigrateSegmentsTest
 
         test.expectedMigratedSegmentCount(2);
 
-        test.expectedSegments(dstRecordingId -> new String[] {
+        final SegmentFileExpectation segmentFileExpectation = (dstRecordingId) -> new String[]
+        {
             Archive.segmentFileName(dstRecordingId, 0),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 2),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 3)
-        });
+        };
+        test.expectedSegments(segmentFileExpectation);
 
         return test;
     }
@@ -483,13 +491,15 @@ public class MigrateSegmentsTest
 
         test.expectedMigratedSegmentCount(2);
 
-        test.expectedSegments(dstRecordingId -> new String[] {
+        final SegmentFileExpectation segmentFileExpectation = (dstRecordingId) -> new String[]
+        {
             Archive.segmentFileName(dstRecordingId, 0),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 2),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 3),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 4)
-        });
+        };
+        test.expectedSegments(segmentFileExpectation);
 
         return test;
     }
@@ -518,12 +528,14 @@ public class MigrateSegmentsTest
 
         test.expectedMigratedSegmentCount(1);
 
-        test.expectedSegments(dstRecordingId -> new String[] {
+        final SegmentFileExpectation segmentFileExpectation = (dstRecordingId) -> new String[]
+        {
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 2),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 3),
             Archive.segmentFileName(dstRecordingId, SEGMENT_LENGTH * 4)
-        });
+        };
+        test.expectedSegments(segmentFileExpectation);
 
         return test;
     }
@@ -633,7 +645,7 @@ public class MigrateSegmentsTest
             .followingSegment(FollowingSegmentAction.LEAVE_ALONE)
             .stream().endpoint("localhost:3334");
 
-        test.expectedErrorMessage("invalid migrate: seam position is not on segment boundary" +
+        test.expectedErrorMessage("invalid migrate: join position is not on segment boundary" +
             " of src recording seamPosition=65536" +
             " startPosition=0 stopPosition=65536" +
             " termBufferLength=65536 segmentFileLength=131072");
@@ -657,7 +669,7 @@ public class MigrateSegmentsTest
             .followingSegment(FollowingSegmentAction.LEAVE_ALONE)
             .stream().endpoint("localhost:3334");
 
-        test.expectedErrorMessage("invalid migrate: seam position is not on segment boundary" +
+        test.expectedErrorMessage("invalid migrate: join position is not on segment boundary" +
             " of src recording seamPosition=1024" +
             " startPosition=0 stopPosition=1024" +
             " termBufferLength=65536 segmentFileLength=131072");
@@ -890,7 +902,6 @@ public class MigrateSegmentsTest
             return this;
         }
 
-        @Override
         public String toString()
         {
             return "{" +
@@ -999,7 +1010,6 @@ public class MigrateSegmentsTest
             return this;
         }
 
-        @Override
         public String toString()
         {
             return "{" +
@@ -1016,6 +1026,7 @@ public class MigrateSegmentsTest
         String[] getExpectedFiles(long dstRecordingId);
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     private static class TestCaseParams
     {
         private final RecordingParams source = new RecordingParams();
@@ -1050,7 +1061,6 @@ public class MigrateSegmentsTest
             return expectedSegments.getExpectedFiles(dstRecordingId);
         }
 
-        @Override
         public String toString()
         {
             return "{" +
@@ -1076,12 +1086,10 @@ public class MigrateSegmentsTest
         {
         }
 
-        @Override
         public void perturb(final File archiveDir, final long srcRecordingId, final long dstRecordingId)
         {
         }
 
-        @Override
         public String toString()
         {
             return "None";
@@ -1097,7 +1105,6 @@ public class MigrateSegmentsTest
             this.segmentBasePosition = segmentBasePosition;
         }
 
-        @Override
         public void perturb(final File archiveDir, final long srcRecordingId, final long dstRecordingId)
         {
             final String fileName = Archive.segmentFileName(srcRecordingId, segmentBasePosition);
@@ -1106,7 +1113,6 @@ public class MigrateSegmentsTest
             assertTrue(segmentFile.delete());
         }
 
-        @Override
         public String toString()
         {
             return "DeleteSrcSegment(" + segmentBasePosition + ")";
@@ -1122,7 +1128,6 @@ public class MigrateSegmentsTest
             this.segmentBasePosition = segmentBasePosition;
         }
 
-        @Override
         public void perturb(final File archiveDir, final long srcRecordingId, final long dstRecordingId)
         {
             final String fileName = Archive.segmentFileName(dstRecordingId, segmentBasePosition);
@@ -1132,13 +1137,12 @@ public class MigrateSegmentsTest
             {
                 Files.write(segmentFile.toPath(), new byte[] {0x1, 0x2, 0x3}, StandardOpenOption.CREATE_NEW);
             }
-            catch (final IOException exn)
+            catch (final IOException ex)
             {
-                LangUtil.rethrowUnchecked(exn);
+                LangUtil.rethrowUnchecked(ex);
             }
         }
 
-        @Override
         public String toString()
         {
             return "AddDstSegment(" + segmentBasePosition + ")";
@@ -1185,7 +1189,6 @@ public class MigrateSegmentsTest
             return this;
         }
 
-        @Override
         public String toString()
         {
             return "{" +

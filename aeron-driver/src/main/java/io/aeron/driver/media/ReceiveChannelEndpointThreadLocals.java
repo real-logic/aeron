@@ -44,7 +44,7 @@ public final class ReceiveChannelEndpointThreadLocals
     private long nextReceiverId;
 
     /**
-     * Construct a set of local state to be use by the receiver thread.
+     * Construct a set of local state to be used by the receiver thread.
      */
     public ReceiveChannelEndpointThreadLocals()
     {

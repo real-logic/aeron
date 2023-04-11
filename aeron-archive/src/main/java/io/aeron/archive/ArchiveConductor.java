@@ -1340,44 +1340,38 @@ abstract class ArchiveConductor
         if (hasRecording(srcRecordingId, correlationId, controlSession) &&
             hasRecording(dstRecordingId, correlationId, controlSession))
         {
-            final RecordingSummary srcRecordingSummary =
-                catalog.recordingSummary(srcRecordingId, recordingSummary);
+            final RecordingSummary srcSummary = catalog.recordingSummary(srcRecordingId, recordingSummary);
+            final RecordingSummary dstSummary = catalog.recordingSummary(dstRecordingId, new RecordingSummary());
 
-            final RecordingSummary dstRecordingSummary =
-                catalog.recordingSummary(dstRecordingId, new RecordingSummary());
-
-            if (isActiveRecording(controlSession, correlationId, recordingSummary) ||
-                !hasMatchingStreamParameters(controlSession, correlationId, srcRecordingSummary, dstRecordingSummary))
+            if (isActiveRecording(controlSession, correlationId, srcSummary) ||
+                !hasMatchingStreamParameters(controlSession, correlationId, srcSummary, dstSummary))
             {
                 return;
             }
 
-            final boolean canPrepend = srcRecordingSummary.stopPosition == dstRecordingSummary.startPosition;
-            final boolean canAppend = srcRecordingSummary.startPosition == dstRecordingSummary.stopPosition;
+            final long joinPosition;
 
-            final long seamPosition;
-
-            if (canPrepend)
+            if (srcSummary.stopPosition == dstSummary.startPosition)
             {
-                seamPosition = srcRecordingSummary.stopPosition;
+                joinPosition = srcSummary.stopPosition;
             }
-            else if (canAppend)
+            else if (srcSummary.startPosition == dstSummary.stopPosition)
             {
-                seamPosition = srcRecordingSummary.startPosition;
+                joinPosition = srcSummary.startPosition;
             }
             else
             {
                 final String msg = "invalid migrate: src and dst are not contiguous" +
-                    " srcStartPosition=" + srcRecordingSummary.startPosition +
-                    " srcStopPosition=" + srcRecordingSummary.stopPosition +
-                    " dstStartPosition=" + dstRecordingSummary.startPosition +
-                    " dstStopPosition=" + dstRecordingSummary.stopPosition;
+                    " srcStartPosition=" + srcSummary.startPosition +
+                    " srcStopPosition=" + srcSummary.stopPosition +
+                    " dstStartPosition=" + dstSummary.startPosition +
+                    " dstStopPosition=" + dstSummary.stopPosition;
                 controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
                 return;
             }
 
-            if (isSeamPosSegmentUnaligned(controlSession, correlationId, "src", srcRecordingSummary, seamPosition) ||
-                isSeamPosSegmentUnaligned(controlSession, correlationId, "dst", dstRecordingSummary, seamPosition))
+            if (isJoinPositionSegmentUnaligned(controlSession, correlationId, "src", srcSummary, joinPosition) ||
+                isJoinPositionSegmentUnaligned(controlSession, correlationId, "dst", dstSummary, joinPosition))
             {
                 return;
             }
@@ -1389,31 +1383,31 @@ abstract class ArchiveConductor
                 correlationId,
                 srcRecordingId,
                 dstRecordingId,
-                srcRecordingSummary,
+                srcSummary,
                 emptyFollowingSrcSegment);
 
             if (movedSegmentCount >= 0)
             {
-                final int toBeDeletedSegmentCount =
-                    addDeleteSegmentsSession(correlationId, srcRecordingId, controlSession, emptyFollowingSrcSegment);
+                final int toBeDeletedSegmentCount = addDeleteSegmentsSession(
+                    correlationId, srcRecordingId, controlSession, emptyFollowingSrcSegment);
 
                 if (toBeDeletedSegmentCount >= 0)
                 {
-                    if (canPrepend)
+                    if (srcSummary.stopPosition == dstSummary.startPosition)
                     {
-                        catalog.startPosition(dstRecordingId, srcRecordingSummary.startPosition);
+                        catalog.startPosition(dstRecordingId, srcSummary.startPosition);
                     }
                     else
                     {
-                        catalog.stopPosition(dstRecordingId, srcRecordingSummary.stopPosition);
+                        catalog.stopPosition(dstRecordingId, srcSummary.stopPosition);
                     }
 
-                    catalog.stopPosition(srcRecordingId, srcRecordingSummary.startPosition);
+                    catalog.stopPosition(srcRecordingId, srcSummary.startPosition);
 
                     controlSession.sendOkResponse(correlationId, movedSegmentCount, controlResponseProxy);
 
-                    final boolean willDeleteSegmentLater = toBeDeletedSegmentCount > 0;
-                    if (movedSegmentCount > 0 && !willDeleteSegmentLater)
+                    final boolean hasSegmentsToDelete = toBeDeletedSegmentCount > 0;
+                    if (movedSegmentCount > 0 && !hasSegmentsToDelete)
                     {
                         controlSession.sendSignal(
                             correlationId, srcRecordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
@@ -2035,7 +2029,7 @@ abstract class ArchiveConductor
         return true;
     }
 
-    private boolean isSeamPosSegmentUnaligned(
+    private boolean isJoinPositionSegmentUnaligned(
         final ControlSession controlSession,
         final long correlationId,
         final String label,
@@ -2051,7 +2045,7 @@ abstract class ArchiveConductor
 
         if (segmentBasePosition != seamPosition)
         {
-            final String error = "invalid migrate: seam position is not on segment boundary of " +
+            final String error = "invalid migrate: join position is not on segment boundary of " +
                 label + " recording" +
                 " seamPosition=" + seamPosition +
                 " startPosition=" + recordingSummary.startPosition +
@@ -2212,6 +2206,7 @@ abstract class ArchiveConductor
                 attachedSegmentCount++;
             }
         }
+
         return attachedSegmentCount;
     }
 
@@ -2241,7 +2236,15 @@ abstract class ArchiveConductor
 
             channel.truncate(segmentOffset);
             dataBuffer.byteBuffer().put(0, (byte)0).limit(1).position(0);
-            channel.write(dataBuffer.byteBuffer(), segmentLength - 1);
+
+            while (true)
+            {
+                final int written = channel.write(dataBuffer.byteBuffer(), segmentLength - 1);
+                if (1 == written)
+                {
+                    break;
+                }
+            }
         }
         catch (final IOException ex)
         {

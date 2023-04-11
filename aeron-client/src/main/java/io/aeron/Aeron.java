@@ -1112,8 +1112,8 @@ public class Aeron implements AutoCloseable
         /**
          * The {@link IdleStrategy} to be used when awaiting a response from the Media Driver.
          * <p>
-         * This can be change to a {@link BusySpinIdleStrategy} or {@link YieldingIdleStrategy} for lower response time,
-         * especially for adding counters or releasing resources, at the expense of CPU usage.
+         * This can be changed to a {@link BusySpinIdleStrategy} or {@link YieldingIdleStrategy} for lower response
+         * time, especially for adding counters or releasing resources, at the expense of CPU usage.
          *
          * @return the {@link IdleStrategy} to be used when awaiting a response from the Media Driver.
          */

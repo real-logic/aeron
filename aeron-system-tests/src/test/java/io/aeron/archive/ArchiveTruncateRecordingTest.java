@@ -68,7 +68,7 @@ import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOfRange;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -175,8 +175,7 @@ class ArchiveTruncateRecordingTest
             assertEquals(stopPosition, aeronArchive.getStopPosition(recordingId));
 
             final Path archiveDir = archive.context().archiveDir().toPath();
-            final ArrayList<String> segmentFiles =
-                Catalog.listSegmentFiles(archiveDir.toFile(), recordingId);
+            final ArrayList<String> segmentFiles = Catalog.listSegmentFiles(archiveDir.toFile(), recordingId);
             segmentFiles.sort(Comparator.naturalOrder());
             assertEquals(asList(
                 recordingId + "-1048576.rec",
@@ -199,8 +198,8 @@ class ArchiveTruncateRecordingTest
             deleteList.add(Files.createFile(archiveDir.resolve(
                 recordingId + "-" + archive.context().segmentFileLength() + RECORDING_SEGMENT_SUFFIX)));
 
-            final Path otherFile =
-                Files.createFile(archiveDir.resolve((recordingId + 1) + "-1179648" + RECORDING_SEGMENT_SUFFIX));
+            final Path otherFile = Files.createFile(
+                archiveDir.resolve((recordingId + 1) + "-1179648" + RECORDING_SEGMENT_SUFFIX));
             final Path otherFile2 = Files.createFile(archiveDir.resolve("something-else.txt"));
 
             recordingSignalConsumer.reset();
@@ -255,8 +254,7 @@ class ArchiveTruncateRecordingTest
             assertEquals(stopPosition, aeronArchive.getStopPosition(recordingId));
 
             final Path archiveDir = archive.context().archiveDir().toPath();
-            final ArrayList<String> segmentFiles =
-                Catalog.listSegmentFiles(archiveDir.toFile(), recordingId);
+            final ArrayList<String> segmentFiles = Catalog.listSegmentFiles(archiveDir.toFile(), recordingId);
             segmentFiles.sort(Comparator.naturalOrder());
             assertEquals(
                 asList(recordingId + "-0.rec", recordingId + "-262144.rec", recordingId + "-524288.rec"),
@@ -266,8 +264,7 @@ class ArchiveTruncateRecordingTest
             for (final String segmentFileName : segmentFiles)
             {
                 final Path file = archiveDir.resolve(segmentFileName);
-                final Path renamed = Files.move(
-                    file, archiveDir.resolve(segmentFileName + ".del"));
+                final Path renamed = Files.move(file, archiveDir.resolve(segmentFileName + ".del"));
                 assertTrue(Files.exists(renamed));
                 deleteList.add(renamed);
             }
@@ -373,8 +370,7 @@ class ArchiveTruncateRecordingTest
             final byte[] startFileData = Files.readAllBytes(startFile);
             final byte[] truncatedFileData = Files.readAllBytes(truncatedFile);
 
-            final ArrayList<String> segmentFiles =
-                Catalog.listSegmentFiles(archiveDir.toFile(), recordingId);
+            final ArrayList<String> segmentFiles = Catalog.listSegmentFiles(archiveDir.toFile(), recordingId);
             segmentFiles.sort(Comparator.naturalOrder());
             assertEquals(Arrays.asList(
                 truncatedFile.getFileName().toString(),

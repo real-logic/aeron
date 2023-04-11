@@ -525,7 +525,7 @@ public class ArchiveTool
         VERIFY_ALL_SEGMENT_FILES("-a"),
 
         /**
-         * Perform checksum for each data frame within a segment file being verify.
+         * Perform checksum for each data frame within a segment file being verified.
          */
         APPLY_CHECKSUM("-checksum");
 

@@ -3900,6 +3900,13 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             while (!standbySnapshotReplicator.isComplete())
             {
                 ctx.idleStrategy().idle(standbySnapshotReplicator.poll(ctx.clusterClock().timeNanos()));
+
+                checkInterruptStatus();
+                aeronClientInvoker.invoke();
+                if (aeron.isClosed())
+                {
+                    throw new AgentTerminationException("unexpected Aeron close");
+                }
             }
         }
     }

@@ -17,7 +17,9 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingSignal;
+import io.aeron.cluster.client.ClusterException;
 import org.agrona.collections.Long2LongHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +35,7 @@ import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -54,8 +57,10 @@ class StandbySnapshotReplicatorTest
     private final AeronArchive.Context ctx = new AeronArchive.Context();
 
     private final AeronArchive mockArchive = mock(AeronArchive.class);
-    private final MultipleRecordingReplication mockMultipleRecordingReplication = mock(
-        MultipleRecordingReplication.class);
+    private final MultipleRecordingReplication mockMultipleRecordingReplication0 = mock(
+        MultipleRecordingReplication.class, "host0");
+    private final MultipleRecordingReplication mockMultipleRecordingReplication1 = mock(
+        MultipleRecordingReplication.class, "host1");
 
     @BeforeEach
     void setUp()
@@ -78,7 +83,7 @@ class StandbySnapshotReplicatorTest
         dstRecordingIds.put(1, 11);
         dstRecordingIds.put(2, 12);
 
-        when(mockMultipleRecordingReplication.completedDstRecordingId(anyLong())).thenAnswer(
+        when(mockMultipleRecordingReplication0.completedDstRecordingId(anyLong())).thenAnswer(
             (invocation) -> dstRecordingIds.get(invocation.<Long>getArgument(0)));
 
         try (RecordingLog recordingLog = new RecordingLog(clusterDir, true))
@@ -101,7 +106,7 @@ class StandbySnapshotReplicatorTest
                 staticMockReplication
                     .when(() -> MultipleRecordingReplication.newInstance(
                         any(), anyInt(), any(), any(), anyLong(), anyLong()))
-                    .thenReturn(mockMultipleRecordingReplication);
+                    .thenReturn(mockMultipleRecordingReplication0);
                 staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
 
                 final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
@@ -112,7 +117,7 @@ class StandbySnapshotReplicatorTest
                     archiveControlStreamId,
                     replicationChannel);
 
-                when(mockMultipleRecordingReplication.isComplete()).thenReturn(true);
+                when(mockMultipleRecordingReplication0.isComplete()).thenReturn(true);
 
                 assertNotEquals(0, standbySnapshotReplicator.poll(nowNs));
                 assertTrue(standbySnapshotReplicator.isComplete());
@@ -126,9 +131,9 @@ class StandbySnapshotReplicatorTest
                     eq(progressTimeoutNs),
                     eq(intervalTimeoutNs)));
 
-                verify(mockMultipleRecordingReplication).addRecording(1L, NULL_RECORDING_ID, NULL_POSITION);
-                verify(mockMultipleRecordingReplication).addRecording(2L, NULL_RECORDING_ID, NULL_POSITION);
-                verify(mockMultipleRecordingReplication).poll(nowNs);
+                verify(mockMultipleRecordingReplication0).addRecording(1L, NULL_RECORDING_ID, NULL_POSITION);
+                verify(mockMultipleRecordingReplication0).addRecording(2L, NULL_RECORDING_ID, NULL_POSITION);
+                verify(mockMultipleRecordingReplication0).poll(nowNs);
             }
         }
 
@@ -160,7 +165,7 @@ class StandbySnapshotReplicatorTest
             staticMockReplication
                 .when(() -> MultipleRecordingReplication.newInstance(
                     any(), anyInt(), any(), any(), anyLong(), anyLong()))
-                .thenReturn(mockMultipleRecordingReplication);
+                .thenReturn(mockMultipleRecordingReplication0);
             staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
 
             final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
@@ -175,7 +180,7 @@ class StandbySnapshotReplicatorTest
             verify(mockArchive).pollForRecordingSignals();
             standbySnapshotReplicator.onSignal(2, 11, 23, 29, 37, RecordingSignal.START);
 
-            verify(mockMultipleRecordingReplication).onSignal(11, 23, 37, RecordingSignal.START);
+            verify(mockMultipleRecordingReplication0).onSignal(11, 23, 37, RecordingSignal.START);
         }
     }
 
@@ -190,7 +195,7 @@ class StandbySnapshotReplicatorTest
             staticMockReplication
                 .when(() -> MultipleRecordingReplication.newInstance(
                     any(), anyInt(), any(), any(), anyLong(), anyLong()))
-                .thenReturn(mockMultipleRecordingReplication);
+                .thenReturn(mockMultipleRecordingReplication0);
             staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
 
             final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
@@ -203,6 +208,238 @@ class StandbySnapshotReplicatorTest
 
             standbySnapshotReplicator.poll(0);
             assertTrue(standbySnapshotReplicator.isComplete());
+        }
+    }
+
+    @Test
+    void shouldSwitchEndpointsOnMultipleReplicationException()
+    {
+        final long standbySnapshotLogPosition = 10_000L;
+        final long localSnapshotLogPosition = 2_000L;
+        final long nowNs = 1_000_000_000L;
+
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true))
+        {
+            recordingLog.appendSnapshot(1, 0, 0, localSnapshotLogPosition, 1_000_000_000L, SERVICE_ID);
+            recordingLog.appendSnapshot(2, 0, 0, localSnapshotLogPosition, 1_000_000_000L, 0);
+
+            recordingLog.appendRemoteSnapshot(
+                1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint0);
+            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint0);
+
+            recordingLog.appendRemoteSnapshot(
+                1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint1);
+            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint1);
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true);
+            MockedStatic<MultipleRecordingReplication> staticMockReplication = mockStatic(
+                MultipleRecordingReplication.class);
+            MockedStatic<AeronArchive> staticMockArchive = mockStatic(AeronArchive.class))
+        {
+            staticMockReplication
+                .when(() -> MultipleRecordingReplication.newInstance(
+                    any(), anyInt(), contains("host0"), any(), anyLong(), anyLong()))
+                .thenReturn(mockMultipleRecordingReplication0);
+
+            staticMockReplication
+                .when(() -> MultipleRecordingReplication.newInstance(
+                    any(), anyInt(), contains("host1"), any(), anyLong(), anyLong()))
+                .thenReturn(mockMultipleRecordingReplication1);
+
+            staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
+
+            final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
+                ctx,
+                recordingLog,
+                1,
+                archiveControlChannel,
+                archiveControlStreamId,
+                replicationChannel);
+
+            when(mockMultipleRecordingReplication0.poll(anyLong())).thenThrow(new ClusterException());
+            when(mockMultipleRecordingReplication1.isComplete()).thenReturn(true);
+
+            standbySnapshotReplicator.poll(nowNs);
+            standbySnapshotReplicator.poll(nowNs);
+
+            assertTrue(standbySnapshotReplicator.isComplete());
+
+            verify(mockMultipleRecordingReplication0).poll(anyLong());
+            verify(mockMultipleRecordingReplication1).poll(anyLong());
+        }
+    }
+
+    @Test
+    void shouldSwitchEndpointsOnArchivePollForSignalsException()
+    {
+        final long standbySnapshotLogPosition = 10_000L;
+        final long localSnapshotLogPosition = 2_000L;
+        final long nowNs = 1_000_000_000L;
+
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true))
+        {
+            recordingLog.appendSnapshot(1, 0, 0, localSnapshotLogPosition, 1_000_000_000L, SERVICE_ID);
+            recordingLog.appendSnapshot(2, 0, 0, localSnapshotLogPosition, 1_000_000_000L, 0);
+
+            recordingLog.appendRemoteSnapshot(
+                1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint0);
+            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint0);
+
+            recordingLog.appendRemoteSnapshot(
+                1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint1);
+            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint1);
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true);
+            MockedStatic<MultipleRecordingReplication> staticMockReplication = mockStatic(
+                MultipleRecordingReplication.class);
+            MockedStatic<AeronArchive> staticMockArchive = mockStatic(AeronArchive.class))
+        {
+            staticMockReplication
+                .when(() -> MultipleRecordingReplication.newInstance(
+                    any(), anyInt(), contains("host0"), any(), anyLong(), anyLong()))
+                .thenReturn(mockMultipleRecordingReplication0);
+
+            staticMockReplication
+                .when(() -> MultipleRecordingReplication.newInstance(
+                    any(), anyInt(), contains("host1"), any(), anyLong(), anyLong()))
+                .thenReturn(mockMultipleRecordingReplication1);
+
+            staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
+            when(mockArchive.pollForRecordingSignals()).thenThrow(new ArchiveException()).thenReturn(1);
+
+            final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
+                ctx,
+                recordingLog,
+                1,
+                archiveControlChannel,
+                archiveControlStreamId,
+                replicationChannel);
+
+            when(mockMultipleRecordingReplication1.isComplete()).thenReturn(true);
+
+            standbySnapshotReplicator.poll(nowNs);
+            standbySnapshotReplicator.poll(nowNs);
+
+            assertTrue(standbySnapshotReplicator.isComplete());
+
+            verify(mockMultipleRecordingReplication0).poll(anyLong());
+            verify(mockMultipleRecordingReplication1).poll(anyLong());
+        }
+    }
+
+    @Test
+    void shouldThrowExceptionIfUnableToReplicateAnySnapshotsDueToClusterExceptions()
+    {
+        final long standbySnapshotLogPosition = 10_000L;
+        final long localSnapshotLogPosition = 2_000L;
+        final long nowNs = 1_000_000_000L;
+
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true))
+        {
+            recordingLog.appendSnapshot(1, 0, 0, localSnapshotLogPosition, 1_000_000_000L, SERVICE_ID);
+            recordingLog.appendSnapshot(2, 0, 0, localSnapshotLogPosition, 1_000_000_000L, 0);
+
+            recordingLog.appendRemoteSnapshot(
+                1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint0);
+            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint0);
+
+            recordingLog.appendRemoteSnapshot(
+                1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint1);
+            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint1);
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true);
+            MockedStatic<MultipleRecordingReplication> staticMockReplication = mockStatic(
+                MultipleRecordingReplication.class);
+            MockedStatic<AeronArchive> staticMockArchive = mockStatic(AeronArchive.class))
+        {
+            staticMockReplication
+                .when(() -> MultipleRecordingReplication.newInstance(
+                    any(), anyInt(), contains("host0"), any(), anyLong(), anyLong()))
+                .thenReturn(mockMultipleRecordingReplication0);
+
+            staticMockReplication
+                .when(() -> MultipleRecordingReplication.newInstance(
+                    any(), anyInt(), contains("host1"), any(), anyLong(), anyLong()))
+                .thenReturn(mockMultipleRecordingReplication1);
+
+            staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
+
+            when(mockMultipleRecordingReplication0.poll(anyLong())).thenThrow(new ClusterException());
+            when(mockMultipleRecordingReplication1.poll(anyLong())).thenThrow(new ClusterException());
+
+            final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
+                ctx,
+                recordingLog,
+                1,
+                archiveControlChannel,
+                archiveControlStreamId,
+                replicationChannel);
+
+            standbySnapshotReplicator.poll(nowNs);
+            standbySnapshotReplicator.poll(nowNs);
+            assertThrows(ClusterException.class, () -> standbySnapshotReplicator.poll(nowNs));
+
+            verify(mockMultipleRecordingReplication0).poll(anyLong());
+            verify(mockMultipleRecordingReplication1).poll(anyLong());
+        }
+    }
+
+    @Test
+    void shouldThrowExceptionIfUnableToReplicateAnySnapshotsDueToArchiveExceptions()
+    {
+        final long standbySnapshotLogPosition = 10_000L;
+        final long localSnapshotLogPosition = 2_000L;
+        final long nowNs = 1_000_000_000L;
+
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true))
+        {
+            recordingLog.appendSnapshot(1, 0, 0, localSnapshotLogPosition, 1_000_000_000L, SERVICE_ID);
+            recordingLog.appendSnapshot(2, 0, 0, localSnapshotLogPosition, 1_000_000_000L, 0);
+
+            recordingLog.appendRemoteSnapshot(
+                1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint0);
+            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint0);
+
+            recordingLog.appendRemoteSnapshot(
+                1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint1);
+            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint1);
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true);
+            MockedStatic<MultipleRecordingReplication> staticMockReplication = mockStatic(
+                MultipleRecordingReplication.class);
+            MockedStatic<AeronArchive> staticMockArchive = mockStatic(AeronArchive.class))
+        {
+            staticMockReplication
+                .when(() -> MultipleRecordingReplication.newInstance(
+                    any(), anyInt(), contains("host0"), any(), anyLong(), anyLong()))
+                .thenReturn(mockMultipleRecordingReplication0);
+
+            staticMockReplication
+                .when(() -> MultipleRecordingReplication.newInstance(
+                    any(), anyInt(), contains("host1"), any(), anyLong(), anyLong()))
+                .thenReturn(mockMultipleRecordingReplication1);
+
+            staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
+            when(mockArchive.pollForRecordingSignals()).thenThrow(new ArchiveException());
+
+            final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
+                ctx,
+                recordingLog,
+                1,
+                archiveControlChannel,
+                archiveControlStreamId,
+                replicationChannel);
+
+            standbySnapshotReplicator.poll(nowNs);
+            standbySnapshotReplicator.poll(nowNs);
+            assertThrows(ClusterException.class, () -> standbySnapshotReplicator.poll(nowNs));
+
+            verify(mockMultipleRecordingReplication0).poll(anyLong());
+            verify(mockMultipleRecordingReplication1).poll(anyLong());
         }
     }
 }

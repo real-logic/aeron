@@ -17,11 +17,12 @@ package io.aeron.cluster;
 
 import io.aeron.ChannelUri;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingSignal;
+import io.aeron.cluster.client.ClusterException;
 import org.agrona.CloseHelper;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +39,8 @@ class StandbySnapshotReplicator implements AutoCloseable
     private final int archiveControlStreamId;
     private final String replicationChannel;
     private MultipleRecordingReplication recordingReplication;
-    private List<RecordingLog.Entry> remoteSnapshotToReplicate;
+    private ArrayList<SnapshotReplicationEntry> snapshotsToReplicate;
+    private SnapshotReplicationEntry currentSnapshotToReplicate;
     private boolean isComplete = false;
 
     StandbySnapshotReplicator(
@@ -80,24 +82,37 @@ class StandbySnapshotReplicator implements AutoCloseable
         {
             workCount++;
 
-            final Map<String, List<RecordingLog.Entry>> snapshotsByEndpoint = recordingLog.latestRemoteSnapshots(
-                serviceCount);
-
-            if (snapshotsByEndpoint.isEmpty())
+            if (null == snapshotsToReplicate)
             {
-                isComplete = true;
-                return workCount;
+
+                final Map<String, List<RecordingLog.Entry>> snapshotsByEndpoint = recordingLog.latestRemoteSnapshots(
+                    serviceCount);
+
+                if (snapshotsByEndpoint.isEmpty())
+                {
+                    isComplete = true;
+                    return workCount;
+                }
+
+                snapshotsToReplicate = new ArrayList<>();
+                snapshotsByEndpoint.forEach(
+                    (k, v) ->
+                    {
+                        final long logPosition = v.get(0).logPosition;
+                        snapshotsToReplicate.add(new SnapshotReplicationEntry(k, logPosition, v));
+                    });
+
+                snapshotsToReplicate.sort(SnapshotReplicationEntry::compareTo);
             }
 
-            final List<List<RecordingLog.Entry>> snapshotsOrderedByLogPosition = new ArrayList<>(
-                snapshotsByEndpoint.values());
-            snapshotsOrderedByLogPosition.sort(Comparator.comparingLong(o -> o.get(0).logPosition));
+            if (snapshotsToReplicate.isEmpty())
+            {
+                throw new ClusterException("Failed to replicate any standby snapshots");
+            }
 
-            remoteSnapshotToReplicate = snapshotsOrderedByLogPosition.get(
-                snapshotsOrderedByLogPosition.size() - 1);
-            final String archiveEndpoint = remoteSnapshotToReplicate.get(0).archiveEndpoint;
-
-            final String srcChannel = ChannelUri.createDestinationUri(archiveControlChannel, archiveEndpoint);
+            currentSnapshotToReplicate = snapshotsToReplicate.remove(0);
+            final String srcChannel = ChannelUri.createDestinationUri(
+                archiveControlChannel, currentSnapshotToReplicate.endpoint);
 
             recordingReplication = MultipleRecordingReplication.newInstance(
                 archive,
@@ -107,23 +122,31 @@ class StandbySnapshotReplicator implements AutoCloseable
                 TimeUnit.SECONDS.toNanos(10),
                 TimeUnit.SECONDS.toNanos(1));
 
-            for (int i = 0, n = remoteSnapshotToReplicate.size(); i < n; i++)
+            for (int i = 0, n = currentSnapshotToReplicate.recordingLogEntries.size(); i < n; i++)
             {
-                final RecordingLog.Entry entry = remoteSnapshotToReplicate.get(i);
+                final RecordingLog.Entry entry = currentSnapshotToReplicate.recordingLogEntries.get(i);
                 recordingReplication.addRecording(entry.recordingId, NULL_RECORDING_ID, NULL_POSITION);
             }
 
             workCount++;
         }
 
-        workCount += recordingReplication.poll(nowNs);
-        archive.pollForRecordingSignals();
-
-        if (recordingReplication.isComplete())
+        try
         {
-            for (int i = 0, n = remoteSnapshotToReplicate.size(); i < n; i++)
+            workCount += recordingReplication.poll(nowNs);
+            archive.pollForRecordingSignals();
+        }
+        catch (final ArchiveException | ClusterException e)
+        {
+            CloseHelper.quietClose(recordingReplication);
+            recordingReplication = null;
+        }
+
+        if (null != recordingReplication && recordingReplication.isComplete())
+        {
+            for (int i = 0, n = currentSnapshotToReplicate.recordingLogEntries.size(); i < n; i++)
             {
-                final RecordingLog.Entry entry = remoteSnapshotToReplicate.get(i);
+                final RecordingLog.Entry entry = currentSnapshotToReplicate.recordingLogEntries.get(i);
                 final long dstRecordingId = recordingReplication.completedDstRecordingId(entry.recordingId);
                 recordingLog.appendSnapshot(
                     dstRecordingId,
@@ -135,6 +158,7 @@ class StandbySnapshotReplicator implements AutoCloseable
             }
             recordingLog.force(0);
 
+            CloseHelper.quietClose(recordingReplication);
             recordingReplication = null;
             isComplete = true;
         }
@@ -164,5 +188,33 @@ class StandbySnapshotReplicator implements AutoCloseable
     public void close()
     {
         CloseHelper.quietClose(archive);
+    }
+
+    private static final class SnapshotReplicationEntry implements Comparable<SnapshotReplicationEntry>
+    {
+        private final String endpoint;
+        private final long logPosition;
+        private final List<RecordingLog.Entry> recordingLogEntries = new ArrayList<>();
+
+        private SnapshotReplicationEntry(
+            final String endpoint,
+            final long logPosition,
+            final List<RecordingLog.Entry> entries)
+        {
+            this.endpoint = endpoint;
+            this.logPosition = logPosition;
+            this.recordingLogEntries.addAll(entries);
+        }
+
+        public int compareTo(final SnapshotReplicationEntry o)
+        {
+            final int desendingOrderCompare = -Long.compare(logPosition, o.logPosition);
+            if (0 != desendingOrderCompare)
+            {
+                return desendingOrderCompare;
+            }
+
+            return endpoint.compareTo(o.endpoint);
+        }
     }
 }

@@ -51,7 +51,6 @@ public:
     {
         if (m_isPollComplete)
         {
-            m_isPollComplete = false;
             m_controlSessionId = aeron::NULL_VALUE;
             m_correlationId = aeron::NULL_VALUE;
             m_relevantId = aeron::NULL_VALUE;
@@ -70,6 +69,7 @@ public:
             delete[] m_encodedChallenge.first;
             m_encodedChallenge.first = nullptr;
             m_encodedChallenge.second = 0;
+            m_isPollComplete = false;
         }
 
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);

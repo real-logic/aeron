@@ -42,7 +42,7 @@ ControlResponsePoller::ControlResponsePoller(std::shared_ptr<Subscription> subsc
 }
 
 ControlledPollAction ControlResponsePoller::onFragment(
-    AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+    AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &)
 {
     if (m_isPollComplete)
     {

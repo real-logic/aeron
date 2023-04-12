@@ -41,14 +41,15 @@ public final class ControlResponsePoller
 
     private final Subscription subscription;
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onFragment);
+    private final int fragmentLimit;
+
     private long controlSessionId = Aeron.NULL_VALUE;
     private long correlationId = Aeron.NULL_VALUE;
     private long relevantId = Aeron.NULL_VALUE;
     private int templateId = Aeron.NULL_VALUE;
     private int version = 0;
-    private final int fragmentLimit;
-    private ControlResponseCode code;
-    private String errorMessage;
+    private ControlResponseCode code = null;
+    private String errorMessage = null;
     private long recordingId = Aeron.NULL_VALUE;
     private long subscriptionId = Aeron.NULL_VALUE;
     private long position = Aeron.NULL_VALUE;
@@ -98,18 +99,19 @@ public final class ControlResponsePoller
     {
         if (isPollComplete)
         {
-            isPollComplete = false;
-            templateId = Aeron.NULL_VALUE;
             controlSessionId = Aeron.NULL_VALUE;
             correlationId = Aeron.NULL_VALUE;
             relevantId = Aeron.NULL_VALUE;
+            templateId = Aeron.NULL_VALUE;
+            version = 0;
+            code = null;
+            errorMessage = null;
             recordingId = Aeron.NULL_VALUE;
             subscriptionId = Aeron.NULL_VALUE;
             position = Aeron.NULL_VALUE;
-            recordingSignal = null;
-            version = 0;
-            errorMessage = null;
             encodedChallenge = null;
+            recordingSignal = null;
+            isPollComplete = false;
         }
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);

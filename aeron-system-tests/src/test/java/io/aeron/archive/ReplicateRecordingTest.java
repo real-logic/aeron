@@ -1169,6 +1169,8 @@ class ReplicateRecordingTest
         catch (final ArchiveException ex)
         {
             assertEquals(ArchiveException.REPLICATION_CONNECTION_FAILURE, ex.errorCode());
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE_END);
+
             return;
         }
 

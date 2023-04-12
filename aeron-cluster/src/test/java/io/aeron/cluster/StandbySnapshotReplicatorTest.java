@@ -257,7 +257,7 @@ class StandbySnapshotReplicatorTest
                 archiveControlStreamId,
                 replicationChannel);
 
-            when(mockMultipleRecordingReplication0.poll(anyLong())).thenThrow(new ClusterException());
+            when(mockMultipleRecordingReplication0.poll(anyLong())).thenThrow(new ClusterException("fail"));
             when(mockMultipleRecordingReplication1.isComplete()).thenReturn(true);
 
             standbySnapshotReplicator.poll(nowNs);
@@ -307,7 +307,7 @@ class StandbySnapshotReplicatorTest
                 .thenReturn(mockMultipleRecordingReplication1);
 
             staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
-            when(mockArchive.pollForRecordingSignals()).thenThrow(new ArchiveException()).thenReturn(1);
+            when(mockArchive.pollForRecordingSignals()).thenThrow(new ArchiveException("fail")).thenReturn(1);
 
             final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
                 ctx,
@@ -367,8 +367,8 @@ class StandbySnapshotReplicatorTest
 
             staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
 
-            when(mockMultipleRecordingReplication0.poll(anyLong())).thenThrow(new ClusterException());
-            when(mockMultipleRecordingReplication1.poll(anyLong())).thenThrow(new ClusterException());
+            when(mockMultipleRecordingReplication0.poll(anyLong())).thenThrow(new ClusterException("fail"));
+            when(mockMultipleRecordingReplication1.poll(anyLong())).thenThrow(new ClusterException("fail"));
 
             final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
                 ctx,
@@ -424,7 +424,7 @@ class StandbySnapshotReplicatorTest
                 .thenReturn(mockMultipleRecordingReplication1);
 
             staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
-            when(mockArchive.pollForRecordingSignals()).thenThrow(new ArchiveException());
+            when(mockArchive.pollForRecordingSignals()).thenThrow(new ArchiveException("fail"));
 
             final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
                 ctx,

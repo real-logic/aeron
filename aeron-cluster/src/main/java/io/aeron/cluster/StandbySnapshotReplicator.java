@@ -21,6 +21,7 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.cluster.client.ClusterException;
 import org.agrona.CloseHelper;
+import org.agrona.collections.Object2ObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +39,7 @@ class StandbySnapshotReplicator implements AutoCloseable
     private final String archiveControlChannel;
     private final int archiveControlStreamId;
     private final String replicationChannel;
+    private final Object2ObjectHashMap<String, String> errorsByEndpoint = new Object2ObjectHashMap<>();
     private MultipleRecordingReplication recordingReplication;
     private ArrayList<SnapshotReplicationEntry> snapshotsToReplicate;
     private SnapshotReplicationEntry currentSnapshotToReplicate;
@@ -84,43 +86,34 @@ class StandbySnapshotReplicator implements AutoCloseable
 
             if (null == snapshotsToReplicate)
             {
+                snapshotsToReplicate = computeSnapshotsToReplicate();
 
-                final Map<String, List<RecordingLog.Entry>> snapshotsByEndpoint = recordingLog.latestRemoteSnapshots(
-                    serviceCount);
-
-                if (snapshotsByEndpoint.isEmpty())
+                if (null == snapshotsToReplicate)
                 {
                     isComplete = true;
                     return workCount;
                 }
-
-                snapshotsToReplicate = new ArrayList<>();
-                snapshotsByEndpoint.forEach(
-                    (k, v) ->
-                    {
-                        final long logPosition = v.get(0).logPosition;
-                        snapshotsToReplicate.add(new SnapshotReplicationEntry(k, logPosition, v));
-                    });
-
-                snapshotsToReplicate.sort(SnapshotReplicationEntry::compareTo);
             }
 
             if (snapshotsToReplicate.isEmpty())
             {
-                throw new ClusterException("Failed to replicate any standby snapshots");
+                throw new ClusterException("failed to replicate any standby snapshots, errors: " + errorsByEndpoint);
             }
 
             currentSnapshotToReplicate = snapshotsToReplicate.remove(0);
             final String srcChannel = ChannelUri.createDestinationUri(
                 archiveControlChannel, currentSnapshotToReplicate.endpoint);
 
+            final long progressTimeoutNs = archive.context().messageTimeoutNs() * 2;
+            final long progressIntervalNs = progressTimeoutNs / 10;
+
             recordingReplication = MultipleRecordingReplication.newInstance(
                 archive,
                 archiveControlStreamId,
                 srcChannel,
                 replicationChannel,
-                TimeUnit.SECONDS.toNanos(10),
-                TimeUnit.SECONDS.toNanos(1));
+                progressTimeoutNs,
+                progressIntervalNs);
 
             for (int i = 0, n = currentSnapshotToReplicate.recordingLogEntries.size(); i < n; i++)
             {
@@ -136,8 +129,10 @@ class StandbySnapshotReplicator implements AutoCloseable
             workCount += recordingReplication.poll(nowNs);
             archive.pollForRecordingSignals();
         }
-        catch (final ArchiveException | ClusterException e)
+        catch (final ArchiveException | ClusterException ex)
         {
+            errorsByEndpoint.put(currentSnapshotToReplicate.endpoint, ex.getMessage());
+
             CloseHelper.quietClose(recordingReplication);
             recordingReplication = null;
         }
@@ -164,6 +159,33 @@ class StandbySnapshotReplicator implements AutoCloseable
         }
 
         return workCount;
+    }
+
+    private ArrayList<SnapshotReplicationEntry> computeSnapshotsToReplicate()
+    {
+        final Map<String, List<RecordingLog.Entry>> snapshotsByEndpoint = recordingLog.latestRemoteSnapshots(
+            serviceCount);
+
+        final ArrayList<SnapshotReplicationEntry> s;
+        if (snapshotsByEndpoint.isEmpty())
+        {
+            s = null;
+        }
+        else
+        {
+            s = new ArrayList<>();
+
+            snapshotsByEndpoint.forEach(
+                (k, v) ->
+                {
+                    final long logPosition = v.get(0).logPosition;
+                    s.add(new SnapshotReplicationEntry(k, logPosition, v));
+                });
+
+            s.sort(SnapshotReplicationEntry::compareTo);
+        }
+
+        return s;
     }
 
     boolean isComplete()
@@ -208,10 +230,10 @@ class StandbySnapshotReplicator implements AutoCloseable
 
         public int compareTo(final SnapshotReplicationEntry o)
         {
-            final int desendingOrderCompare = -Long.compare(logPosition, o.logPosition);
-            if (0 != desendingOrderCompare)
+            final int descendingOrderCompare = -Long.compare(logPosition, o.logPosition);
+            if (0 != descendingOrderCompare)
             {
-                return desendingOrderCompare;
+                return descendingOrderCompare;
             }
 
             return endpoint.compareTo(o.endpoint);

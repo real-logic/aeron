@@ -20,13 +20,13 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.exceptions.AeronException;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Object2ObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.status.RecordingPos.NULL_RECORDING_ID;
@@ -69,7 +69,7 @@ class StandbySnapshotReplicator implements AutoCloseable
         final int archiveControlStreamId,
         final String replicationChannel)
     {
-        final AeronArchive archive = AeronArchive.connect(archiveCtx.clone());
+        final AeronArchive archive = AeronArchive.connect(archiveCtx.clone().errorHandler(null));
         final StandbySnapshotReplicator standbySnapshotReplicator = new StandbySnapshotReplicator(
             archive, recordingLog, serviceCount, archiveControlChannel, archiveControlStreamId, replicationChannel);
         archive.context().recordingSignalConsumer(standbySnapshotReplicator::onSignal);
@@ -97,7 +97,9 @@ class StandbySnapshotReplicator implements AutoCloseable
 
             if (snapshotsToReplicate.isEmpty())
             {
-                throw new ClusterException("failed to replicate any standby snapshots, errors: " + errorsByEndpoint);
+                throw new ClusterException(
+                    "failed to replicate any standby snapshots, errors: " + errorsByEndpoint,
+                    AeronException.Category.WARN);
             }
 
             currentSnapshotToReplicate = snapshotsToReplicate.remove(0);
@@ -132,7 +134,6 @@ class StandbySnapshotReplicator implements AutoCloseable
         catch (final ArchiveException | ClusterException ex)
         {
             errorsByEndpoint.put(currentSnapshotToReplicate.endpoint, ex.getMessage());
-
             CloseHelper.quietClose(recordingReplication);
             recordingReplication = null;
         }

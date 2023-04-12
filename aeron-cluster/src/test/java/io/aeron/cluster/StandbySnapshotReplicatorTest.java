@@ -76,8 +76,8 @@ class StandbySnapshotReplicatorTest
     {
         final long logPositionOldest = 1000L;
         final long logPositionNewest = 3000L;
-        final long progressTimeoutNs = TimeUnit.SECONDS.toNanos(10);
-        final long intervalTimeoutNs = TimeUnit.SECONDS.toNanos(1);
+        final long progressTimeoutNs = TimeUnit.SECONDS.toNanos(20);
+        final long intervalTimeoutNs = TimeUnit.SECONDS.toNanos(2);
         final int serviceCount = 1;
         final Long2LongHashMap dstRecordingIds = new Long2LongHashMap(Aeron.NULL_VALUE);
         dstRecordingIds.put(1, 11);

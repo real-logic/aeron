@@ -51,7 +51,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
     private final BackupQueryDecoder backupQueryDecoder = new BackupQueryDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
     private final HeartbeatRequestDecoder heartbeatRequestDecoder = new HeartbeatRequestDecoder();
-    private final RemoteSnapshotDecoder remoteSnapshotDecoder = new RemoteSnapshotDecoder();
+    private final StandbySnapshotDecoder remoteSnapshotDecoder = new StandbySnapshotDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -379,7 +379,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                 break;
             }
 
-            case RemoteSnapshotDecoder.TEMPLATE_ID:
+            case StandbySnapshotDecoder.TEMPLATE_ID:
             {
                 remoteSnapshotDecoder.wrap(
                     buffer,
@@ -387,12 +387,12 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                final Iterator<RemoteSnapshotDecoder.SnapshotsDecoder> iterator =
+                final Iterator<StandbySnapshotDecoder.SnapshotsDecoder> iterator =
                     remoteSnapshotDecoder.snapshots().iterator();
 
                 while (iterator.hasNext())
                 {
-                    final RemoteSnapshotDecoder.SnapshotsDecoder remoteSnapshot = iterator.next();
+                    final StandbySnapshotDecoder.SnapshotsDecoder remoteSnapshot = iterator.next();
                     consensusModuleAgent.onRemoteSnapshot(
                         remoteSnapshot.recordingId(),
                         remoteSnapshot.leadershipTermId(),

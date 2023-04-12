@@ -169,13 +169,13 @@ public final class RecordingLog implements AutoCloseable
          * @param timestamp           of this entry.
          * @param serviceId           service id for snapshot.
          * @param type                of the entry as a log of a term or a snapshot.
-         * @param archiveEndpoint            archive where the snapshot is located, if
-         *                            <code>entryType == ENTRY_TYPE_REMOTE_SNAPSHOT</code>.
+         * @param archiveEndpoint     archive where the snapshot is located, if
+         *                            <code>entryType == ENTRY_TYPE_STANDBY_SNAPSHOT</code>.
          * @param isValid             indicates if the entry is valid, {@link RecordingLog#invalidateEntry(long, int)}
          *                            marks it invalid.
          * @param position            of the entry on disk.
          * @param entryIndex          of the entry on disk.
-         * @throws ClusterException   if <code>entryType == ENTRY_TYPE_REMOTE_SNAPSHOT</code> and <code>endpoint</code>
+         * @throws ClusterException   if <code>entryType == ENTRY_TYPE_STANDBY_SNAPSHOT</code> and <code>endpoint</code>
          *                            is null or empty.
          */
         public Entry(
@@ -203,7 +203,7 @@ public final class RecordingLog implements AutoCloseable
             this.entryIndex = entryIndex;
             this.isValid = isValid;
 
-            if (ENTRY_TYPE_REMOTE_SNAPSHOT == type && Strings.isEmpty(archiveEndpoint))
+            if (ENTRY_TYPE_STANDBY_SNAPSHOT == type && Strings.isEmpty(archiveEndpoint))
             {
                 throw new ClusterException("Remote snapshots must has a valid endpoint");
             }
@@ -242,7 +242,7 @@ public final class RecordingLog implements AutoCloseable
          */
         public int length()
         {
-            final int unalignedLength = (ENTRY_TYPE_REMOTE_SNAPSHOT == type) ?
+            final int unalignedLength = (ENTRY_TYPE_STANDBY_SNAPSHOT == type) ?
                 ENDPOINT_OFFSET + SIZE_OF_INT + archiveEndpoint.length() : ENDPOINT_OFFSET;
 
             return align(unalignedLength, CACHE_LINE_LENGTH);
@@ -342,7 +342,7 @@ public final class RecordingLog implements AutoCloseable
          */
         public String toString()
         {
-            final String archiveEndpointEntry = ENTRY_TYPE_REMOTE_SNAPSHOT == type ?
+            final String archiveEndpointEntry = ENTRY_TYPE_STANDBY_SNAPSHOT == type ?
                 ", archiveEndpoint=" + archiveEndpoint : "";
 
             return "Entry{" +
@@ -644,7 +644,7 @@ public final class RecordingLog implements AutoCloseable
      * The log entry is for a recording of a snapshot of state taken as of a position in the log on another machine.
      * Entries of this time should have an endpoint for an archive associated with them.
      */
-    public static final int ENTRY_TYPE_REMOTE_SNAPSHOT = 2;
+    public static final int ENTRY_TYPE_STANDBY_SNAPSHOT = 2;
 
     /**
      * The flag used to determine if the entry has been marked with invalid.
@@ -1247,7 +1247,7 @@ public final class RecordingLog implements AutoCloseable
             recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId))
         {
             append(
-                ENTRY_TYPE_REMOTE_SNAPSHOT,
+                ENTRY_TYPE_STANDBY_SNAPSHOT,
                 recordingId,
                 leadershipTermId,
                 termBaseLogPosition,
@@ -1370,7 +1370,7 @@ public final class RecordingLog implements AutoCloseable
         for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
             final Entry entry = entriesCache.get(i);
-            if (ENTRY_TYPE_REMOTE_SNAPSHOT == entry.type)
+            if (ENTRY_TYPE_STANDBY_SNAPSHOT == entry.type)
             {
                 remoteSnapshots.computeIfAbsent(entry.archiveEndpoint, (s) -> new TreeMap<>())
                     .computeIfAbsent(entry.logPosition, (l) -> new ArrayList<>())
@@ -1419,8 +1419,8 @@ public final class RecordingLog implements AutoCloseable
                 return "TERM";
             case ENTRY_TYPE_SNAPSHOT:
                 return "SNAPSHOT";
-            case ENTRY_TYPE_REMOTE_SNAPSHOT:
-                return "REMOTE_SNAPSHOT";
+            case ENTRY_TYPE_STANDBY_SNAPSHOT:
+                return "STANDBY_SNAPSHOT";
             default:
                 return "UNKNOWN";
         }
@@ -1771,7 +1771,7 @@ public final class RecordingLog implements AutoCloseable
                 buffer.getLong(consumed + TIMESTAMP_OFFSET, LITTLE_ENDIAN),
                 buffer.getInt(consumed + SERVICE_ID_OFFSET, LITTLE_ENDIAN),
                 type,
-                (ENTRY_TYPE_REMOTE_SNAPSHOT == type) ? buffer.getStringAscii(consumed + ENDPOINT_OFFSET) : null,
+                (ENTRY_TYPE_STANDBY_SNAPSHOT == type) ? buffer.getStringAscii(consumed + ENDPOINT_OFFSET) : null,
                 isValid,
                 position,
                 nextEntryIndex);

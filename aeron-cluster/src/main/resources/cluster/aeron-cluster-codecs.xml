@@ -629,7 +629,7 @@
         <field name="correlationId"            id="1"  type="int64"/>
     </sbe:message>
 
-    <sbe:message name="RemoteSnapshot"
+    <sbe:message name="StandbySnapshot"
                  id="81"
                  description="Notify node(s) of the creation of a snapshot taken on a remote node">
         <group name="snapshots" id="1" dimensionType="groupSizeEncoding">

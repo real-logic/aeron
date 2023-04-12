@@ -35,7 +35,7 @@ import java.util.function.Predicate;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
-import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_REMOTE_SNAPSHOT;
+import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_STANDBY_SNAPSHOT;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_SNAPSHOT;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_TERM;
 import static java.util.Arrays.asList;
@@ -934,8 +934,8 @@ class RecordingLogTest
         {
             assertLogEntry(log, 1, ENTRY_TYPE_SNAPSHOT, null);
             assertLogEntry(log, 2, ENTRY_TYPE_SNAPSHOT, null);
-            assertLogEntry(log, 3, ENTRY_TYPE_REMOTE_SNAPSHOT, "remotehost.aeron.io:20002");
-            assertLogEntry(log, 4, ENTRY_TYPE_REMOTE_SNAPSHOT, "remotehost.aeron.io:20002");
+            assertLogEntry(log, 3, ENTRY_TYPE_STANDBY_SNAPSHOT, "remotehost.aeron.io:20002");
+            assertLogEntry(log, 4, ENTRY_TYPE_STANDBY_SNAPSHOT, "remotehost.aeron.io:20002");
             assertLogEntry(log, 5, ENTRY_TYPE_SNAPSHOT, null);
             assertLogEntry(log, 6, ENTRY_TYPE_SNAPSHOT, null);
         }
@@ -994,10 +994,10 @@ class RecordingLogTest
         {
             assertLogEntry(log, 1, ENTRY_TYPE_SNAPSHOT, null);
             assertLogEntry(log, 2, ENTRY_TYPE_SNAPSHOT, null);
-            assertLogEntry(log, 3, ENTRY_TYPE_REMOTE_SNAPSHOT, "remotehost0.aeron.io:20002");
-            assertLogEntry(log, 4, ENTRY_TYPE_REMOTE_SNAPSHOT, "remotehost0.aeron.io:20002");
-            assertLogEntry(log, 3, ENTRY_TYPE_REMOTE_SNAPSHOT, "remotehost1.aeron.io:20002");
-            assertLogEntry(log, 4, ENTRY_TYPE_REMOTE_SNAPSHOT, "remotehost1.aeron.io:20002");
+            assertLogEntry(log, 3, ENTRY_TYPE_STANDBY_SNAPSHOT, "remotehost0.aeron.io:20002");
+            assertLogEntry(log, 4, ENTRY_TYPE_STANDBY_SNAPSHOT, "remotehost0.aeron.io:20002");
+            assertLogEntry(log, 3, ENTRY_TYPE_STANDBY_SNAPSHOT, "remotehost1.aeron.io:20002");
+            assertLogEntry(log, 4, ENTRY_TYPE_STANDBY_SNAPSHOT, "remotehost1.aeron.io:20002");
 
             final int serviceCount = 1;
             final Map<String, List<RecordingLog.Entry>> remoteSnapshots = log.latestRemoteSnapshots(serviceCount);

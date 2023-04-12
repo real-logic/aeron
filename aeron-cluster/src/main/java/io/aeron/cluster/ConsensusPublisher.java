@@ -53,7 +53,7 @@ final class ConsensusPublisher
     private final HeartbeatRequestEncoder heartbeatRequestEncoder = new HeartbeatRequestEncoder();
     private final HeartbeatResponseEncoder heartbeatResponseEncoder = new HeartbeatResponseEncoder();
     private final ChallengeResponseEncoder challengeResponseEncoder = new ChallengeResponseEncoder();
-    private final RemoteSnapshotEncoder remoteSnapshotEncoder = new RemoteSnapshotEncoder();
+    private final StandbySnapshotEncoder remoteSnapshotEncoder = new StandbySnapshotEncoder();
 
     void canvassPosition(
         final ExclusivePublication publication,
@@ -718,16 +718,16 @@ final class ConsensusPublisher
         return sendPublication(publication, buffer, length);
     }
 
-    boolean remoteSnapshotsTaken(
+    boolean standbySnapshotsTaken(
         final ExclusivePublication publication,
         final List<RecordingLog.Entry> snapshots,
         final String archiveEndpoint)
     {
         final int snapshotsLength = snapshots.size();
-        final RemoteSnapshotEncoder remoteSnapshotEncoder = this.remoteSnapshotEncoder
+        final StandbySnapshotEncoder remoteSnapshotEncoder = this.remoteSnapshotEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder);
 
-        final RemoteSnapshotEncoder.SnapshotsEncoder snapshotsEncoder = remoteSnapshotEncoder
+        final StandbySnapshotEncoder.SnapshotsEncoder snapshotsEncoder = remoteSnapshotEncoder
             .snapshotsCount(snapshotsLength);
 
         for (int i = 0; i < snapshotsLength; i++)

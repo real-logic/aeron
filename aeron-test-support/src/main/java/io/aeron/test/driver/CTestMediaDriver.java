@@ -21,6 +21,7 @@ import io.aeron.CommonContext;
 import io.aeron.driver.*;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.samples.SamplesUtil;
+import io.aeron.test.SystemTestConfig;
 import io.aeron.test.Tests;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -149,6 +150,11 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     private void awaitSendersAndReceiversClosed()
     {
+        if (!SystemTestConfig.DRIVER_AWAIT_COUNTER_CLOSE)
+        {
+            return;
+        }
+
         final MutableInteger counterCount = new MutableInteger();
         final CountersReader.MetaData metaData = (counterId, typeId, keyBuffer, label) ->
         {
@@ -159,7 +165,7 @@ public final class CTestMediaDriver implements TestMediaDriver
             }
         };
 
-        final long deadlineMs = System.currentTimeMillis() + 10_000;
+        final long deadlineMs = System.currentTimeMillis() + 15_000;
         do
         {
             counterCount.set(0);
@@ -169,15 +175,6 @@ public final class CTestMediaDriver implements TestMediaDriver
             Tests.yield();
         }
         while (0 != counterCount.get() && System.currentTimeMillis() < deadlineMs);
-
-//        if (0 != counterCount.get())
-//        {
-//            System.out.println("Counter did not reach 0 within timeout: " + counterCount);
-//        }
-//        else
-//        {
-//            System.out.println("Timeout remaining " + (deadlineMs - System.currentTimeMillis()));
-//        }
     }
 
     public void cleanup()

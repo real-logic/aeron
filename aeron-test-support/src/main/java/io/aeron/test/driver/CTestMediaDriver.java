@@ -159,7 +159,7 @@ public final class CTestMediaDriver implements TestMediaDriver
             }
         };
 
-        final long deadlineMs = System.currentTimeMillis() + 5_000;
+        final long deadlineMs = System.currentTimeMillis() + 10_000;
         do
         {
             counterCount.set(0);
@@ -169,6 +169,15 @@ public final class CTestMediaDriver implements TestMediaDriver
             Tests.yield();
         }
         while (0 != counterCount.get() && System.currentTimeMillis() < deadlineMs);
+
+//        if (0 != counterCount.get())
+//        {
+//            System.out.println("Counter did not reach 0 within timeout: " + counterCount);
+//        }
+//        else
+//        {
+//            System.out.println("Timeout remaining " + (deadlineMs - System.currentTimeMillis()));
+//        }
     }
 
     public void cleanup()

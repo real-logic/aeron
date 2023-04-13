@@ -16,22 +16,34 @@
 package io.aeron.test.driver;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCounters;
 import io.aeron.CommonContext;
 import io.aeron.driver.*;
 import io.aeron.protocol.HeaderFlyweight;
+import io.aeron.samples.SamplesUtil;
+import io.aeron.test.Tests;
+import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
+import org.agrona.collections.MutableInteger;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.MappedByteBuffer;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.CncFileDescriptor.checkVersion;
+import static io.aeron.CncFileDescriptor.cncVersionOffset;
+import static io.aeron.CncFileDescriptor.createCountersMetaDataBuffer;
+import static io.aeron.CncFileDescriptor.createCountersValuesBuffer;
+import static io.aeron.CncFileDescriptor.createMetaDataBuffer;
+import static io.aeron.samples.SamplesUtil.mapExistingFileReadOnly;
 import static java.util.Collections.emptyMap;
 
 public final class CTestMediaDriver implements TestMediaDriver
@@ -86,6 +98,8 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     public void close()
     {
+        awaitSendersAndReceiversClosed();
+
         if (isClosed)
         {
             return;
@@ -133,6 +147,30 @@ public final class CTestMediaDriver implements TestMediaDriver
         }
     }
 
+    private void awaitSendersAndReceiversClosed()
+    {
+        final MutableInteger counterCount = new MutableInteger();
+        final CountersReader.MetaData metaData = (counterId, typeId, keyBuffer, label) ->
+        {
+            if (AeronCounters.DRIVER_RECEIVE_CHANNEL_STATUS_TYPE_ID == typeId ||
+                AeronCounters.DRIVER_SEND_CHANNEL_STATUS_TYPE_ID == typeId)
+            {
+                counterCount.increment();
+            }
+        };
+
+        final long deadlineMs = System.currentTimeMillis() + 5_000;
+        do
+        {
+            counterCount.set(0);
+            counters().forEach(metaData);
+
+            Tests.checkInterruptStatus();
+            Tests.yield();
+        }
+        while (0 != counterCount.get() && System.currentTimeMillis() < deadlineMs);
+    }
+
     public void cleanup()
     {
         if (NULL_FILE != stdoutFile)
@@ -150,9 +188,16 @@ public final class CTestMediaDriver implements TestMediaDriver
     {
         if (null == countersReader)
         {
-            aeronContext = new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()).conclude();
+            final File cncFile = new File(context.aeronDirectoryName(), "cnc.dat");
+            final MappedByteBuffer cncByteBuffer = mapExistingFileReadOnly(cncFile);
+            final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
+            final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
+
+            checkVersion(cncVersion);
+
             countersReader = new CountersReader(
-                aeronContext.countersMetaDataBuffer(), aeronContext.countersValuesBuffer());
+                createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
+                createCountersValuesBuffer(cncByteBuffer, cncMetaData));
         }
 
         return countersReader;

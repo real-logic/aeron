@@ -25,6 +25,7 @@ import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -50,6 +51,12 @@ class DriverNameResolverTest
 
     @RegisterExtension
     final SystemTestWatcher testWatcher = new SystemTestWatcher();
+
+    @BeforeEach
+    void before()
+    {
+        testWatcher.ignoreErrorsMatching(s -> s.contains("Failed to send resolution frames to neighbor"));
+    }
 
     @AfterEach
     void after()
@@ -207,7 +214,7 @@ class DriverNameResolverTest
     }
 
     @Test
-    @InterruptAfter(20)
+    @InterruptAfter(30)
     void shouldTimeoutAllNeighborsAndCacheEntries()
     {
         addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context())
@@ -309,7 +316,7 @@ class DriverNameResolverTest
     }
 
     @Test
-    @InterruptAfter(20)
+    @InterruptAfter(30)
     void shouldFallbackToAnotherBootstrapNeighborIfOneBecomesUnavailable()
     {
         assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());

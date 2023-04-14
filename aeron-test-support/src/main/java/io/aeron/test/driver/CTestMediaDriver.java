@@ -15,13 +15,13 @@
  */
 package io.aeron.test.driver;
 
-import io.aeron.Aeron;
 import io.aeron.AeronCounters;
 import io.aeron.CommonContext;
 import io.aeron.driver.*;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.test.SystemTestConfig;
 import io.aeron.test.Tests;
+import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
@@ -78,8 +78,8 @@ public final class CTestMediaDriver implements TestMediaDriver
     private final DriverOutputConsumer driverOutputConsumer;
     private final File stdoutFile;
     private final File stderrFile;
-    private Aeron.Context aeronContext;
-    private CountersReader countersReader;
+    private MappedByteBuffer cncByteBuffer = null;
+    private CountersReader countersReader = null;
     private boolean isClosed = false;
 
     private CTestMediaDriver(
@@ -110,9 +110,9 @@ public final class CTestMediaDriver implements TestMediaDriver
         Exception error = null;
         try
         {
-            if (null != aeronContext)
+            if (null == cncByteBuffer)
             {
-                aeronContext.close();
+                BufferUtil.free(cncByteBuffer);
             }
         }
         catch (final Exception ex)
@@ -194,7 +194,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         if (null == countersReader)
         {
             final File cncFile = new File(context.aeronDirectoryName(), "cnc.dat");
-            final MappedByteBuffer cncByteBuffer = mapExistingFileReadOnly(cncFile);
+            cncByteBuffer = mapExistingFileReadOnly(cncFile);
             final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
             final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
 

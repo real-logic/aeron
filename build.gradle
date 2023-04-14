@@ -922,6 +922,7 @@ project(':aeron-system-tests') {
 
 project(':aeron-test-support') {
     apply plugin: 'maven-publish'
+    apply plugin: 'signing'
 
     dependencies {
         api project(':aeron-client')
@@ -932,6 +933,11 @@ project(':aeron-test-support') {
         implementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
+    java {
+        withSourcesJar()
+        withJavadocJar()
+    }
+
     publishing {
         publications {
             aeronTestSupport(MavenPublication) {
@@ -939,14 +945,21 @@ project(':aeron-test-support') {
                 pom(projectPom)
             }
         }
+
+        repositories {
+            maven {
+                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                credentials {
+                    username = ossrhUsername
+                    password = ossrhPassword
+                }
+            }
+        }
     }
 
-    java {
-        withSourcesJar()
+    signing {
+        sign publishing.publications.aeronTestSupport
     }
-
-
-    javadoc.enabled = false
 }
 
 project(':aeron-all') {

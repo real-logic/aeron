@@ -15,14 +15,13 @@
  */
 package io.aeron.test.driver;
 
+import io.aeron.Aeron;
 import io.aeron.AeronCounters;
 import io.aeron.CommonContext;
 import io.aeron.driver.*;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.test.SystemTestConfig;
 import io.aeron.test.Tests;
-import org.agrona.BufferUtil;
-import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
@@ -33,17 +32,10 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.MappedByteBuffer;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.CncFileDescriptor.checkVersion;
-import static io.aeron.CncFileDescriptor.cncVersionOffset;
-import static io.aeron.CncFileDescriptor.createCountersMetaDataBuffer;
-import static io.aeron.CncFileDescriptor.createCountersValuesBuffer;
-import static io.aeron.CncFileDescriptor.createMetaDataBuffer;
-import static io.aeron.samples.SamplesUtil.mapExistingFileReadOnly;
 import static java.util.Collections.emptyMap;
 
 public final class CTestMediaDriver implements TestMediaDriver
@@ -78,8 +70,8 @@ public final class CTestMediaDriver implements TestMediaDriver
     private final DriverOutputConsumer driverOutputConsumer;
     private final File stdoutFile;
     private final File stderrFile;
-    private MappedByteBuffer cncByteBuffer = null;
-    private CountersReader countersReader = null;
+    private Aeron.Context aeronContext;
+    private CountersReader countersReader;
     private boolean isClosed = false;
 
     private CTestMediaDriver(
@@ -110,9 +102,9 @@ public final class CTestMediaDriver implements TestMediaDriver
         Exception error = null;
         try
         {
-            if (null == cncByteBuffer)
+            if (null != aeronContext)
             {
-                BufferUtil.free(cncByteBuffer);
+                aeronContext.close();
             }
         }
         catch (final Exception ex)
@@ -193,16 +185,9 @@ public final class CTestMediaDriver implements TestMediaDriver
     {
         if (null == countersReader)
         {
-            final File cncFile = new File(context.aeronDirectoryName(), "cnc.dat");
-            cncByteBuffer = mapExistingFileReadOnly(cncFile);
-            final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
-            final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
-
-            checkVersion(cncVersion);
-
+            aeronContext = new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()).conclude();
             countersReader = new CountersReader(
-                createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
-                createCountersValuesBuffer(cncByteBuffer, cncMetaData));
+                aeronContext.countersMetaDataBuffer(), aeronContext.countersValuesBuffer());
         }
 
         return countersReader;

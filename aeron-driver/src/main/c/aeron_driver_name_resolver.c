@@ -954,7 +954,7 @@ static int aeron_driver_name_resolver_send_neighbor_resolutions(aeron_driver_nam
 
             if (aeron_driver_name_resolver_do_send(resolver, frame_header, entry_offset, &neighbor->socket_addr) < 0)
             {
-                AERON_APPEND_ERR("%s", "Failed to send neighbour resolutions");
+                AERON_APPEND_ERR("%s", "Failed to send neighbor resolutions");
                 aeron_distinct_error_log_record(resolver->error_log, aeron_errcode(), aeron_errmsg());
             }
             else

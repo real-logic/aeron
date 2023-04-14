@@ -574,12 +574,12 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
 
         static void neighborAdded(final long nowMs, final InetSocketAddress address)
         {
-//            System.out.println(nowMs + " neighbour added: " + address);
+//            System.out.println(nowMs + " neighbor added: " + address);
         }
 
         static void neighborRemoved(final long nowMs, final InetSocketAddress address)
         {
-//            System.out.println(nowMs + " neighbour removed: " + address);
+//            System.out.println(nowMs + " neighbor removed: " + address);
         }
     }
 }

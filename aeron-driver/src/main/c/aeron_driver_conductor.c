@@ -3210,6 +3210,14 @@ int aeron_driver_conductor_on_add_network_publication(
         return -1;
     }
 
+    if (aeron_publication_params_validate_mtu_for_sndbuf(
+        &params, udp_channel->socket_sndbuf_length, conductor->context->os_buffer_lengths.default_so_sndbuf) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        aeron_udp_channel_delete(udp_channel);
+        return -1;
+    }
+
     aeron_client_t *client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id);
     if (NULL == client)
     {

@@ -20,7 +20,6 @@ import io.aeron.AeronCounters;
 import io.aeron.CommonContext;
 import io.aeron.driver.*;
 import io.aeron.protocol.HeaderFlyweight;
-import io.aeron.samples.SamplesUtil;
 import io.aeron.test.SystemTestConfig;
 import io.aeron.test.Tests;
 import org.agrona.DirectBuffer;

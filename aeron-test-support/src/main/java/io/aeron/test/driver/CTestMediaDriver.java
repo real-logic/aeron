@@ -16,12 +16,16 @@
 package io.aeron.test.driver;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCounters;
 import io.aeron.CommonContext;
 import io.aeron.driver.*;
 import io.aeron.protocol.HeaderFlyweight;
+import io.aeron.test.SystemTestConfig;
+import io.aeron.test.Tests;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
+import org.agrona.collections.MutableInteger;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.CountersReader;
@@ -86,6 +90,8 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     public void close()
     {
+        awaitSendersAndReceiversClosed();
+
         if (isClosed)
         {
             return;
@@ -131,6 +137,35 @@ public final class CTestMediaDriver implements TestMediaDriver
         {
             LangUtil.rethrowUnchecked(error);
         }
+    }
+
+    private void awaitSendersAndReceiversClosed()
+    {
+        if (!SystemTestConfig.DRIVER_AWAIT_COUNTER_CLOSE)
+        {
+            return;
+        }
+
+        final MutableInteger counterCount = new MutableInteger();
+        final CountersReader.MetaData metaData = (counterId, typeId, keyBuffer, label) ->
+        {
+            if (AeronCounters.DRIVER_RECEIVE_CHANNEL_STATUS_TYPE_ID == typeId ||
+                AeronCounters.DRIVER_SEND_CHANNEL_STATUS_TYPE_ID == typeId)
+            {
+                counterCount.increment();
+            }
+        };
+
+        final long deadlineMs = System.currentTimeMillis() + 15_000;
+        do
+        {
+            counterCount.set(0);
+            counters().forEach(metaData);
+
+            Tests.checkInterruptStatus();
+            Tests.yield();
+        }
+        while (0 != counterCount.get() && System.currentTimeMillis() < deadlineMs);
     }
 
     public void cleanup()

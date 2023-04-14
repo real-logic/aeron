@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class InterruptingTestCallback implements BeforeEachCallback, AfterEachCallback
 {
@@ -68,7 +69,13 @@ public class InterruptingTestCallback implements BeforeEachCallback, AfterEachCa
         {
             final Thread testThread = Thread.currentThread();
 
-            timer = SCHEDULER.schedule(testThread::interrupt, annotation.value(), annotation.unit());
+            long delayMs = annotation.unit().toMillis(annotation.value());
+            if (SystemTestConfig.DRIVER_AWAIT_COUNTER_CLOSE)
+            {
+                delayMs = Math.max(delayMs, SystemTestConfig.MIN_COUNTER_CLOSE_INTERRUPT_TIMEOUT_MS);
+            }
+
+            timer = SCHEDULER.schedule(testThread::interrupt, delayMs, TimeUnit.MILLISECONDS);
         }
     }
 }

@@ -71,6 +71,8 @@ int aeron_driver_uri_subscription_params(
 int aeron_publication_params_validate_mtu_for_sndbuf(
     aeron_driver_uri_publication_params_t *params,
     size_t endpoint_socket_sndbuf,
+    size_t channel_socket_sndbuf,
+    size_t context_socket_sndbuf,
     size_t os_default_socket_sndbuf);
 
 int aeron_subscription_params_validate_initial_window_for_rcvbuf(

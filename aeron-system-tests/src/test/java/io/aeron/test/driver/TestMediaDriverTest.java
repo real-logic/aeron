@@ -23,6 +23,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -34,8 +35,11 @@ class TestMediaDriverTest
     {
         final File aeronDirectory;
         final MediaDriver.Context context = new MediaDriver.Context().dirDeleteOnStart(true).dirDeleteOnShutdown(false);
-        try (TestMediaDriver driver = TestMediaDriver.launch(context, null))
+        try (TestMediaDriver driver = TestMediaDriver.launch(context, null);
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
+            Objects.requireNonNull(aeron);
+
             aeronDirectory = driver.context().aeronDirectory();
             assertNotNull(aeronDirectory);
 

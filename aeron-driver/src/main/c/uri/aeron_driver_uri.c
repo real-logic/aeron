@@ -372,27 +372,47 @@ int aeron_driver_uri_subscription_params(
     return 0;
 }
 
+static int aeron_publication_params_validate_mtu(size_t socket_sndbuf, size_t mtu_length, const char *name)
+{
+    if (socket_sndbuf < mtu_length)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "MTU greater than SO_SNDBUF for %s: mtu=%" PRIu64 " so-sndbuf=%" PRIu64,
+            name, mtu_length, socket_sndbuf);
+        return -1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 int aeron_publication_params_validate_mtu_for_sndbuf(
     aeron_driver_uri_publication_params_t *params,
     size_t endpoint_socket_sndbuf,
+    size_t channel_socket_sndbuf,
+    size_t context_socket_sndbuf,
     size_t os_default_socket_sndbuf)
 {
-    if (0 != endpoint_socket_sndbuf && endpoint_socket_sndbuf < params->mtu_length)
+    if (0 != endpoint_socket_sndbuf)
     {
-        AERON_SET_ERR(
-            EINVAL,
-            "MTU greater than SO_SNDBUF for channel: mtu=%" PRIu64 " so-sndbuf=%" PRIu64,
-            params->mtu_length, endpoint_socket_sndbuf);
-        return -1;
+        return aeron_publication_params_validate_mtu(endpoint_socket_sndbuf, params->mtu_length, "endpoint");
     }
 
-    if (0 == endpoint_socket_sndbuf && os_default_socket_sndbuf < params->mtu_length)
+    if (0 != channel_socket_sndbuf)
     {
-        AERON_SET_ERR(
-            EINVAL,
-            "MTU greater than SO_SNDBUF for channel: mtu=%" PRIu64 " so-sndbuf=%" PRIu64 " (OS default)",
-            params->mtu_length, endpoint_socket_sndbuf);
-        return -1;
+        return aeron_publication_params_validate_mtu(channel_socket_sndbuf, params->mtu_length, "channel");
+    }
+
+    if (0 != context_socket_sndbuf)
+    {
+        return aeron_publication_params_validate_mtu(context_socket_sndbuf, params->mtu_length, "context");
+    }
+
+    if (0 != os_default_socket_sndbuf)
+    {
+        return aeron_publication_params_validate_mtu(os_default_socket_sndbuf, params->mtu_length, "os default");
     }
 
     return 0;

@@ -1911,7 +1911,10 @@ int aeron_driver_conductor_update_and_check_ats_status(
 }
 
 aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_endpoint(
-    aeron_driver_conductor_t *conductor, aeron_udp_channel_t *channel, int64_t registration_id)
+    aeron_driver_conductor_t *conductor,
+    aeron_udp_channel_t *channel,
+    aeron_driver_uri_publication_params_t *params,
+    int64_t registration_id)
 {
     aeron_send_channel_endpoint_t *endpoint = aeron_driver_conductor_find_send_channel_endpoint_by_tag(
         conductor, channel->tag_id);
@@ -1965,6 +1968,17 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 
     if (NULL == endpoint)
     {
+        if (aeron_publication_params_validate_mtu_for_sndbuf(
+            params,
+            0,
+            channel->socket_sndbuf_length,
+            conductor->context->socket_sndbuf,
+            conductor->context->os_buffer_lengths.default_so_sndbuf) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error_cleanup;
+        }
+
         int ensure_capacity_result = 0;
 
         AERON_ARRAY_ENSURE_CAPACITY(
@@ -1998,6 +2012,17 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
     }
     else
     {
+        if (aeron_publication_params_validate_mtu_for_sndbuf(
+            params,
+            endpoint->conductor_fields.socket_sndbuf,
+            channel->socket_sndbuf_length,
+            conductor->context->socket_sndbuf,
+            conductor->context->os_buffer_lengths.default_so_sndbuf) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error_cleanup;
+        }
+
         if (aeron_driver_conductor_validate_channel_buffer_length(
             AERON_URI_SOCKET_RCVBUF_KEY,
             channel->socket_rcvbuf_length,
@@ -3210,14 +3235,6 @@ int aeron_driver_conductor_on_add_network_publication(
         return -1;
     }
 
-    if (aeron_publication_params_validate_mtu_for_sndbuf(
-        &params, udp_channel->socket_sndbuf_length, conductor->context->os_buffer_lengths.default_so_sndbuf) < 0)
-    {
-        AERON_APPEND_ERR("%s", "");
-        aeron_udp_channel_delete(udp_channel);
-        return -1;
-    }
-
     aeron_client_t *client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id);
     if (NULL == client)
     {
@@ -3227,7 +3244,7 @@ int aeron_driver_conductor_on_add_network_publication(
     }
 
     aeron_send_channel_endpoint_t *endpoint = aeron_driver_conductor_get_or_add_send_channel_endpoint(
-        conductor, udp_channel, correlation_id);
+        conductor, udp_channel, &params, correlation_id);
     if (NULL == endpoint)
     {
         return -1;
@@ -3251,13 +3268,6 @@ int aeron_driver_conductor_on_add_network_publication(
     if (AERON_SEND_CHANNEL_ENDPOINT_STATUS_CLOSING == endpoint->conductor_fields.status)
     {
         AERON_SET_ERR(EINVAL, "%s", "send_channel_endpoint found in CLOSING state");
-        return -1;
-    }
-
-    if (aeron_publication_params_validate_mtu_for_sndbuf(
-        &params, endpoint->conductor_fields.socket_sndbuf, conductor->context->os_buffer_lengths.default_so_sndbuf) < 0)
-    {
-        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 

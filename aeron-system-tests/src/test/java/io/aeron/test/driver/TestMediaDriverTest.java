@@ -35,11 +35,8 @@ class TestMediaDriverTest
     {
         final File aeronDirectory;
         final MediaDriver.Context context = new MediaDriver.Context().dirDeleteOnStart(true).dirDeleteOnShutdown(false);
-        try (TestMediaDriver driver = TestMediaDriver.launch(context, null);
-            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        try (TestMediaDriver driver = TestMediaDriver.launch(context, null))
         {
-            Objects.requireNonNull(aeron);
-
             aeronDirectory = driver.context().aeronDirectory();
             assertNotNull(aeronDirectory);
 

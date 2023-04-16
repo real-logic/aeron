@@ -90,12 +90,12 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     public void close()
     {
-        awaitSendersAndReceiversClosed();
-
         if (isClosed)
         {
             return;
         }
+
+        awaitSendersAndReceiversClosed();
 
         isClosed = true;
 

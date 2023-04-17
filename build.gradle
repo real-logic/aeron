@@ -192,14 +192,19 @@ subprojects {
         options.compilerArgs.addAll(['-Xlint:all', '-Werror']) // Enable all warnings and treat them as errors
     }
 
-    tasks.withType(Test).configureEach {
+    tasks.withType(Test).configureEach { test ->
         if (buildJavaVersion >= 9) {
             jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/java.util.zip=ALL-UNNAMED')
         }
+        testClassesDirs = testing.suites.test.sources.output.classesDirs
+        classpath = testing.suites.test.sources.runtimeClasspath
 
         useJUnitPlatform {
-            excludeTags 'slow', 'topology'
+            if (!test.name.equals('slowTest') && !test.name.equals('bindingsTest') && !test.name.equals('topologyTest'))
+            {
+                excludeTags 'any()'
+            }
         }
 
         testLogging {
@@ -1090,6 +1095,6 @@ tasks.named('dependencyUpdates').configure {
 }
 
 wrapper {
-    gradleVersion = '7.6'
+    gradleVersion = '8.1'
     distributionType = 'ALL'
 }

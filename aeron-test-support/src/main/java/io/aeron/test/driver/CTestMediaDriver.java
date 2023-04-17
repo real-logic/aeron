@@ -185,7 +185,10 @@ public final class CTestMediaDriver implements TestMediaDriver
     {
         if (null == countersReader)
         {
-            aeronContext = new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()).conclude();
+            aeronContext = new Aeron.Context()
+                .aeronDirectoryName(context.aeronDirectoryName())
+                .keepAliveIntervalNs(1_000_000_000)
+                .conclude();
             countersReader = new CountersReader(
                 aeronContext.countersMetaDataBuffer(), aeronContext.countersValuesBuffer());
         }

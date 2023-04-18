@@ -510,6 +510,11 @@ int aeron_publication_image_insert_packet(
     size_t length,
     struct sockaddr_storage *addr)
 {
+    if (aeron_sub_wrap_i32(term_id, image->initial_term_id) < 0)
+    {
+        return 0;
+    }
+
     const bool is_heartbeat = aeron_publication_image_is_heartbeat(buffer, length);
     const int64_t packet_position = aeron_logbuffer_compute_position(
         term_id, term_offset, image->position_bits_to_shift, image->initial_term_id);

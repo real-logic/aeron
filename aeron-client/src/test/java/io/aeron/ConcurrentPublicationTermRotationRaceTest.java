@@ -32,6 +32,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -91,7 +92,7 @@ class ConcurrentPublicationTermRotationRaceTest
 
             final CountDownLatch startLatch = new CountDownLatch(NUM_PUBLISHERS + 1);
             final AtomicReference<Throwable> errors = new AtomicReference<>();
-            final LongHashSet threadIds = new LongHashSet();
+            final LongHashSet publisherIds = new LongHashSet();
             final ArrayList<MessagePublisher> publishers = new ArrayList<>();
             for (int i = 0; i < NUM_PUBLISHERS; i++)
             {
@@ -100,7 +101,7 @@ class ConcurrentPublicationTermRotationRaceTest
                 new TryClaimMessagePublisher(publication, 7777, "try-claim", startLatch, errors);
 
                 publishers.add(publisher);
-                threadIds.add(publisher.getId());
+                publisherIds.add(publisher.publisherId);
                 publisher.start();
             }
 
@@ -112,7 +113,7 @@ class ConcurrentPublicationTermRotationRaceTest
                 (buffer, offset, length, header) ->
                 {
                     final long threadId = buffer.getLong(offset, LITTLE_ENDIAN);
-                    assertTrue(threadIds.contains(threadId));
+                    assertTrue(publisherIds.contains(threadId));
                     msgCount.increment();
                 });
             final Supplier<String> errorMessageSupplier = () -> "missing messages: expected=" + NUM_MESSAGES +
@@ -144,10 +145,12 @@ class ConcurrentPublicationTermRotationRaceTest
 
     abstract static class MessagePublisher extends Thread
     {
+        private static final AtomicLong NEXT_ID = new AtomicLong(Integer.MAX_VALUE);
         private final CountDownLatch startLatch;
         private final ConcurrentPublication publication;
         private final int messageSize;
         private final AtomicReference<Throwable> errors;
+        final long publisherId = NEXT_ID.getAndIncrement();
         long sendCount;
 
         MessagePublisher(
@@ -172,13 +175,12 @@ class ConcurrentPublicationTermRotationRaceTest
             {
                 startLatch.await();
 
-                final long threadId = getId();
                 final int numMessages = NUM_MESSAGES / NUM_PUBLISHERS;
 
                 for (int i = 0; i < numMessages; i++)
                 {
                     long result;
-                    while ((result = publish(publication, threadId, messageSize)) < 0)
+                    while ((result = publish(publication, publisherId, messageSize)) < 0)
                     {
                         if (Publication.CLOSED == result ||
                             Publication.MAX_POSITION_EXCEEDED == result ||

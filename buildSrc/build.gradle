@@ -2,9 +2,12 @@ repositories {
     mavenCentral()
 }
 
+def asciidoctorjVersion = '2.5.8'
+def jgitVersion = '5.13.1.202206130422-r'
+
 dependencies {
-    implementation 'org.asciidoctor:asciidoctorj:2.5.5'
-    implementation 'org.eclipse.jgit:org.eclipse.jgit:5.13.1.202206130422-r'
+    implementation "org.asciidoctor:asciidoctorj:${asciidoctorjVersion}"
+    implementation "org.eclipse.jgit:org.eclipse.jgit:${jgitVersion}"
 }
 
 tasks.withType(JavaCompile).configureEach {

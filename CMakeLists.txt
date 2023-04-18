@@ -245,8 +245,8 @@ if (AERON_TESTS)
 
     FetchContent_Declare(
         gmock
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.12.1.zip
-        URL_MD5 2648d4138129812611cf6b6b4b497a3b)
+        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-1.13.0.zip
+        URL_MD5 a1279c6fb5bf7d4a5e0d0b2a4adb39ac)
 
     FetchContent_MakeAvailable(gmock)
 endif ()

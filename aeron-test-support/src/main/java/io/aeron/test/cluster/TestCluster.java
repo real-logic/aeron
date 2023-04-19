@@ -27,7 +27,9 @@ import io.aeron.archive.client.RecordingSignalConsumer;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.ClusterBackup;
+import io.aeron.cluster.ClusterBackupEventsListener;
 import io.aeron.cluster.ClusterControl;
+import io.aeron.cluster.ClusterMember;
 import io.aeron.cluster.ClusterMembership;
 import io.aeron.cluster.ClusterTool;
 import io.aeron.cluster.ConsensusModule;
@@ -565,7 +567,8 @@ public final class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .credentialsSupplier(credentialsSupplier)
             .sourceType(sourceType)
-            .deleteDirOnStart(cleanStart);
+            .deleteDirOnStart(cleanStart)
+            .eventsListener(new BackupListener());
 
         backupNode = new TestBackupNode(index, context, dataCollector);
 
@@ -2193,6 +2196,43 @@ public final class TestCluster implements AutoCloseable
         int newLeaderEvent()
         {
             return newLeaderEvent.get();
+        }
+    }
+
+    private static class BackupListener implements ClusterBackupEventsListener
+    {
+        public void onBackupQuery()
+        {
+        }
+
+        public void onPossibleFailure(final Exception ex)
+        {
+        }
+
+        public void onBackupResponse(
+            final ClusterMember[] clusterMembers,
+            final ClusterMember logSourceMember,
+            final List<RecordingLog.Snapshot> snapshotsToRetrieve)
+        {
+            for (final ClusterMember clusterMember : clusterMembers)
+            {
+                if (clusterMember.isLeader())
+                {
+                    return;
+                }
+            }
+
+            throw new RuntimeException("No member has isLeader flag set");
+        }
+
+        public void onUpdatedRecordingLog(
+            final RecordingLog recordingLog,
+            final List<RecordingLog.Snapshot> snapshotsRetrieved)
+        {
+        }
+
+        public void onLiveLogProgress(final long recordingId, final long recordingPosCounterId, final long logPosition)
+        {
         }
     }
 }

@@ -38,11 +38,11 @@ public interface ClusterBackupEventsListener
      * Backup response was received for a backup query.
      *
      * @param clusterMembers in the backup response.
-     * @param leaderMember in the backup response.
+     * @param logSourceMember to be used to replicate data from.
      * @param snapshotsToRetrieve snapshots to be retrieved.
      */
     void onBackupResponse(
-        ClusterMember[] clusterMembers, ClusterMember leaderMember, List<RecordingLog.Snapshot> snapshotsToRetrieve);
+        ClusterMember[] clusterMembers, ClusterMember logSourceMember, List<RecordingLog.Snapshot> snapshotsToRetrieve);
 
     /**
      * Updated recording log.

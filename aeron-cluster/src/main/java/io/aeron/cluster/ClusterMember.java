@@ -1356,6 +1356,20 @@ public final class ClusterMember
     }
 
     /**
+     * Run through the list of cluster members and set the isLeader field based on the supplied leaderMemberId.
+     *
+     * @param clusterMembers list of cluster members.
+     * @param leaderMemberId memberId of the current leader.
+     */
+    public static void setIsLeader(final ClusterMember[] clusterMembers, final int leaderMemberId)
+    {
+        for (final ClusterMember clusterMember : clusterMembers)
+        {
+            clusterMember.isLeader(clusterMember.id() == leaderMemberId);
+        }
+    }
+
+    /**
      * {@inheritDoc}
      */
     public String toString()

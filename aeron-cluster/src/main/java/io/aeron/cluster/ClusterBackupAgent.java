@@ -540,6 +540,8 @@ public final class ClusterBackupAgent implements Agent
             leaderCommitPositionCounterId = commitPositionCounterId;
 
             clusterMembers = ClusterMember.parse(backupResponseDecoder.clusterMembers());
+            ClusterMember.setIsLeader(clusterMembers, leaderMemberId);
+
             logSupplierMember = ClusterMember.findMember(clusterMembers, memberId);
             logSupplierMember.leadershipTermId(logLeadershipTermId);
 

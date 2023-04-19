@@ -30,6 +30,7 @@ import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.RecordingSignalEventDecoder;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.BackupResponseDecoder;
 import io.aeron.cluster.codecs.ChallengeDecoder;
@@ -412,6 +413,9 @@ public final class ClusterBackupAgent implements Agent
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                final int memberId = BackupResponseDecoder.memberIdNullValue() != backupResponseDecoder.memberId() ?
+                    backupResponseDecoder.memberId() : NULL_VALUE;
+
                 onBackupResponse(
                     backupResponseDecoder.correlationId(),
                     backupResponseDecoder.logRecordingId(),
@@ -421,7 +425,7 @@ public final class ClusterBackupAgent implements Agent
                     backupResponseDecoder.lastTermBaseLogPosition(),
                     backupResponseDecoder.commitPositionCounterId(),
                     backupResponseDecoder.leaderMemberId(),
-                    backupResponseDecoder.memberId(),
+                    memberId,
                     backupResponseDecoder);
                 break;
 
@@ -459,7 +463,14 @@ public final class ClusterBackupAgent implements Agent
         final int memberId,
         final BackupResponseDecoder backupResponseDecoder)
     {
-        if (!logSourceValidator.isAcceptable(leaderMemberId, memberId))
+        if (NULL_VALUE == memberId)
+        {
+            ctx.errorHandler().onError(new ClusterEvent(
+                "onBackupResponse(): memberId is null, retrying for compatible node"));
+            state(RESET_BACKUP, epochClock.time());
+            return;
+        }
+        else if (!logSourceValidator.isAcceptable(leaderMemberId, memberId))
         {
             consensusPublicationGroup.closeAndExcludeCurrent();
             state(RESET_BACKUP, epochClock.time());

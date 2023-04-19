@@ -363,7 +363,7 @@ public final class ClusterBackup implements AutoCloseable
         /**
          * Default source type to receive log traffic from.
          */
-        public static final String CLUSTER_BACKUP_SOURCE_TYPE_DEFAULT = SourceType.FOLLOWER.name();
+        public static final String CLUSTER_BACKUP_SOURCE_TYPE_DEFAULT = SourceType.ANY.name();
 
         /**
          * The value of system property {@link #CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME} if set, otherwise it will

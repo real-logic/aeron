@@ -1806,6 +1806,7 @@ public final class AeronCluster implements AutoCloseable
                     null != egressSubscription ? egressSubscription.tryResolveChannelEndpointPort() : "<unknown>";
                 final TimeoutException ex = new TimeoutException(
                     "cluster connect timeout: step=" + step +
+                    " messageTimeout=" + ctx.messageTimeoutNs() + "ns" +
                     " ingressChannel=" + ctx.ingressChannel() +
                     " ingressEndpoints=" + ctx.ingressEndpoints() +
                     " ingressPublication=" + ingressPublication +
@@ -1839,7 +1840,7 @@ public final class AeronCluster implements AutoCloseable
             egressSubscription = ctx.aeron().getSubscription(egressRegistrationId);
             if (null != egressSubscription)
             {
-                this.egressPoller = new EgressPoller(egressSubscription, FRAGMENT_LIMIT);
+                egressPoller = new EgressPoller(egressSubscription, FRAGMENT_LIMIT);
                 step(0);
             }
         }

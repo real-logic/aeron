@@ -2229,7 +2229,8 @@ public final class AeronArchive implements AutoCloseable
     {
         if (deadlineNs - nanoClock.nanoTime() < 0)
         {
-            throw new TimeoutException(errorMessage + " - correlationId=" + correlationId);
+            throw new TimeoutException(
+                errorMessage + " - correlationId=" + correlationId + " messageTimeout=" + messageTimeoutNs + "ns");
         }
 
         if (Thread.currentThread().isInterrupted())

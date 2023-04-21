@@ -3890,6 +3890,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private void replicateStandbySnapshots()
     {
         try (StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
+            ctx.clusterMemberId(),
             ctx.archiveContext(),
             recordingLog,
             ctx.serviceCount(),

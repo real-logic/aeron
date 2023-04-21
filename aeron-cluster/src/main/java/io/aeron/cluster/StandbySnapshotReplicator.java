@@ -33,6 +33,7 @@ import static io.aeron.archive.status.RecordingPos.NULL_RECORDING_ID;
 
 class StandbySnapshotReplicator implements AutoCloseable
 {
+    private final int memberId;
     private final AeronArchive archive;
     private final RecordingLog recordingLog;
     private final int serviceCount;
@@ -46,6 +47,7 @@ class StandbySnapshotReplicator implements AutoCloseable
     private boolean isComplete = false;
 
     StandbySnapshotReplicator(
+        final int memberId,
         final AeronArchive archive,
         final RecordingLog recordingLog,
         final int serviceCount,
@@ -53,6 +55,7 @@ class StandbySnapshotReplicator implements AutoCloseable
         final int archiveControlStreamId,
         final String replicationChannel)
     {
+        this.memberId = memberId;
         this.archive = archive;
         this.recordingLog = recordingLog;
         this.serviceCount = serviceCount;
@@ -62,6 +65,7 @@ class StandbySnapshotReplicator implements AutoCloseable
     }
 
     static StandbySnapshotReplicator newInstance(
+        final int memberId,
         final AeronArchive.Context archiveCtx,
         final RecordingLog recordingLog,
         final int serviceCount,
@@ -71,7 +75,13 @@ class StandbySnapshotReplicator implements AutoCloseable
     {
         final AeronArchive archive = AeronArchive.connect(archiveCtx.clone().errorHandler(null));
         final StandbySnapshotReplicator standbySnapshotReplicator = new StandbySnapshotReplicator(
-            archive, recordingLog, serviceCount, archiveControlChannel, archiveControlStreamId, replicationChannel);
+            memberId,
+            archive,
+            recordingLog,
+            serviceCount,
+            archiveControlChannel,
+            archiveControlStreamId,
+            replicationChannel);
         archive.context().recordingSignalConsumer(standbySnapshotReplicator::onSignal);
         return standbySnapshotReplicator;
     }
@@ -116,6 +126,7 @@ class StandbySnapshotReplicator implements AutoCloseable
                 replicationChannel,
                 progressTimeoutNs,
                 progressIntervalNs);
+            recordingReplication.setEventListener(this::logReplicationEnded);
 
             for (int i = 0, n = currentSnapshotToReplicate.recordingLogEntries.size(); i < n; i++)
             {
@@ -239,5 +250,16 @@ class StandbySnapshotReplicator implements AutoCloseable
 
             return endpoint.compareTo(o.endpoint);
         }
+    }
+
+    private void logReplicationEnded(
+        final String controlUri,
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final long position,
+        final boolean hasSynced)
+    {
+        ConsensusModuleAgent.logReplicationEnded(
+            memberId, "STANDBY_SNAPSHOT", controlUri, srcRecordingId, dstRecordingId, position, hasSynced);
     }
 }

@@ -39,6 +39,7 @@ import static io.aeron.agent.ClusterEventCode.DYNAMIC_JOIN_STATE_CHANGE;
 import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;
 import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
 import static io.aeron.agent.ClusterEventCode.REPLAY_NEW_LEADERSHIP_TERM;
+import static io.aeron.agent.ClusterEventCode.REPLICATION_ENDED;
 import static io.aeron.agent.ClusterEventCode.REQUEST_VOTE;
 import static io.aeron.agent.ClusterEventCode.SERVICE_ACK;
 import static io.aeron.agent.ClusterEventCode.STATE_CHANGE;
@@ -46,6 +47,7 @@ import static io.aeron.agent.ClusterEventCode.STOP_CATCHUP;
 import static io.aeron.agent.ClusterEventCode.TERMINATION_ACK;
 import static io.aeron.agent.ClusterEventCode.TERMINATION_POSITION;
 import static io.aeron.agent.ClusterEventCode.TRUNCATE_LOG_ENTRY;
+import static io.aeron.agent.ClusterEventEncoder.replicationEndedLength;
 import static io.aeron.agent.ClusterEventEncoder.serviceAckLength;
 import static io.aeron.agent.ClusterEventEncoder.terminationAckLength;
 import static io.aeron.agent.ClusterEventEncoder.terminationPositionLength;
@@ -73,6 +75,7 @@ import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TAIL_POSITIO
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ClusterEventLoggerTest
 {
@@ -814,6 +817,53 @@ class ClusterEventLoggerTest
         final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: SERVICE_ACK " +
             "\\[56/56]: memberId=222 logPosition=128 timestamp=98273423 timeUnit=MILLISECONDS " +
             "ackId=98234 relevantId=8998 serviceId=982374";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
+
+    @Test
+    void logReplicationEnded()
+    {
+        final int memberId = 222;
+        final String purpose = "STANDBY_SNAPSHOT";
+        final String channel = "aeron:udp?endpoint=localhost:9090";
+        final long srcRecordingId = 234;
+        final long dstRecordingId = 8435;
+        final long position = 982342;
+        final boolean hasSynced = true;
+        final int offset = 64;
+        final TimeUnit timeUnit = MILLISECONDS;
+
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        logger.logReplicationEnded(
+            memberId, purpose, channel, srcRecordingId, dstRecordingId, position, hasSynced);
+
+        verifyLogHeader(
+            logBuffer,
+            offset,
+            REPLICATION_ENDED.toEventCodeId(),
+            replicationEndedLength(purpose, channel),
+            replicationEndedLength(purpose, channel));
+
+        final int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+        assertEquals(srcRecordingId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        assertEquals(dstRecordingId, logBuffer.getLong(index + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(position, logBuffer.getLong(index + (2 * SIZE_OF_LONG), LITTLE_ENDIAN));
+        assertEquals(memberId, logBuffer.getInt(index + (3 * SIZE_OF_LONG), LITTLE_ENDIAN));
+        assertEquals(1, logBuffer.getByte(index + (3 * SIZE_OF_LONG) + (SIZE_OF_INT)));
+        final int purposeIndex = index + (3 * SIZE_OF_LONG) + (SIZE_OF_INT) + (SIZE_OF_BYTE);
+        assertEquals(purpose, logBuffer.getStringAscii(purposeIndex));
+        final int channelIndex = purposeIndex + SIZE_OF_INT + purpose.length();
+        assertEquals(channel, logBuffer.getStringAscii(channelIndex, LITTLE_ENDIAN));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectReplicationEnded(
+            REPLICATION_ENDED, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern =
+            "\\[[0-9]+\\.[0-9]+] CLUSTER: REPLICATION_ENDED \\[86/86]: memberId=222 " +
+            "purpose=STANDBY_SNAPSHOT channel=aeron:udp\\?endpoint=localhost:9090 srcRecordingId=234 " +
+            "dstRecordingId=8435 position=982342 hasSynced=true";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }

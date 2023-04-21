@@ -217,7 +217,6 @@ public final class RecordingPos
      */
     public static String getSourceIdentity(final CountersReader counters, final int counterId)
     {
-
         if (counters.getCounterState(counterId) == RECORD_ALLOCATED &&
             counters.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID)
         {
@@ -238,10 +237,9 @@ public final class RecordingPos
      */
     public static boolean isActive(final CountersReader counters, final int counterId, final long recordingId)
     {
-
+        final int recordingIdOffset = metaDataOffset(counterId) + KEY_OFFSET + RECORDING_ID_OFFSET;
         return counters.getCounterState(counterId) == RECORD_ALLOCATED &&
             counters.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID &&
-            counters.metaDataBuffer()
-                .getLong(CountersReader.metaDataOffset(counterId) + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId;
+            counters.metaDataBuffer().getLong(recordingIdOffset) == recordingId;
     }
 }

@@ -164,7 +164,7 @@ class StandbySnapshotReplicator implements AutoCloseable
 
     private ArrayList<SnapshotReplicationEntry> computeSnapshotsToReplicate()
     {
-        final Map<String, List<RecordingLog.Entry>> snapshotsByEndpoint = recordingLog.latestRemoteSnapshots(
+        final Map<String, List<RecordingLog.Entry>> snapshotsByEndpoint = recordingLog.latestStandbySnapshots(
             serviceCount);
 
         final ArrayList<SnapshotReplicationEntry> s;

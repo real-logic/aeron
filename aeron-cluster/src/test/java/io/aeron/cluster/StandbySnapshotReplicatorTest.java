@@ -91,11 +91,11 @@ class StandbySnapshotReplicatorTest
             recordingLog.appendSnapshot(1, 0, 0, logPositionOldest, 1_000_000_000L, SERVICE_ID);
             recordingLog.appendSnapshot(2, 0, 0, logPositionOldest, 1_000_000_000L, 0);
 
-            recordingLog.appendRemoteSnapshot(1, 0, 0, logPositionNewest, 1_000_000_000L, SERVICE_ID, endpoint0);
-            recordingLog.appendRemoteSnapshot(2, 0, 0, logPositionNewest, 1_000_000_000L, 0, endpoint0);
+            recordingLog.appendStandbySnapshot(1, 0, 0, logPositionNewest, 1_000_000_000L, SERVICE_ID, endpoint0);
+            recordingLog.appendStandbySnapshot(2, 0, 0, logPositionNewest, 1_000_000_000L, 0, endpoint0);
 
-            recordingLog.appendRemoteSnapshot(1, 0, 0, 2000L, 1_000_000_000L, SERVICE_ID, endpoint1);
-            recordingLog.appendRemoteSnapshot(2, 0, 0, 2000L, 1_000_000_000L, 0, endpoint1);
+            recordingLog.appendStandbySnapshot(1, 0, 0, 2000L, 1_000_000_000L, SERVICE_ID, endpoint1);
+            recordingLog.appendStandbySnapshot(2, 0, 0, 2000L, 1_000_000_000L, 0, endpoint1);
 
             final long nowNs = 2_000_000_000L;
 
@@ -159,8 +159,8 @@ class StandbySnapshotReplicatorTest
                 MultipleRecordingReplication.class);
             MockedStatic<AeronArchive> staticMockArchive = mockStatic(AeronArchive.class))
         {
-            recordingLog.appendRemoteSnapshot(1, 0, 0, 1000, 1_000_000_000L, SERVICE_ID, endpoint0);
-            recordingLog.appendRemoteSnapshot(2, 0, 0, 1000, 1_000_000_000L, 0, endpoint0);
+            recordingLog.appendStandbySnapshot(1, 0, 0, 1000, 1_000_000_000L, SERVICE_ID, endpoint0);
+            recordingLog.appendStandbySnapshot(2, 0, 0, 1000, 1_000_000_000L, 0, endpoint0);
 
             staticMockReplication
                 .when(() -> MultipleRecordingReplication.newInstance(
@@ -223,13 +223,13 @@ class StandbySnapshotReplicatorTest
             recordingLog.appendSnapshot(1, 0, 0, localSnapshotLogPosition, 1_000_000_000L, SERVICE_ID);
             recordingLog.appendSnapshot(2, 0, 0, localSnapshotLogPosition, 1_000_000_000L, 0);
 
-            recordingLog.appendRemoteSnapshot(
+            recordingLog.appendStandbySnapshot(
                 1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint0);
-            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint0);
+            recordingLog.appendStandbySnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint0);
 
-            recordingLog.appendRemoteSnapshot(
+            recordingLog.appendStandbySnapshot(
                 1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint1);
-            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint1);
+            recordingLog.appendStandbySnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint1);
         }
 
         try (RecordingLog recordingLog = new RecordingLog(clusterDir, true);
@@ -282,13 +282,13 @@ class StandbySnapshotReplicatorTest
             recordingLog.appendSnapshot(1, 0, 0, localSnapshotLogPosition, 1_000_000_000L, SERVICE_ID);
             recordingLog.appendSnapshot(2, 0, 0, localSnapshotLogPosition, 1_000_000_000L, 0);
 
-            recordingLog.appendRemoteSnapshot(
+            recordingLog.appendStandbySnapshot(
                 1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint0);
-            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint0);
+            recordingLog.appendStandbySnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint0);
 
-            recordingLog.appendRemoteSnapshot(
+            recordingLog.appendStandbySnapshot(
                 1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint1);
-            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint1);
+            recordingLog.appendStandbySnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint1);
         }
 
         try (RecordingLog recordingLog = new RecordingLog(clusterDir, true);
@@ -341,13 +341,13 @@ class StandbySnapshotReplicatorTest
             recordingLog.appendSnapshot(1, 0, 0, localSnapshotLogPosition, 1_000_000_000L, SERVICE_ID);
             recordingLog.appendSnapshot(2, 0, 0, localSnapshotLogPosition, 1_000_000_000L, 0);
 
-            recordingLog.appendRemoteSnapshot(
+            recordingLog.appendStandbySnapshot(
                 1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint0);
-            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint0);
+            recordingLog.appendStandbySnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint0);
 
-            recordingLog.appendRemoteSnapshot(
+            recordingLog.appendStandbySnapshot(
                 1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint1);
-            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint1);
+            recordingLog.appendStandbySnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint1);
         }
 
         try (RecordingLog recordingLog = new RecordingLog(clusterDir, true);
@@ -399,13 +399,13 @@ class StandbySnapshotReplicatorTest
             recordingLog.appendSnapshot(1, 0, 0, localSnapshotLogPosition, 1_000_000_000L, SERVICE_ID);
             recordingLog.appendSnapshot(2, 0, 0, localSnapshotLogPosition, 1_000_000_000L, 0);
 
-            recordingLog.appendRemoteSnapshot(
+            recordingLog.appendStandbySnapshot(
                 1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint0);
-            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint0);
+            recordingLog.appendStandbySnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint0);
 
-            recordingLog.appendRemoteSnapshot(
+            recordingLog.appendStandbySnapshot(
                 1, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, SERVICE_ID, endpoint1);
-            recordingLog.appendRemoteSnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint1);
+            recordingLog.appendStandbySnapshot(2, 0, 0, standbySnapshotLogPosition, 1_000_000_000L, 0, endpoint1);
         }
 
         try (RecordingLog recordingLog = new RecordingLog(clusterDir, true);

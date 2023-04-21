@@ -916,15 +916,15 @@ class RecordingLogTest
     }
 
     @Test
-    void shouldInsertRemoteSnapshotInRecordingLog(@TempDir final File tempDir)
+    void shouldInsertStandbySnapshotInRecordingLog(@TempDir final File tempDir)
     {
         try (RecordingLog log = new RecordingLog(tempDir, true))
         {
             log.appendSnapshot(1, 1, 0, 1000, 1_000_000_000L, SERVICE_ID);
             log.appendSnapshot(2, 1, 0, 1000, 1_000_000_000L, 0);
 
-            log.appendRemoteSnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost.aeron.io:20002");
-            log.appendRemoteSnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost.aeron.io:20002");
+            log.appendStandbySnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost.aeron.io:20002");
+            log.appendStandbySnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost.aeron.io:20002");
 
             log.appendSnapshot(5, 3, 2000, 3000, 1_000_000_000L, SERVICE_ID);
             log.appendSnapshot(6, 3, 2000, 3000, 1_000_000_000L, 0);
@@ -942,15 +942,15 @@ class RecordingLogTest
     }
 
     @Test
-    void shouldNotIncludeRemoteSnapshotInRecoveryPlan(@TempDir final File tempDir)
+    void shouldNotIncludeStandbySnapshotInRecoveryPlan(@TempDir final File tempDir)
     {
         try (RecordingLog log = new RecordingLog(tempDir, true))
         {
             log.appendSnapshot(1, 1, 0, 1000, 1_000_000_000L, SERVICE_ID);
             log.appendSnapshot(2, 1, 0, 1000, 1_000_000_000L, 0);
 
-            log.appendRemoteSnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost.aeron.io:20002");
-            log.appendRemoteSnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost.aeron.io:20002");
+            log.appendStandbySnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost.aeron.io:20002");
+            log.appendStandbySnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost.aeron.io:20002");
         }
 
         final AeronArchive mockArchive = mock(AeronArchive.class);
@@ -970,24 +970,24 @@ class RecordingLogTest
     }
 
     @Test
-    void shouldGetLatestRemoteSnapshotsGroupedByEndpoint(@TempDir final File tempDir)
+    void shouldGetLatestStandbySnapshotsGroupedByEndpoint(@TempDir final File tempDir)
     {
         try (RecordingLog log = new RecordingLog(tempDir, true))
         {
             log.appendSnapshot(1, 1, 0, 1000, 1_000_000_000L, SERVICE_ID);
             log.appendSnapshot(2, 1, 0, 1000, 1_000_000_000L, 0);
 
-            log.appendRemoteSnapshot(5, 2, 500, 800, 1_000_000_000L, SERVICE_ID, "remotehost0.aeron.io:20002");
-            log.appendRemoteSnapshot(6, 2, 500, 800, 1_000_000_000L, 0, "remotehost0.aeron.io:20002");
+            log.appendStandbySnapshot(5, 2, 500, 800, 1_000_000_000L, SERVICE_ID, "remotehost0.aeron.io:20002");
+            log.appendStandbySnapshot(6, 2, 500, 800, 1_000_000_000L, 0, "remotehost0.aeron.io:20002");
 
-            log.appendRemoteSnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost0.aeron.io:20002");
-            log.appendRemoteSnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost0.aeron.io:20002");
+            log.appendStandbySnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost0.aeron.io:20002");
+            log.appendStandbySnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost0.aeron.io:20002");
 
-            log.appendRemoteSnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost1.aeron.io:20002");
-            log.appendRemoteSnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost1.aeron.io:20002");
+            log.appendStandbySnapshot(3, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost1.aeron.io:20002");
+            log.appendStandbySnapshot(4, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost1.aeron.io:20002");
 
-            log.appendRemoteSnapshot(10, 2, 3000, 4000, 1_000_000_000L, 0, "remotehost0.aeron.io:20002");
-            log.appendRemoteSnapshot(11, 2, 3000, 4000, 1_000_000_000L, 0, "remotehost1.aeron.io:20002");
+            log.appendStandbySnapshot(10, 2, 3000, 4000, 1_000_000_000L, 0, "remotehost0.aeron.io:20002");
+            log.appendStandbySnapshot(11, 2, 3000, 4000, 1_000_000_000L, 0, "remotehost1.aeron.io:20002");
         }
 
         try (RecordingLog log = new RecordingLog(tempDir, false))
@@ -1000,16 +1000,16 @@ class RecordingLogTest
             assertLogEntry(log, 4, ENTRY_TYPE_STANDBY_SNAPSHOT, "remotehost1.aeron.io:20002");
 
             final int serviceCount = 1;
-            final Map<String, List<RecordingLog.Entry>> remoteSnapshots = log.latestRemoteSnapshots(serviceCount);
-            assertNotNull(remoteSnapshots);
+            final Map<String, List<RecordingLog.Entry>> standbySnapshots = log.latestStandbySnapshots(serviceCount);
+            assertNotNull(standbySnapshots);
 
-            assertEquals(2, remoteSnapshots.get("remotehost0.aeron.io:20002").size());
-            assertEquals(2, remoteSnapshots.get("remotehost1.aeron.io:20002").size());
+            assertEquals(2, standbySnapshots.get("remotehost0.aeron.io:20002").size());
+            assertEquals(2, standbySnapshots.get("remotehost1.aeron.io:20002").size());
         }
     }
 
     @Test
-    void shouldInvalidateLatestSnapshotIgnoringRemoteSnapshots(@TempDir final File tempDir)
+    void shouldInvalidateLatestSnapshotIgnoringStandbySnapshots(@TempDir final File tempDir)
     {
         try (RecordingLog log = new RecordingLog(tempDir, true))
         {
@@ -1021,19 +1021,19 @@ class RecordingLogTest
             log.appendSnapshot(4, 0, 2, 2000, 1_000_000_000L, SERVICE_ID);
             log.appendSnapshot(5, 0, 2, 2000, 1_000_000_000L, 0);
 
-            log.appendRemoteSnapshot(15, 0, 500, 800, 1_000_000_000L, SERVICE_ID, "remotehost0.aeron.io:20002");
-            log.appendRemoteSnapshot(16, 0, 500, 800, 1_000_000_000L, 0, "remotehost0.aeron.io:20002");
+            log.appendStandbySnapshot(15, 0, 500, 800, 1_000_000_000L, SERVICE_ID, "remotehost0.aeron.io:20002");
+            log.appendStandbySnapshot(16, 0, 500, 800, 1_000_000_000L, 0, "remotehost0.aeron.io:20002");
         }
 
         try (RecordingLog log = new RecordingLog(tempDir, false))
         {
             assertEquals(4, requireNonNull(log.getLatestSnapshot(SERVICE_ID)).recordingId);
-            final Map<String, List<RecordingLog.Entry>> preInvalidate = log.latestRemoteSnapshots(2);
+            final Map<String, List<RecordingLog.Entry>> preInvalidate = log.latestStandbySnapshots(2);
 
             log.invalidateLatestSnapshot();
 
             assertEquals(2, requireNonNull(log.getLatestSnapshot(SERVICE_ID)).recordingId);
-            assertEquals(preInvalidate, log.latestRemoteSnapshots(2));
+            assertEquals(preInvalidate, log.latestStandbySnapshots(2));
         }
     }
 

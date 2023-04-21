@@ -1192,7 +1192,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    void onRemoteSnapshot(
+    void onStandbySnapshot(
         final long recordingId,
         final long leadershipTermId,
         final long termBaseLogPosition,
@@ -1218,7 +1218,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             archiveEndpoint,
             endOfGroup);
 
-        recordingLog.appendRemoteSnapshot(
+        recordingLog.appendStandbySnapshot(
             recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId, archiveEndpoint);
 
         if (endOfGroup)

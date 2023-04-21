@@ -1227,7 +1227,7 @@ public final class RecordingLog implements AutoCloseable
      * @param serviceId           for which the snapshot is recorded.
      * @param archiveEndpoint     endpoint for the archive where
      */
-    public void appendRemoteSnapshot(
+    public void appendStandbySnapshot(
         final long recordingId,
         final long leadershipTermId,
         final long termBaseLogPosition,
@@ -1362,23 +1362,23 @@ public final class RecordingLog implements AutoCloseable
      * @param serviceCount      to ensure that we have a complete set of snapshots.
      * @return                  collection of snapshots.
      */
-    public Map<String, List<Entry>> latestRemoteSnapshots(final int serviceCount)
+    public Map<String, List<Entry>> latestStandbySnapshots(final int serviceCount)
     {
-        final Map<String, List<Entry>> latestRemoteSnapshots = new Object2ObjectHashMap<>();
-        final Map<String, NavigableMap<Long, List<Entry>>> remoteSnapshots = new Object2ObjectHashMap<>();
+        final Map<String, List<Entry>> latestStandbySnapshots = new Object2ObjectHashMap<>();
+        final Map<String, NavigableMap<Long, List<Entry>>> standbySnapshots = new Object2ObjectHashMap<>();
 
         for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
             final Entry entry = entriesCache.get(i);
             if (ENTRY_TYPE_STANDBY_SNAPSHOT == entry.type)
             {
-                remoteSnapshots.computeIfAbsent(entry.archiveEndpoint, (s) -> new TreeMap<>())
+                standbySnapshots.computeIfAbsent(entry.archiveEndpoint, (s) -> new TreeMap<>())
                     .computeIfAbsent(entry.logPosition, (l) -> new ArrayList<>())
                     .add(entry);
             }
         }
 
-        remoteSnapshots.forEach(
+        standbySnapshots.forEach(
             (k, v) ->
             {
                 while (!v.isEmpty())
@@ -1387,7 +1387,7 @@ public final class RecordingLog implements AutoCloseable
                     final int snapshotCount = serviceCount + 1;
                     if (lastEntry.getValue().size() == snapshotCount)
                     {
-                        latestRemoteSnapshots.put(k, lastEntry.getValue());
+                        latestStandbySnapshots.put(k, lastEntry.getValue());
                         break;
                     }
                     else
@@ -1397,7 +1397,7 @@ public final class RecordingLog implements AutoCloseable
                 }
             });
 
-        return latestRemoteSnapshots;
+        return latestStandbySnapshots;
     }
 
     /**

@@ -51,7 +51,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
     private final BackupQueryDecoder backupQueryDecoder = new BackupQueryDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
     private final HeartbeatRequestDecoder heartbeatRequestDecoder = new HeartbeatRequestDecoder();
-    private final StandbySnapshotDecoder remoteSnapshotDecoder = new StandbySnapshotDecoder();
+    private final StandbySnapshotDecoder standbySnapshotDecoder = new StandbySnapshotDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -381,26 +381,26 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
 
             case StandbySnapshotDecoder.TEMPLATE_ID:
             {
-                remoteSnapshotDecoder.wrap(
+                standbySnapshotDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
                 final Iterator<StandbySnapshotDecoder.SnapshotsDecoder> iterator =
-                    remoteSnapshotDecoder.snapshots().iterator();
+                    standbySnapshotDecoder.snapshots().iterator();
 
                 while (iterator.hasNext())
                 {
-                    final StandbySnapshotDecoder.SnapshotsDecoder remoteSnapshot = iterator.next();
-                    consensusModuleAgent.onRemoteSnapshot(
-                        remoteSnapshot.recordingId(),
-                        remoteSnapshot.leadershipTermId(),
-                        remoteSnapshot.termBaseLogPosition(),
-                        remoteSnapshot.logPosition(),
-                        remoteSnapshot.timestamp(),
-                        remoteSnapshot.serviceId(),
-                        remoteSnapshot.archiveEndpoint(),
+                    final StandbySnapshotDecoder.SnapshotsDecoder standbySnapshot = iterator.next();
+                    consensusModuleAgent.onStandbySnapshot(
+                        standbySnapshot.recordingId(),
+                        standbySnapshot.leadershipTermId(),
+                        standbySnapshot.termBaseLogPosition(),
+                        standbySnapshot.logPosition(),
+                        standbySnapshot.timestamp(),
+                        standbySnapshot.serviceId(),
+                        standbySnapshot.archiveEndpoint(),
                         !iterator.hasNext());
                 }
             }

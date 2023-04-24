@@ -32,6 +32,7 @@ import static org.mockito.Mockito.*;
 class SnapshotReplicationTest
 {
     private final AeronArchive archive = mock(AeronArchive.class);
+    private final AeronArchive.Context context = new AeronArchive.Context().controlRequestChannel("aeron:ipc");
     private final String srcChannel = "aeron:udp?endpoint=coming_from:8888";
     private final String replicationChannel = "aeron:udp?endpoint=going_to:8888";
     private final int srcStreamId = 892374;
@@ -82,9 +83,9 @@ class SnapshotReplicationTest
             srcStreamId,
             srcChannel,
             replicationParams);
-        verify(archive, atLeast(0)).context();
 
         snapshotReplication.poll(nowNs);
+        ignoreArchiveContextVerification();
         verifyNoMoreInteractions(archive);
 
         snapshotReplication.onSignal(replicationId0, newRecordingId0, 23423, SYNC);
@@ -93,6 +94,7 @@ class SnapshotReplicationTest
 
         snapshotReplication.onSignal(replicationId0, newRecordingId0, 23423, REPLICATE_END);
         snapshotReplication.poll(nowNs);
+        ignoreArchiveContextVerification();
         verifyNoMoreInteractions(archive);
 
         snapshotReplication.poll(nowNs);
@@ -113,6 +115,7 @@ class SnapshotReplicationTest
 
         snapshotReplication.onSignal(replicationId1, newRecordingId1, 23423, REPLICATE_END);
         snapshotReplication.poll(nowNs);
+        ignoreArchiveContextVerification();
         verifyNoMoreInteractions(archive);
 
         assertTrue(snapshotReplication.isComplete());
@@ -170,14 +173,19 @@ class SnapshotReplicationTest
         snapshots.forEach(snapshotReplication::addSnapshot);
 
         snapshotReplication.poll(nowNs);
+        ignoreArchiveContextVerification();
 
         verify(archive).replicate(anyLong(), anyInt(), any(), any());
 
         snapshotReplication.close();
         verify(archive).tryStopReplication(anyLong());
-        verify(archive, atLeast(0)).context();
 
         snapshotReplication.close();
         verifyNoMoreInteractions(archive);
+    }
+
+    private void ignoreArchiveContextVerification()
+    {
+        verify(archive, atLeast(0)).context();
     }
 }

@@ -75,7 +75,6 @@ import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TAIL_POSITIO
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ClusterEventLoggerTest
 {

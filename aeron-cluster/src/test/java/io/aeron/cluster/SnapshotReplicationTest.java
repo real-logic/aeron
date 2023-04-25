@@ -85,7 +85,6 @@ class SnapshotReplicationTest
             replicationParams);
 
         snapshotReplication.poll(nowNs);
-        ignoreArchiveContextVerification();
         verifyNoMoreInteractions(archive);
 
         snapshotReplication.onSignal(replicationId0, newRecordingId0, 23423, SYNC);
@@ -94,7 +93,6 @@ class SnapshotReplicationTest
 
         snapshotReplication.onSignal(replicationId0, newRecordingId0, 23423, REPLICATE_END);
         snapshotReplication.poll(nowNs);
-        ignoreArchiveContextVerification();
         verifyNoMoreInteractions(archive);
 
         snapshotReplication.poll(nowNs);
@@ -115,7 +113,6 @@ class SnapshotReplicationTest
 
         snapshotReplication.onSignal(replicationId1, newRecordingId1, 23423, REPLICATE_END);
         snapshotReplication.poll(nowNs);
-        ignoreArchiveContextVerification();
         verifyNoMoreInteractions(archive);
 
         assertTrue(snapshotReplication.isComplete());
@@ -173,7 +170,6 @@ class SnapshotReplicationTest
         snapshots.forEach(snapshotReplication::addSnapshot);
 
         snapshotReplication.poll(nowNs);
-        ignoreArchiveContextVerification();
 
         verify(archive).replicate(anyLong(), anyInt(), any(), any());
 
@@ -182,10 +178,5 @@ class SnapshotReplicationTest
 
         snapshotReplication.close();
         verifyNoMoreInteractions(archive);
-    }
-
-    private void ignoreArchiveContextVerification()
-    {
-        verify(archive, atLeast(0)).context();
     }
 }

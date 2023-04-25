@@ -33,7 +33,6 @@ class MultipleRecordingReplication implements AutoCloseable
     private final Long2LongHashMap recordingsCompleted = new Long2LongHashMap(Aeron.NULL_VALUE);
     private final long progressTimeoutNs;
     private final long progressIntervalNs;
-    private final String dstControlChannel;
     private int recordingCursor = 0;
     private RecordingReplication recordingReplication = null;
     private EventListener eventListener = null;
@@ -47,7 +46,6 @@ class MultipleRecordingReplication implements AutoCloseable
         final long replicationProgressIntervalNs)
     {
         this.archive = archive;
-        this.dstControlChannel = this.archive.context().controlRequestChannel();
         this.srcControlStreamId = srcControlStreamId;
         this.srcControlChannel = srcControlChannel;
         this.replicationChannel = replicationChannel;

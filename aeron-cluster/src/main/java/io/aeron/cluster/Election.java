@@ -910,6 +910,15 @@ class Election
             {
                 if (replicationCommitPosition >= appendPosition)
                 {
+                    ConsensusModuleAgent.logReplicationEnded(
+                        thisMemberId(),
+                        "ELECTION",
+                        logReplication.srcArchiveChannel(),
+                        logReplication.recordingId(),
+                        leaderRecordingId,
+                        logReplication.position(),
+                        logReplication.hasSynced());
+
                     appendPosition = logReplication.position();
                     cleanupLogReplication();
                     updateRecordingLogForReplication(

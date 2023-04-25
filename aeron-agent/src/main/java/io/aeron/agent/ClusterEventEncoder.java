@@ -659,4 +659,49 @@ final class ClusterEventEncoder
 
         return logHeaderLength + bodyLength;
     }
+
+    static int replicationEndedLength(final String purpose, final String controlUri)
+    {
+        return (3 * SIZE_OF_LONG) + (SIZE_OF_INT) + (SIZE_OF_BYTE) + (SIZE_OF_INT + purpose.length()) +
+            (SIZE_OF_INT + controlUri.length());
+    }
+
+    public static int encodeReplicationEnded(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final int memberId,
+        final String purpose,
+        final String channel,
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final long position,
+        final boolean hasSynced)
+    {
+        final int logHeaderLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int bodyOffset = offset + logHeaderLength;
+        int bodyLength = 0;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, srcRecordingId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, dstRecordingId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, position, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, memberId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+
+        encodingBuffer.putByte(bodyOffset + bodyLength, (byte)(hasSynced ? 1 : 0));
+        bodyLength += SIZE_OF_BYTE;
+
+        bodyLength += encodingBuffer.putStringAscii(bodyOffset + bodyLength, purpose, LITTLE_ENDIAN);
+        bodyLength += encodeTrailingString(
+            encodingBuffer, bodyOffset + bodyLength, captureLength - bodyLength, channel);
+
+        return logHeaderLength + bodyLength;
+    }
 }

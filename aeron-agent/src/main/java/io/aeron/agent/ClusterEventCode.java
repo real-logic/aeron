@@ -121,7 +121,12 @@ public enum ClusterEventCode implements EventCode
     /**
      * Event when a nodes consensus module receives an ack from a service.
      */
-    SERVICE_ACK(19, ClusterEventDissector::dissectServiceAck);
+    SERVICE_ACK(19, ClusterEventDissector::dissectServiceAck),
+
+    /**
+     * Event when a replication has ended.
+     */
+    REPLICATION_ENDED(20, ClusterEventDissector::dissectReplicationEnded);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

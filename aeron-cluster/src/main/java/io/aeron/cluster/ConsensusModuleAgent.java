@@ -2227,6 +2227,17 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
     }
 
+    static void logReplicationEnded(
+        final int memberId,
+        final String purpose,
+        final String controlUri,
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final long position,
+        final boolean hasSynced)
+    {
+    }
+
     private void startLogRecording(final String channel, final int streamId, final SourceLocation sourceLocation)
     {
         try

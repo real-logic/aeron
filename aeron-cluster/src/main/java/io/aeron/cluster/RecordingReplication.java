@@ -32,6 +32,7 @@ final class RecordingReplication implements AutoCloseable
     private final long stopPosition;
     private final long progressCheckTimeoutNs;
     private final long progressCheckIntervalNs;
+    private final String srcArchiveChannel;
 
     private int recordingPositionCounterId = NULL_COUNTER_ID;
     private long recordingId = NULL_VALUE;
@@ -64,6 +65,7 @@ final class RecordingReplication implements AutoCloseable
         this.progressCheckIntervalNs = progressCheckIntervalNs;
         this.progressDeadlineNs = nowNs + progressCheckTimeoutNs;
         this.progressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
+        this.srcArchiveChannel = srcArchiveChannel;
 
         replicationId = archive.replicate(
             srcRecordingId,
@@ -229,6 +231,11 @@ final class RecordingReplication implements AutoCloseable
         }
 
         return false;
+    }
+
+    String srcArchiveChannel()
+    {
+        return srcArchiveChannel;
     }
 
     public String toString()

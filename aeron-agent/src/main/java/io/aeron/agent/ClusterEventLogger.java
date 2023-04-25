@@ -796,4 +796,54 @@ public final class ClusterEventLogger
             }
         }
     }
+
+    /**
+     * Log a replication end event.
+     *
+     * @param memberId          memberId running the replication.
+     * @param purpose           the reason for the replication.
+     * @param channel           the channel used to connect to the source archive.
+     * @param srcRecordingId    source recording id.
+     * @param dstRecordingId    destination recording id.
+     * @param position          the position where the recording ended.
+     * @param hasSynced         was the sync event been received for the replication.
+     */
+    public void logReplicationEnded(
+        final int memberId,
+        final String purpose,
+        final String channel,
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final long position,
+        final boolean hasSynced)
+    {
+        final int length = ClusterEventEncoder.replicationEndedLength(purpose, channel);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(REPLICATION_ENDED.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                ClusterEventEncoder.encodeReplicationEnded(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    memberId,
+                    purpose,
+                    channel,
+                    srcRecordingId,
+                    dstRecordingId,
+                    position,
+                    hasSynced);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
 }

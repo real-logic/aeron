@@ -331,4 +331,20 @@ class ClusterInterceptor
         }
     }
 
+    static class ReplicationEnded
+    {
+        @Advice.OnMethodEnter
+        static void logReplicationEnded(
+            final int memberId,
+            final String purpose,
+            final String channel,
+            final long srcRecordingId,
+            final long dstRecordingId,
+            final long position,
+            final boolean hasSynced)
+        {
+            LOGGER.logReplicationEnded(memberId, purpose, channel, srcRecordingId, dstRecordingId, position, hasSynced);
+        }
+    }
+
 }

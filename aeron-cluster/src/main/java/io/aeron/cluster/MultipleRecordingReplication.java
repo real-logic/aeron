@@ -35,6 +35,7 @@ class MultipleRecordingReplication implements AutoCloseable
     private final long progressIntervalNs;
     private int recordingCursor = 0;
     private RecordingReplication recordingReplication = null;
+    private EventListener eventListener = null;
 
     MultipleRecordingReplication(
         final AeronArchive archive,
@@ -50,6 +51,23 @@ class MultipleRecordingReplication implements AutoCloseable
         this.replicationChannel = replicationChannel;
         this.progressTimeoutNs = replicationProgressTimeoutNs;
         this.progressIntervalNs = replicationProgressIntervalNs;
+    }
+
+    static MultipleRecordingReplication newInstance(
+        final AeronArchive archive,
+        final int srcControlStreamId,
+        final String srcControlChannel,
+        final String replicationChannel,
+        final long replicationProgressTimeoutNs,
+        final long replicationProgressIntervalNs)
+    {
+        return new MultipleRecordingReplication(
+            archive,
+            srcControlStreamId,
+            srcControlChannel,
+            replicationChannel,
+            replicationProgressTimeoutNs,
+            replicationProgressIntervalNs);
     }
 
     void addRecording(final long srcRecordingId, final long dstRecordingId, final long stopPosition)
@@ -76,9 +94,17 @@ class MultipleRecordingReplication implements AutoCloseable
             recordingReplication.poll(nowNs);
             if (recordingReplication.hasReplicationEnded())
             {
+                final RecordingInfo pending = recordingsPending.get(recordingCursor);
+
+                onReplicationEnded(
+                    srcControlChannel,
+                    pending.srcRecordingId,
+                    recordingReplication.recordingId(),
+                    recordingReplication.position(),
+                    recordingReplication.hasSynced());
+
                 if (recordingReplication.hasSynced())
                 {
-                    final RecordingInfo pending = recordingsPending.get(recordingCursor);
                     recordingsCompleted.put(pending.srcRecordingId, recordingReplication.recordingId());
                     recordingCursor++;
 
@@ -145,7 +171,7 @@ class MultipleRecordingReplication implements AutoCloseable
             nowNs);
     }
 
-    private static final class RecordingInfo
+    static final class RecordingInfo
     {
         private final long srcRecordingId;
         private final long dstRecordingId;
@@ -157,5 +183,34 @@ class MultipleRecordingReplication implements AutoCloseable
             this.dstRecordingId = dstRecordingId;
             this.stopPosition = stopPosition;
         }
+    }
+
+    private void onReplicationEnded(
+        final String srcArchiveControlChannel,
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final long position,
+        final boolean hasSynced)
+    {
+        if (null != eventListener)
+        {
+            eventListener.onReplicationEnded(
+                srcArchiveControlChannel, srcRecordingId, dstRecordingId, position, hasSynced);
+        }
+    }
+
+    void setEventListener(final EventListener eventListener)
+    {
+        this.eventListener = eventListener;
+    }
+
+    interface EventListener
+    {
+        void onReplicationEnded(
+            String controlUri,
+            long srcRecordingId,
+            long dstRecordingId,
+            long position,
+            boolean hasSynced);
     }
 }

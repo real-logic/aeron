@@ -234,6 +234,13 @@ public class ClusterComponentLogger implements ComponentLogger
             ClusterInterceptor.ServiceAck.class,
             "logOnServiceAck");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            REPLICATION_ENDED,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.ReplicationEnded.class,
+            "logReplicationEnded");
+
         return tempBuilder;
     }
 

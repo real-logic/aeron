@@ -250,7 +250,7 @@ public class DriverComponentLogger implements ComponentLogger
             NAME_RESOLUTION_RESOLVE,
             "DefaultNameResolver",
             DriverInterceptor.NameResolution.Resolve.class,
-            "resolveHook");
+            "logResolve");
 
         return tempBuilder;
     }

@@ -42,8 +42,6 @@ public class DefaultNameResolver implements NameResolver
         {
         }
 
-        resolveHook(this.getClass().getSimpleName(), name, resolvedAddress);
-
         return resolvedAddress;
     }
 
@@ -53,8 +51,24 @@ public class DefaultNameResolver implements NameResolver
      * @param resolverName      used to handle the resolution.
      * @param hostname          that was resolved.
      * @param resolvedAddress   the resulting address or null if it can't be resolved.
+     * @deprecated Replaced with {@link DefaultNameResolver#logResolve(String, long, String, InetAddress)}.
+     * @see #logResolve(String, long, String, InetAddress)
      */
+    @Deprecated
     public void resolveHook(final String resolverName, final String hostname, final InetAddress resolvedAddress)
+    {
+    }
+
+    /**
+     * Name resolution hook, useful for logging.
+     *
+     * @param resolverName    used to handle the resolution.
+     * @param durationNs      of the resolution query in nanoseconds.
+     * @param hostname        that was resolved.
+     * @param resolvedAddress the resulting address or null if it can't be resolved.
+     */
+    public static void logResolve(
+        final String resolverName, final long durationNs, final String hostname, final InetAddress resolvedAddress)
     {
     }
 }

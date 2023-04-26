@@ -22,7 +22,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
@@ -30,8 +32,10 @@ import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventEncoder.untetheredSubscriptionStateChangeLength;
+import static io.aeron.agent.DriverEventLogger.MAX_HOST_NAME_LENGTH;
 import static io.aeron.agent.DriverEventLogger.toEventCodeId;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
+import static io.aeron.test.Tests.generateStringWithSuffix;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -272,5 +276,46 @@ class DriverEventLoggerTest
         assertEquals(5656, logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(4, logBuffer.getInt(
             encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
+    }
+
+    @Test
+    void logResolve() throws UnknownHostException
+    {
+        final int recordOffset = 64;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+        final DriverEventCode eventCode = NAME_RESOLUTION_RESOLVE;
+
+        final int offset = 10;
+        final String resolverName = "test";
+        final long durationNs = TimeUnit.DAYS.toNanos(1);
+        final String hostName = generateStringWithSuffix("very-l", "0", 1000);
+        final String expectedHostName =
+            generateStringWithSuffix("very-l", "0", MAX_HOST_NAME_LENGTH - 6 - 3) + "...";
+        final InetAddress address = InetAddress.getLocalHost();
+        final int captureLength = SIZE_OF_LONG + trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
+            trailingStringLength(hostName, MAX_HOST_NAME_LENGTH) +
+            inetAddressLength(address);
+
+        logger.logResolve(eventCode, resolverName, durationNs, hostName, address);
+
+        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(eventCode), captureLength, captureLength);
+
+        int index = encodedMsgOffset(recordOffset) + LOG_HEADER_LENGTH;
+        assertEquals(resolverName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT + resolverName.length();
+
+        assertEquals(durationNs, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+
+        assertEquals(expectedHostName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT + expectedHostName.length();
+
+        final byte[] addressBytes = address.getAddress();
+        assertEquals(addressBytes.length, logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        for (int i = 0; i < addressBytes.length; i++)
+        {
+            assertEquals(addressBytes[i], logBuffer.getByte(index + i));
+        }
     }
 }

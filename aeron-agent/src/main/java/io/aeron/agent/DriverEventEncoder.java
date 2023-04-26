@@ -244,14 +244,21 @@ final class DriverEventEncoder
         final int length,
         final int captureLength,
         final String resolverName,
+        final long durationNs,
         final String hostName,
         final InetAddress inetAddress)
     {
         int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
         encodedLength += encodeTrailingString(
             encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, resolverName);
+
+        encodingBuffer.putLong(offset + encodedLength, durationNs, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
         encodedLength += encodeTrailingString(
             encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, hostName);
+
         encodeInetAddress(encodingBuffer, offset + encodedLength, inetAddress);
     }
 }

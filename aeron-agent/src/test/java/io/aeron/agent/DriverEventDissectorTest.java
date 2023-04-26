@@ -635,6 +635,7 @@ class DriverEventDissectorTest
     void dissectResolve() throws UnknownHostException
     {
         final String resolver = "testResolver";
+        final long durationNs = 32167;
         final String hostname = "localhost";
         final InetAddress address = InetAddress.getByName("127.0.0.1");
 
@@ -642,18 +643,20 @@ class DriverEventDissectorTest
             trailingStringLength(hostname, MAX_HOST_NAME_LENGTH) +
             inetAddressLength(address);
 
-        DriverEventEncoder.encodeResolve(buffer, 0, length, length, resolver, hostname, address);
+        DriverEventEncoder.encodeResolve(buffer, 0, length, length, resolver, durationNs, hostname, address);
         final StringBuilder builder = new StringBuilder();
         DriverEventDissector.dissectResolve(NAME_RESOLUTION_RESOLVE, buffer, 0, builder);
 
         assertThat(builder.toString(), endsWith(
-            "DRIVER: NAME_RESOLUTION_RESOLVE [37/37]: resolver=testResolver hostname=localhost address=127.0.0.1"));
+            "DRIVER: NAME_RESOLUTION_RESOLVE [37/37]: " +
+            "resolver=testResolver durationNs=32167 hostname=localhost address=127.0.0.1"));
     }
 
     @Test
     void dissectResolveNullAddress()
     {
         final String resolver = "myResolver";
+        final long durationNs = -1;
         final String hostname = "some-host";
         final InetAddress address = null;
 
@@ -661,12 +664,13 @@ class DriverEventDissectorTest
             trailingStringLength(hostname, MAX_HOST_NAME_LENGTH) +
             inetAddressLength(address);
 
-        DriverEventEncoder.encodeResolve(buffer, 0, length, length, resolver, hostname, address);
+        DriverEventEncoder.encodeResolve(buffer, 0, length, length, resolver, durationNs, hostname, address);
         final StringBuilder builder = new StringBuilder();
         DriverEventDissector.dissectResolve(NAME_RESOLUTION_RESOLVE, buffer, 0, builder);
 
         assertThat(builder.toString(), endsWith(
-            "DRIVER: NAME_RESOLUTION_RESOLVE [31/31]: resolver=myResolver hostname=some-host address=unknown-address"));
+            "DRIVER: NAME_RESOLUTION_RESOLVE [31/31]: " +
+            "resolver=myResolver durationNs=-1 hostname=some-host address=unknown-address"));
     }
 
     @Test
@@ -679,7 +683,8 @@ class DriverEventDissectorTest
         final String expected = "DRIVER: NAME_RESOLUTION_RESOLVE [522/522]: resolver=testResolver." +
             "this.is.a.really.long.string.to.force.truncation.000000000000000000000000000000000000000000000000000000" +
             "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
-            "0000000000000000000000000000000... hostname=testResolver.this.is.a.really.long.string.to.force.truncati" +
+            "0000000000000000000000000000000... durationNs=555 " +
+            "hostname=testResolver.this.is.a.really.long.string.to.force.truncati" +
             "on.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
             "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000... address=127" +
             ".0.0.1";
@@ -690,7 +695,7 @@ class DriverEventDissectorTest
             trailingStringLength(longString, MAX_HOST_NAME_LENGTH) +
             inetAddressLength(address);
 
-        DriverEventEncoder.encodeResolve(buffer, 0, length, length, longString, longString, address);
+        DriverEventEncoder.encodeResolve(buffer, 0, length, length, longString, 555, longString, address);
         final StringBuilder builder = new StringBuilder();
         DriverEventDissector.dissectResolve(NAME_RESOLUTION_RESOLVE, buffer, 0, builder);
 

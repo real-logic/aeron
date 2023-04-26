@@ -18,6 +18,8 @@ package io.aeron.driver.status;
 import io.aeron.driver.DutyCycleTracker;
 import org.agrona.concurrent.status.AtomicCounter;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Duty cycle tracker that detects when a cycle exceeds a threshold and tracks max cycle time reporting both through
  * counters.
@@ -31,17 +33,17 @@ public class DutyCycleStallTracker extends DutyCycleTracker
     /**
      * Create a tracker to track max cycle time and excesses of a threshold.
      *
-     * @param maxCycleTime counter for tracking.
+     * @param maxCycleTime                    counter for tracking.
      * @param cycleTimeThresholdExceededCount counter for tracking.
-     * @param cycleTimeThresholdNs to use for tracking excesses.
+     * @param cycleTimeThresholdNs            to use for tracking excesses.
      */
     public DutyCycleStallTracker(
         final AtomicCounter maxCycleTime,
         final AtomicCounter cycleTimeThresholdExceededCount,
         final long cycleTimeThresholdNs)
     {
-        this.maxCycleTime = maxCycleTime;
-        this.cycleTimeThresholdExceededCount = cycleTimeThresholdExceededCount;
+        this.maxCycleTime = requireNonNull(maxCycleTime);
+        this.cycleTimeThresholdExceededCount = requireNonNull(cycleTimeThresholdExceededCount);
         this.cycleTimeThresholdNs = cycleTimeThresholdNs;
     }
 
@@ -80,11 +82,14 @@ public class DutyCycleStallTracker extends DutyCycleTracker
      */
     public void reportMeasurement(final long durationNs)
     {
-        maxCycleTime.proposeMaxOrdered(durationNs);
-
-        if (durationNs > cycleTimeThresholdNs)
+        if (!maxCycleTime.isClosed())
         {
-            cycleTimeThresholdExceededCount.incrementOrdered();
+            maxCycleTime.proposeMaxOrdered(durationNs);
+
+            if (durationNs > cycleTimeThresholdNs)
+            {
+                cycleTimeThresholdExceededCount.incrementOrdered();
+            }
         }
     }
 }

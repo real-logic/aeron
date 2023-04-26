@@ -22,6 +22,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.driver.DutyCycleTracker;
 import io.aeron.driver.status.DutyCycleStallTracker;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
@@ -117,9 +118,24 @@ public final class Archive implements AutoCloseable
     {
         loadPropertiesFiles(args);
 
-        try (Archive ignore = launch())
+        final ShutdownSignalBarrier shutdownSignalBarrier = new ShutdownSignalBarrier();
+        final Archive.Context ctx = new Context();
+        ctx.errorHandler(
+            throwable ->
+            {
+                if (throwable instanceof AgentTerminationException)
+                {
+                    shutdownSignalBarrier.signal();
+                }
+                else if (AeronException.isFatal(throwable))
+                {
+                    shutdownSignalBarrier.signal();
+                }
+            });
+
+        try (Archive ignore = launch(ctx))
         {
-            new ShutdownSignalBarrier().await();
+            shutdownSignalBarrier.await();
             System.out.println("Shutdown Archive...");
         }
     }
@@ -1137,9 +1153,9 @@ public final class Archive implements AutoCloseable
                 aeron = Aeron.connect(
                     new Aeron.Context()
                         .aeronDirectoryName(aeronDirectoryName)
-                        .errorHandler(errorHandler)
                         .epochClock(epochClock)
                         .nanoClock(nanoClock)
+                        .errorHandler(RethrowingErrorHandler.INSTANCE)
                         .driverAgentInvoker(mediaDriverAgentInvoker)
                         .useConductorAgentInvoker(true)
                         .subscriberErrorHandler(RethrowingErrorHandler.INSTANCE)
@@ -1166,10 +1182,6 @@ public final class Archive implements AutoCloseable
             if (null == countedErrorHandler)
             {
                 countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
-                if (ownsAeronClient)
-                {
-                    aeron.context().errorHandler(countedErrorHandler);
-                }
             }
 
             if (null == threadFactory)

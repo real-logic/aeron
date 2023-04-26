@@ -1415,8 +1415,6 @@ final class ClientConductor implements Agent
         return workCount;
     }
 
-    private long forceErrorNs = -1;
-
     private void checkServiceInterval(final long nowNs)
     {
         if ((timeOfLastServiceNs + interServiceTimeoutNs) - nowNs < 0)
@@ -1427,16 +1425,6 @@ final class ClientConductor implements Agent
             throw new ConductorServiceTimeoutException(
                 "service interval exceeded: timeout=" + interServiceTimeoutNs +
                 "ns, interval=" + (nowNs - timeOfLastServiceNs) + "ns");
-        }
-
-        if (-1 == forceErrorNs)
-        {
-            forceErrorNs = nowNs;
-        }
-
-        if ((forceErrorNs + TimeUnit.SECONDS.toNanos(5)) < nowNs)
-        {
-            throw new ConductorServiceTimeoutException("forced");
         }
     }
 

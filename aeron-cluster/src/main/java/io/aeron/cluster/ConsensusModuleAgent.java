@@ -48,6 +48,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
@@ -1193,37 +1194,41 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     }
 
     void onStandbySnapshot(
-        final long recordingId,
-        final long leadershipTermId,
-        final long termBaseLogPosition,
-        final long logPosition,
-        final long timestamp,
-        final int serviceId,
-        final String archiveEndpoint,
-        final boolean endOfGroup)
+        final long correlationId,
+        final int version,
+        final List<StandbySnapshotEntry> standbySnapshotEntries,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] encodedCredentials)
     {
-        if (!ctx.acceptStandbySnapshots())
+        if (null == election && null == dynamicJoin)
         {
-            return;
-        }
+            if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
+            {
+                final ClusterSession session = new ClusterSession(
+                    NULL_VALUE, responseStreamId, refineResponseChannel(responseChannel));
 
-        logStandbySnapshot(
-            memberId,
-            recordingId,
-            leadershipTermId,
-            termBaseLogPosition,
-            logPosition,
-            timestamp,
-            serviceId,
-            archiveEndpoint,
-            endOfGroup);
+                final long timestamp = clusterClock.time();
 
-        recordingLog.appendStandbySnapshot(
-            recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId, archiveEndpoint);
+                session.action(ClusterSession.Action.STANDBY_SNAPSHOT);
+                session.asyncConnect(aeron);
+                session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
+                session.requestInput(standbySnapshotEntries);
 
-        if (endOfGroup)
-        {
-            ctx.standbySnapshotCounter().increment();
+                if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION == SemanticVersion.major(version))
+                {
+                    final long timestampMs = clusterTimeUnit.toMillis(timestamp);
+                    authenticator.onConnectRequest(session.id(), encodedCredentials, timestampMs);
+                    pendingBackupSessions.add(session);
+                }
+                else
+                {
+                    final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
+                        ", cluster=" + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
+                    session.reject(EventCode.ERROR, detail);
+                    rejectedBackupSessions.add(session);
+                }
+            }
         }
     }
 
@@ -2579,6 +2584,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return logPublisher.appendClusterAction(leadershipTermId, clusterClock.time(), action, flags);
     }
 
+    @SuppressWarnings("checkstyle:methodlength")
     private int processPendingSessions(
         final ArrayList<ClusterSession> pendingSessions,
         final ArrayList<ClusterSession> rejectedSessions,
@@ -2665,6 +2671,38 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                             workCount += 1;
                         }
                         break;
+                    }
+
+                    case STANDBY_SNAPSHOT:
+                    {
+                        @SuppressWarnings("unchecked")
+                        final List<StandbySnapshotEntry> standbySnapshotEntries =
+                            (List<StandbySnapshotEntry>)session.requestInput();
+
+                        for (final StandbySnapshotEntry standbySnapshotEntry : standbySnapshotEntries)
+                        {
+                            logStandbySnapshot(
+                                memberId,
+                                standbySnapshotEntry.recordingId(),
+                                standbySnapshotEntry.leadershipTermId(),
+                                standbySnapshotEntry.termBaseLogPosition(),
+                                standbySnapshotEntry.logPosition(),
+                                standbySnapshotEntry.timestamp(),
+                                standbySnapshotEntry.serviceId(),
+                                standbySnapshotEntry.archiveEndpoint(),
+                                true);
+
+                            recordingLog.appendStandbySnapshot(
+                                standbySnapshotEntry.recordingId(),
+                                standbySnapshotEntry.leadershipTermId(),
+                                standbySnapshotEntry.termBaseLogPosition(),
+                                standbySnapshotEntry.logPosition(),
+                                standbySnapshotEntry.timestamp(),
+                                standbySnapshotEntry.serviceId(),
+                                standbySnapshotEntry.archiveEndpoint());
+                        }
+
+                        ctx.standbySnapshotCounter().increment();
                     }
                 }
             }

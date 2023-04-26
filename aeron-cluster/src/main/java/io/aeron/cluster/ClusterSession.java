@@ -41,7 +41,7 @@ final class ClusterSession
 
     enum Action
     {
-        CLIENT, BACKUP, HEARTBEAT
+        CLIENT, BACKUP, HEARTBEAT, STANDBY_SNAPSHOT
     }
 
     private boolean hasNewLeaderEventPending = false;
@@ -61,6 +61,7 @@ final class ClusterSession
     private CloseReason closeReason = CloseReason.NULL_VAL;
     private byte[] encodedPrincipal = NULL_PRINCIPAL;
     private Action action = Action.CLIENT;
+    private Object requestInput = null;
 
     ClusterSession(final long sessionId, final int responseStreamId, final String responseChannel)
     {
@@ -350,6 +351,16 @@ final class ClusterSession
     Publication responsePublication()
     {
         return responsePublication;
+    }
+
+    void requestInput(final Object requestInput)
+    {
+        this.requestInput = requestInput;
+    }
+
+    Object requestInput()
+    {
+        return requestInput;
     }
 
     static void checkEncodedPrincipalLength(final byte[] encodedPrincipal)

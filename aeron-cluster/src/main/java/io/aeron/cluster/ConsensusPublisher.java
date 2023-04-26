@@ -720,12 +720,22 @@ final class ConsensusPublisher
 
     boolean standbySnapshotsTaken(
         final ExclusivePublication publication,
+        final long correlationId,
+        final int version,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] encodedCredentials,
         final List<RecordingLog.Entry> snapshots,
         final String archiveEndpoint)
     {
         final int snapshotsLength = snapshots.size();
         final StandbySnapshotEncoder standbySnapshotEncoder = this.standbySnapshotEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder);
+
+        standbySnapshotEncoder
+            .correlationId(correlationId)
+            .version(version)
+            .responseStreamId(responseStreamId);
 
         final StandbySnapshotEncoder.SnapshotsEncoder snapshotsEncoder = standbySnapshotEncoder
             .snapshotsCount(snapshotsLength);
@@ -743,6 +753,10 @@ final class ConsensusPublisher
                 .serviceId(entry.serviceId)
                 .archiveEndpoint(archiveEndpoint);
         }
+
+        standbySnapshotEncoder
+            .responseChannel(responseChannel)
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
         final int encodedLength = MessageHeaderEncoder.ENCODED_LENGTH + standbySnapshotEncoder.encodedLength();
 

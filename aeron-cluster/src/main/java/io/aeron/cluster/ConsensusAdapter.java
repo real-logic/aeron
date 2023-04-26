@@ -25,7 +25,8 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayUtil;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.List;
 
 class ConsensusAdapter implements FragmentHandler, AutoCloseable
 {
@@ -387,22 +388,42 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                final Iterator<StandbySnapshotDecoder.SnapshotsDecoder> iterator =
-                    standbySnapshotDecoder.snapshots().iterator();
+                final long correlationId = standbySnapshotDecoder.correlationId();
+                final int version = standbySnapshotDecoder.version();
+                final int responseStreamId = standbySnapshotDecoder.responseStreamId();
+                final List<StandbySnapshotEntry> standbySnapshotEntries = new ArrayList<>();
 
-                while (iterator.hasNext())
+                for (final StandbySnapshotDecoder.SnapshotsDecoder standbySnapshot : standbySnapshotDecoder.snapshots())
                 {
-                    final StandbySnapshotDecoder.SnapshotsDecoder standbySnapshot = iterator.next();
-                    consensusModuleAgent.onStandbySnapshot(
+                    standbySnapshotEntries.add(new StandbySnapshotEntry(
                         standbySnapshot.recordingId(),
                         standbySnapshot.leadershipTermId(),
                         standbySnapshot.termBaseLogPosition(),
                         standbySnapshot.logPosition(),
                         standbySnapshot.timestamp(),
                         standbySnapshot.serviceId(),
-                        standbySnapshot.archiveEndpoint(),
-                        !iterator.hasNext());
+                        standbySnapshot.archiveEndpoint()));
                 }
+
+                final String responseChannel = standbySnapshotDecoder.responseChannel();
+                final byte[] encodedCredentials;
+                if (0 == standbySnapshotDecoder.encodedCredentialsLength())
+                {
+                    encodedCredentials = ArrayUtil.EMPTY_BYTE_ARRAY;
+                }
+                else
+                {
+                    encodedCredentials = new byte[standbySnapshotDecoder.encodedCredentialsLength()];
+                }
+
+                consensusModuleAgent.onStandbySnapshot(
+                    correlationId,
+                    version,
+                    standbySnapshotEntries,
+                    responseStreamId,
+                    responseChannel,
+                    encodedCredentials
+                );
             }
 
         }

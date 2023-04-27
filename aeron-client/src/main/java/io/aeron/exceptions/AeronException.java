@@ -185,4 +185,15 @@ public class AeronException extends RuntimeException
     {
         return category;
     }
+
+    /**
+     * Determines if a throwable is a FATAL AeronException.
+     *
+     * @param t throwable to check
+     * @return true if this is an AeronException with a category set to FATAL, false otherwise.
+     */
+    public static boolean isFatal(final Throwable t)
+    {
+        return t instanceof AeronException && Category.FATAL == ((AeronException)t).category;
+    }
 }

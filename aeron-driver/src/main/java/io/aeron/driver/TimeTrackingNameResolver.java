@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CounterProvider;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.NanoClock;
 
@@ -70,9 +71,9 @@ final class TimeTrackingNameResolver implements NameResolver, AutoCloseable
     /**
      * {@inheritDoc}
      */
-    public void init(final MediaDriver.Context context)
+    public void init(final CounterProvider counterProvider)
     {
-        delegateResolver.init(context);
+        delegateResolver.init(counterProvider);
     }
 
     /**

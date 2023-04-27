@@ -1731,6 +1731,7 @@ public final class ConsensusModule implements AutoCloseable
             {
                 nameResolver = DefaultNameResolver.INSTANCE;
             }
+            nameResolver.init(aeron::addCounter);
 
             final ChannelUri channelUri = ChannelUri.parse(logChannel());
             isLogMdc = channelUri.isUdp() && null == channelUri.get(ENDPOINT_PARAM_NAME);

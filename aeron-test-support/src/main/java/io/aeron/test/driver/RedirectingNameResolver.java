@@ -15,13 +15,13 @@
  */
 package io.aeron.test.driver;
 
+import io.aeron.CounterProvider;
 import io.aeron.driver.DefaultNameResolver;
-import io.aeron.driver.MediaDriver;
 import io.aeron.driver.NameResolver;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.net.InetAddress;
@@ -59,16 +59,22 @@ public class RedirectingNameResolver implements NameResolver
         }
     }
 
-    public void init(final MediaDriver.Context context)
+    public void init(final CounterProvider counterProvider)
     {
-        final CountersManager countersManager = context.countersManager();
-
+        final ExpandableArrayBuffer tmpBuffer = new ExpandableArrayBuffer();
         for (final NameEntry nameEntry : nameToEntryMap.values())
         {
-            final AtomicCounter atomicCounter = countersManager.newCounter(
-                nameEntry.toString(),
+            final int keyLength = tmpBuffer.putStringAscii(0, nameEntry.name);
+            final int labelLength = tmpBuffer.putStringAscii(keyLength, nameEntry.toString());
+
+            final AtomicCounter atomicCounter = counterProvider.newCounter(
                 NAME_ENTRY_COUNTER_TYPE_ID,
-                (mutableDirectBuffer) -> mutableDirectBuffer.putStringAscii(0, nameEntry.name));
+                tmpBuffer,
+                0,
+                keyLength,
+                tmpBuffer,
+                keyLength,
+                labelLength);
             nameEntry.counter(atomicCounter);
         }
     }

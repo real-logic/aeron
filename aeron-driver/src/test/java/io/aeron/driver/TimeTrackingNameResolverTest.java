@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CounterProvider;
 import org.agrona.concurrent.NanoClock;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -105,10 +106,10 @@ class TimeTrackingNameResolverTest
         final DutyCycleTracker maxTime = mock(DutyCycleTracker.class);
         final TimeTrackingNameResolver resolver = new TimeTrackingNameResolver(delegateResolver, clock, maxTime);
 
-        final MediaDriver.Context ctx = mock(MediaDriver.Context.class);
-        resolver.init(ctx);
+        final CounterProvider factory = mock(CounterProvider.class);
+        resolver.init(factory);
 
-        verify(delegateResolver).init(ctx);
+        verify(delegateResolver).init(factory);
         verifyNoMoreInteractions(delegateResolver);
         verifyNoInteractions(clock, maxTime);
     }

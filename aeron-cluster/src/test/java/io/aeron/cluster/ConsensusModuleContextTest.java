@@ -34,6 +34,7 @@ import io.aeron.security.SessionProxy;
 import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestClusterClock;
+import org.agrona.DirectBuffer;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -54,6 +55,8 @@ import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE
 import static io.aeron.cluster.service.ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -75,6 +78,9 @@ class ConsensusModuleContextTest
         when(aeronContext.useConductorAgentInvoker()).thenReturn(true);
         final AgentInvoker conductorInvoker = mock(AgentInvoker.class);
         final Aeron aeron = mock(Aeron.class);
+        when(aeron.addCounter(
+            anyInt(), any(DirectBuffer.class), anyInt(), anyInt(), any(DirectBuffer.class), anyInt(), anyInt()))
+            .thenAnswer(invocation -> mock(Counter.class));
         when(aeron.context()).thenReturn(aeronContext);
         when(aeron.conductorAgentInvoker()).thenReturn(conductorInvoker);
         when(aeron.countersReader()).thenReturn(countersManager);

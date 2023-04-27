@@ -67,6 +67,9 @@ class ArchiveContextTest
     void beforeEach(final @TempDir Path tempDir)
     {
         final Aeron aeron = mock(Aeron.class);
+        when(aeron.addCounter(
+            anyInt(), any(DirectBuffer.class), anyInt(), anyInt(), any(DirectBuffer.class), anyInt(), anyInt()))
+            .thenAnswer(invocation -> mock(Counter.class));
         final CountersReader countersReader = mock(CountersReader.class);
         final Aeron.Context aeronContext = new Aeron.Context();
         aeronContext.subscriberErrorHandler(RethrowingErrorHandler.INSTANCE);

@@ -119,9 +119,8 @@ public final class Archive implements AutoCloseable
         loadPropertiesFiles(args);
 
         final ShutdownSignalBarrier shutdownSignalBarrier = new ShutdownSignalBarrier();
-        final Archive.Context ctx = new Context();
-        ctx.errorHandler(
-            throwable ->
+        final Archive.Context ctx = new Context().errorHandler(
+            (throwable) ->
             {
                 if (throwable instanceof AgentTerminationException)
                 {

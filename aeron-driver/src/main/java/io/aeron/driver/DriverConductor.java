@@ -113,10 +113,9 @@ public final class DriverConductor implements Agent
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
     private final MutableDirectBuffer tempBuffer;
     private final DataHeaderFlyweight defaultDataHeader = new DataHeaderFlyweight(createDefaultHeader(0, 0, 0));
-    private NameResolver nameResolver;
-    private DriverNameResolver driverNameResolver;
     private final AtomicCounter errorCounter;
     private final DutyCycleTracker dutyCycleTracker;
+    private TimeTrackingNameResolver nameResolver;
 
     DriverConductor(final MediaDriver.Context ctx)
     {
@@ -154,16 +153,10 @@ public final class DriverConductor implements Agent
      */
     public void onStart()
     {
-        if (null == ctx.resolverInterface())
-        {
-            driverNameResolver = null;
-            nameResolver = ctx.nameResolver();
-        }
-        else
-        {
-            driverNameResolver = new DriverNameResolver(ctx);
-            nameResolver = driverNameResolver;
-        }
+        nameResolver = new TimeTrackingNameResolver(
+            null == ctx.resolverInterface() ? ctx.nameResolver() : new DriverNameResolver(ctx),
+            ctx.nanoClock(),
+            ctx.nameResolverTimeTracker());
 
         ctx.systemCounters().get(RESOLUTION_CHANGES).appendToLabel(
             ": driverName=" + ctx.resolverName() +
@@ -172,8 +165,6 @@ public final class DriverConductor implements Agent
         ctx.systemCounters().get(CONDUCTOR_MAX_CYCLE_TIME).appendToLabel(": " + ctx.threadingMode().name());
         ctx.systemCounters().get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED).appendToLabel(
             ": threshold=" + ctx.conductorCycleThresholdNs() + "ns " + ctx.threadingMode().name());
-
-        nameResolver.init(ctx);
 
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
@@ -189,7 +180,7 @@ public final class DriverConductor implements Agent
      */
     public void onClose()
     {
-        CloseHelper.close(ctx.errorHandler(), driverNameResolver);
+        CloseHelper.close(ctx.errorHandler(), nameResolver);
         publicationImages.forEach(PublicationImage::free);
         networkPublications.forEach(NetworkPublication::free);
         ipcPublications.forEach(IpcPublication::free);

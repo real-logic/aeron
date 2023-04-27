@@ -18,10 +18,10 @@ package io.aeron.driver;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class DefaultNameResolverTest
 {
@@ -38,7 +38,7 @@ class DefaultNameResolverTest
     }
 
     @Test
-    void resolveResolvesLocalhostAddress() throws UnknownHostException
+    void resolveResolvesLocalhostAddress()
     {
         final String hostName = "localhost";
         final String uriParamName = "control";
@@ -46,6 +46,6 @@ class DefaultNameResolverTest
 
         final InetAddress address = nameResolver.resolve(hostName, uriParamName, isReResolution);
 
-        assertSame(InetAddress.getLocalHost(), address);
+        assertEquals(InetAddress.getLoopbackAddress(), address);
     }
 }

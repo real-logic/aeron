@@ -59,8 +59,7 @@ import java.util.function.LongConsumer;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.ClientHeartbeatTimestamp.HEARTBEAT_TYPE_ID;
-import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED;
-import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_MAX_CYCLE_TIME;
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -155,6 +154,11 @@ class DriverConductorTest
             spySystemCounters.get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED),
             600_000_000);
 
+        final DutyCycleStallTracker nameResolverTimeTracker = new DutyCycleStallTracker(
+            spySystemCounters.get(NAME_RESOLVER_MAX_TIME),
+            spySystemCounters.get(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED),
+            1_000_000_000);
+
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))
             .timerIntervalNs(DEFAULT_TIMER_INTERVAL_NS)
@@ -185,7 +189,8 @@ class DriverConductorTest
             .conductorCycleThresholdNs(600_000_000)
             .nameResolver(DefaultNameResolver.INSTANCE)
             .threadingMode(ThreadingMode.DEDICATED)
-            .conductorDutyCycleTracker(conductorDutyCycleTracker);
+            .conductorDutyCycleTracker(conductorDutyCycleTracker)
+            .nameResolverTimeTracker(nameResolverTimeTracker);
 
         driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);

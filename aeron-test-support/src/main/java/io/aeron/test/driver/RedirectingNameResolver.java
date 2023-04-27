@@ -80,7 +80,6 @@ public class RedirectingNameResolver implements NameResolver
 
     public InetAddress resolve(final String name, final String uriParamName, final boolean isReResolution)
     {
-        final long beginNs = System.nanoTime();
         final NameEntry nameEntry = nameToEntryMap.get(name);
         final String hostname = null != nameEntry ? nameEntry.redirectHost(name) : name;
 
@@ -89,9 +88,6 @@ public class RedirectingNameResolver implements NameResolver
         {
             resolvedAddress = DefaultNameResolver.INSTANCE.resolve(hostname, uriParamName, isReResolution);
         }
-        final long durationNs = System.nanoTime() - beginNs;
-
-        DefaultNameResolver.logResolve(this.getClass().getSimpleName(), durationNs, hostname, resolvedAddress);
 
         return resolvedAddress;
     }

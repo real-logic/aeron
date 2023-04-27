@@ -182,7 +182,17 @@ public enum SystemCounterDescriptor
     /**
      * Count of the number of times the cycle time threshold has been exceeded by the receiver in its work cycle.
      */
-    RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED(31, "Receiver work cycle exceeded threshold count");
+    RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED(31, "Receiver work cycle exceeded threshold count"),
+
+    /**
+     * The maximum time spent by the NameResolver in one of its operations.
+     */
+    NAME_RESOLVER_MAX_TIME(32, "NameResolver max time in ns"),
+
+    /**
+     * Count of the number of times the time threshold has been exceeded by the NameResolver.
+     */
+    NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED(33, "NameResolver exceeded threshold count");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

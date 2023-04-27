@@ -80,7 +80,8 @@ class IpcPublicationTest
             .nameResolver(DefaultNameResolver.INSTANCE)
             .nanoClock(new CachedNanoClock())
             .threadingMode(ThreadingMode.DEDICATED)
-            .conductorDutyCycleTracker(new DutyCycleTracker());
+            .conductorDutyCycleTracker(new DutyCycleTracker())
+            .nameResolverTimeTracker(new DutyCycleTracker());
 
         driverProxy = new DriverProxy(toDriverCommands, CLIENT_ID);
         driverConductor = new DriverConductor(ctx);

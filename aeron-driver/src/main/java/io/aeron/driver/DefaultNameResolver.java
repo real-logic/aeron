@@ -67,7 +67,7 @@ public class DefaultNameResolver implements NameResolver
      * @param hostname        that was resolved.
      * @param resolvedAddress the resulting address or null if it can't be resolved.
      */
-    public static void logResolve(
+    static void logResolve(
         final String resolverName, final long durationNs, final String hostname, final InetAddress resolvedAddress)
     {
     }

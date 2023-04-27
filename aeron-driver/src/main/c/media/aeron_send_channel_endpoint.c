@@ -49,6 +49,7 @@ int aeron_send_channel_endpoint_create(
 
     if (aeron_alloc((void **)&_endpoint, sizeof(aeron_send_channel_endpoint_t)) < 0)
     {
+        aeron_udp_channel_delete(channel);
         return -1;
     }
 
@@ -66,6 +67,8 @@ int aeron_send_channel_endpoint_create(
                 channel->is_manual_control_mode,
                 AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS) < 0)
         {
+            aeron_udp_channel_delete(channel);
+            aeron_free(_endpoint);
             return -1;
         }
     }

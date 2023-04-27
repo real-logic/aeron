@@ -1992,7 +1992,8 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
         if (aeron_send_channel_endpoint_create(
             &endpoint, channel, conductor->context, &conductor->counters_manager, registration_id) < 0)
         {
-            goto error_cleanup;
+            // the `channel` is now owned by the endpoint
+            return NULL;
         }
 
         if (aeron_str_to_ptr_hash_map_put(

@@ -62,9 +62,10 @@ class DriverInterceptor
                 final String resolverName,
                 final long durationNs,
                 final String name,
+                final boolean isReResolution,
                 final InetAddress address)
             {
-                LOGGER.logResolve(resolverName, durationNs, name, address);
+                LOGGER.logResolve(resolverName, durationNs, name, isReResolution, address);
             }
         }
 
@@ -75,10 +76,10 @@ class DriverInterceptor
                 final String resolverName,
                 final long durationNs,
                 final String name,
-                final boolean isRelookup,
+                final boolean isReLookup,
                 final String resolvedName)
             {
-                LOGGER.logLookup(resolverName, durationNs, name, isRelookup, resolvedName);
+                LOGGER.logLookup(resolverName, durationNs, name, isReLookup, resolvedName);
             }
         }
     }

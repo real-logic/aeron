@@ -56,7 +56,7 @@ final class TimeTrackingNameResolver implements NameResolver, AutoCloseable
         {
             final long endNs = clock.nanoTime();
             maxTimeTracker.measureAndUpdate(endNs);
-            logResolve(delegateResolver.getClass().getSimpleName(), endNs - beginNs, name, address);
+            logResolve(delegateResolver.getClass().getSimpleName(), endNs - beginNs, name, isReResolution, address);
         }
     }
 
@@ -77,12 +77,7 @@ final class TimeTrackingNameResolver implements NameResolver, AutoCloseable
         {
             final long endNs = clock.nanoTime();
             maxTimeTracker.measureAndUpdate(endNs);
-            logLookup(
-                delegateResolver.getClass().getSimpleName(),
-                endNs - beginNs,
-                name,
-                isReLookup,
-                resolvedName);
+            logLookup(delegateResolver.getClass().getSimpleName(), endNs - beginNs, name, isReLookup, resolvedName);
         }
     }
 
@@ -114,7 +109,11 @@ final class TimeTrackingNameResolver implements NameResolver, AutoCloseable
     }
 
     private static void logResolve(
-        final String resolverName, final long durationNs, final String name, final InetAddress resolvedAddress)
+        final String resolverName,
+        final long durationNs,
+        final String name,
+        final boolean isReResolution,
+        final InetAddress resolvedAddress)
     {
     }
 

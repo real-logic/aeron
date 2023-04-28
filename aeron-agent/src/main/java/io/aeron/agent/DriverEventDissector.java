@@ -330,16 +330,23 @@ final class DriverEventDissector
         int absoluteOffset = offset;
         absoluteOffset += dissectLogHeader(CONTEXT, NAME_RESOLUTION_RESOLVE, buffer, absoluteOffset, builder);
 
+        final boolean isReResolution = 1 == buffer.getByte(absoluteOffset);
+        absoluteOffset += SIZE_OF_BYTE;
+
+        final long durationNs = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
         builder.append(": resolver=");
         absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
-        absoluteOffset += SIZE_OF_INT; // String length
+        absoluteOffset += SIZE_OF_INT;
 
-        builder.append(" durationNs=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
-        absoluteOffset += SIZE_OF_LONG;
+        builder.append(" durationNs=").append(durationNs);
 
         builder.append(" hostname=");
         absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
-        absoluteOffset += SIZE_OF_INT; // String length
+        absoluteOffset += SIZE_OF_INT;
+
+        builder.append(" isReResolution=").append(isReResolution);
 
         builder.append(" address=");
         dissectInetAddress(buffer, absoluteOffset, builder);
@@ -351,19 +358,23 @@ final class DriverEventDissector
         int absoluteOffset = offset;
         absoluteOffset += dissectLogHeader(CONTEXT, NAME_RESOLUTION_LOOKUP, buffer, absoluteOffset, builder);
 
+        final boolean isReLookup = 1 == buffer.getByte(absoluteOffset);
+        absoluteOffset += SIZE_OF_BYTE;
+
+        final long durationNs = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
         builder.append(": resolver=");
         absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
         absoluteOffset += SIZE_OF_INT;
 
-        builder.append(" durationNs=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
-        absoluteOffset += SIZE_OF_LONG;
+        builder.append(" durationNs=").append(durationNs);
 
         builder.append(" name=");
         absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
         absoluteOffset += SIZE_OF_INT;
 
-        builder.append(" isRelookup=").append(1 == buffer.getByte(absoluteOffset));
-        absoluteOffset += SIZE_OF_BOOLEAN;
+        builder.append(" isReLookup=").append(isReLookup);
 
         builder.append(" resolvedName=");
         buffer.getStringAscii(absoluteOffset, builder);

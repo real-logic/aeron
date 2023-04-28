@@ -278,8 +278,9 @@ class DriverEventLoggerTest
             encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
     }
 
-    @Test
-    void logResolve() throws UnknownHostException
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void logResolve(final boolean isReResolution) throws UnknownHostException
     {
         final int recordOffset = 64;
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
@@ -289,20 +290,25 @@ class DriverEventLoggerTest
         final String hostName = generateStringWithSuffix("very-l", "0", 1000);
         final String expectedHostName = hostName.substring(0, MAX_HOST_NAME_LENGTH - 3) + "...";
         final InetAddress address = InetAddress.getLocalHost();
-        final int captureLength = SIZE_OF_LONG + trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
+        final int captureLength = SIZE_OF_BOOLEAN + SIZE_OF_LONG +
+            trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
             trailingStringLength(hostName, MAX_HOST_NAME_LENGTH) +
             inetAddressLength(address);
 
-        logger.logResolve(resolverName, durationNs, hostName, address);
+        logger.logResolve(resolverName, durationNs, hostName, isReResolution, address);
 
         verifyLogHeader(logBuffer, recordOffset, toEventCodeId(NAME_RESOLUTION_RESOLVE), captureLength, captureLength);
 
         int index = encodedMsgOffset(recordOffset) + LOG_HEADER_LENGTH;
-        assertEquals(resolverName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
-        index += SIZE_OF_INT + resolverName.length();
+
+        assertEquals(isReResolution, 1 == logBuffer.getByte(index));
+        index += SIZE_OF_BYTE;
 
         assertEquals(durationNs, logBuffer.getLong(index, LITTLE_ENDIAN));
         index += SIZE_OF_LONG;
+
+        assertEquals(resolverName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT + resolverName.length();
 
         assertEquals(expectedHostName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT + expectedHostName.length();
@@ -318,7 +324,7 @@ class DriverEventLoggerTest
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void logLookup(final boolean isRelookup)
+    void logLookup(final boolean isReLookup)
     {
         final int recordOffset = 30;
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
@@ -328,26 +334,28 @@ class DriverEventLoggerTest
         final long durationNs = TimeUnit.HOURS.toNanos(3);
         final String name = "abc.example.com:5555";
         final String resolvedName = "corporate.fancy.address.returned:5555";
-        final int captureLength = trailingStringLength(resolverName, MAX_HOST_NAME_WITH_PORT_LENGTH) + SIZE_OF_LONG +
-            trailingStringLength(name, MAX_HOST_NAME_WITH_PORT_LENGTH) + SIZE_OF_BOOLEAN +
+        final int captureLength = SIZE_OF_BOOLEAN + SIZE_OF_LONG +
+            trailingStringLength(resolverName, MAX_HOST_NAME_WITH_PORT_LENGTH) +
+            trailingStringLength(name, MAX_HOST_NAME_WITH_PORT_LENGTH) +
             trailingStringLength(resolvedName, MAX_HOST_NAME_WITH_PORT_LENGTH);
 
-        logger.logLookup(resolverName, durationNs, name, isRelookup, resolvedName);
+        logger.logLookup(resolverName, durationNs, name, isReLookup, resolvedName);
 
         verifyLogHeader(logBuffer, recordOffset, toEventCodeId(NAME_RESOLUTION_LOOKUP), captureLength, captureLength);
 
         int index = encodedMsgOffset(recordOffset) + LOG_HEADER_LENGTH;
-        assertEquals(expectedResolverName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
-        index += SIZE_OF_INT + expectedResolverName.length();
+
+        assertEquals(isReLookup ? 1 : 0, logBuffer.getByte(index));
+        index += SIZE_OF_BOOLEAN;
 
         assertEquals(durationNs, logBuffer.getLong(index, LITTLE_ENDIAN));
         index += SIZE_OF_LONG;
 
+        assertEquals(expectedResolverName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT + expectedResolverName.length();
+
         assertEquals(name, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT + name.length();
-
-        assertEquals(isRelookup ? 1 : 0, logBuffer.getByte(index));
-        index += SIZE_OF_BOOLEAN;
 
         assertEquals(resolvedName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
     }

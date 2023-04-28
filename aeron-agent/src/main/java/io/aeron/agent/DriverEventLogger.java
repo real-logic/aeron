@@ -341,18 +341,21 @@ public final class DriverEventLogger
     /**
      * Log a resolution for a resolver and the associated result.
      *
-     * @param resolverName simple class name of the resolver
-     * @param durationNs   of the call in nanoseconds.
-     * @param name         host name being resolved
-     * @param address      address that was resolved to, can be null
+     * @param resolverName   simple class name of the resolver.
+     * @param durationNs     of the call in nanoseconds.
+     * @param name           host name being resolved.
+     * @param isReResolution {@code true} if this is a re-resolution or {@code false} if initial resolution.
+     * @param address        address that was resolved to, can be {@code null}.
      */
     public void logResolve(
         final String resolverName,
         final long durationNs,
         final String name,
+        final boolean isReResolution,
         final InetAddress address)
     {
-        final int length = SIZE_OF_LONG + trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
+        final int length = SIZE_OF_BOOLEAN + SIZE_OF_LONG +
+            trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
             trailingStringLength(name, MAX_HOST_NAME_LENGTH) +
             inetAddressLength(address);
 
@@ -365,7 +368,15 @@ public final class DriverEventLogger
             try
             {
                 encodeResolve(
-                    (UnsafeBuffer)ringBuffer.buffer(), index, length, length, resolverName, durationNs, name, address);
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    length,
+                    length,
+                    resolverName,
+                    durationNs,
+                    name,
+                    isReResolution,
+                    address);
             }
             finally
             {
@@ -380,14 +391,14 @@ public final class DriverEventLogger
      * @param resolverName simple class name of the resolver
      * @param durationNs   of the call in nanoseconds.
      * @param name         host name being resolved
-     * @param isRelookup      address that was resolved to, can be null
+     * @param isReLookup      address that was resolved to, can be null
      * @param resolvedName      address that was resolved to, can be null
      */
     public void logLookup(
         final String resolverName,
         final long durationNs,
         final String name,
-        final boolean isRelookup,
+        final boolean isReLookup,
         final String resolvedName)
     {
         final int length = SIZE_OF_LONG + trailingStringLength(resolverName, MAX_HOST_NAME_WITH_PORT_LENGTH) +
@@ -410,7 +421,7 @@ public final class DriverEventLogger
                     resolverName,
                     durationNs,
                     name,
-                    isRelookup,
+                    isReLookup,
                     resolvedName);
             }
             finally

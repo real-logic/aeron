@@ -246,15 +246,19 @@ final class DriverEventEncoder
         final String resolverName,
         final long durationNs,
         final String hostName,
+        final boolean isReResolution,
         final InetAddress inetAddress)
     {
         int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodedLength += encodeTrailingString(
-            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, resolverName);
+        encodingBuffer.putByte(offset + encodedLength, (byte)(isReResolution ? 1 : 0));
+        encodedLength += SIZE_OF_BOOLEAN;
 
         encodingBuffer.putLong(offset + encodedLength, durationNs, LITTLE_ENDIAN);
         encodedLength += SIZE_OF_LONG;
+
+        encodedLength += encodeTrailingString(
+            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, resolverName);
 
         encodedLength += encodeTrailingString(
             encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, hostName);
@@ -270,22 +274,22 @@ final class DriverEventEncoder
         final String resolverName,
         final long durationNs,
         final String name,
-        final boolean isRelookup,
+        final boolean isReLookup,
         final String resolvedName)
     {
         int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodedLength += encodeTrailingString(
-            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_WITH_PORT_LENGTH, resolverName);
+        encodingBuffer.putByte(offset + encodedLength, (byte)(isReLookup ? 1 : 0));
+        encodedLength += SIZE_OF_BOOLEAN;
 
         encodingBuffer.putLong(offset + encodedLength, durationNs, LITTLE_ENDIAN);
         encodedLength += SIZE_OF_LONG;
 
         encodedLength += encodeTrailingString(
-            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_WITH_PORT_LENGTH, name);
+            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_WITH_PORT_LENGTH, resolverName);
 
-        encodingBuffer.putByte(offset + encodedLength, (byte)(isRelookup ? 1 : 0));
-        encodedLength += SIZE_OF_BOOLEAN;
+        encodedLength += encodeTrailingString(
+            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_WITH_PORT_LENGTH, name);
 
         encodeTrailingString(
             encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_WITH_PORT_LENGTH, resolvedName);

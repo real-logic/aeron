@@ -637,19 +637,21 @@ class DriverEventDissectorTest
         final String resolver = "testResolver";
         final long durationNs = 32167;
         final String hostname = "localhost";
+        final boolean isReResolution = false;
         final InetAddress address = InetAddress.getByName("127.0.0.1");
 
-        final int length = trailingStringLength(resolver, MAX_HOST_NAME_LENGTH) +
+        final int length = SIZE_OF_BOOLEAN + SIZE_OF_LONG + trailingStringLength(resolver, MAX_HOST_NAME_LENGTH) +
             trailingStringLength(hostname, MAX_HOST_NAME_LENGTH) +
             inetAddressLength(address);
 
-        DriverEventEncoder.encodeResolve(buffer, 0, length, length, resolver, durationNs, hostname, address);
+        DriverEventEncoder.encodeResolve(
+            buffer, 0, length, length, resolver, durationNs, hostname, isReResolution, address);
         final StringBuilder builder = new StringBuilder();
         DriverEventDissector.dissectResolve(buffer, 0, builder);
 
         assertThat(builder.toString(), endsWith(
-            "DRIVER: NAME_RESOLUTION_RESOLVE [37/37]: " +
-            "resolver=testResolver durationNs=32167 hostname=localhost address=127.0.0.1"));
+            "DRIVER: NAME_RESOLUTION_RESOLVE [46/46]: " +
+            "resolver=testResolver durationNs=32167 hostname=localhost isReResolution=false address=127.0.0.1"));
     }
 
     @Test
@@ -658,19 +660,21 @@ class DriverEventDissectorTest
         final String resolver = "myResolver";
         final long durationNs = -1;
         final String hostname = "some-host";
+        final boolean isReResolution = true;
         final InetAddress address = null;
 
-        final int length = trailingStringLength(resolver, MAX_HOST_NAME_LENGTH) +
+        final int length = SIZE_OF_BOOLEAN + SIZE_OF_LONG + trailingStringLength(resolver, MAX_HOST_NAME_LENGTH) +
             trailingStringLength(hostname, MAX_HOST_NAME_LENGTH) +
             inetAddressLength(address);
 
-        DriverEventEncoder.encodeResolve(buffer, 0, length, length, resolver, durationNs, hostname, address);
+        DriverEventEncoder.encodeResolve(
+            buffer, 0, length, length, resolver, durationNs, hostname, isReResolution, address);
         final StringBuilder builder = new StringBuilder();
         DriverEventDissector.dissectResolve(buffer, 0, builder);
 
         assertThat(builder.toString(), endsWith(
-            "DRIVER: NAME_RESOLUTION_RESOLVE [31/31]: " +
-            "resolver=myResolver durationNs=-1 hostname=some-host address=unknown-address"));
+            "DRIVER: NAME_RESOLUTION_RESOLVE [40/40]: " +
+            "resolver=myResolver durationNs=-1 hostname=some-host isReResolution=true address=unknown-address"));
     }
 
     @Test
@@ -680,22 +684,22 @@ class DriverEventDissectorTest
             "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
             "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
-        final String expected = "DRIVER: NAME_RESOLUTION_RESOLVE [522/522]: resolver=testResolver." +
+        final String expected = "DRIVER: NAME_RESOLUTION_RESOLVE [531/531]: resolver=testResolver." +
             "this.is.a.really.long.string.to.force.truncation.000000000000000000000000000000000000000000000000000000" +
             "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
             "0000000000000000000000000000000... durationNs=555 " +
             "hostname=testResolver.this.is.a.really.long.string.to.force.truncati" +
             "on.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
-            "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000... address=127" +
-            ".0.0.1";
+            "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000... " +
+            "isReResolution=false address=127.0.0.1";
 
         final InetAddress address = InetAddress.getByName("127.0.0.1");
 
-        final int length = trailingStringLength(longString, MAX_HOST_NAME_LENGTH) +
+        final int length = SIZE_OF_BOOLEAN + SIZE_OF_LONG + trailingStringLength(longString, MAX_HOST_NAME_LENGTH) +
             trailingStringLength(longString, MAX_HOST_NAME_LENGTH) +
             inetAddressLength(address);
 
-        DriverEventEncoder.encodeResolve(buffer, 0, length, length, longString, 555, longString, address);
+        DriverEventEncoder.encodeResolve(buffer, 0, length, length, longString, 555, longString, false, address);
         final StringBuilder builder = new StringBuilder();
         DriverEventDissector.dissectResolve(buffer, 0, builder);
 
@@ -709,21 +713,22 @@ class DriverEventDissectorTest
         final String resolver = "xyz";
         final long durationNs = 32167;
         final String name = "localhost:7777";
-        final boolean isRelookup = false;
+        final boolean isReLookup = false;
         final String resolvedName = "test:1234";
 
-        final int length = trailingStringLength(resolver, MAX_HOST_NAME_WITH_PORT_LENGTH) + SIZE_OF_LONG +
-            trailingStringLength(name, MAX_HOST_NAME_WITH_PORT_LENGTH) + SIZE_OF_BOOLEAN +
+        final int length = SIZE_OF_BOOLEAN + SIZE_OF_LONG +
+            trailingStringLength(resolver, MAX_HOST_NAME_WITH_PORT_LENGTH) +
+            trailingStringLength(name, MAX_HOST_NAME_WITH_PORT_LENGTH) +
             trailingStringLength(resolvedName, MAX_HOST_NAME_WITH_PORT_LENGTH);
 
         DriverEventEncoder.encodeLookup(
-            buffer, offset, length, length, resolver, durationNs, name, isRelookup, resolvedName);
+            buffer, offset, length, length, resolver, durationNs, name, isReLookup, resolvedName);
         final StringBuilder builder = new StringBuilder();
         DriverEventDissector.dissectLookup(buffer, offset, builder);
 
         assertThat(builder.toString(), endsWith(
             "DRIVER: NAME_RESOLUTION_LOOKUP [47/47]: " +
-            "resolver=xyz durationNs=32167 name=localhost:7777 isRelookup=false resolvedName=test:1234"));
+            "resolver=xyz durationNs=32167 name=localhost:7777 isReLookup=false resolvedName=test:1234"));
     }
 
     private DirectBuffer newBuffer(final byte[] bytes)

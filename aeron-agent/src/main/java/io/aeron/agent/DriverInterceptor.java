@@ -64,7 +64,21 @@ class DriverInterceptor
                 final String name,
                 final InetAddress address)
             {
-                LOGGER.logResolve(NAME_RESOLUTION_RESOLVE, resolverName, durationNs, name, address);
+                LOGGER.logResolve(resolverName, durationNs, name, address);
+            }
+        }
+
+        static class Lookup
+        {
+            @Advice.OnMethodEnter
+            static void logLookup(
+                final String resolverName,
+                final long durationNs,
+                final String name,
+                final boolean isRelookup,
+                final String resolvedName)
+            {
+                LOGGER.logLookup(resolverName, durationNs, name, isRelookup, resolvedName);
             }
         }
     }

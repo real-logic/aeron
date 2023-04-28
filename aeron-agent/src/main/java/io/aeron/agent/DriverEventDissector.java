@@ -23,8 +23,7 @@ import org.agrona.MutableDirectBuffer;
 import static io.aeron.agent.CommonEventDissector.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 
 /**
  * Dissect encoded log events and append them to a provided {@link StringBuilder}.
@@ -326,10 +325,10 @@ final class DriverEventDissector
     }
 
     static void dissectResolve(
-        final DriverEventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int absoluteOffset = offset;
-        absoluteOffset += dissectLogHeader(CONTEXT, code, buffer, absoluteOffset, builder);
+        absoluteOffset += dissectLogHeader(CONTEXT, NAME_RESOLUTION_RESOLVE, buffer, absoluteOffset, builder);
 
         builder.append(": resolver=");
         absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
@@ -344,6 +343,30 @@ final class DriverEventDissector
 
         builder.append(" address=");
         dissectInetAddress(buffer, absoluteOffset, builder);
+    }
+
+    static void dissectLookup(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, NAME_RESOLUTION_LOOKUP, buffer, absoluteOffset, builder);
+
+        builder.append(": resolver=");
+        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
+        absoluteOffset += SIZE_OF_INT;
+
+        builder.append(" durationNs=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_LONG;
+
+        builder.append(" name=");
+        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
+        absoluteOffset += SIZE_OF_INT;
+
+        builder.append(" isRelookup=").append(1 == buffer.getByte(absoluteOffset));
+        absoluteOffset += SIZE_OF_BOOLEAN;
+
+        builder.append(" resolvedName=");
+        buffer.getStringAscii(absoluteOffset, builder);
     }
 
     static int frameType(final MutableDirectBuffer buffer, final int termOffset)

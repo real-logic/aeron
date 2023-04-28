@@ -32,12 +32,12 @@ import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventDissector.*;
 import static io.aeron.agent.DriverEventLogger.MAX_HOST_NAME_LENGTH;
+import static io.aeron.agent.DriverEventLogger.MAX_HOST_NAME_WITH_PORT_LENGTH;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.*;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -645,7 +645,7 @@ class DriverEventDissectorTest
 
         DriverEventEncoder.encodeResolve(buffer, 0, length, length, resolver, durationNs, hostname, address);
         final StringBuilder builder = new StringBuilder();
-        DriverEventDissector.dissectResolve(NAME_RESOLUTION_RESOLVE, buffer, 0, builder);
+        DriverEventDissector.dissectResolve(buffer, 0, builder);
 
         assertThat(builder.toString(), endsWith(
             "DRIVER: NAME_RESOLUTION_RESOLVE [37/37]: " +
@@ -666,7 +666,7 @@ class DriverEventDissectorTest
 
         DriverEventEncoder.encodeResolve(buffer, 0, length, length, resolver, durationNs, hostname, address);
         final StringBuilder builder = new StringBuilder();
-        DriverEventDissector.dissectResolve(NAME_RESOLUTION_RESOLVE, buffer, 0, builder);
+        DriverEventDissector.dissectResolve(buffer, 0, builder);
 
         assertThat(builder.toString(), endsWith(
             "DRIVER: NAME_RESOLUTION_RESOLVE [31/31]: " +
@@ -697,9 +697,33 @@ class DriverEventDissectorTest
 
         DriverEventEncoder.encodeResolve(buffer, 0, length, length, longString, 555, longString, address);
         final StringBuilder builder = new StringBuilder();
-        DriverEventDissector.dissectResolve(NAME_RESOLUTION_RESOLVE, buffer, 0, builder);
+        DriverEventDissector.dissectResolve(buffer, 0, builder);
 
         assertThat(builder.toString(), endsWith(expected));
+    }
+
+    @Test
+    void dissectLookup()
+    {
+        final int offset = 48;
+        final String resolver = "xyz";
+        final long durationNs = 32167;
+        final String name = "localhost:7777";
+        final boolean isRelookup = false;
+        final String resolvedName = "test:1234";
+
+        final int length = trailingStringLength(resolver, MAX_HOST_NAME_WITH_PORT_LENGTH) + SIZE_OF_LONG +
+            trailingStringLength(name, MAX_HOST_NAME_WITH_PORT_LENGTH) + SIZE_OF_BOOLEAN +
+            trailingStringLength(resolvedName, MAX_HOST_NAME_WITH_PORT_LENGTH);
+
+        DriverEventEncoder.encodeLookup(
+            buffer, offset, length, length, resolver, durationNs, name, isRelookup, resolvedName);
+        final StringBuilder builder = new StringBuilder();
+        DriverEventDissector.dissectLookup(buffer, offset, builder);
+
+        assertThat(builder.toString(), endsWith(
+            "DRIVER: NAME_RESOLUTION_LOOKUP [47/47]: " +
+            "resolver=xyz durationNs=32167 name=localhost:7777 isRelookup=false resolvedName=test:1234"));
     }
 
     private DirectBuffer newBuffer(final byte[] bytes)

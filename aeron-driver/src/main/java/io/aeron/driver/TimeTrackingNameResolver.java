@@ -56,7 +56,7 @@ final class TimeTrackingNameResolver implements NameResolver, AutoCloseable
         {
             final long endNs = clock.nanoTime();
             maxTimeTracker.measureAndUpdate(endNs);
-            DefaultNameResolver.logResolve(delegateResolver.getClass().getSimpleName(), endNs - beginNs, name, address);
+            logResolve(delegateResolver.getClass().getSimpleName(), endNs - beginNs, name, address);
         }
     }
 
@@ -65,7 +65,25 @@ final class TimeTrackingNameResolver implements NameResolver, AutoCloseable
      */
     public String lookup(final String name, final String uriParamName, final boolean isReLookup)
     {
-        return delegateResolver.lookup(name, uriParamName, isReLookup);
+        final long beginNs = clock.nanoTime();
+        maxTimeTracker.update(beginNs);
+        String resolvedName = null;
+        try
+        {
+            resolvedName = delegateResolver.lookup(name, uriParamName, isReLookup);
+            return resolvedName;
+        }
+        finally
+        {
+            final long endNs = clock.nanoTime();
+            maxTimeTracker.measureAndUpdate(endNs);
+            logLookup(
+                delegateResolver.getClass().getSimpleName(),
+                endNs - beginNs,
+                name,
+                isReLookup,
+                resolvedName);
+        }
     }
 
     /**
@@ -93,5 +111,19 @@ final class TimeTrackingNameResolver implements NameResolver, AutoCloseable
         {
             CloseHelper.close((AutoCloseable)delegateResolver);
         }
+    }
+
+    private static void logResolve(
+        final String resolverName, final long durationNs, final String name, final InetAddress resolvedAddress)
+    {
+    }
+
+    private static void logLookup(
+        final String resolverName,
+        final long durationNs,
+        final String name,
+        final boolean isReLookup,
+        final String resolvedName)
+    {
     }
 }

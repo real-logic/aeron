@@ -24,9 +24,9 @@ import java.nio.ByteBuffer;
 
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventLogger.MAX_HOST_NAME_LENGTH;
+import static io.aeron.agent.DriverEventLogger.MAX_HOST_NAME_WITH_PORT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 
 /**
  * Encoding of event types to a {@link UnsafeBuffer} for logging.
@@ -260,5 +260,34 @@ final class DriverEventEncoder
             encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, hostName);
 
         encodeInetAddress(encodingBuffer, offset + encodedLength, inetAddress);
+    }
+
+    static void encodeLookup(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int length,
+        final int captureLength,
+        final String resolverName,
+        final long durationNs,
+        final String name,
+        final boolean isRelookup,
+        final String resolvedName)
+    {
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodedLength += encodeTrailingString(
+            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_WITH_PORT_LENGTH, resolverName);
+
+        encodingBuffer.putLong(offset + encodedLength, durationNs, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodedLength += encodeTrailingString(
+            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_WITH_PORT_LENGTH, name);
+
+        encodingBuffer.putByte(offset + encodedLength, (byte)(isRelookup ? 1 : 0));
+        encodedLength += SIZE_OF_BOOLEAN;
+
+        encodeTrailingString(
+            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_WITH_PORT_LENGTH, resolvedName);
     }
 }

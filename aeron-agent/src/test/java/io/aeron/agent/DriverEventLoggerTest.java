@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -32,8 +33,7 @@ import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventEncoder.untetheredSubscriptionStateChangeLength;
-import static io.aeron.agent.DriverEventLogger.MAX_HOST_NAME_LENGTH;
-import static io.aeron.agent.DriverEventLogger.toEventCodeId;
+import static io.aeron.agent.DriverEventLogger.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.test.Tests.generateStringWithSuffix;
 import static java.nio.ByteBuffer.allocate;
@@ -283,21 +283,19 @@ class DriverEventLoggerTest
     {
         final int recordOffset = 64;
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
-        final DriverEventCode eventCode = NAME_RESOLUTION_RESOLVE;
 
         final String resolverName = "test";
         final long durationNs = TimeUnit.DAYS.toNanos(1);
         final String hostName = generateStringWithSuffix("very-l", "0", 1000);
-        final String expectedHostName =
-            generateStringWithSuffix("very-l", "0", MAX_HOST_NAME_LENGTH - 6 - 3) + "...";
+        final String expectedHostName = hostName.substring(0, MAX_HOST_NAME_LENGTH - 3) + "...";
         final InetAddress address = InetAddress.getLocalHost();
         final int captureLength = SIZE_OF_LONG + trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
             trailingStringLength(hostName, MAX_HOST_NAME_LENGTH) +
             inetAddressLength(address);
 
-        logger.logResolve(eventCode, resolverName, durationNs, hostName, address);
+        logger.logResolve(resolverName, durationNs, hostName, address);
 
-        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(eventCode), captureLength, captureLength);
+        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(NAME_RESOLUTION_RESOLVE), captureLength, captureLength);
 
         int index = encodedMsgOffset(recordOffset) + LOG_HEADER_LENGTH;
         assertEquals(resolverName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
@@ -316,5 +314,41 @@ class DriverEventLoggerTest
         {
             assertEquals(addressBytes[i], logBuffer.getByte(index + i));
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void logLookup(final boolean isRelookup)
+    {
+        final int recordOffset = 30;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+
+        final String resolverName = generateStringWithSuffix("my-resolver", "*", 1000);
+        final String expectedResolverName = resolverName.substring(0, MAX_HOST_NAME_WITH_PORT_LENGTH - 3) + "...";
+        final long durationNs = TimeUnit.HOURS.toNanos(3);
+        final String name = "abc.example.com:5555";
+        final String resolvedName = "corporate.fancy.address.returned:5555";
+        final int captureLength = trailingStringLength(resolverName, MAX_HOST_NAME_WITH_PORT_LENGTH) + SIZE_OF_LONG +
+            trailingStringLength(name, MAX_HOST_NAME_WITH_PORT_LENGTH) + SIZE_OF_BOOLEAN +
+            trailingStringLength(resolvedName, MAX_HOST_NAME_WITH_PORT_LENGTH);
+
+        logger.logLookup(resolverName, durationNs, name, isRelookup, resolvedName);
+
+        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(NAME_RESOLUTION_LOOKUP), captureLength, captureLength);
+
+        int index = encodedMsgOffset(recordOffset) + LOG_HEADER_LENGTH;
+        assertEquals(expectedResolverName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT + expectedResolverName.length();
+
+        assertEquals(durationNs, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+
+        assertEquals(name, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT + name.length();
+
+        assertEquals(isRelookup ? 1 : 0, logBuffer.getByte(index));
+        index += SIZE_OF_BOOLEAN;
+
+        assertEquals(resolvedName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
     }
 }

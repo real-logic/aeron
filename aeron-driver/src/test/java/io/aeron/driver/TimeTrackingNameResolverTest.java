@@ -19,7 +19,6 @@ import io.aeron.CounterProvider;
 import org.agrona.concurrent.NanoClock;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import org.mockito.stubbing.Answer;
 
 import java.net.InetAddress;
 
@@ -115,23 +114,62 @@ class TimeTrackingNameResolverTest
     }
 
     @Test
-    void lookupShouldCallActualMethod()
+    void lookupShouldMeasureExecutionTime()
     {
         final NameResolver delegateResolver = mock(NameResolver.class);
         when(delegateResolver.lookup(anyString(), anyString(), anyBoolean()))
-            .thenAnswer((Answer<String>)invocation -> invocation.getArgument(0) + "!");
+            .thenAnswer(invocation ->
+            {
+                final String name = invocation.getArgument(0);
+                return name.substring(0, name.indexOf(':'));
+            });
         final NanoClock clock = mock(NanoClock.class);
+        final long beginNs = 0;
+        final long endNs = 123456789;
+        when(clock.nanoTime()).thenReturn(beginNs, endNs);
         final DutyCycleTracker maxTime = mock(DutyCycleTracker.class);
         final TimeTrackingNameResolver resolver = new TimeTrackingNameResolver(delegateResolver, clock, maxTime);
 
-        final String name = "my-host";
+        final String name = "my-host:8080";
         final String endpoint = "endpoint";
         final boolean isReLookup = false;
-        assertEquals(name + "!", resolver.lookup(name, endpoint, isReLookup));
+        assertEquals("my-host", resolver.lookup(name, endpoint, isReLookup));
 
-        verify(delegateResolver).lookup(name, endpoint, isReLookup);
-        verifyNoMoreInteractions(delegateResolver);
-        verifyNoInteractions(clock, maxTime);
+        final InOrder inOrder = inOrder(delegateResolver, clock, maxTime);
+        inOrder.verify(clock).nanoTime();
+        inOrder.verify(maxTime).update(beginNs);
+        inOrder.verify(delegateResolver).lookup(name, endpoint, isReLookup);
+        inOrder.verify(clock).nanoTime();
+        inOrder.verify(maxTime).measureAndUpdate(endNs);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void lookupShouldMeasureExecutionTimeEvenIfExceptionIsThrown()
+    {
+        final NameResolver delegateResolver = mock(NameResolver.class);
+        final Error error = new Error("broken");
+        when(delegateResolver.lookup(anyString(), anyString(), anyBoolean())).thenThrow(error);
+        final NanoClock clock = mock(NanoClock.class);
+        final long beginNs = 236745823658245L;
+        final long endNs = 7534957349857893459L;
+        when(clock.nanoTime()).thenReturn(beginNs, endNs);
+        final DutyCycleTracker maxTime = mock(DutyCycleTracker.class);
+        final TimeTrackingNameResolver resolver = new TimeTrackingNameResolver(delegateResolver, clock, maxTime);
+
+        final String name = "test:555";
+        final String endpoint = "control";
+        final boolean isReLookup = true;
+        final Error exception = assertThrowsExactly(Error.class, () -> resolver.lookup(name, endpoint, isReLookup));
+        assertSame(error, exception);
+
+        final InOrder inOrder = inOrder(delegateResolver, clock, maxTime);
+        inOrder.verify(clock).nanoTime();
+        inOrder.verify(maxTime).update(beginNs);
+        inOrder.verify(delegateResolver).lookup(name, endpoint, isReLookup);
+        inOrder.verify(clock).nanoTime();
+        inOrder.verify(maxTime).measureAndUpdate(endNs);
+        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
@@ -139,7 +177,7 @@ class TimeTrackingNameResolverTest
     {
         final NameResolver delegateResolver = mock(NameResolver.class);
         when(delegateResolver.resolve(anyString(), anyString(), anyBoolean()))
-            .thenAnswer((Answer<InetAddress>)invocation -> InetAddress.getByName(invocation.getArgument(0)));
+            .thenAnswer(invocation -> InetAddress.getByName(invocation.getArgument(0)));
         final NanoClock clock = mock(NanoClock.class);
         final long beginNs = SECONDS.toNanos(1);
         final long endNs = SECONDS.toNanos(9);

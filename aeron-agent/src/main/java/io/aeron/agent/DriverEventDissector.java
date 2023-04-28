@@ -342,7 +342,7 @@ final class DriverEventDissector
 
         builder.append(" durationNs=").append(durationNs);
 
-        builder.append(" hostname=");
+        builder.append(" name=");
         absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
         absoluteOffset += SIZE_OF_INT;
 

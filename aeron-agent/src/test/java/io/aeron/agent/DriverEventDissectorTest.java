@@ -651,7 +651,7 @@ class DriverEventDissectorTest
 
         assertThat(builder.toString(), endsWith(
             "DRIVER: NAME_RESOLUTION_RESOLVE [46/46]: " +
-            "resolver=testResolver durationNs=32167 hostname=localhost isReResolution=false address=127.0.0.1"));
+            "resolver=testResolver durationNs=32167 name=localhost isReResolution=false address=127.0.0.1"));
     }
 
     @Test
@@ -674,7 +674,7 @@ class DriverEventDissectorTest
 
         assertThat(builder.toString(), endsWith(
             "DRIVER: NAME_RESOLUTION_RESOLVE [40/40]: " +
-            "resolver=myResolver durationNs=-1 hostname=some-host isReResolution=true address=unknown-address"));
+            "resolver=myResolver durationNs=-1 name=some-host isReResolution=true address=unknown-address"));
     }
 
     @Test
@@ -688,7 +688,7 @@ class DriverEventDissectorTest
             "this.is.a.really.long.string.to.force.truncation.000000000000000000000000000000000000000000000000000000" +
             "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
             "0000000000000000000000000000000... durationNs=555 " +
-            "hostname=testResolver.this.is.a.really.long.string.to.force.truncati" +
+            "name=testResolver.this.is.a.really.long.string.to.force.truncati" +
             "on.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
             "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000... " +
             "isReResolution=false address=127.0.0.1";

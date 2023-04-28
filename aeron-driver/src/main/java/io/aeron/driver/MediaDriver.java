@@ -453,6 +453,7 @@ public final class MediaDriver implements AutoCloseable
         private long conductorCycleThresholdNs = Configuration.conductorCycleThresholdNs();
         private long senderCycleThresholdNs = Configuration.senderCycleThresholdNs();
         private long receiverCycleThresholdNs = Configuration.receiverCycleThresholdNs();
+        private long nameResolverThresholdNs = Configuration.nameResolverThresholdNs();
 
         private int conductorBufferLength = Configuration.conductorBufferLength();
         private int toClientsBufferLength = Configuration.toClientsBufferLength();
@@ -550,6 +551,7 @@ public final class MediaDriver implements AutoCloseable
         private DutyCycleTracker conductorDutyCycleTracker;
         private DutyCycleTracker senderDutyCycleTracker;
         private DutyCycleTracker receiverDutyCycleTracker;
+        private DutyCycleTracker nameResolverTimeTracker;
 
         /**
          * Perform a shallow copy of the object.
@@ -3168,6 +3170,32 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * Set a threshold for the {@link NameResolver} which when exceed it will increment the
+         * {@link io.aeron.driver.status.SystemCounterDescriptor#NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED} counter.
+         *
+         * @param thresholdNs value in nanoseconds
+         * @return this for fluent API.
+         * @see Configuration#NAME_RESOLVER_THRESHOLD_PROP_NAME
+         * @see Configuration#NAME_RESOLVER_THRESHOLD_DEFAULT_NS
+         */
+        public Context nameResolverThresholdNs(final long thresholdNs)
+        {
+            this.nameResolverThresholdNs = thresholdNs;
+            return this;
+        }
+
+        /**
+         * Threshold for the {@link NameResolver} which when exceed it will increment the
+         * {@link io.aeron.driver.status.SystemCounterDescriptor#NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED} counter.
+         *
+         * @return threshold to track for the name resolution.
+         */
+        public long nameResolverThresholdNs()
+        {
+            return nameResolverThresholdNs;
+        }
+
+        /**
          * Maximum number of {@link DriverManagedResource}s to free within a single duty cycle within the conductor.
          *
          * @param resourceFreeLimit number of resources to limit to.
@@ -3279,6 +3307,28 @@ public final class MediaDriver implements AutoCloseable
         public Context receiverDutyCycleTracker(final DutyCycleTracker dutyCycleTracker)
         {
             this.receiverDutyCycleTracker = dutyCycleTracker;
+            return this;
+        }
+
+        /**
+         * Duty cycle tracker used for the {@link NameResolver}.
+         *
+         * @return {@link NameResolver} duty cycle tracker.
+         */
+        public DutyCycleTracker nameResolverTimeTracker()
+        {
+            return nameResolverTimeTracker;
+        }
+
+        /**
+         * Set the duty cycle tracker used for the {@link NameResolver}.
+         *
+         * @param dutyCycleTracker for the {@link NameResolver}.
+         * @return this for a fluent API.
+         */
+        public Context nameResolverTimeTracker(final DutyCycleTracker dutyCycleTracker)
+        {
+            this.nameResolverTimeTracker = dutyCycleTracker;
             return this;
         }
 
@@ -3688,6 +3738,16 @@ public final class MediaDriver implements AutoCloseable
                     systemCounters.get(RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED),
                     receiverCycleThresholdNs);
             }
+
+            if (null == nameResolverTimeTracker)
+            {
+                nameResolverTimeTracker = new DutyCycleStallTracker(
+                    systemCounters.get(NAME_RESOLVER_MAX_TIME),
+                    systemCounters.get(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED),
+                    nameResolverThresholdNs);
+            }
+
+            nameResolver.init(countersManager::newCounter);
         }
 
         private void concludeCounters()

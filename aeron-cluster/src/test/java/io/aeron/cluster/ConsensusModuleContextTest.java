@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Counter;
+import io.aeron.CounterProvider;
 import io.aeron.RethrowingErrorHandler;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
@@ -34,6 +35,7 @@ import io.aeron.security.SessionProxy;
 import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestClusterClock;
+import org.agrona.DirectBuffer;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -45,6 +47,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -54,8 +57,9 @@ import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE
 import static io.aeron.cluster.service.ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.*;
 
 class ConsensusModuleContextTest
 {
@@ -75,6 +79,9 @@ class ConsensusModuleContextTest
         when(aeronContext.useConductorAgentInvoker()).thenReturn(true);
         final AgentInvoker conductorInvoker = mock(AgentInvoker.class);
         final Aeron aeron = mock(Aeron.class);
+        when(aeron.addCounter(
+            anyInt(), any(DirectBuffer.class), anyInt(), anyInt(), any(DirectBuffer.class), anyInt(), anyInt()))
+            .thenAnswer(invocation -> mock(Counter.class));
         when(aeron.context()).thenReturn(aeronContext);
         when(aeron.conductorAgentInvoker()).thenReturn(conductorInvoker);
         when(aeron.countersReader()).thenReturn(countersManager);
@@ -469,6 +476,20 @@ class ConsensusModuleContextTest
         context.conclude();
 
         assertEquals(existingCandidateTermId, context.nodeStateFile().candidateTerm().candidateTermId());
+    }
+
+    @Test
+    void shouldInitializeNameResolver()
+    {
+        final NameResolver nameResolver = mock(NameResolver.class);
+        context.nameResolver(nameResolver);
+
+        context.conclude();
+
+        final ArgumentCaptor<CounterProvider> argumentCaptor = ArgumentCaptor.forClass(CounterProvider.class);
+        verify(nameResolver).init(argumentCaptor.capture());
+        assertNotNull(argumentCaptor.getValue());
+        verifyNoMoreInteractions(nameResolver);
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

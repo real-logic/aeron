@@ -119,7 +119,8 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
 
         cache = new DriverNameResolverCache(TIMEOUT_MS);
 
-        final UdpChannel placeholderChannel = UdpChannel.parse("aeron:udp?endpoint=localhost:8050");
+        final UdpChannel placeholderChannel =
+            UdpChannel.parse("aeron:udp?endpoint=localhost:8050", delegateResolver);
         transport = new UdpNameResolutionTransport(placeholderChannel, localSocketAddress, unsafeBuffer, ctx);
 
         neighborsCounter = ctx.countersManager().newCounter(
@@ -205,8 +206,6 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
         catch (final UnknownHostException ignore)
         {
         }
-
-        DefaultNameResolver.INSTANCE.resolveHook(this.getClass().getSimpleName(), name, resolvedAddress);
 
         return resolvedAddress;
     }

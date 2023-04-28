@@ -15,14 +15,21 @@
  */
 package io.aeron.driver;
 
+import io.aeron.driver.status.DutyCycleStallTracker;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class MediaDriverTest
 {
@@ -49,5 +56,107 @@ class MediaDriverTest
         {
             System.setOut(out);
         }
+    }
+
+    @Test
+    void shouldInitializeDutyCycleTrackersWhenNotSet(final @TempDir Path tempDir) throws IOException
+    {
+        final Path aeronDir = tempDir.resolve("aeron");
+        Files.createDirectories(aeronDir);
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .aeronDirectoryName(aeronDir.toString())
+            .threadingMode(ThreadingMode.SHARED)
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
+            .conductorCycleThresholdNs(123)
+            .senderCycleThresholdNs(456)
+            .receiverCycleThresholdNs(789)
+            .nameResolverThresholdNs(101010);
+
+        assertNull(context.conductorDutyCycleTracker());
+        assertNull(context.senderDutyCycleTracker());
+        assertNull(context.receiverDutyCycleTracker());
+        assertNull(context.nameResolverTimeTracker());
+
+        try
+        {
+            context.conclude();
+
+            verifyStallTracker(
+                context.conductorDutyCycleTracker(),
+                CONDUCTOR_MAX_CYCLE_TIME,
+                CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED,
+                context.conductorCycleThresholdNs());
+            verifyStallTracker(
+                context.senderDutyCycleTracker(),
+                SENDER_MAX_CYCLE_TIME,
+                SENDER_CYCLE_TIME_THRESHOLD_EXCEEDED,
+                context.senderCycleThresholdNs());
+            verifyStallTracker(
+                context.receiverDutyCycleTracker(),
+                RECEIVER_MAX_CYCLE_TIME,
+                RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED,
+                context.receiverCycleThresholdNs());
+            verifyStallTracker(
+                context.nameResolverTimeTracker(),
+                NAME_RESOLVER_MAX_TIME,
+                NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED,
+                context.nameResolverThresholdNs());
+        }
+        finally
+        {
+            context.close();
+        }
+    }
+
+    @Test
+    void shouldUseProvidedDutyCycleTrackers(final @TempDir Path tempDir) throws IOException
+    {
+        final Path aeronDir = tempDir.resolve("aeron");
+        Files.createDirectories(aeronDir);
+        final DutyCycleTracker conductorDutyCycleTracker = new DutyCycleTracker();
+        final DutyCycleTracker senderDutyCycleTracker = new DutyCycleTracker();
+        final DutyCycleTracker receiverDutyCycleTracker = new DutyCycleTracker();
+        final DutyCycleTracker nameResolverTimeTracker = new DutyCycleTracker();
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .aeronDirectoryName(aeronDir.toString())
+            .threadingMode(ThreadingMode.SHARED)
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
+            .conductorDutyCycleTracker(conductorDutyCycleTracker)
+            .senderDutyCycleTracker(senderDutyCycleTracker)
+            .receiverDutyCycleTracker(receiverDutyCycleTracker)
+            .nameResolverTimeTracker(nameResolverTimeTracker);
+
+        assertSame(conductorDutyCycleTracker, context.conductorDutyCycleTracker());
+        assertSame(senderDutyCycleTracker, context.senderDutyCycleTracker());
+        assertSame(receiverDutyCycleTracker, context.receiverDutyCycleTracker());
+        assertSame(nameResolverTimeTracker, context.nameResolverTimeTracker());
+
+        try
+        {
+            context.conclude();
+
+            assertSame(conductorDutyCycleTracker, context.conductorDutyCycleTracker());
+            assertSame(senderDutyCycleTracker, context.senderDutyCycleTracker());
+            assertSame(receiverDutyCycleTracker, context.receiverDutyCycleTracker());
+            assertSame(nameResolverTimeTracker, context.nameResolverTimeTracker());
+        }
+        finally
+        {
+            context.close();
+        }
+    }
+
+    private static void verifyStallTracker(
+        final DutyCycleTracker dutyCycleTracker,
+        final SystemCounterDescriptor maxCycleTimeCounter,
+        final SystemCounterDescriptor cycleTimeThresholdExceededCounter,
+        final long cycleTimeThresholdNs)
+    {
+        final DutyCycleStallTracker stallTracker = assertInstanceOf(DutyCycleStallTracker.class, dutyCycleTracker);
+        assertEquals(maxCycleTimeCounter.id(), stallTracker.maxCycleTime().id());
+        assertEquals(cycleTimeThresholdExceededCounter.id(), stallTracker.cycleTimeThresholdExceededCount().id());
+        assertEquals(cycleTimeThresholdNs, stallTracker.cycleTimeThresholdNs());
     }
 }

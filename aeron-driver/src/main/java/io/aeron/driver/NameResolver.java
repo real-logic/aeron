@@ -15,6 +15,8 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CounterProvider;
+
 import java.net.InetAddress;
 
 /**
@@ -27,7 +29,7 @@ public interface NameResolver
      *
      * @param name           to resolve.
      * @param uriParamName   that the resolution is for.
-     * @param isReResolution true if this is a re-resolution or false if initial resolution.
+     * @param isReResolution {@code true} if this is a re-resolution or {@code false} if initial resolution.
      * @return address for the name that most recently represents the name or null if not resolvable currently.
      * @see io.aeron.CommonContext#ENDPOINT_PARAM_NAME
      * @see io.aeron.CommonContext#MDC_CONTROL_PARAM_NAME
@@ -40,7 +42,7 @@ public interface NameResolver
      *
      * @param name         to lookup
      * @param uriParamName that the lookup is for.
-     * @param isReLookup   true if this is a re-lookup or false if initial lookup.
+     * @param isReLookup   {@code true} if this is a re-lookup or {@code true} if initial lookup.
      * @return string in name:port form.
      */
     default String lookup(String name, String uriParamName, boolean isReLookup)
@@ -53,8 +55,21 @@ public interface NameResolver
      * used for actions like adding counters.
      *
      * @param context for the media driver that the name resolver is running in.
+     * @deprecated Use {@link #init(CounterProvider)} instead.
+     * @see #init(CounterProvider)
      */
+    @Deprecated
     default void init(MediaDriver.Context context)
+    {
+        throw new UnsupportedOperationException("deprecated: use NameResolver.init(io.aeron.CounterFactory) instead");
+    }
+
+    /**
+     * Do post construction initialisation of the name resolver.
+     *
+     * @param counterProvider for adding counters.
+     */
+    default void init(CounterProvider counterProvider)
     {
     }
 

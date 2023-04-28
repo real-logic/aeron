@@ -248,9 +248,16 @@ public class DriverComponentLogger implements ComponentLogger
         tempBuilder = addEventInstrumentation(
             tempBuilder,
             NAME_RESOLUTION_RESOLVE,
-            "DefaultNameResolver",
+            "TimeTrackingNameResolver",
             DriverInterceptor.NameResolution.Resolve.class,
-            "resolveHook");
+            "logResolve");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            NAME_RESOLUTION_LOOKUP,
+            "TimeTrackingNameResolver",
+            DriverInterceptor.NameResolution.Lookup.class,
+            "logLookup");
 
         return tempBuilder;
     }

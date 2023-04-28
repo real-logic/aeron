@@ -751,6 +751,16 @@ public final class Configuration
     public static final long RECEIVER_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
     /**
+     * Property name for threshold value for the name resolution threshold to track for being exceeded.
+     */
+    public static final String NAME_RESOLVER_THRESHOLD_PROP_NAME = "aeron.name.resolver.threshold";
+
+    /**
+     * Default threshold value for the name resolution threshold to track for being exceeded.
+     */
+    public static final long NAME_RESOLVER_THRESHOLD_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
+    /**
      * Should the driver configuration be printed on start.
      *
      * @return true if the driver configuration be printed on start.
@@ -1472,6 +1482,16 @@ public final class Configuration
     public static long receiverCycleThresholdNs()
     {
         return getDurationInNanos(RECEIVER_CYCLE_THRESHOLD_PROP_NAME, RECEIVER_CYCLE_THRESHOLD_DEFAULT_NS);
+    }
+
+    /**
+     * Get threshold value for the name resolution time threshold to track for being exceeded.
+     *
+     * @return threshold value in nanoseconds.
+     */
+    public static long nameResolverThresholdNs()
+    {
+        return getDurationInNanos(NAME_RESOLVER_THRESHOLD_PROP_NAME, NAME_RESOLVER_THRESHOLD_DEFAULT_NS);
     }
 
     /**

@@ -30,8 +30,7 @@ import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventEncoder.encode;
 import static io.aeron.agent.DriverEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 
 /**
  * Event logger interface used by interceptors for recording into a {@link RingBuffer} for a
@@ -48,6 +47,11 @@ public final class DriverEventLogger
      * Maximum length of a host name.
      */
     public static final int MAX_HOST_NAME_LENGTH = 253;
+
+    /**
+     * Maximum length of a host name with a port specified.
+     */
+    public static final int MAX_HOST_NAME_WITH_PORT_LENGTH = MAX_HOST_NAME_LENGTH + 6;
 
     private final ManyToOneRingBuffer ringBuffer;
 
@@ -337,30 +341,88 @@ public final class DriverEventLogger
     /**
      * Log a resolution for a resolver and the associated result.
      *
-     * @param code          representing the event type
-     * @param resolverName  simple class name of the resolver
-     * @param name          host name being resolved
-     * @param address       address that was resolved to, can be null
+     * @param resolverName   simple class name of the resolver.
+     * @param durationNs     of the call in nanoseconds.
+     * @param name           host name being resolved.
+     * @param isReResolution {@code true} if this is a re-resolution or {@code false} if initial resolution.
+     * @param address        address that was resolved to, can be {@code null}.
      */
     public void logResolve(
-        final DriverEventCode code,
         final String resolverName,
+        final long durationNs,
         final String name,
+        final boolean isReResolution,
         final InetAddress address)
     {
-        final int length = trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
+        final int length = SIZE_OF_BOOLEAN + SIZE_OF_LONG +
+            trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
             trailingStringLength(name, MAX_HOST_NAME_LENGTH) +
             inetAddressLength(address);
 
         final int encodedLength = encodedLength(length);
 
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(toEventCodeId(code), encodedLength);
+        final int index = ringBuffer.tryClaim(toEventCodeId(NAME_RESOLUTION_RESOLVE), encodedLength);
         if (index > 0)
         {
             try
             {
-                encodeResolve((UnsafeBuffer)ringBuffer.buffer(), index, length, length, resolverName, name, address);
+                encodeResolve(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    length,
+                    length,
+                    resolverName,
+                    durationNs,
+                    name,
+                    isReResolution,
+                    address);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log a resolution for a resolver and the associated result.
+     *
+     * @param resolverName simple class name of the resolver
+     * @param durationNs   of the call in nanoseconds.
+     * @param name         host name being resolved
+     * @param isReLookup      address that was resolved to, can be null
+     * @param resolvedName      address that was resolved to, can be null
+     */
+    public void logLookup(
+        final String resolverName,
+        final long durationNs,
+        final String name,
+        final boolean isReLookup,
+        final String resolvedName)
+    {
+        final int length = SIZE_OF_LONG + trailingStringLength(resolverName, MAX_HOST_NAME_WITH_PORT_LENGTH) +
+            trailingStringLength(name, MAX_HOST_NAME_WITH_PORT_LENGTH) + SIZE_OF_BOOLEAN +
+            trailingStringLength(resolvedName, MAX_HOST_NAME_WITH_PORT_LENGTH);
+
+        final int encodedLength = encodedLength(length);
+
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(toEventCodeId(NAME_RESOLUTION_LOOKUP), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encodeLookup(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    length,
+                    length,
+                    resolverName,
+                    durationNs,
+                    name,
+                    isReLookup,
+                    resolvedName);
             }
             finally
             {

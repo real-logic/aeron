@@ -21,8 +21,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
@@ -30,8 +33,9 @@ import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventEncoder.untetheredSubscriptionStateChangeLength;
-import static io.aeron.agent.DriverEventLogger.toEventCodeId;
+import static io.aeron.agent.DriverEventLogger.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
+import static io.aeron.test.Tests.generateStringWithSuffix;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -272,5 +276,87 @@ class DriverEventLoggerTest
         assertEquals(5656, logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(4, logBuffer.getInt(
             encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void logResolve(final boolean isReResolution) throws UnknownHostException
+    {
+        final int recordOffset = 64;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+
+        final String resolverName = "test";
+        final long durationNs = TimeUnit.DAYS.toNanos(1);
+        final String hostName = generateStringWithSuffix("very-l", "0", 1000);
+        final String expectedHostName = hostName.substring(0, MAX_HOST_NAME_LENGTH - 3) + "...";
+        final InetAddress address = InetAddress.getLocalHost();
+        final int captureLength = SIZE_OF_BOOLEAN + SIZE_OF_LONG +
+            trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
+            trailingStringLength(hostName, MAX_HOST_NAME_LENGTH) +
+            inetAddressLength(address);
+
+        logger.logResolve(resolverName, durationNs, hostName, isReResolution, address);
+
+        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(NAME_RESOLUTION_RESOLVE), captureLength, captureLength);
+
+        int index = encodedMsgOffset(recordOffset) + LOG_HEADER_LENGTH;
+
+        assertEquals(isReResolution, 1 == logBuffer.getByte(index));
+        index += SIZE_OF_BYTE;
+
+        assertEquals(durationNs, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+
+        assertEquals(resolverName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT + resolverName.length();
+
+        assertEquals(expectedHostName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT + expectedHostName.length();
+
+        final byte[] addressBytes = address.getAddress();
+        assertEquals(addressBytes.length, logBuffer.getInt(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT;
+        for (int i = 0; i < addressBytes.length; i++)
+        {
+            assertEquals(addressBytes[i], logBuffer.getByte(index + i));
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void logLookup(final boolean isReLookup)
+    {
+        final int recordOffset = 30;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+
+        final String resolverName = generateStringWithSuffix("my-resolver", "*", 1000);
+        final String expectedResolverName = resolverName.substring(0, MAX_HOST_NAME_WITH_PORT_LENGTH - 3) + "...";
+        final long durationNs = TimeUnit.HOURS.toNanos(3);
+        final String name = "abc.example.com:5555";
+        final String resolvedName = "corporate.fancy.address.returned:5555";
+        final int captureLength = SIZE_OF_BOOLEAN + SIZE_OF_LONG +
+            trailingStringLength(resolverName, MAX_HOST_NAME_WITH_PORT_LENGTH) +
+            trailingStringLength(name, MAX_HOST_NAME_WITH_PORT_LENGTH) +
+            trailingStringLength(resolvedName, MAX_HOST_NAME_WITH_PORT_LENGTH);
+
+        logger.logLookup(resolverName, durationNs, name, isReLookup, resolvedName);
+
+        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(NAME_RESOLUTION_LOOKUP), captureLength, captureLength);
+
+        int index = encodedMsgOffset(recordOffset) + LOG_HEADER_LENGTH;
+
+        assertEquals(isReLookup ? 1 : 0, logBuffer.getByte(index));
+        index += SIZE_OF_BOOLEAN;
+
+        assertEquals(durationNs, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+
+        assertEquals(expectedResolverName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT + expectedResolverName.length();
+
+        assertEquals(name, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+        index += SIZE_OF_INT + name.length();
+
+        assertEquals(resolvedName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
     }
 }

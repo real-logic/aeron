@@ -58,12 +58,28 @@ class DriverInterceptor
         static class Resolve
         {
             @Advice.OnMethodEnter
-            static void resolveHook(
+            static void logResolve(
                 final String resolverName,
+                final long durationNs,
                 final String name,
+                final boolean isReResolution,
                 final InetAddress address)
             {
-                LOGGER.logResolve(DriverEventCode.NAME_RESOLUTION_RESOLVE, resolverName, name, address);
+                LOGGER.logResolve(resolverName, durationNs, name, isReResolution, address);
+            }
+        }
+
+        static class Lookup
+        {
+            @Advice.OnMethodEnter
+            static void logLookup(
+                final String resolverName,
+                final long durationNs,
+                final String name,
+                final boolean isReLookup,
+                final String resolvedName)
+            {
+                LOGGER.logLookup(resolverName, durationNs, name, isReLookup, resolvedName);
             }
         }
     }

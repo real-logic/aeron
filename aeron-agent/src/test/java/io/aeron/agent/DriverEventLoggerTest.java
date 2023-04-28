@@ -285,7 +285,6 @@ class DriverEventLoggerTest
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
         final DriverEventCode eventCode = NAME_RESOLUTION_RESOLVE;
 
-        final int offset = 10;
         final String resolverName = "test";
         final long durationNs = TimeUnit.DAYS.toNanos(1);
         final String hostName = generateStringWithSuffix("very-l", "0", 1000);

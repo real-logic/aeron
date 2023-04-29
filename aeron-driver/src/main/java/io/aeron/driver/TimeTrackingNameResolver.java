@@ -18,6 +18,7 @@ package io.aeron.driver;
 import io.aeron.CounterProvider;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.net.InetAddress;
 
@@ -84,9 +85,9 @@ final class TimeTrackingNameResolver implements NameResolver, AutoCloseable
     /**
      * {@inheritDoc}
      */
-    public void init(final CounterProvider counterProvider)
+    public void init(final CountersReader countersReader, final CounterProvider counterProvider)
     {
-        delegateResolver.init(counterProvider);
+        delegateResolver.init(countersReader, counterProvider);
     }
 
     /**

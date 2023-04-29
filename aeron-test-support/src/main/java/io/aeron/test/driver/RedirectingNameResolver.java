@@ -18,6 +18,7 @@ package io.aeron.test.driver;
 import io.aeron.CounterProvider;
 import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.NameResolver;
+import org.agrona.BitUtil;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.Object2ObjectHashMap;
@@ -59,23 +60,39 @@ public class RedirectingNameResolver implements NameResolver
         }
     }
 
-    public void init(final CounterProvider counterProvider)
+    public void init(final CountersReader countersReader, final CounterProvider counterProvider)
     {
+        countersReader.forEach((counterId, typeId, keyBuffer, label) ->
+        {
+            if (typeId == NAME_ENTRY_COUNTER_TYPE_ID && keyBuffer.capacity() > BitUtil.SIZE_OF_INT)
+            {
+                final String entryName = keyBuffer.getStringAscii(0);
+                final NameEntry entry = nameToEntryMap.get(entryName);
+                if (null != entry)
+                {
+                    entry.counter(new AtomicCounter(countersReader.valuesBuffer(), counterId));
+                }
+            }
+        });
+
         final ExpandableArrayBuffer tmpBuffer = new ExpandableArrayBuffer();
         for (final NameEntry nameEntry : nameToEntryMap.values())
         {
-            final int keyLength = tmpBuffer.putStringAscii(0, nameEntry.name);
-            final int labelLength = tmpBuffer.putStringAscii(keyLength, nameEntry.toString());
+            if (null == nameEntry.counter)
+            {
+                final int keyLength = tmpBuffer.putStringAscii(0, nameEntry.name);
+                final int labelLength = tmpBuffer.putStringAscii(keyLength, nameEntry.toString());
 
-            final AtomicCounter atomicCounter = counterProvider.newCounter(
-                NAME_ENTRY_COUNTER_TYPE_ID,
-                tmpBuffer,
-                0,
-                keyLength,
-                tmpBuffer,
-                keyLength,
-                labelLength);
-            nameEntry.counter(atomicCounter);
+                final AtomicCounter atomicCounter = counterProvider.newCounter(
+                    NAME_ENTRY_COUNTER_TYPE_ID,
+                    tmpBuffer,
+                    0,
+                    keyLength,
+                    tmpBuffer,
+                    keyLength,
+                    labelLength);
+                nameEntry.counter(atomicCounter);
+            }
         }
     }
 

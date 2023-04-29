@@ -16,6 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.CounterProvider;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.net.InetAddress;
 
@@ -55,8 +56,8 @@ public interface NameResolver
      * used for actions like adding counters.
      *
      * @param context for the media driver that the name resolver is running in.
-     * @deprecated Use {@link #init(CounterProvider)} instead.
-     * @see #init(CounterProvider)
+     * @deprecated Use {@link #init(CountersReader, CounterProvider)} instead.
+     * @see #init(CountersReader, CounterProvider)
      */
     @Deprecated
     default void init(MediaDriver.Context context)
@@ -67,9 +68,10 @@ public interface NameResolver
     /**
      * Do post construction initialisation of the name resolver.
      *
+     * @param countersReader for finding existing counters.
      * @param counterProvider for adding counters.
      */
-    default void init(CounterProvider counterProvider)
+    default void init(final CountersReader countersReader, CounterProvider counterProvider)
     {
     }
 

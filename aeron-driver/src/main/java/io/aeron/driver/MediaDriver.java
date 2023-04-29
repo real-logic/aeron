@@ -3747,7 +3747,7 @@ public final class MediaDriver implements AutoCloseable
                     nameResolverThresholdNs);
             }
 
-            nameResolver.init(countersManager::newCounter);
+            nameResolver.init(countersManager, countersManager::newCounter);
         }
 
         private void concludeCounters()

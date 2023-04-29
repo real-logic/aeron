@@ -40,6 +40,7 @@ import org.agrona.SystemUtil;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -486,9 +487,11 @@ class ConsensusModuleContextTest
 
         context.conclude();
 
-        final ArgumentCaptor<CounterProvider> argumentCaptor = ArgumentCaptor.forClass(CounterProvider.class);
-        verify(nameResolver).init(argumentCaptor.capture());
-        assertNotNull(argumentCaptor.getValue());
+        final ArgumentCaptor<CountersReader> readerCaptor = ArgumentCaptor.forClass(CountersReader.class);
+        final ArgumentCaptor<CounterProvider> providerCaptor = ArgumentCaptor.forClass(CounterProvider.class);
+        verify(nameResolver).init(readerCaptor.capture(), providerCaptor.capture());
+        assertSame(context.aeron().countersReader(), readerCaptor.getValue());
+        assertNotNull(providerCaptor.getValue());
         verifyNoMoreInteractions(nameResolver);
     }
 

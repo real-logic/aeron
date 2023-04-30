@@ -846,4 +846,61 @@ public final class ClusterEventLogger
             }
         }
     }
+
+    /**
+     * Log a standby snapshot notification.
+     *
+     * @param memberId            memberId receiving the notification.
+     * @param recordingId         the recording id of the standby snapshot in the remote archive.
+     * @param leadershipTermId    the leadershipTermId of the standby snapshot.
+     * @param termBaseLogPosition the termBaseLogPosition of the standby snapshot.
+     * @param logPosition         the position of the standby snapshot when it is taken.
+     * @param timestamp           the cluster timestamp when the snapshot is taken.
+     * @param timeUnit            the cluster time unit.
+     * @param serviceId           the serviceId for the snapshot.
+     * @param archiveEndpoint     the endpoint holding the standby snapshot.
+     *
+     */
+    public void logStandbySnapshotNotification(
+        final int memberId,
+        final long recordingId,
+        final long leadershipTermId,
+        final long termBaseLogPosition,
+        final long logPosition,
+        final long timestamp,
+        final TimeUnit timeUnit,
+        final int serviceId,
+        final String archiveEndpoint)
+    {
+        final int length = ClusterEventEncoder.standbySnapshotNotificationLength(timeUnit, archiveEndpoint);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(STANDBY_SNAPSHOT_NOTIFICATION.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                ClusterEventEncoder.encodeStandbySnapshotNotification(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    memberId,
+                    recordingId,
+                    leadershipTermId,
+                    termBaseLogPosition,
+                    logPosition,
+                    timestamp,
+                    timeUnit,
+                    serviceId,
+                    archiveEndpoint);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
 }

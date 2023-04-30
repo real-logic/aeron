@@ -42,6 +42,7 @@ import static io.aeron.agent.ClusterEventCode.REPLAY_NEW_LEADERSHIP_TERM;
 import static io.aeron.agent.ClusterEventCode.REPLICATION_ENDED;
 import static io.aeron.agent.ClusterEventCode.REQUEST_VOTE;
 import static io.aeron.agent.ClusterEventCode.SERVICE_ACK;
+import static io.aeron.agent.ClusterEventCode.STANDBY_SNAPSHOT_NOTIFICATION;
 import static io.aeron.agent.ClusterEventCode.STATE_CHANGE;
 import static io.aeron.agent.ClusterEventCode.STOP_CATCHUP;
 import static io.aeron.agent.ClusterEventCode.TERMINATION_ACK;
@@ -49,6 +50,7 @@ import static io.aeron.agent.ClusterEventCode.TERMINATION_POSITION;
 import static io.aeron.agent.ClusterEventCode.TRUNCATE_LOG_ENTRY;
 import static io.aeron.agent.ClusterEventEncoder.replicationEndedLength;
 import static io.aeron.agent.ClusterEventEncoder.serviceAckLength;
+import static io.aeron.agent.ClusterEventEncoder.standbySnapshotNotificationLength;
 import static io.aeron.agent.ClusterEventEncoder.terminationAckLength;
 import static io.aeron.agent.ClusterEventEncoder.terminationPositionLength;
 import static io.aeron.agent.ClusterEventEncoder.canvassPositionLength;
@@ -863,6 +865,65 @@ class ClusterEventLoggerTest
             "\\[[0-9]+\\.[0-9]+] CLUSTER: REPLICATION_ENDED \\[86/86]: memberId=222 " +
             "purpose=STANDBY_SNAPSHOT channel=aeron:udp\\?endpoint=localhost:9090 srcRecordingId=234 " +
             "dstRecordingId=8435 position=982342 hasSynced=true";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
+
+    @Test
+    void logStandbySnapshotNotification()
+    {
+        final int memberId = 222;
+        final long recordingId = 9823674L;
+        final long leadershipTermId = 23478L;
+        final long termBaseLogPosition = 823423L;
+        final long logPosition = 9827342L;
+        final long timestamp = 98273423434L;
+        final int serviceId = 1;
+        final String archiveEndpoint = "localhost:9090";
+        final int offset = 64;
+        final TimeUnit timeUnit = MILLISECONDS;
+
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+        logger.logStandbySnapshotNotification(
+            memberId,
+            recordingId,
+            leadershipTermId,
+            termBaseLogPosition,
+            logPosition,
+            timestamp,
+            timeUnit,
+            serviceId,
+            archiveEndpoint);
+
+        verifyLogHeader(
+            logBuffer,
+            offset,
+            STANDBY_SNAPSHOT_NOTIFICATION.toEventCodeId(),
+            standbySnapshotNotificationLength(timeUnit, archiveEndpoint),
+            standbySnapshotNotificationLength(timeUnit, archiveEndpoint));
+
+        final int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+        assertEquals(recordingId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        assertEquals(leadershipTermId, logBuffer.getLong(index + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(termBaseLogPosition, logBuffer.getLong(index + (2 * SIZE_OF_LONG), LITTLE_ENDIAN));
+        assertEquals(logPosition, logBuffer.getLong(index + (3 * SIZE_OF_LONG), LITTLE_ENDIAN));
+        assertEquals(timestamp, logBuffer.getLong(index + (4 * SIZE_OF_LONG), LITTLE_ENDIAN));
+        assertEquals(memberId, logBuffer.getInt(index + (5 * SIZE_OF_LONG), LITTLE_ENDIAN));
+        assertEquals(serviceId, logBuffer.getInt(index + (5 * SIZE_OF_LONG) + (SIZE_OF_INT), LITTLE_ENDIAN));
+
+        final int timeUnitIndex = index + (5 * SIZE_OF_LONG) + (2 * SIZE_OF_INT);
+        assertEquals(timeUnit.name(), logBuffer.getStringAscii(timeUnitIndex));
+        final int archiveEndpointIndex = timeUnitIndex + SIZE_OF_INT + timeUnit.name().length();
+        assertEquals(archiveEndpoint, logBuffer.getStringAscii(archiveEndpointIndex, LITTLE_ENDIAN));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectStandbySnapshotNotification(
+            STANDBY_SNAPSHOT_NOTIFICATION, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern =
+            "\\[[0-9]+\\.[0-9]+] CLUSTER: STANDBY_SNAPSHOT_NOTIFICATION \\[90/90]: memberId=222 " +
+            "recordingId=9823674 leadershipTermId=23478 termBaseLeadershipPosition=823423 logPosition=9827342 " +
+            "timestamp=98273423434 timeUnit=MILLISECONDS serviceId=1 archiveEndpoint=localhost:9090";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }

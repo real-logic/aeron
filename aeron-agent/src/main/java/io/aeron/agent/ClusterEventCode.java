@@ -126,7 +126,12 @@ public enum ClusterEventCode implements EventCode
     /**
      * Event when a replication has ended.
      */
-    REPLICATION_ENDED(20, ClusterEventDissector::dissectReplicationEnded);
+    REPLICATION_ENDED(20, ClusterEventDissector::dissectReplicationEnded),
+
+    /**
+     * Event when a standby snapshot notification has been received by a consensus module
+     */
+    STANDBY_SNAPSHOT_NOTIFICATION(21, ClusterEventDissector::dissectStandbySnapshotNotification);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

@@ -347,4 +347,30 @@ class ClusterInterceptor
         }
     }
 
+    static class StandbySnapshotNotification
+    {
+        @Advice.OnMethodEnter
+        static void logStandbySnapshotNotification(
+            final int memberId,
+            final long recordingId,
+            final long leadershipTermId,
+            final long termBaseLogPosition,
+            final long logPosition,
+            final long timestamp,
+            final TimeUnit timeUnit,
+            final int serviceId,
+            final String archiveEndpoint)
+        {
+            LOGGER.logStandbySnapshotNotification(
+                memberId,
+                recordingId,
+                leadershipTermId,
+                termBaseLogPosition,
+                logPosition,
+                timestamp,
+                timeUnit,
+                serviceId,
+                archiveEndpoint);
+        }
+    }
 }

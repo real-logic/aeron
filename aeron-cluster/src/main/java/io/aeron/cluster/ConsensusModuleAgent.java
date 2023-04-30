@@ -2235,16 +2235,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
     }
 
-    private void logStandbySnapshot(
+    private void logStandbySnapshotNotification(
         final int memberId,
-        final long recordingLog,
+        final long recordingId,
         final long leadershipTermId,
         final long termBaseLogPosition,
         final long logPosition,
         final long timestamp,
+        final TimeUnit timeUnit,
         final int serviceId,
-        final String archiveEndpoint,
-        final boolean endOfGroup)
+        final String archiveEndpoint)
     {
     }
 
@@ -2681,16 +2681,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
                         for (final StandbySnapshotEntry standbySnapshotEntry : standbySnapshotEntries)
                         {
-                            logStandbySnapshot(
+                            logStandbySnapshotNotification(
                                 memberId,
                                 standbySnapshotEntry.recordingId(),
                                 standbySnapshotEntry.leadershipTermId(),
                                 standbySnapshotEntry.termBaseLogPosition(),
                                 standbySnapshotEntry.logPosition(),
                                 standbySnapshotEntry.timestamp(),
+                                ctx.clusterClock().timeUnit(),
                                 standbySnapshotEntry.serviceId(),
-                                standbySnapshotEntry.archiveEndpoint(),
-                                true);
+                                standbySnapshotEntry.archiveEndpoint());
 
                             recordingLog.appendStandbySnapshot(
                                 standbySnapshotEntry.recordingId(),

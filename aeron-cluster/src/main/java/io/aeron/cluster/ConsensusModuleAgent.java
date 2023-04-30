@@ -2703,6 +2703,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                         }
 
                         ctx.standbySnapshotCounter().increment();
+                        ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
+                        session.close(aeron, ctx.countedErrorHandler());
+                        workCount += 1;
                     }
                 }
             }

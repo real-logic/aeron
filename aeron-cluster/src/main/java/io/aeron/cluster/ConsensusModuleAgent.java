@@ -161,6 +161,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private String liveLogDestination;
     private String catchupLogDestination;
     private String ingressEndpoints;
+    private StandbySnapshotReplicator standbySnapshotReplicator = null;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {
@@ -283,7 +284,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
             if (null == ctx.boostrapState())
             {
-                replicateStandbySnapshots();
+                replicateStandbySnapshotsForStartup();
                 recoveryPlan = recoverFromSnapshotAndLog();
             }
             else
@@ -2502,6 +2503,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
 
         workCount += consensusModuleAdapter.poll();
+        workCount += pollStandbySnapshotReplication(nowNs);
 
         return workCount;
     }
@@ -2536,8 +2538,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 if (ConsensusModule.State.ACTIVE == state)
                 {
                     appendAction(ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT);
-                    ClusterControl.ToggleState.reset(controlToggle);
                 }
+                ClusterControl.ToggleState.reset(controlToggle);
                 break;
 
             case SHUTDOWN:
@@ -2565,6 +2567,21 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                     serviceProxy.terminationPosition(terminationPosition, errorHandler);
                     state(ConsensusModule.State.TERMINATING);
                 }
+                break;
+
+            case REPLICATE_STANDBY_SNAPSHOT:
+                if (null == this.standbySnapshotReplicator)
+                {
+                    this.standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
+                        ctx.clusterMemberId(),
+                        ctx.archiveContext(),
+                        recordingLog,
+                        ctx.serviceCount(),
+                        ctx.leaderArchiveControlChannel(),
+                        ctx.archiveContext().controlRequestStreamId(),
+                        ctx.replicationChannel());
+                }
+                ClusterControl.ToggleState.reset(controlToggle);
                 break;
 
             default:
@@ -3928,7 +3945,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return recoveryPlan;
     }
 
-    private void replicateStandbySnapshots()
+    private void replicateStandbySnapshotsForStartup()
     {
         try (StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
             ctx.clusterMemberId(),
@@ -3959,6 +3976,24 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 }
             }
         }
+    }
+
+    private int pollStandbySnapshotReplication(final long nowNs)
+    {
+        int workCount = 0;
+
+        if (null != standbySnapshotReplicator)
+        {
+            workCount += standbySnapshotReplicator.poll(nowNs);
+
+            if (standbySnapshotReplicator.isComplete())
+            {
+                CloseHelper.quietClose(standbySnapshotReplicator);
+                standbySnapshotReplicator = null;
+            }
+        }
+
+        return workCount;
     }
 
     public String toString()

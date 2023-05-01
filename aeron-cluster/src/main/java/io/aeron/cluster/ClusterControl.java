@@ -80,7 +80,12 @@ public class ClusterControl
         /**
          * Trigger a snapshot that will only occur on a cluster standby.
          */
-        STANDBY_SNAPSHOT(7);
+        STANDBY_SNAPSHOT(7),
+
+        /**
+         * Trigger a replication of the most resent standby snapshots.
+         */
+        REPLICATE_STANDBY_SNAPSHOT(8);
 
         private final int code;
 

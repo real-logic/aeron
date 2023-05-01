@@ -282,7 +282,7 @@ public interface Cluster
      *     {
      *         break;
      *     }
-     *     else if (Publication.ADMIN_ACTION != position || Publication.BACK_PRESSURED != position)
+     *     else if (Publication.ADMIN_ACTION != position && Publication.BACK_PRESSURED != position)
      *     {
      *         throw new ClusterException("Internal offer failed: " + position);
      *     }

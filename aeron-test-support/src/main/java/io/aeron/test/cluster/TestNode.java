@@ -681,6 +681,7 @@ public final class TestNode implements AutoCloseable
             delaySessionMessageProcessing = shouldDelay;
         }
 
+        @SuppressWarnings("this-escape")
         public MessageTrackingService(final int serviceId, final int index)
         {
             this.serviceId = serviceId;

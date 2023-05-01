@@ -100,6 +100,7 @@ public class CubicCongestionControl implements CongestionControl
      * @param context         for configuration options applied in the driver.
      * @param countersManager for the driver.
      */
+    @SuppressWarnings("this-escape")
     public CubicCongestionControl(
         final long registrationId,
         final UdpChannel udpChannel,

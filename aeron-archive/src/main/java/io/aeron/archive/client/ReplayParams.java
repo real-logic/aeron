@@ -31,6 +31,7 @@ public class ReplayParams
     /**
      * Default, initialise all values to "null"
      */
+    @SuppressWarnings("this-escape")
     public ReplayParams()
     {
         reset();

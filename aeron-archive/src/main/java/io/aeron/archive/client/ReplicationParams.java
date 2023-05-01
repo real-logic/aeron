@@ -35,6 +35,7 @@ public class ReplicationParams
     /**
      * Initialise all parameters to defaults.
      */
+    @SuppressWarnings("this-escape")
     public ReplicationParams()
     {
         reset();

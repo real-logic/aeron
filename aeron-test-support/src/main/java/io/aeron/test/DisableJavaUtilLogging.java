@@ -23,6 +23,7 @@ import java.util.logging.LogManager;
  */
 public class DisableJavaUtilLogging extends LogManager
 {
+    @SuppressWarnings("this-escape")
     public DisableJavaUtilLogging()
     {
         reset(); // Close all logging handlers

@@ -622,7 +622,6 @@ public class Aeron implements AutoCloseable
         return conductor.removeCloseHandler(handler);
     }
 
-
     /**
      * {@inheritDoc}
      */
@@ -719,11 +718,16 @@ public class Aeron implements AutoCloseable
                     System.err.println(System.currentTimeMillis() + " Exception:");
                     throwable.printStackTrace(System.err);
                 }
+
                 if (throwable instanceof DriverTimeoutException)
                 {
-                    System.err.printf(
-                        "%n***%n*** timeout for the Media Driver - is it currently running? exiting%n***%n");
-                    System.exit(-1);
+                    System.err.printf("%n***%n*** Media Driver timeout - is it running? exiting client...%n***%n");
+
+                    final Thread t = new Thread(() -> Runtime.getRuntime().exit(-1));
+
+                    t.setName("runtime-exit-runner");
+                    t.setDaemon(true);
+                    t.start();
                 }
             };
 

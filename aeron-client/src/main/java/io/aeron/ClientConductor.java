@@ -422,8 +422,7 @@ final class ClientConductor implements Agent
     {
         if (!isClosed)
         {
-            isTerminating = true;
-            forceCloseResources();
+            terminateConductor();
             handleError(new ClientTimeoutException("client timeout from driver"));
         }
     }
@@ -1239,8 +1238,7 @@ final class ClientConductor implements Agent
         }
     }
 
-    void closeImages(
-        final Image[] images, final UnavailableImageHandler unavailableImageHandler, final long lingerNs)
+    void closeImages(final Image[] images, final UnavailableImageHandler unavailableImageHandler, final long lingerNs)
     {
         for (final Image image : images)
         {
@@ -1315,17 +1313,16 @@ final class ClientConductor implements Agent
         {
             if (isClientApiCall(correlationId))
             {
-                isTerminating = true;
-                forceCloseResources();
+                terminateConductor();
             }
+
             throw ex;
         }
         catch (final Exception ex)
         {
             if (driverEventsAdapter.isInvalid())
             {
-                isTerminating = true;
-                forceCloseResources();
+                terminateConductor();
 
                 if (!isClientApiCall(correlationId))
                 {
@@ -1344,9 +1341,10 @@ final class ClientConductor implements Agent
         return workCount;
     }
 
-    private static boolean isClientApiCall(final long correlationId)
+    private void terminateConductor()
     {
-        return correlationId != NO_CORRELATION_ID;
+        isTerminating = true;
+        forceCloseResources();
     }
 
     private void awaitResponse(final long correlationId)
@@ -1384,7 +1382,7 @@ final class ClientConductor implements Agent
 
             if (Thread.currentThread().isInterrupted())
             {
-                isTerminating = true;
+                terminateConductor();
                 throw new AeronException("unexpected interrupt");
             }
         }
@@ -1413,8 +1411,7 @@ final class ClientConductor implements Agent
     {
         if ((timeOfLastServiceNs + interServiceTimeoutNs) - nowNs < 0)
         {
-            isTerminating = true;
-            forceCloseResources();
+            terminateConductor();
 
             throw new ConductorServiceTimeoutException(
                 "service interval exceeded: timeout=" + interServiceTimeoutNs +
@@ -1431,8 +1428,7 @@ final class ClientConductor implements Agent
 
             if (nowMs > (lastKeepAliveMs + driverTimeoutMs))
             {
-                isTerminating = true;
-                forceCloseResources();
+                terminateConductor();
 
                 throw new DriverTimeoutException(
                     "MediaDriver (" + aeron.context().aeronDirectoryName() + ") keepalive: age=" +
@@ -1456,8 +1452,7 @@ final class ClientConductor implements Agent
                 final int counterId = heartbeatTimestamp.id();
                 if (!HeartbeatTimestamp.isActive(countersReader, counterId, HEARTBEAT_TYPE_ID, ctx.clientId()))
                 {
-                    isTerminating = true;
-                    forceCloseResources();
+                    terminateConductor();
 
                     throw new AeronException("unexpected close of heartbeat timestamp counter: " + counterId);
                 }
@@ -1627,6 +1622,11 @@ final class ClientConductor implements Agent
         }
 
         return null;
+    }
+
+    private static boolean isClientApiCall(final long correlationId)
+    {
+        return correlationId != NO_CORRELATION_ID;
     }
 
     private static final class PendingSubscription

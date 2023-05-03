@@ -133,46 +133,40 @@ final class ClientConductor implements Agent
     {
         boolean isInterrupted = false;
 
+        aeron.internalClose();
+
         clientLock.lock();
         try
         {
-            if (!isClosed)
+            final boolean isTerminating = this.isTerminating;
+            this.isTerminating = true;
+            forceCloseResources();
+            notifyCloseHandlers();
+
+            try
             {
-                if (!aeron.isClosed())
+                if (isTerminating)
                 {
-                    aeron.internalClose();
+                    Thread.sleep(IDLE_SLEEP_MS);
                 }
 
-                final boolean isTerminating = this.isTerminating;
-                this.isTerminating = true;
-                forceCloseResources();
-                notifyCloseHandlers();
-
-                try
-                {
-                    if (isTerminating)
-                    {
-                        Thread.sleep(IDLE_SLEEP_MS);
-                    }
-
-                    Thread.sleep(NANOSECONDS.toMillis(ctx.closeLingerDurationNs()));
-                }
-                catch (final InterruptedException ignore)
-                {
-                    isInterrupted = true;
-                }
-
-                for (final LogBuffers lingeringLogBuffer : lingeringLogBuffers)
-                {
-                    CloseHelper.close(ctx.errorHandler(), lingeringLogBuffer);
-                }
-
-                driverProxy.clientClose();
-                ctx.close();
-
-                ctx.countersMetaDataBuffer().wrap(0, 0);
-                ctx.countersValuesBuffer().wrap(0, 0);
+                Thread.sleep(NANOSECONDS.toMillis(ctx.closeLingerDurationNs()));
             }
+            catch (final InterruptedException ignore)
+            {
+                isInterrupted = true;
+            }
+
+            for (final LogBuffers lingeringLogBuffer : lingeringLogBuffers)
+            {
+                CloseHelper.close(ctx.errorHandler(), lingeringLogBuffer);
+            }
+
+            driverProxy.clientClose();
+            ctx.close();
+
+            ctx.countersMetaDataBuffer().wrap(0, 0);
+            ctx.countersValuesBuffer().wrap(0, 0);
         }
         finally
         {

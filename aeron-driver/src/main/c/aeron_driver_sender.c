@@ -319,7 +319,7 @@ void aeron_driver_sender_on_remove_publication(void *clientd, void *command)
     }
 
     if (aeron_udp_channel_interceptors_publication_notifications(
-        transport->data_paths, transport, publication, AERON_UDP_CHANNEL_INTERCEPTOR_ADD_NOTIFICATION) < 0)
+        transport->data_paths, transport, publication, AERON_UDP_CHANNEL_INTERCEPTOR_REMOVE_NOTIFICATION) < 0)
     {
         AERON_APPEND_ERR("%s", "sender on_remove_publication interceptors publication notifications");
         aeron_driver_sender_log_error(sender);

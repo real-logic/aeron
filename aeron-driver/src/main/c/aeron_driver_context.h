@@ -273,9 +273,11 @@ typedef struct aeron_driver_context_stct
     aeron_duty_cycle_tracker_t *conductor_duty_cycle_tracker;
     aeron_duty_cycle_tracker_t *sender_duty_cycle_tracker;
     aeron_duty_cycle_tracker_t *receiver_duty_cycle_tracker;
+    aeron_duty_cycle_tracker_t *name_resolver_time_tracker;
     aeron_duty_cycle_stall_tracker_t conductor_duty_cycle_stall_tracker;
     aeron_duty_cycle_stall_tracker_t sender_duty_cycle_stall_tracker;
     aeron_duty_cycle_stall_tracker_t receiver_duty_cycle_stall_tracker;
+    aeron_duty_cycle_stall_tracker_t name_resolver_time_stall_tracker;
 
     aeron_dl_loaded_libs_state_t *dynamic_libs;
     aeron_driver_context_bindings_clientd_entry_t *bindings_clientd_entries;

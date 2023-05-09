@@ -321,6 +321,7 @@ static void aeron_driver_conductor_on_endpoint_change_null(const void *channel)
 #define AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD_NS_DEFAULT (1 * 1000 * 1000 * INT64_C(1000))
 #define AERON_DRIVER_SENDER_CYCLE_THRESHOLD_NS_DEFAULT (1 * 1000 * 1000 * INT64_C(1000))
 #define AERON_DRIVER_RECEIVER_CYCLE_THRESHOLD_NS_DEFAULT (1 * 1000 * 1000 * INT64_C(1000))
+#define AERON_DRIVER_NAME_RESOLVER_THRESHOLD_NS_DEFAULT (5 * 1000 * 1000 * INT64_C(1000))
 #define AERON_RECEIVER_IO_VECTOR_CAPACITY_DEFAULT UINT32_C(2)
 #define AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT UINT32_C(2)
 #define AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT UINT32_C(2)
@@ -373,6 +374,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->receiver_duty_cycle_stall_tracker.tracker.measure_and_update =
         aeron_duty_cycle_stall_tracker_measure_and_update;
     _context->receiver_duty_cycle_stall_tracker.tracker.state = &_context->receiver_duty_cycle_stall_tracker;
+
+    _context->name_resolver_time_tracker = &_context->name_resolver_time_stall_tracker.tracker;
+    _context->name_resolver_time_stall_tracker.tracker.update =
+        aeron_duty_cycle_stall_tracker_update;
+    _context->name_resolver_time_stall_tracker.tracker.measure_and_update =
+        aeron_duty_cycle_stall_tracker_measure_and_update;
+    _context->name_resolver_time_stall_tracker.tracker.state = &_context->name_resolver_time_stall_tracker;
 
     _context->udp_channel_outgoing_interceptor_bindings = NULL;
     _context->udp_channel_incoming_interceptor_bindings = NULL;
@@ -518,6 +526,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->conductor_duty_cycle_stall_tracker.cycle_threshold_ns = AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD_NS_DEFAULT;
     _context->sender_duty_cycle_stall_tracker.cycle_threshold_ns = AERON_DRIVER_SENDER_CYCLE_THRESHOLD_NS_DEFAULT;
     _context->receiver_duty_cycle_stall_tracker.cycle_threshold_ns = AERON_DRIVER_RECEIVER_CYCLE_THRESHOLD_NS_DEFAULT;
+    _context->name_resolver_time_stall_tracker.cycle_threshold_ns = AERON_DRIVER_NAME_RESOLVER_THRESHOLD_NS_DEFAULT;
     _context->receiver_io_vector_capacity = AERON_RECEIVER_IO_VECTOR_CAPACITY_DEFAULT;
     _context->sender_io_vector_capacity = AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT;
     _context->network_publication_max_messages_per_send = AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT;
@@ -2696,6 +2705,20 @@ aeron_duty_cycle_tracker_t *aeron_driver_context_get_receiver_duty_cycle_tracker
     return NULL != context ? context->receiver_duty_cycle_tracker : NULL;
 }
 
+int aeron_driver_context_set_name_resolver_time_tracker(
+    aeron_driver_context_t *context, aeron_duty_cycle_tracker_t *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->name_resolver_time_tracker = value;
+    return 0;
+}
+
+aeron_duty_cycle_tracker_t *aeron_driver_context_get_name_resolver_time_tracker(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->name_resolver_time_tracker : NULL;
+}
+
 int64_t aeron_driver_context_set_conductor_cycle_threshold_ns(aeron_driver_context_t *context, uint64_t value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
@@ -2739,6 +2762,21 @@ int64_t aeron_driver_context_get_receiver_cycle_threshold_ns(aeron_driver_contex
     return NULL != context ?
         context->receiver_duty_cycle_stall_tracker.cycle_threshold_ns :
         AERON_DRIVER_RECEIVER_CYCLE_THRESHOLD_NS_DEFAULT;
+}
+
+int64_t aeron_driver_context_set_name_resolver_threshold_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->name_resolver_time_stall_tracker.cycle_threshold_ns = value;
+    return 0;
+}
+
+int64_t aeron_driver_context_get_name_resolver_threshold_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ?
+        context->name_resolver_time_stall_tracker.cycle_threshold_ns :
+        AERON_DRIVER_NAME_RESOLVER_THRESHOLD_NS_DEFAULT;
 }
 
 int aeron_driver_context_bindings_clientd_find_first_free_index(aeron_driver_context_t *context)

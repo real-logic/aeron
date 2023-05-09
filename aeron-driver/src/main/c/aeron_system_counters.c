@@ -55,6 +55,8 @@ static aeron_system_counter_t system_counters[] =
         { "Sender work cycle exceeded threshold count", AERON_SYSTEM_COUNTER_SENDER_CYCLE_TIME_THRESHOLD_EXCEEDED },
         { "Receiver max cycle time doing its work in ns", AERON_SYSTEM_COUNTER_RECEIVER_MAX_CYCLE_TIME },
         { "Receiver work cycle exceeded threshold count", AERON_SYSTEM_COUNTER_RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED },
+        { "NameResolver max time in ns", AERON_SYSTEM_COUNTER_NAME_RESOLVER_MAX_TIME },
+        { "NameResolver exceeded threshold count", AERON_SYSTEM_COUNTER_NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED },
     };
 
 static size_t num_system_counters = sizeof(system_counters) / sizeof(aeron_system_counter_t);

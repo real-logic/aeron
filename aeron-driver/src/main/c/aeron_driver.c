@@ -563,6 +563,8 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
         context->sender_duty_cycle_stall_tracker.cycle_threshold_ns);
     fprintf(fpout, "\n    receiver_cycle_threshold_ns=%" PRIu64,
         context->receiver_duty_cycle_stall_tracker.cycle_threshold_ns);
+    fprintf(fpout, "\n    name_resolver_threshold_ns=%" PRIu64,
+        context->name_resolver_time_stall_tracker.cycle_threshold_ns);
     fprintf(fpout, "\n    term_buffer_length=%" PRIu64, (uint64_t)context->term_buffer_length);
     fprintf(fpout, "\n    ipc_term_buffer_length=%" PRIu64, (uint64_t)context->ipc_term_buffer_length);
     fprintf(fpout, "\n    publication_window_length=%" PRIu64, (uint64_t)context->publication_window_length);

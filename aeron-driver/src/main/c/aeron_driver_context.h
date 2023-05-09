@@ -90,7 +90,7 @@ typedef void (*aeron_driver_name_resolver_on_resolve_t)(
 typedef void (*aeron_driver_name_resolver_on_lookup_t)(
     aeron_name_resolver_t *name_resolver,
     int64_t duration_ns,
-    const char *hostname,
+    const char *name,
     bool is_re_lookup,
     const char *resolved_name);
 

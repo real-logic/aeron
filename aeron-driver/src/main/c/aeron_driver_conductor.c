@@ -406,7 +406,8 @@ static int aeron_time_tracking_name_resolver_resolve(
     aeron_time_tracking_name_resolver_t *time_tracking_resolver = (aeron_time_tracking_name_resolver_t *)resolver->state;
     aeron_driver_context_t *context = time_tracking_resolver->context;
     int64_t begin_ns = context->nano_clock();
-    context->name_resolver_time_tracker->update(context->name_resolver_time_tracker->state, begin_ns);
+    aeron_duty_cycle_tracker_t *tracker = context->name_resolver_time_tracker;
+    tracker->update(tracker->state, begin_ns);
 
     int result = time_tracking_resolver->delegate_resolver.resolve_func(
         &time_tracking_resolver->delegate_resolver,
@@ -416,7 +417,7 @@ static int aeron_time_tracking_name_resolver_resolve(
         address);
 
     int64_t end_ns = context->nano_clock();
-    context->name_resolver_time_tracker->measure_and_update(context->name_resolver_time_tracker->state, end_ns);
+    tracker->measure_and_update(tracker->state, end_ns);
 
     if (NULL != context->on_name_resolve_func)
     {
@@ -438,7 +439,8 @@ static int aeron_time_tracking_name_resolver_lookup(
     aeron_time_tracking_name_resolver_t *time_tracking_resolver = (aeron_time_tracking_name_resolver_t *)resolver->state;
     aeron_driver_context_t *context = time_tracking_resolver->context;
     int64_t begin_ns = context->nano_clock();
-    context->name_resolver_time_tracker->update(context->name_resolver_time_tracker->state, begin_ns);
+    aeron_duty_cycle_tracker_t *tracker = context->name_resolver_time_tracker;
+    tracker->update(tracker->state, begin_ns);
 
     int result = time_tracking_resolver->delegate_resolver.lookup_func(
         &time_tracking_resolver->delegate_resolver,
@@ -448,7 +450,7 @@ static int aeron_time_tracking_name_resolver_lookup(
         resolved_name);
 
     int64_t end_ns = context->nano_clock();
-    context->name_resolver_time_tracker->measure_and_update(context->name_resolver_time_tracker->state, end_ns);
+    tracker->measure_and_update(tracker->state, end_ns);
 
     if (NULL != context->on_name_lookup_func)
     {

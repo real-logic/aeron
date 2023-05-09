@@ -418,6 +418,12 @@ static int aeron_time_tracking_name_resolver_resolve(
     int64_t end_ns = context->nano_clock();
     context->name_resolver_time_tracker->measure_and_update(context->name_resolver_time_tracker->state, end_ns);
 
+    if (NULL != context->on_name_resolve_func)
+    {
+        struct sockaddr_storage *resolved_address = 0 <= result ? address : NULL;
+        context->on_name_resolve_func(resolver, name, resolved_address);
+    }
+
     return result;
 }
 
@@ -657,7 +663,6 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->name_resolver.lookup_func = aeron_time_tracking_name_resolver_lookup;
     conductor->name_resolver.do_work_func = aeron_time_tracking_name_resolver_do_work;
     conductor->name_resolver.close_func = aeron_time_tracking_name_resolver_close;
-    conductor->name_resolver.on_resolve_func = NULL;
     conductor->name_resolver.state = time_tracking_name_resolver;
 
     char local_hostname[AERON_MAX_HOSTNAME_LEN];

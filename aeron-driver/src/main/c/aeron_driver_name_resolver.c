@@ -1105,12 +1105,6 @@ int aeron_driver_name_resolver_resolve(
         result = aeron_driver_name_resolver_to_sockaddr(&cache_entry->cache_addr, sock_addr);
     }
 
-    if (NULL != resolver->on_resolve_func)
-    {
-        struct sockaddr_storage *resolved_address = 0 <= result ? sock_addr : NULL;
-        resolver->on_resolve_func(resolver, name, resolved_address);
-    }
-
     return result;
 }
 
@@ -1166,7 +1160,6 @@ int aeron_driver_name_resolver_supplier(
     resolver->resolve_func = aeron_driver_name_resolver_resolve;
     resolver->do_work_func = aeron_driver_name_resolver_do_work;
     resolver->close_func = aeron_driver_name_resolver_close;
-    resolver->on_resolve_func = context->on_name_resolve_func;
     resolver->state = name_resolver;
     resolver->name = "driver";
 

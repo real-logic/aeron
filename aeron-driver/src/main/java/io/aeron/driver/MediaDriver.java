@@ -1266,7 +1266,6 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-
         /**
          * The maximum time to backoff before sending a NAK on multicast.
          *
@@ -3196,7 +3195,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Maximum number of {@link DriverManagedResource}s to free within a single duty cycle within the conductor.
+         * Maximum number of {@link DriverManagedResource}s to free within a single duty cycle of the conductor.
          *
          * @param resourceFreeLimit number of resources to limit to.
          * @return this for a fluent API.
@@ -3212,7 +3211,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Maximum number of {@link DriverManagedResource}s to free within a single duty cycle within the conductor.
+         * Maximum number of {@link DriverManagedResource}s to free within a single duty cycle of the conductor.
          *
          * @return limit on the number of resources that can be freed.
          * @since 1.41.0
@@ -3257,7 +3256,7 @@ public final class MediaDriver implements AutoCloseable
         /**
          * Set the duty cycle tracker used for the conductor.
          *
-         * @param dutyCycleTracker for the ocnductor.
+         * @param dutyCycleTracker for the conductor.
          * @return this for a fluent API.
          */
         public Context conductorDutyCycleTracker(final DutyCycleTracker dutyCycleTracker)

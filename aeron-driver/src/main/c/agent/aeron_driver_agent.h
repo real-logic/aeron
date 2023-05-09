@@ -166,9 +166,11 @@ aeron_driver_agent_flow_control_receiver_change_log_header_t;
 typedef struct aeron_driver_agent_name_resolver_resolve_log_header_stct
 {
     int64_t time_ns;
+    int64_t duration_ns;
     int32_t resolver_name_length;
     int32_t hostname_length;
     int32_t address_length;
+    bool is_re_resolution;
 }
 aeron_driver_agent_name_resolver_resolve_log_header_t;
 

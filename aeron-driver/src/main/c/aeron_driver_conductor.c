@@ -421,7 +421,8 @@ static int aeron_time_tracking_name_resolver_resolve(
     if (NULL != context->on_name_resolve_func)
     {
         struct sockaddr_storage *resolved_address = 0 <= result ? address : NULL;
-        context->on_name_resolve_func(resolver, name, resolved_address);
+        context->on_name_resolve_func(
+            &time_tracking_resolver->delegate_resolver, end_ns - begin_ns, name, is_re_resolution, resolved_address);
     }
 
     return result;
@@ -431,7 +432,7 @@ static int aeron_time_tracking_name_resolver_lookup(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
-    bool is_re_resolution,
+    bool is_re_lookup,
     const char **resolved_name)
 {
     aeron_time_tracking_name_resolver_t *time_tracking_resolver = (aeron_time_tracking_name_resolver_t *)resolver->state;
@@ -443,11 +444,18 @@ static int aeron_time_tracking_name_resolver_lookup(
         &time_tracking_resolver->delegate_resolver,
         name,
         uri_param_name,
-        is_re_resolution,
+        is_re_lookup,
         resolved_name);
 
     int64_t end_ns = context->nano_clock();
     context->name_resolver_time_tracker->measure_and_update(context->name_resolver_time_tracker->state, end_ns);
+
+    if (NULL != context->on_name_lookup_func)
+    {
+        const char *result_name = 0 <= result ? *resolved_name : NULL;
+        context->on_name_lookup_func(
+            &time_tracking_resolver->delegate_resolver, end_ns - begin_ns, name, is_re_lookup, result_name);
+    }
 
     return result;
 }

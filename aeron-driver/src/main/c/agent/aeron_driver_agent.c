@@ -935,7 +935,9 @@ int32_t aeron_driver_agent_socket_address_length(struct sockaddr_storage *addres
 
 void aeron_driver_agent_name_resolver_on_resolve(
     aeron_name_resolver_t *name_resolver,
+    int64_t duration_ns,
     const char *hostname,
+    bool is_re_resolution,
     struct sockaddr_storage *address)
 {
     const size_t resolverNameFullLength = strlen(name_resolver->name);
@@ -963,9 +965,11 @@ void aeron_driver_agent_name_resolver_on_resolve(
             (aeron_driver_agent_name_resolver_resolve_log_header_t *)ptr;
 
         hdr->time_ns = aeron_nano_clock();
+        hdr->duration_ns = duration_ns;
         hdr->resolver_name_length = (int32_t)resolverNameLength;
         hdr->hostname_length = (int32_t)hostnameLength;
         hdr->address_length = (int32_t)addressLength;
+        hdr->is_re_resolution = is_re_resolution;
 
         uint8_t *bodyPtr = ptr + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t);
         memcpy(bodyPtr, name_resolver->name, (size_t)resolverNameLength);
@@ -1886,12 +1890,14 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 
             fprintf(
                 logfp,
-                "%s: resolver=%.*s hostname=%.*s address=%s%s%s\n",
+                "%s: resolver=%.*s durationNs=%" PRIu64 " name=%.*s isReResolution=%s address=%s%s%s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 (int)hdr->resolver_name_length,
                 resolver_name_ptr,
+                (uint64_t)hdr->duration_ns,
                 (int)hdr->hostname_length,
                 hostname_ptr,
+                hdr->is_re_resolution ? "true" : "false",
                 addr_prefix,
                 address_str,
                 addr_suffix);

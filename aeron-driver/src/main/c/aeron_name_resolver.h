@@ -43,7 +43,7 @@ typedef int (*aeron_name_resolver_lookup_func_t)(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
-    bool is_re_resolution,
+    bool is_re_lookup,
     const char **resolved_name);
 
 typedef int (*aeron_name_resolver_do_work_func_t)(aeron_name_resolver_t *resolver, int64_t now_ms);
@@ -79,7 +79,7 @@ int aeron_default_name_resolver_lookup(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
-    bool is_re_resolution,
+    bool is_re_lookup,
     const char **resolved_name);
 
 int aeron_default_name_resolver_do_work(aeron_name_resolver_t *resolver, int64_t now_ms);

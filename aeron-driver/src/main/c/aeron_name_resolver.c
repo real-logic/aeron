@@ -99,7 +99,7 @@ int aeron_default_name_resolver_lookup(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
-    bool is_re_resolution,
+    bool is_re_lookup,
     const char **resolved_name)
 {
     *resolved_name = name;

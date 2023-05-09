@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventLogger.MAX_HOST_NAME_LENGTH;
-import static io.aeron.agent.DriverEventLogger.MAX_HOST_NAME_WITH_PORT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.*;
 
@@ -286,12 +285,12 @@ final class DriverEventEncoder
         encodedLength += SIZE_OF_LONG;
 
         encodedLength += encodeTrailingString(
-            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_WITH_PORT_LENGTH, resolverName);
+            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, resolverName);
 
         encodedLength += encodeTrailingString(
-            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_WITH_PORT_LENGTH, name);
+            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, name);
 
         encodeTrailingString(
-            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_WITH_PORT_LENGTH, resolvedName);
+            encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, resolvedName);
     }
 }

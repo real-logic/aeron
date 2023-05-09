@@ -46,12 +46,7 @@ public final class DriverEventLogger
     /**
      * Maximum length of a host name.
      */
-    public static final int MAX_HOST_NAME_LENGTH = 253;
-
-    /**
-     * Maximum length of a host name with a port specified.
-     */
-    public static final int MAX_HOST_NAME_WITH_PORT_LENGTH = MAX_HOST_NAME_LENGTH + 6;
+    public static final int MAX_HOST_NAME_LENGTH = 256;
 
     private final ManyToOneRingBuffer ringBuffer;
 
@@ -401,9 +396,9 @@ public final class DriverEventLogger
         final boolean isReLookup,
         final String resolvedName)
     {
-        final int length = SIZE_OF_LONG + trailingStringLength(resolverName, MAX_HOST_NAME_WITH_PORT_LENGTH) +
-            trailingStringLength(name, MAX_HOST_NAME_WITH_PORT_LENGTH) + SIZE_OF_BOOLEAN +
-            trailingStringLength(resolvedName, MAX_HOST_NAME_WITH_PORT_LENGTH);
+        final int length = SIZE_OF_LONG + trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
+            trailingStringLength(name, MAX_HOST_NAME_LENGTH) + SIZE_OF_BOOLEAN +
+            trailingStringLength(resolvedName, MAX_HOST_NAME_LENGTH);
 
         final int encodedLength = encodedLength(length);
 

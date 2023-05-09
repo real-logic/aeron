@@ -330,14 +330,14 @@ class DriverEventLoggerTest
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
 
         final String resolverName = generateStringWithSuffix("my-resolver", "*", 1000);
-        final String expectedResolverName = resolverName.substring(0, MAX_HOST_NAME_WITH_PORT_LENGTH - 3) + "...";
+        final String expectedResolverName = resolverName.substring(0, MAX_HOST_NAME_LENGTH - 3) + "...";
         final long durationNs = TimeUnit.HOURS.toNanos(3);
         final String name = "abc.example.com:5555";
         final String resolvedName = "corporate.fancy.address.returned:5555";
         final int captureLength = SIZE_OF_BOOLEAN + SIZE_OF_LONG +
-            trailingStringLength(resolverName, MAX_HOST_NAME_WITH_PORT_LENGTH) +
-            trailingStringLength(name, MAX_HOST_NAME_WITH_PORT_LENGTH) +
-            trailingStringLength(resolvedName, MAX_HOST_NAME_WITH_PORT_LENGTH);
+            trailingStringLength(resolverName, MAX_HOST_NAME_LENGTH) +
+            trailingStringLength(name, MAX_HOST_NAME_LENGTH) +
+            trailingStringLength(resolvedName, MAX_HOST_NAME_LENGTH);
 
         logger.logLookup(resolverName, durationNs, name, isReLookup, resolvedName);
 

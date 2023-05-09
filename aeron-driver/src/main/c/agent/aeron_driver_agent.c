@@ -260,33 +260,22 @@ static void aeron_driver_agent_set_enabled_all_events(const bool is_enabled)
 
 static void aeron_driver_agent_set_enabled_admin_events(const bool is_enabled)
 {
-    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_KEEPALIVE_CLIENT].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_PUBLICATION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_SUBSCRIPTION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_CLIENT_CLOSE].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_RCV_DESTINATION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_RCV_DESTINATION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_PUBLICATION_READY].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_AVAILABLE_IMAGE].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_IMAGE].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ERROR].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_SUBSCRIPTION_READY].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_COUNTER_READY].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_COUNTER].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_CLIENT_TIMEOUT].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_TERMINATE_DRIVER].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE].enabled = is_enabled;
+    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    {
+        if (AERON_DRIVER_EVENT_FRAME_IN != i &&
+            AERON_DRIVER_EVENT_FRAME_OUT != i &&
+            AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED != i &&
+            AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED != i &&
+            AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR != i &&
+            AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT != i)
+        {
+            const char *event_name = log_events[i].name;
+            if (!aeron_driver_agent_is_unknown_event(event_name))
+            {
+                log_events[i].enabled = is_enabled;
+            }
+        }
+    }
 }
 
 static void aeron_driver_agent_set_enabled_specific_events(const uint8_t type, const bool is_enabled)

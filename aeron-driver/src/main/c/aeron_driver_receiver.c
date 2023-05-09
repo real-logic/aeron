@@ -104,8 +104,8 @@ int aeron_driver_receiver_init(
 
     int64_t now_ns = context->nano_clock();
     receiver->re_resolution_deadline_ns = now_ns + (int64_t)context->re_resolution_check_interval_ns;
-    receiver->context->receiver_duty_cycle_stall_tracker.tracker.update(
-        receiver->context->receiver_duty_cycle_stall_tracker.tracker.state, now_ns);
+    aeron_duty_cycle_tracker_t *tracker = receiver->context->receiver_duty_cycle_tracker;
+    tracker->update(tracker->state, now_ns);
 
     return 0;
 }

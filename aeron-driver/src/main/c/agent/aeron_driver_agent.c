@@ -264,8 +264,6 @@ static void aeron_driver_agent_set_enabled_admin_events(const bool is_enabled)
     {
         if (AERON_DRIVER_EVENT_FRAME_IN != i &&
             AERON_DRIVER_EVENT_FRAME_OUT != i &&
-            AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED != i &&
-            AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED != i &&
             AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR != i &&
             AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT != i)
         {

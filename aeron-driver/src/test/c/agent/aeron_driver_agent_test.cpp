@@ -67,7 +67,7 @@ protected:
             auto event_name = aeron_driver_agent_event_name(event_id);
             bool expected = 0 != strncmp(
                 AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, event_name, strlen(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME) + 1);
-            EXPECT_EQ(expected, aeron_driver_agent_is_event_enabled(event_id));
+            EXPECT_EQ(expected, aeron_driver_agent_is_event_enabled(event_id)) << event_name;
         }
 
         EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NUM_ELEMENTS));
@@ -81,8 +81,6 @@ protected:
             auto event_id = static_cast<aeron_driver_agent_event_t>(i);
             if (AERON_DRIVER_EVENT_FRAME_IN != event_id &&
                 AERON_DRIVER_EVENT_FRAME_OUT != event_id &&
-                AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED != event_id &&
-                AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED != event_id &&
                 AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR != event_id &&
                 AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT != event_id)
             {
@@ -176,8 +174,6 @@ TEST_F(DriverAgentTest, shouldEnabledAdminLoggingEvents)
 
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_IN));
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_OUT));
-    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED));
-    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED));
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR));
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT));
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<aeron_driver_agent_event_t>(0)));

@@ -1904,6 +1904,22 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             break;
         }
 
+        case AERON_DRIVER_EVENT_NAME_GENERIC_MESSAGE:
+        {
+            aeron_driver_agent_generic_message_log_header_t *hdr =
+                (aeron_driver_agent_generic_message_log_header_t *)message;
+            uint8_t *message_ptr =
+                (uint8_t *)message + sizeof(aeron_driver_agent_generic_message_log_header_t);
+
+            fprintf(
+                logfp,
+                "%s: %.*s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                hdr->message_length,
+                message_ptr);
+            break;
+        }
+
         case AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR:
         {
             aeron_driver_agent_add_dissector_header_t *hdr = (aeron_driver_agent_add_dissector_header_t *)message;

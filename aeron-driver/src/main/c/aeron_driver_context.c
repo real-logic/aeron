@@ -954,6 +954,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         0,
         UINT64_C(60) * 60 * 1000 * 1000 * 1000);
 
+    _context->name_resolver_time_stall_tracker.cycle_threshold_ns = aeron_config_parse_duration_ns(
+        AERON_DRIVER_NAME_RESOLVER_THRESHOLD_ENV_VAR,
+        getenv(AERON_DRIVER_NAME_RESOLVER_THRESHOLD_ENV_VAR),
+        _context->name_resolver_time_stall_tracker.cycle_threshold_ns,
+        0,
+        UINT64_C(60) * 60 * 1000 * 1000 * 1000);
+
     _context->receiver_io_vector_capacity = aeron_config_parse_uint32(
         AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR,
         getenv(AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR),

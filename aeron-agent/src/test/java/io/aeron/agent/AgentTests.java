@@ -102,9 +102,7 @@ final class AgentTests
             assertEquals(
                 EnumSet.complementOf(EnumSet.of(
                 FRAME_IN,
-                FRAME_OUT,
-                NAME_RESOLUTION_NEIGHBOR_ADDED,
-                NAME_RESOLUTION_NEIGHBOR_REMOVED)),
+                FRAME_OUT)),
                 DriverComponentLogger.ENABLED_EVENTS);
             assertEquals(
                 EnumSet.of(CMD_IN_EXTEND_RECORDING, CATALOG_RESIZE),

@@ -39,7 +39,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 
-import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.test.driver.RedirectingNameResolver.*;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
@@ -101,7 +101,8 @@ class NameReResolutionTest
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED)
-            .nameResolver(new RedirectingNameResolver(STUB_LOOKUP_CONFIGURATION));
+            .nameResolver(new RedirectingNameResolver(STUB_LOOKUP_CONFIGURATION))
+            .nameResolverThresholdNs(1);
 
         driver = TestMediaDriver.launch(context, systemTestWatcher);
         systemTestWatcher.dataCollector().add(context.aeronDirectory());
@@ -460,6 +461,19 @@ class NameReResolutionTest
             client.context().aeronDirectoryName(),
             exceptionMessageMatcher,
             new SleepingMillisIdleStrategy(100));
+    }
+
+    @Test
+    void shouldTrackNameResolutionTime()
+    {
+        assertEquals(0, countersReader.getCounterValue(NAME_RESOLVER_MAX_TIME.id()));
+        assertEquals(0, countersReader.getCounterValue(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED.id()));
+
+        publication = client.addPublication(PUBLICATION_URI, STREAM_ID);
+        publication.close();
+
+        assertNotEquals(0, countersReader.getCounterValue(NAME_RESOLVER_MAX_TIME.id()));
+        assertNotEquals(0, countersReader.getCounterValue(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED.id()));
     }
 
     private static void assumeBindAddressAvailable(final String address)

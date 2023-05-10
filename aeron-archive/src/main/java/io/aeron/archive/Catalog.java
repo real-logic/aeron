@@ -1217,9 +1217,9 @@ final class Catalog implements AutoCloseable
         final UnsafeBuffer buffer)
     {
         final File file = new File(archiveDir, segmentFile);
-        try (FileChannel segment = FileChannel.open(file.toPath(), READ, WRITE))
+        try (FileChannel segmentFileChannel = FileChannel.open(file.toPath(), READ, WRITE))
         {
-            final int offsetLimit = (int)min(segmentFileLength, segment.size());
+            final int offsetLimit = (int)min(segmentFileLength, segmentFileChannel.size());
             final ByteBuffer byteBuffer = buffer.byteBuffer();
 
             int nextFragmentOffset = offset;
@@ -1229,7 +1229,7 @@ final class Catalog implements AutoCloseable
             out:
             while (nextFragmentOffset < offsetLimit)
             {
-                final int bytesRead = readNextChunk(segment, byteBuffer, nextFragmentOffset, offsetLimit);
+                final int bytesRead = readNextChunk(segmentFileChannel, byteBuffer, nextFragmentOffset, offsetLimit);
 
                 bufferOffset = 0;
                 while (bufferOffset < bytesRead)
@@ -1251,9 +1251,13 @@ final class Catalog implements AutoCloseable
                 !isValidFragment(buffer, bufferOffset - lastFragmentLength, lastFragmentLength, checksum) &&
                 truncateOnPageStraddle.test(file))
             {
-                segment.truncate(lastFragmentOffset);
-                byteBuffer.put(0, (byte)0).limit(1).position(0);
-                segment.write(byteBuffer, segmentFileLength - 1);
+                final int singleByte = 1;
+                segmentFileChannel.truncate(lastFragmentOffset);
+                byteBuffer.put(0, (byte)0).limit(singleByte).position(0);
+                if (singleByte != segmentFileChannel.write(byteBuffer, segmentFileLength - 1))
+                {
+                    throw new IllegalStateException("Failed to write single byte to set segment file length");
+                }
 
                 return lastFragmentOffset;
             }

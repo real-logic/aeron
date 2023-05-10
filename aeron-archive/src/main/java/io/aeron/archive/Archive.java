@@ -1332,8 +1332,8 @@ public final class Archive implements AutoCloseable
                     {
                         throw new ConfigurationException(
                             "Unable to derive Archive.Context.archiveClientContext.controlResponseChannel as " +
-                                "Archive.Context.controlChannel.endpoint=" + endpoint +
-                                " and is not in the <host>:<port> format");
+                            "Archive.Context.controlChannel.endpoint=" + endpoint +
+                            " and is not in the <host>:<port> format");
                     }
 
                     final String responseEndpoint = endpoint.substring(0, separatorIndex) + ":0";

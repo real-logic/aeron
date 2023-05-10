@@ -613,7 +613,7 @@ public class ArchiveTool
     }
 
     /**
-     * Compute and persist CRC-32 checksums for every fragment of a segment file for all recordings in the catalog.
+     * Compute and persist CRC-32(c) checksums for every fragment of a segment file for all recordings in the catalog.
      *
      * @param out               stream to print results and errors to.
      * @param archiveDir        that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
@@ -627,7 +627,7 @@ public class ArchiveTool
     }
 
     /**
-     * Compute and persist CRC-32 checksums for every fragment of a segment file(s) for a given recording.
+     * Compute and persist CRC-32(c) checksums for every fragment of a segment file(s) for a given recording.
      *
      * @param out               stream to print results and errors to.
      * @param archiveDir        that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.

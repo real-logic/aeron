@@ -1969,12 +1969,12 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             break;
         }
 
-        case AERON_DRIVER_EVENT_NAME_GENERIC_MESSAGE:
+        case AERON_DRIVER_EVENT_NAME_TEXT_DATA:
         {
-            aeron_driver_agent_generic_message_log_header_t *hdr =
-                (aeron_driver_agent_generic_message_log_header_t *)message;
+            aeron_driver_agent_text_data_log_header_t *hdr =
+                (aeron_driver_agent_text_data_log_header_t *)message;
             uint8_t *message_ptr =
-                (uint8_t *)message + sizeof(aeron_driver_agent_generic_message_log_header_t);
+                (uint8_t *)message + sizeof(aeron_driver_agent_text_data_log_header_t);
 
             fprintf(
                 logfp,

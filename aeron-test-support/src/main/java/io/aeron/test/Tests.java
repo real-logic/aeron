@@ -87,7 +87,7 @@ public class Tests
 
     /**
      * Error handler that can be used as an implementation of {@link org.agrona.ErrorHandler} which will print out
-     * a stacktrace unless the exception is to type {@link AeronException.Category#WARN}.
+     * a stacktrace unless the exception is to type {@link io.aeron.exceptions.AeronException.Category#WARN}.
      *
      * @param ex to be handled.
      */

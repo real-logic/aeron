@@ -85,7 +85,7 @@ public enum DriverEventCode implements EventCode
     NAME_RESOLUTION_RESOLVE(50,
         (code, buffer, offset, builder) -> DriverEventDissector.dissectResolve(buffer, offset, builder)),
 
-    GENERIC_MESSAGE(51, DriverEventDissector::dissectString),
+    TEXT_DATA(51, DriverEventDissector::dissectString),
 
     NAME_RESOLUTION_LOOKUP(52,
         (code, buffer, offset, builder) -> DriverEventDissector.dissectLookup(buffer, offset, builder));

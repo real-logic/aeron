@@ -788,6 +788,10 @@ int aeron_driver_context_set_receiver_duty_cycle_tracker(
     aeron_driver_context_t *context, aeron_duty_cycle_tracker_t *value);
 aeron_duty_cycle_tracker_t *aeron_driver_context_get_receiver_duty_cycle_tracker(aeron_driver_context_t *context);
 
+int aeron_driver_context_set_name_resolver_time_tracker(
+    aeron_driver_context_t *context, aeron_duty_cycle_tracker_t *value);
+aeron_duty_cycle_tracker_t *aeron_driver_context_get_name_resolver_time_tracker(aeron_driver_context_t *context);
+
 /**
  * Specify the duty cycle time threshold for the conductor.
  */
@@ -811,6 +815,14 @@ int64_t aeron_driver_context_get_sender_cycle_threshold_ns(aeron_driver_context_
 
 int64_t aeron_driver_context_set_receiver_cycle_threshold_ns(aeron_driver_context_t *context, uint64_t value);
 int64_t aeron_driver_context_get_receiver_cycle_threshold_ns(aeron_driver_context_t *context);
+
+/**
+ * Specify the duty cycle time threshold for the name_resolver.
+ */
+#define AERON_DRIVER_NAME_RESOLVER_THRESHOLD_ENV_VAR "AERON_DRIVER_NAME_RESOLVER_THRESHOLD"
+
+int64_t aeron_driver_context_set_name_resolver_threshold_ns(aeron_driver_context_t *context, uint64_t value);
+int64_t aeron_driver_context_get_name_resolver_threshold_ns(aeron_driver_context_t *context);
 
 #define AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR "AERON_RECEIVER_IO_VECTOR_CAPACITY"
 int aeron_driver_context_set_receiver_io_vector_capacity(aeron_driver_context_t *context, uint32_t value);

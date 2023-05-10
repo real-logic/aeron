@@ -82,8 +82,17 @@ typedef void (*aeron_driver_flow_control_strategy_on_receiver_change_func_t)(
 
 typedef void (*aeron_driver_name_resolver_on_resolve_t)(
     aeron_name_resolver_t *name_resolver,
+    int64_t duration_ns,
     const char *hostname,
+    bool is_re_resolution,
     struct sockaddr_storage *address);
+
+typedef void (*aeron_driver_name_resolver_on_lookup_t)(
+    aeron_name_resolver_t *name_resolver,
+    int64_t duration_ns,
+    const char *name,
+    bool is_re_lookup,
+    const char *resolved_name);
 
 typedef struct aeron_driver_context_stct
 {
@@ -269,13 +278,16 @@ typedef struct aeron_driver_context_stct
     aeron_name_resolver_supplier_func_t driver_name_resolver_bootstrap_resolver_supplier_func;
     const char *name_resolver_init_args;
     aeron_driver_name_resolver_on_resolve_t on_name_resolve_func;
+    aeron_driver_name_resolver_on_lookup_t on_name_lookup_func;
 
     aeron_duty_cycle_tracker_t *conductor_duty_cycle_tracker;
     aeron_duty_cycle_tracker_t *sender_duty_cycle_tracker;
     aeron_duty_cycle_tracker_t *receiver_duty_cycle_tracker;
+    aeron_duty_cycle_tracker_t *name_resolver_time_tracker;
     aeron_duty_cycle_stall_tracker_t conductor_duty_cycle_stall_tracker;
     aeron_duty_cycle_stall_tracker_t sender_duty_cycle_stall_tracker;
     aeron_duty_cycle_stall_tracker_t receiver_duty_cycle_stall_tracker;
+    aeron_duty_cycle_stall_tracker_t name_resolver_time_stall_tracker;
 
     aeron_dl_loaded_libs_state_t *dynamic_libs;
     aeron_driver_context_bindings_clientd_entry_t *bindings_clientd_entries;

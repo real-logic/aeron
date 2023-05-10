@@ -125,6 +125,8 @@ static struct aeron_driver_agent_log_event_stct log_events[AERON_DRIVER_EVENT_NU
         { "FLOW_CONTROL_RECEIVER_ADDED",          AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "FLOW_CONTROL_RECEIVER_REMOVED",        AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "NAME_RESOLUTION_RESOLVE",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "GENERIC_MESSAGE",                      AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "NAME_RESOLUTION_LOOKUP",               AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "ADD_DYNAMIC_DISSECTOR",                AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "DYNAMIC_DISSECTOR_EVENT",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
     };
@@ -258,33 +260,20 @@ static void aeron_driver_agent_set_enabled_all_events(const bool is_enabled)
 
 static void aeron_driver_agent_set_enabled_admin_events(const bool is_enabled)
 {
-    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_KEEPALIVE_CLIENT].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_PUBLICATION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_SUBSCRIPTION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_CLIENT_CLOSE].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_ADD_RCV_DESTINATION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_REMOVE_RCV_DESTINATION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_PUBLICATION_READY].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_AVAILABLE_IMAGE].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_IMAGE].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ERROR].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_SUBSCRIPTION_READY].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_COUNTER_READY].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_COUNTER].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_OUT_ON_CLIENT_TIMEOUT].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_CMD_IN_TERMINATE_DRIVER].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE].enabled = is_enabled;
-    log_events[AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE].enabled = is_enabled;
+    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    {
+        if (AERON_DRIVER_EVENT_FRAME_IN != i &&
+            AERON_DRIVER_EVENT_FRAME_OUT != i &&
+            AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR != i &&
+            AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT != i)
+        {
+            const char *event_name = log_events[i].name;
+            if (!aeron_driver_agent_is_unknown_event(event_name))
+            {
+                log_events[i].enabled = is_enabled;
+            }
+        }
+    }
 }
 
 static void aeron_driver_agent_set_enabled_specific_events(const uint8_t type, const bool is_enabled)
@@ -935,7 +924,9 @@ int32_t aeron_driver_agent_socket_address_length(struct sockaddr_storage *addres
 
 void aeron_driver_agent_name_resolver_on_resolve(
     aeron_name_resolver_t *name_resolver,
+    int64_t duration_ns,
     const char *hostname,
+    bool is_re_resolution,
     struct sockaddr_storage *address)
 {
     const size_t resolverNameFullLength = strlen(name_resolver->name);
@@ -963,9 +954,11 @@ void aeron_driver_agent_name_resolver_on_resolve(
             (aeron_driver_agent_name_resolver_resolve_log_header_t *)ptr;
 
         hdr->time_ns = aeron_nano_clock();
+        hdr->duration_ns = duration_ns;
         hdr->resolver_name_length = (int32_t)resolverNameLength;
         hdr->hostname_length = (int32_t)hostnameLength;
         hdr->address_length = (int32_t)addressLength;
+        hdr->is_re_resolution = is_re_resolution;
 
         uint8_t *bodyPtr = ptr + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t);
         memcpy(bodyPtr, name_resolver->name, (size_t)resolverNameLength);
@@ -989,6 +982,58 @@ void aeron_driver_agent_name_resolver_on_resolve(
                     &address_in6->sin6_addr,
                     addressLength);
             }
+        }
+
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
+    }
+}
+
+void aeron_driver_agent_name_resolver_on_lookup(
+    aeron_name_resolver_t *name_resolver,
+    int64_t duration_ns,
+    const char *name,
+    bool is_re_lookup,
+    const char *resolved_name)
+{
+    const size_t resolverNameFullLength = strlen(name_resolver->name);
+    const size_t resolverNameLength = resolverNameFullLength < AERON_MAX_HOSTNAME_LEN ?
+        resolverNameFullLength : AERON_MAX_HOSTNAME_LEN;
+
+    const size_t nameFullLength = strlen(name);
+    const size_t nameLength = nameFullLength < AERON_MAX_HOSTNAME_LEN ? nameFullLength : AERON_MAX_HOSTNAME_LEN;
+
+    const size_t resolvedNameFullLength = NULL != resolved_name ? strlen(resolved_name) : 0;
+    const size_t resolvedNameLength = resolvedNameFullLength < AERON_MAX_HOSTNAME_LEN ?
+        resolvedNameFullLength : AERON_MAX_HOSTNAME_LEN;
+
+    int32_t offset = aeron_mpsc_rb_try_claim(
+        &logging_mpsc_rb,
+        AERON_DRIVER_EVENT_NAME_RESOLUTION_LOOKUP,
+        sizeof(aeron_driver_agent_name_resolver_lookup_log_header_t) +
+            resolverNameLength +
+            nameLength +
+            resolvedNameLength);
+
+    if (offset > 0)
+    {
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_name_resolver_lookup_log_header_t *hdr =
+            (aeron_driver_agent_name_resolver_lookup_log_header_t *)ptr;
+
+        hdr->time_ns = aeron_nano_clock();
+        hdr->duration_ns = duration_ns;
+        hdr->resolver_name_length = (int32_t)resolverNameLength;
+        hdr->name_length = (int32_t)nameLength;
+        hdr->resolved_name_length = (int32_t)resolvedNameLength;
+        hdr->is_re_lookup = is_re_lookup;
+
+        uint8_t *bodyPtr = ptr + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t);
+        memcpy(bodyPtr, name_resolver->name, (size_t)resolverNameLength);
+        memcpy(bodyPtr + resolverNameLength, name, (size_t)nameLength);
+
+        if (NULL != resolved_name)
+        {
+            memcpy(bodyPtr + resolverNameLength + nameLength, resolved_name, (size_t)resolvedNameLength);
         }
 
         aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
@@ -1152,6 +1197,11 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_RESOLVE))
     {
         context->on_name_resolve_func = aeron_driver_agent_name_resolver_on_resolve;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_LOOKUP))
+    {
+        context->on_name_lookup_func = aeron_driver_agent_name_resolver_on_lookup;
     }
 
     return 0;
@@ -1860,13 +1910,8 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             char address_buf[INET6_ADDRSTRLEN] = { 0 };
             uint8_t *resolver_name_ptr =
                 (uint8_t *)message + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t);
-            uint8_t *hostname_ptr =
-                (uint8_t *)message + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t) +
-                hdr->resolver_name_length;
-            uint8_t *address_ptr =
-                (uint8_t *)message + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t) +
-                hdr->resolver_name_length +
-                hdr->hostname_length;
+            uint8_t *hostname_ptr = resolver_name_ptr + hdr->resolver_name_length;
+            uint8_t *address_ptr = hostname_ptr + hdr->hostname_length;
 
             const char *addr_prefix = "";
             const char *addr_suffix = "";
@@ -1886,15 +1931,57 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 
             fprintf(
                 logfp,
-                "%s: resolver=%.*s hostname=%.*s address=%s%s%s\n",
+                "%s: resolver=%.*s durationNs=%" PRIu64 " name=%.*s isReResolution=%s address=%s%s%s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
                 (int)hdr->resolver_name_length,
                 resolver_name_ptr,
+                (uint64_t)hdr->duration_ns,
                 (int)hdr->hostname_length,
                 hostname_ptr,
+                hdr->is_re_resolution ? "true" : "false",
                 addr_prefix,
                 address_str,
                 addr_suffix);
+            break;
+        }
+
+        case AERON_DRIVER_EVENT_NAME_RESOLUTION_LOOKUP:
+        {
+            aeron_driver_agent_name_resolver_lookup_log_header_t *hdr =
+                (aeron_driver_agent_name_resolver_lookup_log_header_t *)message;
+            uint8_t *resolver_name_ptr =
+                (uint8_t *)message + sizeof(aeron_driver_agent_name_resolver_lookup_log_header_t);
+            uint8_t *name_ptr = resolver_name_ptr + hdr->resolver_name_length;
+            uint8_t *resolved_name_ptr = name_ptr + hdr->name_length;
+
+            fprintf(
+                logfp,
+                "%s: resolver=%.*s durationNs=%" PRIu64 " name=%.*s isReLookup=%s resolvedName=%.*s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                (int)hdr->resolver_name_length,
+                resolver_name_ptr,
+                (uint64_t)hdr->duration_ns,
+                (int)hdr->name_length,
+                name_ptr,
+                hdr->is_re_lookup ? "true" : "false",
+                (int)hdr->resolved_name_length,
+                resolved_name_ptr);
+            break;
+        }
+
+        case AERON_DRIVER_EVENT_NAME_TEXT_DATA:
+        {
+            aeron_driver_agent_text_data_log_header_t *hdr =
+                (aeron_driver_agent_text_data_log_header_t *)message;
+            uint8_t *message_ptr =
+                (uint8_t *)message + sizeof(aeron_driver_agent_text_data_log_header_t);
+
+            fprintf(
+                logfp,
+                "%s: %.*s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                hdr->message_length,
+                message_ptr);
             break;
         }
 

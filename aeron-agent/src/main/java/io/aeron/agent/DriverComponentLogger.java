@@ -42,11 +42,7 @@ public class DriverComponentLogger implements ComponentLogger
     static
     {
         SPECIAL_EVENTS.put("all", EnumSet.allOf(DriverEventCode.class));
-        SPECIAL_EVENTS.put("admin", EnumSet.complementOf(EnumSet.of(
-            FRAME_IN,
-            FRAME_OUT,
-            NAME_RESOLUTION_NEIGHBOR_ADDED,
-            NAME_RESOLUTION_NEIGHBOR_REMOVED)));
+        SPECIAL_EVENTS.put("admin", EnumSet.complementOf(EnumSet.of(FRAME_IN, FRAME_OUT)));
     }
 
     /**

@@ -67,7 +67,7 @@ protected:
             auto event_name = aeron_driver_agent_event_name(event_id);
             bool expected = 0 != strncmp(
                 AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME, event_name, strlen(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME) + 1);
-            EXPECT_EQ(expected, aeron_driver_agent_is_event_enabled(event_id));
+            EXPECT_EQ(expected, aeron_driver_agent_is_event_enabled(event_id)) << event_name;
         }
 
         EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NUM_ELEMENTS));
@@ -76,33 +76,24 @@ protected:
 
     static void assert_admin_events_enabled(const bool is_enabled)
     {
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_ADD_SUBSCRIPTION));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_KEEPALIVE_CLIENT));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_REMOVE_PUBLICATION));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_REMOVE_SUBSCRIPTION));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_ADD_COUNTER));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_REMOVE_COUNTER));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_CLIENT_CLOSE));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_ADD_RCV_DESTINATION));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_REMOVE_RCV_DESTINATION));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_PUBLICATION_READY));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_AVAILABLE_IMAGE));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_IMAGE));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_ON_OPERATION_SUCCESS));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_ERROR));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_SUBSCRIPTION_READY));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_COUNTER_READY));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_ON_UNAVAILABLE_COUNTER));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_OUT_ON_CLIENT_TIMEOUT));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_CMD_IN_TERMINATE_DRIVER));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE));
-        EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE));
+        for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+        {
+            auto event_id = static_cast<aeron_driver_agent_event_t>(i);
+            if (AERON_DRIVER_EVENT_FRAME_IN != event_id &&
+                AERON_DRIVER_EVENT_FRAME_OUT != event_id &&
+                AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR != event_id &&
+                AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT != event_id)
+            {
+                auto event_name = aeron_driver_agent_event_name(event_id);
+                if (0 != strncmp(
+                    AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,
+                    event_name,
+                    strlen(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME) + 1))
+                {
+                    EXPECT_EQ(is_enabled, aeron_driver_agent_is_event_enabled(event_id)) << event_name;
+                }
+            }
+        }
     }
 
     static void assert_cmd_id_events_enabled(const bool is_enabled)
@@ -182,7 +173,9 @@ TEST_F(DriverAgentTest, shouldEnabledAdminLoggingEvents)
     assert_admin_events_enabled(true);
 
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_IN));
-    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_OUT));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT));
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<aeron_driver_agent_event_t>(0)));
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<aeron_driver_agent_event_t>(9)));
     EXPECT_FALSE(aeron_driver_agent_is_event_enabled(static_cast<aeron_driver_agent_event_t>(27)));
@@ -714,7 +707,7 @@ TEST_F(DriverAgentTest, shouldLogSmallAgentLogFrames)
 
             EXPECT_EQ(msg_type_id, 22);
             EXPECT_EQ(length,
-                      sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage) + 100);
+                sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage) + 100);
 
             char *buffer = (char *)msg;
             auto *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
@@ -762,7 +755,7 @@ TEST_F(DriverAgentTest, shouldLogAgentLogFramesAndCopyUpToMaxFrameLengthMessage)
 
             EXPECT_EQ(msg_type_id, 13);
             EXPECT_EQ(length,
-                      sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage) + AERON_MAX_FRAME_LENGTH);
+                sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage) + AERON_MAX_FRAME_LENGTH);
 
             char *buffer = (char *)msg;
             auto *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
@@ -1493,7 +1486,8 @@ TEST_F(DriverAgentTest, shouldLogFlowControlReceiverRemoved)
             EXPECT_EQ(-41, data->stream_id);
             EXPECT_EQ(10, data->channel_length);
             EXPECT_EQ(1, data->receiver_count);
-            EXPECT_EQ(memcmp((const char *)msg + sizeof(aeron_driver_agent_flow_control_receiver_change_log_header_t), "channel 10", 10), 0);
+            EXPECT_EQ(memcmp((const char *)msg + sizeof(aeron_driver_agent_flow_control_receiver_change_log_header_t),
+                "channel 10", 10), 0);
         };
 
     size_t timesCalled = 0;
@@ -1523,4 +1517,48 @@ TEST_F(DriverAgentTest, dissecLogHeaderShouldFormatNanoTimeWithMicrosecondPrecis
     auto result = std::string(aeron_driver_agent_dissect_log_header(time_ns, event, capture_length, message_length));
 
     ASSERT_EQ("[333000555.000999] DRIVER: CMD_IN_CLIENT_CLOSE [100/200]", result);
+}
+
+TEST_F(DriverAgentTest, shouldNotAssignFlowControlOnNameResolveFunctionWhenNotConfigured)
+{
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_EQ(nullptr, m_context->on_name_resolve_func);
+}
+
+TEST_F(DriverAgentTest, shouldNotAssignFlowControlOnNameLookupFunctionWhenNotConfigured)
+{
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_EQ(nullptr, m_context->on_name_lookup_func);
+}
+
+TEST_F(DriverAgentTest, shouldInitializeOnNameResolveFunction)
+{
+    EXPECT_EQ(nullptr, m_context->on_name_resolve_func);
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("NAME_RESOLUTION_RESOLVE", nullptr));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(nullptr, m_context->on_name_resolve_func);
+}
+
+TEST_F(DriverAgentTest, shouldInitializeOnNameLookupFunction)
+{
+    EXPECT_EQ(nullptr, m_context->on_name_lookup_func);
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("NAME_RESOLUTION_LOOKUP", nullptr));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(nullptr, m_context->on_name_lookup_func);
+}
+
+TEST_F(DriverAgentTest, shouldInitializeNameResolverFunctions)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("NAME_RESOLUTION_LOOKUP,NAME_RESOLUTION_RESOLVE", nullptr));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(nullptr, m_context->on_name_resolve_func);
+    EXPECT_NE(nullptr, m_context->on_name_lookup_func);
+    EXPECT_NE((void *)m_context->on_name_resolve_func, (void *)m_context->on_name_lookup_func);
 }

@@ -32,7 +32,6 @@ import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventDissector.*;
 import static io.aeron.agent.DriverEventLogger.MAX_HOST_NAME_LENGTH;
-import static io.aeron.agent.DriverEventLogger.MAX_HOST_NAME_WITH_PORT_LENGTH;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.*;
 import static java.nio.ByteBuffer.allocate;
@@ -684,14 +683,16 @@ class DriverEventDissectorTest
             "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
             "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
-        final String expected = "DRIVER: NAME_RESOLUTION_RESOLVE [531/531]: resolver=testResolver." +
-            "this.is.a.really.long.string.to.force.truncation.000000000000000000000000000000000000000000000000000000" +
-            "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
-            "0000000000000000000000000000000... durationNs=555 " +
-            "name=testResolver.this.is.a.really.long.string.to.force.truncati" +
-            "on.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
-            "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000... " +
-            "isReResolution=false address=127.0.0.1";
+        final String expected = "DRIVER: NAME_RESOLUTION_RESOLVE [537/537]: resolver=testResolver." +
+            "this.is.a.really.long.string.to.force.truncation.0000000000000000000000000000000000000000000000000000000" +
+            "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+            "00000000000000000000000000000000... " +
+            "durationNs=555 " +
+            "name=testResolver.this.is.a.really.long.string.to.force.truncation.0000000000000000000000000000000000000" +
+            "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+            "00000000000000000000000000000000000000000000000000... " +
+            "isReResolution=false " +
+            "address=127.0.0.1";
 
         final InetAddress address = InetAddress.getByName("127.0.0.1");
 
@@ -717,9 +718,9 @@ class DriverEventDissectorTest
         final String resolvedName = "test:1234";
 
         final int length = SIZE_OF_BOOLEAN + SIZE_OF_LONG +
-            trailingStringLength(resolver, MAX_HOST_NAME_WITH_PORT_LENGTH) +
-            trailingStringLength(name, MAX_HOST_NAME_WITH_PORT_LENGTH) +
-            trailingStringLength(resolvedName, MAX_HOST_NAME_WITH_PORT_LENGTH);
+            trailingStringLength(resolver, MAX_HOST_NAME_LENGTH) +
+            trailingStringLength(name, MAX_HOST_NAME_LENGTH) +
+            trailingStringLength(resolvedName, MAX_HOST_NAME_LENGTH);
 
         DriverEventEncoder.encodeLookup(
             buffer, offset, length, length, resolver, durationNs, name, isReLookup, resolvedName);

@@ -3900,6 +3900,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    conductorCycleThresholdNs=" + conductorCycleThresholdNs +
                 "\n    senderCycleThresholdNs=" + senderCycleThresholdNs +
                 "\n    receiverCycleThresholdNs=" + receiverCycleThresholdNs +
+                "\n    nameResolverThresholdNs=" + nameResolverThresholdNs +
                 "\n    publicationTermBufferLength=" + publicationTermBufferLength +
                 "\n    ipcTermBufferLength=" + ipcTermBufferLength +
                 "\n    publicationTermWindowLength=" + publicationTermWindowLength +

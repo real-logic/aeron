@@ -79,7 +79,6 @@ int aeron_default_name_resolver_supplier(
     resolver->resolve_func = aeron_default_name_resolver_resolve;
     resolver->do_work_func = aeron_default_name_resolver_do_work;
     resolver->close_func = aeron_default_name_resolver_close;
-    resolver->on_resolve_func = NULL != context ? context->on_name_resolve_func : NULL;
     resolver->state = NULL;
     resolver->name = "default";
 
@@ -93,22 +92,14 @@ int aeron_default_name_resolver_resolve(
     bool is_re_resolution,
     struct sockaddr_storage *address)
 {
-    int result = aeron_ip_addr_resolver(name, address, AF_INET, IPPROTO_UDP);
-
-    if (NULL != resolver->on_resolve_func)
-    {
-        struct sockaddr_storage *resolved_address = 0 <= result ? address : NULL;
-        resolver->on_resolve_func(resolver, name, resolved_address);
-    }
-
-    return result;
+    return aeron_ip_addr_resolver(name, address, AF_INET, IPPROTO_UDP);
 }
 
 int aeron_default_name_resolver_lookup(
     aeron_name_resolver_t *resolver,
     const char *name,
     const char *uri_param_name,
-    bool is_re_resolution,
+    bool is_re_lookup,
     const char **resolved_name)
 {
     *resolved_name = name;

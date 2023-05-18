@@ -18,6 +18,9 @@ package io.aeron.cluster;
 import io.aeron.ExclusivePublication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.SnapshotTaker;
+import io.aeron.exceptions.AeronEvent;
+import io.aeron.exceptions.AeronException;
+import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.ExpandableRingBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -128,9 +131,10 @@ class ConsensusModuleSnapshotTaker
         }
     }
 
-    void snapshot(final PendingServiceMessageTracker tracker)
+    void snapshot(final PendingServiceMessageTracker tracker, final ErrorHandler errorHandler)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + PendingMessageTrackerEncoder.BLOCK_LENGTH;
+        final long nextServiceSessionId = correctNextServiceSessionId(tracker, errorHandler);
 
         idleStrategy.reset();
         while (true)
@@ -140,7 +144,7 @@ class ConsensusModuleSnapshotTaker
             {
                 pendingMessageTrackerEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .nextServiceSessionId(tracker.nextServiceSessionId())
+                    .nextServiceSessionId(nextServiceSessionId)
                     .logServiceSessionId(tracker.logServiceSessionId())
                     .pendingMessageCapacity(tracker.pendingMessages().size())
                     .serviceId(tracker.serviceId());
@@ -168,4 +172,21 @@ class ConsensusModuleSnapshotTaker
             .responseChannel(responseChannel);
     }
 
+    private static long correctNextServiceSessionId(
+        final PendingServiceMessageTracker tracker,
+        final ErrorHandler errorHandler)
+    {
+        final long nextServiceSessionId = tracker.pendingMessages().isEmpty() ?
+            tracker.logServiceSessionId() + 1 : tracker.nextServiceSessionId();
+        final long missedServiceMessageCount = nextServiceSessionId - tracker.nextServiceSessionId();
+        if (0 < missedServiceMessageCount)
+        {
+            errorHandler.onError(new AeronEvent(
+                "Follower has missed " + missedServiceMessageCount +
+                " service message(s).  Please check service (id=" + tracker.serviceId() +
+                ") determinism around the use of Cluster::offer",
+                AeronException.Category.ERROR));
+        }
+        return nextServiceSessionId;
+    }
 }

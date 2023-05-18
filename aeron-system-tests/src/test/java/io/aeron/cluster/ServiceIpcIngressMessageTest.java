@@ -285,6 +285,48 @@ class ServiceIpcIngressMessageTest
         assertTrackedMessages(cluster, -1, messageCount);
     }
 
+    @Test
+    @InterruptAfter(10)
+    void shouldHandleServiceMessagesMissedOnTheFollowerWhenSnapshot()
+    {
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeaderAndClosedElection();
+        cluster.connectClient();
+        int messageLength = cluster.msgBuffer().putStringWithoutLengthAscii(
+            0, ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG);
+
+        final int messageCount = 5;
+        for (int i = 0; i < messageCount; i++)
+        {
+            cluster.pollUntilMessageSent(messageLength);
+        }
+
+        messageLength = cluster.msgBuffer().putStringWithoutLengthAscii(
+            0, ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG_SKIP_FOLLOWER);
+
+        cluster.pollUntilMessageSent(messageLength);
+
+        messageLength = cluster.msgBuffer().putStringWithoutLengthAscii(
+            0, ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG);
+
+        for (int i = 0; i < messageCount; i++)
+        {
+            cluster.pollUntilMessageSent(messageLength);
+        }
+
+        cluster.awaitResponseMessageCount(2 * messageCount + 1);
+        cluster.awaitServicesMessageCount(2 * messageCount + 1);
+
+        cluster.takeSnapshot(leader);
+        cluster.awaitSnapshotCount(1);
+
+        cluster.stopAllNodes();
+        cluster.restartAllNodes(false);
+        cluster.awaitLeaderAndClosedElection();
+    }
+
     private static void awaitMessageCounts(final TestCluster cluster, final int messageCount)
     {
         for (int i = 0; i < 3; i++)

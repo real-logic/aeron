@@ -39,6 +39,8 @@ public class ClusterTests
     public static final String NO_OP_MSG = "No op!           ";
     public static final String REGISTER_TIMER_MSG = "Register a timer!";
     public static final String ECHO_SERVICE_IPC_INGRESS_MSG = "Echo as Service IPC ingress";
+    public static final String ECHO_SERVICE_IPC_INGRESS_MSG_SKIP_FOLLOWER =
+        "Echo as Service IPC ingress (skip follower)";
     public static final String UNEXPECTED_MSG =
         "Should never get this message because it is not going to be committed!";
     public static final String LARGE_MSG;

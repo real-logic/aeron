@@ -3391,7 +3391,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
         for (final PendingServiceMessageTracker tracker : pendingServiceMessageTrackers)
         {
-            snapshotTaker.snapshot(tracker);
+            snapshotTaker.snapshot(tracker, ctx.errorHandler());
         }
 
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, clusterTimeUnit, ctx.appVersion());

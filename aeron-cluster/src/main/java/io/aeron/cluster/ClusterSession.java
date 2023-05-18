@@ -50,7 +50,7 @@ final class ClusterSession
     private long correlationId;
     private long openedLogPosition = AeronArchive.NULL_POSITION;
     private long closedLogPosition = AeronArchive.NULL_POSITION;
-    private long timeOfLastActivityNs;
+    private transient long timeOfLastActivityNs;
     private long responsePublicationId = Aeron.NULL_VALUE;
     private final int responseStreamId;
     private final String responseChannel;

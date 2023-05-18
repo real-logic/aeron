@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.SnapshotTaker;
@@ -162,7 +163,7 @@ class ConsensusModuleSnapshotTaker
             .clusterSessionId(session.id())
             .correlationId(session.correlationId())
             .openedLogPosition(session.openedLogPosition())
-            .timeOfLastActivity(session.timeOfLastActivityNs())
+            .timeOfLastActivity(Aeron.NULL_VALUE)
             .closeReason(session.closeReason())
             .responseStreamId(session.responseStreamId())
             .responseChannel(responseChannel);

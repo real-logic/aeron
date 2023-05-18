@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.cluster.codecs.*;
@@ -174,7 +175,7 @@ class ConsensusModuleSnapshotTakerTest
         assertEquals(clusterSession.id(), clusterSessionDecoder.clusterSessionId());
         assertEquals(clusterSession.correlationId(), clusterSessionDecoder.correlationId());
         assertEquals(clusterSession.openedLogPosition(), clusterSessionDecoder.openedLogPosition());
-        assertEquals(clusterSession.timeOfLastActivityNs(), clusterSessionDecoder.timeOfLastActivity());
+        assertEquals(Aeron.NULL_VALUE, clusterSessionDecoder.timeOfLastActivity());
         assertEquals(clusterSession.closeReason(), clusterSessionDecoder.closeReason());
         assertEquals(clusterSession.responseStreamId(), clusterSessionDecoder.responseStreamId());
         assertEquals(responseChannel, clusterSessionDecoder.responseChannel());
@@ -209,7 +210,7 @@ class ConsensusModuleSnapshotTakerTest
         assertEquals(clusterSession.id(), clusterSessionDecoder.clusterSessionId());
         assertEquals(clusterSession.correlationId(), clusterSessionDecoder.correlationId());
         assertEquals(clusterSession.openedLogPosition(), clusterSessionDecoder.openedLogPosition());
-        assertEquals(clusterSession.timeOfLastActivityNs(), clusterSessionDecoder.timeOfLastActivity());
+        assertEquals(Aeron.NULL_VALUE, clusterSessionDecoder.timeOfLastActivity());
         assertEquals(clusterSession.closeReason(), clusterSessionDecoder.closeReason());
         assertEquals(clusterSession.responseStreamId(), clusterSessionDecoder.responseStreamId());
         assertEquals(responseChannel, clusterSessionDecoder.responseChannel());

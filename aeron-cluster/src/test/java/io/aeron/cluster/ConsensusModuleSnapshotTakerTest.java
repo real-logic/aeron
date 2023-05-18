@@ -22,6 +22,8 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.ClusterClock;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -98,7 +100,7 @@ class ConsensusModuleSnapshotTakerTest
         when(publication.offer(any(), anyInt(), anyInt()))
             .thenReturn(BACK_PRESSURED, 9L);
 
-        snapshotTaker.snapshot(pendingServiceMessageTracker);
+        snapshotTaker.snapshot(pendingServiceMessageTracker, mock(ErrorHandler.class));
 
         final InOrder inOrder = inOrder(idleStrategy, publication);
         inOrder.verify(idleStrategy).reset();
@@ -116,6 +118,35 @@ class ConsensusModuleSnapshotTakerTest
         assertEquals(-8791026472627208192L, pendingMessageTrackerDecoder.logServiceSessionId());
         assertEquals(capacity, pendingMessageTrackerDecoder.pendingMessageCapacity());
         assertEquals(serviceId, pendingMessageTrackerDecoder.serviceId());
+    }
+
+    @Test
+    void snapshotPendingServiceMessageTrackerWithServiceMessagesMissedByFollower()
+    {
+        final int serviceId = 6;
+        final PendingServiceMessageTracker pendingServiceMessageTracker = new PendingServiceMessageTracker(
+            serviceId, mock(Counter.class), mock(LogPublisher.class), mock(ClusterClock.class));
+        final AtomicBuffer headerMessageBuffer = new UnsafeBuffer(new byte[1024]);
+
+        final long expectedLogServiceSessionId = pendingServiceMessageTracker.logServiceSessionId() + 1;
+        final long expectedNextServiceSessionId = expectedLogServiceSessionId + 1;
+        when(publication.tryClaim(anyInt(), any())).thenAnswer(
+            (Answer<Long>)invocation ->
+            {
+                final int length = invocation.getArgument(0, Integer.class);
+                final BufferClaim bufferClaim = invocation.getArgument(1, BufferClaim.class);
+
+                bufferClaim.wrap(headerMessageBuffer, 0, length + 32);
+                return (long)length;
+            });
+
+        pendingServiceMessageTracker.sweepFollowerMessages(expectedLogServiceSessionId);
+
+        snapshotTaker.snapshot(pendingServiceMessageTracker, mock(ErrorHandler.class));
+
+        pendingMessageTrackerDecoder.wrapAndApplyHeader(headerMessageBuffer, HEADER_LENGTH, messageHeaderDecoder);
+        assertEquals(expectedNextServiceSessionId, pendingMessageTrackerDecoder.nextServiceSessionId());
+        assertEquals(expectedLogServiceSessionId, pendingMessageTrackerDecoder.logServiceSessionId());
     }
 
     @Test

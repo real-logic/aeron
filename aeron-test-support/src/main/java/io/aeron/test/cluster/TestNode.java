@@ -480,23 +480,11 @@ public final class TestNode implements AutoCloseable
 
             if (message.equals(ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG))
             {
-                if (null != session)
-                {
-                    while (cluster.offer(buffer, offset, length) < 0)
-                    {
-                        idleStrategy.idle();
-                    }
-                }
-                else
-                {
-                    for (final ClientSession clientSession : cluster.clientSessions())
-                    {
-                        while (clientSession.offer(buffer, offset, length) < 0)
-                        {
-                            idleStrategy.idle();
-                        }
-                    }
-                }
+                sendServiceIpcMessage(session, buffer, offset, length);
+            }
+            else if (message.equals(ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG_SKIP_FOLLOWER))
+            {
+                simulateBuggyApplicationCodeThatSkipsServiceMessageOnFollower(session, buffer, offset, length);
             }
             else
             {
@@ -510,6 +498,43 @@ public final class TestNode implements AutoCloseable
             }
 
             messageCount.incrementAndGet();
+        }
+
+        private void simulateBuggyApplicationCodeThatSkipsServiceMessageOnFollower(
+            final ClientSession session,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length)
+        {
+            if (Cluster.Role.LEADER == cluster.role())
+            {
+                sendServiceIpcMessage(session, buffer, offset, length);
+            }
+        }
+
+        private void sendServiceIpcMessage(
+            final ClientSession session,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length)
+        {
+            if (null != session)
+            {
+                while (cluster.offer(buffer, offset, length) < 0)
+                {
+                    idleStrategy.idle();
+                }
+            }
+            else
+            {
+                for (final ClientSession clientSession : cluster.clientSessions())
+                {
+                    while (clientSession.offer(buffer, offset, length) < 0)
+                    {
+                        idleStrategy.idle();
+                    }
+                }
+            }
         }
 
         public void onTimerEvent(final long correlationId, final long timestamp)

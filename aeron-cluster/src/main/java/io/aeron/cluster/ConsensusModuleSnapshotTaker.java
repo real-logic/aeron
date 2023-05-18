@@ -180,14 +180,15 @@ class ConsensusModuleSnapshotTaker
         final long nextServiceSessionId = tracker.pendingMessages().isEmpty() ?
             tracker.logServiceSessionId() + 1 : tracker.nextServiceSessionId();
         final long missedServiceMessageCount = nextServiceSessionId - tracker.nextServiceSessionId();
+
         if (0 < missedServiceMessageCount)
         {
-            errorHandler.onError(new AeronEvent(
-                "Follower has missed " + missedServiceMessageCount +
+            final String message = "Follower has missed " + missedServiceMessageCount +
                 " service message(s).  Please check service (id=" + tracker.serviceId() +
-                ") determinism around the use of Cluster::offer",
-                AeronException.Category.ERROR));
+                ") determinism around the use of Cluster::offer";
+            errorHandler.onError(new AeronEvent(message, AeronException.Category.ERROR));
         }
+
         return nextServiceSessionId;
     }
 }

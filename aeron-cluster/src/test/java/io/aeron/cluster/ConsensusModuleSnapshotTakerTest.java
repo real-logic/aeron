@@ -131,7 +131,7 @@ class ConsensusModuleSnapshotTakerTest
         final long expectedLogServiceSessionId = pendingServiceMessageTracker.logServiceSessionId() + 1;
         final long expectedNextServiceSessionId = expectedLogServiceSessionId + 1;
         when(publication.tryClaim(anyInt(), any())).thenAnswer(
-            (Answer<Long>)invocation ->
+            (invocation) ->
             {
                 final int length = invocation.getArgument(0, Integer.class);
                 final BufferClaim bufferClaim = invocation.getArgument(1, BufferClaim.class);

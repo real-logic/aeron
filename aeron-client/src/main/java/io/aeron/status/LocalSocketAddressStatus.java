@@ -225,9 +225,9 @@ public class LocalSocketAddressStatus
     /**
      * Return number of local addresses for the given subscription registration id.
      *
-     * @param countersReader for the connected driver
-     * @param registrationId for the subscription
-     * @return nunmber of local socket addresses in use
+     * @param countersReader for the connected driver.
+     * @param registrationId for the subscription.
+     * @return number of local socket addresses in use.
      */
     public static int findNumberOfAddressesByRegistrationId(
         final CountersReader countersReader, final long registrationId)

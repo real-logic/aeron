@@ -117,6 +117,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private final TimerService timerService;
     private final Counter moduleState;
     private final Counter controlToggle;
+    private final Counter nodeControlToggle;
     private final ConsensusModuleAdapter consensusModuleAdapter;
     private final ServiceProxy serviceProxy;
     private final IngressAdapter ingressAdapter;
@@ -178,6 +179,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         this.moduleState = ctx.moduleStateCounter();
         this.commitPosition = ctx.commitPositionCounter();
         this.controlToggle = ctx.controlToggleCounter();
+        this.nodeControlToggle = ctx.nodeControlToggleCounter();
         this.logPublisher = ctx.logPublisher();
         this.idleStrategy = ctx.idleStrategy();
         this.activeMembers = ClusterMember.parse(ctx.clusterMembers());
@@ -1865,6 +1867,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             timeOfLastAppendPositionUpdateNs = nowNs;
             timeOfLastAppendPositionSendNs = nowNs;
         }
+        NodeControl.ToggleState.activate(nodeControlToggle);
 
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
 
@@ -2405,7 +2408,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         {
             if (Cluster.Role.LEADER == role)
             {
-                workCount += checkControlToggle(nowNs);
+                workCount += checkClusterControlToggle(nowNs);
+                workCount += checkNodeControlToggle(nowNs);
 
                 if (ConsensusModule.State.ACTIVE == state)
                 {
@@ -2508,7 +2512,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return workCount;
     }
 
-    private int checkControlToggle(final long nowNs)
+    private int checkClusterControlToggle(final long nowNs)
     {
         switch (ClusterControl.ToggleState.get(controlToggle))
         {
@@ -2569,9 +2573,22 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 }
                 break;
 
+            default:
+                return 0;
+        }
+
+        return 1;
+    }
+
+    private int checkNodeControlToggle(final long nowNs)
+    {
+        //noinspection SwitchStatementWithTooFewBranches
+        switch (NodeControl.ToggleState.get(nodeControlToggle))
+        {
             case REPLICATE_STANDBY_SNAPSHOT:
                 if (null == this.standbySnapshotReplicator)
                 {
+                    System.out.println("memberId=" + memberId + " replicate snapshot");
                     this.standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
                         ctx.clusterMemberId(),
                         ctx.archiveContext(),
@@ -2581,7 +2598,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                         ctx.archiveContext().controlRequestStreamId(),
                         ctx.replicationChannel());
                 }
-                ClusterControl.ToggleState.reset(controlToggle);
+                NodeControl.ToggleState.reset(nodeControlToggle);
                 break;
 
             default:
@@ -3988,6 +4005,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
             if (standbySnapshotReplicator.isComplete())
             {
+                ctx.snapshotCounter().increment();
                 CloseHelper.quietClose(standbySnapshotReplicator);
                 standbySnapshotReplicator = null;
             }

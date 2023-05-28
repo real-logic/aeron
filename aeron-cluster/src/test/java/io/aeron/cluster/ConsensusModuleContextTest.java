@@ -53,6 +53,7 @@ import org.mockito.ArgumentCaptor;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE;
 import static io.aeron.cluster.service.ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;
@@ -98,6 +99,7 @@ class ConsensusModuleContextTest
             .clusterNodeRoleCounter(newCounter("clusterNodeRole", CLUSTER_NODE_ROLE_TYPE_ID))
             .commitPositionCounter(newCounter("commitPosition", COMMIT_POSITION_TYPE_ID))
             .controlToggleCounter(newCounter("controlToggle", CONTROL_TOGGLE_TYPE_ID))
+            .nodeControlToggleCounter(newCounter("nodeControlToggle", NODE_CONTROL_TOGGLE_TYPE_ID))
             .snapshotCounter(newCounter("snapshot", SNAPSHOT_COUNTER_TYPE_ID))
             .timedOutClientCounter(newCounter("timedOut", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID));
     }

@@ -50,6 +50,7 @@ import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 import static io.aeron.AeronCounters.CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID;
+import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.AeronCounters.validateCounterTypeId;
 import static io.aeron.CommonContext.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
@@ -1411,7 +1412,8 @@ public final class ConsensusModule implements AutoCloseable
         private Counter electionStateCounter;
         private Counter clusterNodeRoleCounter;
         private Counter commitPosition;
-        private Counter controlToggle;
+        private Counter clusterControlToggle;
+        private Counter nodeControlToggle;
         private Counter snapshotCounter;
         private Counter timedOutClientCounter;
         private Counter standbySnapshotCounter;
@@ -1644,12 +1646,19 @@ public final class ConsensusModule implements AutoCloseable
             }
             validateCounterTypeId(aeron, commitPosition, COMMIT_POSITION_TYPE_ID);
 
-            if (null == controlToggle)
+            if (null == clusterControlToggle)
             {
-                controlToggle = ClusterCounters.allocate(
+                clusterControlToggle = ClusterCounters.allocate(
                     aeron, buffer, "Cluster control toggle", CONTROL_TOGGLE_TYPE_ID, clusterId);
             }
-            validateCounterTypeId(aeron, controlToggle, CONTROL_TOGGLE_TYPE_ID);
+            validateCounterTypeId(aeron, clusterControlToggle, CONTROL_TOGGLE_TYPE_ID);
+
+            if (null == nodeControlToggle)
+            {
+                nodeControlToggle = ClusterCounters.allocate(
+                    aeron, buffer, "Node control toggle", NODE_CONTROL_TOGGLE_TYPE_ID, clusterId);
+            }
+            validateCounterTypeId(aeron, nodeControlToggle, NODE_CONTROL_TOGGLE_TYPE_ID);
 
             if (null == snapshotCounter)
             {
@@ -3299,18 +3308,18 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the counter for the control toggle for triggering actions on the cluster node.
+         * Get the counter for the control toggle for triggering actions for the cluster.
          *
          * @return the counter for triggering cluster node actions.
          * @see ClusterControl
          */
         public Counter controlToggleCounter()
         {
-            return controlToggle;
+            return clusterControlToggle;
         }
 
         /**
-         * Set the counter for the control toggle for triggering actions on the cluster node.
+         * Set the counter for the control toggle for triggering actions for the cluster.
          *
          * @param controlToggle the counter for triggering cluster node actions.
          * @return this for a fluent API.
@@ -3318,7 +3327,31 @@ public final class ConsensusModule implements AutoCloseable
          */
         public Context controlToggleCounter(final Counter controlToggle)
         {
-            this.controlToggle = controlToggle;
+            this.clusterControlToggle = controlToggle;
+            return this;
+        }
+
+        /**
+         * Get the counter for the control toggle for triggering actions on the cluster node.
+         *
+         * @return the counter for triggering cluster node actions.
+         * @see ClusterControl
+         */
+        public Counter nodeControlToggleCounter()
+        {
+            return nodeControlToggle;
+        }
+
+        /**
+         * Set the counter for the control toggle for triggering actions on the cluster node.
+         *
+         * @param nodeControlToggle the counter for triggering cluster node actions.
+         * @return this for a fluent API.
+         * @see ClusterControl
+         */
+        public Context nodeControlToggleCounter(final Counter nodeControlToggle)
+        {
+            this.nodeControlToggle = nodeControlToggle;
             return this;
         }
 
@@ -3822,7 +3855,7 @@ public final class ConsensusModule implements AutoCloseable
                     clusterNodeRoleCounter,
                     electionStateCounter,
                     commitPosition,
-                    controlToggle,
+                    clusterControlToggle,
                     snapshotCounter,
                     timedOutClientCounter);
             }
@@ -4005,7 +4038,7 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    electionStateCounter=" + electionStateCounter +
                 "\n    clusterNodeRoleCounter=" + clusterNodeRoleCounter +
                 "\n    commitPosition=" + commitPosition +
-                "\n    controlToggle=" + controlToggle +
+                "\n    controlToggle=" + clusterControlToggle +
                 "\n    snapshotCounter=" + snapshotCounter +
                 "\n    timedOutClientCounter=" + timedOutClientCounter +
                 "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +

@@ -34,6 +34,7 @@ import io.aeron.cluster.ClusterMembership;
 import io.aeron.cluster.ClusterTool;
 import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.ElectionState;
+import io.aeron.cluster.NodeControl;
 import io.aeron.cluster.RecordingLog;
 import io.aeron.cluster.TimerServiceSupplier;
 import io.aeron.cluster.client.AeronCluster;
@@ -1268,20 +1269,22 @@ public final class TestCluster implements AutoCloseable
 
     public void takeSnapshot(final TestNode leaderNode)
     {
-        final AtomicCounter controlToggle = getControlToggle(leaderNode);
+        final AtomicCounter controlToggle = getClusterControlToggle(leaderNode);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
     }
 
     public void takeStandbySnapshot(final TestNode leaderNode)
     {
-        final AtomicCounter controlToggle = getControlToggle(leaderNode);
+        final AtomicCounter controlToggle = getClusterControlToggle(leaderNode);
         assertTrue(ClusterControl.ToggleState.STANDBY_SNAPSHOT.toggle(controlToggle));
     }
 
     public void replicateStandbySnapshot(final TestNode node)
     {
-        final AtomicCounter controlToggle = getControlToggle(node);
-        assertTrue(ClusterControl.ToggleState.REPLICATE_STANDBY_SNAPSHOT.toggle(controlToggle));
+        final AtomicCounter nodeControl = getNodeControlToggle(node);
+        System.out.println("nodeControl pre=" + NodeControl.ToggleState.get(nodeControl));
+        assertTrue(NodeControl.ToggleState.REPLICATE_STANDBY_SNAPSHOT.toggle(nodeControl));
+        System.out.println("nodeControl post=" + NodeControl.ToggleState.get(nodeControl));
     }
 
     public void replicateStandbySnapshots()
@@ -1297,13 +1300,13 @@ public final class TestCluster implements AutoCloseable
 
     public void shutdownCluster(final TestNode leaderNode)
     {
-        final AtomicCounter controlToggle = getControlToggle(leaderNode);
+        final AtomicCounter controlToggle = getClusterControlToggle(leaderNode);
         assertTrue(ClusterControl.ToggleState.SHUTDOWN.toggle(controlToggle));
     }
 
     public void abortCluster(final TestNode leaderNode)
     {
-        final AtomicCounter controlToggle = getControlToggle(leaderNode);
+        final AtomicCounter controlToggle = getClusterControlToggle(leaderNode);
         assertTrue(ClusterControl.ToggleState.ABORT.toggle(controlToggle));
     }
 
@@ -1565,18 +1568,28 @@ public final class TestCluster implements AutoCloseable
 
     public void awaitNeutralControlToggle(final TestNode leaderNode)
     {
-        final AtomicCounter controlToggle = getControlToggle(leaderNode);
+        final AtomicCounter controlToggle = getClusterControlToggle(leaderNode);
         while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
         {
             Tests.yield();
         }
     }
 
-    public AtomicCounter getControlToggle(final TestNode leaderNode)
+    public AtomicCounter getClusterControlToggle(final TestNode leaderNode)
     {
         final CountersReader counters = leaderNode.countersReader();
         final int clusterId = leaderNode.consensusModule().context().clusterId();
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters, clusterId);
+        assertNotNull(controlToggle);
+
+        return controlToggle;
+    }
+
+    public AtomicCounter getNodeControlToggle(final TestNode leaderNode)
+    {
+        final CountersReader counters = leaderNode.countersReader();
+        final int clusterId = leaderNode.consensusModule().context().clusterId();
+        final AtomicCounter controlToggle = NodeControl.findControlToggle(counters, clusterId);
         assertNotNull(controlToggle);
 
         return controlToggle;

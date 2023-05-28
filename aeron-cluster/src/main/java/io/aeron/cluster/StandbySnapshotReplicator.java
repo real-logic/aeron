@@ -178,26 +178,26 @@ class StandbySnapshotReplicator implements AutoCloseable
         final Map<String, List<RecordingLog.Entry>> snapshotsByEndpoint = recordingLog.latestStandbySnapshots(
             serviceCount);
 
-        final ArrayList<SnapshotReplicationEntry> s;
+        final ArrayList<SnapshotReplicationEntry> orderedSnapshotToReplicate;
         if (snapshotsByEndpoint.isEmpty())
         {
-            s = null;
+            orderedSnapshotToReplicate = null;
         }
         else
         {
-            s = new ArrayList<>();
+            orderedSnapshotToReplicate = new ArrayList<>();
 
             snapshotsByEndpoint.forEach(
                 (k, v) ->
                 {
                     final long logPosition = v.get(0).logPosition;
-                    s.add(new SnapshotReplicationEntry(k, logPosition, v));
+                    orderedSnapshotToReplicate.add(new SnapshotReplicationEntry(k, logPosition, v));
                 });
 
-            s.sort(SnapshotReplicationEntry::compareTo);
+            orderedSnapshotToReplicate.sort(SnapshotReplicationEntry::compareTo);
         }
 
-        return s;
+        return orderedSnapshotToReplicate;
     }
 
     boolean isComplete()

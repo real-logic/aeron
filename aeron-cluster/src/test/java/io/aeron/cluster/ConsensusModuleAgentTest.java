@@ -90,6 +90,7 @@ public class ConsensusModuleAgentTest
         .moduleStateCounter(mock(Counter.class))
         .commitPositionCounter(mock(Counter.class))
         .controlToggleCounter(mock(Counter.class))
+        .nodeControlToggleCounter(mock(Counter.class))
         .clusterNodeRoleCounter(mock(Counter.class))
         .timedOutClientCounter(mockTimedOutClientCounter)
         .clusterTimeConsumerSupplier((ctx) -> mockTimeConsumer)

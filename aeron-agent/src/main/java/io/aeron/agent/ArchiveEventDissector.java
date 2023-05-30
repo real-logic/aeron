@@ -467,8 +467,11 @@ final class ArchiveEventDissector
 
         final long replicationId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
+        final long position = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
 
         builder.append(": replicationId=").append(replicationId);
+        builder.append(" position=").append(position);
         builder.append(" ");
         buffer.getStringAscii(absoluteOffset, builder);
     }
@@ -480,6 +483,8 @@ final class ArchiveEventDissector
         absoluteOffset += dissectLogHeader(CONTEXT, CONTROL_SESSION_STATE_CHANGE, buffer, absoluteOffset, builder);
 
         final long controlSessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long ignorePosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
 
         builder.append(": controlSessionId=").append(controlSessionId);

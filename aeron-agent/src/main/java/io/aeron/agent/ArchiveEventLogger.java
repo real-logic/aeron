@@ -108,10 +108,16 @@ public final class ArchiveEventLogger
      * @param oldState         before the change.
      * @param newState         after the change.
      * @param controlSessionId identity for the control session on the Archive.
+     * @param position         position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
+     *                         if not relevant)
      * @param <E>              type representing the state change.
      */
     public <E extends Enum<E>> void logSessionStateChange(
-        final ArchiveEventCode eventCode, final E oldState, final E newState, final long controlSessionId)
+        final ArchiveEventCode eventCode,
+        final E oldState,
+        final E newState,
+        final long controlSessionId,
+        final long position)
     {
         final int length = sessionStateChangeLength(oldState, newState);
         final int captureLength = captureLength(length);
@@ -130,7 +136,8 @@ public final class ArchiveEventLogger
                     length,
                     oldState,
                     newState,
-                    controlSessionId);
+                    controlSessionId,
+                    position);
             }
             finally
             {

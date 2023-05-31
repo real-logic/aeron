@@ -52,6 +52,7 @@ class ControlSessionDemuxerV6Test
         replicateRequest2Encoder.wrapAndApplyHeader(buffer, 0, headerEncoder);
 
         final int fileIoMaxLength = Aeron.NULL_VALUE; // Since v7
+        final int sessionId = Aeron.NULL_VALUE; // Since v8
 
         replicateRequest2Encoder
             .controlSessionId(928374L)
@@ -80,6 +81,7 @@ class ControlSessionDemuxerV6Test
             expected.subscriptionTagId(),
             expected.srcControlStreamId(),
             fileIoMaxLength,
+            sessionId,
             expected.srcControlChannel(),
             expected.liveDestination(),
             expected.replicationChannel());

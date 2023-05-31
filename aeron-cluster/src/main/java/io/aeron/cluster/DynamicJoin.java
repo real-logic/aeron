@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.ChannelUri;
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
@@ -291,7 +292,7 @@ final class DynamicJoin
                 leaderArchiveControlRequestChannel(),
                 ctx.archiveContext().controlRequestStreamId(),
                 ctx.replicationChannel(),
-                ctx.leaderHeartbeatTimeoutNs(),
+                Aeron.NULL_VALUE, ctx.leaderHeartbeatTimeoutNs(),
                 ctx.leaderHeartbeatIntervalNs(),
                 nowNs);
 
@@ -326,7 +327,7 @@ final class DynamicJoin
                         leaderArchiveControlRequestChannel(),
                         ctx.archiveContext().controlRequestStreamId(),
                         ctx.replicationChannel(),
-                        ctx.leaderHeartbeatTimeoutNs(),
+                        Aeron.NULL_VALUE, ctx.leaderHeartbeatTimeoutNs(),
                         ctx.leaderHeartbeatIntervalNs(),
                         nowNs);
 

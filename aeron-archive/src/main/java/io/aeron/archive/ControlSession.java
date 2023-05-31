@@ -501,6 +501,7 @@ final class ControlSession implements Session
         final long subscriptionTagId,
         final int srcControlStreamId,
         final int fileIoMaxLength,
+        final int replicationSessionId,
         final String srcControlChannel,
         final String liveDestination,
         final String replicationChannel)
@@ -520,6 +521,7 @@ final class ControlSession implements Session
                 liveDestination,
                 replicationChannel,
                 fileIoMaxLength,
+                replicationSessionId,
                 this);
         }
     }

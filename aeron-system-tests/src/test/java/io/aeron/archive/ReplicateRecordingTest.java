@@ -274,6 +274,54 @@ class ReplicateRecordingTest
         resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
     }
 
+    @Test
+    @InterruptAfter(10)
+    void shouldReplicateRecordingWithCustomSessionId()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final int specifiedSessionId = 100_024;
+        final long srcRecordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+        {
+            final CountersReader counters = srcAeron.countersReader();
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            Tests.awaitPosition(counters, counterId, publication.position());
+        }
+
+        srcRecordingSignalConsumer.reset();
+        srcAeronArchive.stopRecording(subscriptionId);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+
+        dstRecordingSignalConsumer.reset();
+        dstAeronArchive.replicate(
+            srcRecordingId,
+            SRC_CONTROL_STREAM_ID,
+            SRC_CONTROL_REQUEST_CHANNEL,
+            new ReplicationParams().replicationSessionId(specifiedSessionId));
+
+        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+        final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.SYNC);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+
+
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(1);
+        assertEquals(1, dstAeronArchive.listRecording(dstRecordingId, collector.reset()));
+        final RecordingDescriptor dstRecording = collector.descriptors().get(0).retain();
+
+        assertEquals(specifiedSessionId, dstRecording.sessionId());
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = { true, false })
     @InterruptAfter(10)

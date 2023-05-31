@@ -16,15 +16,14 @@
 package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ReplicationParams;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.RecordingSignal.REPLICATE_END;
 import static io.aeron.archive.codecs.RecordingSignal.SYNC;
-import static io.aeron.archive.status.RecordingPos.NULL_RECORDING_ID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -48,9 +47,9 @@ class SnapshotReplicationTest
             new RecordingLog.Snapshot(2, 3, 5, 7, 11, 0),
             new RecordingLog.Snapshot(17, 3, 5, 7, 31, -1));
 
-        when(archive.replicate(eq(snapshots.get(0).recordingId), anyLong(), anyLong(), anyInt(), any(), any(), any()))
+        when(archive.replicate(eq(snapshots.get(0).recordingId), anyInt(), any(), any()))
             .thenReturn(replicationId0);
-        when(archive.replicate(eq(snapshots.get(1).recordingId), anyLong(), anyLong(), anyInt(), any(), any(), any()))
+        when(archive.replicate(eq(snapshots.get(1).recordingId), anyInt(), any(), any()))
             .thenReturn(replicationId1);
 
         final SnapshotReplication snapshotReplication = new SnapshotReplication(
@@ -60,14 +59,24 @@ class SnapshotReplicationTest
         snapshotReplication.addSnapshot(snapshots.get(1));
 
         assertEquals(1, snapshotReplication.poll(nowNs));
+
+        final ReplicationParams replicationParams = new ReplicationParams()
+            .replicationChannel(replicationChannel);
+
+//        verify(archive).replicate(
+//            snapshots.get(0).recordingId,
+//            NULL_RECORDING_ID,
+//            NULL_POSITION,
+//            srcStreamId,
+//            srcChannel,
+//            null,
+//            replicationChannel);
+
         verify(archive).replicate(
             snapshots.get(0).recordingId,
-            NULL_RECORDING_ID,
-            NULL_POSITION,
             srcStreamId,
             srcChannel,
-            null,
-            replicationChannel);
+            replicationParams);
 
         snapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
@@ -81,14 +90,19 @@ class SnapshotReplicationTest
         verifyNoMoreInteractions(archive);
 
         snapshotReplication.poll(nowNs);
+//        verify(archive).replicate(
+//            snapshots.get(1).recordingId,
+//            NULL_RECORDING_ID,
+//            NULL_POSITION,
+//            srcStreamId,
+//            srcChannel,
+//            null,
+//            replicationChannel);
         verify(archive).replicate(
             snapshots.get(1).recordingId,
-            NULL_RECORDING_ID,
-            NULL_POSITION,
             srcStreamId,
             srcChannel,
-            null,
-            replicationChannel);
+            replicationParams);
 
         snapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
@@ -132,8 +146,7 @@ class SnapshotReplicationTest
         snapshotReplication.addSnapshot(snapshots.get(1));
 
         snapshotReplication.poll(nowNs);
-        verify(archive).replicate(
-            eq(snapshots.get(0).recordingId), anyLong(), anyLong(), anyInt(), any(), any(), any());
+        verify(archive).replicate(eq(snapshots.get(0).recordingId), anyInt(), any(), any());
 
         snapshotReplication.poll(nowNs);
         snapshotReplication.onSignal(replicationId0, snapshots.get(0).recordingId, 23423, REPLICATE_END);
@@ -158,8 +171,7 @@ class SnapshotReplicationTest
 
         snapshotReplication.poll(nowNs);
 
-        verify(archive).replicate(
-            anyLong(), anyLong(), anyLong(), anyInt(), any(), any(), any());
+        verify(archive).replicate(anyLong(), anyInt(), any(), any());
 
         snapshotReplication.close();
         verify(archive).tryStopReplication(anyLong());

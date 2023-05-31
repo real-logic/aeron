@@ -992,7 +992,7 @@ public final class ArchiveProxy
             null,
             correlationId,
             controlSessionId,
-            Aeron.NULL_VALUE);
+            Aeron.NULL_VALUE, Aeron.NULL_VALUE);
     }
 
     /**
@@ -1043,7 +1043,7 @@ public final class ArchiveProxy
             replicationChannel,
             correlationId,
             controlSessionId,
-            Aeron.NULL_VALUE);
+            Aeron.NULL_VALUE, Aeron.NULL_VALUE);
     }
 
     /**
@@ -1093,7 +1093,7 @@ public final class ArchiveProxy
             null,
             correlationId,
             controlSessionId,
-            Aeron.NULL_VALUE);
+            Aeron.NULL_VALUE, Aeron.NULL_VALUE);
     }
 
     /**
@@ -1148,7 +1148,7 @@ public final class ArchiveProxy
             replicationChannel,
             correlationId,
             controlSessionId,
-            Aeron.NULL_VALUE);
+            Aeron.NULL_VALUE, Aeron.NULL_VALUE);
     }
 
     /**
@@ -1180,6 +1180,12 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
+        if (null != replicationParams.liveDestination() && Aeron.NULL_VALUE != replicationParams.replicationSessionId())
+        {
+            throw new IllegalArgumentException(
+                "ReplicationParams.liveDestination and ReplicationParams.sessionId can not be specified together");
+        }
+
         return replicate(
             srcRecordingId,
             replicationParams.dstRecordingId(),
@@ -1192,7 +1198,8 @@ public final class ArchiveProxy
             replicationParams.replicationChannel(),
             correlationId,
             controlSessionId,
-            replicationParams.fileIoMaxLength());
+            replicationParams.fileIoMaxLength(),
+            replicationParams.replicationSessionId());
     }
 
     /**
@@ -1520,7 +1527,8 @@ public final class ArchiveProxy
         final String replicationChannel,
         final long correlationId,
         final long controlSessionId,
-        final int fileIoMaxLength)
+        final int fileIoMaxLength,
+        final int replicationSessionId)
     {
         if (null == replicateRequest)
         {
@@ -1540,7 +1548,8 @@ public final class ArchiveProxy
             .fileIoMaxLength(fileIoMaxLength)
             .srcControlChannel(srcControlChannel)
             .liveDestination(liveDestination)
-            .replicationChannel(replicationChannel);
+            .replicationChannel(replicationChannel)
+            .replicationSessionId(replicationSessionId);
 
         return offer(replicateRequest.encodedLength());
     }

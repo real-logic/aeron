@@ -294,7 +294,7 @@ public final class TestCluster implements AutoCloseable
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
             .segmentFileLength(archiveSegmentFileLength)
-            .replicationChannel(REPLICATION_CHANNEL);
+            .replicationChannel(archiveReplicationChannel(index));
 
         context.consensusModuleContext
             .clusterMemberId(index)
@@ -305,7 +305,7 @@ public final class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel(ingressChannel)
             .logChannel(logChannel)
-            .replicationChannel(REPLICATION_CHANNEL)
+            .replicationChannel(clusterReplicationChannel(0, index))
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
@@ -355,7 +355,7 @@ public final class TestCluster implements AutoCloseable
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
             .segmentFileLength(archiveSegmentFileLength)
-            .replicationChannel(REPLICATION_CHANNEL);
+            .replicationChannel(archiveReplicationChannel(index));
 
         context.consensusModuleContext
             .clusterMemberId(NULL_VALUE)
@@ -365,7 +365,7 @@ public final class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel(ingressChannel)
             .logChannel(logChannel)
-            .replicationChannel(REPLICATION_CHANNEL)
+            .replicationChannel(clusterReplicationChannel(0, index))
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
@@ -415,7 +415,7 @@ public final class TestCluster implements AutoCloseable
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
             .segmentFileLength(archiveSegmentFileLength)
-            .replicationChannel(REPLICATION_CHANNEL);
+            .replicationChannel(archiveReplicationChannel(index));
 
         final String dynamicOnlyConsensusEndpoints = clusterConsensusEndpoints(0, 3, index);
 
@@ -427,7 +427,7 @@ public final class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel(ingressChannel)
             .logChannel(logChannel)
-            .replicationChannel(REPLICATION_CHANNEL)
+            .replicationChannel(clusterReplicationChannel(0, index))
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
@@ -476,7 +476,7 @@ public final class TestCluster implements AutoCloseable
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(false)
             .segmentFileLength(archiveSegmentFileLength)
-            .replicationChannel(REPLICATION_CHANNEL);
+            .replicationChannel(archiveReplicationChannel(index));
 
         context.consensusModuleContext
             .clusterMemberId(index)
@@ -487,7 +487,7 @@ public final class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "consensus-module"))
             .ingressChannel(ingressChannel)
             .logChannel(logChannel)
-            .replicationChannel(REPLICATION_CHANNEL)
+            .replicationChannel(clusterReplicationChannel(0, index))
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
@@ -552,7 +552,7 @@ public final class TestCluster implements AutoCloseable
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
             .segmentFileLength(archiveSegmentFileLength)
-            .replicationChannel(REPLICATION_CHANNEL);
+            .replicationChannel(archiveReplicationChannel(index));
 
         final ChannelUri consensusChannelUri = ChannelUri.parse(context.clusterBackupContext.consensusChannel());
         final String backupStatusEndpoint = clusterBackupStatusEndpoint(0, index);
@@ -612,7 +612,7 @@ public final class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(false)
-            .replicationChannel(REPLICATION_CHANNEL);
+            .replicationChannel(archiveReplicationChannel(backupNodeIndex));
 
         context.consensusModuleContext
             .clusterMemberId(backupNodeIndex)
@@ -621,7 +621,7 @@ public final class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .ingressChannel(ingressChannel)
             .logChannel(logChannel)
-            .replicationChannel(REPLICATION_CHANNEL)
+            .replicationChannel(clusterReplicationChannel(0, backupNodeIndex))
             .archiveContext(context.aeronArchiveContext.clone()
                 .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
                 .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
@@ -1683,6 +1683,26 @@ public final class TestCluster implements AutoCloseable
     static String archiveControlResponseEndpoint(final int memberId)
     {
         return hostname(memberId) + ":0";
+    }
+
+    static String archiveReplicationChannel(final int memberId)
+    {
+        return "aeron:udp?endpoint=" + archiveReplicationEndpoint(memberId);
+    }
+
+    static String archiveReplicationEndpoint(final int memberId)
+    {
+        return hostname(memberId) + ":802" + memberId;
+    }
+
+    static String clusterReplicationChannel(final int clusterId, final int memberId)
+    {
+        return "aeron:udp?endpoint=" + clusterReplicationEndpoint(clusterId, memberId) + "|linger=5000000000";
+    }
+
+    static String clusterReplicationEndpoint(final int clusterId, final int memberId)
+    {
+        return hostname(memberId) + ":2" + clusterId + "55" + memberId;
     }
 
     public void invalidateLatestSnapshot()

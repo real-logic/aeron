@@ -78,6 +78,7 @@ class ControlSessionDemuxerTest
             expected.subscriptionTagId(),
             expected.srcControlStreamId(),
             expected.fileIoMaxLength(),
+            expected.replicationSessionId(),
             expected.srcControlChannel(),
             expected.liveDestination(),
             expected.replicationChannel());

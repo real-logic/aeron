@@ -32,6 +32,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 {
     private static final int FRAGMENT_LIMIT = 10;
     private static final int FILE_IO_MAX_LENGTH_VERSION = 7;
+    private static final int SESSION_ID_VERSION = 8;
 
     private final ControlRequestDecoders decoders;
     private final Image image;
@@ -564,6 +565,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         Aeron.NULL_VALUE,
                         decoder.srcControlStreamId(),
                         Aeron.NULL_VALUE,
+                        Aeron.NULL_VALUE,
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
                         ""
@@ -821,6 +823,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         decoder.subscriptionTagId(),
                         decoder.srcControlStreamId(),
                         Aeron.NULL_VALUE,
+                        Aeron.NULL_VALUE,
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
                         ""
@@ -916,6 +919,9 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 final int fileIoMaxLength = FILE_IO_MAX_LENGTH_VERSION <= headerDecoder.version() ?
                     decoder.fileIoMaxLength() : Aeron.NULL_VALUE;
 
+                final int sessionId = SESSION_ID_VERSION <= headerDecoder.version() ?
+                    decoder.replicationSessionId() : Aeron.NULL_VALUE;
+
                 if (null != controlSession)
                 {
                     controlSession.onReplicate(
@@ -927,6 +933,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         decoder.subscriptionTagId(),
                         decoder.srcControlStreamId(),
                         fileIoMaxLength,
+                        sessionId,
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
                         decoder.replicationChannel()

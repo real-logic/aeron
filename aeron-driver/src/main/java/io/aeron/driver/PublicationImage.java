@@ -447,7 +447,7 @@ public final class PublicationImage
     }
 
     /**
-     * Activate this image from the {@link Receiver}
+     * Activate this image from the {@link Receiver}.
      */
     void activate()
     {

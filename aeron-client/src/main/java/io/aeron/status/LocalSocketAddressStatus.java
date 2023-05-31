@@ -251,4 +251,41 @@ public class LocalSocketAddressStatus
 
         return result;
     }
+
+    /**
+     * Is a socket currently active for a channel.
+     *
+     * @param countersReader  for the connected driver.
+     * @param channelStatusId identity of the counter for the channel.
+     * @return true if the counter is active otherwise false.
+     */
+    public static boolean isActive(final CountersReader countersReader, final int channelStatusId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            final int counterState = countersReader.getCounterState(i);
+            if (RECORD_ALLOCATED == counterState)
+            {
+                if (countersReader.getCounterTypeId(i) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID)
+                {
+                    final int recordOffset = CountersReader.metaDataOffset(i);
+                    final int keyIndex = recordOffset + CountersReader.KEY_OFFSET;
+
+                    if (channelStatusId == buffer.getInt(keyIndex + CHANNEL_STATUS_ID_OFFSET) &&
+                        ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(i))
+                    {
+                        return true;
+                    }
+                }
+            }
+            else if (RECORD_UNUSED == counterState)
+            {
+                break;
+            }
+        }
+
+        return false;
+    }
 }

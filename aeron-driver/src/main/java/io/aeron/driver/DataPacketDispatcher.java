@@ -243,8 +243,15 @@ public final class DataPacketDispatcher
             {
                 if (sessionInterest.image.correlationId() == image.correlationId())
                 {
-                    sessionInterest.state = ON_COOL_DOWN;
-                    sessionInterest.image = null;
+                    if (image.isEndOfStream)
+                    {
+                        streamInterest.sessionInterestByIdMap.remove(image.sessionId());
+                    }
+                    else
+                    {
+                        sessionInterest.state = ON_COOL_DOWN;
+                        sessionInterest.image = null;
+                    }
                 }
             }
         }
@@ -272,7 +279,7 @@ public final class DataPacketDispatcher
     }
 
     /**
-     * Remove a cool down action once it has expired
+     * Remove a cool down action once it has expired.
      *
      * @param sessionId of the registered interest.
      * @param streamId  of the registered interest.

@@ -200,6 +200,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
             receiver->receiver_id = receiver_id;
             receiver->session_id = status_message_header->session_id;
             receiver->stream_id = status_message_header->stream_id;
+            receiver->eos_flagged = false;
 
             min_position = (position + window_length) < min_position ? (position + window_length) : min_position;
 

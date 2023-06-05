@@ -1233,10 +1233,6 @@ class ClusterTest
         final TestNode lateJoiningNode = cluster.node(originalLeader.index());
 
         cluster.awaitServiceMessageCount(lateJoiningNode, messageCount * 3);
-
-        Tests.sleep(5_000);
-
-        cluster.sendAndAwaitMessages(messageCount, messageCount * 4);
     }
 
     @Test

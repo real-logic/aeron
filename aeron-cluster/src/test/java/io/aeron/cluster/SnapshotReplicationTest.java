@@ -63,15 +63,6 @@ class SnapshotReplicationTest
         final ReplicationParams replicationParams = new ReplicationParams()
             .replicationChannel(replicationChannel);
 
-//        verify(archive).replicate(
-//            snapshots.get(0).recordingId,
-//            NULL_RECORDING_ID,
-//            NULL_POSITION,
-//            srcStreamId,
-//            srcChannel,
-//            null,
-//            replicationChannel);
-
         verify(archive).replicate(
             snapshots.get(0).recordingId,
             srcStreamId,
@@ -90,14 +81,7 @@ class SnapshotReplicationTest
         verifyNoMoreInteractions(archive);
 
         snapshotReplication.poll(nowNs);
-//        verify(archive).replicate(
-//            snapshots.get(1).recordingId,
-//            NULL_RECORDING_ID,
-//            NULL_POSITION,
-//            srcStreamId,
-//            srcChannel,
-//            null,
-//            replicationChannel);
+
         verify(archive).replicate(
             snapshots.get(1).recordingId,
             srcStreamId,

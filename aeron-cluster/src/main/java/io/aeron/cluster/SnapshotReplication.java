@@ -52,7 +52,7 @@ class SnapshotReplication implements AutoCloseable
         final long replicationProgressTimeoutNs,
         final long replicationProgressIntervalNs)
     {
-        multipleRecordingReplication = new MultipleRecordingReplication(
+        multipleRecordingReplication = MultipleRecordingReplication.newInstance(
             archive,
             srcControlStreamId,
             srcControlChannel,

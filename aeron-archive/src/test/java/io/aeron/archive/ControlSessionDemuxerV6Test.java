@@ -87,7 +87,7 @@ class ControlSessionDemuxerV6Test
             expected.srcControlChannel(),
             expected.liveDestination(),
             expected.replicationChannel(),
-            NullCredentialsSupplier.NULL_CREDENTIAL);
+            encodedCredentials);
     }
 
     @Test

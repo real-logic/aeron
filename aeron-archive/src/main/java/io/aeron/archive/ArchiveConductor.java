@@ -1163,6 +1163,7 @@ abstract class ArchiveConductor
         final String replicationChannel,
         final int fileIoMaxLength,
         final int replicationSessionId,
+        final byte[] encodedCredentials,
         final ControlSession controlSession)
     {
         final boolean hasRecording = catalog.hasRecording(dstRecordingId);
@@ -1188,6 +1189,11 @@ abstract class ArchiveConductor
         final AeronArchive.Context remoteArchiveContext = ctx.archiveClientContext().clone()
             .controlRequestChannel(srcControlChannel)
             .controlRequestStreamId(srcControlStreamId);
+
+        if (null != encodedCredentials && 0 < encodedCredentials.length)
+        {
+            remoteArchiveContext.credentialsSupplier(new ReplicationCredentialsSupplier(encodedCredentials));
+        }
 
         final long replicationId = nextSessionId++;
         final ReplicationSession replicationSession = new ReplicationSession(

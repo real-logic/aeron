@@ -24,6 +24,7 @@ import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.security.AuthorisationService;
+import io.aeron.security.NullCredentialsSupplier;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -33,6 +34,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
     private static final int FRAGMENT_LIMIT = 10;
     private static final int FILE_IO_MAX_LENGTH_VERSION = 7;
     private static final int SESSION_ID_VERSION = 8;
+    private static final int ENCODED_CREDENTIALS_VERSION = 8;
 
     private final ControlRequestDecoders decoders;
     private final Image image;
@@ -568,8 +570,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         Aeron.NULL_VALUE,
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
-                        ""
-                    );
+                        "",
+                        NullCredentialsSupplier.NULL_CREDENTIAL);
                 }
                 break;
             }
@@ -826,8 +828,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         Aeron.NULL_VALUE,
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
-                        ""
-                    );
+                        "",
+                        NullCredentialsSupplier.NULL_CREDENTIAL);
                 }
                 break;
             }
@@ -922,6 +924,20 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 final int sessionId = SESSION_ID_VERSION <= headerDecoder.version() ?
                     decoder.replicationSessionId() : Aeron.NULL_VALUE;
 
+                final String srcControlChannel = decoder.srcControlChannel();
+                final String liveDestination = decoder.liveDestination();
+                final String replicationChannel = decoder.replicationChannel();
+                final byte[] encodedCredentials;
+                if (ENCODED_CREDENTIALS_VERSION <= headerDecoder.version())
+                {
+                    encodedCredentials = new byte[decoder.encodedCredentialsLength()];
+                    decoder.getEncodedCredentials(encodedCredentials, 0, decoder.encodedCredentialsLength());
+                }
+                else
+                {
+                    encodedCredentials = NullCredentialsSupplier.NULL_CREDENTIAL;
+                }
+
                 if (null != controlSession)
                 {
                     controlSession.onReplicate(
@@ -934,9 +950,10 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         decoder.srcControlStreamId(),
                         fileIoMaxLength,
                         sessionId,
-                        decoder.srcControlChannel(),
-                        decoder.liveDestination(),
-                        decoder.replicationChannel()
+                        srcControlChannel,
+                        liveDestination,
+                        replicationChannel,
+                        encodedCredentials
                     );
                 }
                 break;

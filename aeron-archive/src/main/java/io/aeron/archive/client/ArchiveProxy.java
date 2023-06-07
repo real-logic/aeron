@@ -992,7 +992,9 @@ public final class ArchiveProxy
             null,
             correlationId,
             controlSessionId,
-            Aeron.NULL_VALUE, Aeron.NULL_VALUE);
+            Aeron.NULL_VALUE,
+            Aeron.NULL_VALUE,
+            NullCredentialsSupplier.NULL_CREDENTIAL);
     }
 
     /**
@@ -1043,7 +1045,9 @@ public final class ArchiveProxy
             replicationChannel,
             correlationId,
             controlSessionId,
-            Aeron.NULL_VALUE, Aeron.NULL_VALUE);
+            Aeron.NULL_VALUE,
+            Aeron.NULL_VALUE,
+            NullCredentialsSupplier.NULL_CREDENTIAL);
     }
 
     /**
@@ -1093,7 +1097,9 @@ public final class ArchiveProxy
             null,
             correlationId,
             controlSessionId,
-            Aeron.NULL_VALUE, Aeron.NULL_VALUE);
+            Aeron.NULL_VALUE,
+            Aeron.NULL_VALUE,
+            NullCredentialsSupplier.NULL_CREDENTIAL);
     }
 
     /**
@@ -1148,7 +1154,9 @@ public final class ArchiveProxy
             replicationChannel,
             correlationId,
             controlSessionId,
-            Aeron.NULL_VALUE, Aeron.NULL_VALUE);
+            Aeron.NULL_VALUE,
+            Aeron.NULL_VALUE,
+            NullCredentialsSupplier.NULL_CREDENTIAL);
     }
 
     /**
@@ -1199,7 +1207,8 @@ public final class ArchiveProxy
             correlationId,
             controlSessionId,
             replicationParams.fileIoMaxLength(),
-            replicationParams.replicationSessionId());
+            replicationParams.replicationSessionId(),
+            replicationParams.encodedCredentials());
     }
 
     /**
@@ -1528,7 +1537,8 @@ public final class ArchiveProxy
         final long correlationId,
         final long controlSessionId,
         final int fileIoMaxLength,
-        final int replicationSessionId)
+        final int replicationSessionId,
+        final byte[] encodedCredentials)
     {
         if (null == replicateRequest)
         {
@@ -1549,7 +1559,8 @@ public final class ArchiveProxy
             .srcControlChannel(srcControlChannel)
             .liveDestination(liveDestination)
             .replicationChannel(replicationChannel)
-            .replicationSessionId(replicationSessionId);
+            .replicationSessionId(replicationSessionId)
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
         return offer(replicateRequest.encodedLength());
     }

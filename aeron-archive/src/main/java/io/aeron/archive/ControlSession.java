@@ -504,7 +504,8 @@ final class ControlSession implements Session
         final int replicationSessionId,
         final String srcControlChannel,
         final String liveDestination,
-        final String replicationChannel)
+        final String replicationChannel,
+        final byte[] encodedCredentials)
     {
         attemptToActivate();
         if (State.ACTIVE == state)
@@ -522,6 +523,7 @@ final class ControlSession implements Session
                 replicationChannel,
                 fileIoMaxLength,
                 replicationSessionId,
+                encodedCredentials,
                 this);
         }
     }

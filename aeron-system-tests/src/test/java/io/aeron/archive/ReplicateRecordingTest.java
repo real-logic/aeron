@@ -24,7 +24,9 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.samples.archive.RecordingDescriptor;
 import io.aeron.samples.archive.RecordingDescriptorCollector;
+import io.aeron.samples.archive.SampleAuthenticatorSupplier;
 import io.aeron.test.*;
+import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
@@ -43,6 +45,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -52,6 +55,7 @@ import static io.aeron.archive.ArchiveSystemTests.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -65,7 +69,7 @@ class ReplicateRecordingTest
     private static final String DST_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8095";
     private static final String DST_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:0";
     private static final String SRC_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
-    private static final String DST_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
+    private static final String DST_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:20000";
     private static final String REPLAY_CHANNEL = "aeron:udp?endpoint=localhost:6666";
     private static final int REPLAY_STREAM_ID = 101;
     private static final long TIMER_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(15);
@@ -77,6 +81,7 @@ class ReplicateRecordingTest
         .termLength(TERM_LENGTH)
         .build();
     private TestMediaDriver srcDriver;
+    private Archive.Context srcArchiveCtx;
     private Archive srcArchive;
     private TestMediaDriver dstDriver;
     private Archive dstArchive;
@@ -87,6 +92,7 @@ class ReplicateRecordingTest
 
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    private AeronArchive.Context srcAeronArchiveCtx;
 
     @BeforeEach
     void before()
@@ -102,7 +108,7 @@ class ReplicateRecordingTest
             .timerIntervalNs(TIMER_INTERVAL_NS)
             .dirDeleteOnStart(true);
 
-        final Archive.Context srcArchiveCtx = new Archive.Context()
+        srcArchiveCtx = new Archive.Context()
             .catalogCapacity(CATALOG_CAPACITY)
             .aeronDirectoryName(srcAeronDirectoryName)
             .controlChannel(SRC_CONTROL_REQUEST_CHANNEL)
@@ -134,19 +140,20 @@ class ReplicateRecordingTest
 
         srcDriver = TestMediaDriver.launch(srcContext, systemTestWatcher);
         systemTestWatcher.dataCollector().add(srcContext.aeronDirectory());
-        srcArchive = Archive.launch(srcArchiveCtx);
+        srcArchive = Archive.launch(srcArchiveCtx.clone());
         systemTestWatcher.dataCollector().add(srcArchiveCtx.archiveDir());
         dstDriver = TestMediaDriver.launch(dstContext, systemTestWatcher);
         systemTestWatcher.dataCollector().add(dstContext.aeronDirectory());
         dstArchive = Archive.launch(dstArchiveCtx);
         systemTestWatcher.dataCollector().add(dstArchiveCtx.archiveDir());
 
-        srcAeronArchive = AeronArchive.connect(
-            new AeronArchive.Context()
-                .idleStrategy(YieldingIdleStrategy.INSTANCE)
-                .controlRequestChannel(SRC_CONTROL_REQUEST_CHANNEL)
-                .controlResponseChannel(SRC_CONTROL_RESPONSE_CHANNEL)
-                .aeronDirectoryName(srcAeronDirectoryName));
+        srcAeronArchiveCtx = new AeronArchive.Context()
+            .idleStrategy(YieldingIdleStrategy.INSTANCE)
+            .controlRequestChannel(SRC_CONTROL_REQUEST_CHANNEL)
+            .controlResponseChannel(SRC_CONTROL_RESPONSE_CHANNEL)
+            .aeronDirectoryName(srcAeronDirectoryName);
+
+        srcAeronArchive = AeronArchive.connect(srcAeronArchiveCtx.clone());
 
         dstAeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
@@ -549,10 +556,9 @@ class ReplicateRecordingTest
         awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = { true, false })
+    @Test
     @InterruptAfter(10)
-    void shouldReplicateMoreThanOnce(final boolean useParams)
+    void shouldReplicateMoreThanOnce()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -560,6 +566,7 @@ class ReplicateRecordingTest
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
         final Aeron srcAeron = srcAeronArchive.context().aeron();
+        final ReplicationParams replicationParams = new ReplicationParams();
 
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
@@ -570,18 +577,13 @@ class ReplicateRecordingTest
             offer(publication, messageCount, messagePrefix);
             Tests.awaitPosition(srcCounters, counterId, publication.position());
 
-            long replicationId;
             dstRecordingSignalConsumer.reset();
-            if (useParams)
-            {
-                replicationId = dstAeronArchive.replicate(
-                    srcRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, new ReplicationParams());
-            }
-            else
-            {
-                replicationId = dstAeronArchive.replicate(
-                    srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
-            }
+            replicationParams
+                .reset()
+                .replicationSessionId((int)dstAeronArchive.context().aeron().nextCorrelationId());
+
+            long replicationId = dstAeronArchive.replicate(
+                srcRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, replicationParams);
 
             awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
             final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
@@ -596,19 +598,17 @@ class ReplicateRecordingTest
             awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
 
             dstRecordingSignalConsumer.reset();
-            if (useParams)
-            {
-                replicationId = dstAeronArchive.replicate(
-                    srcRecordingId,
-                    SRC_CONTROL_STREAM_ID,
-                    SRC_CONTROL_REQUEST_CHANNEL,
-                    new ReplicationParams().dstRecordingId(dstRecordingId));
-            }
-            else
-            {
-                replicationId = dstAeronArchive.replicate(
-                    srcRecordingId, dstRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
-            }
+
+            replicationParams
+                .reset()
+                .replicationSessionId((int)dstAeronArchive.context().aeron().nextCorrelationId())
+                .dstRecordingId(dstRecordingId);
+            replicationId = dstAeronArchive.replicate(
+                srcRecordingId,
+                SRC_CONTROL_STREAM_ID,
+                SRC_CONTROL_REQUEST_CHANNEL,
+                replicationParams);
+
             awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
 
             dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
@@ -1208,6 +1208,123 @@ class ReplicateRecordingTest
         }
 
         fail("expected archive exception");
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldReplicateWithAuthentication()
+    {
+        final Archive.Context authArchiveCtx = srcArchiveCtx
+            .clone()
+            .controlChannel("aeron:udp?endpoint=localhost:8098")
+            .authenticatorSupplier(new SampleAuthenticatorSupplier());
+        final AeronArchive.Context authAeronArchiveCtx = srcAeronArchiveCtx
+            .clone()
+            .credentialsSupplier(TestCluster.SIMPLE_CREDENTIALS_SUPPLIER)
+            .controlRequestChannel(authArchiveCtx.controlChannel());
+
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        try (Archive archive = Archive.launch(authArchiveCtx);
+            AeronArchive aeronArchive = AeronArchive.connect(authAeronArchiveCtx))
+        {
+            Objects.requireNonNull(archive);
+            final TestRecordingSignalConsumer authSignalConsumer = injectRecordingSignalConsumer(aeronArchive);
+
+            final long subscriptionId = aeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+            final Aeron srcAeron = aeronArchive.context().aeron();
+            try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+            {
+                final CountersReader counters = srcAeron.countersReader();
+                final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
+                srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
+
+                offer(publication, messageCount, messagePrefix);
+                Tests.awaitPosition(counters, counterId, publication.position());
+            }
+
+            authSignalConsumer.reset();
+            aeronArchive.stopRecording(subscriptionId);
+            awaitSignal(aeronArchive, authSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+
+            dstRecordingSignalConsumer.reset();
+            final ReplicationParams replicationParams = new ReplicationParams()
+                .encodedCredentials(TestCluster.SIMPLE_CREDENTIALS_SUPPLIER.encodedCredentials());
+            dstAeronArchive.replicate(
+                srcRecordingId,
+                authAeronArchiveCtx.controlRequestStreamId(),
+                authAeronArchiveCtx.controlRequestChannel(),
+                replicationParams);
+
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+            final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.SYNC);
+            resetAndAwaitSignal(
+                dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldFailReplicationWithUsefulErrorWithChallengeResponseAuthentication()
+    {
+        final Archive.Context authArchiveCtx = srcArchiveCtx
+            .clone()
+            .controlChannel("aeron:udp?endpoint=localhost:8098")
+            .authenticatorSupplier(new SampleAuthenticatorSupplier());
+        final AeronArchive.Context authAeronArchiveCtx = srcAeronArchiveCtx
+            .clone()
+            .credentialsSupplier(TestCluster.CHALLENGE_RESPONSE_CREDENTIALS_SUPPLIER)
+            .controlRequestChannel(authArchiveCtx.controlChannel());
+
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        try (Archive archive = Archive.launch(authArchiveCtx);
+            AeronArchive aeronArchive = AeronArchive.connect(authAeronArchiveCtx))
+        {
+            Objects.requireNonNull(archive);
+            final TestRecordingSignalConsumer authSignalConsumer = injectRecordingSignalConsumer(aeronArchive);
+
+            final long subscriptionId = aeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+            final Aeron srcAeron = aeronArchive.context().aeron();
+            try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+            {
+                final CountersReader counters = srcAeron.countersReader();
+                final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
+                srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
+
+                offer(publication, messageCount, messagePrefix);
+                Tests.awaitPosition(counters, counterId, publication.position());
+            }
+
+            authSignalConsumer.reset();
+            aeronArchive.stopRecording(subscriptionId);
+            awaitSignal(aeronArchive, authSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+
+            dstRecordingSignalConsumer.reset();
+            final ReplicationParams replicationParams = new ReplicationParams()
+                .encodedCredentials(TestCluster.CHALLENGE_RESPONSE_CREDENTIALS_SUPPLIER.encodedCredentials());
+            dstAeronArchive.replicate(
+                srcRecordingId,
+                authAeronArchiveCtx.controlRequestStreamId(),
+                authAeronArchiveCtx.controlRequestChannel(),
+                replicationParams);
+
+            final ArchiveException archiveException = assertThrows(
+                ArchiveException.class,
+                () -> awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE));
+            assertThat(
+                archiveException.getMessage(),
+                containsString("Replication does not support challenge/response authentication"));
+        }
     }
 
     private void readRecordingIntoBuffer(final long srcRecordingId, final ExpandableArrayBuffer srcRecordingData)

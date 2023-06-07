@@ -16,6 +16,7 @@
 package io.aeron.archive.client;
 
 import io.aeron.Aeron;
+import io.aeron.security.NullCredentialsSupplier;
 
 import java.util.Objects;
 
@@ -34,6 +35,7 @@ public class ReplicationParams
     private long subscriptionTagId;
     private int fileIoMaxLength;
     private int replicationSessionId;
+    private byte[] encodedCredentials;
 
     /**
      * Initialise all parameters to defaults.
@@ -59,6 +61,7 @@ public class ReplicationParams
         subscriptionTagId = Aeron.NULL_VALUE;
         fileIoMaxLength = Aeron.NULL_VALUE;
         replicationSessionId = Aeron.NULL_VALUE;
+        encodedCredentials = NullCredentialsSupplier.NULL_CREDENTIAL;
 
         return this;
     }
@@ -244,6 +247,29 @@ public class ReplicationParams
     public int replicationSessionId()
     {
         return this.replicationSessionId;
+    }
+
+    /**
+     * Sets the encoded credentials that will be passed to the source archive for authentication. Currently only simple
+     * authentication (i.e. not challenge/response) is supported for replication.
+     *
+     * @param encodedCredentials credentials to be passed to the source archive.
+     * @return this for a fluent API.
+     */
+    public ReplicationParams encodedCredentials(final byte[] encodedCredentials)
+    {
+        this.encodedCredentials = encodedCredentials;
+        return this;
+    }
+
+    /**
+     * Gets the encoded credentials that will be used to authenticate against the source archive.
+     *
+     * @return encoded credentials used for authentication.
+     */
+    public byte[] encodedCredentials()
+    {
+        return encodedCredentials;
     }
 
     /**

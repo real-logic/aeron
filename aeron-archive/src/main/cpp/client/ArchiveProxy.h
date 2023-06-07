@@ -35,7 +35,7 @@ constexpr const std::size_t PROXY_REQUEST_BUFFER_LENGTH = 8 * 1024;
  * replication including tagging, stop position, extending destination recordings, live merging, and setting the
  * maximum length of the file I/O operations.
  */
- class ReplicationParams
+class ReplicationParams
 {
 public:
     ReplicationParams() :
@@ -45,7 +45,8 @@ public:
         m_replicationChannel(),
         m_channelTagId(NULL_VALUE),
         m_subscriptionTagId(NULL_VALUE),
-        m_fileIoMaxLength(NULL_VALUE)
+        m_fileIoMaxLength(NULL_VALUE),
+        m_replicationSessionId(NULL_VALUE)
     {}
 
     /**
@@ -207,6 +208,52 @@ public:
         return *this;
     }
 
+    /**
+     * Sets the session-id to be used for the replicated file instead of the session id from the source archive. This
+     * is useful in cases where we are replicating the same recording in multiple stages.
+     *
+     * @param replicationSessionId the session-id to be set for the received recording.
+     * @return this for fluent API
+     */
+    ReplicationParams &replicationSessionId(int64_t replicationSessionId)
+    {
+        m_replicationSessionId = replicationSessionId;
+        return *this;
+    }
+
+    /**
+     * The session-id to be used for the replicated recording.
+     *
+     * @return session-id to be useful for the replicated recording.
+     */
+    std::int64_t replicationSessionId() const
+    {
+        return m_replicationSessionId;
+    }
+
+    /**
+     * Sets the encoded credentials that will be passed to the source archive for authentication. Currently only simple
+     * authentication (i.e. not challenge/response) is supported for replication.
+     *
+     * @param encodedCredentials credentials to be passed to the source archive.
+     * @return this for a fluent API.
+     */
+    ReplicationParams &encodedCredentials(std::pair<const char *, std::uint32_t> encodedCredentials)
+    {
+        m_encodedCredentials = encodedCredentials;
+        return *this;
+    }
+
+    /**
+     * Gets the encoded credentials that will be used to authenticate against the source archive.
+     *
+     * @return encoded credentials used for authentication.
+     */
+    std::pair<const char *, std::uint32_t> encodedCredentials() const
+    {
+        return m_encodedCredentials;
+    }
+
 private:
     std::int64_t m_stopPosition;
     std::int64_t m_dstRecordingId;
@@ -215,6 +262,8 @@ private:
     std::int64_t m_channelTagId;
     std::int64_t m_subscriptionTagId;
     std::int32_t m_fileIoMaxLength;
+    std::int64_t m_replicationSessionId;
+    std::pair<const char *, std::uint32_t> m_encodedCredentials;
 };
 
 /**
@@ -1146,6 +1195,8 @@ public:
             replicationParams.liveDestination(),
             replicationParams.replicationChannel(),
             replicationParams.fileIoMaxLength(),
+            replicationParams.replicationSessionId(),
+            replicationParams.encodedCredentials(),
             correlationId,
             controlSessionId);
 
@@ -1674,6 +1725,8 @@ private:
         const std::string &liveDestination,
         const std::string &replicationChannel,
         std::int32_t fileIoMaxLength,
+        std::int64_t replicationSessionId,
+        std::pair<const char *, std::uint32_t> encodedCredentials,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 

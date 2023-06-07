@@ -1217,6 +1217,7 @@ class ReplicateRecordingTest
         final Archive.Context authArchiveCtx = srcArchiveCtx
             .clone()
             .controlChannel("aeron:udp?endpoint=localhost:8098")
+            .archiveDir(new File(SystemUtil.tmpDirName(), "auth-archive"))
             .authenticatorSupplier(new SampleAuthenticatorSupplier());
         final AeronArchive.Context authAeronArchiveCtx = srcAeronArchiveCtx
             .clone()
@@ -1276,6 +1277,7 @@ class ReplicateRecordingTest
         final Archive.Context authArchiveCtx = srcArchiveCtx
             .clone()
             .controlChannel("aeron:udp?endpoint=localhost:8098")
+            .archiveDir(new File(SystemUtil.tmpDirName(), "auth-archive"))
             .authenticatorSupplier(new SampleAuthenticatorSupplier());
         final AeronArchive.Context authAeronArchiveCtx = srcAeronArchiveCtx
             .clone()

@@ -3777,7 +3777,8 @@ int aeron_driver_conductor_on_add_network_subscription(
 
             if (endpoint == image->conductor_fields.endpoint &&
                 command->stream_id == image->stream_id &&
-                aeron_publication_image_is_accepting_subscriptions(image))
+                aeron_publication_image_is_accepting_subscriptions(image) &&
+                (!link->has_session_id || (link->session_id == image->session_id)))
             {
                 if (aeron_driver_conductor_link_subscribable(
                     conductor,

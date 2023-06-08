@@ -64,4 +64,22 @@ public class RecordingSummary
      * The stream-id of the recorded stream.
      */
     public int streamId;
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "RecordingSummary{" +
+            "recordingId=" + recordingId +
+            ", startPosition=" + startPosition +
+            ", stopPosition=" + stopPosition +
+            ", initialTermId=" + initialTermId +
+            ", segmentFileLength=" + segmentFileLength +
+            ", termBufferLength=" + termBufferLength +
+            ", mtuLength=" + mtuLength +
+            ", sessionId=" + sessionId +
+            ", streamId=" + streamId +
+            '}';
+    }
 }

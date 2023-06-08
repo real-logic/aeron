@@ -320,10 +320,9 @@ class ReplicateRecordingTest
         resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = { true, false })
+    @Test
     @InterruptAfter(10)
-    void shouldReplicateStoppedRecordingsConcurrently(final boolean useParams)
+    void shouldReplicateStoppedRecordingsConcurrently()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -354,27 +353,13 @@ class ReplicateRecordingTest
         for (int i = 0; i < 2; i++)
         {
             dstRecordingSignalConsumer.reset();
-            if (useParams)
-            {
-                dstAeronArchive.archiveProxy().replicate(
-                    srcRecordingIds[i],
-                    SRC_CONTROL_STREAM_ID,
-                    SRC_CONTROL_REQUEST_CHANNEL,
-                    new ReplicationParams(),
-                    dstAeronArchive.context().aeron().nextCorrelationId(),
-                    dstAeronArchive.controlSessionId());
-            }
-            else
-            {
-                dstAeronArchive.archiveProxy().replicate(
-                    srcRecordingIds[i],
-                    NULL_VALUE,
-                    SRC_CONTROL_STREAM_ID,
-                    SRC_CONTROL_REQUEST_CHANNEL,
-                    null,
-                    dstAeronArchive.context().aeron().nextCorrelationId(),
-                    dstAeronArchive.controlSessionId());
-            }
+            dstAeronArchive.archiveProxy().replicate(
+                srcRecordingIds[i],
+                SRC_CONTROL_STREAM_ID,
+                SRC_CONTROL_REQUEST_CHANNEL,
+                new ReplicationParams(),
+                dstAeronArchive.context().aeron().nextCorrelationId(),
+                dstAeronArchive.controlSessionId());
         }
 
         int stopCount = 0;

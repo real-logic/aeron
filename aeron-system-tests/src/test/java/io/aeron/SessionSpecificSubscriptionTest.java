@@ -22,7 +22,9 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableBoolean;
@@ -30,12 +32,16 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import static io.aeron.CommonContext.IPC_MEDIA;
@@ -56,6 +62,8 @@ class SessionSpecificSubscriptionTest
 
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
+    @RegisterExtension
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private static Stream<ChannelUriStringBuilder> data()
     {
@@ -69,11 +77,12 @@ class SessionSpecificSubscriptionTest
     private final FragmentHandler handlerSessionIdTwo =
         (buffer, offset, length, header) -> assertEquals(SESSION_ID_2, header.sessionId());
 
-    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Tests::onError)
         .dirDeleteOnStart(true)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-        .threadingMode(ThreadingMode.SHARED));
+        .threadingMode(ThreadingMode.SHARED),
+        systemTestWatcher);
 
     private final Aeron aeron = Aeron.connect();
 
@@ -238,6 +247,94 @@ class SessionSpecificSubscriptionTest
             assertTrue(isValid.get());
             assertEquals(1, fragments);
         }
+    }
+
+    @Test
+    void shouldNotSeeNotificationsForSessionsThatAreNotRelevant()
+    {
+        final String uri1 = "aeron:udp?endpoint=localhost:20000|session-id=12345|rejoin=false";
+        final String uri2 = "aeron:udp?endpoint=localhost:20000|session-id=12346|rejoin=false";
+
+        final AtomicReference<String> error1 = new AtomicReference<>(null);
+        final AtomicReference<String> error2 = new AtomicReference<>(null);
+        final AvailableImageHandler handler1 = (image) ->
+        {
+            if (image.sessionId() != 12345)
+            {
+                error1.compareAndSet(null, image.toString());
+            }
+        };
+        final AvailableImageHandler handler2 = (image) ->
+        {
+            if (image.sessionId() != 12346)
+            {
+                error2.compareAndSet(null, image.toString());
+            }
+        };
+
+        try (
+            Subscription sub1 = aeron.addSubscription(uri1, 10000, handler1, image -> {}))
+        {
+            try (
+                ExclusivePublication pub1 = aeron.addExclusivePublication(uri1, 10000))
+            {
+                Tests.awaitConnected(sub1);
+                Tests.awaitConnected(pub1);
+
+                try (Subscription sub2 = aeron.addSubscription(uri2, 10000, handler2, image -> {}))
+                {
+                    Objects.requireNonNull(sub2);
+                    Tests.sleep(500);
+                }
+            }
+        }
+
+        assertNull(error1.get());
+        assertNull(error2.get());
+    }
+
+    @Test
+    void shouldNotSeeNotificationsForSessionsThatAreNotRelevantViaIpc()
+    {
+        final String uri1 = "aeron:ipc?session-id=12345|rejoin=false";
+        final String uri2 = "aeron:ipc?session-id=12346|rejoin=false";
+
+        final AtomicReference<String> error1 = new AtomicReference<>(null);
+        final AtomicReference<String> error2 = new AtomicReference<>(null);
+        final AvailableImageHandler handler1 = (image) ->
+        {
+            if (image.sessionId() != 12345)
+            {
+                error1.compareAndSet(null, image.toString());
+            }
+        };
+        final AvailableImageHandler handler2 = (image) ->
+        {
+            if (image.sessionId() != 12346)
+            {
+                error2.compareAndSet(null, image.toString());
+            }
+        };
+
+        try (
+            Subscription sub1 = aeron.addSubscription(uri1, 10000, handler1, image -> {}))
+        {
+            try (
+                ExclusivePublication pub1 = aeron.addExclusivePublication(uri1, 10000))
+            {
+                Tests.awaitConnected(sub1);
+                Tests.awaitConnected(pub1);
+
+                try (Subscription sub2 = aeron.addSubscription(uri2, 10000, handler2, image -> {}))
+                {
+                    Objects.requireNonNull(sub2);
+                    Tests.sleep(500);
+                }
+            }
+        }
+
+        assertNull(error1.get());
+        assertNull(error2.get());
     }
 
     private static void publishMessage(final UnsafeBuffer buffer, final Publication publication)

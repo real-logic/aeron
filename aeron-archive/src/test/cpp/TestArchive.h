@@ -162,12 +162,13 @@ public:
         {
             m_stream << currentTimeMillis() << " [TearDown] Shutting down PID " << m_pid << std::endl;
 
-            const std::string cncFilename = m_aeronDir + std::string(1, AERON_FILE_SEP) + CncFileDescriptor::CNC_FILE;
-            const CncFileReader reader = aeron::CncFileReader::mapExisting(m_aeronDir.c_str());
-
             const std::string aeronPath = m_aeronDir;
+            const std::string cncFilename = aeronPath + std::string(1, AERON_FILE_SEP) + CncFileDescriptor::CNC_FILE;
 
-            printErrors(aeronPath, m_stream);
+            {
+                const CncFileReader reader = aeron::CncFileReader::mapExisting(m_aeronDir.c_str());
+                printErrors(aeronPath, m_stream);
+            }
 
             if (aeron::Context::requestDriverTermination(aeronPath, nullptr, 0))
             {

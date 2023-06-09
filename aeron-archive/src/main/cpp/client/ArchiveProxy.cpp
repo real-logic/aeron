@@ -641,7 +641,7 @@ util::index_t ArchiveProxy::replicate(
     const std::string &liveDestination,
     const std::string &replicationChannel,
     std::int32_t fileIoMaxLength,
-    std::int64_t replicationSessionId,
+    std::int32_t replicationSessionId,
     std::pair<const char *, std::uint32_t> encodedCredentials,
     std::int64_t correlationId,
     std::int64_t controlSessionId)

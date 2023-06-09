@@ -215,7 +215,7 @@ public:
      * @param replicationSessionId the session-id to be set for the received recording.
      * @return this for fluent API
      */
-    ReplicationParams &replicationSessionId(int64_t replicationSessionId)
+    ReplicationParams &replicationSessionId(std::int32_t replicationSessionId)
     {
         m_replicationSessionId = replicationSessionId;
         return *this;
@@ -226,7 +226,7 @@ public:
      *
      * @return session-id to be useful for the replicated recording.
      */
-    std::int64_t replicationSessionId() const
+    std::int32_t replicationSessionId() const
     {
         return m_replicationSessionId;
     }
@@ -262,7 +262,7 @@ private:
     std::int64_t m_channelTagId;
     std::int64_t m_subscriptionTagId;
     std::int32_t m_fileIoMaxLength;
-    std::int64_t m_replicationSessionId;
+    std::int32_t m_replicationSessionId;
     std::pair<const char *, std::uint32_t> m_encodedCredentials;
 };
 
@@ -1725,7 +1725,7 @@ private:
         const std::string &liveDestination,
         const std::string &replicationChannel,
         std::int32_t fileIoMaxLength,
-        std::int64_t replicationSessionId,
+        std::int32_t replicationSessionId,
         std::pair<const char *, std::uint32_t> encodedCredentials,
         std::int64_t correlationId,
         std::int64_t controlSessionId);

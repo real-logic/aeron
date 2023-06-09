@@ -280,12 +280,14 @@ protected:
     const std::int32_t m_replayStreamId = 66;
 
     const int m_fragmentLimit = 10;
+    std::ostringstream m_stream;
+
     std::shared_ptr<TestArchive> m_destArchive;
     std::shared_ptr<TestArchive> m_archive;
     AeronArchive::Context_t m_destContext;
     AeronArchive::Context_t m_context;
+
     pid_t m_pid = -1;
-    std::ostringstream m_stream;
     bool m_debug = true;
 
 private:

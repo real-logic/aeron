@@ -2438,6 +2438,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             {
                 if (Cluster.Role.FOLLOWER == role && ConsensusModule.State.ACTIVE == state)
                 {
+                    workCount += checkNodeControlToggle(nowNs);
                     workCount += processPendingSessions(pendingBackupSessions, rejectedBackupSessions, nowNs);
                 }
 

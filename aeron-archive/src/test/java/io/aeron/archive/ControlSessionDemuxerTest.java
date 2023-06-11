@@ -23,6 +23,8 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.mockito.Mockito.*;
 
 class ControlSessionDemuxerTest
@@ -50,6 +52,7 @@ class ControlSessionDemuxerTest
 
         replicateRequest2Encoder.wrapAndApplyHeader(buffer, 0, headerEncoder);
 
+        final byte[] encodedCredentials = "some password".getBytes(StandardCharsets.US_ASCII);
         replicateRequest2Encoder
             .controlSessionId(928374L)
             .correlationId(9382475L)
@@ -62,13 +65,15 @@ class ControlSessionDemuxerTest
             .fileIoMaxLength(4096)
             .srcControlChannel("src")
             .liveDestination("live")
-            .replicationChannel("replication");
+            .replicationChannel("replication")
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
         final int replicateRequestLength = replicateRequest2Encoder.encodedLength();
 
         controlSessionDemuxer.onFragment(buffer, 0, replicateRequestLength, mockHeader);
 
         final ReplicateRequest2Decoder expected = new ReplicateRequest2Decoder()
             .wrapAndApplyHeader(buffer, 0, new MessageHeaderDecoder());
+
         verify(mockSession).onReplicate(
             expected.correlationId(),
             expected.srcRecordingId(),
@@ -78,9 +83,11 @@ class ControlSessionDemuxerTest
             expected.subscriptionTagId(),
             expected.srcControlStreamId(),
             expected.fileIoMaxLength(),
+            expected.replicationSessionId(),
             expected.srcControlChannel(),
             expected.liveDestination(),
-            expected.replicationChannel());
+            expected.replicationChannel(),
+            encodedCredentials);
     }
 
     @Test

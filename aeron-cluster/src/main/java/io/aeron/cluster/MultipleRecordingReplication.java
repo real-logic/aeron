@@ -166,7 +166,7 @@ class MultipleRecordingReplication implements AutoCloseable
             srcControlChannel,
             srcControlStreamId,
             replicationChannel,
-            progressTimeoutNs,
+            Aeron.NULL_VALUE, progressTimeoutNs,
             progressIntervalNs,
             nowNs);
     }

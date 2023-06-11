@@ -641,6 +641,8 @@ util::index_t ArchiveProxy::replicate(
     const std::string &liveDestination,
     const std::string &replicationChannel,
     std::int32_t fileIoMaxLength,
+    std::int32_t replicationSessionId,
+    std::pair<const char *, std::uint32_t> encodedCredentials,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
@@ -656,9 +658,11 @@ util::index_t ArchiveProxy::replicate(
         .subscriptionTagId(subscriptionTagId)
         .srcControlStreamId(srcControlStreamId)
         .fileIoMaxLength(fileIoMaxLength)
+        .replicationSessionId(replicationSessionId)
         .putSrcControlChannel(srcControlChannel)
         .putLiveDestination(liveDestination)
-        .putReplicationChannel(replicationChannel);
+        .putReplicationChannel(replicationChannel)
+        .putEncodedCredentials(encodedCredentials.first, encodedCredentials.second);
 
     return messageAndHeaderLength(request);
 }

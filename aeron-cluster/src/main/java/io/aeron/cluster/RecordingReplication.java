@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ReplicationParams;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
@@ -55,6 +56,7 @@ final class RecordingReplication implements AutoCloseable
         final String srcArchiveChannel,
         final int srcControlStreamId,
         final String replicationChannel,
+        final int replicationSessionId,
         final long progressCheckTimeoutNs,
         final long progressCheckIntervalNs,
         final long nowNs)
@@ -67,14 +69,17 @@ final class RecordingReplication implements AutoCloseable
         this.progressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
         this.srcArchiveChannel = srcArchiveChannel;
 
+        final ReplicationParams replicationParams = new ReplicationParams()
+            .stopPosition(stopPosition)
+            .dstRecordingId(dstRecordingId)
+            .replicationChannel(replicationChannel)
+            .replicationSessionId(replicationSessionId);
+
         replicationId = archive.replicate(
             srcRecordingId,
-            dstRecordingId,
-            stopPosition,
             srcControlStreamId,
             srcArchiveChannel,
-            null,
-            replicationChannel);
+            replicationParams);
     }
 
     int poll(final long nowNs)

@@ -20,6 +20,7 @@ import io.aeron.Image;
 import io.aeron.archive.codecs.v6.*;
 import io.aeron.logbuffer.Header;
 import io.aeron.security.AuthorisationService;
+import io.aeron.security.NullCredentialsSupplier;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,8 @@ class ControlSessionDemuxerV6Test
         replicateRequest2Encoder.wrapAndApplyHeader(buffer, 0, headerEncoder);
 
         final int fileIoMaxLength = Aeron.NULL_VALUE; // Since v7
+        final int sessionId = Aeron.NULL_VALUE; // Since v8
+        final byte[] encodedCredentials = NullCredentialsSupplier.NULL_CREDENTIAL; // Since v8
 
         replicateRequest2Encoder
             .controlSessionId(928374L)
@@ -80,9 +83,11 @@ class ControlSessionDemuxerV6Test
             expected.subscriptionTagId(),
             expected.srcControlStreamId(),
             fileIoMaxLength,
+            sessionId,
             expected.srcControlChannel(),
             expected.liveDestination(),
-            expected.replicationChannel());
+            expected.replicationChannel(),
+            encodedCredentials);
     }
 
     @Test

@@ -38,6 +38,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 {
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
     private static final int RETRY_ATTEMPTS = 3;
+    private final int replicationSessionId;
 
     enum State
     {
@@ -99,6 +100,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final String liveDestination,
         final String replicationChannel,
         final int fileIoMaxLength,
+        final int replicationSessionId,
         final RecordingSummary recordingSummary,
         final AeronArchive.Context context,
         final CachedEpochClock epochClock,
@@ -112,6 +114,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         this.liveDestination = Strings.isEmpty(liveDestination) ? null : liveDestination;
         this.replicationChannel = replicationChannel;
         this.fileIoMaxLength = fileIoMaxLength;
+        this.replicationSessionId = replicationSessionId;
         this.aeron = context.aeron();
         this.context = context;
         this.catalog = catalog;
@@ -270,7 +273,14 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     {
         srcStopPosition = stopPosition;
         replayStreamId = streamId;
-        replaySessionId = sessionId;
+        if (null == liveDestination && NULL_VALUE != replicationSessionId)
+        {
+            replaySessionId = replicationSessionId;
+        }
+        else
+        {
+            replaySessionId = sessionId;
+        }
 
         if (Aeron.NULL_VALUE != fileIoMaxLength && fileIoMaxLength < mtuLength)
         {

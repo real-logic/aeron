@@ -3117,6 +3117,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             ChannelUri.createDestinationUri(ctx.leaderArchiveControlChannel(), leaderArchiveEndpoint),
             archive.context().controlRequestStreamId(),
             ctx.replicationChannel(),
+            (int)aeron.nextCorrelationId(),
             ctx.leaderHeartbeatTimeoutNs(),
             ctx.leaderHeartbeatIntervalNs(),
             nowNs);

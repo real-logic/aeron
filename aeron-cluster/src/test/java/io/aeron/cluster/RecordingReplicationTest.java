@@ -61,9 +61,7 @@ class RecordingReplicationTest
 
         when(aeronArchive.controlResponsePoller()).thenReturn(controlResponsePoller);
         when(controlResponsePoller.subscription()).thenReturn(subscription);
-        when(aeronArchive.replicate(
-            anyLong(), anyLong(), anyLong(), anyInt(), anyString(), nullable(String.class), nullable(String.class)))
-            .thenReturn(REPLICATION_ID);
+        when(aeronArchive.replicate(anyLong(), anyInt(), any(), any())).thenReturn(REPLICATION_ID);
     }
 
     void shouldIndicateAppropriateStatesAsSignalsAreReceived()
@@ -79,7 +77,7 @@ class RecordingReplicationTest
             ENDPOINT,
             SRC_STREAM_ID,
             REPLICATION_CHANNEL,
-            PROGRESS_CHECK_TIMEOUT_NS,
+            Aeron.NULL_VALUE, PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
 
@@ -114,7 +112,7 @@ class RecordingReplicationTest
             ENDPOINT,
             SRC_STREAM_ID,
             REPLICATION_CHANNEL,
-            PROGRESS_CHECK_TIMEOUT_NS,
+            Aeron.NULL_VALUE, PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
 
@@ -140,7 +138,7 @@ class RecordingReplicationTest
             ENDPOINT,
             SRC_STREAM_ID,
             REPLICATION_CHANNEL,
-            PROGRESS_CHECK_TIMEOUT_NS,
+            Aeron.NULL_VALUE, PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
 
@@ -165,6 +163,7 @@ class RecordingReplicationTest
             ENDPOINT,
             SRC_STREAM_ID,
             REPLICATION_CHANNEL,
+            Aeron.NULL_VALUE,
             PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
@@ -188,7 +187,7 @@ class RecordingReplicationTest
             ENDPOINT,
             SRC_STREAM_ID,
             REPLICATION_CHANNEL,
-            PROGRESS_CHECK_TIMEOUT_NS,
+            Aeron.NULL_VALUE, PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             t0);
 

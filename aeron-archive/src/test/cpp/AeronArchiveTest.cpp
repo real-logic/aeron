@@ -30,6 +30,7 @@
 #include "concurrent/SleepingIdleStrategy.h"
 #include "ChannelUriStringBuilder.h"
 #include "CncFileReader.h"
+#include "aeron_archive_client/RecordingSignal.h"
 
 #if defined(__linux__) || defined(Darwin)
 #include <unistd.h>
@@ -44,74 +45,12 @@ typedef intptr_t pid_t;
 #error "must spawn Java Archive per test"
 #endif
 
+#include "TestArchive.h"
+
 using namespace aeron;
 using namespace aeron::util;
 using namespace aeron::concurrent;
 using namespace aeron::archive::client;
-
-static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
-
-#ifdef _WIN32
-
-static bool aeron_file_exists(const char *path)
-{
-    DWORD dwAttrib = GetFileAttributes(path);
-    return dwAttrib != INVALID_FILE_ATTRIBUTES;
-}
-
-static int aeron_delete_directory(const char *dir)
-{
-    char dir_buffer[1024] = { 0 };
-
-    size_t dir_length = strlen(dir);
-    if (dir_length > (1024 - 2))
-    {
-        return -1;
-    }
-
-    memcpy(dir_buffer, dir, dir_length);
-    dir_buffer[dir_length] = '\0';
-    dir_buffer[dir_length + 1] = '\0';
-
-    SHFILEOPSTRUCT file_op =
-        {
-            nullptr,
-            FO_DELETE,
-            dir_buffer,
-            nullptr,
-            FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT,
-            false,
-            nullptr,
-            nullptr
-        };
-
-    return SHFileOperation(&file_op);
-}
-
-#else
-
-static bool aeron_file_exists(const char *path)
-{
-    struct stat stat_info = {};
-    return stat(path, &stat_info) == 0;
-}
-
-static int aeron_unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
-{
-    if (remove(path) != 0)
-    {
-        perror("remove");
-    }
-
-    return 0;
-}
-
-static int aeron_delete_directory(const char *dirname)
-{
-    return nftw(dirname, aeron_unlink_func, 64, FTW_DEPTH | FTW_PHYS);
-}
-
-#endif
 
 class AeronArchiveTestBase
 {
@@ -126,148 +65,14 @@ public:
 
     void DoSetUp()
     {
-        m_stream << currentTimeMillis() << " [SetUp] Starting ArchivingMediaDriver..." << std::endl;
+        std::string sourceArchiveDir = m_archiveDir + AERON_FILE_SEP + "source";
+        m_archive = std::make_shared<TestArchive>(m_context.aeronDirectoryName(), sourceArchiveDir, m_stream);
 
-        std::string aeronDirArg = "-Daeron.dir=" + m_context.aeronDirectoryName();
-        std::string archiveDirArg = "-Daeron.archive.dir=" + m_archiveDir;
-        const char *const argv[] =
-            {
-                "java",
-#if JAVA_MAJOR_VERSION >= 9
-                "--add-opens",
-                "java.base/java.lang.reflect=ALL-UNNAMED",
-                "--add-opens",
-                "java.base/java.net=ALL-UNNAMED",
-                "--add-opens",
-                "java.base/sun.nio.ch=ALL-UNNAMED",
-#endif
-                "-Daeron.dir.delete.on.start=true",
-                "-Daeron.dir.delete.on.shutdown=true",
-                "-Daeron.archive.dir.delete.on.start=true",
-                "-Daeron.archive.max.catalog.entries=128",
-                "-Daeron.term.buffer.sparse.file=true",
-                "-Daeron.perform.storage.checks=false",
-                "-Daeron.term.buffer.length=64k",
-                "-Daeron.ipc.term.buffer.length=64k",
-                "-Daeron.threading.mode=SHARED",
-                "-Daeron.shared.idle.strategy=yield",
-                "-Daeron.archive.threading.mode=SHARED",
-                "-Daeron.archive.idle.strategy=yield",
-                "-Daeron.archive.recording.events.enabled=false",
-                "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
-                "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
-                "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
-                "-Daeron.archive.control.channel=aeron:udp?endpoint=localhost:8010",
-                "-Daeron.archive.replication.channel=aeron:udp?endpoint=localhost:0",
-                "-Daeron.archive.control.response.channel=aeron:udp?endpoint=localhost:0",
-                archiveDirArg.c_str(),
-                aeronDirArg.c_str(),
-                "-cp",
-                m_aeronAllJar.c_str(),
-                "io.aeron.archive.ArchivingMediaDriver",
-                nullptr
-            };
-
-#if defined(_WIN32)
-        m_pid = _spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
-#else
-        m_pid = -1;
-        if (0 != posix_spawn(&m_pid, m_java.c_str(), nullptr, nullptr, (char * const *)&argv[0], nullptr))
-        {
-            perror("spawn");
-            ::exit(EXIT_FAILURE);
-        }
-#endif
-
-        if (m_pid < 0)
-        {
-            perror("spawn");
-            ::exit(EXIT_FAILURE);
-        }
-
-        auto onEncodedCredentials =
-            []() -> std::pair<const char *, std::uint32_t>
-            {
-                std::string credentials("admin:admin");
-
-                char *arr = new char[credentials.length() + 1];
-                std::memcpy(arr, credentials.data(), credentials.length());
-                arr[credentials.length()] = '\0';
-
-                return { arr, static_cast<std::uint32_t>(credentials.length()) };
-            };
-
-        m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
-        m_context.messageTimeoutNs(m_context.messageTimeoutNs());
-
-        m_stream << currentTimeMillis() << " [SetUp] ArchivingMediaDriver PID " << m_pid << std::endl;
+        setCredentials(m_context);
     }
 
     void DoTearDown()
     {
-        if (0 != m_pid)
-        {
-            m_stream << currentTimeMillis() << " [TearDown] Shutting down PID " << m_pid << std::endl;
-
-            const std::string cncFilename = m_context.aeron()->context().cncFileName();
-            const std::string aeronPath = aeron::Context::defaultAeronPath();
-            m_context.aeron(nullptr);
-
-            printErrors(aeronPath);
-
-            if (aeron::Context::requestDriverTermination(aeronPath, nullptr, 0))
-            {
-                m_stream << currentTimeMillis() << " [TearDown] Waiting for driver termination" << std::endl;
-
-                while (aeron_file_exists(cncFilename.c_str()))
-                {
-                    std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
-                }
-
-                m_stream << currentTimeMillis() << " [TearDown] CnC file no longer exists" << std::endl;
-
-#if defined(_WIN32)
-                WaitForSingleObject(reinterpret_cast<HANDLE>(m_pid), INFINITE);
-#else
-                int process_status = -1;
-                do
-                {
-                    waitpid(m_pid, &process_status, WUNTRACED);
-                }
-                while (0 >= WIFEXITED(process_status));
-#endif
-                m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
-            }
-            else
-            {
-                const auto now_ms = currentTimeMillis();
-                m_stream << now_ms << " [TearDown] Failed to send driver terminate command" << std::endl;
-                m_stream << now_ms << " [TearDown] Deleting " << m_archiveDir << std::endl;
-                if (aeron_delete_directory(m_archiveDir.c_str()) != 0)
-                {
-                    m_stream << currentTimeMillis() << " [TearDown] Failed to delete " << m_archiveDir << std::endl;
-                }
-            }
-        }
-    }
-
-    void printErrors(const std::string &aeronPath)
-    {
-        const CncFileReader reader = aeron::CncFileReader::mapExisting(aeronPath.c_str());
-
-        int count = reader.readErrorLog(
-            [&](
-                std::int32_t observationCount,
-                std::int64_t firstObservationTimestamp,
-                std::int64_t lastObservationTimestamp,
-                const std::string &encodedException)
-            {
-                m_stream << "***\n" << observationCount
-                         << " observations for:\n " << encodedException.c_str() << std::endl;
-            },
-            0);
-
-        m_stream << currentTimeMillis() << " [TearDown] " << count << " distinct errors observed." << std::endl;
     }
 
     static std::shared_ptr<Publication> addPublication(Aeron &aeron, const std::string &channel, std::int32_t streamId)
@@ -452,6 +257,18 @@ public:
         return true;
     }
 
+    void startDestArchive()
+    {
+        const std::string aeronDir = aeron::Context::defaultAeronPath() + "_dest";
+        const std::string archiveDir = m_archiveDir + AERON_FILE_SEP + "dest";
+        const std::string controlChannel = "aeron:udp?endpoint=localhost:8011";
+        const std::string replicationChannel = "aeron:udp?endpoint=localhost:8012";
+        m_destArchive = std::make_shared<TestArchive>(
+            aeronDir, archiveDir, m_stream, controlChannel, replicationChannel);
+        m_destContext.controlRequestChannel(controlChannel);
+        setCredentials(m_destContext);
+    }
+
 protected:
     const std::string m_java = JAVA_EXECUTABLE;
     const std::string m_aeronAllJar = AERON_ALL_JAR;
@@ -463,10 +280,34 @@ protected:
     const std::int32_t m_replayStreamId = 66;
 
     const int m_fragmentLimit = 10;
-    AeronArchive::Context_t m_context;
-    pid_t m_pid = -1;
     std::ostringstream m_stream;
+
+    std::shared_ptr<TestArchive> m_destArchive;
+    std::shared_ptr<TestArchive> m_archive;
+    AeronArchive::Context_t m_destContext;
+    AeronArchive::Context_t m_context;
+
+    pid_t m_pid = -1;
     bool m_debug = true;
+
+private:
+
+    static void setCredentials(AeronArchive::Context_t &context)
+    {
+        auto onEncodedCredentials =
+            []() -> std::pair<const char *, std::uint32_t>
+            {
+                std::string credentials("admin:admin");
+
+                char *arr = new char[credentials.length() + 1];
+                std::memcpy(arr, credentials.data(), credentials.length());
+                arr[credentials.length()] = '\0';
+
+                return { arr, static_cast<std::uint32_t>(credentials.length()) };
+            };
+
+        context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
+    }
 };
 
 class AeronArchiveTest : public AeronArchiveTestBase, public testing::Test
@@ -1489,3 +1330,204 @@ TEST_F(AeronArchiveTest, shouldReadJumboRecordingDescriptor)
 
     EXPECT_EQ(count, 1);
 }
+
+TEST_F(AeronArchiveTest, shouldRecordReplicateThenReplay)
+{
+    const std::string messagePrefix = "Message ";
+    const std::size_t messageCount = 10;
+    std::int32_t sessionId;
+    std::int64_t recordingId;
+    std::int64_t stopPosition;
+
+    startDestArchive();
+
+    std::set<std::int32_t> signals;
+
+    auto signalConsumer = [&](
+        std::int64_t controlSessionId,
+        std::int64_t recordingId,
+        std::int64_t subscriptionId,
+        std::int64_t position,
+        std::int32_t recordingSignalCode) -> void
+    {
+        signals.insert(recordingSignalCode);
+    };
+
+    m_destContext.recordingSignalConsumer(signalConsumer);
+
+    std::shared_ptr<AeronArchive> srcAeronArchive = AeronArchive::connect(m_context);
+    std::shared_ptr<AeronArchive> dstAeronArchive = AeronArchive::connect(m_destContext);
+
+    const std::int64_t subscriptionId = srcAeronArchive->startRecording(
+        m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
+
+    {
+        std::shared_ptr<Subscription> subscription = addSubscription(
+            *srcAeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+        std::shared_ptr<Publication> publication = addPublication(
+            *srcAeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+
+        sessionId = publication->sessionId();
+
+        CountersReader &countersReader = srcAeronArchive->context().aeron()->countersReader();
+        const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
+        recordingId = RecordingPos::getRecordingId(countersReader, counterId);
+        EXPECT_TRUE(RecordingPos::isActive(countersReader, counterId, recordingId));
+        EXPECT_EQ(counterId, RecordingPos::findCounterIdByRecordingId(countersReader, recordingId));
+        EXPECT_EQ("aeron:ipc", RecordingPos::getSourceIdentity(countersReader, counterId));
+
+        offerMessages(*publication, messageCount, messagePrefix);
+        consumeMessages(*subscription, messageCount, messagePrefix);
+
+        stopPosition = publication->position();
+
+        YieldingIdleStrategy idleStrategy;
+        while (countersReader.getCounterValue(counterId) < stopPosition)
+        {
+            idleStrategy.idle();
+        }
+    }
+
+    srcAeronArchive->stopRecording(subscriptionId);
+
+    YieldingIdleStrategy idleStrategy;
+    while (srcAeronArchive->getStopPosition(recordingId) != stopPosition)
+    {
+        idleStrategy.idle();
+    }
+
+    auto credentials = std::make_pair("admin:admin", 11);
+
+    ReplicationParams params;
+    params.encodedCredentials(credentials);
+
+    dstAeronArchive->replicate(
+        recordingId, m_context.controlRequestStreamId(), m_context.controlRequestChannel(), params);
+
+    while (0 == signals.count(aeron::archive::client::RecordingSignal::Value::SYNC))
+    {
+        dstAeronArchive->pollForRecordingSignals();
+        idleStrategy.idle();
+    }
+
+    const std::int64_t position = 0L;
+    const std::int64_t length = stopPosition - position;
+    std::shared_ptr<Subscription> subscription = addSubscription(
+        *srcAeronArchive->context().aeron(), m_replayChannel, m_replayStreamId);
+
+    srcAeronArchive->startReplay(
+        recordingId,
+        m_replayChannel,
+        m_replayStreamId,
+        ReplayParams().position(position).length(length).fileIoMaxLength(4096));
+
+    consumeMessages(*subscription, messageCount, messagePrefix);
+    EXPECT_EQ(stopPosition, subscription->imageByIndex(0)->position());
+}
+
+TEST_F(AeronArchiveTest, shouldRecordReplicateTwice)
+{
+    const std::string messagePrefix = "Message ";
+    const std::size_t messageCount = 10;
+    std::int32_t sessionId;
+    std::int64_t recordingId;
+    std::int64_t stopPosition;
+    YieldingIdleStrategy idleStrategy;
+
+    startDestArchive();
+
+    std::set<std::int32_t> signals;
+
+    auto signalConsumer = [&](
+        std::int64_t controlSessionId,
+        std::int64_t recordingId,
+        std::int64_t subscriptionId,
+        std::int64_t position,
+        std::int32_t recordingSignalCode) -> void
+    {
+        signals.insert(recordingSignalCode);
+    };
+
+    m_destContext.recordingSignalConsumer(signalConsumer);
+
+    std::shared_ptr<AeronArchive> srcAeronArchive = AeronArchive::connect(m_context);
+    std::shared_ptr<AeronArchive> dstAeronArchive = AeronArchive::connect(m_destContext);
+
+    const std::int64_t subscriptionId = srcAeronArchive->startRecording(
+        m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
+
+    std::int64_t halfwayPosition;
+
+    {
+        std::shared_ptr<Subscription> subscription = addSubscription(
+            *srcAeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+        std::shared_ptr<Publication> publication = addPublication(
+            *srcAeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+
+        sessionId = publication->sessionId();
+
+        CountersReader &countersReader = srcAeronArchive->context().aeron()->countersReader();
+        const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
+        recordingId = RecordingPos::getRecordingId(countersReader, counterId);
+        EXPECT_TRUE(RecordingPos::isActive(countersReader, counterId, recordingId));
+        EXPECT_EQ(counterId, RecordingPos::findCounterIdByRecordingId(countersReader, recordingId));
+        EXPECT_EQ("aeron:ipc", RecordingPos::getSourceIdentity(countersReader, counterId));
+
+        offerMessages(*publication, messageCount, messagePrefix);
+        consumeMessages(*subscription, messageCount, messagePrefix);
+        halfwayPosition = publication->position();
+        while (countersReader.getCounterValue(counterId) < halfwayPosition)
+        {
+            idleStrategy.idle();
+        }
+
+        offerMessages(*publication, messageCount, messagePrefix);
+        consumeMessages(*subscription, messageCount, messagePrefix);
+        stopPosition = publication->position();
+
+        while (countersReader.getCounterValue(counterId) < stopPosition)
+        {
+            idleStrategy.idle();
+        }
+    }
+
+    srcAeronArchive->stopRecording(subscriptionId);
+    while (srcAeronArchive->getStopPosition(recordingId) != stopPosition)
+    {
+        idleStrategy.idle();
+    }
+
+    auto credentials = std::make_pair("admin:admin", 11);
+
+    ReplicationParams params1;
+    params1
+        .encodedCredentials(credentials)
+        .stopPosition(halfwayPosition)
+        .replicationSessionId(1);
+
+    dstAeronArchive->replicate(
+        recordingId, m_context.controlRequestStreamId(), m_context.controlRequestChannel(), params1);
+
+    while (0 == signals.count(aeron::archive::client::RecordingSignal::Value::REPLICATE_END))
+    {
+        dstAeronArchive->pollForRecordingSignals();
+        idleStrategy.idle();
+    }
+
+    ReplicationParams params2;
+    params2
+        .encodedCredentials(credentials)
+        .replicationSessionId(2);
+
+    dstAeronArchive->replicate(
+        recordingId, m_context.controlRequestStreamId(), m_context.controlRequestChannel(), params2);
+
+    signals.clear();
+
+    while (0 == signals.count(aeron::archive::client::RecordingSignal::Value::REPLICATE_END))
+    {
+        dstAeronArchive->pollForRecordingSignals();
+        idleStrategy.idle();
+    }
+}
+

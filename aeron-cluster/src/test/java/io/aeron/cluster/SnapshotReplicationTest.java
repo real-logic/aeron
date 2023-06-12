@@ -83,6 +83,7 @@ class SnapshotReplicationTest
             srcStreamId,
             srcChannel,
             replicationParams);
+        ignoreArchiveContextLookup();
 
         snapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
@@ -102,7 +103,7 @@ class SnapshotReplicationTest
             srcStreamId,
             srcChannel,
             replicationParams);
-        verify(archive, atLeast(0)).context();
+        ignoreArchiveContextLookup();
 
         snapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
@@ -172,11 +173,17 @@ class SnapshotReplicationTest
         snapshotReplication.poll(nowNs);
 
         verify(archive).replicate(anyLong(), anyInt(), any(), any());
+        ignoreArchiveContextLookup();
 
         snapshotReplication.close();
         verify(archive).tryStopReplication(anyLong());
 
         snapshotReplication.close();
         verifyNoMoreInteractions(archive);
+    }
+
+    private void ignoreArchiveContextLookup()
+    {
+        verify(archive, atLeast(0)).context();
     }
 }

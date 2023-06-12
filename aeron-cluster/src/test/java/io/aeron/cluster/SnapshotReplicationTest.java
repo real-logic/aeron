@@ -15,8 +15,10 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ReplicationParams;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -34,6 +36,17 @@ class SnapshotReplicationTest
     private final String replicationChannel = "aeron:udp?endpoint=going_to:8888";
     private final int srcStreamId = 892374;
     private final long nowNs = 1_000_000_000;
+    private final long correlationId = 987237452342L;
+
+    @BeforeEach
+    void setUp()
+    {
+        final AeronArchive.Context mockContext = mock(AeronArchive.Context.class);
+        final Aeron mockAeron = mock(Aeron.class);
+        when(archive.context()).thenReturn(mockContext);
+        when(mockContext.aeron()).thenReturn(mockAeron);
+        when(mockAeron.nextCorrelationId()).thenReturn(correlationId);
+    }
 
     @Test
     void shouldReplicateTwoSnapshots()
@@ -61,13 +74,15 @@ class SnapshotReplicationTest
         assertEquals(1, snapshotReplication.poll(nowNs));
 
         final ReplicationParams replicationParams = new ReplicationParams()
-            .replicationChannel(replicationChannel);
+            .replicationChannel(replicationChannel)
+            .replicationSessionId((int)correlationId);
 
         verify(archive).replicate(
             snapshots.get(0).recordingId,
             srcStreamId,
             srcChannel,
             replicationParams);
+        verify(archive, atLeast(0)).context();
 
         snapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
@@ -87,6 +102,7 @@ class SnapshotReplicationTest
             srcStreamId,
             srcChannel,
             replicationParams);
+        verify(archive, atLeast(0)).context();
 
         snapshotReplication.poll(nowNs);
         verifyNoMoreInteractions(archive);
@@ -159,6 +175,7 @@ class SnapshotReplicationTest
 
         snapshotReplication.close();
         verify(archive).tryStopReplication(anyLong());
+        verify(archive, atLeast(0)).context();
 
         snapshotReplication.close();
         verifyNoMoreInteractions(archive);

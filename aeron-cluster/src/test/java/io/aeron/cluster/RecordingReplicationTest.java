@@ -64,6 +64,7 @@ class RecordingReplicationTest
         when(aeronArchive.replicate(anyLong(), anyInt(), any(), any())).thenReturn(REPLICATION_ID);
     }
 
+    @Test
     void shouldIndicateAppropriateStatesAsSignalsAreReceived()
     {
         final long stopPosition = 982734;
@@ -77,7 +78,8 @@ class RecordingReplicationTest
             ENDPOINT,
             SRC_STREAM_ID,
             REPLICATION_CHANNEL,
-            Aeron.NULL_VALUE, PROGRESS_CHECK_TIMEOUT_NS,
+            Aeron.NULL_VALUE,
+            PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
 
@@ -112,7 +114,8 @@ class RecordingReplicationTest
             ENDPOINT,
             SRC_STREAM_ID,
             REPLICATION_CHANNEL,
-            Aeron.NULL_VALUE, PROGRESS_CHECK_TIMEOUT_NS,
+            Aeron.NULL_VALUE,
+            PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
 
@@ -138,7 +141,8 @@ class RecordingReplicationTest
             ENDPOINT,
             SRC_STREAM_ID,
             REPLICATION_CHANNEL,
-            Aeron.NULL_VALUE, PROGRESS_CHECK_TIMEOUT_NS,
+            Aeron.NULL_VALUE,
+            PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             nowNs);
 
@@ -187,7 +191,8 @@ class RecordingReplicationTest
             ENDPOINT,
             SRC_STREAM_ID,
             REPLICATION_CHANNEL,
-            Aeron.NULL_VALUE, PROGRESS_CHECK_TIMEOUT_NS,
+            Aeron.NULL_VALUE,
+            PROGRESS_CHECK_TIMEOUT_NS,
             PROGRESS_CHECK_INTERVAL_NS,
             t0);
 

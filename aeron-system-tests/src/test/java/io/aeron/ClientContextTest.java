@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.locks.ReentrantLock;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ClientContextTest
@@ -82,6 +83,25 @@ class ClientContextTest
             try (Aeron aeron = Aeron.connect(ctx))
             {
                 aeron.clientId();
+            }
+        }
+    }
+
+    @Test
+    void shouldHaveUniqueCorrelationIdsAcrossMultipleClientsToTheSameDriver()
+    {
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true);
+
+        try (MediaDriver mediaDriver = MediaDriver.launch(driverCtx))
+        {
+            final Aeron.Context ctx = new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName());
+
+            try (Aeron aeron0 = Aeron.connect(ctx.clone());
+                Aeron aeron1 = Aeron.connect(ctx.clone()))
+            {
+                assertNotEquals(aeron0.nextCorrelationId(), aeron1.nextCorrelationId());
             }
         }
     }

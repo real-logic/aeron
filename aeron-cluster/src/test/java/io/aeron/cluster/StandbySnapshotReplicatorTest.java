@@ -44,6 +44,7 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -448,6 +449,49 @@ class StandbySnapshotReplicatorTest
 
             verify(mockMultipleRecordingReplication0).poll(anyLong());
             verify(mockMultipleRecordingReplication1).poll(anyLong());
+        }
+    }
+
+    @Test
+    void shouldNotRetrieveSnapshotsIfRecordingLogAlreadyHasUpToDateCopies()
+    {
+        final long logPosition = 1001234;
+        final long nowNs = 1_000_000_000L;
+
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true))
+        {
+            recordingLog.appendSnapshot(1, 0, 0, logPosition, 1_000_000_000L, SERVICE_ID);
+            recordingLog.appendSnapshot(2, 0, 0, logPosition, 1_000_000_000L, 0);
+
+            recordingLog.appendStandbySnapshot(1, 0, 0, logPosition, 1_000_000_000L, SERVICE_ID, endpoint0);
+            recordingLog.appendStandbySnapshot(2, 0, 0, logPosition, 1_000_000_000L, 0, endpoint0);
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true);
+            MockedStatic<MultipleRecordingReplication> staticMockReplication = mockStatic(
+                MultipleRecordingReplication.class);
+            MockedStatic<AeronArchive> staticMockArchive = mockStatic(AeronArchive.class))
+        {
+            staticMockReplication
+                .when(() -> MultipleRecordingReplication.newInstance(
+                    any(), anyInt(), any(), any(), anyLong(), anyLong()))
+                .thenReturn(mockMultipleRecordingReplication0);
+
+            staticMockArchive.when(() -> AeronArchive.connect(any())).thenReturn(mockArchive);
+
+            final StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
+                memberId,
+                ctx,
+                recordingLog,
+                1,
+                archiveControlChannel,
+                archiveControlStreamId,
+                replicationChannel);
+
+            standbySnapshotReplicator.poll(nowNs);
+            standbySnapshotReplicator.poll(nowNs);
+
+            verify(mockMultipleRecordingReplication0, never()).poll(anyLong());
         }
     }
 }

@@ -2409,7 +2409,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             if (Cluster.Role.LEADER == role)
             {
                 workCount += checkClusterControlToggle(nowNs);
-                workCount += checkNodeControlToggle(nowNs);
 
                 if (ConsensusModule.State.ACTIVE == state)
                 {
@@ -2438,7 +2437,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             {
                 if (Cluster.Role.FOLLOWER == role && ConsensusModule.State.ACTIVE == state)
                 {
-                    workCount += checkNodeControlToggle(nowNs);
                     workCount += processPendingSessions(pendingBackupSessions, rejectedBackupSessions, nowNs);
                 }
 
@@ -2452,6 +2450,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                         workCount += 1;
                     }
                 }
+            }
+
+            if (ConsensusModule.State.ACTIVE == state)
+            {
+                workCount += checkNodeControlToggle(nowNs);
             }
         }
 
@@ -2589,7 +2592,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             case REPLICATE_STANDBY_SNAPSHOT:
                 if (null == this.standbySnapshotReplicator)
                 {
-                    System.out.println("memberId=" + memberId + " replicate snapshot");
                     this.standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
                         ctx.clusterMemberId(),
                         ctx.archiveContext(),

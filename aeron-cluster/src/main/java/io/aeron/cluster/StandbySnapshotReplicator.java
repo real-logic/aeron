@@ -175,8 +175,8 @@ class StandbySnapshotReplicator implements AutoCloseable
 
     private ArrayList<SnapshotReplicationEntry> computeSnapshotsToReplicate()
     {
-        final Map<String, List<RecordingLog.Entry>> snapshotsByEndpoint = recordingLog.latestStandbySnapshots(
-            serviceCount);
+        final Map<String, List<RecordingLog.Entry>> snapshotsByEndpoint = filterByExistingRecordingLogEntries(
+            recordingLog.latestStandbySnapshots(serviceCount));
 
         final ArrayList<SnapshotReplicationEntry> orderedSnapshotToReplicate;
         if (snapshotsByEndpoint.isEmpty())
@@ -261,5 +261,31 @@ class StandbySnapshotReplicator implements AutoCloseable
     {
         ConsensusModuleAgent.logReplicationEnded(
             memberId, "STANDBY_SNAPSHOT", controlUri, srcRecordingId, dstRecordingId, position, hasSynced);
+    }
+
+    private Map<String, List<RecordingLog.Entry>> filterByExistingRecordingLogEntries(
+        final Map<String, List<RecordingLog.Entry>> standbySnapshotsByEndpoint)
+    {
+        final Map<String, List<RecordingLog.Entry>> filteredSnapshotsByEndpoint = new Object2ObjectHashMap<>();
+
+        for (final Map.Entry<String, List<RecordingLog.Entry>> entry : standbySnapshotsByEndpoint.entrySet())
+        {
+            for (int i = entry.getValue().size(); --i > -1;)
+            {
+                final RecordingLog.Entry standbySnapshotEntry = entry.getValue().get(i);
+                final RecordingLog.Entry snapshotEntry = recordingLog.getLatestSnapshot(standbySnapshotEntry.serviceId);
+                if (null != snapshotEntry && standbySnapshotEntry.logPosition <= snapshotEntry.logPosition)
+                {
+                    entry.getValue().remove(i);
+                }
+            }
+
+            if (!entry.getValue().isEmpty())
+            {
+                filteredSnapshotsByEndpoint.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return filteredSnapshotsByEndpoint;
     }
 }

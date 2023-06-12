@@ -1282,9 +1282,7 @@ public final class TestCluster implements AutoCloseable
     public void replicateStandbySnapshot(final TestNode node)
     {
         final AtomicCounter nodeControl = getNodeControlToggle(node);
-        System.out.println("nodeControl pre=" + NodeControl.ToggleState.get(nodeControl));
         assertTrue(NodeControl.ToggleState.REPLICATE_STANDBY_SNAPSHOT.toggle(nodeControl));
-        System.out.println("nodeControl post=" + NodeControl.ToggleState.get(nodeControl));
     }
 
     public void replicateStandbySnapshots()
@@ -1585,10 +1583,30 @@ public final class TestCluster implements AutoCloseable
         return controlToggle;
     }
 
-    public AtomicCounter getNodeControlToggle(final TestNode leaderNode)
+    public void awaitNeutralNodeControlToggle()
     {
-        final CountersReader counters = leaderNode.countersReader();
-        final int clusterId = leaderNode.consensusModule().context().clusterId();
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                awaitNeutralNodeControlToggle(node);
+            }
+        }
+    }
+
+    public void awaitNeutralNodeControlToggle(final TestNode node)
+    {
+        final AtomicCounter controlToggle = getNodeControlToggle(node);
+        while (controlToggle.get() != NodeControl.ToggleState.NEUTRAL.code())
+        {
+            Tests.yield();
+        }
+    }
+
+    public AtomicCounter getNodeControlToggle(final TestNode node)
+    {
+        final CountersReader counters = node.countersReader();
+        final int clusterId = node.consensusModule().context().clusterId();
         final AtomicCounter controlToggle = NodeControl.findControlToggle(counters, clusterId);
         assertNotNull(controlToggle);
 

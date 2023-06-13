@@ -1279,23 +1279,6 @@ public final class TestCluster implements AutoCloseable
         assertTrue(ClusterControl.ToggleState.STANDBY_SNAPSHOT.toggle(controlToggle));
     }
 
-    public void replicateStandbySnapshot(final TestNode node)
-    {
-        final AtomicCounter nodeControl = getNodeControlToggle(node);
-        assertTrue(NodeControl.ToggleState.REPLICATE_STANDBY_SNAPSHOT.toggle(nodeControl));
-    }
-
-    public void replicateStandbySnapshots()
-    {
-        for (final TestNode node : nodes)
-        {
-            if (null != node && !node.isClosed())
-            {
-                replicateStandbySnapshot(node);
-            }
-        }
-    }
-
     public void shutdownCluster(final TestNode leaderNode)
     {
         final AtomicCounter controlToggle = getClusterControlToggle(leaderNode);

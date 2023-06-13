@@ -133,7 +133,7 @@ public class ClusterTool
     public static final int AERON_CLUSTER_TOOL_REPLAY_STREAM_ID = Integer.getInteger(
         AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_PROP_NAME, AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_DEFAULT);
 
-    private static final long TIMEOUT_MS =
+    static final long TIMEOUT_MS =
         NANOSECONDS.toMillis(getDurationInNanos(AERON_CLUSTER_TOOL_TIMEOUT_PROP_NAME, 0));
 
     /**
@@ -1172,6 +1172,28 @@ public class ClusterTool
         final boolean waitForToggleToComplete,
         final long defaultTimeoutMs)
     {
+        return toggleState(
+            out,
+            clusterDir,
+            true,
+            expectedState,
+            toggleState,
+            ToggleApplication.CLUSTER_CONTROL,
+            waitForToggleToComplete,
+            defaultTimeoutMs);
+    }
+
+    @SuppressWarnings("MethodLength")
+    static <T extends Enum<T>> boolean toggleState(
+        final PrintStream out,
+        final File clusterDir,
+        final boolean isLeaderRequired,
+        final ConsensusModule.State expectedState,
+        final T targetState,
+        final ToggleApplication<T> toggleApplication,
+        final boolean waitForToggleToComplete,
+        final long defaultTimeoutMs)
+    {
         if (!markFileExists(clusterDir) && TIMEOUT_MS <= 0)
         {
             out.println(ClusterMarkFile.FILENAME + " does not exist.");
@@ -1197,10 +1219,10 @@ public class ClusterTool
 
         final String prefix = "Member [" + clusterMembership.memberId + "]: ";
 
-        if (clusterMembership.leaderMemberId != clusterMembership.memberId)
+        if (isLeaderRequired && clusterMembership.leaderMemberId != clusterMembership.memberId)
         {
             out.println(prefix + "Current node is not the leader (leaderMemberId = " +
-                clusterMembership.leaderMemberId + "), unable to " + toggleState);
+                clusterMembership.leaderMemberId + "), unable to " + targetState);
             return false;
         }
 
@@ -1224,21 +1246,21 @@ public class ClusterTool
 
             if (expectedState != moduleState)
             {
-                out.println(prefix + "Unable to " + toggleState + " as the state of the consensus module is " +
+                out.println(prefix + "Unable to " + targetState + " as the state of the consensus module is " +
                     moduleState + ", but needs to be " + expectedState);
                 return false;
             }
 
-            final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader, clusterId);
+            final AtomicCounter controlToggle = toggleApplication.find(countersReader, clusterId);
             if (null == controlToggle)
             {
                 out.println(prefix + "Failed to find control toggle");
                 return false;
             }
 
-            if (!toggleState.toggle(controlToggle))
+            if (!toggleApplication.apply(controlToggle, targetState))
             {
-                out.println(prefix + "Failed to apply " + toggleState + ", current toggle value = " +
+                out.println(prefix + "Failed to apply " + targetState + ", current toggle value = " +
                     ClusterControl.ToggleState.get(controlToggle));
                 return false;
             }
@@ -1247,7 +1269,7 @@ public class ClusterTool
             {
                 final long toggleTimeoutMs = Math.max(defaultTimeoutMs, TIMEOUT_MS);
                 final long deadlineMs = System.currentTimeMillis() + toggleTimeoutMs;
-                ClusterControl.ToggleState currentState = null;
+                T currentState = null;
 
                 do
                 {
@@ -1257,18 +1279,18 @@ public class ClusterTool
                         break;
                     }
 
-                    currentState = ClusterControl.ToggleState.get(controlToggle);
+                    currentState = toggleApplication.get(controlToggle);
                 }
-                while (currentState != ClusterControl.ToggleState.NEUTRAL);
+                while (!toggleApplication.isNeutral(currentState));
 
-                if (currentState != ClusterControl.ToggleState.NEUTRAL)
+                if (!toggleApplication.isNeutral(currentState))
                 {
                     out.println(prefix + "Timed out after " + toggleTimeoutMs + "ms waiting for " +
-                        toggleState + " to complete.");
+                        targetState + " to complete.");
                 }
             }
 
-            out.println(prefix + toggleState + " applied successfully");
+            out.println(prefix + targetState + " applied successfully");
 
             return true;
 
@@ -1279,7 +1301,7 @@ public class ClusterTool
         }
     }
 
-    private static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
+    static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
     {
         return new ClusterMarkFile(clusterDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
     }

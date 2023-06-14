@@ -134,6 +134,8 @@ public final class TestCluster implements AutoCloseable
     private final String staticClusterMembers;
     private final String staticClusterMemberEndpoints;
     private final String[] clusterMembersEndpoints;
+    private final String[] senderWildcardPortRanges;
+    private final String[] receiverWildcardPortRanges;
     private final String clusterConsensusEndpoints;
     private final int staticMemberCount;
     private final int dynamicMemberCount;
@@ -172,6 +174,8 @@ public final class TestCluster implements AutoCloseable
         this.staticClusterMembers = clusterMembers(0, staticMemberCount);
         this.staticClusterMemberEndpoints = ingressEndpoints(0, staticMemberCount);
         this.clusterMembersEndpoints = clusterMembersEndpoints(0, memberCount);
+        this.senderWildcardPortRanges = senderWildcardPortRanges(0, memberCount);
+        this.receiverWildcardPortRanges = receiverWildcardPortRanges(0, memberCount);
         this.clusterConsensusEndpoints = clusterConsensusEndpoints(0, 0, staticMemberCount);
         this.staticMemberCount = staticMemberCount;
         this.dynamicMemberCount = dynamicMemberCount;
@@ -282,6 +286,8 @@ public final class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
+            .senderWildcardPortRange(senderWildcardPortRanges[index])
+            .receiverWildcardPortRange(receiverWildcardPortRanges[index])
             .dirDeleteOnShutdown(false)
             .dirDeleteOnStart(true);
 
@@ -343,6 +349,8 @@ public final class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
+            .senderWildcardPortRange(senderWildcardPortRanges[index])
+            .receiverWildcardPortRange(receiverWildcardPortRanges[index])
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false);
 
@@ -403,6 +411,8 @@ public final class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
+            .senderWildcardPortRange(senderWildcardPortRanges[index])
+            .receiverWildcardPortRange(receiverWildcardPortRanges[index])
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false);
 
@@ -464,6 +474,8 @@ public final class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
+            .senderWildcardPortRange(senderWildcardPortRanges[index])
+            .receiverWildcardPortRange(receiverWildcardPortRanges[index])
             .dirDeleteOnShutdown(false)
             .dirDeleteOnStart(true);
 
@@ -539,6 +551,8 @@ public final class TestCluster implements AutoCloseable
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
             .errorHandler(errorHandler(index))
+            .senderWildcardPortRange(senderWildcardPortRanges[index])
+            .receiverWildcardPortRange(receiverWildcardPortRanges[index])
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false)
             .nameResolver(new RedirectingNameResolver(nodeNameMappings(index)));
@@ -602,6 +616,8 @@ public final class TestCluster implements AutoCloseable
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
+            .senderWildcardPortRange(senderWildcardPortRanges[backupNodeIndex])
+            .receiverWildcardPortRange(receiverWildcardPortRanges[backupNodeIndex])
             .dirDeleteOnStart(true);
 
         context.archiveContext
@@ -761,7 +777,9 @@ public final class TestCluster implements AutoCloseable
                 .dirDeleteOnStart(true)
                 .dirDeleteOnShutdown(false)
                 .aeronDirectoryName(aeronDirName)
-                .nameResolver(new RedirectingNameResolver(nodeNameMappings()));
+                .nameResolver(new RedirectingNameResolver(nodeNameMappings()))
+                .senderWildcardPortRange("20700 20709")
+                .receiverWildcardPortRange("20710 20719");
 
             clientMediaDriver = TestMediaDriver.launch(ctx, clientDriverOutputConsumer(dataCollector));
         }
@@ -1653,6 +1671,30 @@ public final class TestCluster implements AutoCloseable
         builder.setLength(builder.length() - 1);
 
         return builder.toString();
+    }
+
+    static String[] senderWildcardPortRanges(final int clusterId, final int maxMemberCount)
+    {
+        final String[] ranges = new String[maxMemberCount + 1];
+
+        for (int i = 0; i <= maxMemberCount; i++)
+        {
+            ranges[i] = "2" + clusterId + "5" + i + "0 " + "2" + clusterId + "5" + i + "9";
+        }
+
+        return ranges;
+    }
+
+    static String[] receiverWildcardPortRanges(final int clusterId, final int maxMemberCount)
+    {
+        final String[] ranges = new String[maxMemberCount + 1];
+
+        for (int i = 0; i <= maxMemberCount; i++)
+        {
+            ranges[i] = "2" + clusterId + "6" + i + "0 " + "2" + clusterId + "6" + i + "9";
+        }
+
+        return ranges;
     }
 
     static String hostname(final int memberId)

@@ -174,7 +174,9 @@ class ReceiverTest
             .systemCounters(mockSystemCounters)
             .cachedNanoClock(nanoClock)
             .senderCachedNanoClock(nanoClock)
-            .receiverCachedNanoClock(nanoClock);
+            .receiverCachedNanoClock(nanoClock)
+            .senderPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, true))
+            .receiverPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, false));
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             UdpChannel.parse(URI),

@@ -23,6 +23,7 @@ import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
+import io.aeron.driver.media.WildcardPortManager;
 import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.driver.status.SystemCounters;
@@ -190,7 +191,9 @@ class DriverConductorTest
             .nameResolver(DefaultNameResolver.INSTANCE)
             .threadingMode(ThreadingMode.DEDICATED)
             .conductorDutyCycleTracker(conductorDutyCycleTracker)
-            .nameResolverTimeTracker(nameResolverTimeTracker);
+            .nameResolverTimeTracker(nameResolverTimeTracker)
+            .senderPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, true))
+            .receiverPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, false));
 
         driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);

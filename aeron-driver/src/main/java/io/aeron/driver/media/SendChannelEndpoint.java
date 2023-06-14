@@ -95,6 +95,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             udpChannel.remoteControl(),
             udpChannel.localControl(),
             udpChannel.hasExplicitControl() || udpChannel.isManualControlMode() ? null : udpChannel.remoteData(),
+            context.senderPortManager(),
             context);
 
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);

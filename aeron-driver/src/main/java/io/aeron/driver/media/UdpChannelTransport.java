@@ -79,9 +79,10 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected SelectionKey selectionKey;
 
     private UdpTransportPoller transportPoller;
-    private final InetSocketAddress bindAddress;
+    private InetSocketAddress bindAddress;
     private final InetSocketAddress endPointAddress;
     private final AtomicCounter invalidPackets;
+    private final PortManager portManager;
 
     /**
      * Can be used to check if the transport is closed so an operation does not proceed.
@@ -99,6 +100,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      * @param bindAddress        for listening on.
      * @param connectAddress     for sending data to.
      * @param context            for configuration.
+     * @param portManager        for port binding.
      * @param socketRcvbufLength set SO_RCVBUF for socket, 0 for OS default.
      * @param socketSndbufLength set SO_SNDBUF for socket, 0 for OS default.
      */
@@ -107,6 +109,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         final InetSocketAddress endPointAddress,
         final InetSocketAddress bindAddress,
         final InetSocketAddress connectAddress,
+        final PortManager portManager,
         final MediaDriver.Context context,
         final int socketRcvbufLength,
         final int socketSndbufLength)
@@ -114,6 +117,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         this.context = context;
         this.udpChannel = udpChannel;
         this.errorHandler = context.errorHandler();
+        this.portManager = portManager;
         this.endPointAddress = endPointAddress;
         this.bindAddress = bindAddress;
         this.connectAddress = connectAddress;
@@ -129,6 +133,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      * @param endPointAddress to which data will be sent.
      * @param bindAddress     for listening on.
      * @param connectAddress  for sending data to.
+     * @param portManager     for port binding.
      * @param context         for configuration.
      */
     protected UdpChannelTransport(
@@ -136,6 +141,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         final InetSocketAddress endPointAddress,
         final InetSocketAddress bindAddress,
         final InetSocketAddress connectAddress,
+        final PortManager portManager,
         final MediaDriver.Context context)
     {
         this(
@@ -143,6 +149,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
             endPointAddress,
             bindAddress,
             connectAddress,
+            portManager,
             context,
             udpChannel.socketRcvbufLengthOrDefault(context.socketRcvbufLength()),
             udpChannel.socketSndbufLengthOrDefault(context.socketSndbufLength()));
@@ -199,6 +206,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
             }
             else
             {
+                bindAddress = portManager.getManagedPort(udpChannel, bindAddress);
                 sendDatagramChannel.bind(bindAddress);
             }
 
@@ -334,6 +342,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
             {
                 transportPoller.selectNowWithoutProcessing();
             }
+
+            portManager.freeManagedPort(bindAddress);
         }
     }
 

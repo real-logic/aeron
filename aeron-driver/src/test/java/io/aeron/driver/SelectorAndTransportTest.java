@@ -88,7 +88,9 @@ class SelectorAndTransportTest
         .cachedNanoClock(nanoClock)
         .senderCachedNanoClock(nanoClock)
         .receiverCachedNanoClock(nanoClock)
-        .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals());
+        .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals())
+        .senderPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, true))
+        .receiverPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, false));
 
     @BeforeEach
     void setup()

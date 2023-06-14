@@ -484,6 +484,8 @@ public final class MediaDriver implements AutoCloseable
         private String resolverName = Configuration.resolverName();
         private String resolverInterface = Configuration.resolverInterface();
         private String resolverBootstrapNeighbor = Configuration.resolverBootstrapNeighbor();
+        private String senderWildcardPortRange = Configuration.senderWildcardPortRange();
+        private String receiverWildcardPortRange = Configuration.receiverWildcardPortRange();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -552,6 +554,8 @@ public final class MediaDriver implements AutoCloseable
         private DutyCycleTracker senderDutyCycleTracker;
         private DutyCycleTracker receiverDutyCycleTracker;
         private DutyCycleTracker nameResolverTimeTracker;
+        private PortManager senderPortManager;
+        private PortManager receiverPortManager;
 
         /**
          * Perform a shallow copy of the object.
@@ -3332,6 +3336,104 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * Wildcard port range used for the Sender
+         *
+         * @return port range as a string in the format "low high".
+         */
+        public String senderWildcardPortRange()
+        {
+            return senderWildcardPortRange;
+        }
+
+
+        /**
+         * Set the wildcard port range to be used for the Sender.
+         * <p>
+         * Format is a string in "low high". With low being the low port value and high being the high port value. For
+         * example, "100 200". A null value or a value of "0 0" will use OS wildcard functionality.
+         *
+         * @param portRange as a string in the format "low high".
+         * @return this for fluent API.
+         * @see Configuration#SENDER_WILDCARD_PORT_RANGE_PROP_NAME
+         */
+        public Context senderWildcardPortRange(final String portRange)
+        {
+            this.senderWildcardPortRange = portRange;
+            return this;
+        }
+
+        /**
+         * Wildcard port range used for the Receiver
+         *
+         * @return port range as a string in the format "low high".
+         */
+        public String receiverWildcardPortRange()
+        {
+            return receiverWildcardPortRange;
+        }
+
+
+        /**
+         * Set the wildcard port range to be used for the Receiver.
+         * <p>
+         * Format is a string in "low high". With low being the low port value and high being the high port value. For
+         * example, "100 200". A null value or a value of "0 0" will use OS wildcard functionality.
+         *
+         * @param portRange as a string in the format "low high".
+         * @return this for fluent API.
+         * @see Configuration#RECEIVER_WILDCARD_PORT_RANGE_PROP_NAME
+         */
+        public Context receiverWildcardPortRange(final String portRange)
+        {
+            this.receiverWildcardPortRange = portRange;
+            return this;
+        }
+
+        /**
+         * Port manager used for the {@link Sender}.
+         *
+         * @return Sender {@link PortManager}.
+         */
+        public PortManager senderPortManager()
+        {
+            return senderPortManager;
+        }
+
+        /**
+         * Set the {@link PortManager} used for the {@link Sender}.
+         *
+         * @param portManager for the {@link Sender}
+         * @return this for a fluent API.
+         */
+        public Context senderPortManager(final PortManager portManager)
+        {
+            this.senderPortManager = portManager;
+            return this;
+        }
+
+        /**
+         * Port manager used for the {@link Receiver}.
+         *
+         * @return Receiver {@link PortManager}.
+         */
+        public PortManager receiverPortManager()
+        {
+            return receiverPortManager;
+        }
+
+        /**
+         * Set the {@link PortManager} used for the {@link Receiver}.
+         *
+         * @param portManager for the {@link Receiver}
+         * @return this for a fluent API.
+         */
+        public Context receiverPortManager(final PortManager portManager)
+        {
+            this.receiverPortManager = portManager;
+            return this;
+        }
+
+        /**
          * Clock used record channel send timestamps.
          *
          * @return a clock instance.
@@ -3746,6 +3848,18 @@ public final class MediaDriver implements AutoCloseable
                     nameResolverThresholdNs);
             }
 
+            if (null == senderPortManager)
+            {
+                senderPortManager = new WildcardPortManager(
+                    WildcardPortManager.parsePortRange(senderWildcardPortRange), true);
+            }
+
+            if (null == receiverPortManager)
+            {
+                receiverPortManager = new WildcardPortManager(
+                    WildcardPortManager.parsePortRange(receiverWildcardPortRange), false);
+            }
+
             nameResolver.init(countersManager, countersManager::newCounter);
         }
 
@@ -3980,6 +4094,10 @@ public final class MediaDriver implements AutoCloseable
                 "\n    conductorDutyCycleTracker=" + conductorDutyCycleTracker +
                 "\n    senderDutyCycleTracker=" + senderDutyCycleTracker +
                 "\n    receiverDutyCycleTracker=" + receiverDutyCycleTracker +
+                "\n    senderWildcardPortRange=" + senderWildcardPortRange +
+                "\n    receiverWildcardPortRange=" + receiverWildcardPortRange +
+                "\n    senderPortManager=" + senderPortManager +
+                "\n    receiverPortManager=" + receiverPortManager +
                 "\n    resourceFreeLimit=" + resourceFreeLimit +
                 "\n}";
         }

@@ -761,6 +761,16 @@ public final class Configuration
     public static final long NAME_RESOLVER_THRESHOLD_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
     /**
+     * Property name for wildcard port range for the Sender.
+     */
+    public static final String SENDER_WILDCARD_PORT_RANGE_PROP_NAME = "aeron.sender.wildcard.port.range";
+
+    /**
+     * Property name for wildcard port range for the Receiver.
+     */
+    public static final String RECEIVER_WILDCARD_PORT_RANGE_PROP_NAME = "aeron.receiver.wildcard.port.range";
+
+    /**
      * Should the driver configuration be printed on start.
      *
      * @return true if the driver configuration be printed on start.
@@ -1492,6 +1502,26 @@ public final class Configuration
     public static long nameResolverThresholdNs()
     {
         return getDurationInNanos(NAME_RESOLVER_THRESHOLD_PROP_NAME, NAME_RESOLVER_THRESHOLD_DEFAULT_NS);
+    }
+
+    /**
+     * Get wildcard port range in use for the Sender.
+     *
+     * @return port range as string with the format "low high"
+     */
+    public static String senderWildcardPortRange()
+    {
+        return getProperty(SENDER_WILDCARD_PORT_RANGE_PROP_NAME);
+    }
+
+    /**
+     * Get wildcard port range in use for the Receiver.
+     *
+     * @return port range as string with the format "low high"
+     */
+    public static String receiverWildcardPortRange()
+    {
+        return getProperty(RECEIVER_WILDCARD_PORT_RANGE_PROP_NAME);
     }
 
     /**

@@ -67,7 +67,7 @@ public final class UdpNameResolutionTransport extends UdpChannelTransport
         final UnsafeBuffer unsafeBuffer,
         final MediaDriver.Context context)
     {
-        super(udpChannel, null, resolverAddress, null, context);
+        super(udpChannel, null, resolverAddress, null, context.receiverPortManager(), context);
 
         this.unsafeBuffer = unsafeBuffer;
         this.byteBuffer = unsafeBuffer.byteBuffer();

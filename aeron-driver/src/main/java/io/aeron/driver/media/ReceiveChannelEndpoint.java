@@ -60,7 +60,7 @@ abstract class ReceiveChannelEndpointLhsPadding extends UdpChannelTransport
         final InetSocketAddress connectAddress,
         final MediaDriver.Context context)
     {
-        super(udpChannel, endPointAddress, bindAddress, connectAddress, context);
+        super(udpChannel, endPointAddress, bindAddress, connectAddress, context.receiverPortManager(), context);
     }
 }
 

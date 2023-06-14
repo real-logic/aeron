@@ -1170,7 +1170,7 @@ class ClusterTest
 
         final TestNode originalLeader = cluster.awaitLeader();
 
-        final int messageCount = 10;
+        final int messageCount = 100000;
         cluster.connectClient();
         cluster.sendMessages(messageCount);
         cluster.awaitResponseMessageCount(messageCount);
@@ -1222,7 +1222,7 @@ class ClusterTest
         cluster.awaitResponseMessageCount(messageCount * 2);
 
         cluster.stopNode(newLeader);
-        cluster.startStaticNode(newLeader.index(), false);
+        cluster.startStaticNode(newLeader.index(), true);
         cluster.awaitLeader();
         cluster.reconnectClient();
 
@@ -1236,7 +1236,7 @@ class ClusterTest
     }
 
     @Test
-    @InterruptAfter(40)
+    @InterruptAfter(140)
     @Disabled
     void shouldHandleManyLargeMessages()
     {

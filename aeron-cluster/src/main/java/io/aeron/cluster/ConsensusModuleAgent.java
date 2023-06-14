@@ -2682,6 +2682,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
                     case BACKUP:
                     {
+                        if (!authorisationService.isAuthorised(
+                            MessageHeaderDecoder.SCHEMA_ID,
+                            BackupQueryDecoder.TEMPLATE_ID,
+                            null,
+                            session.encodedPrincipal()))
+                        {
+                            session.reject(EventCode.AUTHENTICATION_REJECTED, "Not authorised for BackupQuery");
+                            break;
+                        }
+
                         final RecordingLog.Entry entry = recordingLog.findLastTerm();
                         if (null != entry && consensusPublisher.backupResponse(
                             session,
@@ -2701,6 +2711,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
                     case HEARTBEAT:
                     {
+                        if (!authorisationService.isAuthorised(
+                            MessageHeaderDecoder.SCHEMA_ID,
+                            HeartbeatRequestDecoder.TEMPLATE_ID,
+                            null,
+                            session.encodedPrincipal()))
+                        {
+                            session.reject(EventCode.AUTHENTICATION_REJECTED, "Not authorised for Heartbeat");
+                            break;
+                        }
+
                         if (consensusPublisher.heartbeatResponse(session))
                         {
                             ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
@@ -2712,6 +2732,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
                     case STANDBY_SNAPSHOT:
                     {
+                        if (!authorisationService.isAuthorised(
+                            MessageHeaderDecoder.SCHEMA_ID,
+                            StandbySnapshotDecoder.TEMPLATE_ID,
+                            null,
+                            session.encodedPrincipal()))
+                        {
+                            session.reject(EventCode.AUTHENTICATION_REJECTED, "Not authorised for StandbySnapshot");
+                            break;
+                        }
+
                         @SuppressWarnings("unchecked")
                         final List<StandbySnapshotEntry> standbySnapshotEntries =
                             (List<StandbySnapshotEntry>)session.requestInput();

@@ -200,7 +200,7 @@ class ConsensusModuleContextTest
     @Test
     void defaultAuthorisationServiceSupplierReturnsADenyAllAuthorisationService()
     {
-        assertSame(AuthorisationService.DENY_ALL, DEFAULT_AUTHORISATION_SERVICE_SUPPLIER.get());
+        assertSame(ALLOW_ONLY_BACKUP_QUERIES, DEFAULT_AUTHORISATION_SERVICE_SUPPLIER.get());
     }
 
     @Test

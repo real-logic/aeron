@@ -20,6 +20,8 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.codecs.BackupQueryDecoder;
+import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
 import io.aeron.driver.DefaultNameResolver;
@@ -706,12 +708,18 @@ public final class ConsensusModule implements AutoCloseable
         public static final String AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME =
             "aeron.cluster.authorisation.service.supplier";
 
+        static final AuthorisationService ALLOW_ONLY_BACKUP_QUERIES =
+            (protocolId, actionId, type, encodedPrincipal) ->
+            {
+                return MessageHeaderDecoder.SCHEMA_ID == protocolId && BackupQueryDecoder.TEMPLATE_ID == actionId;
+            };
+
         /**
          * Default {@link AuthorisationServiceSupplier} that returns {@link AuthorisationService} that forbids all
          * command from being executed (i.e. {@link AuthorisationService#DENY_ALL}).
          */
         public static final AuthorisationServiceSupplier DEFAULT_AUTHORISATION_SERVICE_SUPPLIER =
-            () -> AuthorisationService.DENY_ALL;
+            () -> ALLOW_ONLY_BACKUP_QUERIES;
 
         /**
          * Size in bytes of the error buffer for the cluster.

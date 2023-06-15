@@ -212,8 +212,8 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 }
 
                 System.out.println(
-                    "*** " + testName + " failed in " +
-                    NANOSECONDS.toMillis(endTimeNs - startTimeNs) + " ms, cause: " + error);
+                    "*** " + testName + " failed in endTimeNs(" + endTimeNs + ") - startTimeNs(" + startTimeNs + ") " +
+                    " = " + NANOSECONDS.toMillis(endTimeNs - startTimeNs) + " ms, cause: " + error);
                 final Throwable terminateError = reportAndTerminate(directoryName);
                 error = setOrUpdateError(error, terminateError);
                 try

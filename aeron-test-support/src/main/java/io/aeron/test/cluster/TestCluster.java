@@ -1016,13 +1016,15 @@ public final class TestCluster implements AutoCloseable
     public void awaitResponseMessageCount(final int messageCount)
     {
         clientKeepAlive.init();
-        long count;
         final Supplier<String> msg =
             () -> "expected=" + messageCount + " responseCount=" + defaultEgressListener.responseCount();
 
-        while ((count = defaultEgressListener.responseCount()) < messageCount)
+        while (defaultEgressListener.responseCount() < messageCount)
         {
-            pollClient();
+            if (0 == pollClient())
+            {
+                Tests.yieldingIdle(msg);
+            }
 
             try
             {
@@ -1030,10 +1032,10 @@ public final class TestCluster implements AutoCloseable
             }
             catch (final ClusterException ex)
             {
-                final String message = "count=" + count + " awaiting=" + messageCount + " cause=" + ex.getMessage();
+                final String message = "count=" + defaultEgressListener.responseCount() + " awaiting=" + messageCount +
+                    " cause=" + ex.getMessage();
                 throw new RuntimeException(message, ex);
             }
-            Tests.yieldingIdle(msg);
         }
     }
 
@@ -1046,7 +1048,7 @@ public final class TestCluster implements AutoCloseable
         }
     }
 
-    private void pollClient()
+    private int pollClient()
     {
         invokeSharedAgentInvoker();
 
@@ -1056,7 +1058,7 @@ public final class TestCluster implements AutoCloseable
             conductorAgentInvoker.invoke();
         }
 
-        client.pollEgress();
+        return client.pollEgress();
     }
 
     private void invokeSharedAgentInvoker()

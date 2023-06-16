@@ -718,7 +718,7 @@ final class ConsensusPublisher
         return sendPublication(publication, buffer, length);
     }
 
-    boolean standbySnapshotsTaken(
+    boolean standbySnapshotTaken(
         final ExclusivePublication publication,
         final long correlationId,
         final int version,

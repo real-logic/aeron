@@ -833,7 +833,6 @@ class ClusterEventLoggerTest
         final long position = 982342;
         final boolean hasSynced = true;
         final int offset = 64;
-        final TimeUnit timeUnit = MILLISECONDS;
 
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
         logger.logReplicationEnded(

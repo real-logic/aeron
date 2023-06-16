@@ -194,10 +194,21 @@ class StandbySnapshotReplicator implements AutoCloseable
                     orderedSnapshotToReplicate.add(new SnapshotReplicationEntry(k, logPosition, v));
                 });
 
-            orderedSnapshotToReplicate.sort(SnapshotReplicationEntry::compareTo);
+            orderedSnapshotToReplicate.sort(StandbySnapshotReplicator::compareTo);
         }
 
         return orderedSnapshotToReplicate;
+    }
+
+    private static int compareTo(final SnapshotReplicationEntry a, final SnapshotReplicationEntry b)
+    {
+        final int descendingOrderCompare = -Long.compare(a.logPosition, b.logPosition);
+        if (0 != descendingOrderCompare)
+        {
+            return descendingOrderCompare;
+        }
+
+        return a.endpoint.compareTo(b.endpoint);
     }
 
     boolean isComplete()
@@ -224,7 +235,7 @@ class StandbySnapshotReplicator implements AutoCloseable
         CloseHelper.quietClose(archive);
     }
 
-    private static final class SnapshotReplicationEntry implements Comparable<SnapshotReplicationEntry>
+    private static final class SnapshotReplicationEntry
     {
         private final String endpoint;
         private final long logPosition;
@@ -238,17 +249,6 @@ class StandbySnapshotReplicator implements AutoCloseable
             this.endpoint = endpoint;
             this.logPosition = logPosition;
             this.recordingLogEntries.addAll(entries);
-        }
-
-        public int compareTo(final SnapshotReplicationEntry o)
-        {
-            final int descendingOrderCompare = -Long.compare(logPosition, o.logPosition);
-            if (0 != descendingOrderCompare)
-            {
-                return descendingOrderCompare;
-            }
-
-            return endpoint.compareTo(o.endpoint);
         }
     }
 

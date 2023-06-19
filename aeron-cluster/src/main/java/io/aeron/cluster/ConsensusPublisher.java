@@ -729,7 +729,7 @@ final class ConsensusPublisher
         final String archiveEndpoint)
     {
         final int snapshotsLength = snapshots.size();
-        final StandbySnapshotEncoder standbySnapshotEncoder = this.standbySnapshotEncoder
+        standbySnapshotEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder);
 
         standbySnapshotEncoder

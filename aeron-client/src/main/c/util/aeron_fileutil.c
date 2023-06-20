@@ -39,6 +39,12 @@
 #define AERON_FILE_SEP '/'
 #endif
 
+#ifdef _MSC_VER
+#define AERON_FILE_SEP_STR "\\"
+#else
+#define AERON_FILE_SEP_STR "/"
+#endif
+
 #if defined(AERON_COMPILER_MSVC)
 
 #include <windows.h>
@@ -526,7 +532,7 @@ int aeron_publication_image_location(char *dst, size_t length, const char *aeron
 {
     return snprintf(
         dst, length,
-        "%s/" AERON_IMAGES_DIR "/%" PRId64 ".logbuffer",
+        "%s" AERON_FILE_SEP_STR AERON_IMAGES_DIR AERON_FILE_SEP_STR "%" PRId64 ".logbuffer",
         aeron_dir, correlation_id);
 }
 

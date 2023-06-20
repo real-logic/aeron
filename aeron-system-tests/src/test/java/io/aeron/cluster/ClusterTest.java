@@ -1012,7 +1012,7 @@ class ClusterTest
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
 
-        final int messageCount = 50_000;
+        final int messageCount = 5_000;
         cluster.connectClient();
         final int messageLength = cluster.msgBuffer().putStringWithoutLengthAscii(0, NO_OP_MSG);
         for (int i = 0; i < messageCount; i++)

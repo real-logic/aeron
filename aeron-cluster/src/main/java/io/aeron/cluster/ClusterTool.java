@@ -401,7 +401,8 @@ public class ClusterTool
             Files.copy(
                 clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME),
                 recordingLogBackup,
-                REPLACE_EXISTING, COPY_ATTRIBUTES);
+                REPLACE_EXISTING,
+                COPY_ATTRIBUTES);
         }
         catch (final IOException ex)
         {
@@ -429,7 +430,8 @@ public class ClusterTool
                         entry.timestamp,
                         entry.serviceId,
                         entry.type,
-                        null, entry.isValid,
+                        null,
+                        entry.isValid,
                         NULL_VALUE));
                     serviceId++;
                 }

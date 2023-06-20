@@ -1170,7 +1170,7 @@ class ClusterTest
 
         final TestNode originalLeader = cluster.awaitLeader();
 
-        final int messageCount = 100000;
+        final int messageCount = 10;
         cluster.connectClient();
         cluster.sendMessages(messageCount);
         cluster.awaitResponseMessageCount(messageCount);

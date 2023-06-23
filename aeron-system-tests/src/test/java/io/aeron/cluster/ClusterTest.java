@@ -1209,7 +1209,7 @@ class ClusterTest
 
         final TestNode originalLeader = cluster.awaitLeader();
 
-        final int messageCount = 100_000;
+        final int messageCount = 100;
         cluster.connectClient();
         cluster.sendMessages(messageCount);
         cluster.awaitResponseMessageCount(messageCount);

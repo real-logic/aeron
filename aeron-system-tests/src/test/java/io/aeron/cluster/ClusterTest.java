@@ -83,6 +83,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 class ClusterTest
 {
+    private static final String EMPTY_MSG = "";
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
@@ -349,7 +350,7 @@ class ClusterTest
     }
 
     @Test
-    @InterruptAfter(20)
+    @InterruptAfter(10)
     void shouldElectNewLeaderAfterGracefulLeaderClose()
     {
         cluster = aCluster().withStaticNodes(3).start();
@@ -359,17 +360,14 @@ class ClusterTest
         cluster.connectClient();
 
         final int messageCount = 10;
-        cluster.sendAndAwaitMessages(messageCount);
+        cluster.sendMessages(messageCount);
+        cluster.awaitResponseMessageCount(messageCount);
 
         leader.gracefulClose();
 
         final TestNode newLeader = cluster.awaitLeader();
         cluster.awaitNewLeadershipEvent(1);
         assertNotEquals(newLeader.index(), leader.index());
-
-        cluster.stopNode(leader);
-
-        cluster.sendAndAwaitMessages(messageCount, messageCount * 2);
     }
 
     @Test
@@ -807,7 +805,7 @@ class ClusterTest
 
     @Test
     @InterruptAfter(30)
-    void shouldEnterElectionWhenRecordingStopsOnLeader()
+    void shouldEnterElectionWhenRecordingStopsUnexpectedlyOnLeader()
     {
         cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
@@ -831,36 +829,6 @@ class ClusterTest
         cluster.awaitNewLeadershipEvent(1);
         cluster.awaitLeaderAndClosedElection();
         cluster.followers(2);
-    }
-
-    @Test
-    @InterruptAfter(30)
-    void shouldRecoverFollowerWhenRecordingStops()
-    {
-        cluster = aCluster().withStaticNodes(3).start();
-        systemTestWatcher.cluster(cluster);
-
-        cluster.awaitLeader();
-
-        final TestNode follower = cluster.followers().get(0);
-        final AeronArchive.Context archiveCtx = new AeronArchive.Context()
-            .controlRequestChannel(follower.archive().context().localControlChannel())
-            .controlResponseChannel(follower.archive().context().localControlChannel())
-            .controlRequestStreamId(follower.archive().context().localControlStreamId())
-            .aeronDirectoryName(follower.mediaDriver().aeronDirectoryName());
-
-        try (AeronArchive archive = AeronArchive.connect(archiveCtx))
-        {
-            final int firstRecordingIdIsTheClusterLog = 0;
-            assertTrue(archive.tryStopRecordingByIdentity(firstRecordingIdIsTheClusterLog));
-        }
-
-        final int messageCount = 10;
-        cluster.connectClient();
-        cluster.sendMessages(messageCount);
-        cluster.awaitResponseMessageCount(messageCount);
-
-        cluster.awaitServiceMessageCount(follower, messageCount);
     }
 
     @Test
@@ -1918,7 +1886,7 @@ class ClusterTest
 
         final long requestCorrelationId = System.nanoTime();
         final MutableBoolean hasResponse = injectAdminResponseEgressListener(
-            requestCorrelationId, AdminRequestType.SNAPSHOT, AdminResponseCode.OK, "");
+            requestCorrelationId, AdminRequestType.SNAPSHOT, AdminResponseCode.OK, EMPTY_MSG);
 
         final AeronCluster client = cluster.connectClient();
         while (!client.sendAdminRequestToTakeASnapshot(requestCorrelationId))
@@ -1956,8 +1924,7 @@ class ClusterTest
         final TestNode leader = cluster.awaitLeader();
 
         final long requestCorrelationId = System.nanoTime();
-        final MutableBoolean hasResponse = injectAdminRequestControlledEgressListener(
-            requestCorrelationId, AdminRequestType.SNAPSHOT, AdminResponseCode.OK, "");
+        final MutableBoolean hasResponse = injectAdminRequestControlledEgressListener(requestCorrelationId);
 
         final AeronCluster client = cluster.connectClient();
         while (!client.sendAdminRequestToTakeASnapshot(requestCorrelationId))
@@ -2116,11 +2083,7 @@ class ClusterTest
         return hasResponse;
     }
 
-    private MutableBoolean injectAdminRequestControlledEgressListener(
-        final long expectedCorrelationId,
-        final AdminRequestType expectedRequestType,
-        final AdminResponseCode expectedResponseCode,
-        final String expectedMessage)
+    private MutableBoolean injectAdminRequestControlledEgressListener(final long expectedCorrelationId)
     {
         final MutableBoolean hasResponse = new MutableBoolean();
 
@@ -2150,9 +2113,9 @@ class ClusterTest
                 {
                     hasResponse.set(true);
                     assertEquals(expectedCorrelationId, correlationId);
-                    assertEquals(expectedRequestType, requestType);
-                    assertEquals(expectedResponseCode, responseCode);
-                    assertEquals(expectedMessage, message);
+                    assertEquals(AdminRequestType.SNAPSHOT, requestType);
+                    assertEquals(AdminResponseCode.OK, responseCode);
+                    assertEquals(EMPTY_MSG, message);
                     assertNotNull(payload);
                     final int minPayloadOffset =
                         MessageHeaderEncoder.ENCODED_LENGTH +

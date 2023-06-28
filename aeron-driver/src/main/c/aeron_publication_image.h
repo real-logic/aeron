@@ -314,8 +314,10 @@ inline int64_t aeron_publication_image_join_position(aeron_publication_image_t *
     for (size_t i = 0, length = image->conductor_fields.subscribable.length; i < length; i++)
     {
         aeron_tetherable_position_t *tetherable_position = &image->conductor_fields.subscribable.array[i];
-        if (tetherable_position->state == AERON_SUBSCRIPTION_TETHER_RESTING)
+        if (AERON_SUBSCRIPTION_TETHER_RESTING == tetherable_position->state)
+        {
             continue;
+        }
 
         int64_t sub_pos = aeron_counter_get_volatile(tetherable_position->value_addr);
 

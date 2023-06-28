@@ -106,7 +106,8 @@ public final class SampleAuthenticator implements Authenticator
      */
     public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
     {
-        final SessionState sessionState = sessionIdToStateMap.get(sessionProxy.sessionId());
+        final long sessionId = sessionProxy.sessionId();
+        final SessionState sessionState = sessionIdToStateMap.get(sessionId);
 
         if (null != sessionState)
         {
@@ -117,11 +118,15 @@ public final class SampleAuthenticator implements Authenticator
                     break;
 
                 case AUTHENTICATED:
-                    sessionProxy.authenticate(encodedPrincipal());
+                    if (sessionProxy.authenticate(encodedPrincipal()))
+                    {
+                        sessionIdToStateMap.remove(sessionId);
+                    }
                     break;
 
                 case REJECT:
                     sessionProxy.reject();
+                    sessionIdToStateMap.remove(sessionId);
                     break;
             }
         }
@@ -135,7 +140,8 @@ public final class SampleAuthenticator implements Authenticator
      */
     public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
     {
-        final SessionState sessionState = sessionIdToStateMap.get(sessionProxy.sessionId());
+        final long sessionId = sessionProxy.sessionId();
+        final SessionState sessionState = sessionIdToStateMap.get(sessionId);
 
         if (null != sessionState)
         {
@@ -145,11 +151,15 @@ public final class SampleAuthenticator implements Authenticator
                     break;
 
                 case AUTHENTICATED:
-                    sessionProxy.authenticate(ArrayUtil.EMPTY_BYTE_ARRAY);
+                    if (sessionProxy.authenticate(ArrayUtil.EMPTY_BYTE_ARRAY))
+                    {
+                        sessionIdToStateMap.remove(sessionId);
+                    }
                     break;
 
                 case REJECT:
                     sessionProxy.reject();
+                    sessionIdToStateMap.remove(sessionId);
                     break;
             }
         }

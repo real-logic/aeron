@@ -384,8 +384,9 @@ void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int
             }
         }
 
-        const int64_t rebuild_position = *image->rcv_pos_position.value_addr > max_sub_pos ?
-            *image->rcv_pos_position.value_addr : max_sub_pos;
+        const int64_t rcv_position = *image->rcv_pos_position.value_addr;
+        const int64_t consumed_position = rcv_position < min_sub_pos ? rcv_position : min_sub_pos;
+        const int64_t rebuild_position = rcv_position > max_sub_pos ? rcv_position : max_sub_pos;
 
         bool loss_found = false;
         const size_t index = aeron_logbuffer_index_by_position(rebuild_position, image->position_bits_to_shift);
@@ -410,7 +411,7 @@ void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int
             image->congestion_control->state,
             &should_force_send_sm,
             now_ns,
-            min_sub_pos,
+            consumed_position,
             image->next_sm_position,
             hwm_position,
             rebuild_position,
@@ -420,11 +421,11 @@ void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int
         const int32_t threshold = window_length / 4;
 
         if (should_force_send_sm ||
-            (min_sub_pos > (image->next_sm_position + threshold)) ||
+            (consumed_position > (image->next_sm_position + threshold)) ||
             window_length != image->next_sm_receiver_window_length)
         {
-            aeron_publication_image_clean_buffer_to(image, min_sub_pos - image->term_length);
-            aeron_publication_image_schedule_status_message(image, min_sub_pos, window_length);
+            aeron_publication_image_clean_buffer_to(image, consumed_position - image->term_length);
+            aeron_publication_image_schedule_status_message(image, consumed_position, window_length);
         }
     }
 }

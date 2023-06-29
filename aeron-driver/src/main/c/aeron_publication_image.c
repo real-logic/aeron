@@ -385,7 +385,7 @@ void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int
         }
 
         const int64_t rcv_position = *image->rcv_pos_position.value_addr;
-        const int64_t consumed_position = rcv_position < min_sub_pos ? rcv_position : min_sub_pos;
+        const int64_t consumed_position = INT64_MAX == min_sub_pos ? rcv_position : min_sub_pos;
         const int64_t rebuild_position = rcv_position > max_sub_pos ? rcv_position : max_sub_pos;
 
         bool loss_found = false;

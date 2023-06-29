@@ -24,16 +24,12 @@ the [Agrona](https://github.com/real-logic/agrona) project.
 For details of usage, protocol specification, FAQ, etc. please check out the
 [Wiki](https://github.com/real-logic/aeron/wiki).
 
-For those who prefer to watch a video then try [Aeron Messaging](https://www.youtube.com/watch?v=tM4YskS94b0) from
-StrangeLoop 2014. Things have advanced quite a bit with performance and features, but the basic design still applies.
-
 For the latest version information and changes see the [Change Log](https://github.com/real-logic/aeron/wiki/Change-Log)
 with Java **downloads** at [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Caeron).
 
-Aeron is owned and operated by [Adaptive Financial Consulting](https://weareadaptive.com/).
-Originally created by Martin Thompson and Todd Montgomery, the Aeron team joined Adaptive in 2022.
+Aeron is owned and operated by Adaptive Financial Consulting. Originally created by Martin Thompson and Todd Montgomery, the Aeron team joined Adaptive in 2022.
 
-Aeron is free and open source but if your team needs support, we are here to help.
+For Business users, to get started with Aeron Premium, please visit [Aeron.io](https://aeron.io)
 
 We provide a range of services including:
 * Training for development and operations with Aeron and Aeron Cluster.

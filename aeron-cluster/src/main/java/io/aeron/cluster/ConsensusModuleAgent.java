@@ -233,11 +233,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         if (!aeron.isClosed())
         {
             aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
-            tryStopLogRecording();
 
             final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
             logPublisher.disconnect(errorHandler);
             CloseHelper.close(logAdapter.subscription());
+            tryStopLogRecording();
 
             if (!ctx.ownsAeronClient())
             {

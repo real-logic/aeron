@@ -44,7 +44,7 @@ class ControlSessionDemuxerV6Test
     {
         final ControlSessionDemuxer controlSessionDemuxer = new ControlSessionDemuxer(
             new ControlRequestDecoders(), mockImage, mockConductor, mockAuthorisationService);
-        setupControlSession(controlSessionDemuxer, CONTROL_SESSION_ID);
+        setupControlSession(controlSessionDemuxer);
 
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -95,7 +95,7 @@ class ControlSessionDemuxerV6Test
     {
         final ControlSessionDemuxer controlSessionDemuxer = new ControlSessionDemuxer(
             new ControlRequestDecoders(), mockImage, mockConductor, mockAuthorisationService);
-        setupControlSession(controlSessionDemuxer, CONTROL_SESSION_ID);
+        setupControlSession(controlSessionDemuxer);
 
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -135,7 +135,7 @@ class ControlSessionDemuxerV6Test
     {
         final ControlSessionDemuxer controlSessionDemuxer = new ControlSessionDemuxer(
             new ControlRequestDecoders(), mockImage, mockConductor, mockAuthorisationService);
-        setupControlSession(controlSessionDemuxer, CONTROL_SESSION_ID);
+        setupControlSession(controlSessionDemuxer);
 
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -170,7 +170,7 @@ class ControlSessionDemuxerV6Test
             expected.replayChannel());
     }
 
-    private void setupControlSession(final ControlSessionDemuxer controlSessionDemuxer, final long controlSessionId)
+    private void setupControlSession(final ControlSessionDemuxer controlSessionDemuxer)
     {
         final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder2 = new MessageHeaderEncoder();
@@ -184,7 +184,7 @@ class ControlSessionDemuxerV6Test
         final int connectRequestLength = connectRequestEncoder.encodedLength();
 
         doReturn(mockSession).when(mockConductor).newControlSession(anyLong(), anyInt(), anyInt(), any(), any(), any());
-        doReturn(controlSessionId).when(mockSession).sessionId();
+        doReturn(CONTROL_SESSION_ID).when(mockSession).sessionId();
         doReturn(true).when(mockAuthorisationService).isAuthorised(anyInt(), anyInt(), any(), any());
 
         controlSessionDemuxer.onFragment(buffer, 0, connectRequestLength, mockHeader);

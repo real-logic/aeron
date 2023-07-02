@@ -258,11 +258,16 @@ inline bool aeron_publication_image_is_drained(aeron_publication_image_t *image)
 
     for (size_t i = 0, length = image->conductor_fields.subscribable.length; i < length; i++)
     {
-        int64_t position = aeron_counter_get_volatile(image->conductor_fields.subscribable.array[i].value_addr);
+        aeron_tetherable_position_t *tetherable_position = &image->conductor_fields.subscribable.array[i];
 
-        if (position < rebuild_position)
+        if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
         {
-            return false;
+            const int64_t sub_pos = aeron_counter_get_volatile(tetherable_position->value_addr);
+
+            if (sub_pos < rebuild_position)
+            {
+                return false;
+            }
         }
     }
 
@@ -313,11 +318,16 @@ inline int64_t aeron_publication_image_join_position(aeron_publication_image_t *
 
     for (size_t i = 0, length = image->conductor_fields.subscribable.length; i < length; i++)
     {
-        int64_t sub_pos = aeron_counter_get_volatile(image->conductor_fields.subscribable.array[i].value_addr);
+        aeron_tetherable_position_t *tetherable_position = &image->conductor_fields.subscribable.array[i];
 
-        if (sub_pos < position)
+        if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
         {
-            position = sub_pos;
+            const int64_t sub_pos = aeron_counter_get_volatile(tetherable_position->value_addr);
+
+            if (sub_pos < position)
+            {
+                position = sub_pos;
+            }
         }
     }
 

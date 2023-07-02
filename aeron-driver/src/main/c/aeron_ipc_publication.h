@@ -164,11 +164,16 @@ inline int64_t aeron_ipc_publication_join_position(aeron_ipc_publication_t *publ
 
     for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
     {
-        int64_t sub_pos = aeron_counter_get_volatile(publication->conductor_fields.subscribable.array[i].value_addr);
+        aeron_tetherable_position_t *tetherable_position = &publication->conductor_fields.subscribable.array[i];
 
-        if (sub_pos < position)
+        if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
         {
-            position = sub_pos;
+            const int64_t sub_pos = aeron_counter_get_volatile(tetherable_position->value_addr);
+
+            if (sub_pos < position)
+            {
+                position = sub_pos;
+            }
         }
     }
 
@@ -186,11 +191,16 @@ inline bool aeron_ipc_publication_is_drained(aeron_ipc_publication_t *publicatio
 
     for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
     {
-        int64_t sub_pos = aeron_counter_get_volatile(publication->conductor_fields.subscribable.array[i].value_addr);
+        aeron_tetherable_position_t *tetherable_position = &publication->conductor_fields.subscribable.array[i];
 
-        if (sub_pos < producer_position)
+        if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
         {
-            return false;
+            const int64_t sub_pos = aeron_counter_get_volatile(tetherable_position->value_addr);
+
+            if (sub_pos < producer_position)
+            {
+                return false;
+            }
         }
     }
 

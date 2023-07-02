@@ -746,6 +746,7 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
                 {
                     aeron_tetherable_position_t *tetherable_position =
                         &publication->conductor_fields.subscribable.array[i];
+
                     if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
                     {
                         int64_t position = aeron_counter_get_volatile(tetherable_position->value_addr);
@@ -834,9 +835,14 @@ bool aeron_network_publication_spies_finished_consuming(
     {
         for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
         {
-            if (aeron_counter_get_volatile(publication->conductor_fields.subscribable.array[i].value_addr) < eos_pos)
+            aeron_tetherable_position_t *tetherable_position = &publication->conductor_fields.subscribable.array[i];
+
+            if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
             {
-                return false;
+                if (aeron_counter_get_volatile(tetherable_position->value_addr) < eos_pos)
+                {
+                    return false;
+                }
             }
         }
 

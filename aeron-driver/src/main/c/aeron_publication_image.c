@@ -248,6 +248,7 @@ int aeron_publication_image_create(
     *image = _image;
 
     return 0;
+
 error:
     aeron_free(_image->connections.array);
     aeron_free(_image->log_file_name);
@@ -292,6 +293,7 @@ bool aeron_publication_image_free(aeron_publication_image_t *image)
 
     aeron_free(image->log_file_name);
     aeron_free(image);
+
     return true;
 }
 

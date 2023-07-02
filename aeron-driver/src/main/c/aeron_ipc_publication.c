@@ -218,6 +218,7 @@ bool aeron_ipc_publication_free(aeron_ipc_publication_t *publication)
 
     aeron_free(publication->log_file_name);
     aeron_free(publication);
+
     return true;
 }
 

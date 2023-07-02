@@ -281,6 +281,7 @@ bool aeron_network_publication_free(aeron_network_publication_t *publication)
 
     aeron_free(publication->log_file_name);
     aeron_free(publication);
+
     return true;
 }
 

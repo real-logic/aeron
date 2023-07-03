@@ -48,6 +48,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
@@ -60,6 +61,8 @@ import static io.aeron.archive.client.ArchiveException.UNKNOWN_REPLAY;
 import static io.aeron.archive.client.ReplayMerge.LIVE_ADD_MAX_WINDOW;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
+import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT;
+import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_DEFAULT;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
@@ -114,6 +117,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private final TimerService timerService;
     private final Counter moduleState;
     private final Counter controlToggle;
+    private final Counter nodeControlToggle;
     private final ConsensusModuleAdapter consensusModuleAdapter;
     private final ServiceProxy serviceProxy;
     private final IngressAdapter ingressAdapter;
@@ -158,6 +162,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private String liveLogDestination;
     private String catchupLogDestination;
     private String ingressEndpoints;
+    private StandbySnapshotReplicator standbySnapshotReplicator = null;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {
@@ -174,6 +179,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         this.moduleState = ctx.moduleStateCounter();
         this.commitPosition = ctx.commitPositionCounter();
         this.controlToggle = ctx.controlToggleCounter();
+        this.nodeControlToggle = ctx.nodeControlToggleCounter();
         this.logPublisher = ctx.logPublisher();
         this.idleStrategy = ctx.idleStrategy();
         this.activeMembers = ClusterMember.parse(ctx.clusterMembers());
@@ -280,6 +286,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
             if (null == ctx.boostrapState())
             {
+                replicateStandbySnapshotsForStartup();
                 recoveryPlan = recoverFromSnapshotAndLog();
             }
             else
@@ -1189,6 +1196,45 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
+    void onStandbySnapshot(
+        final long correlationId,
+        final int version,
+        final List<StandbySnapshotEntry> standbySnapshotEntries,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] encodedCredentials)
+    {
+        if (null == election && null == dynamicJoin)
+        {
+            if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
+            {
+                final ClusterSession session = new ClusterSession(
+                    NULL_VALUE, responseStreamId, refineResponseChannel(responseChannel));
+
+                final long timestamp = clusterClock.time();
+
+                session.action(ClusterSession.Action.STANDBY_SNAPSHOT);
+                session.asyncConnect(aeron);
+                session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
+                session.requestInput(standbySnapshotEntries);
+
+                if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION == SemanticVersion.major(version))
+                {
+                    final long timestampMs = clusterTimeUnit.toMillis(timestamp);
+                    authenticator.onConnectRequest(session.id(), encodedCredentials, timestampMs);
+                    pendingBackupSessions.add(session);
+                }
+                else
+                {
+                    final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
+                        ", cluster=" + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
+                    session.reject(EventCode.ERROR, detail);
+                    rejectedBackupSessions.add(session);
+                }
+            }
+        }
+    }
+
     void state(final ConsensusModule.State newState)
     {
         if (newState != state)
@@ -1440,7 +1486,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    void onReplayClusterAction(final long leadershipTermId, final ClusterAction action)
+    void onReplayClusterAction(final long leadershipTermId, final ClusterAction action, final int flags)
     {
         if (leadershipTermId == this.leadershipTermId)
         {
@@ -1452,7 +1498,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             {
                 state(ConsensusModule.State.ACTIVE);
             }
-            else if (ClusterAction.SNAPSHOT == action)
+            else if (ClusterAction.SNAPSHOT == action && CLUSTER_ACTION_FLAGS_DEFAULT == flags)
             {
                 state(ConsensusModule.State.SNAPSHOT);
             }
@@ -1821,6 +1867,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             timeOfLastAppendPositionUpdateNs = nowNs;
             timeOfLastAppendPositionSendNs = nowNs;
         }
+        NodeControl.ToggleState.activate(nodeControlToggle);
 
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
 
@@ -2192,6 +2239,19 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
     }
 
+    private void logStandbySnapshotNotification(
+        final int memberId,
+        final long recordingId,
+        final long leadershipTermId,
+        final long termBaseLogPosition,
+        final long logPosition,
+        final long timestamp,
+        final TimeUnit timeUnit,
+        final int serviceId,
+        final String archiveEndpoint)
+    {
+    }
+
     private static void logOnStopCatchup(final int memberId, final long leadershipTermId, final int followerMemberId)
     {
     }
@@ -2348,7 +2408,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         {
             if (Cluster.Role.LEADER == role)
             {
-                workCount += checkControlToggle(nowNs);
+                workCount += checkClusterControlToggle(nowNs);
 
                 if (ConsensusModule.State.ACTIVE == state)
                 {
@@ -2390,6 +2450,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                         workCount += 1;
                     }
                 }
+            }
+
+            if (ConsensusModule.State.ACTIVE == state)
+            {
+                workCount += checkNodeControlToggle(nowNs);
             }
         }
 
@@ -2446,11 +2511,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
 
         workCount += consensusModuleAdapter.poll();
+        workCount += pollStandbySnapshotReplication(nowNs);
 
         return workCount;
     }
 
-    private int checkControlToggle(final long nowNs)
+    private int checkClusterControlToggle(final long nowNs)
     {
         switch (ClusterControl.ToggleState.get(controlToggle))
         {
@@ -2474,6 +2540,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 {
                     state(ConsensusModule.State.SNAPSHOT);
                 }
+                break;
+
+            case STANDBY_SNAPSHOT:
+                if (ConsensusModule.State.ACTIVE == state)
+                {
+                    appendAction(ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT);
+                }
+                ClusterControl.ToggleState.reset(controlToggle);
                 break;
 
             case SHUTDOWN:
@@ -2510,11 +2584,44 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return 1;
     }
 
-    private boolean appendAction(final ClusterAction action)
+    private int checkNodeControlToggle(final long nowNs)
     {
-        return logPublisher.appendClusterAction(leadershipTermId, clusterClock.time(), action);
+        //noinspection SwitchStatementWithTooFewBranches
+        switch (NodeControl.ToggleState.get(nodeControlToggle))
+        {
+            case REPLICATE_STANDBY_SNAPSHOT:
+                if (null == this.standbySnapshotReplicator)
+                {
+                    this.standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
+                        ctx.clusterMemberId(),
+                        ctx.archiveContext(),
+                        recordingLog,
+                        ctx.serviceCount(),
+                        ctx.leaderArchiveControlChannel(),
+                        ctx.archiveContext().controlRequestStreamId(),
+                        ctx.replicationChannel());
+                }
+                NodeControl.ToggleState.reset(nodeControlToggle);
+                break;
+
+            default:
+                return 0;
+        }
+
+        return 1;
     }
 
+    private boolean appendAction(final ClusterAction action)
+    {
+        return appendAction(action, CLUSTER_ACTION_FLAGS_DEFAULT);
+    }
+
+    private boolean appendAction(final ClusterAction action, final int flags)
+    {
+        return logPublisher.appendClusterAction(leadershipTermId, clusterClock.time(), action, flags);
+    }
+
+    @SuppressWarnings("checkstyle:methodlength")
     private int processPendingSessions(
         final ArrayList<ClusterSession> pendingSessions,
         final ArrayList<ClusterSession> rejectedSessions,
@@ -2575,6 +2682,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
                     case BACKUP:
                     {
+                        if (!authorisationService.isAuthorised(
+                            MessageHeaderDecoder.SCHEMA_ID,
+                            BackupQueryDecoder.TEMPLATE_ID,
+                            null,
+                            session.encodedPrincipal()))
+                        {
+                            session.reject(EventCode.AUTHENTICATION_REJECTED, "Not authorised for BackupQuery");
+                            break;
+                        }
+
                         final RecordingLog.Entry entry = recordingLog.findLastTerm();
                         if (null != entry && consensusPublisher.backupResponse(
                             session,
@@ -2594,6 +2711,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
                     case HEARTBEAT:
                     {
+                        if (!authorisationService.isAuthorised(
+                            MessageHeaderDecoder.SCHEMA_ID,
+                            HeartbeatRequestDecoder.TEMPLATE_ID,
+                            null,
+                            session.encodedPrincipal()))
+                        {
+                            session.reject(EventCode.AUTHENTICATION_REJECTED, "Not authorised for Heartbeat");
+                            break;
+                        }
+
                         if (consensusPublisher.heartbeatResponse(session))
                         {
                             ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
@@ -2601,6 +2728,51 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                             workCount += 1;
                         }
                         break;
+                    }
+
+                    case STANDBY_SNAPSHOT:
+                    {
+                        if (!authorisationService.isAuthorised(
+                            MessageHeaderDecoder.SCHEMA_ID,
+                            StandbySnapshotDecoder.TEMPLATE_ID,
+                            null,
+                            session.encodedPrincipal()))
+                        {
+                            session.reject(EventCode.AUTHENTICATION_REJECTED, "Not authorised for StandbySnapshot");
+                            break;
+                        }
+
+                        @SuppressWarnings("unchecked")
+                        final List<StandbySnapshotEntry> standbySnapshotEntries =
+                            (List<StandbySnapshotEntry>)session.requestInput();
+
+                        for (final StandbySnapshotEntry standbySnapshotEntry : standbySnapshotEntries)
+                        {
+                            logStandbySnapshotNotification(
+                                memberId,
+                                standbySnapshotEntry.recordingId(),
+                                standbySnapshotEntry.leadershipTermId(),
+                                standbySnapshotEntry.termBaseLogPosition(),
+                                standbySnapshotEntry.logPosition(),
+                                standbySnapshotEntry.timestamp(),
+                                ctx.clusterClock().timeUnit(),
+                                standbySnapshotEntry.serviceId(),
+                                standbySnapshotEntry.archiveEndpoint());
+
+                            recordingLog.appendStandbySnapshot(
+                                standbySnapshotEntry.recordingId(),
+                                standbySnapshotEntry.leadershipTermId(),
+                                standbySnapshotEntry.termBaseLogPosition(),
+                                standbySnapshotEntry.logPosition(),
+                                standbySnapshotEntry.timestamp(),
+                                standbySnapshotEntry.serviceId(),
+                                standbySnapshotEntry.archiveEndpoint());
+                        }
+
+                        ctx.standbySnapshotCounter().increment();
+                        ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
+                        session.close(aeron, ctx.countedErrorHandler());
+                        workCount += 1;
                     }
                 }
             }
@@ -3821,6 +3993,58 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         ++serviceAckId;
 
         return recoveryPlan;
+    }
+
+    private void replicateStandbySnapshotsForStartup()
+    {
+        try (StandbySnapshotReplicator standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
+            ctx.clusterMemberId(),
+            ctx.archiveContext(),
+            recordingLog,
+            ctx.serviceCount(),
+            ctx.leaderArchiveControlChannel(),
+            ctx.archiveContext().controlRequestStreamId(),
+            ctx.replicationChannel()))
+        {
+            while (!standbySnapshotReplicator.isComplete())
+            {
+                try
+                {
+                    ctx.idleStrategy().idle(standbySnapshotReplicator.poll(ctx.clusterClock().timeNanos()));
+                }
+                catch (final ClusterException ex)
+                {
+                    ctx.errorHandler().onError(ex);
+                    break;
+                }
+
+                checkInterruptStatus();
+                aeronClientInvoker.invoke();
+                if (aeron.isClosed())
+                {
+                    throw new AgentTerminationException("unexpected Aeron close");
+                }
+            }
+        }
+    }
+
+    private int pollStandbySnapshotReplication(final long nowNs)
+    {
+        int workCount = 0;
+
+        if (null != standbySnapshotReplicator)
+        {
+            workCount += standbySnapshotReplicator.poll(nowNs);
+
+            if (standbySnapshotReplicator.isComplete())
+            {
+                ctx.snapshotCounter().increment();
+                CloseHelper.quietClose(standbySnapshotReplicator);
+                standbySnapshotReplicator = null;
+            }
+        }
+
+        return workCount;
     }
 
     public String toString()

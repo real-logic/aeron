@@ -31,6 +31,7 @@ public final class SampleAuthenticator implements Authenticator
     private static final String CREDENTIALS_STRING_REQUIRING_CHALLENGE = "admin:adminC";
     private static final String CHALLENGE_CREDENTIALS_STRING = "admin:CSadmin";
     private static final String CHALLENGE_STRING = "challenge!";
+    public static final String PRINCIPAL = "admin";
 
     enum SessionState
     {
@@ -38,6 +39,17 @@ public final class SampleAuthenticator implements Authenticator
     }
 
     private final Long2ObjectHashMap<SessionState> sessionIdToStateMap = new Long2ObjectHashMap<>();
+
+    /**
+     * Byte array encoded representation of the sample principal.
+     *
+     * @return byte array representation of {@link #PRINCIPAL}
+     * @see #PRINCIPAL
+     */
+    public byte[] encodedPrincipal()
+    {
+        return PRINCIPAL.getBytes(StandardCharsets.US_ASCII);
+    }
 
     /**
      * Client is attempting to connect.
@@ -105,7 +117,7 @@ public final class SampleAuthenticator implements Authenticator
                     break;
 
                 case AUTHENTICATED:
-                    sessionProxy.authenticate(ArrayUtil.EMPTY_BYTE_ARRAY);
+                    sessionProxy.authenticate(encodedPrincipal());
                     break;
 
                 case REJECT:

@@ -21,10 +21,13 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
+import org.agrona.Strings;
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.MutableReference;
+import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -36,7 +39,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.TreeMap;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -79,6 +85,12 @@ import static org.agrona.BitUtil.*;
  *  |                  Service ID when a Snapshot                   |
  *  +---------------------------------------------------------------+
  *  |R|               Entry Type (Log or Snapshot)                  |
+ *  +---------------------------------------------------------------+
+ *  |                 Archive Endpoint (length)                     |
+ *  +---------------------------------------------------------------+
+ *  |                 Archive Endpoint (length)                     |
+ *  |                    Archive Endpoint                         ...
+ *  ...                     (variable)                              |
  *  +---------------------------------------------------------------+
  *  |                                                               |
  *  |                                                              ...
@@ -141,6 +153,13 @@ public final class RecordingLog implements AutoCloseable
         public final boolean isValid;
 
         /**
+         * Endpoint for an archive where a remote snapshot is located.
+         */
+        public final String archiveEndpoint;
+
+        private long position;
+
+        /**
          * A new entry in the recording log.
          *
          * @param recordingId         of the entry in an archive.
@@ -150,9 +169,14 @@ public final class RecordingLog implements AutoCloseable
          * @param timestamp           of this entry.
          * @param serviceId           service id for snapshot.
          * @param type                of the entry as a log of a term or a snapshot.
+         * @param archiveEndpoint     archive where the snapshot is located, if
+         *                            <code>entryType == ENTRY_TYPE_STANDBY_SNAPSHOT</code>.
          * @param isValid             indicates if the entry is valid, {@link RecordingLog#invalidateEntry(long, int)}
          *                            marks it invalid.
+         * @param position            of the entry on disk.
          * @param entryIndex          of the entry on disk.
+         * @throws ClusterException   if <code>entryType == ENTRY_TYPE_STANDBY_SNAPSHOT</code> and <code>endpoint</code>
+         *                            is null or empty.
          */
         public Entry(
             final long recordingId,
@@ -162,7 +186,9 @@ public final class RecordingLog implements AutoCloseable
             final long timestamp,
             final int serviceId,
             final int type,
+            final String archiveEndpoint,
             final boolean isValid,
+            final long position,
             final int entryIndex)
         {
             this.recordingId = recordingId;
@@ -172,8 +198,59 @@ public final class RecordingLog implements AutoCloseable
             this.timestamp = timestamp;
             this.serviceId = serviceId;
             this.type = type;
+            this.archiveEndpoint = archiveEndpoint;
+            this.position = position;
             this.entryIndex = entryIndex;
             this.isValid = isValid;
+
+            if (ENTRY_TYPE_STANDBY_SNAPSHOT == type && Strings.isEmpty(archiveEndpoint))
+            {
+                throw new ClusterException("Remote snapshots must has a valid endpoint");
+            }
+        }
+
+        Entry(
+            final long recordingId,
+            final long leadershipTermId,
+            final long termBaseLogPosition,
+            final long logPosition,
+            final long timestamp,
+            final int serviceId,
+            final int type,
+            final String archiveEndpoint,
+            final boolean isValid,
+            final int entryIndex)
+        {
+            this(
+                recordingId,
+                leadershipTermId,
+                termBaseLogPosition,
+                logPosition,
+                timestamp,
+                serviceId,
+                type,
+                archiveEndpoint,
+                isValid,
+                NULL_VALUE,
+                entryIndex);
+        }
+
+        /**
+         * Binary length of the serialised entry including alignment.
+         *
+         * @return length of this entry.
+         */
+        public int length()
+        {
+            final int unalignedLength = (ENTRY_TYPE_STANDBY_SNAPSHOT == type) ?
+                ENDPOINT_OFFSET + SIZE_OF_INT + archiveEndpoint.length() : ENDPOINT_OFFSET;
+
+            return align(unalignedLength, CACHE_LINE_LENGTH);
+        }
+
+        private void position(final long position)
+        {
+            this.position = position;
         }
 
         Entry invalidate()
@@ -186,7 +263,9 @@ public final class RecordingLog implements AutoCloseable
                 timestamp,
                 serviceId,
                 type,
+                archiveEndpoint,
                 false,
+                position,
                 entryIndex);
         }
 
@@ -200,7 +279,9 @@ public final class RecordingLog implements AutoCloseable
                 timestamp,
                 serviceId,
                 type,
+                archiveEndpoint,
                 isValid,
+                position,
                 entryIndex);
         }
 
@@ -261,6 +342,9 @@ public final class RecordingLog implements AutoCloseable
          */
         public String toString()
         {
+            final String archiveEndpointEntry = ENTRY_TYPE_STANDBY_SNAPSHOT == type ?
+                ", archiveEndpoint=" + archiveEndpoint : "";
+
             return "Entry{" +
                 "recordingId=" + recordingId +
                 ", leadershipTermId=" + leadershipTermId +
@@ -271,6 +355,7 @@ public final class RecordingLog implements AutoCloseable
                 ", type=" + typeAsString(type) +
                 ", isValid=" + isValid +
                 ", entryIndex=" + entryIndex +
+                archiveEndpointEntry +
                 '}';
         }
     }
@@ -556,6 +641,12 @@ public final class RecordingLog implements AutoCloseable
     public static final int ENTRY_TYPE_SNAPSHOT = 1;
 
     /**
+     * The log entry is for a recording of a snapshot of state taken as of a position in the log on another machine.
+     * Entries of this time should have an endpoint for an archive associated with them.
+     */
+    public static final int ENTRY_TYPE_STANDBY_SNAPSHOT = 2;
+
+    /**
      * The flag used to determine if the entry has been marked with invalid.
      */
     public static final int ENTRY_TYPE_INVALID_FLAG = 1 << 31;
@@ -596,9 +687,16 @@ public final class RecordingLog implements AutoCloseable
     public static final int ENTRY_TYPE_OFFSET = SERVICE_ID_OFFSET + SIZE_OF_INT;
 
     /**
-     * The length of each entry in the recording log (not the recordings in the archive).
+     * The offset at which the endpoint of the remote snapshot is held.
      */
-    static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
+    public static final int ENDPOINT_OFFSET = ENTRY_TYPE_OFFSET + SIZE_OF_INT;
+
+    private static final int MAX_ENDPOINT_LENGTH = SIZE_OF_INT + 255 + 6;
+
+    /**
+     * Maximum possible entry length. Include the entry plus a variable length endpoint string.
+     */
+    public static final int MAX_ENTRY_LENGTH = BitUtil.align(ENDPOINT_OFFSET + MAX_ENDPOINT_LENGTH, CACHE_LINE_LENGTH);
 
     private static final Comparator<Entry> ENTRY_COMPARATOR =
         (Entry e1, Entry e2) ->
@@ -740,29 +838,23 @@ public final class RecordingLog implements AutoCloseable
         try
         {
             long filePosition = 0;
+            long consumePosition = 0;
+
             while (true)
             {
                 final int bytesRead = fileChannel.read(byteBuffer, filePosition);
-                if (byteBuffer.remaining() == 0)
+                filePosition += bytesRead;
+
+                if (0 < bytesRead)
                 {
                     byteBuffer.flip();
-                    captureEntriesFromBuffer(byteBuffer, buffer, entriesCache);
-                    byteBuffer.clear();
+                    consumePosition += captureEntriesFromBuffer(consumePosition, byteBuffer, buffer, entriesCache);
+                    byteBuffer.compact();
                 }
-
-                if (bytesRead <= 0)
+                else
                 {
-                    if (byteBuffer.position() > 0)
-                    {
-                        byteBuffer.flip();
-                        captureEntriesFromBuffer(byteBuffer, buffer, entriesCache);
-                        byteBuffer.clear();
-                    }
-
                     break;
                 }
-
-                filePosition += bytesRead;
             }
         }
         catch (final IOException ex)
@@ -780,7 +872,7 @@ public final class RecordingLog implements AutoCloseable
                 cacheIndexByLeadershipTermIdMap.put(entry.leadershipTermId, i);
             }
 
-            if (ENTRY_TYPE_SNAPSHOT == entry.type && !entry.isValid)
+            if (isInvalidSnapshot(entry))
             {
                 invalidSnapshots.add(i);
             }
@@ -1084,7 +1176,7 @@ public final class RecordingLog implements AutoCloseable
             termBaseLogPosition,
             logPosition,
             timestamp,
-            NULL_VALUE);
+            NULL_VALUE, RECORDING_LOG_FILE_NAME);
 
         cacheIndexByLeadershipTermIdMap.put(leadershipTermId, index);
     }
@@ -1119,7 +1211,50 @@ public final class RecordingLog implements AutoCloseable
                 termBaseLogPosition,
                 logPosition,
                 timestamp,
-                serviceId);
+                serviceId,
+                null);
+        }
+    }
+
+    /**
+     * Append a log entry for a snapshot. Snapshots must be for the current term.
+     *
+     * @param recordingId         in the archive for the snapshot.
+     * @param leadershipTermId    for the current term
+     * @param termBaseLogPosition at the beginning of the leadership term.
+     * @param logPosition         within the current term or accumulated length for the log.
+     * @param timestamp           at which the snapshot was taken.
+     * @param serviceId           for which the snapshot is recorded.
+     * @param archiveEndpoint     endpoint for the archive where
+     */
+    public void appendStandbySnapshot(
+        final long recordingId,
+        final long leadershipTermId,
+        final long termBaseLogPosition,
+        final long logPosition,
+        final long timestamp,
+        final int serviceId,
+        final String archiveEndpoint)
+    {
+        validateRecordingId(recordingId);
+
+        if (Strings.isEmpty(archiveEndpoint))
+        {
+            throw new ClusterException("Remote snapshots must has a valid endpoint");
+        }
+
+        if (!restoreInvalidSnapshot(
+            recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId))
+        {
+            append(
+                ENTRY_TYPE_STANDBY_SNAPSHOT,
+                recordingId,
+                leadershipTermId,
+                termBaseLogPosition,
+                logPosition,
+                timestamp,
+                serviceId,
+                archiveEndpoint);
         }
     }
 
@@ -1140,7 +1275,8 @@ public final class RecordingLog implements AutoCloseable
         final Entry entry = entriesCache.get(index);
         if (entry.logPosition != logPosition)
         {
-            commitEntryLogPosition(entry.entryIndex, logPosition);
+            buffer.putLong(0, logPosition, LITTLE_ENDIAN);
+            persistToStorage(entry.position, LOG_POSITION_OFFSET, SIZE_OF_LONG);
             entriesCache.set(index, entry.logPosition(logPosition));
         }
     }
@@ -1185,7 +1321,7 @@ public final class RecordingLog implements AutoCloseable
 
         final int invalidEntryType = ENTRY_TYPE_INVALID_FLAG | invalidEntry.type;
         buffer.putInt(0, invalidEntryType, LITTLE_ENDIAN);
-        persistToStorage(entryIndex, ENTRY_TYPE_OFFSET, SIZE_OF_INT);
+        persistToStorage(invalidEntry.position, ENTRY_TYPE_OFFSET, SIZE_OF_INT);
     }
 
     /**
@@ -1196,27 +1332,72 @@ public final class RecordingLog implements AutoCloseable
      */
     void removeEntry(final long leadershipTermId, final int entryIndex)
     {
-        int index = -1;
+        Entry entryToRemove = null;
 
         for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
             final Entry entry = entriesCache.get(i);
             if (entry.leadershipTermId == leadershipTermId && entry.entryIndex == entryIndex)
             {
-                index = entry.entryIndex;
+                entryToRemove = entry;
                 break;
             }
         }
 
-        if (-1 == index)
+        if (null == entryToRemove)
         {
             throw new ClusterException("unknown entry index: " + entryIndex);
         }
 
         buffer.putInt(0, NULL_VALUE, LITTLE_ENDIAN);
-        persistToStorage(index, ENTRY_TYPE_OFFSET, SIZE_OF_INT);
+        persistToStorage(entryToRemove.position, ENTRY_TYPE_OFFSET, SIZE_OF_INT);
 
         reload();
+    }
+
+    /**
+     * Return a collection of the most recent remote snapshots grouped by the archiveEndpoint where the snapshot is
+     * stored.
+     *
+     * @param serviceCount      to ensure that we have a complete set of snapshots.
+     * @return                  collection of snapshots.
+     */
+    public Map<String, List<Entry>> latestStandbySnapshots(final int serviceCount)
+    {
+        final Map<String, List<Entry>> latestStandbySnapshots = new Object2ObjectHashMap<>();
+        final Map<String, NavigableMap<Long, List<Entry>>> standbySnapshots = new Object2ObjectHashMap<>();
+
+        for (int i = entriesCache.size() - 1; i >= 0; i--)
+        {
+            final Entry entry = entriesCache.get(i);
+            if (ENTRY_TYPE_STANDBY_SNAPSHOT == entry.type)
+            {
+                standbySnapshots.computeIfAbsent(entry.archiveEndpoint, (s) -> new TreeMap<>())
+                    .computeIfAbsent(entry.logPosition, (l) -> new ArrayList<>())
+                    .add(entry);
+            }
+        }
+
+        standbySnapshots.forEach(
+            (k, v) ->
+            {
+                while (!v.isEmpty())
+                {
+                    final Map.Entry<Long, List<Entry>> lastEntry = v.lastEntry();
+                    final int snapshotCount = serviceCount + 1;
+                    if (lastEntry.getValue().size() == snapshotCount)
+                    {
+                        latestStandbySnapshots.put(k, lastEntry.getValue());
+                        break;
+                    }
+                    else
+                    {
+                        v.remove(lastEntry.getKey());
+                    }
+                }
+            });
+
+        return latestStandbySnapshots;
     }
 
     /**
@@ -1238,6 +1419,8 @@ public final class RecordingLog implements AutoCloseable
                 return "TERM";
             case ENTRY_TYPE_SNAPSHOT:
                 return "SNAPSHOT";
+            case ENTRY_TYPE_STANDBY_SNAPSHOT:
+                return "STANDBY_SNAPSHOT";
             default:
                 return "UNKNOWN";
         }
@@ -1291,11 +1474,20 @@ public final class RecordingLog implements AutoCloseable
         buffer.putLong(TIMESTAMP_OFFSET, entry.timestamp, LITTLE_ENDIAN);
         buffer.putInt(SERVICE_ID_OFFSET, entry.serviceId, LITTLE_ENDIAN);
         buffer.putInt(ENTRY_TYPE_OFFSET, entry.type, LITTLE_ENDIAN);
+        if (!Strings.isEmpty(entry.archiveEndpoint))
+        {
+            buffer.putStringAscii(ENDPOINT_OFFSET, entry.archiveEndpoint);
+        }
     }
 
     static boolean isValidSnapshot(final Entry entry)
     {
         return entry.isValid && ENTRY_TYPE_SNAPSHOT == entry.type;
+    }
+
+    static boolean isInvalidSnapshot(final Entry entry)
+    {
+        return !entry.isValid && ENTRY_TYPE_SNAPSHOT == entry.type;
     }
 
     void ensureCoherent(
@@ -1414,11 +1606,13 @@ public final class RecordingLog implements AutoCloseable
                     timestamp,
                     serviceId,
                     ENTRY_TYPE_SNAPSHOT,
+                    null,
                     true,
+                    entry.position,
                     entry.entryIndex);
 
                 writeEntryToBuffer(validatedEntry, buffer);
-                persistToStorage(entry.entryIndex, 0, ENTRY_LENGTH);
+                persistToStorage(entry, buffer);
 
                 entriesCache.set(entryCacheIndex, validatedEntry);
                 invalidSnapshots.fastUnorderedRemove(i);
@@ -1437,7 +1631,8 @@ public final class RecordingLog implements AutoCloseable
         final long termBaseLogPosition,
         final long logPosition,
         final long timestamp,
-        final int serviceId)
+        final int serviceId,
+        final String endpoint)
     {
         final Entry entry = new Entry(
             recordingId,
@@ -1447,11 +1642,13 @@ public final class RecordingLog implements AutoCloseable
             timestamp,
             serviceId,
             entryType,
+            endpoint,
             true,
+            NULL_VALUE,
             nextEntryIndex);
 
         writeEntryToBuffer(entry, buffer);
-        persistToStorage(entry.entryIndex, 0, ENTRY_LENGTH);
+        persistToStorage(entry, buffer);
 
         nextEntryIndex++;
 
@@ -1512,10 +1709,10 @@ public final class RecordingLog implements AutoCloseable
         return index;
     }
 
-    private void persistToStorage(final int entryIndex, final int offset, final int length)
+    private void persistToStorage(final long entryPosition, final int offset, final int length)
     {
         byteBuffer.limit(length).position(0);
-        final long position = (entryIndex * (long)ENTRY_LENGTH) + offset;
+        final long position = entryPosition + offset;
 
         try
         {
@@ -1530,28 +1727,57 @@ public final class RecordingLog implements AutoCloseable
         }
     }
 
-    private void captureEntriesFromBuffer(
-        final ByteBuffer byteBuffer, final UnsafeBuffer buffer, final ArrayList<Entry> entries)
+    private void persistToStorage(final Entry entry, final DirectBuffer directBuffer)
     {
-        for (int i = 0, length = byteBuffer.limit(); i < length; i += ENTRY_LENGTH)
+        final ByteBuffer byteBuffer = directBuffer.byteBuffer();
+        byteBuffer.limit(entry.length()).position(0);
+
+        try
         {
-            final int entryType = buffer.getInt(i + ENTRY_TYPE_OFFSET);
+            if (NULL_VALUE == entry.position)
+            {
+                final long nextPosition = align(fileChannel.size(), CACHE_LINE_LENGTH);
+                entry.position(nextPosition);
+            }
+
+            if (entry.length() != fileChannel.write(byteBuffer, entry.position))
+            {
+                throw new ClusterException("failed to write field atomically");
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    private int captureEntriesFromBuffer(
+        final long filePosition, final ByteBuffer byteBuffer, final UnsafeBuffer buffer, final ArrayList<Entry> entries)
+    {
+        int consumed = 0; // This is assuming that we have filled the byte buffer from the beginning.
+
+        for (int length = byteBuffer.limit(); consumed < length;)
+        {
+            final long position = filePosition + consumed;
+            final int entryType = buffer.getInt(consumed + ENTRY_TYPE_OFFSET);
+            final int type = entryType & ~ENTRY_TYPE_INVALID_FLAG;
+            final boolean isValid = (entryType & ENTRY_TYPE_INVALID_FLAG) == 0;
+
+            final Entry entry = new Entry(
+                buffer.getLong(consumed + RECORDING_ID_OFFSET, LITTLE_ENDIAN),
+                buffer.getLong(consumed + LEADERSHIP_TERM_ID_OFFSET, LITTLE_ENDIAN),
+                buffer.getLong(consumed + TERM_BASE_LOG_POSITION_OFFSET, LITTLE_ENDIAN),
+                buffer.getLong(consumed + LOG_POSITION_OFFSET, LITTLE_ENDIAN),
+                buffer.getLong(consumed + TIMESTAMP_OFFSET, LITTLE_ENDIAN),
+                buffer.getInt(consumed + SERVICE_ID_OFFSET, LITTLE_ENDIAN),
+                type,
+                (ENTRY_TYPE_STANDBY_SNAPSHOT == type) ? buffer.getStringAscii(consumed + ENDPOINT_OFFSET) : null,
+                isValid,
+                position,
+                nextEntryIndex);
+
             if (NULL_VALUE != entryType)
             {
-                final int type = entryType & ~ENTRY_TYPE_INVALID_FLAG;
-                final boolean isValid = (entryType & ENTRY_TYPE_INVALID_FLAG) == 0;
-
-                final Entry entry = new Entry(
-                    buffer.getLong(i + RECORDING_ID_OFFSET, LITTLE_ENDIAN),
-                    buffer.getLong(i + LEADERSHIP_TERM_ID_OFFSET, LITTLE_ENDIAN),
-                    buffer.getLong(i + TERM_BASE_LOG_POSITION_OFFSET, LITTLE_ENDIAN),
-                    buffer.getLong(i + LOG_POSITION_OFFSET, LITTLE_ENDIAN),
-                    buffer.getLong(i + TIMESTAMP_OFFSET, LITTLE_ENDIAN),
-                    buffer.getInt(i + SERVICE_ID_OFFSET, LITTLE_ENDIAN),
-                    type,
-                    isValid,
-                    nextEntryIndex);
-
                 if (ENTRY_TYPE_TERM == type)
                 {
                     validateTermRecordingId(entry.recordingId);
@@ -1560,8 +1786,12 @@ public final class RecordingLog implements AutoCloseable
                 entries.add(entry);
             }
 
+            consumed += entry.length();
             ++nextEntryIndex;
         }
+
+        byteBuffer.position(consumed);
+        return consumed;
     }
 
     private static void syncDirectory(final File dir)

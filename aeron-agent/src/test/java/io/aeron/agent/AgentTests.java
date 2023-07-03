@@ -63,7 +63,8 @@ final class AgentTests
         final int captureLength,
         final int length)
     {
-        assertEquals(HEADER_LENGTH + LOG_HEADER_LENGTH + captureLength,
+        assertEquals(
+            HEADER_LENGTH + LOG_HEADER_LENGTH + captureLength,
             logBuffer.getInt(lengthOffset(recordOffset), LITTLE_ENDIAN));
         assertEquals(eventCodeId, logBuffer.getInt(typeOffset(recordOffset), LITTLE_ENDIAN));
         assertEquals(captureLength, logBuffer.getInt(encodedMsgOffset(recordOffset), LITTLE_ENDIAN));

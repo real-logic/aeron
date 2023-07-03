@@ -17,6 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.BufferBuilder;
 import io.aeron.Image;
+import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.client.*;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.*;
@@ -221,11 +222,15 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                final int flags = ClusterActionRequestDecoder.flagsNullValue() != actionRequestDecoder.flags() ?
+                    actionRequestDecoder.flags() : ConsensusModule.CLUSTER_ACTION_FLAGS_DEFAULT;
+
                 agent.onServiceAction(
                     actionRequestDecoder.leadershipTermId(),
                     actionRequestDecoder.logPosition(),
                     actionRequestDecoder.timestamp(),
-                    actionRequestDecoder.action());
+                    actionRequestDecoder.action(),
+                    flags);
                 break;
 
             case NewLeadershipTermEventDecoder.TEMPLATE_ID:

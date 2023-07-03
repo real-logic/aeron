@@ -45,6 +45,8 @@ import java.util.function.Consumer;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
+import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT;
+import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_DEFAULT;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.*;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
@@ -111,6 +113,8 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
     private final BoundedLogAdapter logAdapter;
     private final DutyCycleTracker dutyCycleTracker;
     private final String subscriptionAlias;
+    private final int standbySnapshotFlags;
+
     private String activeLifecycleCallbackName;
     private ReadableCounter commitPosition;
     private ActiveLogEvent activeLogEvent;
@@ -138,6 +142,8 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(channel, ctx.consensusModuleStreamId()));
         serviceAdapter = new ServiceAdapter(aeron.addSubscription(channel, ctx.serviceStreamId()), this);
         sessionMessageHeaderEncoder.wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder());
+        this.standbySnapshotFlags = ctx.standbySnapshotEnabled() ? CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT :
+            CLUSTER_ACTION_FLAGS_DEFAULT;
     }
 
     public void onStart()
@@ -501,11 +507,15 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
     }
 
     void onServiceAction(
-        final long leadershipTermId, final long logPosition, final long timestamp, final ClusterAction action)
+        final long leadershipTermId,
+        final long logPosition,
+        final long timestamp,
+        final ClusterAction action,
+        final int flags)
     {
         this.logPosition = logPosition;
         clusterTime = timestamp;
-        executeAction(action, logPosition, leadershipTermId);
+        executeAction(action, logPosition, leadershipTermId, flags);
     }
 
     void onNewLeadershipTermEvent(
@@ -974,9 +984,13 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, timeUnit, ctx.appVersion());
     }
 
-    private void executeAction(final ClusterAction action, final long logPosition, final long leadershipTermId)
+    private void executeAction(
+        final ClusterAction action,
+        final long logPosition,
+        final long leadershipTermId,
+        final int flags)
     {
-        if (ClusterAction.SNAPSHOT == action)
+        if (ClusterAction.SNAPSHOT == action && shouldSnapshot(flags))
         {
             final long recordingId = onTakeSnapshot(logPosition, leadershipTermId);
             final long id = ackId++;
@@ -986,6 +1000,11 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
                 idle();
             }
         }
+    }
+
+    private boolean shouldSnapshot(final int flags)
+    {
+        return CLUSTER_ACTION_FLAGS_DEFAULT == flags || 0 != (flags & standbySnapshotFlags);
     }
 
     private int awaitRecordingCounter(final int sessionId, final CountersReader counters, final AeronArchive archive)
@@ -1180,5 +1199,15 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         {
             ctx.countedErrorHandler().onError(ex);
         }
+    }
+
+    private void logAck(
+        final int memberId,
+        final long logPosition,
+        final long clusterTime,
+        final long id,
+        final long recordingId,
+        final int serviceId)
+    {
     }
 }

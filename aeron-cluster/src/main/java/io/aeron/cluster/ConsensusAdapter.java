@@ -25,6 +25,9 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayUtil;
 
+import java.util.ArrayList;
+import java.util.List;
+
 class ConsensusAdapter implements FragmentHandler, AutoCloseable
 {
     static final int FRAGMENT_LIMIT = 10;
@@ -49,6 +52,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
     private final BackupQueryDecoder backupQueryDecoder = new BackupQueryDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
     private final HeartbeatRequestDecoder heartbeatRequestDecoder = new HeartbeatRequestDecoder();
+    private final StandbySnapshotDecoder standbySnapshotDecoder = new StandbySnapshotDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -374,6 +378,52 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     credentials);
 
                 break;
+            }
+
+            case StandbySnapshotDecoder.TEMPLATE_ID:
+            {
+                standbySnapshotDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final long correlationId = standbySnapshotDecoder.correlationId();
+                final int version = standbySnapshotDecoder.version();
+                final int responseStreamId = standbySnapshotDecoder.responseStreamId();
+                final List<StandbySnapshotEntry> standbySnapshotEntries = new ArrayList<>();
+
+                for (final StandbySnapshotDecoder.SnapshotsDecoder standbySnapshot : standbySnapshotDecoder.snapshots())
+                {
+                    standbySnapshotEntries.add(new StandbySnapshotEntry(
+                        standbySnapshot.recordingId(),
+                        standbySnapshot.leadershipTermId(),
+                        standbySnapshot.termBaseLogPosition(),
+                        standbySnapshot.logPosition(),
+                        standbySnapshot.timestamp(),
+                        standbySnapshot.serviceId(),
+                        standbySnapshot.archiveEndpoint()));
+                }
+
+                final String responseChannel = standbySnapshotDecoder.responseChannel();
+                final byte[] encodedCredentials;
+                if (0 == standbySnapshotDecoder.encodedCredentialsLength())
+                {
+                    encodedCredentials = ArrayUtil.EMPTY_BYTE_ARRAY;
+                }
+                else
+                {
+                    encodedCredentials = new byte[standbySnapshotDecoder.encodedCredentialsLength()];
+                }
+
+                consensusModuleAgent.onStandbySnapshot(
+                    correlationId,
+                    version,
+                    standbySnapshotEntries,
+                    responseStreamId,
+                    responseChannel,
+                    encodedCredentials
+                );
             }
 
         }

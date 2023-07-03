@@ -80,6 +80,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  *                     backup-query: [delay] get, or set, time of next backup query.
  *       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.
  *                         snapshot: triggers a snapshot on the leader.
+ *                 standby-snapshot: triggers a snapshot on cluster standby nodes.
  *                          suspend: suspends appending to the log.
  *                           resume: resumes reading from the log.
  *                         shutdown: initiates an orderly stop of the cluster with a snapshot.
@@ -132,7 +133,7 @@ public class ClusterTool
     public static final int AERON_CLUSTER_TOOL_REPLAY_STREAM_ID = Integer.getInteger(
         AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_PROP_NAME, AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_DEFAULT);
 
-    private static final long TIMEOUT_MS =
+    static final long TIMEOUT_MS =
         NANOSECONDS.toMillis(getDurationInNanos(AERON_CLUSTER_TOOL_TIMEOUT_PROP_NAME, 0));
 
     /**
@@ -400,7 +401,8 @@ public class ClusterTool
             Files.copy(
                 clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME),
                 recordingLogBackup,
-                REPLACE_EXISTING, COPY_ATTRIBUTES);
+                REPLACE_EXISTING,
+                COPY_ATTRIBUTES);
         }
         catch (final IOException ex)
         {
@@ -428,6 +430,7 @@ public class ClusterTool
                         entry.timestamp,
                         entry.serviceId,
                         entry.type,
+                        null,
                         entry.isValid,
                         NULL_VALUE));
                     serviceId++;
@@ -1142,17 +1145,8 @@ public class ClusterTool
     {
         try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
         {
-            final List<RecordingLog.Entry> entries = recordingLog.entries();
-            for (int i = entries.size() - 1; i >= 0; i--)
-            {
-                final RecordingLog.Entry e = entries.get(i);
-                if (RecordingLog.isValidSnapshot(e) && ConsensusModule.Configuration.SERVICE_ID == e.serviceId)
-                {
-                    return e;
-                }
-            }
+            return recordingLog.getLatestSnapshot(ConsensusModule.Configuration.SERVICE_ID);
         }
-        return null;
     }
 
     /**
@@ -1172,11 +1166,33 @@ public class ClusterTool
     }
 
     @SuppressWarnings("MethodLength")
-    private static boolean toggleClusterState(
+    static boolean toggleClusterState(
         final PrintStream out,
         final File clusterDir,
         final ConsensusModule.State expectedState,
         final ClusterControl.ToggleState toggleState,
+        final boolean waitForToggleToComplete,
+        final long defaultTimeoutMs)
+    {
+        return toggleState(
+            out,
+            clusterDir,
+            true,
+            expectedState,
+            toggleState,
+            ToggleApplication.CLUSTER_CONTROL,
+            waitForToggleToComplete,
+            defaultTimeoutMs);
+    }
+
+    @SuppressWarnings("MethodLength")
+    static <T extends Enum<T>> boolean toggleState(
+        final PrintStream out,
+        final File clusterDir,
+        final boolean isLeaderRequired,
+        final ConsensusModule.State expectedState,
+        final T targetState,
+        final ToggleApplication<T> toggleApplication,
         final boolean waitForToggleToComplete,
         final long defaultTimeoutMs)
     {
@@ -1205,10 +1221,10 @@ public class ClusterTool
 
         final String prefix = "Member [" + clusterMembership.memberId + "]: ";
 
-        if (clusterMembership.leaderMemberId != clusterMembership.memberId)
+        if (isLeaderRequired && clusterMembership.leaderMemberId != clusterMembership.memberId)
         {
             out.println(prefix + "Current node is not the leader (leaderMemberId = " +
-                clusterMembership.leaderMemberId + "), unable to " + toggleState);
+                clusterMembership.leaderMemberId + "), unable to " + targetState);
             return false;
         }
 
@@ -1232,21 +1248,21 @@ public class ClusterTool
 
             if (expectedState != moduleState)
             {
-                out.println(prefix + "Unable to " + toggleState + " as the state of the consensus module is " +
+                out.println(prefix + "Unable to " + targetState + " as the state of the consensus module is " +
                     moduleState + ", but needs to be " + expectedState);
                 return false;
             }
 
-            final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader, clusterId);
+            final AtomicCounter controlToggle = toggleApplication.find(countersReader, clusterId);
             if (null == controlToggle)
             {
                 out.println(prefix + "Failed to find control toggle");
                 return false;
             }
 
-            if (!toggleState.toggle(controlToggle))
+            if (!toggleApplication.apply(controlToggle, targetState))
             {
-                out.println(prefix + "Failed to apply " + toggleState + ", current toggle value = " +
+                out.println(prefix + "Failed to apply " + targetState + ", current toggle value = " +
                     ClusterControl.ToggleState.get(controlToggle));
                 return false;
             }
@@ -1255,7 +1271,7 @@ public class ClusterTool
             {
                 final long toggleTimeoutMs = Math.max(defaultTimeoutMs, TIMEOUT_MS);
                 final long deadlineMs = System.currentTimeMillis() + toggleTimeoutMs;
-                ClusterControl.ToggleState currentState = null;
+                T currentState = null;
 
                 do
                 {
@@ -1265,18 +1281,18 @@ public class ClusterTool
                         break;
                     }
 
-                    currentState = ClusterControl.ToggleState.get(controlToggle);
+                    currentState = toggleApplication.get(controlToggle);
                 }
-                while (currentState != ClusterControl.ToggleState.NEUTRAL);
+                while (!toggleApplication.isNeutral(currentState));
 
-                if (currentState != ClusterControl.ToggleState.NEUTRAL)
+                if (!toggleApplication.isNeutral(currentState))
                 {
                     out.println(prefix + "Timed out after " + toggleTimeoutMs + "ms waiting for " +
-                        toggleState + " to complete.");
+                        targetState + " to complete.");
                 }
             }
 
-            out.println(prefix + toggleState + " applied successfully");
+            out.println(prefix + targetState + " applied successfully");
 
             return true;
 
@@ -1287,7 +1303,7 @@ public class ClusterTool
         }
     }
 
-    private static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
+    static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
     {
         return new ClusterMarkFile(clusterDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
     }
@@ -1388,7 +1404,8 @@ public class ClusterTool
             {
                 final Path newRecordingLog = clusterDir.toPath().resolve(RecordingLog.RECORDING_LOG_FILE_NAME + ".tmp");
                 Files.deleteIfExists(newRecordingLog);
-                final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(RecordingLog.ENTRY_LENGTH).order(LITTLE_ENDIAN);
+                final ByteBuffer byteBuffer = ByteBuffer
+                    .allocateDirect(RecordingLog.MAX_ENTRY_LENGTH).order(LITTLE_ENDIAN);
                 final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
                 try (FileChannel fileChannel = FileChannel.open(newRecordingLog, CREATE_NEW, WRITE))
                 {
@@ -1396,13 +1413,13 @@ public class ClusterTool
                     for (final RecordingLog.Entry e : entries)
                     {
                         RecordingLog.writeEntryToBuffer(e, buffer);
-                        byteBuffer.limit(RecordingLog.ENTRY_LENGTH).position(0);
+                        byteBuffer.limit(e.length()).position(0);
 
-                        if (RecordingLog.ENTRY_LENGTH != fileChannel.write(byteBuffer, position))
+                        if (e.length() != fileChannel.write(byteBuffer, position))
                         {
                             throw new ClusterException("failed to write recording");
                         }
-                        position += RecordingLog.ENTRY_LENGTH;
+                        position += e.length();
                     }
                 }
                 finally
@@ -1420,7 +1437,7 @@ public class ClusterTool
         }
     }
 
-    private static void exitWithErrorOnFailure(final boolean success)
+    static void exitWithErrorOnFailure(final boolean success)
     {
         if (!success)
         {
@@ -1428,7 +1445,7 @@ public class ClusterTool
         }
     }
 
-    private static void printHelp()
+    static void printHelp()
     {
         System.out.format(
             "Usage: <cluster-dir> <command> [options]%n" +

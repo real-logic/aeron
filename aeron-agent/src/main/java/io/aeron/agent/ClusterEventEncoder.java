@@ -666,7 +666,7 @@ final class ClusterEventEncoder
             (SIZE_OF_INT + controlUri.length());
     }
 
-    public static int encodeReplicationEnded(
+    static int encodeReplicationEnded(
         final UnsafeBuffer encodingBuffer,
         final int offset,
         final int captureLength,
@@ -701,6 +701,59 @@ final class ClusterEventEncoder
         bodyLength += encodingBuffer.putStringAscii(bodyOffset + bodyLength, purpose, LITTLE_ENDIAN);
         bodyLength += encodeTrailingString(
             encodingBuffer, bodyOffset + bodyLength, captureLength - bodyLength, channel);
+
+        return logHeaderLength + bodyLength;
+    }
+
+    static int standbySnapshotNotificationLength(final TimeUnit timeUnit, final String archiveEndpoint)
+    {
+        return (5 * SIZE_OF_LONG) + (2 * SIZE_OF_LONG) +
+            (2 * SIZE_OF_INT) + timeUnit.name().length() + archiveEndpoint.length();
+    }
+
+    static int encodeStandbySnapshotNotification(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final int memberId,
+        final long recordingId,
+        final long leadershipTermId,
+        final long termBaseLogPosition,
+        final long logPosition,
+        final long timestamp,
+        final TimeUnit timeUnit,
+        final int serviceId,
+        final String archiveEndpoint)
+    {
+        final int logHeaderLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int bodyOffset = offset + logHeaderLength;
+        int bodyLength = 0;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, recordingId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, leadershipTermId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, termBaseLogPosition, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, logPosition, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, timestamp, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, memberId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, serviceId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+
+        bodyLength += encodingBuffer.putStringAscii(bodyOffset + bodyLength, timeUnit.name(), LITTLE_ENDIAN);
+        bodyLength += encodeTrailingString(
+            encodingBuffer, bodyOffset + bodyLength, captureLength - bodyLength, archiveEndpoint);
 
         return logHeaderLength + bodyLength;
     }

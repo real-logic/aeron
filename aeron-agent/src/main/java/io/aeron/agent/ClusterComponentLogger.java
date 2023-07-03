@@ -241,6 +241,13 @@ public class ClusterComponentLogger implements ComponentLogger
             ClusterInterceptor.ReplicationEnded.class,
             "logReplicationEnded");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            STANDBY_SNAPSHOT_NOTIFICATION,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.StandbySnapshotNotification.class,
+            "logStandbySnapshotNotification");
+
         return tempBuilder;
     }
 

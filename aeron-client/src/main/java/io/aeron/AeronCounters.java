@@ -239,6 +239,11 @@ public final class AeronCounters
     public static final int CLUSTER_SNAPSHOT_COUNTER_TYPE_ID = 205;
 
     /**
+     * Counter type for count of standby snapshots received.
+     */
+    public static final int CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID = 232;
+
+    /**
      * Type id for election state counter.
      */
     public static final int CLUSTER_ELECTION_STATE_TYPE_ID = 207;
@@ -367,6 +372,11 @@ public final class AeronCounters
      * the transition module.
      */
     public static final int TRANSITION_MODULE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID = 230;
+
+    /**
+     * The type of the {@link Counter} used for handling node specific operations.
+     */
+    public static final int NODE_CONTROL_TOGGLE_TYPE_ID = 233;
 
     private AeronCounters()
     {

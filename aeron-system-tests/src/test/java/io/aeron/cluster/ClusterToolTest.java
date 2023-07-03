@@ -249,6 +249,7 @@ class ClusterToolTest
                     entry.timestamp,
                     entry.serviceId,
                     entry.type,
+                    null,
                     entry.isValid,
                     i));
             }
@@ -353,6 +354,7 @@ class ClusterToolTest
                     entry.timestamp,
                     entry.serviceId,
                     entry.type,
+                    null,
                     entry.isValid,
                     i - 2));
             }

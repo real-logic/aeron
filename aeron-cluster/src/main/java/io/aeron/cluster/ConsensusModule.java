@@ -20,6 +20,8 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.codecs.BackupQueryDecoder;
+import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
 import io.aeron.driver.DefaultNameResolver;
@@ -49,6 +51,8 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
+import static io.aeron.AeronCounters.CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID;
+import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.AeronCounters.validateCounterTypeId;
 import static io.aeron.CommonContext.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
@@ -66,6 +70,16 @@ import static org.agrona.SystemUtil.*;
  */
 public final class ConsensusModule implements AutoCloseable
 {
+    /**
+     * Default set of flags when taking a snapshot
+     */
+    public static final int CLUSTER_ACTION_FLAGS_DEFAULT = 0;
+
+    /**
+     * Flag for a snapshot taken on a standby node.
+     */
+    public static final int CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT = 1;
+
     /**
      * Possible states for the {@link ConsensusModule}.
      * These will be reflected in the {@link Context#moduleStateCounter()} counter.
@@ -694,12 +708,18 @@ public final class ConsensusModule implements AutoCloseable
         public static final String AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME =
             "aeron.cluster.authorisation.service.supplier";
 
+        static final AuthorisationService ALLOW_ONLY_BACKUP_QUERIES =
+            (protocolId, actionId, type, encodedPrincipal) ->
+            {
+                return MessageHeaderDecoder.SCHEMA_ID == protocolId && BackupQueryDecoder.TEMPLATE_ID == actionId;
+            };
+
         /**
          * Default {@link AuthorisationServiceSupplier} that returns {@link AuthorisationService} that forbids all
          * command from being executed (i.e. {@link AuthorisationService#DENY_ALL}).
          */
         public static final AuthorisationServiceSupplier DEFAULT_AUTHORISATION_SERVICE_SUPPLIER =
-            () -> AuthorisationService.DENY_ALL;
+            () -> ALLOW_ONLY_BACKUP_QUERIES;
 
         /**
          * Size in bytes of the error buffer for the cluster.
@@ -820,6 +840,12 @@ public final class ConsensusModule implements AutoCloseable
          */
         public static final String CLUSTER_REPLICATION_PROGRESS_INTERVAL_PROP_NAME =
             "aeron.cluster.replication.progress.interval";
+
+        /**
+         * Property name of enabling the acceptance of standby snapshots
+         */
+        public static final String CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME =
+            "aeron.cluster.accept.standby.snapshots";
 
         /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
@@ -1293,6 +1319,16 @@ public final class ConsensusModule implements AutoCloseable
         {
             return SystemUtil.getDurationInNanos(CLUSTER_REPLICATION_PROGRESS_INTERVAL_PROP_NAME, Aeron.NULL_VALUE);
         }
+
+        /**
+         * If this node should accept snapshots from standby nodes.
+         *
+         * @return value from property {@link #CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME} or false if not set.
+         */
+        public static boolean acceptStandbySnapshots()
+        {
+            return Boolean.getBoolean(CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME);
+        }
     }
 
     /**
@@ -1384,9 +1420,11 @@ public final class ConsensusModule implements AutoCloseable
         private Counter electionStateCounter;
         private Counter clusterNodeRoleCounter;
         private Counter commitPosition;
-        private Counter controlToggle;
+        private Counter clusterControlToggle;
+        private Counter nodeControlToggle;
         private Counter snapshotCounter;
         private Counter timedOutClientCounter;
+        private Counter standbySnapshotCounter;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
 
@@ -1401,6 +1439,7 @@ public final class ConsensusModule implements AutoCloseable
         private boolean useAgentInvoker = false;
         private ConsensusModuleStateExport boostrapState = null;
         private NameResolver nameResolver;
+        private boolean acceptStandbySnapshots = Configuration.acceptStandbySnapshots();
 
         /**
          * Perform a shallow copy of the object.
@@ -1615,12 +1654,19 @@ public final class ConsensusModule implements AutoCloseable
             }
             validateCounterTypeId(aeron, commitPosition, COMMIT_POSITION_TYPE_ID);
 
-            if (null == controlToggle)
+            if (null == clusterControlToggle)
             {
-                controlToggle = ClusterCounters.allocate(
+                clusterControlToggle = ClusterCounters.allocate(
                     aeron, buffer, "Cluster control toggle", CONTROL_TOGGLE_TYPE_ID, clusterId);
             }
-            validateCounterTypeId(aeron, controlToggle, CONTROL_TOGGLE_TYPE_ID);
+            validateCounterTypeId(aeron, clusterControlToggle, CONTROL_TOGGLE_TYPE_ID);
+
+            if (null == nodeControlToggle)
+            {
+                nodeControlToggle = ClusterCounters.allocate(
+                    aeron, buffer, "Node control toggle", NODE_CONTROL_TOGGLE_TYPE_ID, clusterId);
+            }
+            validateCounterTypeId(aeron, nodeControlToggle, NODE_CONTROL_TOGGLE_TYPE_ID);
 
             if (null == snapshotCounter)
             {
@@ -1635,6 +1681,21 @@ public final class ConsensusModule implements AutoCloseable
                     aeron, buffer, "Cluster timed out client count", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, clusterId);
             }
             validateCounterTypeId(aeron, timedOutClientCounter, CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID);
+
+            // TODO: Disable with configuration... (Mike)
+            if (acceptStandbySnapshots)
+            {
+                if (null == standbySnapshotCounter)
+                {
+                    standbySnapshotCounter = ClusterCounters.allocate(
+                        aeron,
+                        buffer,
+                        "Cluster standby snapshots received",
+                        CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID,
+                        clusterId);
+                }
+                validateCounterTypeId(aeron, standbySnapshotCounter, CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID);
+            }
 
             if (null == dutyCycleTracker)
             {
@@ -3255,18 +3316,18 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the counter for the control toggle for triggering actions on the cluster node.
+         * Get the counter for the control toggle for triggering actions for the cluster.
          *
          * @return the counter for triggering cluster node actions.
          * @see ClusterControl
          */
         public Counter controlToggleCounter()
         {
-            return controlToggle;
+            return clusterControlToggle;
         }
 
         /**
-         * Set the counter for the control toggle for triggering actions on the cluster node.
+         * Set the counter for the control toggle for triggering actions for the cluster.
          *
          * @param controlToggle the counter for triggering cluster node actions.
          * @return this for a fluent API.
@@ -3274,7 +3335,31 @@ public final class ConsensusModule implements AutoCloseable
          */
         public Context controlToggleCounter(final Counter controlToggle)
         {
-            this.controlToggle = controlToggle;
+            this.clusterControlToggle = controlToggle;
+            return this;
+        }
+
+        /**
+         * Get the counter for the control toggle for triggering actions on the cluster node.
+         *
+         * @return the counter for triggering cluster node actions.
+         * @see ClusterControl
+         */
+        public Counter nodeControlToggleCounter()
+        {
+            return nodeControlToggle;
+        }
+
+        /**
+         * Set the counter for the control toggle for triggering actions on the cluster node.
+         *
+         * @param nodeControlToggle the counter for triggering cluster node actions.
+         * @return this for a fluent API.
+         * @see ClusterControl
+         */
+        public Context nodeControlToggleCounter(final Counter nodeControlToggle)
+        {
+            this.nodeControlToggle = nodeControlToggle;
             return this;
         }
 
@@ -3692,6 +3777,56 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Indicate whether this node should accept snapshots from standby nodes
+         *
+         * @return <code>true</code> if this node should accept snapshots from standby nodes, <code>false</code>
+         * otherwise.
+         * @see Configuration#CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME
+         * @see Configuration#acceptStandbySnapshots()
+         */
+        public boolean acceptStandbySnapshots()
+        {
+            return acceptStandbySnapshots;
+        }
+
+        /**
+         * Indicate whether this node should accept snapshots from standby nodes
+         *
+         * @param acceptStandbySnapshots <code>true</code> if this node should accept snapshots from standby nodes,
+         *                               <code>false</code> otherwise.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME
+         * @see Configuration#acceptStandbySnapshots()
+         */
+        public ConsensusModule.Context acceptStandbySnapshots(final boolean acceptStandbySnapshots)
+        {
+            this.acceptStandbySnapshots = acceptStandbySnapshots;
+            return this;
+        }
+
+        /**
+         * Get the counter used to track standby snapshots accepted by this node.
+         *
+         * @return the counter for standby snapshots.
+         */
+        public Counter standbySnapshotCounter()
+        {
+            return standbySnapshotCounter;
+        }
+
+        /**
+         * Set the counter used to track standby snapshots accepted by this node.
+         *
+         * @param standbySnapshotCounter the counter for standby snapshots.
+         * @return this for a fluentAPI.
+         */
+        public Context standbySnapshotCounter(final Counter standbySnapshotCounter)
+        {
+            this.standbySnapshotCounter = standbySnapshotCounter;
+            return this;
+        }
+
+        /**
          * Delete the cluster directory.
          */
         public void deleteDirectory()
@@ -3728,7 +3863,7 @@ public final class ConsensusModule implements AutoCloseable
                     clusterNodeRoleCounter,
                     electionStateCounter,
                     commitPosition,
-                    controlToggle,
+                    clusterControlToggle,
                     snapshotCounter,
                     timedOutClientCounter);
             }
@@ -3911,7 +4046,7 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    electionStateCounter=" + electionStateCounter +
                 "\n    clusterNodeRoleCounter=" + clusterNodeRoleCounter +
                 "\n    commitPosition=" + commitPosition +
-                "\n    controlToggle=" + controlToggle +
+                "\n    controlToggle=" + clusterControlToggle +
                 "\n    snapshotCounter=" + snapshotCounter +
                 "\n    timedOutClientCounter=" + timedOutClientCounter +
                 "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +

@@ -15,30 +15,27 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.AeronCounters;
+import io.aeron.CommonContext;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.service.ClusterCounters;
 import io.aeron.cluster.service.ClusteredServiceContainer;
-import org.agrona.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
-import java.nio.MappedByteBuffer;
-import java.nio.charset.StandardCharsets;
-
-import static io.aeron.CncFileDescriptor.*;
 
 /**
- * Toggle control {@link ToggleState}s for a cluster node such as {@link ToggleState#SUSPEND} or
- * {@link ToggleState#RESUME}. This can only be applied to the {@link io.aeron.cluster.service.Cluster.Role#LEADER}.
+ * Toggle control {@link ToggleState}s for a cluster node such as {@link ToggleState#REPLICATE_STANDBY_SNAPSHOT}.
+ * This can only be applied to individual nodes and does not apply across the cluster.
  */
-public class ClusterControl
+public class NodeControl
 {
     /**
      * Toggle states for controlling the cluster node once it has entered the active state after initialising.
      * The toggle can only we switched into a new state from {@link #NEUTRAL} and will be reset by the
-     * {@link io.aeron.cluster.ConsensusModule} once the triggered action is complete.
+     * {@link ConsensusModule} once the triggered action is complete.
      */
     public enum ToggleState
     {
@@ -53,34 +50,9 @@ public class ClusterControl
         NEUTRAL(1),
 
         /**
-         * Suspend processing of ingress and timers.
+         * Trigger a replication of the most resent standby snapshots.
          */
-        SUSPEND(2),
-
-        /**
-         * Resume processing of ingress and timers.
-         */
-        RESUME(3),
-
-        /**
-         * Take a snapshot of cluster state.
-         */
-        SNAPSHOT(4),
-
-        /**
-         * Shut down the cluster in an orderly fashion by taking a snapshot first then terminating.
-         */
-        SHUTDOWN(5),
-
-        /**
-         * Abort processing and terminate the cluster without taking a snapshot.
-         */
-        ABORT(6),
-
-        /**
-         * Trigger a snapshot that will only occur on a cluster standby.
-         */
-        STANDBY_SNAPSHOT(7);
+        REPLICATE_STANDBY_SNAPSHOT(2);
 
         private final int code;
 
@@ -108,20 +80,12 @@ public class ClusterControl
 
         /**
          * Toggle the control counter to trigger the requested {@link ToggleState}.
-         * <p>
-         * This action is thread safe and will succeed if the toggle is in the {@link ToggleState#NEUTRAL} state,
-         * or if toggle is {@link ToggleState#SUSPEND} and requested state is {@link ToggleState#RESUME}.
          *
          * @param controlToggle to change to the trigger state.
          * @return true if the counter toggles or false if it is in a state other than {@link ToggleState#NEUTRAL}.
          */
         public final boolean toggle(final AtomicCounter controlToggle)
         {
-            if (code() == RESUME.code() && controlToggle.get() == SUSPEND.code())
-            {
-                return controlToggle.compareAndSet(SUSPEND.code(), RESUME.code());
-            }
-
             return controlToggle.compareAndSet(NEUTRAL.code(), code());
         }
 
@@ -182,27 +146,7 @@ public class ClusterControl
     /**
      * Counter type id for the control toggle.
      */
-    public static final int CONTROL_TOGGLE_TYPE_ID = AeronCounters.CLUSTER_CONTROL_TOGGLE_TYPE_ID;
-
-    /**
-     * Map a {@link CountersReader} over the provided {@link File} for the CnC file.
-     *
-     * @param cncFile for the counters.
-     * @return a {@link CountersReader} over the provided CnC file.
-     */
-    public static CountersReader mapCounters(final File cncFile)
-    {
-        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
-        final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
-        final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
-
-        CncFileDescriptor.checkVersion(cncVersion);
-
-        return new CountersReader(
-            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
-            createCountersValuesBuffer(cncByteBuffer, cncMetaData),
-            StandardCharsets.US_ASCII);
-    }
+    public static final int CONTROL_TOGGLE_TYPE_ID = AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
 
     /**
      * Find the control toggle counter or return null if not found.
@@ -236,7 +180,7 @@ public class ClusterControl
         final File cncFile = CommonContext.newDefaultCncFile();
         System.out.println("Command `n Control file " + cncFile);
 
-        final CountersReader countersReader = mapCounters(cncFile);
+        final CountersReader countersReader = ClusterControl.mapCounters(cncFile);
         final int clusterId = ClusteredServiceContainer.Configuration.clusterId();
         final AtomicCounter controlToggle = findControlToggle(countersReader, clusterId);
 
@@ -261,7 +205,7 @@ public class ClusterControl
         if (1 != args.length)
         {
             System.out.format("Usage: [-Daeron.dir=<directory containing CnC file> -Daeron.cluster.id=<id>] " +
-                ClusterControl.class.getName() + " <action>%n");
+                NodeControl.class.getName() + " <action>%n");
 
             System.exit(0);
         }

@@ -145,6 +145,23 @@ class ClusterTest
     }
 
     @Test
+    @InterruptAfter(10)
+    void shouldNotSnapshotOnPrimaryClusterWhenStandbySnapshotIsRequested()
+    {
+        cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+
+        cluster.takeStandbySnapshot(leader);
+        cluster.awaitNeutralControlToggle(leader);
+
+        cluster.connectClient();
+        cluster.sendAndAwaitMessages(1);
+        assertEquals(0, cluster.getSnapshotCount(leader));
+    }
+
+    @Test
     @InterruptAfter(30)
     void shouldStopClusteredServicesOnAppropriateMessage()
     {

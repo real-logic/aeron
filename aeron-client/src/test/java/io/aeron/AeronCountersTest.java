@@ -16,6 +16,7 @@
 package io.aeron;
 
 import org.agrona.collections.Int2ObjectHashMap;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -23,7 +24,9 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -68,5 +71,31 @@ class AeronCountersTest
         {
             fail("Duplicate typeIds: " + duplicates);
         }
+    }
+
+    @Test
+    @Disabled
+    void printLargestCounterId()
+    {
+        final ToIntFunction<Field> getValue = (field) ->
+        {
+            try
+            {
+                return (Integer)field.get(null);
+            }
+            catch (final IllegalAccessException e)
+            {
+                throw new RuntimeException(e);
+            }
+        };
+
+        final OptionalInt maxValue = Arrays.stream(AeronCounters.class.getFields())
+            .filter((f) -> Modifier.isStatic(f.getModifiers()))
+            .filter((f) -> f.getName().endsWith("_TYPE_ID"))
+            .filter((f) -> Integer.TYPE.isAssignableFrom(f.getType()))
+            .mapToInt(getValue)
+            .max();
+
+        System.out.println(maxValue);
     }
 }

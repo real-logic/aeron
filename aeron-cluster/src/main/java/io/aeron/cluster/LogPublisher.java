@@ -250,7 +250,11 @@ final class LogPublisher
         return result;
     }
 
-    boolean appendClusterAction(final long leadershipTermId, final long timestamp, final ClusterAction action)
+    boolean appendClusterAction(
+        final long leadershipTermId,
+        final long timestamp,
+        final ClusterAction action,
+        final int flags)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterActionRequestEncoder.BLOCK_LENGTH;
         final int fragmentLength = DataHeaderFlyweight.HEADER_LENGTH + length;
@@ -269,7 +273,8 @@ final class LogPublisher
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
                     .timestamp(timestamp)
-                    .action(action);
+                    .action(action)
+                    .flags(flags);
 
                 bufferClaim.commit();
                 return true;

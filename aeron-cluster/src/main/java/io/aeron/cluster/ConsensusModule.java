@@ -3549,7 +3549,41 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the {@link AuthorisationServiceSupplier} that will be used for the consensus module.
+         * <p>Set the {@link AuthorisationServiceSupplier} that will be used for the consensus module.</p>
+         *
+         * <p>When using an authorisation service for the ConsensusModule, then the following values for protocolId,
+         * actionId, and type should be considered.</p>
+         * <table summary="Parameters for authorisation service queries from the Consensus Module">
+         *     <thead>
+         *         <tr><td>Description</td><td>protocolId</td><td>actionId</td><td>type(s)</td></tr>
+         *     </thead>
+         *     <tbody>
+         *         <tr>
+         *             <td>Admin requests made through the client API</td>
+         *             <td>{@link MessageHeaderDecoder#SCHEMA_ID}</td>
+         *             <td>{@link io.aeron.cluster.codecs.AdminRequestDecoder#TEMPLATE_ID}</td>
+         *             <td>{@link io.aeron.cluster.codecs.AdminRequestType#SNAPSHOT}</td>
+         *         </tr>
+         *         <tr>
+         *             <td>Backup queries from Cluster Backup &amp; Standby</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.cluster.codecs.BackupQueryDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Heartbeat requests from Cluster Standby</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.cluster.codecs.HeartbeatRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Standby snapshot notifications from Cluster Standby</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.cluster.codecs.BackupQueryDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *     </tbody>
+         * </table>
          *
          * @param authorisationServiceSupplier {@link AuthorisationServiceSupplier} to use for the consensus module.
          * @return this for a fluent API.

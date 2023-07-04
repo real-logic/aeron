@@ -28,7 +28,7 @@ import java.util.Set;
  * Authorisation service that supports setting general and per-principal rules as well as scoping to protocol, action
  * and type. Uses a fluent API to add authorisation rules.
  */
-public class SimpleAuthorisationService implements AuthorisationService
+public final class SimpleAuthorisationService implements AuthorisationService
 {
     private final AuthorisationService defaultAuthorisation;
     private final Object2ObjectHashMap<ByteArrayAsKey, Principal> principalByKeyMap = new Object2ObjectHashMap<>();
@@ -108,6 +108,17 @@ public class SimpleAuthorisationService implements AuthorisationService
             return this;
         }
 
+        /**
+         * Add rule for a specific principal that is scope to a protocolId, actionId, and type.
+         *
+         * @param protocolId        <code>sbe:messageSchema@id</code> value that the rule applies to.
+         * @param actionId          <code>sbe:message@id</code> value that the rule applies to.
+         * @param type              a parameter of the message can be used to narrow the scope of the authorisation
+         *                          rule. This is message dependent.
+         * @param encodedPrincipal  The principal encoded as byte array.
+         * @param isAllowed         If the rule should allow or deny access.
+         * @return this for a fluent API.
+         */
         public Builder addPrincipalRule(
             final int protocolId,
             final int actionId,
@@ -126,6 +137,15 @@ public class SimpleAuthorisationService implements AuthorisationService
             return this;
         }
 
+        /**
+         * Add rule for a specific principal that is scope to a protocolId and actionId.
+         *
+         * @param protocolId        <code>sbe:messageSchema@id</code> value that the rule applies to.
+         * @param actionId          <code>sbe:message@id</code> value that the rule applies to.
+         * @param encodedPrincipal  The principal encoded as byte array.
+         * @param isAllowed         If the rule should allow or deny access.
+         * @return this for a fluent API.
+         */
         public Builder addPrincipalRule(
             final int protocolId,
             final int actionId,
@@ -139,6 +159,14 @@ public class SimpleAuthorisationService implements AuthorisationService
             return this;
         }
 
+        /**
+         * Add rule for a specific principal that is scope to a protocolId.
+         *
+         * @param protocolId        <code>sbe:messageSchema@id</code> value that the rule applies to.
+         * @param encodedPrincipal  The principal encoded as byte array.
+         * @param isAllowed         If the rule should allow or deny access.
+         * @return this for a fluent API.
+         */
         public Builder addPrincipalRule(
             final int protocolId,
             final byte[] encodedPrincipal,
@@ -151,23 +179,16 @@ public class SimpleAuthorisationService implements AuthorisationService
             return this;
         }
 
-        public SimpleAuthorisationService newInstance()
-        {
-            return new SimpleAuthorisationService(this);
-        }
-
-        public Builder addGeneralRule(final int protocolId, final boolean isAllowed)
-        {
-            defaultPrincipal.byProtocol.put(protocolId, (Boolean)isAllowed);
-            return this;
-        }
-
-        public Builder addGeneralRule(final int protocolId, final int actionId, final boolean isAllowed)
-        {
-            defaultPrincipal.byProtocolAction.put(protocolId, actionId, isAllowed);
-            return this;
-        }
-
+        /**
+         * Add rule for all principals that is scoped to a protocolId, actionId and type.
+         *
+         * @param protocolId        <code>sbe:messageSchema@id</code> value that the rule applies to.
+         * @param actionId          <code>sbe:message@id</code> value that the rule applies to.
+         * @param type              a parameter of the message can be used to narrow the scope of the authorisation
+         *                          rule. This is message dependent.
+         * @param isAllowed         If the rule should allow or deny access.
+         * @return this for a fluent API.
+         */
         public Builder addGeneralRule(
             final int protocolId,
             final int actionId,
@@ -179,6 +200,43 @@ public class SimpleAuthorisationService implements AuthorisationService
             byTypeMap.computeIfAbsent(protocolId, actionId, (a, b) -> new HashSet<>()).add(type);
 
             return this;
+        }
+
+        /**
+         * Add rule for all principals that is scoped to a protocolId and actionId.
+         *
+         * @param protocolId        <code>sbe:messageSchema@id</code> value that the rule applies to.
+         * @param actionId          <code>sbe:message@id</code> value that the rule applies to.
+        * @param isAllowed         If the rule should allow or deny access.
+         * @return this for a fluent API.
+         */
+        public Builder addGeneralRule(final int protocolId, final int actionId, final boolean isAllowed)
+        {
+            defaultPrincipal.byProtocolAction.put(protocolId, actionId, isAllowed);
+            return this;
+        }
+
+        /**
+         * Add rule for all principals that is scoped to a protocolId.
+         *
+         * @param protocolId        <code>sbe:messageSchema@id</code> value that the rule applies to.
+         * @param isAllowed         If the rule should allow or deny access.
+         * @return this for a fluent API.
+         */
+        public Builder addGeneralRule(final int protocolId, final boolean isAllowed)
+        {
+            defaultPrincipal.byProtocol.put(protocolId, (Boolean)isAllowed);
+            return this;
+        }
+
+        /**
+         * Create and instance of the SimpleAuthorisationService.
+         *
+         * @return new SimpleAuthorisationService.
+         */
+        public SimpleAuthorisationService newInstance()
+        {
+            return new SimpleAuthorisationService(this);
         }
     }
 

@@ -21,7 +21,11 @@ import org.agrona.collections.Object2ObjectHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class SimpleAuthenticator implements Authenticator
+/**
+ * An authenticator that works off a simple principal/credential pair constructed by a builder. It only supports simple
+ * authentication, but not challenge/response.
+ */
+public final class SimpleAuthenticator implements Authenticator
 {
     private final Object2ObjectHashMap<Credentials, Principal> principalsByCredentialsMap =
         new Object2ObjectHashMap<>();
@@ -102,9 +106,9 @@ public class SimpleAuthenticator implements Authenticator
          *     .newInstance();
          * </pre>
          *
-         * @param encodedPrincipal
-         * @param encodedCredentials
-         * @return
+         * @param encodedPrincipal      principal encoded as a byte array.
+         * @param encodedCredentials    credentials encoded as a byte array.
+         * @return this for a fluent API.
          */
         public Builder principal(final byte[] encodedPrincipal, final byte[] encodedCredentials)
         {

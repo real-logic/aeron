@@ -17,11 +17,9 @@ package io.aeron.security;
 
 import io.aeron.archive.codecs.MessageHeaderDecoder;
 import io.aeron.archive.codecs.ReplicateRequest2Decoder;
-import io.aeron.archive.codecs.StartPositionRequestDecoder;
 import io.aeron.archive.codecs.StartRecordingRequestDecoder;
 import io.aeron.archive.codecs.TruncateRecordingRequestDecoder;
 import io.aeron.cluster.codecs.BackupQueryDecoder;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 

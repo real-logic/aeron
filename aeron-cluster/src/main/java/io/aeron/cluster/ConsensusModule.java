@@ -1475,6 +1475,10 @@ public final class ConsensusModule implements AutoCloseable
             {
                 clusterDir = new File(clusterDirectoryName);
             }
+            else
+            {
+                clusterDirectoryName = clusterDir.getPath();
+            }
 
             if (null == clusterMembers)
             {

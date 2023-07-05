@@ -19,10 +19,12 @@ import io.aeron.Aeron;
 import io.aeron.RethrowingErrorHandler;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -32,9 +34,10 @@ class ClusterBackupContextTest
 {
     @TempDir
     private File clusterDir;
+    private ClusterBackup.Context context;
 
-    @Test
-    void throwsIllegalStateExceptionIfThereIsAnActiveMarkFile()
+    @BeforeEach
+    void setUp()
     {
         final RethrowingErrorHandler errorHandler = mock(RethrowingErrorHandler.class);
         final Aeron.Context aeronContext = mock(Aeron.Context.class);
@@ -45,12 +48,17 @@ class ClusterBackupContextTest
         when(aeron.context()).thenReturn(aeronContext);
         when(aeron.conductorAgentInvoker()).thenReturn(conductorAgentInvoker);
         final AtomicCounter errorCounter = mock(AtomicCounter.class);
-        final ClusterBackup.Context context = new ClusterBackup.Context()
+        context = new ClusterBackup.Context()
             .aeron(aeron)
             .errorCounter(errorCounter)
             .errorHandler(errorHandler)
             .clusterDir(clusterDir)
             .catchupEndpoint("something");
+    }
+
+    @Test
+    void throwsIllegalStateExceptionIfThereIsAnActiveMarkFile()
+    {
         final ClusterBackup.Context other = context.clone();
 
         try
@@ -66,5 +74,26 @@ class ClusterBackupContextTest
         {
             context.close();
         }
+    }
+
+    @Test
+    void clusterDirectoryNameShouldMatchClusterDirWhenClusterDirSet() throws IOException
+    {
+        context.clusterDir(clusterDir);
+        context.conclude();
+
+        assertEquals(
+            new File(context.clusterDirectoryName()).getCanonicalPath(), context.clusterDir().getCanonicalPath());
+    }
+
+    @Test
+    void clusterDirectoryNameShouldMatchClusterDirWhenClusterDirectoryNameSet() throws IOException
+    {
+        context.clusterDir(null);
+        context.clusterDirectoryName(clusterDir.getAbsolutePath());
+        context.conclude();
+
+        assertEquals(
+            new File(context.clusterDirectoryName()).getCanonicalPath(), context.clusterDir().getCanonicalPath());
     }
 }

@@ -51,6 +51,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
@@ -495,6 +496,27 @@ class ConsensusModuleContextTest
         assertSame(context.aeron().countersReader(), readerCaptor.getValue());
         assertNotNull(providerCaptor.getValue());
         verifyNoMoreInteractions(nameResolver);
+    }
+
+    @Test
+    void clusterDirectoryNameShouldMatchClusterDirWhenClusterDirSet() throws IOException
+    {
+        context.clusterDir(clusterDir);
+        context.conclude();
+
+        assertEquals(
+            new File(context.clusterDirectoryName()).getCanonicalPath(), context.clusterDir().getCanonicalPath());
+    }
+
+    @Test
+    void clusterDirectoryNameShouldMatchClusterDirWhenClusterDirectoryNameSet() throws IOException
+    {
+        context.clusterDir(null);
+        context.clusterDirectoryName(clusterDir.getAbsolutePath());
+        context.conclude();
+
+        assertEquals(
+            new File(context.clusterDirectoryName()).getCanonicalPath(), context.clusterDir().getCanonicalPath());
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

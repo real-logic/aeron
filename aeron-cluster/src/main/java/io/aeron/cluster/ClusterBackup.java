@@ -581,6 +581,10 @@ public final class ClusterBackup implements AutoCloseable
             {
                 clusterDir = new File(clusterDirectoryName);
             }
+            else
+            {
+                clusterDirectoryName = clusterDir.getPath();
+            }
 
             if (deleteDirOnStart)
             {

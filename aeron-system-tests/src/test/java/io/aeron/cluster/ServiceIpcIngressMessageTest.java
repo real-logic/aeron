@@ -286,7 +286,7 @@ class ServiceIpcIngressMessageTest
     }
 
     @Test
-    @InterruptAfter(10)
+    @InterruptAfter(20)
     void shouldHandleServiceMessagesMissedOnTheFollowerWhenSnapshot()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();

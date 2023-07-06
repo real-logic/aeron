@@ -21,7 +21,6 @@ import io.aeron.exceptions.AeronException;
 import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 
@@ -69,11 +68,7 @@ public class ClusterTests
                     {
                         hasTerminated.set(true);
                     }
-
-                    throw new ClusterTerminationException();
                 }
-
-                throw new AgentTerminationException();
             };
     }
 

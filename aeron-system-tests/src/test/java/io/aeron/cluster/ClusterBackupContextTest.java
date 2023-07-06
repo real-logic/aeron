@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.RethrowingErrorHandler;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -56,24 +57,23 @@ class ClusterBackupContextTest
             .catchupEndpoint("something");
     }
 
+    @AfterEach
+    void tearDown()
+    {
+        context.close();
+    }
+
     @Test
     void throwsIllegalStateExceptionIfThereIsAnActiveMarkFile()
     {
         final ClusterBackup.Context other = context.clone();
 
-        try
-        {
-            context.conclude();
+        context.conclude();
 
-            final RuntimeException exception = assertThrowsExactly(RuntimeException.class, other::conclude);
-            final Throwable cause = exception.getCause();
-            assertInstanceOf(IllegalStateException.class, cause);
-            assertEquals("active Mark file detected", cause.getMessage());
-        }
-        finally
-        {
-            context.close();
-        }
+        final RuntimeException exception = assertThrowsExactly(RuntimeException.class, other::conclude);
+        final Throwable cause = exception.getCause();
+        assertInstanceOf(IllegalStateException.class, cause);
+        assertEquals("active Mark file detected", cause.getMessage());
     }
 
     @Test

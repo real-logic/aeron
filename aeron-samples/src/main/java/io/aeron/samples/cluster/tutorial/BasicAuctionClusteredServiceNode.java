@@ -62,7 +62,6 @@ public class BasicAuctionClusteredServiceNode
     private static final int LOG_PORT_OFFSET = 4;
     private static final int TRANSFER_PORT_OFFSET = 5;
     private static final int LOG_CONTROL_PORT_OFFSET = 6;
-    private static final int REPLICATION_PORT_OFFSET = 7;
     private static final int TERM_LENGTH = 64 * 1024;
 
     static int calculatePort(final int nodeId, final int offset)
@@ -178,7 +177,7 @@ public class BasicAuctionClusteredServiceNode
             .errorHandler(errorHandler("Consensus Module"))
             .clusterMemberId(nodeId)                                                                     // <1>
             .clusterMembers(clusterMembers(Arrays.asList(hostnames)))                                    // <2>
-            .clusterDir(new File(baseDir, "cluster"))                                               // <3>
+            .clusterDir(new File(baseDir, "cluster"))                                                   // <3>
             .ingressChannel("aeron:udp?term-length=64k")                                                 // <4>
             .logChannel(logControlChannel(nodeId, hostname, LOG_CONTROL_PORT_OFFSET))                    // <5>
             .replicationChannel(logReplicationChannel(hostname))                                         // <6>

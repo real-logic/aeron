@@ -266,15 +266,15 @@ detected from the stored messages. The two approaches can be used to sanity chec
 include::{sampleSourceDir}/io/aeron/samples/cluster/tutorial/BasicAuctionClusteredService.java[tag=loadSnapshot]
 ----
 
-<1> The method `Image::isEndOfStream` can be used to determine if there is going to be any more input.
-
-<2> Because our snapshot is a stream of messages written to a `Publication`, we use the `Image.poll` method for
+<1> Our snapshot is a stream of messages written to a `Publication`, we then use the `Image::poll` method for
 extracting data from the snapshot.
 
-<3> Our total snapshot length (16 bytes) is going to be smaller than any reasonable MTU therefore we can assume that all
-the data will come in a single message.
+<2> Our total snapshot length (16 bytes) is going to be smaller than any reasonable MTU therefore we can assume that all
+the data will come in a single message fragment.
 
-<4> Once all data is loaded, we can initialise the application logic state from the snapshot.
+<3> Once all data is loaded, we can initialise the application logic state from the snapshot.
+
+<4> The method `Image::isEndOfStream` can be used to determine if there is going to be any more input.
 
 <5> Once we've loaded all the data for the application we can break out of the snapshot loading loop.
 
@@ -295,12 +295,12 @@ and disconnecting from the cluster, plus leadership and role changes. We won't l
 Now we have our application implemented we can move onto running it in a Cluster. There are a number of moving parts to
 setting up a cluster node, one of the trickiest parts of using Aeron Cluster is getting the configuration correct. We
 are going to start with a static three-node cluster with a simplified configuration where all the components
-(`MediaDriver`, `Archive`, `ConsensusModule` and `ClusteredServiceContainer`) for a single node within a single process.
-Later we will then start the cluster as three separate processes.
+(`MediaDriver`, `Archive`, `ConsensusModule`, and `ClusteredServiceContainer`) for a single node within a single
+process. Later we will then start the cluster as three separate processes.
 
 === Running Multiple Nodes on the Same Host
 
-In a production deployment, you will want to run the 3 instances on three separate servers, however for our example we
+In a production deployment, you will want to run the 3 instances on 3 separate servers, however for our example we
 want to run the services on a single machine. This does make port allocation a concern as each node within the cluster
 needs to bind to a number of ports, so we need to make sure are no clashes. We could do this with VMs or containers,
 but in the interest of simplicity we are going to specify a port range for each node. For example:

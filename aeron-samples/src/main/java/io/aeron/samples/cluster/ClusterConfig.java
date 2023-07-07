@@ -459,8 +459,7 @@ public final class ClusterConfig
         {
             final int memberId = i + startingMemberId;
             sb.append(memberId).append('=');
-            sb.append(hostnames.get(i)).append(':').append(
-                calculatePort(memberId, portBase, clientFacingPortOffset));
+            sb.append(hostnames.get(i)).append(':').append(calculatePort(memberId, portBase, clientFacingPortOffset));
             sb.append(',');
         }
 

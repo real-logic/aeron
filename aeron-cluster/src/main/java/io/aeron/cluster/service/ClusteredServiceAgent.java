@@ -220,15 +220,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
                 }
             }
 
-            try
-            {
-                isBackgroundInvocation = true;
-                workCount += service.doBackgroundWork(nowNs);
-            }
-            finally
-            {
-                isBackgroundInvocation = false;
-            }
+            workCount += invokeBackgroundWork(nowNs);
         }
         catch (final AgentTerminationException ex)
         {
@@ -1186,6 +1178,19 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
             commitPosition.registrationId() == registrationId)
         {
             commitPosition.close();
+        }
+    }
+
+    private int invokeBackgroundWork(final long nowNs)
+    {
+        try
+        {
+            isBackgroundInvocation = true;
+            return service.doBackgroundWork(nowNs);
+        }
+        finally
+        {
+            isBackgroundInvocation = false;
         }
     }
 

@@ -204,28 +204,38 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
             aeron_cnc_resolve_filename(dirname, filename, sizeof(filename));
             if (aeron_map_existing_file(&cnc_mmap, filename) < 0)
             {
-                snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file: %s", filename);
+                if (ENOENT == errno)
+                {
+                    aeron_err_clear();
+                }
+                else
+                {
+                    snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file: %s", filename);
+                    log_func(buffer);
+                    return -1;
+                }
+            }
+            else
+            {
+                snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s exists", filename);
                 log_func(buffer);
-                return -1;
-            }
 
-            snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s exists", filename);
-            log_func(buffer);
+                if (aeron_is_driver_active_with_cnc(
+                    &cnc_mmap, (int64_t)context->driver_timeout_ms, aeron_epoch_clock(), log_func))
+                {
+                    aeron_unmap(&cnc_mmap);
+                    return -1;
+                }
 
-            if (aeron_is_driver_active_with_cnc(
-                &cnc_mmap, (int64_t)context->driver_timeout_ms, aeron_epoch_clock(), log_func))
-            {
+                if (aeron_report_existing_errors(&cnc_mmap, dirname) < 0)
+                {
+                    aeron_unmap(&cnc_mmap);
+                    return -1;
+                }
+
                 aeron_unmap(&cnc_mmap);
-                return -1;
             }
 
-            if (aeron_report_existing_errors(&cnc_mmap, dirname) < 0)
-            {
-                aeron_unmap(&cnc_mmap);
-                return -1;
-            }
-
-            aeron_unmap(&cnc_mmap);
             if (aeron_delete_directory(context->aeron_dir) != 0)
             {
                 snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to delete %s", context->aeron_dir);

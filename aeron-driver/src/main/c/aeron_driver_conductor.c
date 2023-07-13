@@ -658,10 +658,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     char host_name[AERON_MAX_HOSTNAME_LEN];
     if (gethostname(host_name, AERON_MAX_HOSTNAME_LEN) < 0)
     {
-        char *fallback_host_name = "<unresolved>";
-        size_t fallback_host_name_length = strlen(fallback_host_name);
-        strncpy(host_name, fallback_host_name, fallback_host_name_length);
-        host_name[fallback_host_name_length] = '\0';
+        strcpy(host_name, "<unresolved>");
     }
 
     int64_t end_ns = context->nano_clock();

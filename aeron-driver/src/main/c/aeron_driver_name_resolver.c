@@ -176,35 +176,17 @@ int aeron_driver_name_resolver_init(
     const char *bootstrap_neighbor)
 {
     aeron_driver_name_resolver_t *_driver_resolver = NULL;
-    char *local_hostname = NULL;
 
+    const char *resolver_name = NULL != name ? name : context->name_resolver_host_name;
     if (aeron_alloc((void **)&_driver_resolver, sizeof(aeron_driver_name_resolver_t)) < 0)
     {
-        AERON_APPEND_ERR("Failed to allocate driver resolver for: %s", name);
+        AERON_APPEND_ERR("Failed to allocate driver resolver for: %s", resolver_name);
         goto error_cleanup;
     }
     _driver_resolver->saved_bootstrap_neighbor = NULL;
     _driver_resolver->bootstrap_neighbors = NULL;
-
     _driver_resolver->aligned_buffer = aeron_cache_line_align_buffer(_driver_resolver->buffer);
-
-    _driver_resolver->name = name;
-    if (NULL == _driver_resolver->name)
-    {
-        if (aeron_alloc((void **)&local_hostname, AERON_MAX_HOSTNAME_LEN) < 0)
-        {
-            AERON_APPEND_ERR("Failed to allocate local_hostname for: %s", name);
-            goto error_cleanup;
-        }
-
-        if (gethostname(local_hostname, AERON_MAX_HOSTNAME_LEN) < 0)
-        {
-            AERON_SET_ERR(errno, "Failed to lookup: %s", local_hostname);
-            goto error_cleanup;
-        }
-
-        _driver_resolver->name = local_hostname;
-    }
+    _driver_resolver->name = resolver_name;
     _driver_resolver->name_length = strlen(_driver_resolver->name);
 
     if (aeron_find_unicast_interface(
@@ -303,7 +285,7 @@ int aeron_driver_name_resolver_init(
     {
         AERON_APPEND_ERR(
             "resolver, name=%s interface_name=%s bootstrap_neighbor=%s",
-            name,
+            _driver_resolver->name,
             interface_name,
             bootstrap_neighbor);
         goto error_cleanup;
@@ -384,7 +366,6 @@ error_cleanup:
     aeron_name_resolver_cache_close(&_driver_resolver->cache);
     aeron_free(_driver_resolver->saved_bootstrap_neighbor);
     aeron_free(_driver_resolver->bootstrap_neighbors);
-    aeron_free((void *)local_hostname);
     aeron_free((void *)_driver_resolver);
 
     return -1;

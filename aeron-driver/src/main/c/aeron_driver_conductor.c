@@ -653,6 +653,25 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     context->name_resolver_time_stall_tracker.cycle_time_threshold_exceeded_counter = aeron_counters_manager_addr(
         &conductor->counters_manager, AERON_SYSTEM_COUNTER_NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED);
 
+    context->name_resolver_time_tracker->update(context->name_resolver_time_tracker->state, now_ns);
+
+    char host_name[AERON_MAX_HOSTNAME_LEN];
+    if (gethostname(host_name, AERON_MAX_HOSTNAME_LEN) < 0)
+    {
+        char *fallback_host_name = "<unresolved>";
+        size_t fallback_host_name_length = strlen(fallback_host_name);
+        strncpy(host_name, fallback_host_name, fallback_host_name_length);
+        host_name[fallback_host_name_length] = '\0';
+    }
+
+    int64_t end_ns = context->nano_clock();
+    context->name_resolver_time_tracker->measure_and_update(context->name_resolver_time_tracker->state, end_ns);
+    if (NULL != context->on_host_name_func)
+    {
+        context->on_host_name_func(end_ns - now_ns, host_name);
+    }
+    context->name_resolver_host_name = host_name;
+
     aeron_time_tracking_name_resolver_t *time_tracking_name_resolver = NULL;
     if (aeron_alloc((void **)&time_tracking_name_resolver, sizeof(aeron_time_tracking_name_resolver_t)) < 0)
     {
@@ -675,16 +694,10 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->name_resolver.close_func = aeron_time_tracking_name_resolver_close;
     conductor->name_resolver.state = time_tracking_name_resolver;
 
-    char local_hostname[AERON_MAX_HOSTNAME_LEN];
-    if (gethostname(local_hostname, AERON_MAX_HOSTNAME_LEN) < 0)
-    {
-        local_hostname[0] = '\0';
-    }
-
     char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
     const char *driver_name = NULL == context->resolver_name ? "" : context->resolver_name;
 
-    int label_length = snprintf(label, sizeof(label), ": driverName=%s hostname=%s", driver_name, local_hostname);
+    int label_length = snprintf(label, sizeof(label), ": driverName=%s hostname=%s", driver_name, host_name);
     if (label_length > 0)
     {
         aeron_counters_manager_append_to_label(

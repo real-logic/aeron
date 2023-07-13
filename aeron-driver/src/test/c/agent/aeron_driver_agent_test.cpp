@@ -1519,18 +1519,25 @@ TEST_F(DriverAgentTest, dissecLogHeaderShouldFormatNanoTimeWithMicrosecondPrecis
     ASSERT_EQ("[333000555.000999] DRIVER: CMD_IN_CLIENT_CLOSE [100/200]", result);
 }
 
-TEST_F(DriverAgentTest, shouldNotAssignFlowControlOnNameResolveFunctionWhenNotConfigured)
+TEST_F(DriverAgentTest, shouldNotAssignOnNameResolveFunctionWhenNotConfigured)
 {
     aeron_driver_agent_init_logging_events_interceptors(m_context);
 
     EXPECT_EQ(nullptr, m_context->on_name_resolve_func);
 }
 
-TEST_F(DriverAgentTest, shouldNotAssignFlowControlOnNameLookupFunctionWhenNotConfigured)
+TEST_F(DriverAgentTest, shouldNotAssignOnNameLookupFunctionWhenNotConfigured)
 {
     aeron_driver_agent_init_logging_events_interceptors(m_context);
 
     EXPECT_EQ(nullptr, m_context->on_name_lookup_func);
+}
+
+TEST_F(DriverAgentTest, shouldNotHostNameFunctionWhenNotConfigured)
+{
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_EQ(nullptr, m_context->on_host_name_func);
 }
 
 TEST_F(DriverAgentTest, shouldInitializeOnNameResolveFunction)
@@ -1555,10 +1562,11 @@ TEST_F(DriverAgentTest, shouldInitializeOnNameLookupFunction)
 
 TEST_F(DriverAgentTest, shouldInitializeNameResolverFunctions)
 {
-    EXPECT_TRUE(aeron_driver_agent_logging_events_init("NAME_RESOLUTION_LOOKUP,NAME_RESOLUTION_RESOLVE", nullptr));
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("NAME_RESOLUTION_LOOKUP,NAME_RESOLUTION_RESOLVE,NAME_RESOLUTION_HOST_NAME", nullptr));
     aeron_driver_agent_init_logging_events_interceptors(m_context);
 
     EXPECT_NE(nullptr, m_context->on_name_resolve_func);
     EXPECT_NE(nullptr, m_context->on_name_lookup_func);
+    EXPECT_NE(nullptr, m_context->on_host_name_func);
     EXPECT_NE((void *)m_context->on_name_resolve_func, (void *)m_context->on_name_lookup_func);
 }

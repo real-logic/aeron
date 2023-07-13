@@ -94,6 +94,10 @@ typedef void (*aeron_driver_name_resolver_on_lookup_t)(
     bool is_re_lookup,
     const char *resolved_name);
 
+typedef void (*aeron_driver_name_resolver_on_host_name_t)(
+    int64_t duration_ns,
+    const char *host_name);
+
 typedef struct aeron_driver_context_stct
 {
     char *aeron_dir;                                        /* aeron.dir */
@@ -274,11 +278,13 @@ typedef struct aeron_driver_context_stct
     const char *resolver_name;
     const char *resolver_interface;
     const char *resolver_bootstrap_neighbor;
+    const char *name_resolver_init_args;
+    const char *name_resolver_host_name;
     aeron_name_resolver_supplier_func_t name_resolver_supplier_func;
     aeron_name_resolver_supplier_func_t driver_name_resolver_bootstrap_resolver_supplier_func;
-    const char *name_resolver_init_args;
     aeron_driver_name_resolver_on_resolve_t on_name_resolve_func;
     aeron_driver_name_resolver_on_lookup_t on_name_lookup_func;
+    aeron_driver_name_resolver_on_host_name_t on_host_name_func;
 
     aeron_duty_cycle_tracker_t *conductor_duty_cycle_tracker;
     aeron_duty_cycle_tracker_t *sender_duty_cycle_tracker;

@@ -732,6 +732,23 @@ class DriverEventDissectorTest
             "resolver=xyz durationNs=32167 name=localhost:7777 isReLookup=false resolvedName=test:1234"));
     }
 
+    @Test
+    void dissectHostName()
+    {
+        final int offset = 8;
+        final long durationNs = 32167;
+        final String hostName = "some.funky.host.name";
+
+        final int length = SIZE_OF_LONG + trailingStringLength(hostName, MAX_HOST_NAME_LENGTH);
+
+        DriverEventEncoder.encodeHostName(buffer, offset, length, length, durationNs, hostName);
+        final StringBuilder builder = new StringBuilder();
+        DriverEventDissector.dissectHostName(buffer, offset, builder);
+
+        assertThat(builder.toString(), endsWith(
+            "DRIVER: NAME_RESOLUTION_HOST_NAME [32/32]: durationNs=32167 hostName=some.funky.host.name"));
+    }
+
     private DirectBuffer newBuffer(final byte[] bytes)
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(allocate(bytes.length));

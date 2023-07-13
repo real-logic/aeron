@@ -386,8 +386,8 @@ public final class DriverEventLogger
      * @param resolverName simple class name of the resolver
      * @param durationNs   of the call in nanoseconds.
      * @param name         host name being resolved
-     * @param isReLookup      address that was resolved to, can be null
-     * @param resolvedName      address that was resolved to, can be null
+     * @param isReLookup   address that was resolved to, can be null
+     * @param resolvedName address that was resolved to, can be null
      */
     public void logLookup(
         final String resolverName,
@@ -418,6 +418,39 @@ public final class DriverEventLogger
                     name,
                     isReLookup,
                     resolvedName);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log a host name resolution duration.
+     *
+     * @param durationNs of the call in nanoseconds.
+     * @param hostName   host name being resolved.
+     */
+    public void logHostName(final long durationNs, final String hostName)
+    {
+        final int length = SIZE_OF_LONG + trailingStringLength(hostName, MAX_HOST_NAME_LENGTH);
+
+        final int encodedLength = encodedLength(length);
+
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(toEventCodeId(NAME_RESOLUTION_HOST_NAME), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encodeHostName(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    length,
+                    length,
+                    durationNs,
+                    hostName);
             }
             finally
             {

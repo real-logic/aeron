@@ -153,19 +153,6 @@ public final class DriverConductor implements Agent
      */
     public void onStart()
     {
-        nameResolver = new TimeTrackingNameResolver(
-            null == ctx.resolverInterface() ? ctx.nameResolver() : new DriverNameResolver(ctx),
-            ctx.nanoClock(),
-            ctx.nameResolverTimeTracker());
-
-        ctx.systemCounters().get(RESOLUTION_CHANGES).appendToLabel(
-            ": driverName=" + ctx.resolverName() +
-            " hostname=" + DriverNameResolver.getCanonicalName("<unresolved>"));
-
-        ctx.systemCounters().get(CONDUCTOR_MAX_CYCLE_TIME).appendToLabel(": " + ctx.threadingMode().name());
-        ctx.systemCounters().get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED).appendToLabel(
-            ": threshold=" + ctx.conductorCycleThresholdNs() + "ns " + ctx.threadingMode().name());
-
         final long nowNs = nanoClock.nanoTime();
         cachedNanoClock.update(nowNs);
         cachedEpochClock.update(epochClock.time());
@@ -173,6 +160,28 @@ public final class DriverConductor implements Agent
         timerCheckDeadlineNs = nowNs + timerIntervalNs;
         clockUpdateDeadlineNs = nowNs + CLOCK_UPDATE_INTERNAL_NS;
         timeOfLastToDriverPositionChangeNs = nowNs;
+
+        final DutyCycleTracker nameResolverTimeTracker = ctx.nameResolverTimeTracker();
+        nameResolverTimeTracker.update(nowNs);
+
+        final String hostName = DriverNameResolver.getHostName();
+
+        final long endNs = nanoClock.nanoTime();
+        nameResolverTimeTracker.measureAndUpdate(endNs);
+        TimeTrackingNameResolver.logHostName(endNs - nowNs, hostName);
+
+        nameResolver = new TimeTrackingNameResolver(
+            null == ctx.resolverInterface() ? ctx.nameResolver() : new DriverNameResolver(ctx, hostName),
+            nanoClock,
+            nameResolverTimeTracker);
+
+        ctx.systemCounters().get(RESOLUTION_CHANGES).appendToLabel(
+            ": driverName=" + ctx.resolverName() +
+            " hostname=" + (null != hostName ? hostName : "<unresolved>"));
+
+        ctx.systemCounters().get(CONDUCTOR_MAX_CYCLE_TIME).appendToLabel(": " + ctx.threadingMode().name());
+        ctx.systemCounters().get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED).appendToLabel(
+            ": threshold=" + ctx.conductorCycleThresholdNs() + "ns " + ctx.threadingMode().name());
     }
 
     /**

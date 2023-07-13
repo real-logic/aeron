@@ -33,7 +33,8 @@ import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventEncoder.untetheredSubscriptionStateChangeLength;
-import static io.aeron.agent.DriverEventLogger.*;
+import static io.aeron.agent.DriverEventLogger.MAX_HOST_NAME_LENGTH;
+import static io.aeron.agent.DriverEventLogger.toEventCodeId;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static io.aeron.test.Tests.generateStringWithSuffix;
 import static java.nio.ByteBuffer.allocate;
@@ -279,7 +280,7 @@ class DriverEventLoggerTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @ValueSource(booleans = { false, true })
     void logResolve(final boolean isReResolution) throws UnknownHostException
     {
         final int recordOffset = 64;
@@ -323,7 +324,7 @@ class DriverEventLoggerTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @ValueSource(booleans = { false, true })
     void logLookup(final boolean isReLookup)
     {
         final int recordOffset = 30;
@@ -358,5 +359,30 @@ class DriverEventLoggerTest
         index += SIZE_OF_INT + name.length();
 
         assertEquals(resolvedName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+    }
+
+    @Test
+    void logHost()
+    {
+        final int recordOffset = 64;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+
+        final long durationNs = TimeUnit.DAYS.toNanos(1);
+        final String hostName = generateStringWithSuffix("host-name", "e", 1000);
+        final String expectedHostName = hostName.substring(0, MAX_HOST_NAME_LENGTH - 3) + "...";
+        final int captureLength = SIZE_OF_LONG +
+            trailingStringLength(hostName, MAX_HOST_NAME_LENGTH);
+
+        logger.logHostName(durationNs, hostName);
+
+        verifyLogHeader(
+            logBuffer, recordOffset, toEventCodeId(NAME_RESOLUTION_HOST_NAME), captureLength, captureLength);
+
+        int index = encodedMsgOffset(recordOffset) + LOG_HEADER_LENGTH;
+
+        assertEquals(durationNs, logBuffer.getLong(index, LITTLE_ENDIAN));
+        index += SIZE_OF_LONG;
+
+        assertEquals(expectedHostName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
     }
 }

@@ -466,14 +466,16 @@ class NameReResolutionTest
     @Test
     void shouldTrackNameResolutionTime()
     {
-        assertEquals(0, countersReader.getCounterValue(NAME_RESOLVER_MAX_TIME.id()));
-        assertEquals(0, countersReader.getCounterValue(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED.id()));
+        final long maxTimeNs = countersReader.getCounterValue(NAME_RESOLVER_MAX_TIME.id());
+        final long thresholdCounter = countersReader.getCounterValue(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED.id());
+        assertNotEquals(0, maxTimeNs);
+        assertNotEquals(0, thresholdCounter);
 
         publication = client.addPublication(PUBLICATION_URI, STREAM_ID);
         publication.close();
 
         assertNotEquals(0, countersReader.getCounterValue(NAME_RESOLVER_MAX_TIME.id()));
-        assertNotEquals(0, countersReader.getCounterValue(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED.id()));
+        assertNotEquals(thresholdCounter, countersReader.getCounterValue(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED.id()));
     }
 
     private static void assumeBindAddressAvailable(final String address)

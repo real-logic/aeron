@@ -255,6 +255,13 @@ public class DriverComponentLogger implements ComponentLogger
             DriverInterceptor.NameResolution.Lookup.class,
             "logLookup");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            NAME_RESOLUTION_HOST_NAME,
+            "TimeTrackingNameResolver",
+            DriverInterceptor.NameResolution.HostName.class,
+            "logHostName");
+
         return tempBuilder;
     }
 

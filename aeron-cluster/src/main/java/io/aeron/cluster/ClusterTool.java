@@ -57,6 +57,7 @@ import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.StandardCopyOption.*;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -1305,7 +1306,9 @@ public class ClusterTool
 
     static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
     {
-        return new ClusterMarkFile(clusterDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
+        final File markFileDir = resolveMarkFileDir(clusterDir);
+        return new ClusterMarkFile(
+            markFileDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
     }
 
     private static ClusterMarkFile[] openServiceMarkFiles(final File clusterDir, final Consumer<String> logger)
@@ -1435,6 +1438,31 @@ public class ClusterTool
         {
             throw new UncheckedIOException(ex);
         }
+    }
+
+    private static File resolveMarkFileDir(final File clusterDir)
+    {
+        final File linkFile = new File(clusterDir, ClusterMarkFile.LINK_FILENAME);
+        final File markFileDir;
+        if (linkFile.exists())
+        {
+            try
+            {
+                final byte[] bytes = Files.readAllBytes(linkFile.toPath());
+                final String markFileDirPath = new String(bytes, US_ASCII).trim();
+                markFileDir = new File(markFileDirPath);
+            }
+            catch (final IOException ex)
+            {
+                throw new RuntimeException("failed to read link file=" + linkFile, ex);
+            }
+        }
+        else
+        {
+            markFileDir = clusterDir;
+        }
+
+        return markFileDir;
     }
 
     static void exitWithErrorOnFailure(final boolean success)

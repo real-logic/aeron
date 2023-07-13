@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.BackupQueryDecoder;
@@ -1329,6 +1330,16 @@ public final class ConsensusModule implements AutoCloseable
         {
             return Boolean.getBoolean(CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME);
         }
+
+        /**
+         * Get the alternative directory to be used for storing the archive mark file.
+         *
+         * @return the directory to be used for storing the archive mark file.
+         */
+        public static String markFileDir()
+        {
+            return System.getProperty(MARK_FILE_DIR_PROP_NAME);
+        }
     }
 
     /**
@@ -1353,6 +1364,7 @@ public final class ConsensusModule implements AutoCloseable
         private boolean deleteDirOnStart = false;
         private String clusterDirectoryName = ClusteredServiceContainer.Configuration.clusterDirName();
         private File clusterDir;
+        private File markFileDir;
         private RecordingLog recordingLog;
         private ClusterMarkFile markFile;
         private NodeStateFile nodeStateFile;
@@ -1495,6 +1507,17 @@ public final class ConsensusModule implements AutoCloseable
                 throw new ClusterException("failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
 
+            if (null == markFileDir)
+            {
+                final String dir = Configuration.markFileDir();
+                markFileDir = Strings.isEmpty(dir) ? clusterDir : new File(dir);
+            }
+
+            if (!markFileDir.exists() && !markFileDir.mkdirs())
+            {
+                throw new ArchiveException("failed to create mark file dir: " + markFileDir.getAbsolutePath());
+            }
+
             if (startupCanvassTimeoutNs / leaderHeartbeatTimeoutNs < 2)
             {
                 throw new ClusterException("startupCanvassTimeoutNs=" + startupCanvassTimeoutNs +
@@ -1524,12 +1547,17 @@ public final class ConsensusModule implements AutoCloseable
             if (null == markFile)
             {
                 markFile = new ClusterMarkFile(
-                    new File(clusterDir, ClusterMarkFile.FILENAME),
+                    new File(markFileDir, ClusterMarkFile.FILENAME),
                     ClusterComponentType.CONSENSUS_MODULE,
                     errorBufferLength,
                     epochClock,
                     LIVENESS_TIMEOUT_MS);
             }
+
+            MarkFile.ensureMarkFileLink(
+                clusterDir,
+                new File(markFileDir, ClusterMarkFile.FILENAME),
+                ClusterMarkFile.LINK_FILENAME);
 
             if (null == nodeStateFile)
             {
@@ -1872,6 +1900,32 @@ public final class ConsensusModule implements AutoCloseable
         public File clusterDir()
         {
             return clusterDir;
+        }
+
+        /**
+         * Get the directory in which the ConsensusModule will store mark file (i.e. {@code cluster-mark.dat}). It
+         * defaults to {@link #clusterDir()} if it is not set explicitly via the
+         * {@link ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME}.
+         *
+         * @return the directory in which the Archive will store mark file (i.e. {@code cluster-mark.dat}).
+         * @see ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME
+         * @see #clusterDir()
+         */
+        public File markFileDir()
+        {
+            return markFileDir;
+        }
+
+        /**
+         * Set the directory in which the Archive will store mark file (i.e. {@code cluster-mark.dat}).
+         *
+         * @param markFileDir the directory in which the Archive will store mark file (i.e. {@code cluster-mark.dat}).
+         * @return this for a fluent API.
+         */
+        public ConsensusModule.Context markFileDir(final File markFileDir)
+        {
+            this.markFileDir = markFileDir;
+            return this;
         }
 
         /**

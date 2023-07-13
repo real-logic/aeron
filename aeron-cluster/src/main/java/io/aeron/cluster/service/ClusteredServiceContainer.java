@@ -17,7 +17,9 @@ package io.aeron.cluster.service;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.cluster.AppVersionValidator;
+import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
@@ -265,6 +267,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Directory to use for the aeron cluster.
          */
         public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
+
+        /**
+         * Directory to use for the aeron cluster.
+         */
+        public static final String MARK_FILE_DIR_PROP_NAME = "aeron.cluster.mark.file.dir";
 
         /**
          * Default directory to use for the aeron cluster.
@@ -636,6 +643,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private AeronArchive.Context archiveContext;
         private String clusterDirectoryName = Configuration.clusterDirName();
         private File clusterDir;
+        private File markFileDir;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
         private DutyCycleTracker dutyCycleTracker;
@@ -716,12 +724,28 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     "failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
 
+            if (null == markFileDir)
+            {
+                final String dir = ConsensusModule.Configuration.markFileDir();
+                markFileDir = Strings.isEmpty(dir) ? clusterDir : new File(dir);
+            }
+
+            if (!markFileDir.exists() && !markFileDir.mkdirs())
+            {
+                throw new ArchiveException("failed to create mark file dir: " + markFileDir.getAbsolutePath());
+            }
+
             if (null == markFile)
             {
                 markFile = new ClusterMarkFile(
-                    new File(clusterDir, ClusterMarkFile.markFilenameForService(serviceId)),
+                    new File(markFileDir, ClusterMarkFile.markFilenameForService(serviceId)),
                     ClusterComponentType.CONTAINER, errorBufferLength, epochClock, LIVENESS_TIMEOUT_MS);
             }
+
+            MarkFile.ensureMarkFileLink(
+                clusterDir,
+                new File(markFileDir, ClusterMarkFile.FILENAME),
+                ClusterMarkFile.LINK_FILENAME);
 
             if (null == errorLog)
             {
@@ -1491,6 +1515,33 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public File clusterDir()
         {
             return clusterDir;
+        }
+
+        /**
+         * Get the directory in which the ConsensusModule will store mark file (i.e. {@code
+         * cluster-mark-service-0.dat}). It defaults to {@link #clusterDir()} if it is not set explicitly via the {@link
+         * ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME}.
+         *
+         * @return the directory in which the Archive will store mark file (i.e. {@code cluster-mark-service-0.dat}).
+         * @see ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME
+         * @see #clusterDir()
+         */
+        public File markFileDir()
+        {
+            return markFileDir;
+        }
+
+        /**
+         * Set the directory in which the Archive will store mark file (i.e. {@code cluster-mark-service-0.dat}).
+         *
+         * @param markFileDir the directory in which the Archive will store mark file (i.e. {@code
+         *                    cluster-mark-service-0.dat}).
+         * @return this for a fluent API.
+         */
+        public ClusteredServiceContainer.Context markFileDir(final File markFileDir)
+        {
+            this.markFileDir = markFileDir;
+            return this;
         }
 
         /**

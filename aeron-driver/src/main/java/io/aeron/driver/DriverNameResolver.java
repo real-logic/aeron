@@ -258,7 +258,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
         }
         catch (final UnknownHostException ignore)
         {
-            return null;
+            return "<unresolved>";
         }
     }
 

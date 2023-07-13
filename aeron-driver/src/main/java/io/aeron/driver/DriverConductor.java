@@ -177,7 +177,7 @@ public final class DriverConductor implements Agent
 
         ctx.systemCounters().get(RESOLUTION_CHANGES).appendToLabel(
             ": driverName=" + ctx.resolverName() +
-            " hostname=" + (null != hostName ? hostName : "<unresolved>"));
+            " hostname=" + hostName);
 
         ctx.systemCounters().get(CONDUCTOR_MAX_CYCLE_TIME).appendToLabel(": " + ctx.threadingMode().name());
         ctx.systemCounters().get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED).appendToLabel(

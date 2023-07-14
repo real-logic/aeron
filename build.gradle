@@ -904,8 +904,22 @@ project(':aeron-system-tests') {
     }
 
     tasks.withType(Test).configureEach {
+        dependsOn ':aeron-agent:jar'
+
+        ext.agentFilename = {
+            project.file("../aeron-agent/build/libs/aeron-agent-${aeronVersion}.jar").absolutePath
+        }
+
+        jvmArgs '-javaagent:' + agentFilename()
+        systemProperty 'aeron.event.cluster.log', 'all'
+        systemProperty 'aeron.event.cluster.log.disable', 'CANVASS_POSITION,APPEND_POSITION,COMMIT_POSITION'
+        systemProperty 'aeron.event.archive.log', 'all'
+        systemProperty 'aeron.event.log', 'admin'
+        systemProperty 'aeron.debug.timeout', '3600s'
+        systemProperty 'aeron.event.log.reader.classname', 'io.aeron.agent.CollectingEventLogReaderAgent'
+        systemProperty 'aeron.fallback.logger', 'no_op'
+
         systemProperty('java.net.preferIPv4Stack', 'true')
-        systemProperty('aeron.fallback.logger', 'no_op')
         systemProperty('aeron.test.system.aeronmd.path', System.getProperty('aeron.test.system.aeronmd.path'))
         systemProperty('aeron.test.system.binding.remote.host', System.getProperty('aeron.test.system.binding.remote.host'))
         systemProperty('aeron.test.system.binding.local.host', System.getProperty('aeron.test.system.binding.local.host'))

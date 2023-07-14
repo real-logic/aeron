@@ -31,6 +31,7 @@ import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -97,7 +98,7 @@ class ReplaySessionTest
             return result;
         }
     };
-    private final Catalog mockCatalog = mock(Catalog.class);
+    private final CountersReader mockCountersReader = mock(CountersReader.class);
     private final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
     private Archive.Context context;
     private long recordingPosition;
@@ -114,7 +115,6 @@ class ReplaySessionTest
 
         when(recordingPositionCounter.get()).then((invocation) -> recordingPosition);
         when(mockControlSession.archiveConductor()).thenReturn(mockArchiveConductor);
-        when(mockArchiveConductor.catalog()).thenReturn(mockCatalog);
         when(mockArchiveConductor.context()).thenReturn(context);
         when(mockReplayPub.termBufferLength()).thenReturn(TERM_BUFFER_LENGTH);
         when(mockReplayPub.positionBitsToShift())
@@ -358,7 +358,6 @@ class ReplaySessionTest
         recordingSummary.recordingId = recordingId;
         recordingSummary.stopPosition = NULL_POSITION;
 
-        when(mockCatalog.stopPosition(recordingId)).thenReturn(START_POSITION + FRAME_LENGTH * 4);
         recordingPosition = START_POSITION;
 
         context.recordChecksumBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
@@ -426,7 +425,6 @@ class ReplaySessionTest
             writer.close();
 
             when(recordingPositionCounter.isClosed()).thenReturn(true);
-            when(mockCatalog.stopPosition(recordingId)).thenReturn(START_POSITION + FRAME_LENGTH * 4);
             assertNotEquals(0, replaySession.doWork());
 
             validateFrame(termBuffer, 2 * FRAME_LENGTH, FRAME_LENGTH, 2, END_FRAG_FLAG, sessionId, streamId);
@@ -730,12 +728,12 @@ class ReplaySessionTest
             controlSession,
             proxy,
             replayBuffer,
-            mockCatalog,
             archiveDir,
             epochClock,
             nanoClock,
             replay,
             recordingSummary,
+            mockCountersReader,
             recordingPositionCounter,
             checksum,
             mock(ArchiveConductor.Replayer.class));

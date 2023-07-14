@@ -186,14 +186,6 @@ abstract class ArchiveConductor
         if (null != counter)
         {
             counter.close();
-
-            for (final ReplaySession session : replaySessionByIdMap.values())
-            {
-                if (session.limitPosition() == counter)
-                {
-                    session.abort();
-                }
-            }
         }
     }
 
@@ -353,11 +345,6 @@ abstract class ArchiveConductor
         }
 
         return workCount;
-    }
-
-    Catalog catalog()
-    {
-        return catalog;
     }
 
     void logWarning(final String message)
@@ -746,12 +733,12 @@ abstract class ArchiveConductor
             controlSession,
             controlResponseProxy,
             replayBuffer,
-            catalog,
             archiveDir,
             cachedEpochClock,
             nanoClock,
             replayPublication,
             recordingSummary,
+            aeron.countersReader(),
             replayLimitPosition,
             ctx.replayChecksum(),
             replayer);

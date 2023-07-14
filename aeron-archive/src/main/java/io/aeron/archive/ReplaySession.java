@@ -28,6 +28,7 @@ import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -94,7 +95,7 @@ class ReplaySession implements Session, AutoCloseable
     private final NanoClock nanoClock;
     final ArchiveConductor.Replayer replayer;
     private final File archiveDir;
-    private final Catalog catalog;
+    private final CountersReader countersReader;
     private final Counter limitPosition;
     private final UnsafeBuffer replayBuffer;
     private FileChannel fileChannel;
@@ -112,12 +113,12 @@ class ReplaySession implements Session, AutoCloseable
         final ControlSession controlSession,
         final ControlResponseProxy controlResponseProxy,
         final UnsafeBuffer replayBuffer,
-        final Catalog catalog,
         final File archiveDir,
         final CachedEpochClock epochClock,
         final NanoClock nanoClock,
         final ExclusivePublication publication,
         final RecordingSummary recordingSummary,
+        final CountersReader countersReader,
         final Counter replayLimitPosition,
         final Checksum checksum,
         final ArchiveConductor.Replayer replayer)
@@ -133,10 +134,10 @@ class ReplaySession implements Session, AutoCloseable
         this.nanoClock = nanoClock;
         this.archiveDir = archiveDir;
         this.publication = publication;
+        this.countersReader = countersReader;
         this.limitPosition = replayLimitPosition;
         this.replayBuffer = replayBuffer;
         this.replayBufferAddress = replayBuffer.addressOffset();
-        this.catalog = catalog;
         this.checksum = checksum;
         this.startPosition = recordingSummary.startPosition;
         this.stopPosition = null == limitPosition ? recordingSummary.stopPosition : limitPosition.get();
@@ -273,11 +274,6 @@ class ReplaySession implements Session, AutoCloseable
         return segmentFileBasePosition;
     }
 
-    Counter limitPosition()
-    {
-        return limitPosition;
-    }
-
     void sendPendingError(final ControlResponseProxy controlResponseProxy)
     {
         if (null != errorMessage && !controlSession.isDone())
@@ -354,9 +350,12 @@ class ReplaySession implements Session, AutoCloseable
             return 0;
         }
 
-        if (replayPosition >= stopPosition && null != limitPosition && noNewData(replayPosition, stopPosition))
+        if (null != limitPosition)
         {
-            return 0;
+            if (replayPosition >= stopPosition && !hasNewData(replayPosition, stopPosition))
+            {
+                return 0;
+            }
         }
 
         if (termOffset == termLength)
@@ -519,23 +518,27 @@ class ReplaySession implements Session, AutoCloseable
         state(State.INACTIVE);
     }
 
-    private boolean noNewData(final long replayPosition, final long oldStopPosition)
+    private boolean hasNewData(final long replayPosition, final long oldStopPosition)
     {
         final Counter limitPosition = this.limitPosition;
         final long currentLimitPosition = limitPosition.get();
-        final boolean isCounterClosed = limitPosition.isClosed();
-        final long newStopPosition = isCounterClosed ? catalog.stopPosition(recordingId) : currentLimitPosition;
+        long newStopPosition = oldStopPosition;
 
-        if (isCounterClosed)
+        if (limitPosition.isClosed())
         {
-            if (NULL_POSITION == newStopPosition)
+            if (countersReader.getCounterRegistrationId(limitPosition.id()) == limitPosition.registrationId())
+            {
+                replayLimit = currentLimitPosition;
+                newStopPosition = Math.max(oldStopPosition, currentLimitPosition);
+            }
+            else if (replayLimit >= oldStopPosition)
             {
                 replayLimit = oldStopPosition;
             }
-            else if (newStopPosition < replayLimit)
-            {
-                replayLimit = newStopPosition;
-            }
+        }
+        else
+        {
+            newStopPosition = currentLimitPosition;
         }
 
         if (replayPosition >= replayLimit)
@@ -545,10 +548,10 @@ class ReplaySession implements Session, AutoCloseable
         else if (newStopPosition > oldStopPosition)
         {
             stopPosition = newStopPosition;
-            return false;
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     private void nextTerm() throws IOException
@@ -559,6 +562,7 @@ class ReplaySession implements Session, AutoCloseable
         if (termBaseSegmentOffset == segmentLength)
         {
             closeRecordingSegment();
+            //noinspection NonAtomicOperationOnVolatileField
             segmentFileBasePosition += segmentLength;
             openRecordingSegment();
             termBaseSegmentOffset = 0;

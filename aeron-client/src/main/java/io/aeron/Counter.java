@@ -71,7 +71,7 @@ public final class Counter extends AtomicCounter
     /**
      * Return the registration id used to register this counter with the media driver.
      *
-     * @return registration id
+     * @return the registration id used to register this counter with the media driver.
      */
     public long registrationId()
     {

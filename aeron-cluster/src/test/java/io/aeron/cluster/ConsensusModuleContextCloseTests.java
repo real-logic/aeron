@@ -35,8 +35,8 @@ import static org.mockito.Mockito.*;
 class ConsensusModuleContextCloseTests
 {
     private final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
-    private final ErrorHandler errorHandler = mock(ErrorHandler.class,
-        withSettings().extraInterfaces(AutoCloseable.class));
+    private final ErrorHandler errorHandler = mock(
+        ErrorHandler.class, withSettings().extraInterfaces(AutoCloseable.class));
     private final RecordingLog recordingLog = mock(RecordingLog.class);
     private final ReflectiveOperationException recodingLogException = new ReflectiveOperationException();
     private final ClusterMarkFile markFile = mock(ClusterMarkFile.class);
@@ -52,9 +52,9 @@ class ConsensusModuleContextCloseTests
     private final Counter controlToggle = mock(Counter.class);
     private final IllegalArgumentException controlToggleException = new IllegalArgumentException();
     private final Counter snapshotCounter = mock(Counter.class);
-    private final IndexOutOfBoundsException snapshotCounterException = new IndexOutOfBoundsException();
+    private final IllegalMonitorStateException snapshotCounterException = new IllegalMonitorStateException();
     private final Counter timedOutClientCounter = mock(Counter.class);
-    private final IllegalMonitorStateException timedOutClientCounterException = new IllegalMonitorStateException();
+    private final IndexOutOfBoundsException timedOutClientCounterException = new IndexOutOfBoundsException();
     private ConsensusModule.Context context;
 
     @BeforeEach
@@ -63,12 +63,12 @@ class ConsensusModuleContextCloseTests
         throwOnClose(recordingLog, recodingLogException);
         throwOnClose(markFile, markFileException);
         throwOnClose(aeron, aeronException);
-        throwOnClose(moduleState, moduleStateException);
-        throwOnClose(commitPosition, commitPositionException);
-        throwOnClose(clusterNodeRole, clusterNodeRoleException);
-        throwOnClose(controlToggle, controlToggleException);
-        throwOnClose(snapshotCounter, snapshotCounterException);
         throwOnClose(timedOutClientCounter, timedOutClientCounterException);
+        throwOnClose(snapshotCounter, snapshotCounterException);
+        throwOnClose(controlToggle, controlToggleException);
+        throwOnClose(moduleState, moduleStateException);
+        throwOnClose(clusterNodeRole, clusterNodeRoleException);
+        throwOnClose(commitPosition, commitPositionException);
 
         context = new ConsensusModule.Context()
             .countedErrorHandler(countedErrorHandler)
@@ -107,17 +107,17 @@ class ConsensusModuleContextCloseTests
         context.ownsAeronClient(false);
         when(aeron.isClosed()).thenReturn(false);
 
-        final IllegalStateException ex = assertThrows(IllegalStateException.class, context::close);
+        final IndexOutOfBoundsException ex = assertThrows(IndexOutOfBoundsException.class, context::close);
 
-        assertSame(moduleStateException, ex);
+        assertSame(timedOutClientCounterException, ex);
 
         final Throwable[] expected =
         {
-            clusterNodeRoleException,
-            commitPositionException,
             controlToggleException,
             snapshotCounterException,
-            timedOutClientCounterException
+            moduleStateException,
+            clusterNodeRoleException,
+            commitPositionException,
         };
 
         assertArrayEquals(expected, ex.getSuppressed());

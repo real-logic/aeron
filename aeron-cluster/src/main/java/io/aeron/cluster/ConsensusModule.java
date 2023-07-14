@@ -3863,13 +3863,13 @@ public final class ConsensusModule implements AutoCloseable
             else if (!aeron.isClosed())
             {
                 CloseHelper.closeAll(
-                    moduleStateCounter,
-                    clusterNodeRoleCounter,
-                    electionStateCounter,
-                    commitPosition,
+                    timedOutClientCounter,
                     clusterControlToggle,
                     snapshotCounter,
-                    timedOutClientCounter);
+                    moduleStateCounter,
+                    electionStateCounter,
+                    clusterNodeRoleCounter,
+                    commitPosition);
             }
         }
 

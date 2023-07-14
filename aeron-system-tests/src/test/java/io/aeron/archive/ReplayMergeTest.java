@@ -44,7 +44,7 @@ import static io.aeron.archive.ArchiveSystemTests.*;
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
 import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(InterruptingTestCallback.class)
+@ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 class ReplayMergeTest
 {
     private static final String MESSAGE_PREFIX = "Message-Prefix-";

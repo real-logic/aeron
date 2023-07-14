@@ -59,7 +59,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith({ EventLogExtension`.class, InterruptingTestCallback.class })
+@ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 class ReplicateRecordingTest
 {
     private static final int SRC_CONTROL_STREAM_ID = AeronArchive.Configuration.CONTROL_STREAM_ID_DEFAULT;

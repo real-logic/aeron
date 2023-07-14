@@ -227,7 +227,16 @@ subprojects {
             'aeron.dir.delete.on.start': 'true',
             'aeron.term.buffer.sparse.file': 'true',
             'aeron.perform.storage.checks': 'false',
-            'agrona.strict.alignment.checks': 'true')
+            'agrona.strict.alignment.checks': 'true',
+            'java.net.preferIPv4Stack': 'true',
+            'aeron.test.system.aeronmd.path': System.getProperty('aeron.test.system.aeronmd.path'),
+            'aeron.test.system.binding.remote.host': System.getProperty('aeron.test.system.binding.remote.host'),
+            'aeron.test.system.binding.local.host': System.getProperty('aeron.test.system.binding.local.host'),
+            'aeron.test.system.aeron.dir': System.getProperty('aeron.test.system.aeron.dir'),
+            'aeron.test.system.ats.path': System.getProperty('aeron.test.system.ats.path'),
+            'aeron.test.system.ats.conf.dir': System.getProperty('aeron.test.system.ats.conf.dir'),
+            'aeron.test.system.ats.conf.file': System.getProperty('aeron.test.system.ats.conf.file'),
+            'aeron.test.system.driver.await.counters': System.getProperty('aeron.test.system.driver.await.counters'))
 
         javaLauncher.set(toolchainLauncher)
     }
@@ -903,7 +912,7 @@ project(':aeron-system-tests') {
         }
     }
 
-    tasks.withType(Test).configureEach {
+    tasks.named('test').configure {
         dependsOn ':aeron-agent:jar'
 
         ext.agentFilename = {
@@ -918,16 +927,6 @@ project(':aeron-system-tests') {
         systemProperty 'aeron.debug.timeout', '3600s'
         systemProperty 'aeron.event.log.reader.classname', 'io.aeron.agent.CollectingEventLogReaderAgent'
         systemProperty 'aeron.fallback.logger', 'no_op'
-
-        systemProperty('java.net.preferIPv4Stack', 'true')
-        systemProperty('aeron.test.system.aeronmd.path', System.getProperty('aeron.test.system.aeronmd.path'))
-        systemProperty('aeron.test.system.binding.remote.host', System.getProperty('aeron.test.system.binding.remote.host'))
-        systemProperty('aeron.test.system.binding.local.host', System.getProperty('aeron.test.system.binding.local.host'))
-        systemProperty('aeron.test.system.aeron.dir', System.getProperty('aeron.test.system.aeron.dir'))
-        systemProperty('aeron.test.system.ats.path', System.getProperty('aeron.test.system.ats.path'))
-        systemProperty('aeron.test.system.ats.conf.dir', System.getProperty('aeron.test.system.ats.conf.dir'))
-        systemProperty('aeron.test.system.ats.conf.file', System.getProperty('aeron.test.system.ats.conf.file'))
-        systemProperty('aeron.test.system.driver.await.counters', System.getProperty('aeron.test.system.driver.await.counters'))
     }
 
     shadowJar {

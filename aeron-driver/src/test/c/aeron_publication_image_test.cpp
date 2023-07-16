@@ -492,3 +492,61 @@ TEST_F(PublicationImageTest, shouldReturnStorageSpaceErrorIfNotEnoughStorageSpac
     ASSERT_EQ(nullptr, image) << aeron_errmsg();
     EXPECT_EQ(-AERON_ERROR_CODE_STORAGE_SPACE, aeron_errcode());
 }
+
+TEST_F(PublicationImageTest, shouldNotAllowNewSubscriptionsWhenRemainingSubscriptionsAreUntetheredAndResting)
+{
+//    struct sockaddr_storage addr = {}; // Don't really care what value this is.
+    uint8_t data[128];
+    auto *message = reinterpret_cast<aeron_data_header_t *>(data);
+    const char *uri_1 = "aeron:udp?endpoint=localhost:9090";
+    aeron_receive_channel_endpoint_t *endpoint = createEndpoint(uri_1);
+    int32_t stream_id = 1001;
+    int32_t session_id = 1000001;
+    int64_t registration_id = 0;
+
+    aeron_udp_channel_t *channel_1;
+    aeron_receive_destination_t *dest_1;
+
+    aeron_udp_channel_parse(strlen(uri_1), uri_1, &m_resolver, &channel_1, false);
+
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest_1, channel_1, channel_1, m_context, &m_counters_manager, registration_id, endpoint->channel_status.counter_id));
+//    ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest_1));
+
+    aeron_publication_image_t *image = createImage(endpoint, dest_1, stream_id, session_id);
+
+    ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_ACTIVE, image->conductor_fields.state);
+    image->congestion_control->should_measure_rtt = always_measure_rtt;
+
+    auto *bindings_state_dest1 = static_cast<aeron_test_udp_bindings_state_t *>(dest_1->transport.bindings_clientd);
+
+    aeron_publication_image_schedule_status_message(image, 0, TERM_BUFFER_SIZE);
+    aeron_publication_image_send_pending_status_message(image, 1000000000);
+    ASSERT_EQ(1, bindings_state_dest1->sm_count);
+
+    aeron_publication_image_on_gap_detected(image, 0, 0, 1);
+    aeron_publication_image_send_pending_loss(image);
+    ASSERT_EQ(1, bindings_state_dest1->nak_count);
+
+    aeron_publication_image_initiate_rttm(image, 1000000000);
+    ASSERT_EQ(1, bindings_state_dest1->rttm_count);
+
+    message->stream_id = stream_id;
+    message->session_id = session_id;
+    message->frame_header.frame_length = 64;
+    message->term_id = 0;
+    message->term_offset = 0;
+
+    aeron_publication_image_schedule_status_message(image, 1, TERM_BUFFER_SIZE);
+    aeron_publication_image_send_pending_status_message(image, 2000000000);
+    ASSERT_EQ(2, bindings_state_dest1->sm_count);
+    ASSERT_EQ(2, aeron_counter_get(image->status_messages_sent_counter));
+
+    aeron_publication_image_on_gap_detected(image, 0, 0, 1);
+    aeron_publication_image_send_pending_loss(image);
+    ASSERT_EQ(2, bindings_state_dest1->nak_count);
+    ASSERT_EQ(2, aeron_counter_get(image->nak_messages_sent_counter));
+
+    aeron_publication_image_initiate_rttm(image, 2000000000);
+    ASSERT_EQ(2, bindings_state_dest1->rttm_count);
+}

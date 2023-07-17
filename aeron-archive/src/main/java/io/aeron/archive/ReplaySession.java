@@ -352,7 +352,7 @@ class ReplaySession implements Session, AutoCloseable
 
         if (null != limitPosition)
         {
-            if (replayPosition >= stopPosition && !hasNewData(replayPosition, stopPosition))
+            if (replayPosition >= stopPosition && !hasExtended(replayPosition, stopPosition))
             {
                 return 0;
             }
@@ -518,7 +518,7 @@ class ReplaySession implements Session, AutoCloseable
         state(State.INACTIVE);
     }
 
-    private boolean hasNewData(final long replayPosition, final long oldStopPosition)
+    private boolean hasExtended(final long replayPosition, final long oldStopPosition)
     {
         final Counter limitPosition = this.limitPosition;
         final long currentLimitPosition = limitPosition.get();

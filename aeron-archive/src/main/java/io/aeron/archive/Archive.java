@@ -3125,7 +3125,197 @@ public final class Archive implements AutoCloseable
         }
 
         /**
-         * Set the {@link AuthorisationServiceSupplier} that will be used for the Archive.
+         * <p>Set the {@link AuthorisationServiceSupplier} that will be used for the Archive.</p>
+         * <p>When using an authorisation service for the ConsensusModule, then the following values for protocolId,
+         * actionId, and type should be considered.</p>
+         *
+         * <table summary="Parameters for authorisation service queries from the Archive">
+         *     <thead>
+         *         <tr><td>Description</td><td>protocolId</td><td>actionId</td><td>type(s)</td></tr>
+         *     </thead>
+         *     <tbody>
+         *         <tr>
+         *             <td>Start the recording of a stream</td>
+         *             <td>{@link io.aeron.archive.codecs.MessageHeaderDecoder#SCHEMA_ID}</td>
+         *             <td>{@link io.aeron.archive.codecs.StartRecordingRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Start the recording of a stream (version 2)</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.StartRecordingRequest2Decoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Stop the recording of a stream</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.StopRecordingRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Replay a stream from the archive</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.ReplayRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Stop a replay from the archive</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.StopReplayRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>List the recordings from the archive</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.ListRecordingsRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>List the recordings from the archive for a specific URI</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.ListRecordingsForUriRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>List a specific recording from the archive</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.ListRecordingRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Extend a recording</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.ExtendRecordingRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Extend a recording (version 2)</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.ExtendRecordingRequest2Decoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Gets the position of a recording</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.RecordingPositionRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Truncate a recording</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.TruncateRecordingRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Stop a recording by subscription</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.StopRecordingSubscriptionRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Extend a recording</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.ExtendRecordingRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Get the stop position for a recording</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.StopPositionRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Find the last recording for a given stream, session and channel fragment</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.FindLastMatchingRecordingRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>List subscriptions being used for recordings</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.ListRecordingSubscriptionsRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Stop all replays</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.StopAllReplaysRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Start replicating a recording</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.ReplicateRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Start replicating a recording (version 2)</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.ReplicateRequest2Decoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Stop replication a recording</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.StopReplicationRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Get the start position of a recording</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.StartRecordingRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Detach segment files from a recording</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.DetachSegmentsRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Delete detached segments</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.DeleteDetachedSegmentsRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Attach new segments for a recording</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.AttachSegmentsRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Migrate segments from one recording to another</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.MigrateSegmentsRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Keep alive the archive connection</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.KeepAliveRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Replicate a recording with a tag</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.TaggedReplicateRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Stop recording by recording id</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.StopRecordingByIdentityRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *         <tr>
+         *             <td>Purge a recording by recording id</td>
+         *             <td></td>
+         *             <td>{@link io.aeron.archive.codecs.PurgeRecordingRequestDecoder#TEMPLATE_ID}</td>
+         *             <td><code>(null)</code></td>
+         *         </tr>
+         *     </tbody>
+         * </table>
          *
          * @param authorisationServiceSupplier {@link AuthorisationServiceSupplier} to use for the Archive.
          * @return this for a fluent API.

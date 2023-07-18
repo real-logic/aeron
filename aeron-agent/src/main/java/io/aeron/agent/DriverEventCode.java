@@ -88,7 +88,10 @@ public enum DriverEventCode implements EventCode
     TEXT_DATA(51, DriverEventDissector::dissectString),
 
     NAME_RESOLUTION_LOOKUP(52,
-        (code, buffer, offset, builder) -> DriverEventDissector.dissectLookup(buffer, offset, builder));
+        (code, buffer, offset, builder) -> DriverEventDissector.dissectLookup(buffer, offset, builder)),
+
+    NAME_RESOLUTION_HOST_NAME(53,
+        (code, buffer, offset, builder) -> DriverEventDissector.dissectHostName(buffer, offset, builder));
 
     static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
 

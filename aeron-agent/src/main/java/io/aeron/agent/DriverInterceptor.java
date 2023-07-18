@@ -82,6 +82,17 @@ class DriverInterceptor
                 LOGGER.logLookup(resolverName, durationNs, name, isReLookup, resolvedName);
             }
         }
+
+        static class HostName
+        {
+            @Advice.OnMethodEnter
+            static void logHostName(
+                final long durationNs,
+                final String hostName)
+            {
+                LOGGER.logHostName(durationNs, hostName);
+            }
+        }
     }
 
     static class FlowControl

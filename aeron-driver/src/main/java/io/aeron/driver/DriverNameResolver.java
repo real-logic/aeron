@@ -92,7 +92,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
     private long selfResolutionDeadlineMs;
     private long neighborResolutionDeadlineMs;
 
-    DriverNameResolver(final MediaDriver.Context ctx)
+    DriverNameResolver(final MediaDriver.Context ctx, final String hostName)
     {
         mtuLength = ctx.mtuLength();
         invalidPackets = ctx.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
@@ -110,7 +110,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
             UdpNameResolutionTransport.getInterfaceAddress(ctx.resolverInterface()) :
             new InetSocketAddress("0.0.0.0", 0);
 
-        localDriverName = null != ctx.resolverName() ? ctx.resolverName() : getCanonicalName();
+        localDriverName = null != ctx.resolverName() ? ctx.resolverName() : hostName;
         localName = localDriverName.getBytes(StandardCharsets.US_ASCII);
         localAddress = localSocketAddress.getAddress().getAddress();
 
@@ -250,23 +250,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
         return 0;
     }
 
-    static String getCanonicalName()
-    {
-        String canonicalName = null;
-
-        try
-        {
-            canonicalName = InetAddress.getLocalHost().getHostName();
-        }
-        catch (final UnknownHostException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return canonicalName;
-    }
-
-    static String getCanonicalName(final String fallback)
+    static String getHostName()
     {
         try
         {
@@ -274,10 +258,9 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
         }
         catch (final UnknownHostException ignore)
         {
-            return fallback;
+            return "<unresolved>";
         }
     }
-
 
     private void openDatagramChannel()
     {

@@ -74,6 +74,7 @@ typedef enum aeron_driver_agent_event_enum
     AERON_DRIVER_EVENT_NAME_RESOLUTION_RESOLVE = 50,
     AERON_DRIVER_EVENT_NAME_TEXT_DATA = 51,
     AERON_DRIVER_EVENT_NAME_RESOLUTION_LOOKUP = 52,
+    AERON_DRIVER_EVENT_NAME_RESOLUTION_HOST_NAME = 53,
 
     // C-specific events. Note: event IDs are dynamic to avoid gaps in the sparse arrays.
     AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR,
@@ -186,6 +187,14 @@ typedef struct aeron_driver_agent_name_resolver_lookup_log_header_stct
     bool is_re_lookup;
 }
 aeron_driver_agent_name_resolver_lookup_log_header_t;
+
+typedef struct aeron_driver_agent_name_resolver_host_name_log_header_stct
+{
+    int64_t time_ns;
+    int64_t duration_ns;
+    int32_t host_name_length;
+}
+aeron_driver_agent_name_resolver_host_name_log_header_t;
 
 typedef struct aeron_driver_agent_text_data_log_header_stct
 {

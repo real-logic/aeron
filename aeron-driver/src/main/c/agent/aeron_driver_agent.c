@@ -127,6 +127,7 @@ static struct aeron_driver_agent_log_event_stct log_events[AERON_DRIVER_EVENT_NU
         { "NAME_RESOLUTION_RESOLVE",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "GENERIC_MESSAGE",                      AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "NAME_RESOLUTION_LOOKUP",               AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "NAME_RESOLUTION_HOST_NAME",               AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "ADD_DYNAMIC_DISSECTOR",                AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "DYNAMIC_DISSECTOR_EVENT",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
     };
@@ -1035,7 +1036,7 @@ void aeron_driver_agent_name_resolver_on_lookup(
         hdr->resolved_name_length = (int32_t)resolvedNameLength;
         hdr->is_re_lookup = is_re_lookup;
 
-        uint8_t *bodyPtr = ptr + sizeof(aeron_driver_agent_name_resolver_resolve_log_header_t);
+        uint8_t *bodyPtr = ptr + sizeof(aeron_driver_agent_name_resolver_lookup_log_header_t);
         memcpy(bodyPtr, name_resolver->name, (size_t)resolverNameLength);
         memcpy(bodyPtr + resolverNameLength, name, (size_t)nameLength);
 
@@ -1043,6 +1044,34 @@ void aeron_driver_agent_name_resolver_on_lookup(
         {
             memcpy(bodyPtr + resolverNameLength + nameLength, resolved_name, (size_t)resolvedNameLength);
         }
+
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
+    }
+}
+
+void aeron_driver_agent_name_resolver_on_host_name(int64_t duration_ns, const char *host_name)
+{
+    const size_t hostNameFullLength = strlen(host_name);
+    const size_t hostNameLength =
+        hostNameFullLength < AERON_MAX_HOSTNAME_LEN ? hostNameFullLength : AERON_MAX_HOSTNAME_LEN;
+
+    int32_t offset = aeron_mpsc_rb_try_claim(
+        &logging_mpsc_rb,
+        AERON_DRIVER_EVENT_NAME_RESOLUTION_HOST_NAME,
+        sizeof(aeron_driver_agent_name_resolver_host_name_log_header_t) + hostNameLength);
+
+    if (offset > 0)
+    {
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_name_resolver_host_name_log_header_t *hdr =
+            (aeron_driver_agent_name_resolver_host_name_log_header_t *)ptr;
+
+        hdr->time_ns = aeron_nano_clock();
+        hdr->duration_ns = duration_ns;
+        hdr->host_name_length = (int32_t)hostNameLength;
+
+        uint8_t *bodyPtr = ptr + sizeof(aeron_driver_agent_name_resolver_host_name_log_header_t);
+        memcpy(bodyPtr, host_name, (size_t)hostNameLength);
 
         aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
     }
@@ -1210,6 +1239,11 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_LOOKUP))
     {
         context->on_name_lookup_func = aeron_driver_agent_name_resolver_on_lookup;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_HOST_NAME))
+    {
+        context->on_host_name_func = aeron_driver_agent_name_resolver_on_host_name;
     }
 
     return 0;
@@ -1974,6 +2008,23 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
                 hdr->is_re_lookup ? "true" : "false",
                 (int)hdr->resolved_name_length,
                 resolved_name_ptr);
+            break;
+        }
+
+        case AERON_DRIVER_EVENT_NAME_RESOLUTION_HOST_NAME:
+        {
+            aeron_driver_agent_name_resolver_host_name_log_header_t *hdr =
+                (aeron_driver_agent_name_resolver_host_name_log_header_t *)message;
+            uint8_t *host_name_name_ptr =
+                (uint8_t *)message + sizeof(aeron_driver_agent_name_resolver_host_name_log_header_t);
+
+            fprintf(
+                logfp,
+                "%s: durationNs=%" PRIu64 " hostName=%.*s\n",
+                aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, length),
+                (uint64_t)hdr->duration_ns,
+                (int)hdr->host_name_length,
+                host_name_name_ptr);
             break;
         }
 

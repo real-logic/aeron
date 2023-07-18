@@ -109,6 +109,10 @@ final class TimeTrackingNameResolver implements NameResolver, AutoCloseable
         }
     }
 
+    static void logHostName(final long durationNs, final String hostName)
+    {
+    }
+
     private static void logResolve(
         final String resolverName,
         final long durationNs,

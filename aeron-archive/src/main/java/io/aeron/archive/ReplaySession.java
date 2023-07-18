@@ -350,12 +350,9 @@ class ReplaySession implements Session, AutoCloseable
             return 0;
         }
 
-        if (null != limitPosition)
+        if (null != limitPosition && replayPosition >= stopPosition && notExtended(replayPosition, stopPosition))
         {
-            if (replayPosition >= stopPosition && !hasExtended(replayPosition, stopPosition))
-            {
-                return 0;
-            }
+            return 0;
         }
 
         if (termOffset == termLength)
@@ -370,13 +367,11 @@ class ReplaySession implements Session, AutoCloseable
             final int bytesRead = readRecording(stopPosition - replayPosition);
             if (bytesRead > 0)
             {
-                int batchOffset = 0;
-                int paddingFrameLength = 0;
                 final int sessionId = publication.sessionId();
                 final int streamId = publication.streamId();
                 final int remaining = (int)Math.min(replayLimit - replayPosition, LogBufferDescriptor.TERM_MAX_LENGTH);
-                final Checksum checksum = this.checksum;
-                final UnsafeBuffer replayBuffer = this.replayBuffer;
+                int batchOffset = 0;
+                int paddingFrameLength = 0;
 
                 while (batchOffset < bytesRead && batchOffset < remaining)
                 {
@@ -518,7 +513,7 @@ class ReplaySession implements Session, AutoCloseable
         state(State.INACTIVE);
     }
 
-    private boolean hasExtended(final long replayPosition, final long oldStopPosition)
+    private boolean notExtended(final long replayPosition, final long oldStopPosition)
     {
         final Counter limitPosition = this.limitPosition;
         final long currentLimitPosition = limitPosition.get();
@@ -548,10 +543,10 @@ class ReplaySession implements Session, AutoCloseable
         else if (newStopPosition > oldStopPosition)
         {
             stopPosition = newStopPosition;
-            return true;
+            return false;
         }
 
-        return false;
+        return true;
     }
 
     private void nextTerm() throws IOException

@@ -148,3 +148,82 @@ TEST_F(DriverConductorSubscribableTest, shouldHaveWorkingWhenOneSubscriptionRest
     aeron_driver_subscribable_remove_position(&subscribable, active_link_counter_id);
     ASSERT_FALSE(aeron_driver_subscribable_has_working_positions(&subscribable));
 }
+
+TEST_F(DriverConductorSubscribableTest, shouldApplyMultipleRandomActionsAndEnsureThatTheStateIsCorrectlyManaged)
+{
+    int64_t now_ns = 908234769237;
+
+    aeron_subscribable_t subscribable = {};
+    subscribable.array = NULL;
+    subscribable.length = 0;
+    subscribable.capacity = 0;
+    subscribable.add_position_hook_func = null_hook;
+    subscribable.remove_position_hook_func = null_hook;
+    subscribable.clientd = NULL;
+    
+    int32_t iterations = 1000;
+    int32_t counter_id = 0;
+
+    for (int32_t i = 0; i < iterations; i++)
+    {
+        int32_t action = (static_cast<uint32_t>(aeron_randomised_int32()) % 3);
+
+        switch (action)
+        {
+            case 0: //add
+            {
+                aeron_subscription_link_t link = {};
+                strcpy(link.channel, "aeron:ipc");
+                link.is_tether = false;
+                const int32_t active_link_counter_id = ++counter_id;
+                aeron_driver_subscribable_add_position(
+                    &subscribable, &link, active_link_counter_id, nullptr, now_ns);
+                aeron_tetherable_position_t *position = findTetherablePosition(&subscribable, active_link_counter_id);
+                aeron_driver_subscribable_state(&subscribable, position, AERON_SUBSCRIPTION_TETHER_ACTIVE, now_ns);
+
+                break;
+            }
+
+            case 1: //remove
+            {
+                if (0 != subscribable.length)
+                {
+                    int index = (static_cast<uint32_t>(aeron_randomised_int32()) % subscribable.length);
+                    int32_t counter_id_to_remove = subscribable.array[index].counter_id;
+                    aeron_driver_subscribable_remove_position(&subscribable, counter_id_to_remove);
+                }
+                break;
+            }
+
+            case 2: //change state
+            {
+                if (0 != subscribable.length)
+                {
+                    int index = (static_cast<uint32_t>(aeron_randomised_int32()) % subscribable.length);
+                    int state_as_int = (static_cast<uint32_t>(aeron_randomised_int32()) % 3);
+                    aeron_subscription_tether_state_t state = static_cast<aeron_subscription_tether_state_t>(state_as_int);
+                    aeron_tetherable_position_t *position = &subscribable.array[index];
+
+                    aeron_driver_subscribable_state(&subscribable, position, state, 0);
+                }
+                break;
+            }
+
+            default:
+                FAIL();
+        }
+
+        size_t resting_count = 0;
+        for (int last_index = subscribable.length - 1, j = last_index; j >= 0; j--)
+        {
+            if (AERON_SUBSCRIPTION_TETHER_RESTING == subscribable.array[j].state)
+            {
+                resting_count++;
+            }
+        }
+
+        ASSERT_EQ(resting_count, subscribable.num_resting) << i;
+        ASSERT_LE(subscribable.num_resting, subscribable.length);
+        ASSERT_EQ(resting_count == subscribable.length, !aeron_driver_subscribable_has_working_positions(&subscribable));
+    }
+}

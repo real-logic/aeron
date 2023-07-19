@@ -327,7 +327,7 @@ class DriverEventLoggerTest
     @ValueSource(booleans = { false, true })
     void logLookup(final boolean isReLookup)
     {
-        final int recordOffset = 30;
+        final int recordOffset = align(30, ALIGNMENT);
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
 
         final String resolverName = generateStringWithSuffix("my-resolver", "*", 1000);

@@ -87,7 +87,7 @@ int aeron_ipc_publication_create(
     }
     _pub->raw_log_close_func = context->raw_log_close_func;
     _pub->raw_log_free_func = context->raw_log_free_func;
-    _pub->untethered_subscription_state_change_func = context->untethered_subscription_state_change_func;
+    _pub->untethered_subscription_state_change_func = context->untethered_subscription_on_state_change_func;
 
     strncpy(_pub->log_file_name, path, (size_t)path_length);
     _pub->log_file_name[path_length] = '\0';
@@ -230,7 +230,7 @@ int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
     {
         int64_t consumer_position = publication->conductor_fields.consumer_position;
 
-        if (publication->conductor_fields.subscribable.length > 0)
+        if (aeron_driver_subscribable_has_working_positions(&publication->conductor_fields.subscribable))
         {
             int64_t min_sub_pos = INT64_MAX;
             int64_t max_sub_pos = consumer_position;
@@ -301,9 +301,10 @@ void aeron_ipc_publication_check_untethered_subscriptions(
     int64_t term_window_length = publication->term_window_length;
     int64_t untethered_window_limit = (consumer_position - term_window_length) + (term_window_length / 4);
 
-    for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
+    aeron_subscribable_t *subscribable = &publication->conductor_fields.subscribable;
+    for (size_t i = 0, length = subscribable->length; i < length; i++)
     {
-        aeron_tetherable_position_t *tetherable_position = &publication->conductor_fields.subscribable.array[i];
+        aeron_tetherable_position_t *tetherable_position = &subscribable->array[i];
 
         if (tetherable_position->is_tether)
         {
@@ -331,7 +332,10 @@ void aeron_ipc_publication_check_untethered_subscriptions(
                             AERON_IPC_CHANNEL,
                             AERON_IPC_CHANNEL_LEN);
 
-                        publication->untethered_subscription_state_change_func(
+                        aeron_driver_subscribable_state(
+                            subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_LINGER, now_ns);
+
+                        conductor->context->untethered_subscription_on_state_change_func(
                             tetherable_position,
                             now_ns,
                             AERON_SUBSCRIPTION_TETHER_LINGER,
@@ -343,7 +347,10 @@ void aeron_ipc_publication_check_untethered_subscriptions(
                 case AERON_SUBSCRIPTION_TETHER_LINGER:
                     if (now_ns > (tetherable_position->time_of_last_update_ns + window_limit_timeout_ns))
                     {
-                        publication->untethered_subscription_state_change_func(
+                        aeron_driver_subscribable_state(
+                            subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_RESTING, now_ns);
+
+                        conductor->context->untethered_subscription_on_state_change_func(
                             tetherable_position,
                             now_ns,
                             AERON_SUBSCRIPTION_TETHER_RESTING,
@@ -368,7 +375,10 @@ void aeron_ipc_publication_check_untethered_subscriptions(
                             AERON_IPC_CHANNEL,
                             AERON_IPC_CHANNEL_LEN);
 
-                        publication->untethered_subscription_state_change_func(
+                        aeron_driver_subscribable_state(
+                            subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_ACTIVE, now_ns);
+
+                        conductor->context->untethered_subscription_on_state_change_func(
                             tetherable_position,
                             now_ns,
                             AERON_SUBSCRIPTION_TETHER_ACTIVE,
@@ -513,7 +523,5 @@ extern int64_t aeron_ipc_publication_join_position(aeron_ipc_publication_t *publ
 extern bool aeron_ipc_publication_has_reached_end_of_life(aeron_ipc_publication_t *publication);
 
 extern bool aeron_ipc_publication_is_drained(aeron_ipc_publication_t *publication);
-
-extern size_t aeron_ipc_publication_num_subscribers(aeron_ipc_publication_t *publication);
 
 extern bool aeron_ipc_publication_is_accepting_subscriptions(aeron_ipc_publication_t *publication);

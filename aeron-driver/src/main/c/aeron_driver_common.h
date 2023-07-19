@@ -93,6 +93,16 @@ typedef struct aeron_subscribable_stct
 }
 aeron_subscribable_t;
 
+void aeron_driver_subscribable_state(
+    aeron_subscribable_t *subscribable,
+    aeron_tetherable_position_t *tetherable_position,
+    aeron_subscription_tether_state_t state,
+    int64_t now_ns);
+
+size_t aeron_driver_subscribable_working_position_count(aeron_subscribable_t *subscribable);
+
+bool aeron_driver_subscribable_has_working_positions(aeron_subscribable_t *subscribable);
+
 typedef struct aeron_command_base_stct
 {
     void (*func)(void *clientd, void *command);

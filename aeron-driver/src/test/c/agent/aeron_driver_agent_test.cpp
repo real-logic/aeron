@@ -418,21 +418,21 @@ TEST_F(DriverAgentTest, shouldDissectLogHeader)
 
 TEST_F(DriverAgentTest, shouldInitializeUntetheredStateChangeInterceptor)
 {
-    aeron_untethered_subscription_state_change_func_t func = m_context->untethered_subscription_state_change_func;
+    aeron_untethered_subscription_state_change_func_t func = m_context->untethered_subscription_on_state_change_func;
 
     EXPECT_TRUE(aeron_driver_agent_logging_events_init("UNTETHERED_SUBSCRIPTION_STATE_CHANGE", nullptr));
     aeron_driver_agent_init_logging_events_interceptors(m_context);
 
-    EXPECT_NE(m_context->untethered_subscription_state_change_func, func);
+    EXPECT_NE(m_context->untethered_subscription_on_state_change_func, func);
 }
 
 TEST_F(DriverAgentTest, shouldKeepOriginalUntetheredStateChangeFunctionIfEventNotEnabled)
 {
-    aeron_untethered_subscription_state_change_func_t func = m_context->untethered_subscription_state_change_func;
+    aeron_untethered_subscription_state_change_func_t func = m_context->untethered_subscription_on_state_change_func;
 
     aeron_driver_agent_init_logging_events_interceptors(m_context);
 
-    EXPECT_EQ(m_context->untethered_subscription_state_change_func, func);
+    EXPECT_EQ(m_context->untethered_subscription_on_state_change_func, func);
 }
 
 TEST_F(DriverAgentTest, shouldLogUntetheredSubscriptionStateChange)
@@ -449,15 +449,12 @@ TEST_F(DriverAgentTest, shouldLogUntetheredSubscriptionStateChange)
     tetherable_position.state = old_state;
     tetherable_position.subscription_registration_id = subscription_id;
 
-    aeron_driver_agent_untethered_subscription_state_change_interceptor(
+    aeron_driver_agent_untethered_subscription_state_change(
         &tetherable_position,
         now_ns,
         new_state,
         stream_id,
         session_id);
-
-    EXPECT_EQ(tetherable_position.state, new_state);
-    EXPECT_EQ(tetherable_position.time_of_last_update_ns, now_ns);
 
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)

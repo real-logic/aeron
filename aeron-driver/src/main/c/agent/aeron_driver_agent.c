@@ -773,18 +773,7 @@ void aeron_driver_agent_incoming_msg(
         media_timestamp);
 }
 
-void aeron_untethered_subscription_state_change(
-    aeron_tetherable_position_t *tetherable_position,
-    int64_t now_ns,
-    aeron_subscription_tether_state_t new_state,
-    int32_t stream_id,
-    int32_t session_id)
-{
-    tetherable_position->state = new_state;
-    tetherable_position->time_of_last_update_ns = now_ns;
-}
-
-void aeron_driver_agent_untethered_subscription_state_change_interceptor(
+void aeron_driver_agent_untethered_subscription_state_change(
     aeron_tetherable_position_t *tetherable_position,
     int64_t now_ns,
     aeron_subscription_tether_state_t new_state,
@@ -808,8 +797,6 @@ void aeron_driver_agent_untethered_subscription_state_change_interceptor(
         hdr->session_id = session_id;
         hdr->old_state = tetherable_position->state;
         hdr->new_state = new_state;
-
-        aeron_untethered_subscription_state_change(tetherable_position, now_ns, new_state, stream_id, session_id);
 
         aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
     }
@@ -1207,8 +1194,8 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE))
     {
-        context->untethered_subscription_state_change_func =
-            aeron_driver_agent_untethered_subscription_state_change_interceptor;
+        context->untethered_subscription_on_state_change_func =
+            aeron_driver_agent_untethered_subscription_state_change;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED))

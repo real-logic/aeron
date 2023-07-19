@@ -263,6 +263,16 @@ static void aeron_driver_conductor_on_endpoint_change_null(const void *channel)
 {
 }
 
+static void aeron_driver_untethered_subscription_state_change_null(
+    aeron_tetherable_position_t *tetherable_position,
+    int64_t now_ns,
+    aeron_subscription_tether_state_t new_state,
+    int32_t stream_id,
+    int32_t session_id)
+{
+}
+
+
 #define AERON_DIR_WARN_IF_EXISTS_DEFAULT false
 #define AERON_THREADING_MODE_DEFAULT AERON_THREADING_MODE_DEDICATED
 #define AERON_DIR_DELETE_ON_START_DEFAULT false
@@ -1089,7 +1099,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->receiver_proxy_on_add_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
     _context->receiver_proxy_on_remove_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
 
-    _context->untethered_subscription_state_change_func = aeron_untethered_subscription_state_change;
+    _context->untethered_subscription_on_state_change_func = aeron_driver_untethered_subscription_state_change_null;
 
     _context->name_resolution_on_neighbor_added_func = aeron_driver_conductor_name_resolver_on_neighbor_change_null;
     _context->name_resolution_on_neighbor_removed_func = aeron_driver_conductor_name_resolver_on_neighbor_change_null;

@@ -27,7 +27,7 @@ extern "C"
 #include "aeron_driver_context.h"
 }
 
-#define PUB_URI "aeron:udp?endpoint=192.168.178.22:24325"
+#define PUB_URI "aeron:udp?endpoint=localhost:24325"
 #define STREAM_ID (117)
 
 class CSystemTest : public CSystemTestBase, public testing::TestWithParam<std::tuple<const char *>>

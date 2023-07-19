@@ -3225,6 +3225,44 @@ int aeron_driver_conductor_link_subscribable(
     return result;
 }
 
+void aeron_driver_subscribable_state(
+    aeron_subscribable_t *subscribable,
+    aeron_tetherable_position_t *tetherable_position,
+    aeron_subscription_tether_state_t state,
+    int64_t now_ns)
+{
+    tetherable_position->state = state;
+    tetherable_position->time_of_last_update_ns = now_ns;
+}
+
+size_t aeron_driver_subscribable_working_position_count(aeron_subscribable_t *subscribable)
+{
+    size_t count = 0;
+
+    for (int lastIndex = subscribable->length - 1, i = lastIndex; i >= 0; i--)
+    {
+        if (AERON_SUBSCRIPTION_TETHER_RESTING != subscribable->array[i].state)
+        {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+bool aeron_driver_subscribable_has_working_positions(aeron_subscribable_t *subscribable)
+{
+    for (int lastIndex = subscribable->length - 1, i = lastIndex; i >= 0; i--)
+    {
+        if (AERON_SUBSCRIPTION_TETHER_RESTING != subscribable->array[i].state)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void aeron_driver_conductor_unlink_subscribable(aeron_subscription_link_t *link, aeron_subscribable_t *subscribable)
 {
     for (int last_index = (int32_t)link->subscribable_list.length - 1, i = last_index; i >= 0; i--)

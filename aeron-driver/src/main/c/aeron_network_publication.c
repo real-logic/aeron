@@ -111,7 +111,7 @@ int aeron_network_publication_create(
     }
     _pub->raw_log_close_func = context->raw_log_close_func;
     _pub->raw_log_free_func = context->raw_log_free_func;
-    _pub->untethered_subscription_state_change_func = context->untethered_subscription_state_change_func;
+    _pub->untethered_subscription_state_change_func = context->untethered_subscription_on_state_change_func;
 
     strncpy(_pub->log_file_name, path, (size_t)path_length);
     _pub->log_file_name[path_length] = '\0';
@@ -737,7 +737,8 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
         int64_t snd_pos = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
 
         if (aeron_network_publication_has_required_receivers(publication) ||
-            (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0))
+            (publication->spies_simulate_connection &&
+            aeron_driver_subscribable_has_working_positions(&publication->conductor_fields.subscribable)))
         {
             int64_t min_consumer_position = snd_pos;
             if (publication->conductor_fields.subscribable.length > 0)
@@ -831,7 +832,7 @@ void aeron_network_publication_decref(void *clientd)
 bool aeron_network_publication_spies_finished_consuming(
     aeron_network_publication_t *publication, aeron_driver_conductor_t *conductor, int64_t eos_pos)
 {
-    if (publication->conductor_fields.subscribable.length > 0)
+    if (aeron_driver_subscribable_has_working_positions(&publication->conductor_fields.subscribable))
     {
         for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
         {
@@ -871,9 +872,10 @@ void aeron_network_publication_check_untethered_subscriptions(
     int64_t term_window_length = publication->term_window_length;
     int64_t untethered_window_limit = (sender_position - term_window_length) + (term_window_length / 4);
 
-    for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
+    aeron_subscribable_t *subscribable = &publication->conductor_fields.subscribable;
+    for (size_t i = 0, length = subscribable->length; i < length; i++)
     {
-        aeron_tetherable_position_t *tetherable_position = &publication->conductor_fields.subscribable.array[i];
+        aeron_tetherable_position_t *tetherable_position = &subscribable->array[i];
 
         if (tetherable_position->is_tether)
         {
@@ -901,7 +903,10 @@ void aeron_network_publication_check_untethered_subscriptions(
                             AERON_IPC_CHANNEL,
                             AERON_IPC_CHANNEL_LEN);
 
-                        publication->untethered_subscription_state_change_func(
+                        aeron_driver_subscribable_state(
+                            subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_LINGER, now_ns);
+
+                        conductor->context->untethered_subscription_on_state_change_func(
                             tetherable_position,
                             now_ns,
                             AERON_SUBSCRIPTION_TETHER_LINGER,
@@ -913,7 +918,10 @@ void aeron_network_publication_check_untethered_subscriptions(
                 case AERON_SUBSCRIPTION_TETHER_LINGER:
                     if (now_ns > (tetherable_position->time_of_last_update_ns + window_limit_timeout_ns))
                     {
-                        publication->untethered_subscription_state_change_func(
+                        aeron_driver_subscribable_state(
+                            subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_RESTING, now_ns);
+
+                        conductor->context->untethered_subscription_on_state_change_func(
                             tetherable_position,
                             now_ns,
                             AERON_SUBSCRIPTION_TETHER_RESTING,
@@ -939,7 +947,10 @@ void aeron_network_publication_check_untethered_subscriptions(
                             AERON_IPC_CHANNEL,
                             AERON_IPC_CHANNEL_LEN);
 
-                        publication->untethered_subscription_state_change_func(
+                        aeron_driver_subscribable_state(
+                            subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_ACTIVE, now_ns);
+
+                        conductor->context->untethered_subscription_on_state_change_func(
                             tetherable_position,
                             now_ns,
                             AERON_SUBSCRIPTION_TETHER_ACTIVE,
@@ -963,7 +974,8 @@ void aeron_network_publication_on_time_event(
 
             const bool current_connected_status =
                 aeron_network_publication_has_required_receivers(publication) ||
-                (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0);
+                (publication->spies_simulate_connection &&
+                aeron_driver_subscribable_has_working_positions(&publication->conductor_fields.subscribable));
             aeron_network_publication_update_connected_status(publication, current_connected_status);
 
             const int64_t producer_position = aeron_network_publication_producer_position(publication);
@@ -1053,7 +1065,5 @@ extern void aeron_network_publication_sender_release(aeron_network_publication_t
 extern bool aeron_network_publication_has_sender_released(aeron_network_publication_t *publication);
 
 extern int64_t aeron_network_publication_max_spy_position(aeron_network_publication_t *publication, int64_t snd_pos);
-
-extern size_t aeron_network_publication_num_spy_subscribers(aeron_network_publication_t *publication);
 
 extern bool aeron_network_publication_is_accepting_subscriptions(aeron_network_publication_t *publication);

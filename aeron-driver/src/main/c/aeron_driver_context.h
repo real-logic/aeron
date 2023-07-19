@@ -251,7 +251,7 @@ typedef struct aeron_driver_context_stct
     aeron_on_endpoint_change_func_t receiver_proxy_on_add_endpoint_func;
     aeron_on_endpoint_change_func_t receiver_proxy_on_remove_endpoint_func;
 
-    aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
+    aeron_untethered_subscription_state_change_func_t untethered_subscription_on_state_change_func;
 
     aeron_driver_name_resolver_on_neighbor_change_func_t name_resolution_on_neighbor_added_func;
     aeron_driver_name_resolver_on_neighbor_change_func_t name_resolution_on_neighbor_removed_func;

@@ -1907,7 +1907,7 @@ public final class ConsensusModule implements AutoCloseable
          * defaults to {@link #clusterDir()} if it is not set explicitly via the
          * {@link ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME}.
          *
-         * @return the directory in which the Archive will store mark file (i.e. {@code cluster-mark.dat}).
+         * @return the directory in which the ConsensusModule will store mark file (i.e. {@code cluster-mark.dat}).
          * @see ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME
          * @see #clusterDir()
          */
@@ -1917,7 +1917,7 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the directory in which the Archive will store mark file (i.e. {@code cluster-mark.dat}).
+         * Set the directory in which the ConsensusModule will store mark file (i.e. {@code cluster-mark.dat}).
          *
          * @param markFileDir the directory in which the Archive will store mark file (i.e. {@code cluster-mark.dat}).
          * @return this for a fluent API.

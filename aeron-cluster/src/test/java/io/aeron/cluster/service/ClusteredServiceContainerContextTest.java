@@ -99,6 +99,8 @@ class ClusteredServiceContainerContextTest
 
             assertEquals(markFileDir, context.markFileDir());
             assertTrue(markFileDir.exists());
+            assertTrue(
+                new File(context.clusterDir(), ClusterMarkFile.linkFilenameForService(context.serviceId())).exists());
         }
         finally
         {
@@ -118,6 +120,8 @@ class ClusteredServiceContainerContextTest
 
         assertEquals(markFileDir, context.markFileDir());
         assertTrue(markFileDir.exists());
+        assertTrue(
+            new File(context.clusterDir(), ClusterMarkFile.linkFilenameForService(context.serviceId())).exists());
     }
 
     @ParameterizedTest
@@ -127,7 +131,7 @@ class ClusteredServiceContainerContextTest
         final File markFileDir = isSet ? context.clusterDir() : null;
 
         context.serviceId(serviceId).markFileDir(markFileDir);
-        final File oldLinkFile = new File(context.clusterDir(), ClusterMarkFile.markFilenameForService(serviceId));
+        final File oldLinkFile = new File(context.clusterDir(), ClusterMarkFile.linkFilenameForService(serviceId));
         assertTrue(oldLinkFile.createNewFile());
         assertTrue(oldLinkFile.exists());
 

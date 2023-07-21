@@ -431,6 +431,17 @@ public final class ClusterMarkFile implements AutoCloseable
     }
 
     /**
+     * The filename to be used for the link file given a service id.
+     *
+     * @param serviceId of the service the {@link ClusterMarkFile} represents.
+     * @return the filename to be used for the link file given a service id.
+     */
+    public static String linkFilenameForService(final int serviceId)
+    {
+        return SERVICE_FILENAME_PREFIX + serviceId + LINK_FILE_EXTENSION;
+    }
+
+    /**
      * The control properties for communicating between the consensus module and the services.
      *
      * @return the control properties for communicating between the consensus module and the services.

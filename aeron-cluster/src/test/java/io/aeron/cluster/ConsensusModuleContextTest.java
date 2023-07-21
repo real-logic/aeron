@@ -536,6 +536,7 @@ class ConsensusModuleContextTest
 
             assertEquals(markFileDir, context.markFileDir());
             assertTrue(markFileDir.exists());
+            assertTrue(new File(context.clusterDir(), ClusterMarkFile.LINK_FILENAME).exists());
         }
         finally
         {
@@ -555,6 +556,7 @@ class ConsensusModuleContextTest
 
         assertEquals(markFileDir, context.markFileDir());
         assertTrue(markFileDir.exists());
+        assertTrue(new File(context.clusterDir(), ClusterMarkFile.LINK_FILENAME).exists());
     }
 
     @ParameterizedTest

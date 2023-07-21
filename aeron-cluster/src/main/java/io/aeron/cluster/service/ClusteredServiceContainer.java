@@ -744,8 +744,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             MarkFile.ensureMarkFileLink(
                 clusterDir,
-                new File(markFileDir, ClusterMarkFile.FILENAME),
-                ClusterMarkFile.LINK_FILENAME);
+                new File(markFileDir, ClusterMarkFile.markFilenameForService(serviceId)),
+                ClusterMarkFile.linkFilenameForService(serviceId));
 
             if (null == errorLog)
             {
@@ -1518,11 +1518,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Get the directory in which the ConsensusModule will store mark file (i.e. {@code
+         * Get the directory in which the ClusteredServiceContainer will store mark file (i.e. {@code
          * cluster-mark-service-0.dat}). It defaults to {@link #clusterDir()} if it is not set explicitly via the {@link
          * ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME}.
          *
-         * @return the directory in which the Archive will store mark file (i.e. {@code cluster-mark-service-0.dat}).
+         * @return the directory in which the ClusteredServiceContainer will store mark file (i.e. {@code
+         *         cluster-mark-service-0.dat}).
          * @see ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME
          * @see #clusterDir()
          */
@@ -1532,9 +1533,10 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the directory in which the Archive will store mark file (i.e. {@code cluster-mark-service-0.dat}).
+         * Set the directory in which the ClusteredServiceContainer will store mark file (i.e. {@code
+         * cluster-mark-service-0.dat}).
          *
-         * @param markFileDir the directory in which the Archive will store mark file (i.e. {@code
+         * @param markFileDir the directory in which the ClusteredServiceContainer will store mark file (i.e. {@code
          *                    cluster-mark-service-0.dat}).
          * @return this for a fluent API.
          */

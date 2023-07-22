@@ -52,6 +52,8 @@ public final class Image
     private final int initialTermId;
     private final int termLengthMask;
     private final int positionBitsToShift;
+
+    private long eosPosition = Long.MAX_VALUE;
     private boolean isEos;
     private volatile boolean isClosed;
 
@@ -254,6 +256,22 @@ public final class Image
         }
 
         return subscriberPosition.get() >= endOfStreamPosition(logBuffers.metaDataBuffer());
+    }
+
+    /**
+     * The position the stream reached when EOS was received from the publisher. The position will be
+     * {@link Long#MAX_VALUE} until the stream ends and EOS is set.
+     *
+     * @return position the stream reached when EOS was received from the publisher.
+     */
+    public long eosPosition()
+    {
+        if (isClosed)
+        {
+            return eosPosition;
+        }
+
+        return endOfStreamPosition(logBuffers.metaDataBuffer());
     }
 
     /**
@@ -801,7 +819,8 @@ public final class Image
     void close()
     {
         finalPosition = subscriberPosition.getVolatile();
-        isEos = finalPosition >= endOfStreamPosition(logBuffers.metaDataBuffer());
+        eosPosition = endOfStreamPosition(logBuffers.metaDataBuffer());
+        isEos = finalPosition >= eosPosition;
         isClosed = true;
     }
 
@@ -819,6 +838,7 @@ public final class Image
             ", termLength=" + termBufferLength() +
             ", joinPosition=" + joinPosition +
             ", position=" + position() +
+            ", eosPosition=" + eosPosition() +
             ", activeTransportCount=" + activeTransportCount() +
             ", sourceIdentity='" + sourceIdentity + '\'' +
             ", subscription=" + subscription +

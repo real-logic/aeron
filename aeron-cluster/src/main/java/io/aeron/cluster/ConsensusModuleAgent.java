@@ -2092,16 +2092,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                             member.catchupReplaySessionId(NULL_VALUE);
                             member.catchupReplayCorrelationId(NULL_VALUE);
 
-                            ctx.countedErrorHandler().onError(new ClusterEvent(
-                                "catchup replay failed - " + poller.errorMessage()));
+                            final String message = "catchup replay failed - " + poller.errorMessage();
+                            ctx.countedErrorHandler().onError(new ClusterEvent(message));
                             return workCount;
                         }
                     }
 
                     if (UNKNOWN_REPLAY == poller.relevantId())
                     {
-                        ctx.countedErrorHandler().onError(new ClusterEvent(
-                            "replay no longer relevant - " + poller.errorMessage()));
+                        final String message = "replay no longer relevant - " + poller.errorMessage();
+                        ctx.countedErrorHandler().onError(new ClusterEvent(message));
                         return workCount;
                     }
 
@@ -2129,9 +2129,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                     {
                         logRecordingStopPosition = position;
 
-                        if (Cluster.Role.LEADER == role && null == election)
+                        if (null == election && ConsensusModule.State.ACTIVE == state)
                         {
-                            enterElection(false);
+                            enterElection(logAdapter.isLogEndOfStreamAt(position));
+                            return workCount;
                         }
                     }
 

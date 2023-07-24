@@ -286,6 +286,7 @@ SET(SOURCE
     aeron_name_resolver.c
     aeron_name_resolver_cache.c
     aeron_network_publication.c
+    aeron_port_manager.c
     aeron_position.c
     aeron_publication_image.c
     aeron_retransmit_handler.c
@@ -327,6 +328,7 @@ SET(HEADERS
     aeron_name_resolver.h
     aeron_name_resolver_cache.h
     aeron_network_publication.h
+    aeron_port_manager.h
     aeron_position.h
     aeron_publication_image.h
     aeron_retransmit_handler.h

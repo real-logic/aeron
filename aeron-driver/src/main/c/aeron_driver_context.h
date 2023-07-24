@@ -32,6 +32,7 @@
 #include "aeron_system_counters.h"
 #include "aeron_cnc_file_descriptor.h"
 #include "aeron_duty_cycle_tracker.h"
+#include "aeron_port_manager.h"
 
 #define AERON_COMMAND_RB_CAPACITY (128 * 1024)
 #define AERON_COMMAND_RB_RESERVE (1024)

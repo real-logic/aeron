@@ -23,6 +23,8 @@ import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +36,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -184,6 +187,81 @@ class ImageAvailabilityTest
 
             assertEquals(2, availableImageCount.get());
             assertEquals(2, unavailableImageCount.get());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("channels")
+    @InterruptAfter(10)
+    void shouldGetEndOfStreamPosition(final String channel)
+    {
+        final DirectBuffer message = new UnsafeBuffer("hello word".getBytes(US_ASCII));
+
+        try (Subscription sub = aeron.addSubscription(channel, STREAM_ID);
+            Publication pub = aeron.addPublication(channel, STREAM_ID))
+        {
+            while (!sub.isConnected() || !pub.isConnected())
+            {
+                Tests.yield();
+                aeron.conductorAgentInvoker().invoke();
+            }
+
+            final Image image = sub.imageAtIndex(0);
+            assertEquals(Long.MAX_VALUE, image.eosPosition());
+
+            final int numMessages = 10;
+            for (int i = 0; i < numMessages; i++)
+            {
+                while (pub.offer(message) < 0)
+                {
+                    Tests.yield();
+                }
+            }
+
+            assertEquals(Long.MAX_VALUE, image.eosPosition());
+
+            int messagesRemaining = numMessages;
+            while (0 < messagesRemaining)
+            {
+                messagesRemaining -= image.poll((buffer, offset, length, header) -> {}, 10);
+            }
+
+            assertEquals(Long.MAX_VALUE, image.eosPosition());
+
+            for (int i = 0; i < numMessages; i++)
+            {
+                while (pub.offer(message) < 0)
+                {
+                    Tests.yield();
+                }
+            }
+
+            messagesRemaining = numMessages;
+            while (5 < messagesRemaining)
+            {
+                messagesRemaining -= image.poll((buffer, offset, length, header) -> {}, 1);
+            }
+
+            CloseHelper.quietClose(pub);
+            long eosPosition;
+            while (Long.MAX_VALUE == (eosPosition = image.eosPosition()))
+            {
+                Tests.yield();
+            }
+
+            assertFalse(image.isEndOfStream());
+
+            while (0 < messagesRemaining)
+            {
+                messagesRemaining -= image.poll((buffer, offset, length, header) -> {}, 1);
+            }
+
+            while (!image.isEndOfStream())
+            {
+                Tests.yield();
+            }
+
+            assertEquals(eosPosition, image.position());
         }
     }
 }

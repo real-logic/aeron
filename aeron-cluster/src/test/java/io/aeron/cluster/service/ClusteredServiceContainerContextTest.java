@@ -18,6 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -105,6 +106,7 @@ class ClusteredServiceContainerContextTest
         finally
         {
             System.clearProperty(MARK_FILE_DIR_PROP_NAME);
+            CloseHelper.quietClose(context::close);
         }
     }
 
@@ -116,12 +118,19 @@ class ClusteredServiceContainerContextTest
         assertFalse(markFileDir.exists());
         context.serviceId(serviceId).markFileDir(markFileDir);
 
-        context.conclude();
+        try
+        {
+            context.conclude();
 
-        assertEquals(markFileDir, context.markFileDir());
-        assertTrue(markFileDir.exists());
-        assertTrue(
-            new File(context.clusterDir(), ClusterMarkFile.linkFilenameForService(context.serviceId())).exists());
+            assertEquals(markFileDir, context.markFileDir());
+            assertTrue(markFileDir.exists());
+            assertTrue(
+                new File(context.clusterDir(), ClusterMarkFile.linkFilenameForService(context.serviceId())).exists());
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
+        }
     }
 
     @ParameterizedTest
@@ -135,8 +144,15 @@ class ClusteredServiceContainerContextTest
         assertTrue(oldLinkFile.createNewFile());
         assertTrue(oldLinkFile.exists());
 
-        context.conclude();
+        try
+        {
+            context.conclude();
 
-        assertFalse(oldLinkFile.exists());
+            assertFalse(oldLinkFile.exists());
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
+        }
     }
 }

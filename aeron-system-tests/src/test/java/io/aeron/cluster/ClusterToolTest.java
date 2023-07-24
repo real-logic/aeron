@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -41,6 +42,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.matchesRegex;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
@@ -173,6 +175,28 @@ class ClusterToolTest
         assertThat(
             capturingPrintStream.flushAndGetContent(),
             containsString("cluster-mark.dat does not exist"));
+    }
+
+    @Test
+    void shouldBeAbleToAccessClusterMarkFilesInANonDefaultLocation(final @TempDir File markFileDir)
+    {
+        final TestCluster cluster = aCluster().withStaticNodes(3).markFileBaseDir(markFileDir).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+        cluster.connectClient();
+        cluster.sendUnexpectedMessages(1);
+        final CapturingPrintStream stream = new CapturingPrintStream();
+        ClusterTool.errors(
+            stream.resetAndGetPrintStream(),
+            cluster.node(leader.index()).consensusModule().context().clusterDir());
+
+        final String errorContent = stream.flushAndGetContent();
+        assertThat(errorContent, containsString("unexpected message received"));
+        assertThat(errorContent, containsString("Mark file exists"));
+        final Pattern serviceMarkFileName = Pattern.compile(
+            ".*Mark file exists:.*" + markFileDir + ".*cluster-mark-service-0.dat.*", Pattern.DOTALL);
+        assertThat("Tool output: " + errorContent, errorContent, matchesRegex(serviceMarkFileName));
     }
 
     @Test

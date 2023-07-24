@@ -28,7 +28,6 @@ import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
-import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AtomicBuffer;
@@ -50,6 +49,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -457,7 +457,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, out::println))
             {
                 printTypeAndActivityTimestamp(out, markFile);
                 printErrors(out, markFile);
@@ -691,7 +691,8 @@ public class ClusterTool
      */
     public static boolean markFileExists(final File clusterDir)
     {
-        final File markFile = new File(clusterDir, ClusterMarkFile.FILENAME);
+        final File markFileDir = resolveConsensusModuleMarkFileDir(clusterDir);
+        final File markFile = new File(markFileDir, ClusterMarkFile.FILENAME);
 
         return markFile.exists();
     }
@@ -1306,32 +1307,76 @@ public class ClusterTool
 
     static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
     {
-        final File markFileDir = resolveMarkFileDir(clusterDir);
+        final File markFileDir = resolveConsensusModuleMarkFileDir(clusterDir);
         return new ClusterMarkFile(
             markFileDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
     }
 
     private static ClusterMarkFile[] openServiceMarkFiles(final File clusterDir, final Consumer<String> logger)
     {
-        String[] clusterMarkFileNames =
-            clusterDir.list((dir, name) ->
+        File[] clusterMarkFileNames =
+            clusterDir.listFiles((dir, name) ->
                 name.startsWith(ClusterMarkFile.SERVICE_FILENAME_PREFIX) &&
-                    name.endsWith(ClusterMarkFile.FILE_EXTENSION));
+                    (name.endsWith(ClusterMarkFile.FILE_EXTENSION) ||
+                        name.endsWith(ClusterMarkFile.LINK_FILE_EXTENSION)));
 
         if (null == clusterMarkFileNames)
         {
-            clusterMarkFileNames = ArrayUtil.EMPTY_STRING_ARRAY;
+            clusterMarkFileNames = new File[0];
         }
+
+        final ArrayList<File> resolvedMarkFileNames = new ArrayList<>();
+        resolveServiceMarkFileNames(clusterMarkFileNames, resolvedMarkFileNames);
 
         final ClusterMarkFile[] clusterMarkFiles = new ClusterMarkFile[clusterMarkFileNames.length];
 
-        for (int i = 0, length = clusterMarkFiles.length; i < length; i++)
+        for (int i = 0, n = resolvedMarkFileNames.size(); i < n; i++)
         {
+            final File resolvedMarkFile = resolvedMarkFileNames.get(i);
             clusterMarkFiles[i] = new ClusterMarkFile(
-                clusterDir, clusterMarkFileNames[i], System::currentTimeMillis, TIMEOUT_MS, logger);
+                resolvedMarkFile.getParentFile(),
+                resolvedMarkFile.getName(),
+                System::currentTimeMillis,
+                TIMEOUT_MS,
+                logger);
         }
 
         return clusterMarkFiles;
+    }
+
+    private static void resolveServiceMarkFileNames(final File[] clusterMarkFiles, final ArrayList<File> resolvedFiles)
+    {
+        final HashSet<String> resolvedServices = new HashSet<>();
+
+        for (final File clusterMarkFile : clusterMarkFiles)
+        {
+            final String filename = clusterMarkFile.getName();
+            if (filename.endsWith(ClusterMarkFile.LINK_FILE_EXTENSION))
+            {
+                final String name = filename.substring(
+                    0, filename.length() - ClusterMarkFile.LINK_FILE_EXTENSION.length());
+
+                final File markFileDir = resolveDirectoryFromLinkFile(clusterMarkFile);
+                resolvedFiles.add(new File(markFileDir, name + ClusterMarkFile.FILE_EXTENSION));
+                resolvedServices.add(name);
+            }
+        }
+
+        for (final File clusterMarkFile : clusterMarkFiles)
+        {
+            final String filename = clusterMarkFile.getName();
+            if (filename.endsWith(ClusterMarkFile.FILE_EXTENSION))
+            {
+                final String name = filename.substring(
+                    0, filename.length() - ClusterMarkFile.FILE_EXTENSION.length());
+
+                if (!resolvedServices.contains(name))
+                {
+                    resolvedFiles.add(clusterMarkFile);
+                    resolvedServices.add(name);
+                }
+            }
+        }
     }
 
     private static void printTypeAndActivityTimestamp(final PrintStream out, final ClusterMarkFile markFile)
@@ -1440,26 +1485,25 @@ public class ClusterTool
         }
     }
 
-    private static File resolveMarkFileDir(final File clusterDir)
+    private static File resolveConsensusModuleMarkFileDir(final File clusterDir)
     {
         final File linkFile = new File(clusterDir, ClusterMarkFile.LINK_FILENAME);
+        return linkFile.exists() ? resolveDirectoryFromLinkFile(linkFile) : clusterDir;
+    }
+
+    private static File resolveDirectoryFromLinkFile(final File linkFile)
+    {
         final File markFileDir;
-        if (linkFile.exists())
+
+        try
         {
-            try
-            {
-                final byte[] bytes = Files.readAllBytes(linkFile.toPath());
-                final String markFileDirPath = new String(bytes, US_ASCII).trim();
-                markFileDir = new File(markFileDirPath);
-            }
-            catch (final IOException ex)
-            {
-                throw new RuntimeException("failed to read link file=" + linkFile, ex);
-            }
+            final byte[] bytes = Files.readAllBytes(linkFile.toPath());
+            final String markFileDirPath = new String(bytes, US_ASCII).trim();
+            markFileDir = new File(markFileDirPath);
         }
-        else
+        catch (final IOException ex)
         {
-            markFileDir = clusterDir;
+            throw new RuntimeException("failed to read link file=" + linkFile, ex);
         }
 
         return markFileDir;

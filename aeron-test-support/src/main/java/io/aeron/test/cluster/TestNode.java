@@ -103,7 +103,6 @@ public final class TestNode implements AutoCloseable
             dataCollector.addForCleanup(baseDir);
 
             containers = new ClusteredServiceContainer[services.length];
-            final File servicesDir = new File(baseDir, "services");
             for (int i = 0; i < services.length; i++)
             {
                 final ClusteredServiceContainer.Context ctx = context.serviceContainerContext.clone();
@@ -113,13 +112,13 @@ public final class TestNode implements AutoCloseable
                         .controlResponseChannel("aeron:ipc"))
                     .terminationHook(ClusterTests.terminationHook(
                         context.isTerminationExpected, context.hasServiceTerminated[i]))
-                    .clusterDir(servicesDir)
+                    .clusterDir(context.consensusModuleContext.clusterDir())
+                    .markFileDir(context.consensusModuleContext.markFileDir())
                     .clusteredService(services[i])
                     .serviceId(i);
                 containers[i] = ClusteredServiceContainer.launch(ctx);
             }
 
-            dataCollector.add(servicesDir.toPath());
             dataCollector.add(consensusModule.context().clusterDir().toPath());
             dataCollector.add(archive.context().archiveDir().toPath());
             dataCollector.add(mediaDriver.context().aeronDirectory().toPath());

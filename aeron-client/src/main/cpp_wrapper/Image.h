@@ -279,9 +279,9 @@ public:
      *
      * @return position the stream reached when EOS was received from the publisher.
      */
-    inline std::int64_t eosPosition() const
+    inline std::int64_t endOfStreamPosition() const
     {
-        return aeron_image_eos_position(m_image);
+        return aeron_image_end_of_stream_position(m_image);
     }
 
     /**

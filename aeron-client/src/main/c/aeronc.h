@@ -1831,7 +1831,7 @@ bool aeron_image_is_end_of_stream(aeron_image_t *image);
  * @param image to check.
  * @return position the stream reached when EOS was received from the publisher.
  */
-int64_t aeron_image_eos_position(aeron_image_t *image);
+int64_t aeron_image_end_of_stream_position(aeron_image_t *image);
 
 /**
  * Count of observed active transports within the image liveness timeout.

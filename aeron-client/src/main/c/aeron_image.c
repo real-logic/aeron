@@ -217,7 +217,7 @@ bool aeron_image_is_end_of_stream(aeron_image_t *image)
     return subscriber_position >= end_of_stream_position;
 }
 
-int64_t aeron_image_eos_position(aeron_image_t *image)
+int64_t aeron_image_end_of_stream_position(aeron_image_t *image)
 {
     bool is_closed;
     AERON_GET_VOLATILE(is_closed, image->is_closed);

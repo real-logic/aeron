@@ -836,7 +836,7 @@ public final class Image
             ", termLength=" + termBufferLength() +
             ", joinPosition=" + joinPosition +
             ", position=" + position() +
-            ", eosPosition=" + endOfStreamPosition() +
+            ", endOfStreamPosition=" + endOfStreamPosition() +
             ", activeTransportCount=" + activeTransportCount() +
             ", sourceIdentity='" + sourceIdentity + '\'' +
             ", subscription=" + subscription +

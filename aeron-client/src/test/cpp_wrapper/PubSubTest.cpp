@@ -428,7 +428,7 @@ TEST_P(PubSubTest, shouldHandleEosPosition)
             std::shared_ptr<Image> image = sub->imageByIndex(0);
 
             ASSERT_FALSE(image->isEndOfStream());
-            ASSERT_EQ(INT64_MAX, image->eosPosition());
+            ASSERT_EQ(INT64_MAX, image->endOfStreamPosition());
 
             for (int i = 0; i < numMessages; i++)
             {
@@ -457,7 +457,7 @@ TEST_P(PubSubTest, shouldHandleEosPosition)
             }
 
             ASSERT_FALSE(image->isEndOfStream());
-            ASSERT_EQ(INT64_MAX, image->eosPosition());
+            ASSERT_EQ(INT64_MAX, image->endOfStreamPosition());
 
             for (int i = 0; i < numMessages; i++)
             {
@@ -487,7 +487,7 @@ TEST_P(PubSubTest, shouldHandleEosPosition)
             }
 
             ASSERT_FALSE(image->isEndOfStream());
-            ASSERT_EQ(INT64_MAX, image->eosPosition());
+            ASSERT_EQ(INT64_MAX, image->endOfStreamPosition());
         } // Close the publication by having it go out of scope.
 
         std::shared_ptr<Image> image = sub->imageByIndex(0);
@@ -509,8 +509,8 @@ TEST_P(PubSubTest, shouldHandleEosPosition)
         }
 
         POLL_FOR(image->isEndOfStream(), invoker);
-        POLL_FOR(INT64_MAX != image->eosPosition(), invoker);
-        std::int64_t endOfStreamPosition = image->eosPosition();
+        POLL_FOR(INT64_MAX != image->endOfStreamPosition(), invoker);
+        std::int64_t endOfStreamPosition = image->endOfStreamPosition();
         ASSERT_EQ(endOfStreamPosition, image->position());
     }
 

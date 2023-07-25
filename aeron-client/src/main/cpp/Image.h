@@ -366,7 +366,7 @@ public:
      *
      * @return position the stream reached when EOS was received from the publisher.
      */
-    inline std::int64_t eosPosition() const
+    inline std::int64_t endOfStreamPosition() const
     {
         if (isClosed())
         {

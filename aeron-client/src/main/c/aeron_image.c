@@ -94,6 +94,7 @@ int aeron_image_create(
     _image->removal_change_number = INT64_MAX;
     _image->final_position = 0;
     _image->join_position = *subscriber_position;
+    _image->eos_position = INT64_MAX;
     _image->refcnt = 1;
 
     _image->metadata =
@@ -121,12 +122,9 @@ int aeron_image_delete(aeron_image_t *image)
 
 void aeron_image_force_close(aeron_image_t *image)
 {
-    int64_t end_of_stream_position;
-
-    AERON_GET_VOLATILE(end_of_stream_position, image->metadata->end_of_stream_position);
-
+    AERON_GET_VOLATILE(image->eos_position, image->metadata->end_of_stream_position);
     AERON_PUT_ORDERED(image->final_position, *image->subscriber_position);
-    AERON_PUT_ORDERED(image->is_eos, (image->final_position >= end_of_stream_position));
+    AERON_PUT_ORDERED(image->is_eos, (image->final_position >= image->eos_position));
     AERON_PUT_ORDERED(image->is_closed, true);
 }
 
@@ -217,6 +215,21 @@ bool aeron_image_is_end_of_stream(aeron_image_t *image)
     AERON_GET_VOLATILE(subscriber_position, *image->subscriber_position);
 
     return subscriber_position >= end_of_stream_position;
+}
+
+int64_t aeron_image_eos_position(aeron_image_t *image)
+{
+    bool is_closed;
+    AERON_GET_VOLATILE(is_closed, image->is_closed);
+    if (is_closed)
+    {
+        return image->eos_position;
+    }
+
+    int64_t end_of_stream_position;
+    AERON_GET_VOLATILE(end_of_stream_position, image->metadata->end_of_stream_position);
+
+    return end_of_stream_position;
 }
 
 int aeron_image_active_transport_count(aeron_image_t *image)

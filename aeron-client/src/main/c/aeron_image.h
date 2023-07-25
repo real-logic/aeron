@@ -40,6 +40,7 @@ typedef struct aeron_image_stct
     int64_t join_position;
     int64_t final_position;
     volatile int64_t refcnt;
+    int64_t eos_position;
 
     int32_t session_id;
     int32_t term_length_mask;

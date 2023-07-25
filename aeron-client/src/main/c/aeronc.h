@@ -1825,6 +1825,15 @@ int aeron_image_set_position(aeron_image_t *image, int64_t position);
 bool aeron_image_is_end_of_stream(aeron_image_t *image);
 
 /**
+ * The position the stream reached when EOS was received from the publisher. The position will be
+ * INT64_MAX until the stream ends and EOS is set.
+ *
+ * @param image to check.
+ * @return position the stream reached when EOS was received from the publisher.
+ */
+int64_t aeron_image_eos_position(aeron_image_t *image);
+
+/**
  * Count of observed active transports within the image liveness timeout.
  *
  * If the image is closed, then this is 0. This may also be 0 if no actual datagrams have arrived. IPC

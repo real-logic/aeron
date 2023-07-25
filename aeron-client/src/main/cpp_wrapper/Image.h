@@ -274,6 +274,17 @@ public:
     }
 
     /**
+     * The position the stream reached when EOS was received from the publisher. The position will be
+     * INT64_MAX until the stream ends and EOS is set.
+     *
+     * @return position the stream reached when EOS was received from the publisher.
+     */
+    inline std::int64_t eosPosition() const
+    {
+        return aeron_image_eos_position(m_image);
+    }
+
+    /**
      * A count of observed active transports within the Image liveness timeout.
      *
      * If the Image is closed, then this is 0. This may also be 0 if no actual datagrams have arrived. IPC

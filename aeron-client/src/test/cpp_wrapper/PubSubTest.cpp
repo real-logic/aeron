@@ -397,6 +397,128 @@ TEST_P(PubSubTest, shouldExclusivePublicationTryClaimAndControlledPollSubscripti
     invoker.invoke();
 }
 
+TEST_P(PubSubTest, shouldHandleEosPosition)
+{
+    buffer_t buf;
+    AtomicBuffer message(buf);
+    message.putString(0, "hello world!");
+
+    std::int32_t streamId = 982375;
+    ChannelUriStringBuilder uriBuilder;
+    const std::string channel = setParameters(std::get<0>(GetParam()), std::get<1>(GetParam()), uriBuilder)
+        .networkInterface("localhost")
+        .build();
+    Context ctx;
+
+    ctx.useConductorAgentInvoker(true);
+    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+    std::int64_t subId = aeron->addSubscription(channel, streamId);
+    std::int64_t pubId = aeron->addPublication(channel, streamId);
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
+    const int numMessages = 10;
+    int messagesRemaining = numMessages;
+
+    {
+        // Nest to trigger subscription cleanup
+        POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
+        {
+            // Nest to trigger images becoming unavailable
+            POLL_FOR_NON_NULL(pub, aeron->findPublication(pubId), invoker);
+            POLL_FOR(pub->isConnected() && sub->isConnected(), invoker);
+            std::shared_ptr<Image> image = sub->imageByIndex(0);
+
+            ASSERT_FALSE(image->isEndOfStream());
+            ASSERT_EQ(INT64_MAX, image->eosPosition());
+
+            for (int i = 0; i < numMessages; i++)
+            {
+                POLL_FOR(0 < pub->offer(message), invoker);
+            }
+
+            std::int64_t tStart = aeron_epoch_clock();
+            while (0 < messagesRemaining)
+            {
+                int pollCount = sub->poll(
+                    [&](
+                        concurrent::AtomicBuffer &buffer,
+                        util::index_t offset,
+                        util::index_t length,
+                        Header &header)
+                    {}, 1);
+
+                if (0 == pollCount)
+                {
+                    invoker.invoke();
+                    ASSERT_LT(aeron_epoch_clock() - tStart, AERON_TEST_TIMEOUT) << "Failed waiting";
+                    std::this_thread::yield();
+                }
+
+                messagesRemaining -= pollCount;
+            }
+
+            ASSERT_FALSE(image->isEndOfStream());
+            ASSERT_EQ(INT64_MAX, image->eosPosition());
+
+            for (int i = 0; i < numMessages; i++)
+            {
+                POLL_FOR(0 < pub->offer(message), invoker);
+            }
+
+            tStart = aeron_epoch_clock();
+            messagesRemaining = numMessages;
+            while (5 < messagesRemaining)
+            {
+                int pollCount = sub->poll(
+                    [&](
+                        concurrent::AtomicBuffer &buffer,
+                        util::index_t offset,
+                        util::index_t length,
+                        Header &header)
+                    {}, 1);
+
+                if (0 == pollCount)
+                {
+                    invoker.invoke();
+                    ASSERT_LT(aeron_epoch_clock() - tStart, AERON_TEST_TIMEOUT) << "Failed waiting";
+                    std::this_thread::yield();
+                }
+
+                messagesRemaining -= pollCount;
+            }
+
+            ASSERT_FALSE(image->isEndOfStream());
+            ASSERT_EQ(INT64_MAX, image->eosPosition());
+        } // Close the publication by having it go out of scope.
+
+        std::shared_ptr<Image> image = sub->imageByIndex(0);
+        ASSERT_FALSE(image->isEndOfStream());
+
+        std::int64_t tStart = aeron_epoch_clock();
+        while (0 < messagesRemaining)
+        {
+            int pollCount = sub->poll([&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header) {}, 1);
+
+            if (0 == pollCount)
+            {
+                invoker.invoke();
+                ASSERT_LT(aeron_epoch_clock() - tStart, AERON_TEST_TIMEOUT) << "Failed waiting";
+                std::this_thread::yield();
+            }
+
+            messagesRemaining -= pollCount;
+        }
+
+        POLL_FOR(image->isEndOfStream(), invoker);
+        POLL_FOR(INT64_MAX != image->eosPosition(), invoker);
+        std::int64_t endOfStreamPosition = image->eosPosition();
+        ASSERT_EQ(endOfStreamPosition, image->position());
+    }
+
+    // Allow callbacks to fire to complete cleanup and prevent sanitizer errors.
+    invoker.invoke();
+}
+
+
 // Useful to look at error stack when manually testing error conditions.
 TEST_F(PubSubTest, DISABLED_shouldError)
 {

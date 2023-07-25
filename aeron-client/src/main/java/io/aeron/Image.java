@@ -25,8 +25,6 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.logbuffer.ControlledFragmentHandler.Action.*;
 import static io.aeron.logbuffer.FrameDescriptor.*;
-import static io.aeron.logbuffer.LogBufferDescriptor.endOfStreamPosition;
-import static io.aeron.logbuffer.LogBufferDescriptor.indexByPosition;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -255,7 +253,7 @@ public final class Image
             return isEos;
         }
 
-        return subscriberPosition.get() >= endOfStreamPosition(logBuffers.metaDataBuffer());
+        return subscriberPosition.get() >= LogBufferDescriptor.endOfStreamPosition(logBuffers.metaDataBuffer());
     }
 
     /**
@@ -264,14 +262,14 @@ public final class Image
      *
      * @return position the stream reached when EOS was received from the publisher.
      */
-    public long eosPosition()
+    public long endOfStreamPosition()
     {
         if (isClosed)
         {
             return eosPosition;
         }
 
-        return endOfStreamPosition(logBuffers.metaDataBuffer());
+        return LogBufferDescriptor.endOfStreamPosition(logBuffers.metaDataBuffer());
     }
 
     /**
@@ -761,7 +759,7 @@ public final class Image
 
         final long position = subscriberPosition.get();
         final int offset = (int)position & termLengthMask;
-        final int activeIndex = indexByPosition(position, positionBitsToShift);
+        final int activeIndex = LogBufferDescriptor.indexByPosition(position, positionBitsToShift);
         final UnsafeBuffer termBuffer = termBuffers[activeIndex];
         final int capacity = termBuffer.capacity();
         final int limitOffset = Math.min(offset + blockLengthLimit, capacity);
@@ -792,7 +790,7 @@ public final class Image
 
     private UnsafeBuffer activeTermBuffer(final long position)
     {
-        return termBuffers[indexByPosition(position, positionBitsToShift)];
+        return termBuffers[LogBufferDescriptor.indexByPosition(position, positionBitsToShift)];
     }
 
     private void validatePosition(final long position)
@@ -819,7 +817,7 @@ public final class Image
     void close()
     {
         finalPosition = subscriberPosition.getVolatile();
-        eosPosition = endOfStreamPosition(logBuffers.metaDataBuffer());
+        eosPosition = LogBufferDescriptor.endOfStreamPosition(logBuffers.metaDataBuffer());
         isEos = finalPosition >= eosPosition;
         isClosed = true;
     }
@@ -838,7 +836,7 @@ public final class Image
             ", termLength=" + termBufferLength() +
             ", joinPosition=" + joinPosition +
             ", position=" + position() +
-            ", eosPosition=" + eosPosition() +
+            ", eosPosition=" + endOfStreamPosition() +
             ", activeTransportCount=" + activeTransportCount() +
             ", sourceIdentity='" + sourceIdentity + '\'' +
             ", subscription=" + subscription +

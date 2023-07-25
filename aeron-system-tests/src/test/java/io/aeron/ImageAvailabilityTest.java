@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
@@ -207,7 +208,7 @@ class ImageAvailabilityTest
             }
 
             final Image image = sub.imageAtIndex(0);
-            assertEquals(Long.MAX_VALUE, image.eosPosition());
+            assertEquals(Long.MAX_VALUE, image.endOfStreamPosition());
 
             final int numMessages = 10;
             for (int i = 0; i < numMessages; i++)
@@ -218,15 +219,16 @@ class ImageAvailabilityTest
                 }
             }
 
-            assertEquals(Long.MAX_VALUE, image.eosPosition());
+            assertEquals(Long.MAX_VALUE, image.endOfStreamPosition());
 
             int messagesRemaining = numMessages;
+            final FragmentHandler noopFragmentHandler = (buffer, offset, length, header) -> {};
             while (0 < messagesRemaining)
             {
-                messagesRemaining -= image.poll((buffer, offset, length, header) -> {}, 10);
+                messagesRemaining -= image.poll(noopFragmentHandler, 10);
             }
 
-            assertEquals(Long.MAX_VALUE, image.eosPosition());
+            assertEquals(Long.MAX_VALUE, image.endOfStreamPosition());
 
             for (int i = 0; i < numMessages; i++)
             {
@@ -239,12 +241,12 @@ class ImageAvailabilityTest
             messagesRemaining = numMessages;
             while (5 < messagesRemaining)
             {
-                messagesRemaining -= image.poll((buffer, offset, length, header) -> {}, 1);
+                messagesRemaining -= image.poll(noopFragmentHandler, 1);
             }
 
             CloseHelper.quietClose(pub);
             long eosPosition;
-            while (Long.MAX_VALUE == (eosPosition = image.eosPosition()))
+            while (Long.MAX_VALUE == (eosPosition = image.endOfStreamPosition()))
             {
                 Tests.yield();
             }
@@ -253,7 +255,7 @@ class ImageAvailabilityTest
 
             while (0 < messagesRemaining)
             {
-                messagesRemaining -= image.poll((buffer, offset, length, header) -> {}, 1);
+                messagesRemaining -= image.poll(noopFragmentHandler, 1);
             }
 
             while (!image.isEndOfStream())

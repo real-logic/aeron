@@ -33,8 +33,10 @@ typedef struct aeron_receive_destination_stct
 
     aeron_udp_channel_transport_t transport;
     aeron_udp_channel_data_paths_t *data_paths;
+    aeron_port_manager_t *port_manager;
     aeron_atomic_counter_t local_sockaddr_indicator;
     struct sockaddr_storage current_control_addr;
+    struct sockaddr_storage bind_addr;
     size_t so_rcvbuf;
     bool has_control_addr;
     int64_t time_of_last_activity_ns;

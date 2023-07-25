@@ -33,26 +33,33 @@ uint16_t aeron_wildcard_port_manager_get_port(struct sockaddr_storage *addr)
     return 0;
 }
 
-int aeron_wildcard_port_manager_init(
-        aeron_wildcard_port_manager_t *port_manager, uint16_t low_port, uint16_t high_port, bool is_sender)
+int aeron_wildcard_port_manager_init(aeron_wildcard_port_manager_t *port_manager, bool is_sender)
 {
     port_manager->port_manager.get_managed_port = aeron_wildcard_port_manager_get_managed_port;
     port_manager->port_manager.free_managed_port = aeron_wildcard_port_manager_free_managed_port;
     port_manager->port_manager.state = port_manager;
 
     if (aeron_int64_counter_map_init(
-            &port_manager->port_table, 0, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
+        &port_manager->port_table, 0, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         AERON_APPEND_ERR("%s", "could not init wildcard port manager map");
         return -1;
     }
 
-    port_manager->low_port = low_port;
-    port_manager->high_port = high_port;
-    port_manager->is_os_wildcard = low_port == high_port && 0 == low_port;
+    port_manager->low_port = 0;
+    port_manager->high_port = 0;
+    port_manager->is_os_wildcard = true;
     port_manager->is_sender = is_sender;
 
     return 0;
+}
+
+void aeron_wildcard_port_manager_set_range(
+    aeron_wildcard_port_manager_t *port_manager, uint16_t low_port, uint16_t high_port)
+{
+    port_manager->low_port = low_port;
+    port_manager->high_port = high_port;
+    port_manager->is_os_wildcard = low_port == high_port && 0 == low_port;
 }
 
 void aeron_wildcard_port_manager_delete(aeron_wildcard_port_manager_t *port_manager)
@@ -88,7 +95,7 @@ int aeron_wildcard_port_manager_allocate_open_port(aeron_wildcard_port_manager_t
     if (0 == port)
     {
         AERON_APPEND_ERR("%s", "no available ports in range %" PRIu16 " %" PRIu16,
-                         port_manager->low_port, port_manager->high_port);
+             port_manager->low_port, port_manager->high_port);
         return -1;
     }
 
@@ -104,14 +111,14 @@ int aeron_wildcard_port_manager_allocate_open_port(aeron_wildcard_port_manager_t
         return -1;
     }
 
-    return 0;
+    return port;
 }
 
 int aeron_wildcard_port_manager_get_managed_port(
-        void *state,
-        struct sockaddr_storage *bind_addr_out,
-        aeron_udp_channel_t *udp_channel,
-        struct sockaddr_storage *bind_addr)
+    void *state,
+    struct sockaddr_storage *bind_addr_out,
+    aeron_udp_channel_t *udp_channel,
+    struct sockaddr_storage *bind_addr)
 {
     aeron_wildcard_port_manager_t *port_manager = (aeron_wildcard_port_manager_t *)state;
     uint16_t bind_port_in = aeron_wildcard_port_manager_get_port(bind_addr);
@@ -120,6 +127,7 @@ int aeron_wildcard_port_manager_get_managed_port(
 
     if (0 != bind_port_in)
     {
+//        fprintf(stderr, "existing port %d\n", bind_port_in);
         if (aeron_int64_counter_map_add_and_get(&port_manager->port_table, bind_port_in, 1, NULL) == -1)
         {
             AERON_APPEND_ERR("%s", "could not add to wildcard port manager map");
@@ -130,15 +138,21 @@ int aeron_wildcard_port_manager_get_managed_port(
     {
         if (!port_manager->is_sender || udp_channel->has_explicit_control)
         {
-            uint16_t bind_port_out = aeron_wildcard_port_manager_allocate_open_port(port_manager);
+            int bind_port_out = aeron_wildcard_port_manager_allocate_open_port(port_manager);
 
+            if (bind_port_out < 0)
+            {
+                return -1;
+            }
+
+//            fprintf(stderr, "allocating port %d\n", bind_port_out);
             if (bind_addr_out->ss_family == AF_INET)
             {
-                ((struct sockaddr_in *)bind_addr_out)->sin_port = bind_port_out;
+                ((struct sockaddr_in *)bind_addr_out)->sin_port = (uint16_t)bind_port_out;
             }
             else if (bind_addr_out->ss_family == AF_INET6)
             {
-                ((struct sockaddr_in6 *)bind_addr_out)->sin6_port = bind_port_out;
+                ((struct sockaddr_in6 *)bind_addr_out)->sin6_port = (uint16_t)bind_port_out;
             }
         }
     }
@@ -153,6 +167,7 @@ void aeron_wildcard_port_manager_free_managed_port(void *state, struct sockaddr_
 
     if (0 != bind_port_in)
     {
+//        fprintf(stderr, "free port %d\n", bind_port_in);
         aeron_int64_counter_map_remove(&port_manager->port_table, bind_port_in);
     }
 }
@@ -177,6 +192,11 @@ int aeron_parse_port_range(const char *range_str, uint16_t *low_port, uint16_t *
     }
 
     const uint16_t high = (uint16_t)v;
+
+    if (low > high)
+    {
+        return -1;
+    }
 
     *low_port = low;
     *high_port = high;

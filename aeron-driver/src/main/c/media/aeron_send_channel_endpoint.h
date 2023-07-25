@@ -61,6 +61,8 @@ typedef struct aeron_send_channel_endpoint_stct
     aeron_udp_channel_transport_bindings_t *transport_bindings;
     aeron_udp_channel_data_paths_t *data_paths;
     struct sockaddr_storage current_data_addr;
+    struct sockaddr_storage bind_addr;
+    aeron_port_manager_t *port_manager;
     aeron_clock_cache_t *cached_clock;
     int64_t time_of_last_sm_ns;
     uint8_t padding[AERON_CACHE_LINE_LENGTH];

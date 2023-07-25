@@ -30,15 +30,16 @@ typedef int (*aeron_port_manager_get_managed_port_func_t)(
     struct sockaddr_storage *bind_addr);
 typedef void (*aeron_port_manager_free_managed_port_func_t)(void *state, struct sockaddr_storage *bind_addr);
 
-struct aeron_port_manager_stct
+typedef struct aeron_port_manager_stct
 {
     aeron_port_manager_get_managed_port_func_t get_managed_port;
     aeron_port_manager_free_managed_port_func_t free_managed_port;
     void *state;
-};
+}
+aeron_port_manager_t;
 
 typedef struct aeron_wildcard_port_manager_stct {
-    struct aeron_port_manager_stct port_manager;
+    aeron_port_manager_t port_manager;
     aeron_int64_counter_map_t port_table;
     uint16_t low_port;
     uint16_t high_port;
@@ -56,7 +57,10 @@ int aeron_wildcard_port_manager_get_managed_port(
 void aeron_wildcard_port_manager_free_managed_port(void *state, struct sockaddr_storage *bind_addr);
 
 int aeron_wildcard_port_manager_init(
-    aeron_wildcard_port_manager_t *port_manager, uint16_t low_port, uint16_t high_port, bool is_sender);
+    aeron_wildcard_port_manager_t *port_manager, bool is_sender);
+
+void aeron_wildcard_port_manager_set_range(
+    aeron_wildcard_port_manager_t *port_manager, uint16_t low_port, uint16_t high_port);
 
 void aeron_wildcard_port_manager_delete(aeron_wildcard_port_manager_t *port_manager);
 int aeron_parse_port_range(const char *range_str, uint16_t *low_port, uint16_t *high_port);

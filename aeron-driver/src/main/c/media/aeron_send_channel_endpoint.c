@@ -96,9 +96,22 @@ int aeron_send_channel_endpoint_create(
     _endpoint->data_paths = &context->sender_proxy->sender->data_paths;
     _endpoint->transport.data_paths = _endpoint->data_paths;
 
+    if (context->sender_port_manager->get_managed_port(
+        context->sender_port_manager->state,
+        &_endpoint->bind_addr,
+        channel,
+        channel->is_multicast ? &channel->remote_control : &channel->local_control) < 0)
+    {
+        AERON_APPEND_ERR("uri=%s", channel->original_uri);
+        aeron_send_channel_endpoint_delete(counters_manager, _endpoint);
+        return -1;
+    }
+
+    _endpoint->port_manager = context->sender_port_manager;
+
     if (context->udp_channel_transport_bindings->init_func(
         &_endpoint->transport,
-        channel->is_multicast ? &channel->remote_control : &channel->local_control,
+        &_endpoint->bind_addr,
         channel->is_multicast ? &channel->local_control : &channel->remote_control,
         connect_addr,
         channel->interface_index,
@@ -231,6 +244,11 @@ int aeron_send_channel_endpoint_delete(
     aeron_int64_to_ptr_hash_map_delete(&endpoint->publication_dispatch_map);
     aeron_udp_channel_delete(endpoint->conductor_fields.udp_channel);
     endpoint->transport_bindings->close_func(&endpoint->transport);
+
+    if (NULL != endpoint->port_manager)
+    {
+        endpoint->port_manager->free_managed_port(endpoint->port_manager->state, &endpoint->bind_addr);
+    }
 
     if (NULL != endpoint->destination_tracker)
     {

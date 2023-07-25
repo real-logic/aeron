@@ -290,6 +290,11 @@ typedef struct aeron_driver_context_stct
     aeron_duty_cycle_stall_tracker_t receiver_duty_cycle_stall_tracker;
     aeron_duty_cycle_stall_tracker_t name_resolver_time_stall_tracker;
 
+    aeron_port_manager_t *sender_port_manager;
+    aeron_port_manager_t *receiver_port_manager;
+    aeron_wildcard_port_manager_t sender_wildcard_port_manager;
+    aeron_wildcard_port_manager_t receiver_wildcard_port_manager;
+
     aeron_dl_loaded_libs_state_t *dynamic_libs;
     aeron_driver_context_bindings_clientd_entry_t *bindings_clientd_entries;
     size_t num_bindings_clientd_entries;

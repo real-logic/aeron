@@ -4479,9 +4479,13 @@ void aeron_driver_conductor_on_delete_receive_destination(void *clientd, void *i
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     aeron_command_delete_destination_t *command = (aeron_command_delete_destination_t *)item;
+    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)command->endpoint;
+    aeron_receive_destination_t *destination = (aeron_receive_destination_t *)command->destination;
+
+    endpoint->transport_bindings->close_func(&destination->transport);
 
     aeron_udp_channel_delete((aeron_udp_channel_t *)command->channel);
-    aeron_receive_destination_delete((aeron_receive_destination_t *)command->destination, &conductor->counters_manager);
+    aeron_receive_destination_delete(destination, &conductor->counters_manager);
 }
 
 void aeron_driver_conductor_on_delete_send_destination(void *clientd, void *cmd)

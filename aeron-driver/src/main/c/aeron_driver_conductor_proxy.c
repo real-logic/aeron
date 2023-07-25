@@ -129,11 +129,12 @@ void aeron_driver_conductor_proxy_on_re_resolve_control(
 }
 
 void aeron_driver_conductor_proxy_on_delete_receive_destination(
-    aeron_driver_conductor_proxy_t *conductor_proxy, void *destination, void *channel)
+    aeron_driver_conductor_proxy_t *conductor_proxy, void *endpoint, void *destination, void *channel)
 {
     aeron_command_delete_destination_t cmd =
         {
             .base = { .func = aeron_driver_conductor_on_delete_receive_destination, .item = NULL },
+            .endpoint = endpoint,
             .destination = destination,
             .channel = channel
         };

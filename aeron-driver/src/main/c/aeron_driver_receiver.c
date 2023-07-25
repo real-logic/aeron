@@ -459,7 +459,6 @@ void aeron_driver_receiver_on_remove_destination(void *clientd, void *item)
         }
 
         endpoint->transport_bindings->poller_remove_func(&receiver->poller, &destination->transport);
-        endpoint->transport_bindings->close_func(&destination->transport);
 
         for (size_t i = 0, len = receiver->images.length; i < len; i++)
         {
@@ -471,7 +470,7 @@ void aeron_driver_receiver_on_remove_destination(void *clientd, void *item)
         }
 
         aeron_driver_conductor_proxy_on_delete_receive_destination(
-            receiver->context->conductor_proxy, destination, channel);
+            receiver->context->conductor_proxy, endpoint, destination, channel);
     }
 }
 

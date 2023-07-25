@@ -71,6 +71,7 @@ aeron_command_re_resolve_t;
 typedef struct aeron_command_delete_destination_stct
 {
     aeron_command_base_t base;
+    void *endpoint;
     void *destination;
     void *channel;
 }
@@ -112,6 +113,7 @@ void aeron_driver_conductor_proxy_on_re_resolve_control(
 
 void aeron_driver_conductor_proxy_on_delete_receive_destination(
     aeron_driver_conductor_proxy_t *conductor_proxy,
+    void *endpoint,
     void *destination,
     void *channel);
 

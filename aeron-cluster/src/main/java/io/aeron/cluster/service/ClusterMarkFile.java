@@ -55,7 +55,9 @@ public final class ClusterMarkFile implements AutoCloseable
     public static final int ERROR_BUFFER_MAX_LENGTH = Integer.MAX_VALUE - HEADER_LENGTH;
 
     public static final String FILE_EXTENSION = ".dat";
+    public static final String LINK_FILE_EXTENSION = ".lnk";
     public static final String FILENAME = "cluster-mark" + FILE_EXTENSION;
+    public static final String LINK_FILENAME = "cluster-mark" + LINK_FILE_EXTENSION;
     public static final String SERVICE_FILENAME_PREFIX = "cluster-mark-service-";
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
@@ -191,6 +193,18 @@ public final class ClusterMarkFile implements AutoCloseable
         buffer = markFile.buffer();
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
         errorBuffer = new UnsafeBuffer(buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
+    }
+
+
+    /**
+     * Get the parent directory containing the mark file.
+     *
+     * @return parent directory of the mark file.
+     * @see MarkFile#parentDirectory()
+     */
+    public File parentDirectory()
+    {
+        return markFile.parentDirectory();
     }
 
     /**
@@ -414,6 +428,17 @@ public final class ClusterMarkFile implements AutoCloseable
     public static String markFilenameForService(final int serviceId)
     {
         return SERVICE_FILENAME_PREFIX + serviceId + FILE_EXTENSION;
+    }
+
+    /**
+     * The filename to be used for the link file given a service id.
+     *
+     * @param serviceId of the service the {@link ClusterMarkFile} represents.
+     * @return the filename to be used for the link file given a service id.
+     */
+    public static String linkFilenameForService(final int serviceId)
+    {
+        return SERVICE_FILENAME_PREFIX + serviceId + LINK_FILE_EXTENSION;
     }
 
     /**

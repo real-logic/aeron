@@ -58,6 +58,7 @@ import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE;
 import static io.aeron.cluster.service.ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_DIR_PROP_NAME;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -517,6 +518,61 @@ class ConsensusModuleContextTest
 
         assertEquals(
             new File(context.clusterDirectoryName()).getCanonicalPath(), context.clusterDir().getCanonicalPath());
+    }
+
+    @Test
+    void concludeShouldCreateMarkFileDirSetViaSystemProperty(final @TempDir File tempDir)
+    {
+        final File rootDir = new File(tempDir, "root");
+        final File markFileDir = new File(rootDir, "mark-file-dir");
+        assertFalse(markFileDir.exists());
+
+        System.setProperty(MARK_FILE_DIR_PROP_NAME, markFileDir.getAbsolutePath());
+        try
+        {
+            assertSame(null, context.markFileDir());
+
+            context.conclude();
+
+            assertEquals(markFileDir, context.markFileDir());
+            assertTrue(markFileDir.exists());
+            assertTrue(new File(context.clusterDir(), ClusterMarkFile.LINK_FILENAME).exists());
+        }
+        finally
+        {
+            System.clearProperty(MARK_FILE_DIR_PROP_NAME);
+        }
+    }
+
+    @Test
+    void concludeShouldCreateMarkFileDirSetDirectly(final @TempDir File tempDir)
+    {
+        final File rootDir = new File(tempDir, "root");
+        final File markFileDir = new File(rootDir, "mark-file-dir");
+        assertFalse(markFileDir.exists());
+        context.markFileDir(markFileDir);
+
+        context.conclude();
+
+        assertEquals(markFileDir, context.markFileDir());
+        assertTrue(markFileDir.exists());
+        assertTrue(new File(context.clusterDir(), ClusterMarkFile.LINK_FILENAME).exists());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = { true, false })
+    void shouldRemoveLinkIfMarkFileIsInClusterDir(final boolean isSet) throws IOException
+    {
+        final File markFileDir = isSet ? context.clusterDir() : null;
+
+        context.markFileDir(markFileDir);
+        final File oldLinkFile = new File(context.clusterDir(), ClusterMarkFile.LINK_FILENAME);
+        assertTrue(oldLinkFile.createNewFile());
+        assertTrue(oldLinkFile.exists());
+
+        context.conclude();
+
+        assertFalse(oldLinkFile.exists());
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

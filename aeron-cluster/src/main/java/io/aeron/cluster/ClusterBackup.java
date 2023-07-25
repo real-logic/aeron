@@ -607,7 +607,7 @@ public final class ClusterBackup implements AutoCloseable
 
             if (null == markFileDir)
             {
-                final String dir = ConsensusModule.Configuration.markFileDir();
+                final String dir = ClusteredServiceContainer.Configuration.markFileDir();
                 markFileDir = Strings.isEmpty(dir) ? clusterDir : new File(dir);
             }
 

@@ -18,7 +18,6 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ArchiveException;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.BackupQueryDecoder;
@@ -1330,16 +1329,6 @@ public final class ConsensusModule implements AutoCloseable
         {
             return Boolean.getBoolean(CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME);
         }
-
-        /**
-         * Get the alternative directory to be used for storing the archive mark file.
-         *
-         * @return the directory to be used for storing the archive mark file.
-         */
-        public static String markFileDir()
-        {
-            return System.getProperty(MARK_FILE_DIR_PROP_NAME);
-        }
     }
 
     /**
@@ -1509,13 +1498,13 @@ public final class ConsensusModule implements AutoCloseable
 
             if (null == markFileDir)
             {
-                final String dir = Configuration.markFileDir();
+                final String dir = ClusteredServiceContainer.Configuration.markFileDir();
                 markFileDir = Strings.isEmpty(dir) ? clusterDir : new File(dir);
             }
 
             if (!markFileDir.exists() && !markFileDir.mkdirs())
             {
-                throw new ArchiveException("failed to create mark file dir: " + markFileDir.getAbsolutePath());
+                throw new ClusterException("failed to create mark file dir: " + markFileDir.getAbsolutePath());
             }
 
             if (startupCanvassTimeoutNs / leaderHeartbeatTimeoutNs < 2)

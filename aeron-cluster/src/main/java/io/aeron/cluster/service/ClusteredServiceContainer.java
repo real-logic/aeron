@@ -17,9 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ArchiveException;
 import io.aeron.cluster.AppVersionValidator;
-import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
@@ -269,7 +267,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
 
         /**
-         * Directory to use for the aeron cluster.
+         * Directory to use for the Cluster component's mark file.
          */
         public static final String MARK_FILE_DIR_PROP_NAME = "aeron.cluster.mark.file.dir";
 
@@ -598,6 +596,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             return null;
         }
+
+        /**
+         * Get the alternative directory to be used for storing the Cluster component's mark file.
+         *
+         * @return the directory to be used for storing the archive mark file.
+         */
+        public static String markFileDir()
+        {
+            return System.getProperty(MARK_FILE_DIR_PROP_NAME);
+        }
     }
 
     /**
@@ -726,13 +734,13 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == markFileDir)
             {
-                final String dir = ConsensusModule.Configuration.markFileDir();
+                final String dir = Configuration.markFileDir();
                 markFileDir = Strings.isEmpty(dir) ? clusterDir : new File(dir);
             }
 
             if (!markFileDir.exists() && !markFileDir.mkdirs())
             {
-                throw new ArchiveException("failed to create mark file dir: " + markFileDir.getAbsolutePath());
+                throw new ClusterException("failed to create mark file dir: " + markFileDir.getAbsolutePath());
             }
 
             if (null == markFile)

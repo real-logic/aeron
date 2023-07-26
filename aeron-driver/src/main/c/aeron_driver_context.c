@@ -479,7 +479,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
-    if (aeron_wildcard_port_manager_init(&_context->receiver_wildcard_port_manager,false) < 0)
+    if (aeron_wildcard_port_manager_init(&_context->receiver_wildcard_port_manager, false) < 0)
     {
         AERON_APPEND_ERR("%s", "unable to initialize receiver wildcard port manager");
         return -1;
@@ -989,7 +989,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     {
         uint16_t low_port = 0, high_port = 0;
 
-        if (aeron_parse_port_range(value,&low_port,&high_port) < 0)
+        if (aeron_parse_port_range(value, &low_port, &high_port) < 0)
         {
             AERON_APPEND_ERR("sender wildcard port range \"%s\" is invalid", value);
             return -1;
@@ -1002,7 +1002,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     {
         uint16_t low_port = 0, high_port = 0;
 
-        if (aeron_parse_port_range(value,&low_port,&high_port) < 0)
+        if (aeron_parse_port_range(value, &low_port, &high_port) < 0)
         {
             AERON_APPEND_ERR("receiver wildcard port range \"%s\" is invalid", value);
             return -1;

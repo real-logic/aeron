@@ -23,11 +23,11 @@ uint16_t aeron_wildcard_port_manager_get_port(struct sockaddr_storage *addr)
 {
     if (addr->ss_family == AF_INET)
     {
-        return ((struct sockaddr_in *)addr)->sin_port;
+        return ntohs(((struct sockaddr_in *)addr)->sin_port);
     }
     else if (addr->ss_family == AF_INET6)
     {
-        return ((struct sockaddr_in6 *)addr)->sin6_port;
+        return ntohs(((struct sockaddr_in6 *)addr)->sin6_port);
     }
 
     return 0;
@@ -48,6 +48,7 @@ int aeron_wildcard_port_manager_init(aeron_wildcard_port_manager_t *port_manager
 
     port_manager->low_port = 0;
     port_manager->high_port = 0;
+    port_manager->next_port = 0;
     port_manager->is_os_wildcard = true;
     port_manager->is_sender = is_sender;
 
@@ -59,6 +60,7 @@ void aeron_wildcard_port_manager_set_range(
 {
     port_manager->low_port = low_port;
     port_manager->high_port = high_port;
+    port_manager->next_port = low_port;
     port_manager->is_os_wildcard = low_port == high_port && 0 == low_port;
 }
 
@@ -94,7 +96,7 @@ int aeron_wildcard_port_manager_allocate_open_port(aeron_wildcard_port_manager_t
 
     if (0 == port)
     {
-        AERON_APPEND_ERR("%s", "no available ports in range %" PRIu16 " %" PRIu16,
+        AERON_APPEND_ERR("no available ports in range %" PRIu16 " %" PRIu16,
              port_manager->low_port, port_manager->high_port);
         return -1;
     }
@@ -148,11 +150,11 @@ int aeron_wildcard_port_manager_get_managed_port(
 //            fprintf(stderr, "allocating port %d\n", bind_port_out);
             if (bind_addr_out->ss_family == AF_INET)
             {
-                ((struct sockaddr_in *)bind_addr_out)->sin_port = (uint16_t)bind_port_out;
+                ((struct sockaddr_in *)bind_addr_out)->sin_port = htons((uint16_t)bind_port_out);
             }
             else if (bind_addr_out->ss_family == AF_INET6)
             {
-                ((struct sockaddr_in6 *)bind_addr_out)->sin6_port = (uint16_t)bind_port_out;
+                ((struct sockaddr_in6 *)bind_addr_out)->sin6_port = htons((uint16_t)bind_port_out);
             }
         }
     }

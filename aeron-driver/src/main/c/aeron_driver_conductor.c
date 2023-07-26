@@ -3254,17 +3254,7 @@ void aeron_driver_subscribable_state(
 
 size_t aeron_driver_subscribable_working_position_count(aeron_subscribable_t *subscribable)
 {
-    size_t count = 0;
-
-    for (int lastIndex = subscribable->length - 1, i = lastIndex; i >= 0; i--)
-    {
-        if (AERON_SUBSCRIPTION_TETHER_RESTING != subscribable->array[i].state)
-        {
-            count++;
-        }
-    }
-
-    return count;
+    return subscribable->length - subscribable->num_resting;
 }
 
 bool aeron_driver_subscribable_has_working_positions(aeron_subscribable_t *subscribable)

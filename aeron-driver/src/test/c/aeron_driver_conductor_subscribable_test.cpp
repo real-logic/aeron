@@ -214,15 +214,21 @@ TEST_F(DriverConductorSubscribableTest, shouldApplyMultipleRandomActionsAndEnsur
         }
 
         size_t resting_count = 0;
+        size_t working_count = 0;
         for (int last_index = subscribable.length - 1, j = last_index; j >= 0; j--)
         {
             if (AERON_SUBSCRIPTION_TETHER_RESTING == subscribable.array[j].state)
             {
                 resting_count++;
             }
+            else
+            {
+                working_count++;
+            }
         }
 
         ASSERT_EQ(resting_count, subscribable.num_resting) << i;
+        ASSERT_EQ(working_count, aeron_driver_subscribable_working_position_count(&subscribable));
         ASSERT_LE(subscribable.num_resting, subscribable.length);
         ASSERT_EQ(resting_count == subscribable.length, !aeron_driver_subscribable_has_working_positions(&subscribable));
     }

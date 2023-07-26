@@ -178,6 +178,7 @@ class ClusterToolTest
     }
 
     @Test
+    @InterruptAfter(30)
     void shouldBeAbleToAccessClusterMarkFilesInANonDefaultLocation(final @TempDir File markFileDir)
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).markFileBaseDir(markFileDir).start();
@@ -186,6 +187,8 @@ class ClusterToolTest
         final TestNode leader = cluster.awaitLeader();
         cluster.connectClient();
         cluster.sendUnexpectedMessages(1);
+        cluster.sendAndAwaitMessages(5);
+
         final CapturingPrintStream stream = new CapturingPrintStream();
         ClusterTool.errors(
             stream.resetAndGetPrintStream(),

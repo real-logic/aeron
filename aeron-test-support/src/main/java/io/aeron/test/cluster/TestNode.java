@@ -494,6 +494,11 @@ public final class TestNode implements AutoCloseable
             }
             else
             {
+                if (message.equals(ClusterTests.ERROR_MSG))
+                {
+                    cluster.context().errorHandler().onError(new Exception(message));
+                }
+
                 if (null != session)
                 {
                     while (session.offer(buffer, offset, length) < 0)

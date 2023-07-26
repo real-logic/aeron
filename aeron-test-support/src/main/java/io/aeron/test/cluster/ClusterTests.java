@@ -42,6 +42,7 @@ public class ClusterTests
         "Echo as Service IPC ingress (skip follower)";
     public static final String UNEXPECTED_MSG =
         "Should never get this message because it is not going to be committed!";
+    public static final String ERROR_MSG = "This message will cause an error";
     public static final String LARGE_MSG;
     public static final String TERMINATE_MSG = "Please terminate the clustered service";
 

@@ -186,8 +186,8 @@ class ClusterToolTest
 
         final TestNode leader = cluster.awaitLeader();
         cluster.connectClient();
-        cluster.sendUnexpectedMessages(1);
-        cluster.sendAndAwaitMessages(5);
+        cluster.sendErrorGeneratingMessages(1);
+        cluster.awaitResponseMessageCount(1);
 
         final CapturingPrintStream stream = new CapturingPrintStream();
         ClusterTool.errors(
@@ -195,7 +195,7 @@ class ClusterToolTest
             cluster.node(leader.index()).consensusModule().context().clusterDir());
 
         final String errorContent = stream.flushAndGetContent();
-        assertThat(errorContent, containsString("unexpected message received"));
+        assertThat(errorContent, containsString("This message will cause an error"));
         assertThat(errorContent, containsString("Mark file exists"));
         final Pattern serviceMarkFileName = Pattern.compile(
             ".*Mark file exists:.*" + markFileDir + ".*cluster-mark-service-0.dat.*", Pattern.DOTALL);

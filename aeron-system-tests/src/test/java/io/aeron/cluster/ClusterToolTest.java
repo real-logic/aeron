@@ -197,8 +197,9 @@ class ClusterToolTest
         final String errorContent = stream.flushAndGetContent();
         assertThat(errorContent, containsString("This message will cause an error"));
         assertThat(errorContent, containsString("Mark file exists"));
+        final String path = markFileDir.getAbsolutePath().replace("\\", "\\\\");
         final Pattern serviceMarkFileName = Pattern.compile(
-            ".*Mark file exists:.*" + markFileDir + ".*cluster-mark-service-0.dat.*", Pattern.DOTALL);
+            ".*Mark file exists:.*" + path + ".*cluster-mark-service-0.dat.*", Pattern.DOTALL);
         assertThat("Tool output: " + errorContent, errorContent, matchesRegex(serviceMarkFileName));
     }
 

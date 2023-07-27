@@ -318,6 +318,7 @@ void aeron_err_clear(void)
 
     aeron_set_errno(0);
     error_state->errcode = 0;
+    error_state->offset = 0;
     strcpy(error_state->errmsg, "no error");
 }
 

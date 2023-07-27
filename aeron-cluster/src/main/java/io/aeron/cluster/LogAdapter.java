@@ -59,7 +59,7 @@ final class LogAdapter implements ControlledFragmentHandler
         {
             logPosition = image.position();
             CloseHelper.close(errorHandler, image.subscription());
-            consensusModuleAgent.awaitNoLocalSocketAddresses(image.subscription().registrationId());
+            consensusModuleAgent.awaitLocalSocketsClosed(image.subscription().registrationId());
             image = null;
         }
     }
@@ -130,11 +130,11 @@ final class LogAdapter implements ControlledFragmentHandler
         this.image = image;
     }
 
-    void removeDestination(final String destination)
+    void asyncRemoveDestination(final String destination)
     {
         if (null != image && !image.subscription().isClosed())
         {
-            image.subscription().removeDestination(destination);
+            image.subscription().asyncRemoveDestination(destination);
         }
     }
 

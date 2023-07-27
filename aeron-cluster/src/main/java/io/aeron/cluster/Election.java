@@ -637,7 +637,7 @@ class Election
                 final long subscriptionRegistrationId = logSubscription.registrationId();
 
                 CloseHelper.close(logSubscription);
-                consensusModuleAgent.awaitNoLocalSocketAddresses(subscriptionRegistrationId);
+                consensusModuleAgent.awaitLocalSocketsClosed(subscriptionRegistrationId);
             }
 
             logSubscription = null;

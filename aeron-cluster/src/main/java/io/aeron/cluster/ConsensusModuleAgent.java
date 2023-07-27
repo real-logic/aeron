@@ -952,7 +952,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         {
             if (null != catchupLogDestination)
             {
-                logAdapter.removeDestination(catchupLogDestination);
+                logAdapter.asyncRemoveDestination(catchupLogDestination);
                 catchupLogDestination = null;
             }
         }
@@ -1288,22 +1288,22 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
         final long ingressSubscriptionRegistrationId = ingressAdapter.subscriptionRegistrationId();
         CloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
-        ClusterControl.ToggleState.deactivate(controlToggle);
 
         if (null != catchupLogDestination)
         {
-            logAdapter.removeDestination(catchupLogDestination);
+            logAdapter.asyncRemoveDestination(catchupLogDestination);
             catchupLogDestination = null;
         }
 
         if (null != liveLogDestination)
         {
-            logAdapter.removeDestination(liveLogDestination);
+            logAdapter.asyncRemoveDestination(liveLogDestination);
             liveLogDestination = null;
         }
 
         logAdapter.disconnect(ctx.countedErrorHandler());
         logPublisher.disconnect(ctx.countedErrorHandler());
+        ClusterControl.ToggleState.deactivate(controlToggle);
 
         if (RecordingPos.NULL_RECORDING_ID != logRecordingId)
         {
@@ -1330,7 +1330,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
         if (NULL_VALUE != ingressSubscriptionRegistrationId)
         {
-            awaitNoLocalSocketAddresses(ingressSubscriptionRegistrationId);
+            awaitLocalSocketsClosed(ingressSubscriptionRegistrationId);
         }
 
         return lastAppendPosition;
@@ -3298,7 +3298,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             nowNs);
     }
 
-    void awaitNoLocalSocketAddresses(final long registrationId)
+    void awaitLocalSocketsClosed(final long registrationId)
     {
         final CountersReader countersReader = aeron.countersReader();
         while (LocalSocketAddressStatus.findNumberOfAddressesByRegistrationId(countersReader, registrationId) > 0)

@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.cluster.client.AeronCluster;
@@ -38,6 +39,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final ConsensusModuleAgent consensusModuleAgent;
     private Subscription subscription;
+    private long subscriptionRegistrationId = Aeron.NULL_VALUE;
 
     IngressAdapter(final int fragmentPollLimit, final ConsensusModuleAgent consensusModuleAgent)
     {
@@ -50,13 +52,11 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         final Subscription subscription = this.subscription;
 
         this.subscription = null;
+        subscriptionRegistrationId = Aeron.NULL_VALUE;
         fragmentAssembler.clear();
         if (null != subscription)
         {
-            final long subscriptionRegistrationId = subscription.registrationId();
-
             subscription.close();
-            consensusModuleAgent.awaitNoLocalSocketAddresses(subscriptionRegistrationId);
         }
     }
 
@@ -144,8 +144,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 
                 consensusModuleAgent.onSessionKeepAlive(
                     sessionKeepAliveDecoder.leadershipTermId(),
-                    sessionKeepAliveDecoder.clusterSessionId()
-                );
+                    sessionKeepAliveDecoder.clusterSessionId());
                 break;
             }
 
@@ -193,9 +192,15 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         return Action.CONTINUE;
     }
 
+    long subscriptionRegistrationId()
+    {
+        return subscriptionRegistrationId;
+    }
+
     void connect(final Subscription subscription)
     {
         this.subscription = subscription;
+        subscriptionRegistrationId = subscription.registrationId();
     }
 
     int poll()

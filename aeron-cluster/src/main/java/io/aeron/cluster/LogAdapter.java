@@ -57,11 +57,9 @@ final class LogAdapter implements ControlledFragmentHandler
     {
         if (null != image)
         {
-            final long subscriptionRegistrationId = image.subscription().registrationId();
-
             logPosition = image.position();
             CloseHelper.close(errorHandler, image.subscription());
-            consensusModuleAgent.awaitNoLocalSocketAddresses(subscriptionRegistrationId);
+            consensusModuleAgent.awaitNoLocalSocketAddresses(image.subscription().registrationId());
             image = null;
         }
     }

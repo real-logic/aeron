@@ -1285,6 +1285,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     long prepareForNewLeadership(final long logPosition, final long nowNs)
     {
         role(Cluster.Role.FOLLOWER);
+
+        final long ingressSubscriptionRegistrationId = ingressAdapter.subscriptionRegistrationId();
         CloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
         ClusterControl.ToggleState.deactivate(controlToggle);
 
@@ -1310,12 +1312,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             timeOfLastAppendPositionUpdateNs = nowNs;
             recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
 
-            final CountersReader counters = ctx.aeron().countersReader();
-            while (CountersReader.NULL_COUNTER_ID != RecordingPos.findCounterIdByRecording(counters, logRecordingId))
-            {
-                idle();
-            }
-
             clearSessionsAfter(logPosition);
             for (int i = 0, size = sessions.size(); i < size; i++)
             {
@@ -1324,6 +1320,17 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
             commitPosition.setOrdered(logPosition);
             restoreUncommittedEntries(logPosition);
+
+            final CountersReader counters = ctx.aeron().countersReader();
+            while (CountersReader.NULL_COUNTER_ID != RecordingPos.findCounterIdByRecording(counters, logRecordingId))
+            {
+                idle();
+            }
+        }
+
+        if (NULL_VALUE != ingressSubscriptionRegistrationId)
+        {
+            awaitNoLocalSocketAddresses(ingressSubscriptionRegistrationId);
         }
 
         return lastAppendPosition;
@@ -3731,10 +3738,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    private boolean isIngressMulticast()
+    private boolean isIngressMulticast(final ChannelUri ingressUri)
     {
-        final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
-
         if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
         {
             ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.ingressEndpoint());
@@ -3752,11 +3757,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private void connectIngress()
     {
         final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
-
-        if (Cluster.Role.LEADER != role && isIngressMulticast())
+        if (Cluster.Role.LEADER != role && isIngressMulticast(ingressUri))
         {
-            // don't subscribe to ingress if follower and multicast ingress
-            return;
+            return; // don't subscribe to ingress if follower and multicast ingress
         }
 
         String ingressNetworkEndpoint = ingressUri.get(ENDPOINT_PARAM_NAME);
@@ -3923,6 +3926,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             captureServiceClientIds();
             ++serviceAckId;
         }
+
         return recoveryPlan;
     }
 

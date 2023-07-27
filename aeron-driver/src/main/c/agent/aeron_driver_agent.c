@@ -1464,7 +1464,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             aeron_error_response_t *command = (aeron_error_response_t *)message;
 
             const char *error_message = (const char *)message + sizeof(aeron_error_response_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 "%d %.*s",
+            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 " %d %.*s",
                 command->offending_command_correlation_id,
                 command->error_code,
                 command->error_message_length,

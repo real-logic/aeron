@@ -129,7 +129,6 @@ int aeron_wildcard_port_manager_get_managed_port(
 
     if (0 != bind_port_in)
     {
-//        fprintf(stderr, "existing port %d\n", bind_port_in);
         if (aeron_int64_counter_map_add_and_get(&port_manager->port_table, bind_port_in, 1, NULL) == -1)
         {
             AERON_APPEND_ERR("%s", "could not add to wildcard port manager map");
@@ -147,7 +146,6 @@ int aeron_wildcard_port_manager_get_managed_port(
                 return -1;
             }
 
-//            fprintf(stderr, "allocating port %d\n", bind_port_out);
             if (bind_addr_out->ss_family == AF_INET)
             {
                 ((struct sockaddr_in *)bind_addr_out)->sin_port = htons((uint16_t)bind_port_out);
@@ -169,7 +167,6 @@ void aeron_wildcard_port_manager_free_managed_port(void *state, struct sockaddr_
 
     if (0 != bind_port_in)
     {
-//        fprintf(stderr, "free port %d\n", bind_port_in);
         aeron_int64_counter_map_remove(&port_manager->port_table, bind_port_in);
     }
 }

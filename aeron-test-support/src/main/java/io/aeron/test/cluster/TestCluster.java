@@ -1386,6 +1386,7 @@ public final class TestCluster implements AutoCloseable
             " role=" + node.role() +
             " expected=" + value +
             " snapshotCount=" + snapshotCounter.get();
+
         while (true)
         {
             if (snapshotCounter.isClosed())

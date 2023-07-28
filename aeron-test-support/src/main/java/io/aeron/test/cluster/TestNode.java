@@ -923,6 +923,7 @@ public final class TestNode implements AutoCloseable
                 final int serviceMessageId = buffer.getInt(offset, LITTLE_ENDIAN);
                 serviceMessages.addInt(serviceMessageId);
             }
+
             messageCount.incrementAndGet(); // count all messages
         }
 
@@ -952,11 +953,12 @@ public final class TestNode implements AutoCloseable
             messageBuffer.putInt(offset.get(), messages.size(), LITTLE_ENDIAN);
             offset.addAndGet(SIZE_OF_INT);
 
-            messages.forEachInt((messageId) ->
-            {
-                messageBuffer.putInt(offset.get(), messageId);
-                offset.addAndGet(SIZE_OF_INT);
-            });
+            messages.forEachInt(
+                (messageId) ->
+                {
+                    messageBuffer.putInt(offset.get(), messageId);
+                    offset.addAndGet(SIZE_OF_INT);
+                });
 
             idleStrategy.reset();
             while (snapshotPublication.offer(messageBuffer, 0, offset.get()) < 0)
@@ -973,11 +975,12 @@ public final class TestNode implements AutoCloseable
             messageBuffer.putInt(offset.get(), timers.size(), LITTLE_ENDIAN);
             offset.addAndGet(SIZE_OF_INT);
 
-            timers.forEachLong((correlationId) ->
-            {
-                messageBuffer.putLong(offset.get(), correlationId);
-                offset.addAndGet(SIZE_OF_LONG);
-            });
+            timers.forEachLong(
+                (correlationId) ->
+                {
+                    messageBuffer.putLong(offset.get(), correlationId);
+                    offset.addAndGet(SIZE_OF_LONG);
+                });
 
             idleStrategy.reset();
             while (snapshotPublication.offer(messageBuffer, 0, offset.get()) < 0)

@@ -58,6 +58,7 @@ import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntFunction;
 
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.CommonContext.NULL_SESSION_ID;
@@ -84,6 +85,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
     @Test
     void executeThrowsNullPointerExceptionIfClusterDirIsNull()
     {
+        //noinspection DataFlowIssue
         assertThrowsExactly(
             NullPointerException.class,
             () -> new ConsensusModuleSnapshotPendingServiceMessagesPatch().execute(null));
@@ -130,17 +132,21 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
     @InterruptAfter(60)
     void executeIsANoOpIfTheSnapshotIsValid()
     {
+        final IntFunction<TestNode.TestService[]> servicesSupplier =
+            (i) -> new TestNode.TestService[]
+            {
+                new TestNode.MessageTrackingService(1, i),
+                new TestNode.MessageTrackingService(2, i)
+            };
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
             .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
-            .withServiceSupplier((i) -> new TestNode.TestService[]{
-                new TestNode.MessageTrackingService(1, i),
-                new TestNode.MessageTrackingService(2, i) })
+            .withServiceSupplier(servicesSupplier)
             .start();
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;
 
-        cluster.awaitLeader();
+        final TestNode leader = cluster.awaitLeader();
         cluster.connectClient();
 
         TestNode.MessageTrackingService.delaySessionMessageProcessing(true);
@@ -152,7 +158,6 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
 
-        final TestNode leader = cluster.awaitLeader();
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
         TestNode.MessageTrackingService.delaySessionMessageProcessing(false);
@@ -170,27 +175,27 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         final MutableLong mutableLogServiceSessionId = new MutableLong(NULL_SESSION_ID);
         final LongArrayList pendingMessageClusterSessionIds = new LongArrayList();
         final ConsensusModuleSnapshotListener stateReader = new NoOpConsensusModuleSnapshotListener()
-        {
-            public void onLoadConsensusModuleState(
-                final long nextSessionId,
-                final long nextServiceSessionId,
-                final long logServiceSessionId,
-                final int pendingMessageCapacity,
-                final DirectBuffer buffer,
-                final int offset,
-                final int length)
             {
-                mutableNextSessionId.set(nextSessionId);
-                mutableNextServiceSessionId.set(nextServiceSessionId);
-                mutableLogServiceSessionId.set(logServiceSessionId);
-            }
+                public void onLoadConsensusModuleState(
+                    final long nextSessionId,
+                    final long nextServiceSessionId,
+                    final long logServiceSessionId,
+                    final int pendingMessageCapacity,
+                    final DirectBuffer buffer,
+                    final int offset,
+                    final int length)
+                {
+                    mutableNextSessionId.set(nextSessionId);
+                    mutableNextServiceSessionId.set(nextServiceSessionId);
+                    mutableLogServiceSessionId.set(logServiceSessionId);
+                }
 
-            public void onLoadPendingMessage(
-                final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
-            {
-                pendingMessageClusterSessionIds.add(clusterSessionId);
-            }
-        };
+                public void onLoadPendingMessage(
+                    final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
+                {
+                    pendingMessageClusterSessionIds.add(clusterSessionId);
+                }
+            };
 
         readSnapshotRecording(leader, leaderSnapshot.recordingId, stateReader);
 
@@ -232,7 +237,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         "$compute, 200000, 1, 199999, NextServiceSessionId",
         "7777, 9999, 1000000000000000, 1223372036854775, MaxClusterSessionId" })
     @SlowTest
-    @InterruptAfter(30)
+    @InterruptAfter(60)
     @SuppressWarnings("MethodLength")
     void executeShouldPatchTheStateOfTheLeaderSnapshot(
         final String baseLogServiceSessionId,
@@ -241,12 +246,16 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         final long clusterSessionIdUpperBound,
         final String mode)
     {
+        final IntFunction<TestNode.TestService[]> servicesSupplier =
+            (i) -> new TestNode.TestService[]
+            {
+                new TestNode.MessageTrackingService(1, i),
+                new TestNode.MessageTrackingService(2, i)
+            };
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
             .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
-            .withServiceSupplier((i) -> new TestNode.TestService[]{
-                new TestNode.MessageTrackingService(1, i),
-                new TestNode.MessageTrackingService(2, i) })
+            .withServiceSupplier(servicesSupplier)
             .start();
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;

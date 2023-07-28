@@ -32,6 +32,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.function.IntFunction;
+
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -74,24 +76,28 @@ class ServiceIpcIngressMessageTest
 
     @Test
     @SlowTest
-    @InterruptAfter(40)
+    @InterruptAfter(60)
     void shouldProcessServiceMessagesWithoutDuplicates()
     {
+        final IntFunction<TestNode.TestService[]> serviceSupplier =
+            (i) -> new TestNode.TestService[]
+            {
+                new TestNode.MessageTrackingService(1, i),
+                new TestNode.MessageTrackingService(2, i),
+                new TestNode.MessageTrackingService(3, i)
+            };
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
             .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
-            .withServiceSupplier((i) -> new TestNode.TestService[]{
-                new TestNode.MessageTrackingService(1, i),
-                new TestNode.MessageTrackingService(2, i),
-                new TestNode.MessageTrackingService(3, i) })
+            .withServiceSupplier(serviceSupplier)
             .start();
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;
 
         TestNode oldLeader = cluster.awaitLeaderAndClosedElection();
         cluster.connectClient();
-        final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
 
+        final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
         int messageCount = 0;
         for (int i = 0; i < 50; i++)
         {
@@ -128,20 +134,24 @@ class ServiceIpcIngressMessageTest
     @InterruptAfter(40)
     void shouldProcessServiceMessagesAndTimersWithoutDuplicatesWhenLeaderServicesAreStopped()
     {
+        final IntFunction<TestNode.TestService[]> serviceSupplier =
+            (i) -> new TestNode.TestService[]
+            {
+                new TestNode.MessageTrackingService(1, i),
+                new TestNode.MessageTrackingService(2, i)
+            };
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
             .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
-            .withServiceSupplier((i) -> new TestNode.TestService[]{
-                new TestNode.MessageTrackingService(1, i),
-                new TestNode.MessageTrackingService(2, i) })
+            .withServiceSupplier(serviceSupplier)
             .start();
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;
 
         TestNode oldLeader = cluster.awaitLeaderAndClosedElection();
         cluster.connectClient();
-        final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
 
+        final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
         int messageCount = 0;
         for (int i = 0; i < 50; i++)
         {
@@ -180,19 +190,23 @@ class ServiceIpcIngressMessageTest
     @InterruptAfter(30)
     void shouldProcessServiceMessagesWithoutDuplicatesAfterAFullClusterRestart()
     {
+        final IntFunction<TestNode.TestService[]> serviceSupplier =
+            (i) -> new TestNode.TestService[]
+            {
+                new TestNode.MessageTrackingService(1, i)
+            };
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
             .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
-            .withServiceSupplier((i) -> new TestNode.TestService[]{
-                new TestNode.MessageTrackingService(1, i) })
+            .withServiceSupplier(serviceSupplier)
             .start();
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;
 
         cluster.awaitLeaderAndClosedElection();
         cluster.connectClient();
-        final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
 
+        final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
         int messageCount = 0;
         for (int i = 0; i < 10; i++)
         {
@@ -220,23 +234,27 @@ class ServiceIpcIngressMessageTest
 
     @Test
     @SlowTest
-    @InterruptAfter(30)
+    @InterruptAfter(60)
     void shouldProcessServiceMessagesWithoutDuplicatesWhenClusterIsRestartedAfterTakingASnapshot()
     {
+        final IntFunction<TestNode.TestService[]> serviceSupplier =
+            (i) -> new TestNode.TestService[]
+            {
+                new TestNode.MessageTrackingService(1, i),
+                new TestNode.MessageTrackingService(2, i)
+            };
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
             .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())
-            .withServiceSupplier((i) -> new TestNode.TestService[]{
-                new TestNode.MessageTrackingService(1, i),
-                new TestNode.MessageTrackingService(2, i) })
+            .withServiceSupplier(serviceSupplier)
             .start();
         systemTestWatcher.cluster(cluster);
         final int serviceCount = cluster.node(0).services().length;
 
         final TestNode leader = cluster.awaitLeaderAndClosedElection();
         cluster.connectClient();
-        final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
 
+        final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
         int messageCount = 0;
         TestNode.MessageTrackingService.delaySessionMessageProcessing(true);
         for (int i = 0; i < 1999; i++)

@@ -391,6 +391,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         aeron_duty_cycle_stall_tracker_measure_and_update;
     _context->name_resolver_time_stall_tracker.tracker.state = &_context->name_resolver_time_stall_tracker;
 
+    _context->sender_port_manager = &_context->sender_wildcard_port_manager.port_manager;
+    _context->receiver_port_manager = &_context->receiver_wildcard_port_manager.port_manager;
+
     _context->udp_channel_outgoing_interceptor_bindings = NULL;
     _context->udp_channel_incoming_interceptor_bindings = NULL;
     _context->dynamic_libs = NULL;
@@ -467,6 +470,18 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     if ((_context->name_resolver_supplier_func = aeron_name_resolver_supplier_load(
         AERON_NAME_RESOLVER_SUPPLIER_DEFAULT)) == NULL)
     {
+        return -1;
+    }
+
+    if (aeron_wildcard_port_manager_init(&_context->sender_wildcard_port_manager, true) < 0)
+    {
+        AERON_APPEND_ERR("%s", "unable to initialize sender wildcard port manager");
+        return -1;
+    }
+
+    if (aeron_wildcard_port_manager_init(&_context->receiver_wildcard_port_manager, false) < 0)
+    {
+        AERON_APPEND_ERR("%s", "unable to initialize receiver wildcard port manager");
         return -1;
     }
 
@@ -970,6 +985,32 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         0,
         UINT64_C(60) * 60 * 1000 * 1000 * 1000);
 
+    if ((value = getenv(AERON_DRIVER_SENDER_WILDCARD_PORT_RANGE_ENV_VAR)))
+    {
+        uint16_t low_port = 0, high_port = 0;
+
+        if (aeron_parse_port_range(value, &low_port, &high_port) < 0)
+        {
+            AERON_APPEND_ERR("sender wildcard port range \"%s\" is invalid", value);
+            return -1;
+        }
+
+        aeron_wildcard_port_manager_set_range(&_context->sender_wildcard_port_manager, low_port, high_port);
+    }
+
+    if ((value = getenv(AERON_DRIVER_RECEIVER_WILDCARD_PORT_RANGE_ENV_VAR)))
+    {
+        uint16_t low_port = 0, high_port = 0;
+
+        if (aeron_parse_port_range(value, &low_port, &high_port) < 0)
+        {
+            AERON_APPEND_ERR("receiver wildcard port range \"%s\" is invalid", value);
+            return -1;
+        }
+
+        aeron_wildcard_port_manager_set_range(&_context->receiver_wildcard_port_manager, low_port, high_port);
+    }
+
     _context->receiver_io_vector_capacity = aeron_config_parse_uint32(
         AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR,
         getenv(AERON_RECEIVER_IO_VECTOR_CAPACITY_ENV_VAR),
@@ -1273,6 +1314,9 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
         AERON_SET_ERR(EINVAL, "%s", "aeron_driver_context_close(NULL)");
         return -1;
     }
+
+    aeron_wildcard_port_manager_delete(&context->sender_wildcard_port_manager);
+    aeron_wildcard_port_manager_delete(&context->receiver_wildcard_port_manager);
 
     aeron_free(context->conductor_command_queue.buffer);
     aeron_free(context->sender_command_queue.buffer);
@@ -2793,6 +2837,78 @@ int64_t aeron_driver_context_get_name_resolver_threshold_ns(aeron_driver_context
     return NULL != context ?
         context->name_resolver_time_stall_tracker.cycle_threshold_ns :
         AERON_DRIVER_NAME_RESOLVER_THRESHOLD_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_sender_wildcard_port_range(
+    aeron_driver_context_t *context, uint16_t low_port, uint16_t high_port)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    aeron_wildcard_port_manager_set_range(&context->sender_wildcard_port_manager, low_port, high_port);
+    return 0;
+}
+
+int aeron_driver_context_get_sender_wildcard_port_range(
+    aeron_driver_context_t *context, uint16_t *low_port, uint16_t *high_port)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    *low_port = context->sender_wildcard_port_manager.low_port;
+    *high_port = context->sender_wildcard_port_manager.high_port;
+    return 0;
+}
+
+int aeron_driver_context_set_receiver_wildcard_port_range(
+    aeron_driver_context_t *context, uint16_t low_port, uint16_t high_port)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    aeron_wildcard_port_manager_set_range(&context->receiver_wildcard_port_manager, low_port, high_port);
+    return 0;
+}
+
+int aeron_driver_context_get_receiver_wildcard_port_range(
+    aeron_driver_context_t *context, uint16_t *low_port, uint16_t *high_port)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    *low_port = context->receiver_wildcard_port_manager.low_port;
+    *high_port = context->receiver_wildcard_port_manager.high_port;
+    return 0;
+}
+
+int aeron_driver_context_set_sender_port_manager(
+    aeron_driver_context_t *context, aeron_port_manager_t *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->sender_port_manager = value;
+    return 0;
+}
+
+aeron_port_manager_t *aeron_driver_context_get_sender_port_manager(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->sender_port_manager : NULL;
+}
+
+int aeron_driver_context_set_receiver_port_manager(
+    aeron_driver_context_t *context, aeron_port_manager_t *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->receiver_port_manager = value;
+    return 0;
+}
+
+aeron_port_manager_t *aeron_driver_context_get_receiver_port_manager(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->receiver_port_manager : NULL;
 }
 
 int aeron_driver_context_bindings_clientd_find_first_free_index(aeron_driver_context_t *context)

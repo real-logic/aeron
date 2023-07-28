@@ -666,6 +666,10 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    resolver_bootstrap_neighbor=%s",
         (void *)context->resolver_bootstrap_neighbor ? context->resolver_bootstrap_neighbor : "");
     fprintf(fpout, "\n    re_resolution_check_interval_ns=%" PRIu64, context->re_resolution_check_interval_ns);
+    fprintf(fpout, "\n    sender_wildcard_port_range=\"%" PRIu16 " %" PRIu16 "\"", 
+        context->sender_wildcard_port_manager.low_port, context->sender_wildcard_port_manager.high_port);
+    fprintf(fpout, "\n    receiver_wildcard_port_range=\"%" PRIu16 " %" PRIu16 "\"",
+        context->receiver_wildcard_port_manager.low_port, context->receiver_wildcard_port_manager.high_port);
 
     const aeron_udp_channel_transport_bindings_t *bindings = context->udp_channel_transport_bindings;
     if (NULL != bindings)

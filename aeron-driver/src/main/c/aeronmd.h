@@ -793,6 +793,36 @@ int aeron_driver_context_set_name_resolver_time_tracker(
 aeron_duty_cycle_tracker_t *aeron_driver_context_get_name_resolver_time_tracker(aeron_driver_context_t *context);
 
 /**
+ * Specify the sender wildcard port range.
+ */
+#define AERON_DRIVER_SENDER_WILDCARD_PORT_RANGE_ENV_VAR "AERON_SENDER_WILDCARD_PORT_RANGE"
+
+int aeron_driver_context_set_sender_wildcard_port_range(
+    aeron_driver_context_t *context, uint16_t low_port, uint16_t high_port);
+int aeron_driver_context_get_sender_wildcard_port_range(
+    aeron_driver_context_t *context, uint16_t *low_port, uint16_t *high_port);
+
+/**
+ * Specify the receiver wildcard port range.
+ */
+#define AERON_DRIVER_RECEIVER_WILDCARD_PORT_RANGE_ENV_VAR "AERON_RECEIVER_WILDCARD_PORT_RANGE"
+
+int aeron_driver_context_set_receiver_wildcard_port_range(
+    aeron_driver_context_t *context, uint16_t low_port, uint16_t high_port);
+int aeron_driver_context_get_receiver_wildcard_port_range(
+    aeron_driver_context_t *context, uint16_t *low_port, uint16_t *high_port);
+
+typedef struct aeron_port_manager_stct aeron_port_manager_t;
+
+int aeron_driver_context_set_sender_port_manager(
+    aeron_driver_context_t *context, aeron_port_manager_t *value);
+aeron_port_manager_t *aeron_driver_context_get_sender_port_manager(aeron_driver_context_t *context);
+
+int aeron_driver_context_set_receiver_port_manager(
+    aeron_driver_context_t *context, aeron_port_manager_t *value);
+aeron_port_manager_t *aeron_driver_context_get_receiver_port_manager(aeron_driver_context_t *context);
+
+/**
  * Specify the duty cycle time threshold for the conductor.
  */
 #define AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD_ENV_VAR "AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD"

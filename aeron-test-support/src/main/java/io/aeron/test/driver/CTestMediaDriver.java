@@ -279,6 +279,16 @@ public final class CTestMediaDriver implements TestMediaDriver
         environment.put("AERON_DRIVER_SENDER_CYCLE_THRESHOLD", String.valueOf(context.senderCycleThresholdNs()));
         environment.put("AERON_DRIVER_RECEIVER_CYCLE_THRESHOLD", String.valueOf(context.receiverCycleThresholdNs()));
         environment.put("AERON_DRIVER_NAME_RESOLVER_THRESHOLD", String.valueOf(context.nameResolverThresholdNs()));
+        final String senderWildcardPortRange = context.senderWildcardPortRange();
+        if (null != senderWildcardPortRange)
+        {
+            environment.put("AERON_SENDER_WILDCARD_PORT_RANGE", senderWildcardPortRange);
+        }
+        final String receiverWildcardPortRange = context.receiverWildcardPortRange();
+        if (null != receiverWildcardPortRange)
+        {
+            environment.put("AERON_RECEIVER_WILDCARD_PORT_RANGE", receiverWildcardPortRange);
+        }
 
         setFlowControlStrategy(environment, context);
         setLogging(environment);

@@ -3149,7 +3149,7 @@ void aeron_driver_subscribable_remove_position(aeron_subscribable_t *subscribabl
         {
             if (AERON_SUBSCRIPTION_TETHER_RESTING == tetherable_position->state)
             {
-                subscribable->num_resting--;
+                subscribable->resting_count--;
             }
 
             subscribable->remove_position_hook_func(subscribable->clientd, tetherable_position->value_addr);
@@ -3240,11 +3240,11 @@ void aeron_driver_subscribable_state(
     {
         if (AERON_SUBSCRIPTION_TETHER_RESTING == state)
         {
-            subscribable->num_resting++;
+            subscribable->resting_count++;
         }
         else if (AERON_SUBSCRIPTION_TETHER_RESTING == tetherable_position->state)
         {
-            subscribable->num_resting--;
+            subscribable->resting_count--;
         }
     }
 
@@ -3254,12 +3254,12 @@ void aeron_driver_subscribable_state(
 
 size_t aeron_driver_subscribable_working_position_count(aeron_subscribable_t *subscribable)
 {
-    return subscribable->length - subscribable->num_resting;
+    return subscribable->length - subscribable->resting_count;
 }
 
 bool aeron_driver_subscribable_has_working_positions(aeron_subscribable_t *subscribable)
 {
-    return subscribable->num_resting < subscribable->length;
+    return subscribable->resting_count < subscribable->length;
 }
 
 void aeron_driver_conductor_unlink_subscribable(aeron_subscription_link_t *link, aeron_subscribable_t *subscribable)

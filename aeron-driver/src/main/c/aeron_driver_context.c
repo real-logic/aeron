@@ -272,7 +272,6 @@ static void aeron_driver_untethered_subscription_state_change_null(
 {
 }
 
-
 #define AERON_DIR_WARN_IF_EXISTS_DEFAULT false
 #define AERON_THREADING_MODE_DEFAULT AERON_THREADING_MODE_DEDICATED
 #define AERON_DIR_DELETE_ON_START_DEFAULT false

@@ -332,7 +332,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
             new ConsensusModuleSnapshotPendingServiceMessagesPatch();
         assertTrue(snapshotPatch.execute(leaderClusterDir));
 
-        final MutableBoolean onLoadConsensusModuleState = new MutableBoolean();
+        final MutableBoolean hasLoadedConsensusModuleState = new MutableBoolean();
         final MutableInteger onLoadPendingMessageCount = new MutableInteger();
         readSnapshotRecording(
             leader,
@@ -382,7 +382,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
                     }
 
                     nextClusterSessionId = logServiceSessionId + 1;
-                    onLoadConsensusModuleState.set(true);
+                    hasLoadedConsensusModuleState.set(true);
                 }
 
                 public void onLoadPendingMessage(
@@ -392,7 +392,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
                     onLoadPendingMessageCount.increment();
                 }
             });
-        assertTrue(onLoadConsensusModuleState.get());
+        assertTrue(hasLoadedConsensusModuleState.get());
         assertEquals(numPendingMessages, onLoadPendingMessageCount.get());
 
         for (int i = 0; i < 3; i++)

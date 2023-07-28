@@ -20,6 +20,11 @@ using testing::_;
 
 class DriverConductorIpcTest : public DriverConductorTest, public testing::Test
 {
+protected:
+    inline size_t numSubscribers(aeron_ipc_publication_t *publication)
+    {
+        return publication->conductor_fields.subscribable.length;
+    }
 };
 
 // TODO: Parameterise
@@ -35,7 +40,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSing
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
-    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
+    EXPECT_EQ(numSubscribers(publication), 1u);
 
     int32_t session_id = 0;
     std::string log_file_name;
@@ -55,6 +60,11 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSing
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
+TEST_F(DriverConductorIpcTest, foo)
+{
+    std::cout << sizeof(aeron_tetherable_position_t) << std::endl;
+}
+
 // TODO: Parameterise
 TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIpcSubscription)
 {
@@ -68,7 +78,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingl
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
-    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
+    EXPECT_EQ(numSubscribers(publication), 1u);
 
     int32_t session_id = 0;
     std::string log_file_name;
@@ -103,7 +113,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameS
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
-    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 2u);
+    EXPECT_EQ(numSubscribers(publication), 2u);
 
     int32_t session_id = 0;
     std::string log_file_name;
@@ -144,10 +154,10 @@ TEST_F(DriverConductorIpcTest, shouldAddSingleIpcSubscriptionThenAddMultipleExcl
 
     aeron_ipc_publication_t *publication_1 = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id_1);
-    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication_1), 1u);
+    EXPECT_EQ(numSubscribers(publication_1), 1u);
     aeron_ipc_publication_t *publication_2 = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id_2);
-    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication_2), 1u);
+    EXPECT_EQ(numSubscribers(publication_2), 1u);
 
     int32_t session_id_1 = 0;
     int32_t session_id_2 = 0;
@@ -187,7 +197,7 @@ TEST_F(DriverConductorIpcTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id_1);
-    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
+    EXPECT_EQ(numSubscribers(publication), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_active_ipc_subscriptions(&m_conductor.m_conductor, STREAM_ID_1), 1u);
 
     int32_t session_id = 0;
@@ -282,7 +292,7 @@ TEST_F(DriverConductorIpcTest, shouldAddIpcPublicationThenSubscriptionWithSessio
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
-    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
+    EXPECT_EQ(numSubscribers(publication), 1u);
 
     int32_t session_id = 0;
     std::string log_file_name;
@@ -318,7 +328,7 @@ TEST_F(DriverConductorIpcTest, shouldAddIpcSubscriptionThenPublicationWithSessio
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
-    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
+    EXPECT_EQ(numSubscribers(publication), 1u);
 
     int32_t session_id = 0;
     std::string log_file_name;
@@ -357,7 +367,7 @@ TEST_F(DriverConductorIpcTest, shouldNotAddIpcPublicationThenSubscriptionWithDif
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
-    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 0u);
+    EXPECT_EQ(numSubscribers(publication), 0u);
 
     int32_t session_id = 0;
     std::string log_file_name;
@@ -397,7 +407,7 @@ TEST_F(DriverConductorIpcTest, shouldNotAddIpcSubscriptionThenPublicationWithDif
 
     aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
         &m_conductor.m_conductor, pub_id);
-    EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 0u);
+    EXPECT_EQ(numSubscribers(publication), 0u);
 
     int32_t session_id = 0;
     std::string log_file_name;

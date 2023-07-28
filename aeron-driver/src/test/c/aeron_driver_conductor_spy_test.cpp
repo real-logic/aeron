@@ -20,6 +20,11 @@ using testing::_;
 
 class DriverConductorSpyTest : public DriverConductorTest, public testing::Test
 {
+protected:
+    inline size_t aeron_network_publication_num_spy_subscribers(aeron_network_publication_t *publication)
+    {
+        return publication->conductor_fields.subscribable.length;
+    }
 };
 
 TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscription)

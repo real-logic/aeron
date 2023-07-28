@@ -276,12 +276,12 @@ inline bool aeron_publication_image_is_drained(aeron_publication_image_t *image)
 
 inline bool aeron_publication_image_has_no_subscribers(aeron_publication_image_t *image)
 {
-    return 0 == image->conductor_fields.subscribable.length;
+    return !aeron_driver_subscribable_has_working_positions(&image->conductor_fields.subscribable);
 }
 
 inline bool aeron_publication_image_is_accepting_subscriptions(aeron_publication_image_t *image)
 {
-    return image->conductor_fields.subscribable.length > 0 &&
+    return aeron_driver_subscribable_has_working_positions(&image->conductor_fields.subscribable) &&
         (image->conductor_fields.state == AERON_PUBLICATION_IMAGE_STATE_ACTIVE ||
             (image->conductor_fields.state == AERON_PUBLICATION_IMAGE_STATE_DRAINING &&
                 !aeron_publication_image_is_drained(image)));
@@ -305,11 +305,6 @@ inline const char *aeron_publication_image_log_file_name(aeron_publication_image
 inline int64_t aeron_publication_image_registration_id(aeron_publication_image_t *image)
 {
     return image->conductor_fields.managed_resource.registration_id;
-}
-
-inline size_t aeron_publication_image_subscriber_count(aeron_publication_image_t *image)
-{
-    return image->conductor_fields.subscribable.length;
 }
 
 inline int64_t aeron_publication_image_join_position(aeron_publication_image_t *image)

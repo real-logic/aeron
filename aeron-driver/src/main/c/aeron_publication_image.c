@@ -126,7 +126,7 @@ int aeron_publication_image_create(
     }
     _image->raw_log_close_func = context->raw_log_close_func;
     _image->raw_log_free_func = context->raw_log_free_func;
-    _image->untethered_subscription_state_change_func = context->untethered_subscription_state_change_func;
+    _image->untethered_subscription_state_change_func = context->untethered_subscription_on_state_change_func;
 
     _image->nano_clock = context->nano_clock;
     _image->epoch_clock = context->epoch_clock;
@@ -366,14 +366,13 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
 
 void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int64_t now_ns)
 {
-    size_t subscriber_count = aeron_publication_image_subscriber_count(image);
-    if (subscriber_count > 0)
+    if (aeron_driver_subscribable_has_working_positions(&image->conductor_fields.subscribable))
     {
         const int64_t hwm_position = aeron_counter_get_volatile(image->rcv_hwm_position.value_addr);
         int64_t min_sub_pos = INT64_MAX;
         int64_t max_sub_pos = 0;
 
-        for (size_t i = 0; i < subscriber_count; i++)
+        for (size_t i = 0; i < image->conductor_fields.subscribable.length; i++)
         {
             aeron_tetherable_position_t *tetherable_position = &image->conductor_fields.subscribable.array[i];
 
@@ -384,6 +383,11 @@ void aeron_publication_image_track_rebuild(aeron_publication_image_t *image, int
                 min_sub_pos = position < min_sub_pos ? position : min_sub_pos;
                 max_sub_pos = position > max_sub_pos ? position : max_sub_pos;
             }
+        }
+
+        if (INT64_MAX == min_sub_pos)
+        {
+            return;
         }
 
         const int64_t rebuild_position = *image->rcv_pos_position.value_addr > max_sub_pos ?
@@ -797,9 +801,10 @@ void aeron_publication_image_check_untethered_subscriptions(
 {
     int64_t max_sub_pos = 0;
 
-    for (size_t i = 0, length = image->conductor_fields.subscribable.length; i < length; i++)
+    aeron_subscribable_t *subscribable = &image->conductor_fields.subscribable;
+    for (size_t i = 0, length = subscribable->length; i < length; i++)
     {
-        aeron_tetherable_position_t *tetherable_position = &image->conductor_fields.subscribable.array[i];
+        aeron_tetherable_position_t *tetherable_position = &subscribable->array[i];
 
         if (tetherable_position->is_tether)
         {
@@ -811,9 +816,9 @@ void aeron_publication_image_check_untethered_subscriptions(
     int64_t window_length = image->next_sm_receiver_window_length;
     int64_t untethered_window_limit = (max_sub_pos - window_length) + (window_length / 4);
 
-    for (size_t i = 0, length = image->conductor_fields.subscribable.length; i < length; i++)
+    for (size_t i = 0, length = subscribable->length; i < length; i++)
     {
-        aeron_tetherable_position_t *tetherable_position = &image->conductor_fields.subscribable.array[i];
+        aeron_tetherable_position_t *tetherable_position = &subscribable->array[i];
 
         if (tetherable_position->is_tether)
         {
@@ -841,24 +846,16 @@ void aeron_publication_image_check_untethered_subscriptions(
                             AERON_IPC_CHANNEL,
                             AERON_IPC_CHANNEL_LEN);
 
-                        image->untethered_subscription_state_change_func(
-                            tetherable_position,
-                            now_ns,
-                            AERON_SUBSCRIPTION_TETHER_LINGER,
-                            image->stream_id,
-                            image->session_id);
+                        aeron_driver_subscribable_state(
+                            subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_LINGER, now_ns);
                     }
                     break;
 
                 case AERON_SUBSCRIPTION_TETHER_LINGER:
                     if (now_ns > (tetherable_position->time_of_last_update_ns + window_limit_timeout_ns))
                     {
-                        image->untethered_subscription_state_change_func(
-                            tetherable_position,
-                            now_ns,
-                            AERON_SUBSCRIPTION_TETHER_RESTING,
-                            image->stream_id,
-                            image->session_id);
+                        aeron_driver_subscribable_state(
+                            subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_RESTING, now_ns);
                     }
                     break;
 
@@ -878,12 +875,8 @@ void aeron_publication_image_check_untethered_subscriptions(
                             image->source_identity,
                             image->source_identity_length);
 
-                        image->untethered_subscription_state_change_func(
-                            tetherable_position,
-                            now_ns,
-                            AERON_SUBSCRIPTION_TETHER_ACTIVE,
-                            image->stream_id,
-                            image->session_id);
+                        aeron_driver_subscribable_state(
+                            subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_ACTIVE, now_ns);
                     }
                     break;
             }
@@ -904,7 +897,7 @@ void aeron_publication_image_on_time_event(
             bool is_end_of_stream;
             AERON_GET_VOLATILE(is_end_of_stream, image->is_end_of_stream);
 
-            if (0 == image->conductor_fields.subscribable.length ||
+            if (!aeron_driver_subscribable_has_working_positions(&image->conductor_fields.subscribable) ||
                 now_ns > (last_packet_timestamp_ns + image->conductor_fields.liveness_timeout_ns) ||
                 (is_end_of_stream &&
                  aeron_counter_get(image->rcv_pos_position.value_addr) >=
@@ -984,7 +977,5 @@ extern void aeron_publication_image_conductor_disconnect_endpoint(aeron_publicat
 extern const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image);
 
 extern int64_t aeron_publication_image_registration_id(aeron_publication_image_t *image);
-
-extern size_t aeron_publication_image_subscriber_count(aeron_publication_image_t *image);
 
 extern int64_t aeron_publication_image_join_position(aeron_publication_image_t *image);

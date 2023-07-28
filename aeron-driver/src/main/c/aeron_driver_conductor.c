@@ -3144,10 +3144,15 @@ void aeron_driver_subscribable_remove_position(aeron_subscribable_t *subscribabl
 {
     for (size_t i = 0, size = subscribable->length, last_index = size - 1; i < size; i++)
     {
-        aeron_tetherable_position_t tetherable_position = subscribable->array[i];
-        if (counter_id == tetherable_position.counter_id)
+        aeron_tetherable_position_t *tetherable_position = &subscribable->array[i];
+        if (counter_id == tetherable_position->counter_id)
         {
-            subscribable->remove_position_hook_func(subscribable->clientd, tetherable_position.value_addr);
+            if (AERON_SUBSCRIPTION_TETHER_RESTING == tetherable_position->state)
+            {
+                subscribable->num_resting--;
+            }
+
+            subscribable->remove_position_hook_func(subscribable->clientd, tetherable_position->value_addr);
             aeron_array_fast_unordered_remove(
                 (uint8_t *)subscribable->array, sizeof(aeron_tetherable_position_t), i, last_index);
             subscribable->length--;
@@ -3223,6 +3228,38 @@ int aeron_driver_conductor_link_subscribable(
     }
 
     return result;
+}
+
+void aeron_driver_subscribable_state(
+    aeron_subscribable_t *subscribable,
+    aeron_tetherable_position_t *tetherable_position,
+    aeron_subscription_tether_state_t state,
+    int64_t now_ns)
+{
+    if (tetherable_position->state != state)
+    {
+        if (AERON_SUBSCRIPTION_TETHER_RESTING == state)
+        {
+            subscribable->num_resting++;
+        }
+        else if (AERON_SUBSCRIPTION_TETHER_RESTING == tetherable_position->state)
+        {
+            subscribable->num_resting--;
+        }
+    }
+
+    tetherable_position->state = state;
+    tetherable_position->time_of_last_update_ns = now_ns;
+}
+
+size_t aeron_driver_subscribable_working_position_count(aeron_subscribable_t *subscribable)
+{
+    return subscribable->length - subscribable->num_resting;
+}
+
+bool aeron_driver_subscribable_has_working_positions(aeron_subscribable_t *subscribable)
+{
+    return subscribable->num_resting < subscribable->length;
 }
 
 void aeron_driver_conductor_unlink_subscribable(aeron_subscription_link_t *link, aeron_subscribable_t *subscribable)

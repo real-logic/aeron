@@ -189,7 +189,7 @@ inline void aeron_network_publication_remove_subscriber_hook(void *clientd, vola
 {
     aeron_network_publication_t *publication = (aeron_network_publication_t *)clientd;
 
-    if (1 == publication->conductor_fields.subscribable.length)
+    if (1 == aeron_driver_subscribable_working_position_count(&publication->conductor_fields.subscribable))
     {
         AERON_PUT_ORDERED(publication->has_spies, false);
     }
@@ -259,25 +259,23 @@ inline int64_t aeron_network_publication_max_spy_position(aeron_network_publicat
 
     for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
     {
-        int64_t spy_position = aeron_counter_get_volatile(
-            publication->conductor_fields.subscribable.array[i].value_addr);
+        aeron_tetherable_position_t *tetherable_position = &publication->conductor_fields.subscribable.array[i];
+        int64_t spy_position = aeron_counter_get_volatile(tetherable_position->value_addr);
 
-        position = spy_position > position ? spy_position : position;
+        if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
+        {
+            position = spy_position > position ? spy_position : position;
+        }
     }
 
     return position;
-}
-
-inline size_t aeron_network_publication_num_spy_subscribers(aeron_network_publication_t *publication)
-{
-    return publication->conductor_fields.subscribable.length;
 }
 
 inline bool aeron_network_publication_is_accepting_subscriptions(aeron_network_publication_t *publication)
 {
     return AERON_NETWORK_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state ||
         (AERON_NETWORK_PUBLICATION_STATE_DRAINING == publication->conductor_fields.state &&
-            publication->conductor_fields.subscribable.length > 0 &&
+            aeron_driver_subscribable_has_working_positions(&publication->conductor_fields.subscribable) &&
             aeron_network_publication_producer_position(publication) >
                 aeron_counter_get_volatile(publication->snd_pos_position.value_addr));
 }

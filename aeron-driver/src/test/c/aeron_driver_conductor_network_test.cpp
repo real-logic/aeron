@@ -42,6 +42,11 @@ protected:
 
         return NULL;
     }
+
+    inline size_t aeron_publication_image_subscriber_count(aeron_publication_image_t *image)
+    {
+        return image->conductor_fields.subscribable.length;
+    }
 };
 
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkSubscriptionsWithDifferentChannelSameStreamId)

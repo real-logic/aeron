@@ -23,9 +23,9 @@ import org.agrona.concurrent.status.ReadablePosition;
 public interface Subscribable
 {
     /**
-     * Registration Id that is in use by the subscribable.
+     * Registration Id that is in use by the m_subscribable.
      *
-     * @return registration Id for subscribable.
+     * @return registration Id for m_subscribable.
      */
     long subscribableRegistrationId();
 

@@ -159,19 +159,19 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return false;
     }
 
-    boolean isLinked(final Subscribable subscribable)
+    boolean isLinked(final Subscribable m_subscribable)
     {
-        return positionBySubscribableMap.containsKey(subscribable);
+        return positionBySubscribableMap.containsKey(m_subscribable);
     }
 
-    void link(final Subscribable subscribable, final ReadablePosition position)
+    void link(final Subscribable m_subscribable, final ReadablePosition position)
     {
-        positionBySubscribableMap.put(subscribable, position);
+        positionBySubscribableMap.put(m_subscribable, position);
     }
 
-    void unlink(final Subscribable subscribable)
+    void unlink(final Subscribable m_subscribable)
     {
-        positionBySubscribableMap.remove(subscribable);
+        positionBySubscribableMap.remove(m_subscribable);
     }
 
     boolean isWildcardOrSessionIdMatch(final int sessionId)
@@ -188,8 +188,8 @@ public abstract class SubscriptionLink implements DriverManagedResource
     {
         for (final Map.Entry<Subscribable, ReadablePosition> entry : positionBySubscribableMap.entrySet())
         {
-            final Subscribable subscribable = entry.getKey();
-            conductor.notifyUnavailableImageLink(subscribable.subscribableRegistrationId(), this);
+            final Subscribable m_subscribable = entry.getKey();
+            conductor.notifyUnavailableImageLink(m_subscribable.subscribableRegistrationId(), this);
         }
     }
 
@@ -200,9 +200,9 @@ public abstract class SubscriptionLink implements DriverManagedResource
     {
         for (final Map.Entry<Subscribable, ReadablePosition> entry : positionBySubscribableMap.entrySet())
         {
-            final Subscribable subscribable = entry.getKey();
+            final Subscribable m_subscribable = entry.getKey();
             final ReadablePosition position = entry.getValue();
-            subscribable.removeSubscriber(this, position);
+            m_subscribable.removeSubscriber(this, position);
         }
     }
 

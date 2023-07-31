@@ -146,7 +146,7 @@ else
   cmake -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}"
   make clean
   make -j ${ncpus} all
-  ctest -C ${BUILD_CONFIG} --output-on-failure
+  ctest -C ${BUILD_CONFIG} --output-on-failure --timeout 1800
 fi
 
 if [ true = "${BUILD_PACKAGE}" ]

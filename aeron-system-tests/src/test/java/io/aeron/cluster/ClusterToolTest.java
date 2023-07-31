@@ -167,6 +167,7 @@ class ClusterToolTest
     }
 
     @Test
+    @InterruptAfter(30)
     void shouldFailIfMarkFileUnavailable(final @TempDir Path emptyClusterDir)
     {
         final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
@@ -204,6 +205,7 @@ class ClusterToolTest
     }
 
     @Test
+    @InterruptAfter(30)
     void sortRecordingLogIsANoOpIfRecordLogIsEmpty(final @TempDir Path emptyClusterDir) throws IOException
     {
         final File clusterDir = emptyClusterDir.toFile();
@@ -219,6 +221,7 @@ class ClusterToolTest
     }
 
     @Test
+    @InterruptAfter(30)
     void sortRecordingLogIsANoOpIfRecordDoesNotExist(final @TempDir Path emptyClusterDir)
     {
         final File clusterDir = emptyClusterDir.toFile();
@@ -231,6 +234,7 @@ class ClusterToolTest
     }
 
     @Test
+    @InterruptAfter(30)
     void sortRecordingLogIsANoOpIfRecordLogIsAlreadySorted(final @TempDir Path emptyClusterDir) throws IOException
     {
         final File clusterDir = emptyClusterDir.toFile();
@@ -252,6 +256,7 @@ class ClusterToolTest
     }
 
     @Test
+    @InterruptAfter(30)
     void sortRecordingLogShouldRearrangeDataOnDisc(final @TempDir Path emptyClusterDir) throws IOException
     {
         final File clusterDir = emptyClusterDir.toFile();
@@ -299,6 +304,7 @@ class ClusterToolTest
     }
 
     @Test
+    @InterruptAfter(30)
     void seedRecordingLogFromSnapshotShouldDeleteOriginalRecordingLogFileIfThereAreNoValidSnapshots(
         final @TempDir Path emptyClusterDir) throws IOException
     {
@@ -328,6 +334,7 @@ class ClusterToolTest
     }
 
     @Test
+    @InterruptAfter(30)
     void seedRecordingLogFromSnapshotShouldCreateANewRecordingLogFromALatestValidSnapshot(
         final @TempDir Path emptyClusterDir) throws IOException
     {
@@ -335,6 +342,7 @@ class ClusterToolTest
     }
 
     @Test
+    @InterruptAfter(30)
     void seedRecordingLogFromSnapshotShouldCreateANewRecordingLogFromALatestValidSnapshotCommandLine(
         final @TempDir Path emptyClusterDir) throws IOException
     {

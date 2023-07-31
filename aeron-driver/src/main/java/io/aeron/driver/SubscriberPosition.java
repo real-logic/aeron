@@ -23,14 +23,14 @@ import org.agrona.concurrent.status.Position;
 final class SubscriberPosition
 {
     private final SubscriptionLink subscriptionLink;
-    private final Subscribable m_subscribable;
+    private final Subscribable subscribable;
     private final Position position;
 
     SubscriberPosition(
-        final SubscriptionLink subscriptionLink, final Subscribable m_subscribable, final Position position)
+        final SubscriptionLink subscriptionLink, final Subscribable subscribable, final Position position)
     {
         this.subscriptionLink = subscriptionLink;
-        this.m_subscribable = m_subscribable;
+        this.subscribable = subscribable;
         this.position = position;
     }
 
@@ -61,7 +61,7 @@ final class SubscriberPosition
     {
         return "SubscriberPosition{" +
             "subscriptionLink=" + subscriptionLink +
-            ", m_subscribable=" + m_subscribable +
+            ", m_subscribable=" + subscribable +
             ", position=" + position +
             '}';
     }

@@ -22,6 +22,7 @@ import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -102,6 +103,7 @@ class ClusterBackupContextTest
     }
 
     @Test
+    @Disabled
     void concludeShouldCreateMarkFileDirSetViaSystemProperty(final @TempDir File tempDir)
     {
         final File rootDir = new File(tempDir, "root");

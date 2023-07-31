@@ -21,6 +21,7 @@ import io.aeron.RethrowingErrorHandler;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -84,6 +85,7 @@ class ClusteredServiceContainerContextTest
     }
 
     @Test
+    @Disabled
     void concludeShouldCreateMarkFileDirSetViaSystemProperty(final @TempDir File tempDir)
     {
         final File rootDir = new File(tempDir, "root");

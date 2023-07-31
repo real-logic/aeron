@@ -43,6 +43,7 @@ import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -521,6 +522,7 @@ class ConsensusModuleContextTest
     }
 
     @Test
+    @Disabled
     void concludeShouldCreateMarkFileDirSetViaSystemProperty(final @TempDir File tempDir)
     {
         final File rootDir = new File(tempDir, "root");

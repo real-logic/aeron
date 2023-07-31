@@ -72,7 +72,7 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "file=build/distributions/test_logs.tbz2" >> $GITHUB_OUTPUT
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
           ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
@@ -170,7 +170,7 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "file=build/distributions/test_logs.tbz2" >> $GITHUB_OUTPUT
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
           ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
@@ -227,7 +227,7 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "file=build/distributions/test_logs.tbz2" >> $GITHUB_OUTPUT
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
           ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
@@ -273,7 +273,7 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "file=build/distributions/test_logs.tbz2" >> $GITHUB_OUTPUT
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
           ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
@@ -327,7 +327,7 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "file=build/distributions/test_logs.tbz2" >> $GITHUB_OUTPUT
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
           ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
@@ -384,7 +384,7 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "file=build/distributions/test_logs.tbz2" >> $GITHUB_OUTPUT
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
           ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'

@@ -61,7 +61,7 @@ final class SubscriberPosition
     {
         return "SubscriberPosition{" +
             "subscriptionLink=" + subscriptionLink +
-            ", m_subscribable=" + subscribable +
+            ", subscribable=" + subscribable +
             ", position=" + position +
             '}';
     }

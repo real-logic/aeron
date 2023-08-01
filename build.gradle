@@ -1079,7 +1079,7 @@ tasks.register('copyTestLogs', Copy) {
     include '**/*.log'
     include '**/*.tlog'
     include '**/build/reports/tests/**'
-    include '**/build/test-results/*/TEST*.xml'
+    include '**/build/test-results/**/*'
     include 'LICENSE'
     exclude 'build'
     into 'build/test_logs'

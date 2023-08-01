@@ -39,6 +39,9 @@ if not "%1"=="" (
     ) else if "%1"=="--no-system-tests" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SYSTEM_TESTS=OFF"
         echo "Disabling system tests"
+    ) else if "%1"=="--no-unit-tests" (
+        set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_UNIT_TESTS=OFF"
+        echo "Disabling unit tests"
     ) else if "%1"=="--slow-system-tests" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_SLOW_SYSTEM_TESTS=ON"
         echo "Enabling slow system tests"

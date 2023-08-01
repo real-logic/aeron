@@ -21,6 +21,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.InterruptAfter;
 import io.aeron.test.SlowTest;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
@@ -131,6 +132,7 @@ class PongTest
 
     @SlowTest
     @Test
+    @InterruptAfter(20)
     void playPingPongWithRestart()
     {
         buffer.putInt(0, 1);

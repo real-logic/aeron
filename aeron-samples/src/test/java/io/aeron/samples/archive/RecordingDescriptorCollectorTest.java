@@ -76,6 +76,7 @@ public class RecordingDescriptorCollectorTest
     }
 
     @Test
+    @InterruptAfter(10)
     void shouldAllowUserToRetainDescriptorsToPreventReuse(@TempDir final Path tempDir)
     {
         try (MediaDriver mediaDriver = MediaDriver.launch(new MediaDriver.Context().dirDeleteOnStart(true));
@@ -117,6 +118,7 @@ public class RecordingDescriptorCollectorTest
     }
 
     @Test
+    @InterruptAfter(10)
     void shouldShouldNotReuseDescriptorIfPoolSizeIsZero(@TempDir final Path tempDir)
     {
         try (MediaDriver mediaDriver = MediaDriver.launch(new MediaDriver.Context().dirDeleteOnStart(true));

@@ -1960,6 +1960,7 @@ class ClusterTest
     }
 
     @Test
+    @InterruptAfter(20)
     void shouldHandleTrimmingClusterFromTheFront()
     {
         cluster = aCluster().withSegmentFileLength(512 * 1024).start();
@@ -1987,6 +1988,7 @@ class ClusterTest
     }
 
     @Test
+    @InterruptAfter(20)
     void shouldHandleReusingCorrelationIdsAcrossASnapshot()
     {
         cluster = aCluster().withSegmentFileLength(512 * 1024).start();
@@ -2008,6 +2010,7 @@ class ClusterTest
     }
 
     @Test
+    @InterruptAfter(20)
     void shouldHandleReplayAfterShutdown()
     {
         cluster = aCluster().withStaticNodes(1).start();

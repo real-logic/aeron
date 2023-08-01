@@ -66,6 +66,7 @@ class DriverNameResolverTest
     }
 
     @Test
+    @InterruptAfter(20)
     void shouldInitializeWithDefaultsAndHaveResolverCounters()
     {
         addDriver(TestMediaDriver.launch(setDefaults(new MediaDriver.Context()

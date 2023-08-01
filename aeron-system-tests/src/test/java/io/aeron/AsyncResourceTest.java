@@ -169,7 +169,7 @@ class AsyncResourceTest
 
     @Test
     @SlowTest
-    @Timeout(60)
+    @InterruptAfter(60)
     void shouldDetectUnknownHost()
     {
         final ErrorHandler mockClientErrorHandler = mock(ErrorHandler.class);

@@ -46,5 +46,7 @@ function(aeron_archive_client_test name file)
     set_tests_properties(${wrapper_name} PROPERTIES RUN_SERIAL TRUE)
 endfunction()
 
-aeron_archive_client_test(archiveTest AeronArchiveTest.cpp)
+if (AERON_UNIT_TESTS)
+    aeron_archive_client_test(archiveTest AeronArchiveTest.cpp)
+endif ()
 

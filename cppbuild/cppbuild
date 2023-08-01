@@ -76,6 +76,11 @@ do
       echo "Disabling all tests"
       shift
       ;;
+    --no-unit-tests)
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_UNIT_TESTS=OFF"
+      echo "Disabling unit tests"
+      shift
+      ;;
     --no-system-tests)
       EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_SYSTEM_TESTS=OFF"
       echo "Disabling system tests"

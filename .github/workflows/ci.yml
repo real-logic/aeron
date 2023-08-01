@@ -86,7 +86,7 @@ jobs:
           New-Partition -DiskNumber 1 -Size 30MB -DriveLetter T | Format-Volume -FileSystem NTFS -Confirm:$false
           mkdir T:/tmp_aeron_dir
       - name: Build with Gradle
-        run: ./gradlew -x javadoc
+        run: ./gradlew -x javadoc --console=plain
       - name: Remove small temp file system (Linux)
         if: always() && runner.os == 'Linux'
         run: |

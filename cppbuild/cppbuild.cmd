@@ -98,5 +98,5 @@ if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 cmake --build . --config %BUILD_CONFIG%
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
-ctest -C %BUILD_CONFIG% --output-on-failure
+ctest -C %BUILD_CONFIG% --output-on-failure --timeout 2000
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%

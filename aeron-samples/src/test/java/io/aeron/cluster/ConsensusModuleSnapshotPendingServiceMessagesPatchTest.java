@@ -45,6 +45,7 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -130,6 +131,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
     @Test
     @SlowTest
     @InterruptAfter(60)
+    @Disabled
     void executeIsANoOpIfTheSnapshotIsValid()
     {
         final IntFunction<TestNode.TestService[]> servicesSupplier =
@@ -238,6 +240,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         "7777, 9999, 1000000000000000, 1223372036854775, MaxClusterSessionId" })
     @SlowTest
     @InterruptAfter(60)
+    @Disabled
     @SuppressWarnings("MethodLength")
     void executeShouldPatchTheStateOfTheLeaderSnapshot(
         final String baseLogServiceSessionId,

@@ -19,9 +19,6 @@ import io.aeron.archive.client.RecordingSignalConsumer;
 import io.aeron.archive.codecs.RecordingSignal;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.StringJoiner;
-import java.util.stream.Collectors;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;

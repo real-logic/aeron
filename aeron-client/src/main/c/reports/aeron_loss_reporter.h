@@ -66,32 +66,11 @@ aeron_loss_reporter_entry_offset_t aeron_loss_reporter_create_entry(
     const char *source,
     size_t source_length);
 
-inline void aeron_loss_reporter_record_observation(
+void aeron_loss_reporter_record_observation(
     aeron_loss_reporter_t *reporter,
     aeron_loss_reporter_entry_offset_t offset,
     int64_t bytes_lost,
-    int64_t timestamp_ms)
-{
-    if (offset >= 0)
-    {
-        uint8_t *ptr = reporter->buffer + offset;
-        aeron_loss_reporter_entry_t *entry = (aeron_loss_reporter_entry_t *)ptr;
-        int64_t dest;
-
-        AERON_PUT_ORDERED(entry->last_observation_timestamp, timestamp_ms);
-
-        // this is aligned as far as usage goes. And should perform fine.
-#if defined(__clang__) && defined(AERON_CPU_ARM)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Watomic-alignment"
-#endif
-        AERON_GET_AND_ADD_INT64(dest, entry->total_bytes_lost, bytes_lost);
-        AERON_GET_AND_ADD_INT64(dest, entry->observation_count, 1);
-#if defined(__clang__) && defined(AERON_CPU_ARM)
-#pragma clang diagnostic pop
-#endif
-    }
-}
+    int64_t timestamp_ms);
 
 int aeron_loss_reporter_resolve_filename(const char *directory, char *filename_buffer, size_t filename_buffer_length);
 

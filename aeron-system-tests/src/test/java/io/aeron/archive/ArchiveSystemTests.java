@@ -26,6 +26,8 @@ import io.aeron.test.Tests;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 
+import java.util.function.Supplier;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ArchiveSystemTests
@@ -127,11 +129,12 @@ class ArchiveSystemTests
         final long expectedRecordingId,
         final RecordingSignal expectedSignal)
     {
+        final Supplier<String> errorMessage = signalConsumer::signalHistory;
         while (expectedRecordingId != signalConsumer.recordingId || expectedSignal != signalConsumer.signal)
         {
             if (0 == aeronArchive.pollForRecordingSignals())
             {
-                Tests.yield();
+                Tests.yieldingIdle(errorMessage);
             }
         }
     }

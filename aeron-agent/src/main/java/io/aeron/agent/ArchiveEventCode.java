@@ -94,7 +94,10 @@ public enum ArchiveEventCode implements EventCode
     CMD_IN_REPLICATE2(39, ReplicateRequest2Decoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
 
     RECORDING_SIGNAL(40, RecordingSignalEventDecoder.TEMPLATE_ID,
-        (event, buffer, offset, builder) -> dissectRecordingSignal(buffer, offset, builder));
+        (event, buffer, offset, builder) -> dissectRecordingSignal(buffer, offset, builder)),
+
+    REPLICATION_SESSION_DONE(
+        41, -1, (event, buffer, offset, builder) -> dissectReplicationSessionDone(buffer, offset, builder));
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final ArchiveEventCode[] EVENT_CODE_BY_ID;

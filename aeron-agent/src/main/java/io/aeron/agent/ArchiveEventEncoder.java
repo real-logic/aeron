@@ -19,6 +19,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.agent.CommonEventEncoder.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -87,5 +88,54 @@ final class ArchiveEventEncoder
         encodedLength += SIZE_OF_LONG;
 
         encodingBuffer.putLong(offset + encodedLength, newCatalogLength, LITTLE_ENDIAN);
+    }
+
+    static int replicationSessionDoneLength()
+    {
+        return 8 * SIZE_OF_LONG + 3 * SIZE_OF_BYTE;
+    }
+
+    static void encodeReplicationSessionDone(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final long controlSessionId,
+        final long replicationId,
+        final long srcRecordingId,
+        final long replayPosition,
+        final long srcStopPosition,
+        final long dstRecordingId,
+        final long dstStopPosition,
+        final long position,
+        final boolean isClosed,
+        final boolean isEndOfStream,
+        final boolean isSynced)
+    {
+        final int logHeaderLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int bodyOffset = offset + logHeaderLength;
+        int bodyLength = 0;
+
+        encodingBuffer.putLong(bodyOffset + bodyLength, controlSessionId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(bodyOffset + bodyLength, replicationId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(bodyOffset + bodyLength, srcRecordingId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(bodyOffset + bodyLength, replayPosition, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(bodyOffset + bodyLength, srcStopPosition, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(bodyOffset + bodyLength, dstRecordingId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(bodyOffset + bodyLength, dstStopPosition, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(bodyOffset + bodyLength, position, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_LONG;
+        encodingBuffer.putByte(bodyOffset + bodyLength, (byte)(isClosed ? 1 : 0));
+        bodyLength += SIZE_OF_BYTE;
+        encodingBuffer.putByte(bodyOffset + bodyLength, (byte)(isEndOfStream ? 1 : 0));
+        bodyLength += SIZE_OF_BYTE;
+        encodingBuffer.putByte(bodyOffset + bodyLength, (byte)(isSynced ? 1 : 0));
     }
 }

@@ -147,6 +147,71 @@ public final class ArchiveEventLogger
     }
 
     /**
+     * Log the replication session done event.
+     *
+     * @param eventCode         for the replication session completion.
+     * @param controlSessionId  identity for the control session on the Archive.
+     * @param replicationId     identity for the replication session.
+     * @param srcRecordingId    identity for the recording in the source Archive.
+     * @param replayPosition    position to start the replay from.
+     * @param srcStopPosition   stop position of the source recording.
+     * @param dstRecordingId    identity for the recording in the destination Archive.
+     * @param dstStopPosition   stop position of the destination recording.
+     * @param position          position of the replication when the session stopped.
+     * @param isClosed          is the source image closed.
+     * @param isEndOfStream     is the source image at the end of the stream.
+     * @param isSynced          has the destination recording position reached the stop position of the source
+     *                          recording.
+     */
+    public void logReplicationSessionDone(
+        final ArchiveEventCode eventCode,
+        final long controlSessionId,
+        final long replicationId,
+        final long srcRecordingId,
+        final long replayPosition,
+        final long srcStopPosition,
+        final long dstRecordingId,
+        final long dstStopPosition,
+        final long position,
+        final boolean isClosed,
+        final boolean isEndOfStream,
+        final boolean isSynced)
+    {
+        final int length = replicationSessionDoneLength();
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeReplicationSessionDone(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    controlSessionId,
+                    replicationId,
+                    srcRecordingId,
+                    replayPosition,
+                    srcStopPosition,
+                    dstRecordingId,
+                    dstStopPosition,
+                    position,
+                    isClosed,
+                    isEndOfStream,
+                    isSynced);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
      * Log a control response error.
      *
      * @param sessionId    associated with the response.

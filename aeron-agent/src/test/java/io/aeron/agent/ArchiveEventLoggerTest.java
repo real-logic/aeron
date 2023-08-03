@@ -19,6 +19,7 @@ import io.aeron.archive.codecs.ListRecordingRequestDecoder;
 import io.aeron.archive.codecs.MessageHeaderEncoder;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,6 +30,7 @@ import java.time.temporal.ChronoUnit;
 
 import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.ArchiveEventCode.*;
+import static io.aeron.agent.ArchiveEventEncoder.replicationSessionDoneLength;
 import static io.aeron.agent.ArchiveEventLogger.CONTROL_REQUEST_EVENTS;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
@@ -38,6 +40,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.*;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.*;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
@@ -62,7 +65,8 @@ class ArchiveEventLoggerTest
         mode = EXCLUDE,
         names = {
             "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
-            "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE"
+            "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE",
+            "REPLICATION_SESSION_DONE"
         })
     void logControlRequest(final ArchiveEventCode eventCode)
     {
@@ -220,5 +224,58 @@ class ArchiveEventLoggerTest
             logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(newCatalogLength,
             logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG), LITTLE_ENDIAN));
+    }
+
+    @Test
+    void logReplicationSessionDone()
+    {
+        final long controlSessionId = 232345;
+        final long replicationId = 456456;
+        final long srcRecordingId = 345123;
+        final long replayPosition = 2345;
+        final long srcStopPosition = 3245;
+        final long dstRecordingId = 435675346;
+        final long dstStopPosition = 5685623;
+        final long position = 3425234;
+        final boolean isClosed = true;
+        final boolean isEndOfStream = true;
+        final boolean isSynced = false;
+
+        final int offset = ALIGNMENT * 3;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+
+        logger.logReplicationSessionDone(
+            REPLICATION_SESSION_DONE,
+            controlSessionId,
+            replicationId,
+            srcRecordingId,
+            replayPosition,
+            srcStopPosition,
+            dstRecordingId,
+            dstStopPosition,
+            position,
+            isClosed,
+            isEndOfStream,
+            isSynced);
+
+        verifyLogHeader(
+            logBuffer,
+            offset,
+            REPLICATION_SESSION_DONE.toEventCodeId(),
+            replicationSessionDoneLength(),
+            replicationSessionDoneLength());
+
+        final StringBuilder sb = new StringBuilder();
+        ArchiveEventDissector.dissectReplicationSessionDone(
+            logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern =
+            "\\[[0-9]+\\.[0-9]+] ARCHIVE: REPLICATION_SESSION_DONE \\[67/67]: controlSessionId=" + controlSessionId +
+            " replicationId=" + replicationId + " srcRecordingId=" + srcRecordingId +
+            " replayPosition=" + replayPosition + " srcStopPosition=" + srcStopPosition +
+            " dstRecordingId=" + dstRecordingId + " dstStopPosition=" + dstStopPosition + " position=" + position +
+            " isClosed=" + isClosed + " isEndOfStream=" + isEndOfStream + " isSynced=" + isSynced;
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
 }

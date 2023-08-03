@@ -621,6 +621,19 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             (NULL_POSITION != dstStopPosition && position >= dstStopPosition) ||
             isEndOfStream || isClosed)
         {
+            logReplicationSessionDone(
+                controlSession.sessionId(),
+                replicationId,
+                srcRecordingId,
+                replayPosition,
+                srcStopPosition,
+                dstRecordingId,
+                dstStopPosition,
+                position,
+                isClosed,
+                isEndOfStream,
+                isSynced);
+
             if (isSynced)
             {
                 signal(position, SYNC);
@@ -811,5 +824,27 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final long position)
     {
         //System.out.println("ReplicationSession: " + oldState + " -> " + newState + " replicationId=" + replicationId);
+    }
+
+    @SuppressWarnings("unused")
+    private void logReplicationSessionDone(
+        final long controlSessionId,
+        final long replicationId,
+        final long srcRecordingId,
+        final long replayPosition,
+        final long srcStopPosition,
+        final long dstRecordingId,
+        final long dstStopPosition,
+        final long position,
+        final boolean isClosed,
+        final boolean isEndOfStream,
+        final boolean isSynced)
+    {
+//        System.out.println(
+//            "ReplicationDone: controlSessionId = " + controlSessionId + ", replicationId = " + replicationId +
+//            ", srcRecordingId = " + srcRecordingId + ", srcRecordingPosition = " + srcRecordingPosition +
+//            ", srcStopPosition = " + srcStopPosition + ", dstRecordingId = " + dstRecordingId +
+//            ", dstStopPosition = " + dstStopPosition + ", position = " + position + ", isClosed = " + isClosed +
+//            ", isEndOfStream = " + isEndOfStream + ", isSynced = " + isSynced);
     }
 }

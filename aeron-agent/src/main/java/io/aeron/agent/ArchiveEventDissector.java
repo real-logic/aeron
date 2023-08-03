@@ -21,6 +21,7 @@ import org.agrona.MutableDirectBuffer;
 import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.CommonEventDissector.dissectLogHeader;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -457,6 +458,51 @@ final class ArchiveEventDissector
             .append(" subscriptionId=").append(RECORDING_SIGNAL_EVENT_DECODER.subscriptionId())
             .append(" position=").append(RECORDING_SIGNAL_EVENT_DECODER.position())
             .append(" signal=").append(RECORDING_SIGNAL_EVENT_DECODER.signal());
+    }
+
+    static void dissectReplicationSessionDone(
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, REPLICATION_SESSION_DONE, buffer, offset, builder);
+
+        final long controlSessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long replicationId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long srcRecordingId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long replayPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long srcStopPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long dstRecordingId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long dstStopPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long position = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final boolean isClosed = 1 == buffer.getByte(absoluteOffset);
+        absoluteOffset += SIZE_OF_BYTE;
+        final boolean isEndOfStream = 1 == buffer.getByte(absoluteOffset);
+        absoluteOffset += SIZE_OF_BYTE;
+        final boolean isSynced = 1 == buffer.getByte(absoluteOffset);
+        absoluteOffset += SIZE_OF_BYTE;
+
+        builder
+            .append(": controlSessionId=").append(controlSessionId)
+            .append(" replicationId=").append(replicationId)
+            .append(" srcRecordingId=").append(srcRecordingId)
+            .append(" replayPosition=").append(replayPosition)
+            .append(" srcStopPosition=").append(srcStopPosition)
+            .append(" dstRecordingId=").append(dstRecordingId)
+            .append(" dstStopPosition=").append(dstStopPosition)
+            .append(" position=").append(position)
+            .append(" isClosed=").append(isClosed)
+            .append(" isEndOfStream=").append(isEndOfStream)
+            .append(" isSynced=").append(isSynced);
     }
 
     static void dissectReplicationSessionStateChange(

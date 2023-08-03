@@ -18,14 +18,11 @@ package io.aeron.archive;
 import io.aeron.archive.client.RecordingSignalConsumer;
 import io.aeron.archive.codecs.RecordingSignal;
 
-import java.util.ArrayList;
-
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 class TestRecordingSignalConsumer implements RecordingSignalConsumer
 {
-    private final ArrayList<String> signalHistory = new ArrayList<>();
     final long controlSessionId;
     long correlationId;
     long recordingId;
@@ -55,8 +52,6 @@ class TestRecordingSignalConsumer implements RecordingSignalConsumer
         this.subscriptionId = subscriptionId;
         this.position = position;
         this.signal = signal;
-
-        signalHistory.add(recordingId + "->" + signal);
     }
 
     public void reset()
@@ -66,10 +61,5 @@ class TestRecordingSignalConsumer implements RecordingSignalConsumer
         subscriptionId = NULL_VALUE;
         position = NULL_POSITION;
         signal = null;
-    }
-
-    public String signalHistory()
-    {
-        return "signalHistory={" + String.join(", ", signalHistory) + "}";
     }
 }

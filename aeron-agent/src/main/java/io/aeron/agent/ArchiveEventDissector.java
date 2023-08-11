@@ -530,7 +530,7 @@ final class ArchiveEventDissector
 
         final long controlSessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
-        final long ignorePosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        // SKIP: final long ignorePosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
 
         builder.append(": controlSessionId=").append(controlSessionId);

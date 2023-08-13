@@ -1011,6 +1011,12 @@ project(':aeron-all') {
 
     jar.finalizedBy shadowJar
 
+    tasks.register('dedupJar', io.aeron.build.DeduplicateTask) {
+        source shadowJar.outputs.files.singleFile
+    }
+
+    shadowJar.finalizedBy dedupJar
+
     tasks.register('sourcesJar', Jar) {
         dependsOn ':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs'
         archiveClassifier.set('sources')

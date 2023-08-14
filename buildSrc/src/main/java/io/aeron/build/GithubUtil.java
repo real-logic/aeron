@@ -15,8 +15,14 @@
  */
 package io.aeron.build;
 
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.URIish;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 
 final class GithubUtil
@@ -59,5 +65,12 @@ final class GithubUtil
         }
 
         return s;
+    }
+
+    public static String currentGitHash() throws IOException, GitAPIException
+    {
+        final Repository repository = new FileRepositoryBuilder().findGitDir().build();
+        final Git git = new Git(repository);
+        return git.log().setMaxCount(1).call().iterator().next().getName();
     }
 }

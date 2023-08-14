@@ -56,6 +56,7 @@ def mockitoVersion = '4.11.0'
 def byteBuddyVersion = '1.14.5'
 def findbugsAnnotationsVersion = '3.0.1'
 def hdrHistogramVersion = '2.1.12'
+def gitCommit = io.aeron.build.GithubUtil.currentGitHash();
 
 ext {
     isReleaseVersion = !version.endsWith('-SNAPSHOT')
@@ -189,7 +190,9 @@ subprojects {
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
         options.deprecation = true
-        options.compilerArgs.addAll(['-Xlint:all', '-Werror']) // Enable all warnings and treat them as errors
+        options.compilerArgs.addAll(['-Xlint:all,-processing', '-Werror']) // Enable all warnings and treat them as errors
+        options.compilerArgs.add("-Aio.aeron.version=${aeronVersion}")
+        options.compilerArgs.add("-Aio.aeron.gitsha=${gitCommit}")
     }
 
     tasks.withType(Test).configureEach { test ->
@@ -329,6 +332,11 @@ subprojects {
     }
 }
 
+project(':aeron-version') {
+    java {
+    }
+}
+
 project(':aeron-client') {
     apply plugin: 'maven-publish'
     apply plugin: 'signing'
@@ -341,6 +349,8 @@ project(':aeron-client') {
                 prefer(agronaVersion)
             }
         }
+        annotationProcessor project(':aeron-version')
+        implementation project(':aeron-version')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
@@ -401,6 +411,8 @@ project(':aeron-driver') {
 
     dependencies {
         api project(':aeron-client')
+        annotationProcessor project(':aeron-version')
+        implementation project(':aeron-version')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
@@ -472,6 +484,8 @@ project(':aeron-archive') {
         api project(':aeron-driver')
         api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
+        annotationProcessor project(':aeron-version')
+        implementation project(':aeron-version')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
         testImplementation files('build/classes/java/generatedTest')
@@ -622,6 +636,8 @@ project(':aeron-cluster') {
         api project(':aeron-archive')
         api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
+        annotationProcessor project(':aeron-version')
+        implementation project(':aeron-version')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }

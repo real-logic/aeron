@@ -29,6 +29,7 @@ import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
+import io.aeron.version.VersionType;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -66,6 +67,7 @@ import static org.agrona.SystemUtil.*;
 /**
  * The Aeron Archive which allows for the recording and replay of local and remote {@link io.aeron.Publication}s .
  */
+@VersionType("io.aeron.archive.ArchiveVersion")
 public final class Archive implements AutoCloseable
 {
     private final Context ctx;

@@ -67,9 +67,9 @@ final class GithubUtil
         return s;
     }
 
-    public static String currentGitHash() throws IOException, GitAPIException
+    public static String currentGitHash(final String projectDir) throws IOException, GitAPIException
     {
-        final Repository repository = new FileRepositoryBuilder().findGitDir().build();
+        final Repository repository = new FileRepositoryBuilder().findGitDir(new File(projectDir)).build();
         final Git git = new Git(repository);
         return git.log().setMaxCount(1).call().iterator().next().getName();
     }

@@ -70,8 +70,8 @@ public class VersionProcessor extends AbstractProcessor
                     {
                         final int lastDot = versionType.value().lastIndexOf('.');
                         final String packageName = -1 != lastDot ? versionType.value().substring(0, lastDot) : null;
-                        final String className =
-                            -1 != lastDot ? versionType.value().substring(lastDot + 1) : versionType.value();
+                        final String className = -1 != lastDot ?
+                            versionType.value().substring(lastDot + 1) : versionType.value();
 
                         final String versionString = processingEnv.getOptions().get("io.aeron.version");
                         final VersionInformation info = new VersionInformation(versionString);
@@ -116,7 +116,7 @@ public class VersionProcessor extends AbstractProcessor
             final Matcher matcher = VERSION_PATTERN.matcher(versionString);
             if (!matcher.matches())
             {
-                throw new IllegalArgumentException("The version string: " + versionString + " is not valid");
+                throw new IllegalArgumentException("The version string: '" + versionString + "' is not valid");
             }
 
             major = Integer.parseInt(matcher.group(1));

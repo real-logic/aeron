@@ -968,18 +968,7 @@ public final class PublicationImage
         final int untetheredSubscriptionsSize = untetheredSubscriptions.size();
         if (untetheredSubscriptionsSize > 0)
         {
-            long maxConsumerPosition = 0;
-            for (final ReadablePosition subscriberPosition : subscriberPositions)
-            {
-                final long position = subscriberPosition.getVolatile();
-                if (position > maxConsumerPosition)
-                {
-                    maxConsumerPosition = position;
-                }
-            }
-
-            final int windowLength = nextSmReceiverWindowLength;
-            final long untetheredWindowLimit = (maxConsumerPosition - windowLength) + (windowLength >> 2);
+            final long untetheredWindowLimit = untetheredWindowLimit();
 
             for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
             {
@@ -1022,6 +1011,23 @@ public final class PublicationImage
                 }
             }
         }
+    }
+
+    private long untetheredWindowLimit()
+    {
+        final int windowLength = nextSmReceiverWindowLength;
+        long maxConsumerPosition = 0;
+
+        for (final ReadablePosition subscriberPosition : subscriberPositions)
+        {
+            final long position = subscriberPosition.getVolatile();
+            if (position > maxConsumerPosition)
+            {
+                maxConsumerPosition = position;
+            }
+        }
+
+        return (maxConsumerPosition - windowLength) + (windowLength >> 2);
     }
 
     private void updateActiveTransportCount()

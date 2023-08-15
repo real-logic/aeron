@@ -99,10 +99,18 @@ if (NOT DEFINED CMAKE_C_EXTENSIONS)
     set(CMAKE_C_EXTENSIONS OFF)
 endif ()
 
+execute_process(
+    COMMAND git log -1 --format=%H
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    OUTPUT_VARIABLE AERON_VERSION_GITSHA
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 add_definitions(-DAERON_VERSION_TXT="${AERON_VERSION_TXT}")
 add_definitions(-DAERON_VERSION_MAJOR=${aeron_VERSION_MAJOR})
 add_definitions(-DAERON_VERSION_MINOR=${aeron_VERSION_MINOR})
 add_definitions(-DAERON_VERSION_PATCH=${aeron_VERSION_PATCH})
+add_definitions(-DAERON_VERSION_GITSHA="${AERON_VERSION_GITSHA}")
 
 # all UNIX-based platform compiler flags
 if (UNIX)

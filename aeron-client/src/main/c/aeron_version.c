@@ -20,6 +20,7 @@ const char aeron_version_full_str[] = "aeron version " AERON_VERSION_TXT " built
 int aeron_major_version = AERON_VERSION_MAJOR;
 int aeron_minor_version = AERON_VERSION_MINOR;
 int aeron_patch_version = AERON_VERSION_PATCH;
+const char aeron_gitsha[] = AERON_VERSION_GITSHA;
 
 const char *aeron_version_full(void)
 {
@@ -39,6 +40,11 @@ int aeron_version_minor(void)
 int aeron_version_patch(void)
 {
     return aeron_patch_version;
+}
+
+const char *aeron_version_gitsha(void)
+{
+    return aeron_gitsha;
 }
 
 int32_t aeron_semantic_version_compose(uint8_t major, uint8_t minor, uint8_t patch)

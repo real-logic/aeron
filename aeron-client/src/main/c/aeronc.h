@@ -2177,6 +2177,13 @@ int aeron_version_minor(void);
 int aeron_version_patch(void);
 
 /**
+ * Return the git sha for the current build.
+ *
+ * @return git version
+ */
+const char *aeron_version_gitsha(void);
+
+/**
  * Clock function used by aeron.
  */
 typedef int64_t (*aeron_clock_func_t)(void);

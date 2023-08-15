@@ -104,8 +104,14 @@ int main(int argc, char **argv)
 
             case 'v':
             {
-                printf("%s <%s> major %d minor %d patch %d\n",
-                    argv[0], aeron_version_full(), aeron_version_major(), aeron_version_minor(), aeron_version_patch());
+                printf(
+                    "%s <%s> major %d minor %d patch %d git %s\n",
+                    argv[0],
+                    aeron_version_full(),
+                    aeron_version_major(),
+                    aeron_version_minor(),
+                    aeron_version_patch(),
+                    aeron_version_gitsha());
                 exit(EXIT_SUCCESS);
             }
 

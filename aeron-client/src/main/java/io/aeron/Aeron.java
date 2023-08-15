@@ -20,7 +20,7 @@ import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.version.VersionType;
+import io.aeron.version.Versioned;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastReceiver;
@@ -57,7 +57,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  * occurs then the process will face the wrath of {@link System#exit(int)}.
  * See {@link Aeron.Configuration#DEFAULT_ERROR_HANDLER}.
  */
-@VersionType("io.aeron.AeronVersion")
+@Versioned
 public class Aeron implements AutoCloseable
 {
     /**

@@ -21,6 +21,7 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedOptions;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
@@ -32,7 +33,7 @@ import java.util.regex.Pattern;
 /**
  * Version processor
  */
-@SupportedAnnotationTypes("io.aeron.version.VersionType")
+@SupportedAnnotationTypes("io.aeron.version.Versioned")
 @SupportedOptions({"io.aeron.version", "io.aeron.gitsha"})
 public class VersionProcessor extends AbstractProcessor
 {
@@ -49,29 +50,24 @@ public class VersionProcessor extends AbstractProcessor
      */
     public boolean process(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv)
     {
-        boolean claimed = false;
         for (final TypeElement annotation : annotations)
         {
             final Set<? extends Element> elementsAnnotatedWith = roundEnv.getElementsAnnotatedWith(annotation);
             for (final Element element : elementsAnnotatedWith)
             {
-                final VersionType versionType = element.getAnnotation(VersionType.class);
-                if (null == versionType)
-                {
-                    continue;
-                }
-
-                claimed = true;
+                final PackageElement pkg = processingEnv.getElementUtils().getPackageOf(element);
+                final String versionTypeName =
+                    pkg.getQualifiedName().toString() + '.' + element.getSimpleName() + "Version";
 
                 try
                 {
-                    final JavaFileObject sourceFile = processingEnv.getFiler().createSourceFile(versionType.value());
+                    final JavaFileObject sourceFile = processingEnv.getFiler().createSourceFile(versionTypeName);
                     try (PrintWriter out = new PrintWriter(sourceFile.openWriter()))
                     {
-                        final int lastDot = versionType.value().lastIndexOf('.');
-                        final String packageName = -1 != lastDot ? versionType.value().substring(0, lastDot) : null;
-                        final String className = -1 != lastDot ?
-                            versionType.value().substring(lastDot + 1) : versionType.value();
+                        final int lastDot = versionTypeName.lastIndexOf('.');
+                        final String packageName = -1 != lastDot ? versionTypeName.substring(0, lastDot) : null;
+                        final String className =
+                            -1 != lastDot ? versionTypeName.substring(lastDot + 1) : versionTypeName;
 
                         final String versionString = processingEnv.getOptions().get("io.aeron.version");
                         final VersionInformation info = new VersionInformation(versionString);
@@ -100,7 +96,7 @@ public class VersionProcessor extends AbstractProcessor
             }
         }
 
-        return claimed;
+        return false;
     }
 
     private static class VersionInformation

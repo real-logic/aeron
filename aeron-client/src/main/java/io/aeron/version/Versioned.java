@@ -21,16 +21,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation to define the version class to be generated
+ * Annotation to indicate a version class should be generated.
  */
-@Target(ElementType.TYPE)
+@Target({ElementType.TYPE, ElementType.CONSTRUCTOR})
 @Retention(RetentionPolicy.SOURCE)
-public @interface VersionType
+public @interface Versioned
 {
-    /**
-     * Name of the version class to be generated for this project.
-     *
-     * @return name of the class to be generated
-     */
-    String value();
 }

@@ -24,7 +24,7 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
-import io.aeron.version.VersionType;
+import io.aeron.version.Versioned;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -44,7 +44,7 @@ import java.util.function.Consumer;
  * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)},
  * and {@link ClusteredService#onNewLeadershipTermEvent(long, long, long, long, int, int, TimeUnit, int)}.
  */
-@VersionType("io.aeron.cluster.ClusterVersion")
+@Versioned
 public interface Cluster
 {
     /**

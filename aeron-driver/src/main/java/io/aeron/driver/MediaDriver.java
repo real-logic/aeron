@@ -29,7 +29,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.version.VersionType;
+import io.aeron.version.Versioned;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
@@ -78,7 +78,7 @@ import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
  *
  * @see Configuration
  */
-@VersionType("io.aeron.archive.DriverVersion")
+@Versioned
 public final class MediaDriver implements AutoCloseable
 {
     private boolean wasHighResTimerEnabled;

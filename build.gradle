@@ -349,8 +349,7 @@ project(':aeron-client') {
                 prefer(agronaVersion)
             }
         }
-        api project(':aeron-version')
-        annotationProcessor project(':aeron-version')
+//        annotationProcessor project(':aeron-version')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
@@ -411,7 +410,7 @@ project(':aeron-driver') {
 
     dependencies {
         api project(':aeron-client')
-        annotationProcessor project(':aeron-version')
+//        annotationProcessor project(':aeron-version')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
@@ -483,7 +482,7 @@ project(':aeron-archive') {
         api project(':aeron-driver')
         api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
-        annotationProcessor project(':aeron-version')
+//        annotationProcessor project(':aeron-version')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
         testImplementation files('build/classes/java/generatedTest')
@@ -634,7 +633,7 @@ project(':aeron-cluster') {
         api project(':aeron-archive')
         api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
-        annotationProcessor project(':aeron-version')
+//        annotationProcessor project(':aeron-version')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }

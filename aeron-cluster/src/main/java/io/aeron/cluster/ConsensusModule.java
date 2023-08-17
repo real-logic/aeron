@@ -1894,10 +1894,10 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Get the directory in which the ConsensusModule will store mark file (i.e. {@code cluster-mark.dat}). It
          * defaults to {@link #clusterDir()} if it is not set explicitly via the
-         * {@link ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME}.
+         * {@link io.aeron.cluster.service.ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME}.
          *
          * @return the directory in which the ConsensusModule will store mark file (i.e. {@code cluster-mark.dat}).
-         * @see ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME
          * @see #clusterDir()
          */
         public File markFileDir()

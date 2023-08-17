@@ -149,6 +149,10 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     @SuppressWarnings("methodlength")
     public void afterEach(final ExtensionContext context)
     {
+        if (0 == endTimeNs)
+        {
+            endTimeNs = System.nanoTime();
+        }
         Thread.interrupted(); // clean the interrupted flag
         Throwable error = context.getExecutionException()
             .filter((t) -> !(t instanceof TestAbortedException))

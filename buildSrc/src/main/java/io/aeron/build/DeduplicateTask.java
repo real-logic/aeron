@@ -30,7 +30,7 @@ import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
 /**
- * Removes duplicate entries from Jar files.  Will process the file in place.
+ * Removes duplicate entries from Jar files. Will process the file in place.
  */
 public class DeduplicateTask extends DefaultTask
 {
@@ -70,32 +70,34 @@ public class DeduplicateTask extends DefaultTask
 
         try
         {
-            final JarFile inputFile = new JarFile(source);
-            final LinkedHashMap<String, JarEntry> entries = new LinkedHashMap<>();
-            inputFile.stream().forEach(jarEntry -> entries.putIfAbsent(jarEntry.getName(), jarEntry));
-
-            try (JarOutputStream jarOutputStream = new JarOutputStream(Files.newOutputStream(newFile.toPath())))
+            try (JarFile inputFile = new JarFile(source))
             {
-                entries.forEach(
-                    (k, v) ->
-                    {
-                        final byte[] buf = new byte[4096];
-                        try
+                final LinkedHashMap<String, JarEntry> entries = new LinkedHashMap<>();
+                inputFile.stream().forEach((jarEntry) -> entries.putIfAbsent(jarEntry.getName(), jarEntry));
+
+                try (JarOutputStream jarOutputStream = new JarOutputStream(Files.newOutputStream(newFile.toPath())))
+                {
+                    entries.forEach(
+                        (k, v) ->
                         {
-                            final InputStream inputStream = inputFile.getInputStream(v);
-                            jarOutputStream.putNextEntry(new ZipEntry(k));
-                            int read;
-                            while (-1 != (read = inputStream.read(buf)))
+                            final byte[] buf = new byte[4096];
+                            try
                             {
-                                jarOutputStream.write(buf, 0, read);
+                                final InputStream inputStream = inputFile.getInputStream(v);
+                                jarOutputStream.putNextEntry(new ZipEntry(k));
+                                int read;
+                                while (-1 != (read = inputStream.read(buf)))
+                                {
+                                    jarOutputStream.write(buf, 0, read);
+                                }
+                                jarOutputStream.flush();
                             }
-                            jarOutputStream.flush();
-                        }
-                        catch (final IOException e)
-                        {
-                            throw new RuntimeException(e);
-                        }
-                    });
+                            catch (final IOException ex)
+                            {
+                                throw new RuntimeException(ex);
+                            }
+                        });
+                }
             }
 
             if (!source.renameTo(oldFile))

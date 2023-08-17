@@ -45,6 +45,9 @@ add_executable(TimeTests raw/TimeTests.cpp ${HEADERS})
 add_executable(Throughput Throughput.cpp ${HEADERS})
 add_executable(ExclusiveThroughput ExclusiveThroughput.cpp ${HEADERS})
 add_executable(PingPong PingPong.cpp ${HEADERS})
+add_executable(PingPongW PingPong.cpp ${HEADERS})
+add_executable(ExclusivePingPong ExclusivePingPong.cpp ${HEADERS})
+add_executable(ExclusivePingPongW ExclusivePingPong.cpp ${HEADERS})
 
 target_include_directories(BasicPublisher
     PUBLIC ${AERON_CLIENT_SOURCE_PATH})
@@ -127,6 +130,27 @@ target_link_libraries(PingPong
     hdr_histogram_static)
 add_dependencies(PingPong hdr_histogram)
 
+target_include_directories(PingPongW
+    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+target_link_libraries(PingPongW
+    ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB}
+    hdr_histogram_static)
+add_dependencies(PingPongW hdr_histogram)
+
+target_include_directories(ExclusivePingPong
+    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
+target_link_libraries(ExclusivePingPong
+    ${CLIENT_LINK_LIB}
+    hdr_histogram_static)
+add_dependencies(ExclusivePingPong hdr_histogram)
+
+target_include_directories(ExclusivePingPongW
+    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+target_link_libraries(ExclusivePingPongW
+    ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB}
+    hdr_histogram_static)
+add_dependencies(ExclusivePingPongW hdr_histogram)
+
 target_include_directories(TimeTests
     PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(TimeTests
@@ -145,10 +169,13 @@ if (AERON_INSTALL_TARGETS)
         Throughput
         ExclusiveThroughput
         PingPong
+        ExclusivePingPong
         BasicPublisherW
         BasicSubscriberW
+        RateSubscriberW
         PingW
         PongW
-        RateSubscriberW
+        PingPongW
+        ExclusivePingPongW
         DESTINATION bin)
 endif ()

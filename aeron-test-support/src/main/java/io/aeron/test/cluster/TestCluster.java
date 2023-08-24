@@ -119,6 +119,7 @@ public final class TestCluster implements AutoCloseable
     static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k|alias=ingress";
     static final long LEADER_HEARTBEAT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
     static final long STARTUP_CANVASS_TIMEOUT_NS = LEADER_HEARTBEAT_TIMEOUT_NS * 2;
+    public static final String CLUSTER_BASE_DIR_PROP_NAME = "aeron.test.system.cluster.base.dir";
 
     public static final String DEFAULT_NODE_MAPPINGS =
         "node0,localhost,localhost|" +
@@ -157,6 +158,7 @@ public final class TestCluster implements AutoCloseable
     private IntHashSet byMemberInvalidInitialResolutions;
     private boolean acceptStandbySnapshots;
     private File markFileBaseDir;
+    private String clusterBaseDir;
 
     private TestCluster(
         final int staticMemberCount,
@@ -275,7 +277,7 @@ public final class TestCluster implements AutoCloseable
     public TestNode startStaticNode(
         final int index, final boolean cleanStart, final IntFunction<TestNode.TestService[]> serviceSupplier)
     {
-        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
+        final String baseDirName = clusterBaseDir + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
         final File markFileDir = null != markFileBaseDir ? new File(markFileBaseDir, "mark-" + index) : null;
         final TestNode.Context context = new TestNode.Context(serviceSupplier.apply(index), nodeNameMappings());
@@ -341,7 +343,7 @@ public final class TestCluster implements AutoCloseable
     public TestNode startDynamicNode(
         final int index, final boolean cleanStart, final IntFunction<TestNode.TestService[]> serviceSupplier)
     {
-        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
+        final String baseDirName = clusterBaseDir + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
         final File markFileDir = null != markFileBaseDir ? new File(markFileBaseDir, "mark-" + index) : null;
         final TestNode.Context context = new TestNode.Context(serviceSupplier.apply(index), nodeNameMappings());
@@ -406,7 +408,7 @@ public final class TestCluster implements AutoCloseable
     public TestNode startDynamicNodeConsensusEndpoints(
         final int index, final boolean cleanStart, final IntFunction<TestNode.TestService[]> serviceSupplier)
     {
-        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
+        final String baseDirName = clusterBaseDir + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
         final File markFileDir = null != markFileBaseDir ? new File(markFileBaseDir, "mark-" + index) : null;
         final TestNode.Context context = new TestNode.Context(serviceSupplier.apply(index), nodeNameMappings());
@@ -472,7 +474,7 @@ public final class TestCluster implements AutoCloseable
     public TestNode startStaticNodeFromDynamicNode(
         final int index, final IntFunction<TestNode.TestService[]> serviceSupplier)
     {
-        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
+        final String baseDirName = clusterBaseDir + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
         final File markFileDir = null != markFileBaseDir ? new File(markFileBaseDir, "mark-" + index) : null;
         final TestNode.Context context = new TestNode.Context(serviceSupplier.apply(index), nodeNameMappings());
@@ -552,7 +554,7 @@ public final class TestCluster implements AutoCloseable
         final ClusterBackup.SourceType sourceType)
     {
         final int index = staticMemberCount + dynamicMemberCount;
-        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
+        final String baseDirName = clusterBaseDir + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
         final File markFileDir = null != markFileBaseDir ? new File(markFileBaseDir, "mark-" + index) : null;
         final TestBackupNode.Context context = new TestBackupNode.Context();
@@ -613,7 +615,7 @@ public final class TestCluster implements AutoCloseable
 
     public TestNode startStaticNodeFromBackup(final IntFunction<TestNode.TestService[]> serviceSupplier)
     {
-        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + backupNodeIndex;
+        final String baseDirName = clusterBaseDir + "-" + backupNodeIndex;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + backupNodeIndex + "-driver";
         final File markFileDir = null != markFileBaseDir ? new File(markFileBaseDir, "mark-" + backupNodeIndex) : null;
         final TestNode.Context context = new TestNode.Context(
@@ -2097,6 +2099,8 @@ public final class TestCluster implements AutoCloseable
         private int archiveSegmentFileLength = TestCluster.SEGMENT_FILE_LENGTH;
         private boolean acceptStandbySnapshots = false;
         private File markFileBaseDir = null;
+        private String clusterBaseDir = System.getProperty(
+            CLUSTER_BASE_DIR_PROP_NAME, CommonContext.getAeronDirectoryName());
 
         public Builder withStaticNodes(final int nodeCount)
         {
@@ -2187,6 +2191,12 @@ public final class TestCluster implements AutoCloseable
             return this;
         }
 
+        public Builder withClusterBaseDir(final String clusterBaseDir)
+        {
+            this.clusterBaseDir = clusterBaseDir;
+            return this;
+        }
+
         public Builder markFileBaseDir(final File markFileBaseDir)
         {
             this.markFileBaseDir = markFileBaseDir;
@@ -2222,6 +2232,7 @@ public final class TestCluster implements AutoCloseable
             testCluster.invalidInitialResolutions(byHostInvalidInitialResolutions, byMemberInvalidInitialResolutions);
             testCluster.acceptStandbySnapshots(acceptStandbySnapshots);
             testCluster.markFileBaseDir(markFileBaseDir);
+            testCluster.clusterBaseDir(clusterBaseDir);
 
             try
             {
@@ -2248,6 +2259,11 @@ public final class TestCluster implements AutoCloseable
 
             return testCluster;
         }
+    }
+
+    private void clusterBaseDir(final String clusterBaseDir)
+    {
+        this.clusterBaseDir = clusterBaseDir;
     }
 
     private void markFileBaseDir(final File markFileBaseDir)

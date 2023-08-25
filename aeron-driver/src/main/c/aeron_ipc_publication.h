@@ -70,8 +70,8 @@ typedef struct aeron_ipc_publication_stct
     size_t log_file_name_length;
     char *log_file_name;
 
-    aeron_raw_log_close_func_t raw_log_close_func;
-    aeron_raw_log_free_func_t raw_log_free_func;
+    aeron_raw_log_manager_t* raw_log_manager;
+    aeron_raw_log_mngr_free_func_t raw_log_free_func;
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
 
     volatile int64_t *unblocked_publications_counter;

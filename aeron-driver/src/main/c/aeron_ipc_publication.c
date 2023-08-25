@@ -77,7 +77,7 @@ int aeron_ipc_publication_create(
     }
 
     if (context->raw_log_map_func(
-        &_pub->mapped_raw_log, path, params->is_sparse, params->term_length, context->file_page_size) < 0)
+        &context->raw_log_manager, &_pub->mapped_raw_log, path, params->is_sparse, params->term_length, context->file_page_size) < 0)
     {
         aeron_free(_pub->log_file_name);
         aeron_free(_pub->channel);
@@ -85,7 +85,7 @@ int aeron_ipc_publication_create(
         AERON_APPEND_ERR("error mapping IPC raw log: %s", path);
         return -1;
     }
-    _pub->raw_log_close_func = context->raw_log_close_func;
+    _pub->raw_log_manager = &context->raw_log_manager;
     _pub->raw_log_free_func = context->raw_log_free_func;
     _pub->untethered_subscription_state_change_func = context->untethered_subscription_on_state_change_func;
 
@@ -211,7 +211,8 @@ bool aeron_ipc_publication_free(aeron_ipc_publication_t *publication)
         return true;
     }
 
-    if (!publication->raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
+    if (!publication->raw_log_free_func(
+            publication->raw_log_manager, &publication->mapped_raw_log, publication->log_file_name))
     {
         return false;
     }

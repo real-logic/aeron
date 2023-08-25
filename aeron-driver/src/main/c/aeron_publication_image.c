@@ -119,12 +119,12 @@ int aeron_publication_image_create(
     }
 
     if (context->raw_log_map_func(
-        &_image->mapped_raw_log, path, is_sparse, (uint64_t)term_buffer_length, context->file_page_size) < 0)
+        &context->raw_log_manager, &_image->mapped_raw_log, path, is_sparse, (uint64_t)term_buffer_length, context->file_page_size) < 0)
     {
         AERON_APPEND_ERR("error mapping network raw log: %s", path);
         goto error;
     }
-    _image->raw_log_close_func = context->raw_log_close_func;
+    _image->raw_log_manager = &context->raw_log_manager;
     _image->raw_log_free_func = context->raw_log_free_func;
     _image->untethered_subscription_state_change_func = context->untethered_subscription_on_state_change_func;
 
@@ -286,7 +286,8 @@ bool aeron_publication_image_free(aeron_publication_image_t *image)
         return true;
     }
 
-    if (!image->raw_log_free_func(&image->mapped_raw_log, image->log_file_name))
+    if (!image->raw_log_free_func(
+            image->raw_log_manager, &image->mapped_raw_log, image->log_file_name))
     {
         return false;
     }

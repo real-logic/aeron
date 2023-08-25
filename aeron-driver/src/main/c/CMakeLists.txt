@@ -289,6 +289,7 @@ SET(SOURCE
     aeron_port_manager.c
     aeron_position.c
     aeron_publication_image.c
+    aeron_raw_log_manager.c
     aeron_retransmit_handler.c
     aeron_system_counters.c
     aeron_termination_validator.c)

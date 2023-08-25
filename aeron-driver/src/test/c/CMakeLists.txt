@@ -99,6 +99,7 @@ if (AERON_UNIT_TESTS)
 
     aeron_driver_test(ipc_publication_test aeron_ipc_publication_test.cpp)
     aeron_driver_test(network_publication_test aeron_network_publication_test.cpp)
+    aeron_driver_test(raw_log_manager_test aeron_raw_log_manager_test.cpp)
     aeron_driver_test(timestamps_test aeron_timestamps_test.cpp)
     aeron_driver_test(position_test aeron_position_test.cpp)
     aeron_driver_test(driver_context_config_test aeron_driver_context_config_test.cpp)

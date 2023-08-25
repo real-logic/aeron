@@ -109,8 +109,8 @@ typedef struct aeron_network_publication_stct
     volatile bool is_end_of_stream;
     volatile bool has_sender_released;
     volatile bool has_received_sm_eos;
-    aeron_raw_log_close_func_t raw_log_close_func;
-    aeron_raw_log_free_func_t raw_log_free_func;
+    aeron_raw_log_manager_t* raw_log_manager;
+    aeron_raw_log_mngr_free_func_t raw_log_free_func;
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
 
     volatile int64_t *short_sends_counter;

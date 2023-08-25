@@ -103,8 +103,8 @@ typedef struct aeron_publication_image_stct
     int32_t term_length_mask;
     size_t log_file_name_length;
     size_t position_bits_to_shift;
-    aeron_raw_log_close_func_t raw_log_close_func;
-    aeron_raw_log_free_func_t raw_log_free_func;
+    aeron_raw_log_manager_t* raw_log_manager;
+    aeron_raw_log_mngr_free_func_t raw_log_free_func;
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
 
     int64_t last_loss_change_number;

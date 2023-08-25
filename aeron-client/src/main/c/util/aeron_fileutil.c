@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include "aeronc.h"
 #include "aeron_platform.h"
 #include "aeron_error.h"
 #include "aeron_fileutil.h"

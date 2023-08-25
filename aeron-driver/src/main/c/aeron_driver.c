@@ -729,6 +729,7 @@ int aeron_driver_shared_do_work(void *clientd)
     int sum = 0;
 
     sum += aeron_driver_conductor_do_work(&driver->conductor);
+    sum += aeron_raw_log_manager_do_work(&driver->context->raw_log_manager);
     sum += aeron_driver_sender_do_work(&driver->sender);
     sum += aeron_driver_receiver_do_work(&driver->receiver);
 
@@ -740,6 +741,7 @@ void aeron_driver_shared_on_close(void *clientd)
     aeron_driver_t *driver = (aeron_driver_t *)clientd;
 
     aeron_driver_conductor_on_close(&driver->conductor);
+    aeron_raw_log_manager_on_close(&driver->context->raw_log_manager);
     aeron_driver_sender_on_close(&driver->sender);
     aeron_driver_receiver_on_close(&driver->receiver);
 }
@@ -761,6 +763,37 @@ void aeron_driver_shared_network_on_close(void *clientd)
 
     aeron_driver_sender_on_close(&driver->sender);
     aeron_driver_receiver_on_close(&driver->receiver);
+}
+
+int aeron_driver_shared_conductor_do_work(void *clientd)
+{
+    aeron_driver_t *driver = (aeron_driver_t *)clientd;
+    int sum = 0;
+
+    sum += aeron_driver_conductor_do_work(&driver->conductor);
+    sum += aeron_raw_log_manager_do_work(&driver->context->raw_log_manager);
+
+    return sum;
+}
+
+void aeron_driver_shared_conductor_on_close(void *clientd)
+{
+    aeron_driver_t *driver = (aeron_driver_t *)clientd;
+
+    aeron_driver_conductor_on_close(&driver->conductor);
+    aeron_raw_log_manager_on_close(&driver->context->raw_log_manager);
+}
+
+int aeron_driver_dedicated_conductor_do_work(void *clientd)
+{
+    aeron_driver_t *driver = (aeron_driver_t *)clientd;
+    return aeron_driver_conductor_do_work(&driver->conductor);
+}
+
+void aeron_driver_dedicated_conductor_on_close(void *clientd)
+{
+    aeron_driver_t *driver = (aeron_driver_t *)clientd;
+    aeron_driver_conductor_on_close(&driver->conductor);
 }
 
 int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
@@ -879,7 +912,6 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     {
         goto error;
     }
-
     if (aeron_driver_create_loss_report_file(_driver) < 0)
     {
         goto error;
@@ -921,6 +953,12 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     _driver->context->receiver_proxy = &_driver->receiver.receiver_proxy;
 
+    
+    if (aeron_raw_log_manager_init(&context->raw_log_manager, context, aeron_raw_log_map, aeron_raw_log_free) < 0)
+    {
+        goto error;
+    }
+
     aeron_mpsc_rb_next_correlation_id(&_driver->conductor.to_driver_commands);
     aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epoch_clock());
     aeron_cnc_version_signal_cnc_ready((aeron_cnc_metadata_t *)context->cnc_map.addr, AERON_CNC_VERSION);
@@ -950,7 +988,33 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         aeron_driver_context_print_configuration(_driver->context);
     }
 
-    switch (_driver->context->threading_mode)
+    aeron_agent_do_work_func_t conductor_do_work = aeron_driver_shared_conductor_do_work;
+    aeron_agent_on_close_func_t conductor_on_close =  aeron_driver_shared_conductor_on_close;
+
+    aeron_threading_mode_t threading_mode = _driver->context->threading_mode;
+    if (_driver->context->dedicated_raw_log_manager && 
+        (AERON_THREADING_MODE_SHARED_NETWORK == threading_mode
+        || AERON_THREADING_MODE_DEDICATED == threading_mode))
+    {
+        conductor_do_work = aeron_driver_dedicated_conductor_do_work;
+        conductor_on_close = aeron_driver_dedicated_conductor_on_close;
+
+        if (aeron_agent_init(
+                &_driver->runners[AERON_AGENT_RUNNER_LOG_MANAGER],
+                "log_manager",
+                &_driver->context->raw_log_manager,
+                _driver->context->agent_on_start_func,
+                _driver->context->agent_on_start_state,
+                aeron_raw_log_manager_do_work,
+                aeron_raw_log_manager_on_close,
+                _driver->context->conductor_idle_strategy_func,
+                _driver->context->conductor_idle_strategy_state) < 0)
+            {
+                goto error;
+            }
+    }
+
+    switch (threading_mode)
     {
         case AERON_THREADING_MODE_INVOKER:
         case AERON_THREADING_MODE_SHARED:
@@ -973,11 +1037,11 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
             if (aeron_agent_init(
                 &_driver->runners[AERON_AGENT_RUNNER_CONDUCTOR],
                 "conductor",
-                &_driver->conductor,
+                _driver,
                 _driver->context->agent_on_start_func,
                 _driver->context->agent_on_start_state,
-                aeron_driver_conductor_do_work,
-                aeron_driver_conductor_on_close,
+                conductor_do_work,
+                conductor_on_close,
                 _driver->context->conductor_idle_strategy_func,
                 _driver->context->conductor_idle_strategy_state) < 0)
             {
@@ -1004,11 +1068,11 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
             if (aeron_agent_init(
                 &_driver->runners[AERON_AGENT_RUNNER_CONDUCTOR],
                 "conductor",
-                &_driver->conductor,
+                _driver,
                 _driver->context->agent_on_start_func,
                 _driver->context->agent_on_start_state,
-                aeron_driver_conductor_do_work,
-                aeron_driver_conductor_on_close,
+                conductor_do_work,
+                conductor_on_close,
                 _driver->context->conductor_idle_strategy_func,
                 _driver->context->conductor_idle_strategy_state) < 0)
             {

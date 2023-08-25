@@ -337,6 +337,8 @@ static void aeron_driver_untethered_subscription_state_change_null(
 #define AERON_DRIVER_RESOURCE_FREE_LIMIT_DEFAULT UINT32_C(10)
 #define AERON_CPU_AFFINITY_DEFAULT (-1)
 #define AERON_DRIVER_CONNECT_DEFAULT true
+#define AERON_DRIVER_DEDICATED_LOG_MANAGER_DEFAULT (false)
+
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -559,7 +561,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->conductor_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
     _context->sender_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
     _context->receiver_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
-
+    _context->dedicated_raw_log_manager = AERON_DRIVER_DEDICATED_LOG_MANAGER_DEFAULT;
+    _context->raw_log_pools = NULL;
+    _context->num_raw_log_pools = 0;
     char *value = NULL;
 
     if ((value = getenv(AERON_DRIVER_DYNAMIC_LIBRARIES_ENV_VAR)))
@@ -1039,6 +1043,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         1,
         INT32_MAX);
 
+    _context->dedicated_raw_log_manager = aeron_parse_bool(
+        getenv(AERON_DRIVER_DEDICATED_LOG_MANAGER_ENV_VAR), _context->dedicated_raw_log_manager);
+
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;
     _context->counters_values_buffer = NULL;
@@ -1123,9 +1130,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->usable_fs_space_func = _context->perform_storage_checks ?
         aeron_usable_fs_space : aeron_usable_fs_space_disabled;
-    _context->raw_log_map_func = aeron_raw_log_map;
-    _context->raw_log_close_func = aeron_raw_log_close;
-    _context->raw_log_free_func = aeron_raw_log_free;
+    _context->raw_log_map_func = aeron_raw_log_manager_map_log;
+    _context->raw_log_free_func = aeron_raw_log_manager_return_log;
+
+    // These will be overridden when the driver initialises, based on config set on this context. 
+    // These keep sensible behaviour in tests that lazily initialise
+    _context->raw_log_manager.map_func = aeron_raw_log_map;
+    _context->raw_log_manager.free_func = aeron_raw_log_free;
+    _context->raw_log_manager.num_pools = 0;
 
     _context->to_driver_interceptor_func = aeron_driver_conductor_to_driver_interceptor_null;
     _context->to_client_interceptor_func = aeron_driver_conductor_to_client_interceptor_null;
@@ -1318,6 +1330,7 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_wildcard_port_manager_delete(&context->sender_wildcard_port_manager);
     aeron_wildcard_port_manager_delete(&context->receiver_wildcard_port_manager);
 
+    aeron_raw_log_manager_close(&context->raw_log_manager);
     aeron_free(context->conductor_command_queue.buffer);
     aeron_free(context->sender_command_queue.buffer);
     aeron_free(context->receiver_command_queue.buffer);
@@ -3021,6 +3034,23 @@ uint32_t aeron_driver_context_get_network_publication_max_messages_per_send(aero
         context->network_publication_max_messages_per_send : AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT;
 }
 
+int aeron_driver_context_add_raw_log_pool_config(aeron_driver_context_t *context, aeron_raw_log_pool_config_t cfg)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->num_raw_log_pools++;
+    if (aeron_reallocf((void**)&context->raw_log_pools, sizeof(aeron_raw_log_pool_config_t)*context->num_raw_log_pools) < 0)
+    {
+        return -1;
+    }
+
+    context->raw_log_pools[context->num_raw_log_pools-1] = cfg;
+    return 0;
+}
+
 int aeron_driver_context_set_resource_free_limit(aeron_driver_context_t *context, uint32_t value)
 {
     if (NULL == context)
@@ -3068,4 +3098,21 @@ void aeron_set_thread_affinity_on_start(void *state, const char *role_name)
         }
         aeron_err_clear();
     }
+}
+
+bool aeron_driver_context_get_dedicated_raw_log_manager(aeron_driver_context_t *context)
+{
+    return NULL != context ?
+        context->dedicated_raw_log_manager : AERON_DRIVER_DEDICATED_LOG_MANAGER_DEFAULT;
+}
+
+int aeron_driver_context_set_dedicated_raw_log_manager(aeron_driver_context_t *context, bool value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->dedicated_raw_log_manager = value;
+    return 0;
 }

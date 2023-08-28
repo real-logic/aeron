@@ -295,12 +295,12 @@ jobs:
           path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-gcc-centos-build:
-    name: C++ CentOS devtoolset-${{ matrix.version }}
+    name: C++ CentOS 7
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        version: [ '7' ]
+        version: [ '9' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -317,7 +317,7 @@ jobs:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Build
-        run: GCC_VERSION=9 cppbuild/centos-docker-build ${{ matrix.version }}
+        run: GCC_VERSION=${{ matrix.version }} cppbuild/centos-docker-build
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -331,13 +331,13 @@ jobs:
           name: crash-logs-gcc-centos-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.file }}
 
-  cpp-gcc-rhel-build:
-    name: C++ RHEL 8
+  cpp-gcc-rocky-build:
+    name: C++ Rocky 8
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        version: [ '8' ]
+        version: [ '10' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -354,7 +354,7 @@ jobs:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
       - name: Build
-        run: cppbuild/rhel-docker-build
+        run: GCC_VERSION=${{ matrix.version }} cppbuild/rocky-docker-build
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

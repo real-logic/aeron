@@ -5,7 +5,7 @@ ARG GROUP_ID
 ARG CMAKE_VERSION=3.14.7
 ARG GCC_VERSION
 
-RUN groupadd --gid $GROUP_ID --system athena
+RUN groupadd --gid $GROUP_ID --non-unique --system athena
 RUN adduser --uid $USER_ID --system --gid $GROUP_ID athena
 
 # Install dev tools

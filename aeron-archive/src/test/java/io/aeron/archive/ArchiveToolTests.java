@@ -1256,7 +1256,7 @@ class ArchiveToolTests
     {
         final long rec1;
         final long rec2;
-        try (Catalog catalog = new Catalog(archiveDir, epochClock, 1024, true, null, null))
+        try (Catalog catalog = new Catalog(archiveDir, epochClock, 1024, true, null, null, false))
         {
             rec1 = catalog.addNewRecording(0, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 42, 5, "some ch", "some ch", "rec1");
@@ -1291,6 +1291,35 @@ class ArchiveToolTests
 
         assertFileExists(file22, file23, file24);
         assertFileDoesNotExist(file21, file25);
+    }
+
+    @Test
+    void markInvalidInvalidatesAnExistingRecording()
+    {
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertTrue(catalog.hasRecording(validRecording3));
+        }
+        markRecordingInvalid(out, archiveDir, validRecording3);
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertFalse(catalog.hasRecording(validRecording3));
+        }
+    }
+
+    @Test
+    void markValidValidatesAnExistingRecording()
+    {
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
+        {
+            assertTrue(catalog.invalidateRecording(validRecording6));
+            assertRecordingState(catalog, validRecording6, INVALID);
+        }
+        markRecordingValid(out, archiveDir, validRecording6);
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertTrue(catalog.hasRecording(validRecording6));
+        }
     }
 
     private static List<Arguments> verifyChecksumClassValidation()

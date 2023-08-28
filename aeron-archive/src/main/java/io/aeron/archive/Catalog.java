@@ -126,6 +126,7 @@ final class Catalog implements AutoCloseable
 
     private final boolean forceWrites;
     private final boolean forceMetadata;
+    private boolean indexInvalid;
     private boolean isClosed;
     private final File catalogFile;
     private final File archiveDir;
@@ -236,7 +237,7 @@ final class Catalog implements AutoCloseable
 
     Catalog(final File archiveDir, final EpochClock epochClock)
     {
-        this(archiveDir, epochClock, MIN_CAPACITY, false, null, null);
+        this(archiveDir, epochClock, MIN_CAPACITY, false, null, null, false);
     }
 
     Catalog(
@@ -245,11 +246,13 @@ final class Catalog implements AutoCloseable
         final long catalogCapacity,
         final boolean writable,
         final Checksum checksum,
-        final IntConsumer versionCheck)
+        final IntConsumer versionCheck,
+        final boolean indexInvalid)
     {
         this.archiveDir = archiveDir;
         this.forceWrites = false;
         this.forceMetadata = false;
+        this.indexInvalid = indexInvalid;
         this.epochClock = epochClock;
         this.catalogChannel = null;
         this.checksum = checksum;
@@ -954,7 +957,7 @@ final class Catalog implements AutoCloseable
             }
 
             recordingId = recordingId(catalogBuffer);
-            if (isValidDescriptor(catalogBuffer))
+            if (isValidDescriptor(catalogBuffer) || this.indexInvalid)
             {
                 catalogIndex.add(recordingId, offset);
             }

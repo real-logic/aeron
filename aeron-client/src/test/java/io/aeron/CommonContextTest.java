@@ -28,6 +28,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 
@@ -105,6 +106,34 @@ class CommonContextTest
         assertSame(userHandlerError, error);
 
         inOrder.verify(distinctErrorLog).record(throwable);
+        inOrder.verify(userErrorHandler).onError(throwable);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void setupErrorHandlerShouldCloseUserErrorHandlerAfterClosingTheLoggingErrorHandler() throws Exception
+    {
+        final Throwable throwable = mock(Throwable.class);
+        final ErrorHandler userErrorHandler =
+            mock(ErrorHandler.class, withSettings().extraInterfaces(AutoCloseable.class));
+        ((AutoCloseable)doThrow(new IOException("failed to close")).when(userErrorHandler)).close();
+        final DistinctErrorLog distinctErrorLog = mock(DistinctErrorLog.class);
+        doReturn(true).when(distinctErrorLog).record(any(Throwable.class));
+        final PrintStream fallbackErrorStream = mock(PrintStream.class);
+
+        final InOrder inOrder = inOrder(userErrorHandler, distinctErrorLog, throwable, fallbackErrorStream);
+
+        final ErrorHandler errorHandler =
+            CommonContext.setupErrorHandler(userErrorHandler, distinctErrorLog, fallbackErrorStream);
+        assertInstanceOf(AutoCloseable.class, errorHandler);
+
+        ((AutoCloseable)errorHandler).close();
+
+        errorHandler.onError(throwable);
+
+        inOrder.verify((AutoCloseable)userErrorHandler).close();
+        inOrder.verify(fallbackErrorStream).println("error log is closed");
+        inOrder.verify(throwable).printStackTrace(fallbackErrorStream);
         inOrder.verify(userErrorHandler).onError(throwable);
         inOrder.verifyNoMoreInteractions();
     }

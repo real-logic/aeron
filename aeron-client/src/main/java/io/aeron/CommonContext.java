@@ -1004,18 +1004,20 @@ public class CommonContext implements Cloneable
      */
     public static ErrorHandler setupErrorHandler(final ErrorHandler userErrorHandler, final DistinctErrorLog errorLog)
     {
-        final LoggingErrorHandler loggingErrorHandler = new LoggingErrorHandler(errorLog, fallbackLogger());
+        return setupErrorHandler(userErrorHandler, errorLog, fallbackLogger());
+    }
+
+    static ErrorHandler setupErrorHandler(
+        final ErrorHandler userErrorHandler, final DistinctErrorLog errorLog, final PrintStream fallbackErrorStream)
+    {
+        final LoggingErrorHandler loggingErrorHandler = new LoggingErrorHandler(errorLog, fallbackErrorStream);
         if (null == userErrorHandler)
         {
             return loggingErrorHandler;
         }
         else
         {
-            return (throwable) ->
-            {
-                loggingErrorHandler.onError(throwable);
-                userErrorHandler.onError(throwable);
-            };
+            return new ErrorHandlerWrapper(loggingErrorHandler, userErrorHandler);
         }
     }
 
@@ -1029,6 +1031,33 @@ public class CommonContext implements Cloneable
         {
             Thread.currentThread().interrupt();
             throw new AeronException("unexpected interrupt", ex);
+        }
+    }
+
+    private static final class ErrorHandlerWrapper implements ErrorHandler, AutoCloseable
+    {
+        private final LoggingErrorHandler loggingErrorHandler;
+        private final ErrorHandler userErrorHandler;
+
+        private ErrorHandlerWrapper(final LoggingErrorHandler loggingErrorHandler, final ErrorHandler userErrorHandler)
+        {
+            this.loggingErrorHandler = loggingErrorHandler;
+            this.userErrorHandler = userErrorHandler;
+        }
+
+        public void close()
+        {
+            loggingErrorHandler.close();
+            if (userErrorHandler instanceof AutoCloseable)
+            {
+                CloseHelper.quietClose((AutoCloseable)userErrorHandler);
+            }
+        }
+
+        public void onError(final Throwable throwable)
+        {
+            loggingErrorHandler.onError(throwable);
+            userErrorHandler.onError(throwable);
         }
     }
 }

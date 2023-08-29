@@ -1330,7 +1330,6 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_wildcard_port_manager_delete(&context->sender_wildcard_port_manager);
     aeron_wildcard_port_manager_delete(&context->receiver_wildcard_port_manager);
 
-    aeron_raw_log_manager_close(&context->raw_log_manager);
     aeron_free(context->conductor_command_queue.buffer);
     aeron_free(context->sender_command_queue.buffer);
     aeron_free(context->receiver_command_queue.buffer);

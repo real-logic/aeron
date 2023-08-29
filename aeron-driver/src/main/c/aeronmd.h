@@ -25,6 +25,8 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "util/aeron_raw_log_pool_config.h"
+
 typedef struct aeron_driver_context_stct aeron_driver_context_t;
 typedef struct aeron_driver_stct aeron_driver_t;
 
@@ -874,6 +876,7 @@ uint32_t aeron_driver_context_get_resource_free_limit(aeron_driver_context_t *co
  * Only compatible with AERON_THREADING_MODE_SHARED_NETWORK and AERON_THREADING_MODE_DEDICATED
 */
 #define AERON_DRIVER_DEDICATED_LOG_MANAGER_ENV_VAR "AERON_DRIVER_DEDICATED_LOG_MANAGER"
+int aeron_driver_context_add_raw_log_pool_config(aeron_driver_context_t *context, aeron_raw_log_pool_config_t cfg);
 int aeron_driver_context_set_dedicated_raw_log_manager(aeron_driver_context_t *context, bool value);
 bool aeron_driver_context_get_dedicated_raw_log_manager(aeron_driver_context_t *context);
 

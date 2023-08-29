@@ -513,6 +513,14 @@ uint64_t aeron_usable_fs_space_disabled(const char *path)
     return UINT64_MAX;
 }
 
+int aeron_tmp_logbuffer_location(char *dst, size_t length, const char *aeron_dir, int64_t id)
+{
+    return snprintf(
+        dst, length,
+        "%s" AERON_FILE_SEP_STR AERON_TMP_BUFFER_DIR AERON_FILE_SEP_STR "%" PRId64 ".logbuffer",
+        aeron_dir, id);
+}
+
 int aeron_ipc_publication_location(char *dst, size_t length, const char *aeron_dir, int64_t correlation_id)
 {
     return snprintf(
@@ -610,6 +618,7 @@ int aeron_raw_log_map(
         (uint8_t *)mapped_raw_log->mapped_file.addr + (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
     mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
     mapped_raw_log->term_length = (size_t)term_length;
+    mapped_raw_log->from_pool = false;
 
     return 0;
 }

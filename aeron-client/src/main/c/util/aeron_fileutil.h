@@ -79,11 +79,15 @@ typedef struct aeron_mapped_raw_log_stct
     aeron_mapped_buffer_t log_meta_data;
     aeron_mapped_file_t mapped_file;
     size_t term_length;
+    bool from_pool;
 }
 aeron_mapped_raw_log_t;
 
 #define AERON_PUBLICATIONS_DIR "publications"
+#define AERON_TMP_BUFFER_DIR "tmp"
 #define AERON_IMAGES_DIR "images"
+
+int aeron_tmp_logbuffer_location(char *dst, size_t length, const char *aeron_dir, int64_t id);
 
 int aeron_ipc_publication_location(char *dst, size_t length, const char *aeron_dir, int64_t correlation_id);
 

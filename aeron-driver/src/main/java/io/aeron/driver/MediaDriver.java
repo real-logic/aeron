@@ -814,8 +814,10 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Will the driver attempt to immediately delete {@link #aeronDirectoryName()} on startup.
+         * WARNING: {@link #aeronDirectoryName()} will be recreated regardless, unless set to false
+         * and an active Media Driver is detected.
          *
-         * @return true when directory will be deleted, otherwise false.
+         * @return true when directory will be recreated without checks, otherwise false.
          * @see Configuration#DIR_DELETE_ON_START_PROP_NAME
          */
         public boolean dirDeleteOnStart()
@@ -825,8 +827,10 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Should the driver attempt to immediately delete {@link #aeronDirectoryName()} on startup.
+         * WARNING: {@link #aeronDirectoryName()} will be recreated regardless, unless set to false
+         * and an active Media Driver is detected.
          *
-         * @param dirDeleteOnStart Attempt deletion.
+         * @param dirDeleteOnStart Attempt deletion without checks.
          * @return this for a fluent API.
          * @see Configuration#DIR_DELETE_ON_START_PROP_NAME
          */

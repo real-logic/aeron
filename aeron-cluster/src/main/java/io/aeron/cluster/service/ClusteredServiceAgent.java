@@ -362,11 +362,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
     public void idle()
     {
         idleStrategy.idle();
-        if (Thread.currentThread().isInterrupted())
-        {
-            throw new AgentTerminationException("interrupted");
-        }
-        checkForClockTick(nanoClock.nanoTime());
+        doIdleWork();
     }
 
     public void idle(final int workCount)
@@ -374,11 +370,24 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         idleStrategy.idle(workCount);
         if (workCount <= 0)
         {
-            if (Thread.currentThread().isInterrupted())
-            {
-                throw new AgentTerminationException("interrupted");
-            }
-            checkForClockTick(nanoClock.nanoTime());
+            doIdleWork();
+        }
+    }
+
+    private void doIdleWork()
+    {
+        if (Thread.currentThread().isInterrupted())
+        {
+            throw new AgentTerminationException("interrupted");
+        }
+
+        final long nowNs = nanoClock.nanoTime();
+
+        checkForClockTick(nowNs);
+
+        if (isServiceActive)
+        {
+            invokeBackgroundWork(nowNs);
         }
     }
 

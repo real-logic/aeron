@@ -64,8 +64,8 @@ public final class Configuration
     public static final String DIR_WARN_IF_EXISTS_PROP_NAME = "aeron.dir.warn.if.exists";
 
     /**
-     * Should driver attempt to an immediate forced delete of {@link CommonContext#AERON_DIR_PROP_NAME} on start
-     * if it exists.
+     * Should the Media Driver attempt to immediately delete the directory {@link CommonContext#AERON_DIR_PROP_NAME}
+     * on start if it exists before performing any additional checks.
      */
     public static final String DIR_DELETE_ON_START_PROP_NAME = "aeron.dir.delete.on.start";
 

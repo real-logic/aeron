@@ -35,6 +35,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,6 +46,7 @@ import org.mockito.InOrder;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.SystemTests.verifyLossOccurredForStream;
@@ -668,6 +670,24 @@ class PubAndSubTest
             Tests.yield();
         }
     }
+
+
+    @Test
+    void shouldHandleTagsAndParametersIfParametersMatch()
+    {
+        launch("aeron:ipc");
+
+        try (
+            Subscription ignore1 = subscribingClient.addSubscription("aeron:udp?endpoint=127.0.0.1:0|tags=1001", 1000);
+            Subscription ignore2 = subscribingClient.addSubscription("aeron:udp?endpoint=127.0.0.1:0|tags=1001", 1000))
+        {
+            Objects.requireNonNull(ignore1);
+            Objects.requireNonNull(ignore2);
+
+
+        }
+    }
+
 
     private void publishMessage()
     {

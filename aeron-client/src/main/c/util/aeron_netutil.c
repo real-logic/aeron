@@ -722,3 +722,34 @@ done:
 
     return result;
 }
+
+int aeron_sockaddr_storage_cmp(struct sockaddr_storage *a, struct sockaddr_storage *b, bool *result)
+{
+    if (a->ss_family != b->ss_family)
+    {
+        *result = false;
+    }
+    else if (AF_INET == a->ss_family)
+    {
+        struct sockaddr_in *a_in = (struct sockaddr_in *)a;
+        struct sockaddr_in *b_in = (struct sockaddr_in *)b;
+
+        *result = (a_in->sin_addr.s_addr == b_in->sin_addr.s_addr) && (a_in->sin_port == b_in->sin_port);
+    }
+    else if (AF_INET6 == a->ss_family)
+    {
+        struct sockaddr_in6 *a_in6 = (struct sockaddr_in6 *)a;
+        struct sockaddr_in6 *b_in6 = (struct sockaddr_in6 *)b;
+
+        *result = 0 == memcmp(&a_in6->sin6_addr, &b_in6->sin6_addr, sizeof(struct sockaddr_in6)) &&
+            (a_in6->sin6_port == b_in6->sin6_port);
+    }
+    else
+    {
+        *result = false;
+        AERON_SET_ERR(EINVAL, "%s", "Unsupported address family");
+        return -1;
+    }
+
+    return 0;
+}

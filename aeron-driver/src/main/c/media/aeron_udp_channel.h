@@ -21,6 +21,7 @@
 #include "uri/aeron_uri.h"
 #include "util/aeron_netutil.h"
 #include "aeron_name_resolver.h"
+#include "util/aeron_error.h"
 
 #define AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET (-8)
 
@@ -66,6 +67,35 @@ inline bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel)
 {
     return aeron_is_wildcard_addr(&channel->remote_data) && aeron_is_wildcard_port(&channel->remote_data) &&
         aeron_is_wildcard_addr(&channel->local_data) && aeron_is_wildcard_port(&channel->local_data);
+}
+
+inline int aeron_udp_channel_endpoints_match(aeron_udp_channel_t *channel, aeron_udp_channel_t *other, bool *result)
+{
+    bool cmp;
+    int rc;
+
+    rc = aeron_sockaddr_storage_cmp(&channel->remote_data, &other->remote_data, &cmp);
+    if (rc < 0)
+    {
+        AERON_APPEND_ERR("%s", "remote_data");
+        return rc;
+    }
+
+    if (!cmp)
+    {
+        *result = cmp;
+        return 0;
+    }
+
+    rc = aeron_sockaddr_storage_cmp(&channel->local_data, &other->local_data, &cmp);
+    if (rc < 0)
+    {
+        AERON_APPEND_ERR("%s", "local_data");
+        return rc;
+    }
+
+    *result = cmp;
+    return 0;
 }
 
 inline bool aeron_udp_channel_equals(aeron_udp_channel_t *a, aeron_udp_channel_t *b)

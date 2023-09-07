@@ -58,7 +58,6 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;

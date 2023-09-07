@@ -20,6 +20,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.ext.DebugChannelEndpointConfiguration;
 import io.aeron.driver.ext.DebugSendChannelEndpoint;
 import io.aeron.driver.ext.LossGenerator;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.RawBlockHandler;
@@ -55,7 +56,9 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.util.Arrays.asList;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
@@ -100,7 +103,6 @@ class PubAndSubTest
     {
         context
             .threadingMode(THREADING_MODE)
-            .errorHandler(Tests::onError)
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
 
@@ -673,21 +675,196 @@ class PubAndSubTest
 
 
     @Test
-    void shouldHandleTagsAndParametersIfParametersMatch()
+    void shouldAllowSubscriptionsIfUsingTagsAndParametersAndAllMatch()
     {
         launch("aeron:ipc");
 
+        final String channel = "aeron:udp?endpoint=127.0.0.1:0|control=127.0.0.1:9999|tags=1001";
         try (
-            Subscription ignore1 = subscribingClient.addSubscription("aeron:udp?endpoint=127.0.0.1:0|tags=1001", 1000);
-            Subscription ignore2 = subscribingClient.addSubscription("aeron:udp?endpoint=127.0.0.1:0|tags=1001", 1000))
+            Subscription ignore1 = subscribingClient.addSubscription(channel, 1000);
+            Subscription ignore2 = subscribingClient.addSubscription(channel, 1000))
         {
             Objects.requireNonNull(ignore1);
             Objects.requireNonNull(ignore2);
-
-
         }
     }
 
+    @Test
+    void shouldRejectSubscriptionsIfUsingTagsAndParametersAndEndpointDoesNotMatchEndpointWithExplicitControl()
+    {
+        watcher.ignoreErrorsMatching((s) -> s.contains("has explicit endpoint or control"));
+        launch("aeron:ipc");
+
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
+            "aeron:udp?endpoint=127.0.0.1:0|control=127.0.0.1:9999|tags=1001");
+
+        try (Subscription ignore1 = subscribingClient.addSubscription(builder.build(), 1000))
+        {
+            Objects.requireNonNull(ignore1);
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addSubscription(builder.endpoint("127.0.0.1:9999").build(), 1000));
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addSubscription(builder.endpoint("127.0.0.2:0").build(), 1000));
+        }
+    }
+
+    @Test
+    void shouldRejectSubscriptionsIfUsingTagsAndParametersAndEndpointDoesNotMatchEndpointWithoutControl()
+    {
+        watcher.ignoreErrorsMatching((s) -> s.contains("has explicit endpoint or control"));
+        launch("aeron:ipc");
+
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
+            "aeron:udp?endpoint=127.0.0.1:9999|tags=1001");
+
+        try (Subscription ignore1 = subscribingClient.addSubscription(builder.build(), 1000))
+        {
+            Objects.requireNonNull(ignore1);
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addSubscription(builder.endpoint("127.0.0.1:0").build(), 1000));
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addSubscription(builder.endpoint("127.0.0.2:9999").build(), 1000));
+        }
+    }
+
+    @Test
+    void shouldRejectSubscriptionsIfUsingTagsAndParametersAndEndpointDoesNotMatchControl()
+    {
+        watcher.ignoreErrorsMatching((s) -> s.contains("has explicit endpoint or control"));
+        launch("aeron:ipc");
+
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
+            "aeron:udp?endpoint=127.0.0.1:0|control=127.0.0.1:9999|tags=1001");
+
+        try (Subscription ignore1 = subscribingClient.addSubscription(builder.build(), 1000))
+        {
+            Objects.requireNonNull(ignore1);
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addSubscription(builder.controlEndpoint("127.0.0.1:10000").build(), 1000));
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addSubscription(builder.controlEndpoint("127.0.0.2:9999").build(), 1000));
+        }
+    }
+
+    @Test
+    void shouldRejectSubscriptionsIfUsingTagsAndParametersAndEndpointDoesNotMatchSocketReceiveBufferLength()
+    {
+        watcher.ignoreErrorsMatching((s) -> true);
+        launch("aeron:ipc");
+
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
+            "aeron:udp?endpoint=127.0.0.1:0|control=127.0.0.1:9999|so-rcvbuf=128K|tags=1001");
+
+        try (Subscription ignore1 = subscribingClient.addSubscription(builder.build(), 1000))
+        {
+            Objects.requireNonNull(ignore1);
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addSubscription(builder.socketRcvbufLength(64 * 1024).build(), 1000));
+        }
+    }
+
+    @Test
+    void shouldAllowPublicationsIfUsingTagsAndParametersAndAllMatch()
+    {
+        launch("aeron:ipc");
+
+        final String channel = "aeron:udp?endpoint=127.0.0.1:9999|control=127.0.0.1:0|tags=1001";
+        try (
+            Publication ignore1 = subscribingClient.addPublication(channel, 1000);
+            Publication ignore2 = subscribingClient.addPublication(channel, 1000))
+        {
+            Objects.requireNonNull(ignore1);
+            Objects.requireNonNull(ignore2);
+        }
+    }
+
+    @Test
+    void shouldRejectPublicationsIfUsingTagsAndParametersAndEndpointDoesNotMatchEndpointWithExplicitControl()
+    {
+        watcher.ignoreErrorsMatching((s) -> s.contains("has explicit endpoint or control"));
+        launch("aeron:ipc");
+
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
+            "aeron:udp?endpoint=127.0.0.1:10000|control=127.0.0.1:0|tags=1001");
+
+        try (Publication ignore1 = subscribingClient.addPublication(builder.build(), 1000))
+        {
+            Objects.requireNonNull(ignore1);
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addPublication(builder.endpoint("127.0.0.1:9999").build(), 1000));
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addPublication(builder.endpoint("127.0.0.2:10000").build(), 1000));
+        }
+    }
+
+    @Test
+    void shouldRejectPublicationsIfUsingTagsAndParametersAndEndpointDoesNotMatchEndpointWithoutControl()
+    {
+        watcher.ignoreErrorsMatching((s) -> s.contains("has explicit endpoint or control"));
+        launch("aeron:ipc");
+
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
+            "aeron:udp?endpoint=127.0.0.1:10000|tags=1001");
+
+        try (Subscription ignore1 = subscribingClient.addSubscription(builder.build(), 1000))
+        {
+            Objects.requireNonNull(ignore1);
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addSubscription(builder.endpoint("127.0.0.1:9999").build(), 1000));
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addSubscription(builder.endpoint("127.0.0.2:10000").build(), 1000));
+        }
+    }
+
+    @Test
+    void shouldRejectPublicationsIfUsingTagsAndParametersAndEndpointDoesNotMatchControl()
+    {
+        watcher.ignoreErrorsMatching((s) -> s.contains("has explicit endpoint or control"));
+        launch("aeron:ipc");
+
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
+            "aeron:udp?endpoint=127.0.0.1:10000|control=127.0.0.1:0|tags=1001");
+
+        try (Publication ignore1 = subscribingClient.addPublication(builder.build(), 1000))
+        {
+            Objects.requireNonNull(ignore1);
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addPublication(builder.controlEndpoint("127.0.0.1:10000").build(), 1000));
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addPublication(builder.controlEndpoint("127.0.0.2:0").build(), 1000));
+        }
+    }
+
+    @Test
+    void shouldRejectPublicationsIfUsingTagsAndParametersAndMtuDoesNotMatch()
+    {
+        watcher.ignoreErrorsMatching((s) -> true);
+        launch("aeron:ipc");
+
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
+            "aeron:udp?endpoint=127.0.0.1:10000|control=127.0.0.1:0|mtu=1408|tags=1001");
+
+        try (Publication ignore1 = subscribingClient.addPublication(builder.build(), 1000))
+        {
+            Objects.requireNonNull(ignore1);
+            assertThrows(
+                RegistrationException.class,
+                () -> subscribingClient.addPublication(builder.mtu(8192).build(), 1000));
+        }
+    }
 
     private void publishMessage()
     {

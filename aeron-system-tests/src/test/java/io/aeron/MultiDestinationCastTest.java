@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -43,6 +44,7 @@ import java.util.function.Supplier;
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
@@ -450,6 +452,62 @@ class MultiDestinationCastTest
         }
 
         pollForFragment(subscriptionA, fragmentHandlerA);
+    }
+
+    @Test
+    void shouldHandleSubscriptionsIfUsingTagsAndEndpointsMatchButSessionIdInUse()
+    {
+        launch(Tests::onError);
+
+        try (
+            Publication pub1 = clientA.addExclusivePublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
+            Publication pub2 = clientA.addExclusivePublication(PUB_MDC_DYNAMIC_URI, STREAM_ID))
+        {
+
+            final String sub1Uri = new ChannelUriStringBuilder(SUB1_MDC_DYNAMIC_URI)
+                .endpoint("127.0.0.1:0")
+                .tags("1001")
+                .sessionId(pub1.sessionId())
+                .build();
+
+            final String sub2Uri = new ChannelUriStringBuilder(SUB1_MDC_DYNAMIC_URI)
+                .endpoint("127.0.0.1:0")
+                .tags("1001")
+                .sessionId(pub2.sessionId())
+                .build();
+
+            try (
+                Subscription sub1 = clientB.addSubscription(sub1Uri, STREAM_ID);
+                Subscription sub2 = clientB.addSubscription(sub2Uri, STREAM_ID))
+            {
+                Tests.awaitConnected(sub1);
+                Tests.awaitConnected(sub2);
+                Tests.awaitConnected(pub1);
+                Tests.awaitConnected(pub2);
+
+                while (pub1.offer(buffer, 0, buffer.capacity()) < 0L)
+                {
+                    Tests.yield();
+                }
+
+                while (pub2.offer(buffer, 0, buffer.capacity()) < 0L)
+                {
+                    Tests.yield();
+                }
+
+                final long nowMs = System.currentTimeMillis();
+                long sub1Count = 0;
+                long sub2Count = 0;
+                while (System.currentTimeMillis() - nowMs < 500L)
+                {
+                    sub1Count += sub1.poll((a, b, c, d) -> {}, 10);
+                    sub2Count += sub2.poll((a, b, c, d) -> {}, 10);
+
+                    assertThat(sub1Count, lessThan(2L));
+                    assertThat(sub2Count, lessThan(2L));
+                }
+            }
+        }
     }
 
     private static void pollForFragment(final Subscription subscription, final FragmentHandler handler)

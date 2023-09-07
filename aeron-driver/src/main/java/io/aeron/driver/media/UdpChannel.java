@@ -707,11 +707,10 @@ public final class UdpChannel
             return true;
         }
 
-        // TODO: Should we do this????
         if (udpChannel.remoteData().getAddress().equals(remoteData.getAddress()) &&
             udpChannel.remoteData().getPort() == remoteData.getPort() &&
-            udpChannel.localData.getAddress().equals(localData.getAddress()) &&
-            udpChannel.localData.getPort() == localData.getPort())
+            udpChannel.localData().getAddress().equals(localData.getAddress()) &&
+            udpChannel.localData().getPort() == localData.getPort())
         {
             return true;
         }

@@ -310,7 +310,16 @@ public final class DataCollector
 
     private Path createUniqueDirectory(final String name) throws IOException
     {
-        Path path = rootDir.resolve(name);
+        Path path;
+        try
+        {
+            path = rootDir.resolve(name);
+        }
+        catch (final InvalidPathException ex)
+        {
+            throw new IOException("Unable to resolve path for name=" + name);
+        }
+
         while (Files.exists(path))
         {
             path = rootDir.resolve(name + "-" + UNIQUE_ID.incrementAndGet());

@@ -53,6 +53,10 @@ import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.CommonContext.generateRandomDirName;
 import static io.aeron.archive.ArchiveSystemTests.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.codecs.RecordingSignal.EXTEND;
+import static io.aeron.archive.codecs.RecordingSignal.REPLICATE;
+import static io.aeron.archive.codecs.RecordingSignal.REPLICATE_END;
+import static io.aeron.archive.codecs.RecordingSignal.STOP;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -259,7 +263,7 @@ class ReplicateRecordingTest
 
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
 
         dstRecordingSignalConsumer.reset();
         if (useParams)
@@ -273,12 +277,12 @@ class ReplicateRecordingTest
                 srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
         }
 
-        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
         final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
         resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.SYNC);
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
     }
 
     @Test
@@ -305,7 +309,7 @@ class ReplicateRecordingTest
 
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
 
         dstRecordingSignalConsumer.reset();
         dstAeronArchive.replicate(
@@ -314,12 +318,12 @@ class ReplicateRecordingTest
             SRC_CONTROL_REQUEST_CHANNEL,
             new ReplicationParams().replicationSessionId(specifiedSessionId));
 
-        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
         final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
         resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.SYNC);
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
 
 
         final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(1);
@@ -353,7 +357,7 @@ class ReplicateRecordingTest
 
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
 
         dstRecordingSignalConsumer.reset();
         if (useParams)
@@ -367,12 +371,12 @@ class ReplicateRecordingTest
                 srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
         }
 
-        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
         final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
         resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.SYNC);
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
     }
 
     @Test
@@ -399,7 +403,7 @@ class ReplicateRecordingTest
                 position = publication.position();
                 Tests.awaitPosition(counters, counterId, position);
             }
-            awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingIds[i], RecordingSignal.STOP);
+            awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingIds[i], STOP);
         }
 
         srcRecordingSignalConsumer.reset();
@@ -420,7 +424,7 @@ class ReplicateRecordingTest
         int stopCount = 0;
         while (stopCount < 2)
         {
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.STOP);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, STOP);
             stopCount++;
         }
 
@@ -462,13 +466,13 @@ class ReplicateRecordingTest
                     srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
             }
 
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
             final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
             resetAndAwaitSignal(
                 dstAeronArchive,
                 dstRecordingSignalConsumer,
                 dstRecordingId,
-                RecordingSignal.EXTEND);
+                EXTEND);
 
             final CountersReader dstCounters = dstAeronArchive.context().aeron().countersReader();
             final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
@@ -479,12 +483,12 @@ class ReplicateRecordingTest
 
             dstRecordingSignalConsumer.reset();
             dstAeronArchive.stopReplication(replicationId);
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
         }
 
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
     }
 
     @ParameterizedTest
@@ -533,10 +537,10 @@ class ReplicateRecordingTest
                     null);
             }
 
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
             final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
 
             offer(publication, messageCount, messagePrefix);
             final int srcCounterId = RecordingPos.findCounterIdByRecording(srcCounters, srcRecordingId);
@@ -553,7 +557,7 @@ class ReplicateRecordingTest
 
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
     }
 
     @Test
@@ -585,9 +589,9 @@ class ReplicateRecordingTest
             long replicationId = dstAeronArchive.replicate(
                 srcRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, replicationParams);
 
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
             final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
 
             final CountersReader dstCounters = dstArchive.context().aeron().countersReader();
             int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
@@ -595,7 +599,7 @@ class ReplicateRecordingTest
 
             dstRecordingSignalConsumer.reset();
             dstAeronArchive.stopReplication(replicationId);
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
 
             dstRecordingSignalConsumer.reset();
 
@@ -609,7 +613,7 @@ class ReplicateRecordingTest
                 SRC_CONTROL_REQUEST_CHANNEL,
                 replicationParams);
 
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
 
             dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
 
@@ -618,12 +622,12 @@ class ReplicateRecordingTest
 
             dstRecordingSignalConsumer.reset();
             dstAeronArchive.stopReplication(replicationId);
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
         }
 
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
     }
 
     @ParameterizedTest
@@ -649,7 +653,7 @@ class ReplicateRecordingTest
 
             srcRecordingSignalConsumer.reset();
             srcAeronArchive.stopRecording(subscriptionId);
-            awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+            awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
 
             dstRecordingSignalConsumer.reset();
             if (useParams)
@@ -662,15 +666,15 @@ class ReplicateRecordingTest
                 dstAeronArchive.replicate(
                     srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
             }
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
             final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
 
 
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.SYNC);
             resetAndAwaitSignal(
-                dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+                dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
 
             dstRecordingSignalConsumer.reset();
             if (useParams)
@@ -688,7 +692,7 @@ class ReplicateRecordingTest
             }
             awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.SYNC);
             resetAndAwaitSignal(
-                dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
+                dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
         }
     }
 
@@ -734,9 +738,9 @@ class ReplicateRecordingTest
 
             offer(publication, messageCount, messagePrefix);
 
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
             final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.MERGE);
 
             final CountersReader dstCounters = dstArchive.context().aeron().countersReader();
@@ -748,7 +752,7 @@ class ReplicateRecordingTest
 
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
     }
 
     @ParameterizedTest
@@ -785,9 +789,9 @@ class ReplicateRecordingTest
                     srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, LIVE_CHANNEL);
             }
 
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
             dstRecordingId = dstRecordingSignalConsumer.recordingId;
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.MERGE);
 
             final CountersReader dstCounters = dstArchive.context().aeron().countersReader();
@@ -800,9 +804,9 @@ class ReplicateRecordingTest
         dstRecordingSignalConsumer.reset();
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
 
-        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
+        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
     }
 
     @ParameterizedTest
@@ -861,9 +865,9 @@ class ReplicateRecordingTest
             offer(publication, messageCount, messagePrefix);
             consume(taggedSubscription, messageCount, messagePrefix);
 
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
             dstRecordingId = dstRecordingSignalConsumer.recordingId;
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.MERGE);
 
             final CountersReader dstCounters = dstAeron.countersReader();
@@ -880,8 +884,8 @@ class ReplicateRecordingTest
         dstRecordingSignalConsumer.reset();
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
-        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
+        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
     }
 
     @Test
@@ -918,7 +922,7 @@ class ReplicateRecordingTest
 
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
 
         dstRecordingSignalConsumer.reset();
         dstAeronArchive.replicate(
@@ -927,12 +931,12 @@ class ReplicateRecordingTest
             SRC_CONTROL_REQUEST_CHANNEL,
             new ReplicationParams().fileIoMaxLength(fileIoMaxLength));
 
-        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
         final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
         resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.SYNC);
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
 
         assertNotEquals(NULL_VALUE, dstRecordingId);
 
@@ -973,7 +977,7 @@ class ReplicateRecordingTest
 
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
 
         final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(10);
         final int i = srcAeronArchive.listRecording(srcRecordingId, collector.reset());
@@ -1061,10 +1065,10 @@ class ReplicateRecordingTest
         dstAeronArchive.replicate(
             srcRecordingId, dstRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
-        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
         resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.SYNC);
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
 
         assertEquals(1, dstAeronArchive.listRecording(dstRecordingId, collector.reset()));
         final RecordingDescriptor replicatedRecording = collector.descriptors().get(0).retain();
@@ -1167,9 +1171,9 @@ class ReplicateRecordingTest
 
             offer(publication, messageCount, messagePrefix);
 
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
             final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
             resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.MERGE);
 
             final CountersReader dstCounters = dstArchive.context().aeron().countersReader();
@@ -1181,7 +1185,7 @@ class ReplicateRecordingTest
 
         srcRecordingSignalConsumer.reset();
         srcAeronArchive.stopRecording(subscriptionId);
-        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
     }
 
     @Test
@@ -1197,12 +1201,12 @@ class ReplicateRecordingTest
                 INVALID_SRC_CONTROL_REQUEST_CHANNEL,
                 new ReplicationParams());
 
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
         }
         catch (final ArchiveException ex)
         {
             assertEquals(ArchiveException.REPLICATION_CONNECTION_FAILURE, ex.errorCode());
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE_END);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE_END);
 
             return;
         }
@@ -1249,7 +1253,7 @@ class ReplicateRecordingTest
 
             authSignalConsumer.reset();
             aeronArchive.stopRecording(subscriptionId);
-            awaitSignal(aeronArchive, authSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+            awaitSignal(aeronArchive, authSignalConsumer, srcRecordingId, STOP);
 
             dstRecordingSignalConsumer.reset();
             final ReplicationParams replicationParams = new ReplicationParams()
@@ -1260,13 +1264,11 @@ class ReplicateRecordingTest
                 authAeronArchiveCtx.controlRequestChannel(),
                 replicationParams);
 
-            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
             final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.EXTEND);
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.SYNC);
-            resetAndAwaitSignal(
-                dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.REPLICATE_END);
-            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.STOP);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
+            resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
+            awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
         }
     }
 
@@ -1309,7 +1311,7 @@ class ReplicateRecordingTest
 
             authSignalConsumer.reset();
             aeronArchive.stopRecording(subscriptionId);
-            awaitSignal(aeronArchive, authSignalConsumer, srcRecordingId, RecordingSignal.STOP);
+            awaitSignal(aeronArchive, authSignalConsumer, srcRecordingId, STOP);
 
             dstRecordingSignalConsumer.reset();
             final ReplicationParams replicationParams = new ReplicationParams()
@@ -1322,7 +1324,7 @@ class ReplicateRecordingTest
 
             final ArchiveException archiveException = assertThrows(
                 ArchiveException.class,
-                () -> awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, RecordingSignal.REPLICATE));
+                () -> awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE));
             assertThat(
                 archiveException.getMessage(),
                 containsString("Replication does not support challenge/response authentication"));
@@ -1384,7 +1386,7 @@ class ReplicateRecordingTest
             {
                 recordingSignalConsumer.reset();
                 aeronArchive.stopRecording(publication);
-                awaitSignal(aeronArchive, recordingSignalConsumer, recordingId, RecordingSignal.STOP);
+                awaitSignal(aeronArchive, recordingSignalConsumer, recordingId, STOP);
             }
         }
     }

@@ -40,7 +40,6 @@ import static io.aeron.AeronCounters.DRIVER_RECEIVER_HWM_TYPE_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -153,14 +152,20 @@ class MultiSubscriberTest
                 Tests.yield();
             }
 
-            final int counterIdA = aeron.countersReader()
-                .findByTypeIdAndRegistrationId(DRIVER_RECEIVER_HWM_TYPE_ID, subAImageCorrelationId.get());
-            assertNotEquals(-1, counterIdA);
+            int counterIdA;
+            while (-1 == (counterIdA = aeron.countersReader()
+                .findByTypeIdAndRegistrationId(DRIVER_RECEIVER_HWM_TYPE_ID, subAImageCorrelationId.get())))
+            {
+                Tests.yield();
+            }
             assertThat(aeron.countersReader().getCounterLabel(counterIdA), containsString(channelA));
 
-            final int counterIdB = aeron.countersReader()
-                .findByTypeIdAndRegistrationId(DRIVER_RECEIVER_HWM_TYPE_ID, subBImageCorrelationId.get());
-            assertNotEquals(-1, counterIdB);
+            int counterIdB;
+            while (-1 == (counterIdB = aeron.countersReader()
+                .findByTypeIdAndRegistrationId(DRIVER_RECEIVER_HWM_TYPE_ID, subBImageCorrelationId.get())))
+            {
+                Tests.yield();
+            }
             assertThat(aeron.countersReader().getCounterLabel(counterIdB), containsString(channelB));
         }
     }

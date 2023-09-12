@@ -88,4 +88,6 @@ int aeron_format_source_identity(char *buffer, size_t length, struct sockaddr_st
 
 int aeron_netutil_get_so_buf_lengths(size_t *default_so_rcvbuf, size_t *default_so_sndbuf);
 
+int aeron_sockaddr_storage_cmp(struct sockaddr_storage *a, struct sockaddr_storage *b, bool *result);
+
 #endif //AERON_NETUTIL_H

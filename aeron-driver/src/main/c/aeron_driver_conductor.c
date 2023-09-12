@@ -2038,11 +2038,18 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 
     if (NULL != endpoint)
     {
-        if (!aeron_udp_channel_is_wildcard(channel))
+        bool endpoints_match = false;
+        if (aeron_udp_channel_endpoints_match(channel, endpoint->conductor_fields.udp_channel, &endpoints_match) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error_cleanup;
+        }
+
+        if (!aeron_udp_channel_is_wildcard(channel) && !endpoints_match)
         {
             AERON_SET_ERR(
                 EINVAL,
-                "matching tag %" PRId64 "  has explicit endpoint or control: %.*s <> %.*s",
+                "matching tag %" PRId64 " has explicit endpoint or control: %.*s <> %.*s",
                 channel->tag_id,
                 (int)endpoint->conductor_fields.udp_channel->uri_length,
                 endpoint->conductor_fields.udp_channel->original_uri,
@@ -2179,7 +2186,14 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
 
     if (NULL != endpoint)
     {
-        if (!aeron_udp_channel_is_wildcard(channel))
+        bool endpoints_match = false;
+        if (aeron_udp_channel_endpoints_match(channel, endpoint->conductor_fields.udp_channel, &endpoints_match) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error_cleanup;
+        }
+
+        if (!aeron_udp_channel_is_wildcard(channel) && !endpoints_match)
         {
             AERON_SET_ERR(
                 EINVAL,

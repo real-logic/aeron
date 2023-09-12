@@ -71,8 +71,8 @@ inline bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel)
 
 inline int aeron_udp_channel_endpoints_match(aeron_udp_channel_t *channel, aeron_udp_channel_t *other, bool *result)
 {
-    bool cmp;
-    int rc;
+    bool cmp = false;
+    int rc = 0;
 
     rc = aeron_sockaddr_storage_cmp(&channel->remote_data, &other->remote_data, &cmp);
     if (rc < 0)

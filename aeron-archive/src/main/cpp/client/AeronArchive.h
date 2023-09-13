@@ -801,7 +801,7 @@ public:
      * @param replayParams   to control the behaviour of the replay.
      * @tparam IdleStrategy  to use for polling operations.
      * @return the id of the replay session which will be the same as the Image#sessionId of the received
-     *         replay for correlation with the matching channel and stream id in the lower 32 bits.
+     *         replay for correlation with the matching session id in the lower 32 bits.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t startReplay(
@@ -841,7 +841,7 @@ public:
      * @param replayStreamId to which the replay should be sent.
      * @tparam IdleStrategy  to use for polling operations.
      * @return the id of the replay session which will be the same as the Image#sessionId of the received
-     *         replay for correlation with the matching channel and stream id in the lower 32 bits.
+     *         replay for correlation with the matching session id in the lower 32 bits.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t startReplay(
@@ -883,7 +883,7 @@ public:
      * @param replayStreamId to which the replay should be sent.
      * @tparam IdleStrategy  to use for polling operations.
      * @return the id of the replay session which will be the same as the Image#sessionId of the received
-     *         replay for correlation with the matching channel and stream id in the lower 32 bits.
+     *         replay for correlation with the matching session id in the lower 32 bits.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t startBoundedReplay(

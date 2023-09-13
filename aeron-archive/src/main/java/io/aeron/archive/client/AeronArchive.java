@@ -989,7 +989,7 @@ public final class AeronArchive implements AutoCloseable
      * @param replayChannel  to which the replay should be sent.
      * @param replayStreamId to which the replay should be sent.
      * @return the id of the replay session which will be the same as the {@link Image#sessionId()} of the received
-     * replay for correlation with the matching channel and stream id in the lower 32 bits.
+     * replay for correlation with the matching session id in the lower 32 bits.
      */
     public long startReplay(
         final long recordingId,
@@ -1042,7 +1042,7 @@ public final class AeronArchive implements AutoCloseable
      * @param replayChannel  to which the replay should be sent.
      * @param replayStreamId to which the replay should be sent.
      * @return the id of the replay session which will be the same as the {@link Image#sessionId()} of the received
-     * replay for correlation with the matching channel and stream id in the lower 32 bits.
+     * replay for correlation with the matching session id in the lower 32 bits.
      */
     public long startBoundedReplay(
         final long recordingId,
@@ -1090,7 +1090,7 @@ public final class AeronArchive implements AutoCloseable
      * @param replayStreamId to which the replay should be sent.
      * @param replayParams   optional parameters for the replay
      * @return the id of the replay session which will be the same as the {@link Image#sessionId()} of the received
-     * replay for correlation with the matching channel and stream id in the lower 32 bits.
+     * replay for correlation with the matching session id in the lower 32 bits.
      * @see ReplayParams
      */
     public long startReplay(

@@ -125,6 +125,9 @@ void aeron_counters_manager_counter_registration_id(
 void aeron_counters_manager_counter_owner_id(
     aeron_counters_manager_t *manager, int32_t counter_id, int64_t owner_id);
 
+void aeron_counters_manager_counter_reference_id(
+    aeron_counters_manager_t *manager, int32_t counter_id, int64_t reference_id);
+
 void aeron_counters_manager_update_label(
     aeron_counters_manager_t *manager, int32_t counter_id, size_t label_length, const char *label);
 

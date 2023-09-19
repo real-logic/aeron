@@ -672,19 +672,21 @@ class PubAndSubTest
         }
     }
 
-
     @Test
     void shouldAllowSubscriptionsIfUsingTagsAndParametersAndAllMatch()
     {
         launch("aeron:ipc");
 
+        final String pubChannel = "aeron:udp?control-mode=dynamic|control=127.0.0.1:9999";
         final String channel = "aeron:udp?endpoint=127.0.0.1:0|control=127.0.0.1:9999|tags=1001";
         try (
-            Subscription ignore1 = subscribingClient.addSubscription(channel, 1000);
-            Subscription ignore2 = subscribingClient.addSubscription(channel, 1000))
+            Publication pub = subscribingClient.addPublication(pubChannel, 1000);
+            Subscription sub1 = subscribingClient.addSubscription(channel, 1000);
+            Subscription sub2 = subscribingClient.addSubscription(channel, 1000))
         {
-            Objects.requireNonNull(ignore1);
-            Objects.requireNonNull(ignore2);
+            Tests.awaitConnected(sub1);
+            Tests.awaitConnected(sub2);
+            Tests.awaitConnected(pub);
         }
     }
 

@@ -32,7 +32,7 @@ import static io.aeron.driver.RetransmitHandler.State.LINGERING;
  */
 public final class RetransmitHandler
 {
-    private final BiInt2ObjectMap<RetransmitAction> activeRetransmitsMap = new BiInt2ObjectMap<>();
+    private final BiInt2ObjectMap<RetransmitAction> activeRetransmitByTermIdAndTermOffsetMap = new BiInt2ObjectMap<>();
     private final RetransmitAction[] retransmitActionPool = new RetransmitAction[MAX_RETRANSMITS_DEFAULT];
     private final NanoClock nanoClock;
     private final FeedbackDelayGenerator delayGenerator;
@@ -42,10 +42,10 @@ public final class RetransmitHandler
     /**
      * Create a handler for the dealing with the reception of frame request a frame to be retransmitted.
      *
-     * @param nanoClock              used to determine time
-     * @param invalidPackets         for recording invalid packets
-     * @param delayGenerator         to use for delay determination
-     * @param lingerTimeoutGenerator to use for linger timeout
+     * @param nanoClock              used to determine time.
+     * @param invalidPackets         for recording invalid packets.
+     * @param delayGenerator         to use for delay determination.
+     * @param lingerTimeoutGenerator to use for linger timeout.
      */
     public RetransmitHandler(
         final NanoClock nanoClock,
@@ -67,11 +67,11 @@ public final class RetransmitHandler
     /**
      * Called on reception of a NAK to start retransmits handling.
      *
-     * @param termId           from the NAK and the term id of the buffer to retransmit from
-     * @param termOffset       from the NAK and the offset of the data to retransmit
-     * @param length           of the missing data
+     * @param termId           from the NAK and the term id of the buffer to retransmit from.
+     * @param termOffset       from the NAK and the offset of the data to retransmit.
+     * @param length           of the missing data.
      * @param termLength       of the term buffer.
-     * @param retransmitSender to call if an immediate retransmit is required
+     * @param retransmitSender to call if an immediate retransmit is required.
      */
     public void onNak(
         final int termId,
@@ -82,8 +82,8 @@ public final class RetransmitHandler
     {
         if (!isInvalid(termOffset, termLength))
         {
-            if (null == activeRetransmitsMap.get(termId, termOffset) &&
-                activeRetransmitsMap.size() < MAX_RETRANSMITS_DEFAULT)
+            if (null == activeRetransmitByTermIdAndTermOffsetMap.get(termId, termOffset) &&
+                activeRetransmitByTermIdAndTermOffsetMap.size() < MAX_RETRANSMITS_DEFAULT)
             {
                 final RetransmitAction action = assignRetransmitAction();
                 action.termId = termId;
@@ -101,7 +101,7 @@ public final class RetransmitHandler
                     action.delay(delay, nanoClock.nanoTime());
                 }
 
-                activeRetransmitsMap.put(termId, termOffset, action);
+                activeRetransmitByTermIdAndTermOffsetMap.put(termId, termOffset, action);
             }
         }
     }
@@ -111,30 +111,29 @@ public final class RetransmitHandler
      * <p>
      * NOTE: Currently only called from unit tests. Would be used for retransmitting from receivers for NAK suppression.
      *
-     * @param termId     of the data
-     * @param termOffset of the data
+     * @param termId     of the data.
+     * @param termOffset of the data.
      */
     public void onRetransmitReceived(final int termId, final int termOffset)
     {
-        final RetransmitAction action = activeRetransmitsMap.get(termId, termOffset);
+        final RetransmitAction action = activeRetransmitByTermIdAndTermOffsetMap.get(termId, termOffset);
 
         if (null != action && DELAYED == action.state)
         {
-            activeRetransmitsMap.remove(termId, termOffset);
-            action.cancel();
-            // do not go into linger
+            activeRetransmitByTermIdAndTermOffsetMap.remove(termId, termOffset);
+            action.cancel(); // do not go into linger
         }
     }
 
     /**
      * Called to process any outstanding timeouts.
      *
-     * @param nowNs            time in nanoseconds
-     * @param retransmitSender to call on retransmissions
+     * @param nowNs            time in nanoseconds.
+     * @param retransmitSender to call on retransmissions.
      */
     public void processTimeouts(final long nowNs, final RetransmitSender retransmitSender)
     {
-        if (activeRetransmitsMap.size() > 0)
+        if (!activeRetransmitByTermIdAndTermOffsetMap.isEmpty())
         {
             for (final RetransmitAction action : retransmitActionPool)
             {
@@ -146,7 +145,7 @@ public final class RetransmitHandler
                 else if (LINGERING == action.state && (action.expireNs - nowNs < 0))
                 {
                     action.cancel();
-                    activeRetransmitsMap.remove(action.termId, action.termOffset);
+                    activeRetransmitByTermIdAndTermOffsetMap.remove(action.termId, action.termOffset);
                 }
             }
         }

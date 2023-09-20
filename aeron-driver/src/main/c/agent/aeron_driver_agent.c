@@ -72,7 +72,7 @@ static aeron_thread_t log_reader_thread;
 static aeron_driver_agent_dynamic_dissector_entry_t *dynamic_dissector_entries = NULL;
 static size_t num_dynamic_dissector_entries = 0;
 static int64_t dynamic_dissector_index = 0;
-static struct aeron_driver_agent_log_event_stct log_events[AERON_DRIVER_EVENT_NUM_ELEMENTS] =
+static aeron_driver_agent_log_event_t log_events[] =
     {
         { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
         { "FRAME_IN",                             AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
@@ -132,11 +132,12 @@ static struct aeron_driver_agent_log_event_stct log_events[AERON_DRIVER_EVENT_NU
         { "DYNAMIC_DISSECTOR_EVENT",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
     };
 
-typedef struct aeron_driver_agent_name_resolver_state_stct
+#define AERON_DRIVER_EVENT_NUM_ELEMENTS (sizeof(log_events) / sizeof(aeron_driver_agent_log_event_t))
+
+size_t aeron_driver_agent_max_event_count()
 {
-    aeron_name_resolver_resolve_func_t delegate_resolve_func;
+    return AERON_DRIVER_EVENT_NUM_ELEMENTS;
 }
-aeron_driver_agent_name_resolver_state_t;
 
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb(void)
 {
@@ -189,7 +190,7 @@ void aeron_driver_agent_logging_ring_buffer_init(void)
 
     if (aeron_mpsc_rb_init(&logging_mpsc_rb, rb_buffer, rb_length) < 0)
     {
-        fprintf(stderr, "could not init logging mpwc_rb. exiting.\n");
+        fprintf(stderr, "could not init logging mpsc_rb. exiting.\n");
         exit(EXIT_FAILURE);
     }
 }

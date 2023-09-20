@@ -113,4 +113,19 @@ public class MaxMulticastFlowControl implements FlowControl
     {
         return true;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int maxResendBytes(
+        final long resendPosition,
+        final int resendLength,
+        final int termBufferLength,
+        final int mtuLength)
+    {
+        final int estimatedWindow = Configuration.receiverWindowLength(
+            termBufferLength, Configuration.INITIAL_WINDOW_LENGTH_DEFAULT);
+
+        return Math.min(4 * estimatedWindow, resendLength);
+    }
 }

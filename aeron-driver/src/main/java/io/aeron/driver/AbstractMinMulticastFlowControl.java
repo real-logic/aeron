@@ -193,6 +193,21 @@ public abstract class AbstractMinMulticastFlowControl
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public int maxResendBytes(
+        final long resendPosition,
+        final int resendLength,
+        final int termBufferLength,
+        final int mtuLength)
+    {
+        final int estimatedWindow = Configuration.receiverWindowLength(
+            termBufferLength, Configuration.INITIAL_WINDOW_LENGTH_DEFAULT);
+
+        return Math.min(16 * estimatedWindow, resendLength);
+    }
+
+    /**
      * Process a received status message.
      *
      * @param flyweight           mapped over the status message.

@@ -485,7 +485,8 @@ public final class NetworkPublication
             final UnsafeBuffer termBuffer = termBuffers[activeIndex];
             final ByteBuffer sendBuffer = sendBuffers[activeIndex];
 
-            int remainingBytes = length;
+            int remainingBytes = flowControl.maxResendBytes(
+                resendPosition, length, termBufferLength, mtuLength);
             int bytesSent = 0;
             int offset = termOffset;
             do

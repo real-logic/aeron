@@ -33,6 +33,7 @@
 
 typedef enum aeron_driver_agent_event_enum
 {
+    AERON_DRIVER_EVENT_UNKNOWN_EVENT = -1,
     AERON_DRIVER_EVENT_FRAME_IN = 1,
     AERON_DRIVER_EVENT_FRAME_OUT = 2,
     AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION = 3,
@@ -80,8 +81,7 @@ typedef enum aeron_driver_agent_event_enum
     AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR,
     AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT,
 
-    AERON_DRIVER_EVENT_NUM_ELEMENTS, // number of elements in this enum (including gaps)
-    AERON_DRIVER_EVENT_UNKNOWN_EVENT = -1
+    AERON_DRIVER_EVENT_NUM_ELEMENTS // number of elements in this enum (including gaps)
 }
 aeron_driver_agent_event_t;
 

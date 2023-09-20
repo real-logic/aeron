@@ -127,7 +127,7 @@ static struct aeron_driver_agent_log_event_stct log_events[AERON_DRIVER_EVENT_NU
         { "NAME_RESOLUTION_RESOLVE",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "GENERIC_MESSAGE",                      AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "NAME_RESOLUTION_LOOKUP",               AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
-        { "NAME_RESOLUTION_HOST_NAME",               AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "NAME_RESOLUTION_HOST_NAME",            AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "ADD_DYNAMIC_DISSECTOR",                AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "DYNAMIC_DISSECTOR_EVENT",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
     };

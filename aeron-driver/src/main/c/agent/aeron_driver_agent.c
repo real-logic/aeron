@@ -231,7 +231,7 @@ static aeron_driver_agent_event_t aeron_driver_agent_event_name_to_id(const char
 
 static inline bool is_valid_event_id(const int id)
 {
-    return id >= 0 && id < AERON_DRIVER_EVENT_NUM_ELEMENTS;
+    return id >= 0 && id < (int)AERON_DRIVER_EVENT_NUM_ELEMENTS;
 }
 
 const char *aeron_driver_agent_event_name(const aeron_driver_agent_event_t id)

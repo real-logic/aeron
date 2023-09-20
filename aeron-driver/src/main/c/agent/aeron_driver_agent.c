@@ -217,7 +217,7 @@ static aeron_driver_agent_event_t aeron_driver_agent_event_name_to_id(const char
         return AERON_DRIVER_EVENT_UNKNOWN_EVENT;
     }
 
-    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    for (size_t i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         const char *name = log_events[i].name;
         if (0 == strncmp(name, event_name, strlen(name) + 1))
@@ -251,7 +251,7 @@ bool aeron_driver_agent_is_event_enabled(const aeron_driver_agent_event_t id)
 
 static void aeron_driver_agent_set_enabled_all_events(const bool is_enabled)
 {
-    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    for (size_t i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         const char *event_name = log_events[i].name;
         if (!aeron_driver_agent_is_unknown_event(event_name))
@@ -263,7 +263,7 @@ static void aeron_driver_agent_set_enabled_all_events(const bool is_enabled)
 
 static void aeron_driver_agent_set_enabled_admin_events(const bool is_enabled)
 {
-    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    for (size_t i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         if (AERON_DRIVER_EVENT_FRAME_IN != i &&
             AERON_DRIVER_EVENT_FRAME_OUT != i &&
@@ -281,7 +281,7 @@ static void aeron_driver_agent_set_enabled_admin_events(const bool is_enabled)
 
 static void aeron_driver_agent_set_enabled_specific_events(const uint8_t type, const bool is_enabled)
 {
-    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    for (size_t i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         if (type == log_events[i].type)
         {
@@ -292,7 +292,7 @@ static void aeron_driver_agent_set_enabled_specific_events(const uint8_t type, c
 
 static bool any_event_enabled(const uint8_t type)
 {
-    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    for (size_t i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         if (type == log_events[i].type && log_events[i].enabled)
         {
@@ -475,7 +475,7 @@ bool aeron_driver_agent_logging_events_init(const char *event_log, const char *e
 
 void aeron_driver_agent_logging_events_free(void)
 {
-    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    for (size_t i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         log_events[i].enabled = false;
     }

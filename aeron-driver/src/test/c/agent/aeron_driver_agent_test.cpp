@@ -52,7 +52,7 @@ protected:
 
     static void assert_all_events_disabled()
     {
-        for (int i = 0; i < aeron_driver_agent_max_event_count(); i++)
+        for (size_t i = 0; i < aeron_driver_agent_max_event_count(); i++)
         {
             auto event_id = static_cast<aeron_driver_agent_event_t>(i);
             EXPECT_FALSE(aeron_driver_agent_is_event_enabled(event_id));
@@ -61,7 +61,7 @@ protected:
 
     static void assert_all_events_enabled()
     {
-        for (int i = 0; i < aeron_driver_agent_max_event_count(); i++)
+        for (size_t i = 0; i < aeron_driver_agent_max_event_count(); i++)
         {
             auto event_id = static_cast<aeron_driver_agent_event_t>(i);
             auto event_name = aeron_driver_agent_event_name(event_id);
@@ -75,7 +75,7 @@ protected:
 
     static void assert_admin_events_enabled(const bool is_enabled)
     {
-        for (int i = 0; i < aeron_driver_agent_max_event_count(); i++)
+        for (size_t i = 0; i < aeron_driver_agent_max_event_count(); i++)
         {
             auto event_id = static_cast<aeron_driver_agent_event_t>(i);
             if (AERON_DRIVER_EVENT_FRAME_IN != event_id &&
@@ -133,7 +133,7 @@ TEST_F(DriverAgentTest, allLoggingEventsShouldHaveUniqueNames)
     std::set<std::string> names;
     std::string unknown_name = std::string(AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME);
 
-    for (int i = 0; i < aeron_driver_agent_max_event_count(); i++)
+    for (size_t i = 0; i < aeron_driver_agent_max_event_count(); i++)
     {
         auto event_id = static_cast<aeron_driver_agent_event_t>(i);
         auto event_name = std::string(aeron_driver_agent_event_name(event_id));

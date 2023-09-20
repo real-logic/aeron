@@ -134,7 +134,7 @@ static aeron_driver_agent_log_event_t log_events[] =
 
 #define AERON_DRIVER_EVENT_NUM_ELEMENTS (sizeof(log_events) / sizeof(aeron_driver_agent_log_event_t))
 
-size_t aeron_driver_agent_max_event_count()
+size_t aeron_driver_agent_max_event_count(void)
 {
     return AERON_DRIVER_EVENT_NUM_ELEMENTS;
 }

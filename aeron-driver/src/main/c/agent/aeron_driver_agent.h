@@ -205,9 +205,9 @@ aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb(void);
 
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 
-size_t aeron_driver_agent_max_event_count();
-
 int aeron_driver_agent_context_init(aeron_driver_context_t *context);
+
+size_t aeron_driver_agent_max_event_count(void);
 
 const char *aeron_driver_agent_dissect_log_header(
     int64_t time_ns,

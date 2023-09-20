@@ -72,7 +72,7 @@ static aeron_thread_t log_reader_thread;
 static aeron_driver_agent_dynamic_dissector_entry_t *dynamic_dissector_entries = NULL;
 static size_t num_dynamic_dissector_entries = 0;
 static int64_t dynamic_dissector_index = 0;
-static struct aeron_driver_agent_log_event_stct log_events[AERON_DRIVER_EVENT_NUM_ELEMENTS] =
+static aeron_driver_agent_log_event_t log_events[] =
     {
         { AERON_DRIVER_AGENT_EVENT_UNKNOWN_NAME,  AERON_DRIVER_AGENT_EVENT_TYPE_UNKNOWN, false },
         { "FRAME_IN",                             AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
@@ -127,16 +127,17 @@ static struct aeron_driver_agent_log_event_stct log_events[AERON_DRIVER_EVENT_NU
         { "NAME_RESOLUTION_RESOLVE",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "GENERIC_MESSAGE",                      AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "NAME_RESOLUTION_LOOKUP",               AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
-        { "NAME_RESOLUTION_HOST_NAME",               AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "NAME_RESOLUTION_HOST_NAME",            AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "ADD_DYNAMIC_DISSECTOR",                AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "DYNAMIC_DISSECTOR_EVENT",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
     };
 
-typedef struct aeron_driver_agent_name_resolver_state_stct
+#define AERON_DRIVER_EVENT_NUM_ELEMENTS (sizeof(log_events) / sizeof(aeron_driver_agent_log_event_t))
+
+size_t aeron_driver_agent_max_event_count(void)
 {
-    aeron_name_resolver_resolve_func_t delegate_resolve_func;
+    return AERON_DRIVER_EVENT_NUM_ELEMENTS;
 }
-aeron_driver_agent_name_resolver_state_t;
 
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb(void)
 {
@@ -189,7 +190,7 @@ void aeron_driver_agent_logging_ring_buffer_init(void)
 
     if (aeron_mpsc_rb_init(&logging_mpsc_rb, rb_buffer, rb_length) < 0)
     {
-        fprintf(stderr, "could not init logging mpwc_rb. exiting.\n");
+        fprintf(stderr, "could not init logging mpsc_rb. exiting.\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -216,7 +217,7 @@ static aeron_driver_agent_event_t aeron_driver_agent_event_name_to_id(const char
         return AERON_DRIVER_EVENT_UNKNOWN_EVENT;
     }
 
-    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    for (size_t i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         const char *name = log_events[i].name;
         if (0 == strncmp(name, event_name, strlen(name) + 1))
@@ -230,7 +231,7 @@ static aeron_driver_agent_event_t aeron_driver_agent_event_name_to_id(const char
 
 static inline bool is_valid_event_id(const int id)
 {
-    return id >= 0 && id < AERON_DRIVER_EVENT_NUM_ELEMENTS;
+    return id >= 0 && id < (int)AERON_DRIVER_EVENT_NUM_ELEMENTS;
 }
 
 const char *aeron_driver_agent_event_name(const aeron_driver_agent_event_t id)
@@ -250,7 +251,7 @@ bool aeron_driver_agent_is_event_enabled(const aeron_driver_agent_event_t id)
 
 static void aeron_driver_agent_set_enabled_all_events(const bool is_enabled)
 {
-    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    for (size_t i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         const char *event_name = log_events[i].name;
         if (!aeron_driver_agent_is_unknown_event(event_name))
@@ -262,7 +263,7 @@ static void aeron_driver_agent_set_enabled_all_events(const bool is_enabled)
 
 static void aeron_driver_agent_set_enabled_admin_events(const bool is_enabled)
 {
-    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    for (size_t i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         if (AERON_DRIVER_EVENT_FRAME_IN != i &&
             AERON_DRIVER_EVENT_FRAME_OUT != i &&
@@ -280,7 +281,7 @@ static void aeron_driver_agent_set_enabled_admin_events(const bool is_enabled)
 
 static void aeron_driver_agent_set_enabled_specific_events(const uint8_t type, const bool is_enabled)
 {
-    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    for (size_t i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         if (type == log_events[i].type)
         {
@@ -291,7 +292,7 @@ static void aeron_driver_agent_set_enabled_specific_events(const uint8_t type, c
 
 static bool any_event_enabled(const uint8_t type)
 {
-    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    for (size_t i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         if (type == log_events[i].type && log_events[i].enabled)
         {
@@ -474,7 +475,7 @@ bool aeron_driver_agent_logging_events_init(const char *event_log, const char *e
 
 void aeron_driver_agent_logging_events_free(void)
 {
-    for (int i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
+    for (size_t i = 0; i < AERON_DRIVER_EVENT_NUM_ELEMENTS; i++)
     {
         log_events[i].enabled = false;
     }

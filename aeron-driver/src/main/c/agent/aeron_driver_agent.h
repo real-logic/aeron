@@ -33,6 +33,7 @@
 
 typedef enum aeron_driver_agent_event_enum
 {
+    AERON_DRIVER_EVENT_UNKNOWN_EVENT = -1,
     AERON_DRIVER_EVENT_FRAME_IN = 1,
     AERON_DRIVER_EVENT_FRAME_OUT = 2,
     AERON_DRIVER_EVENT_CMD_IN_ADD_PUBLICATION = 3,
@@ -77,11 +78,8 @@ typedef enum aeron_driver_agent_event_enum
     AERON_DRIVER_EVENT_NAME_RESOLUTION_HOST_NAME = 53,
 
     // C-specific events. Note: event IDs are dynamic to avoid gaps in the sparse arrays.
-    AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR,
-    AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT,
-
-    AERON_DRIVER_EVENT_NUM_ELEMENTS, // number of elements in this enum (including gaps)
-    AERON_DRIVER_EVENT_UNKNOWN_EVENT = -1
+    AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR = 54,
+    AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT = 55
 }
 aeron_driver_agent_event_t;
 
@@ -208,6 +206,8 @@ aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb(void);
 typedef int (*aeron_driver_context_init_t)(aeron_driver_context_t **);
 
 int aeron_driver_agent_context_init(aeron_driver_context_t *context);
+
+size_t aeron_driver_agent_max_event_count(void);
 
 const char *aeron_driver_agent_dissect_log_header(
     int64_t time_ns,

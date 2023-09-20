@@ -590,7 +590,8 @@ typedef struct aeron_counter_value_descriptor_stct
     int64_t counter_value;
     int64_t registration_id;
     int64_t owner_id;
-    uint8_t pad1[(2 * AERON_COUNTER_CACHE_LINE_LENGTH) - (3 * sizeof(int64_t))];
+    int64_t reference_id;
+    uint8_t pad1[(2 * AERON_COUNTER_CACHE_LINE_LENGTH) - (4 * sizeof(int64_t))];
 }
 aeron_counter_value_descriptor_t;
 
@@ -626,6 +627,7 @@ aeron_counter_metadata_descriptor_t;
 #define AERON_COUNTER_REGISTRATION_ID_DEFAULT INT64_C(0)
 #define AERON_COUNTER_NOT_FREE_TO_REUSE (INT64_MAX)
 #define AERON_COUNTER_OWNER_ID_DEFAULT INT64_C(0)
+#define AERON_COUNTER_REFERENCE_ID_DEFAULT INT64_C(0)
 
 #define AERON_NULL_COUNTER_ID (-1)
 
@@ -717,6 +719,18 @@ int aeron_counters_reader_counter_registration_id(
  */
 int aeron_counters_reader_counter_owner_id(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *owner_id);
+
+/**
+ * Get the reference id assigned to a counter which typically be the registration id of an associated Image,
+ * Subscription, Publication, etc.
+ *
+ * @param counters_reader representing the this pointer.
+ * @param counter_id      for which the registration id requested.
+ * @param reference_id    pointer for value to be set on success.
+ * @return -1 on failure, 0 on success.
+ */
+int aeron_counters_reader_counter_reference_id(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *reference_id);
 
 /**
  * Get the state for a counter.

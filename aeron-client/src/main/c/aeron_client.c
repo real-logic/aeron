@@ -217,7 +217,7 @@ void aeron_print_counters(aeron_t *client, void (*stream_out)(const char *))
         return;
     }
 
-    aeron_print_counters_stream_out_t out;
+    aeron_print_counters_stream_out_t out = { .stream_out = stream_out };
 
     aeron_counters_reader_foreach_counter(&client->conductor.counters_reader, aeron_print_counters_format, &out);
 }

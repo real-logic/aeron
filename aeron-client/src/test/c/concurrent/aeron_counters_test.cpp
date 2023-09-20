@@ -236,3 +236,46 @@ TEST_F(CountersTest, shouldResetValueAndOwnerIdIfReused)
     EXPECT_EQ(0, aeron_counters_reader_counter_owner_id(&m_reader, id_two, &owner_id_two));
     EXPECT_EQ(expected_owner_id_two, owner_id_two);
 }
+
+TEST_F(CountersTest, shouldSetReferenceId)
+{
+    int32_t id = aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, nullptr, 0);
+
+    int64_t reference_id = 999;
+    EXPECT_EQ(0, aeron_counters_reader_counter_reference_id(&m_reader, id, &reference_id));
+    EXPECT_EQ(AERON_COUNTER_REFERENCE_ID_DEFAULT, reference_id);
+
+    int64_t expected_reference_id = 777;
+    aeron_counters_manager_counter_reference_id(&m_manager, id, expected_reference_id);
+    EXPECT_EQ(0, aeron_counters_reader_counter_reference_id(&m_reader, id, &reference_id));
+    EXPECT_EQ(expected_reference_id, reference_id);
+}
+
+TEST_F(CountersTest, shouldResetValueAndReferenceIdIfReused)
+{
+    int32_t id_one = aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, nullptr, 0);
+
+    int64_t reference_id_one = 999;
+    EXPECT_EQ(0, aeron_counters_reader_counter_reference_id(&m_reader, id_one, &reference_id_one));
+    EXPECT_EQ(AERON_COUNTER_REGISTRATION_ID_DEFAULT, reference_id_one);
+
+    int64_t expected_reference_id_one = 777;
+    aeron_counters_manager_counter_reference_id(&m_manager, id_one, expected_reference_id_one);
+    EXPECT_EQ(0, aeron_counters_reader_counter_reference_id(&m_reader, id_one, &reference_id_one));
+    EXPECT_EQ(expected_reference_id_one, reference_id_one);
+
+    m_manager.free_to_reuse_timeout_ms = 0;
+    aeron_counters_manager_free(&m_manager, id_one);
+
+    int32_t id_two = aeron_counters_manager_allocate(&m_manager, 0, nullptr, 0, nullptr, 0);
+
+    int64_t reference_id_two = 999;
+    EXPECT_EQ(0, aeron_counters_reader_counter_reference_id(&m_reader, id_one, &reference_id_two));
+    EXPECT_EQ(id_one, id_two);
+    EXPECT_EQ(AERON_COUNTER_REGISTRATION_ID_DEFAULT, reference_id_two);
+
+    int64_t expected_reference_id_two = 333;
+    aeron_counters_manager_counter_reference_id(&m_manager, id_two, expected_reference_id_two);
+    EXPECT_EQ(0, aeron_counters_reader_counter_reference_id(&m_reader, id_two, &reference_id_two));
+    EXPECT_EQ(expected_reference_id_two, reference_id_two);
+}

@@ -3207,7 +3207,10 @@ int aeron_driver_conductor_link_subscribable(
 
         if (counter_id >= 0)
         {
-            aeron_counters_manager_counter_owner_id(&conductor->counters_manager, counter_id, link->client_id);
+            aeron_counters_manager_counter_owner_id(
+                &conductor->counters_manager, counter_id, link->client_id);
+            aeron_counters_manager_counter_reference_id(
+                &conductor->counters_manager, counter_id, original_registration_id);
             int64_t *position_addr = aeron_counters_manager_addr(&conductor->counters_manager, counter_id);
 
             if (aeron_driver_subscribable_add_position(subscribable, link, counter_id, position_addr, now_ns) >= 0)

@@ -206,7 +206,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                     }
                     else
                     {
-                        directoryName = testMethod + "_" + System.nanoTime() + context.getUniqueId();
+                        directoryName = testMethod + "_" + System.nanoTime();
                     }
                 }
                 else

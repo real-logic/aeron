@@ -489,7 +489,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommand)
     command->correlated.client_id = 42;
     command->stream_id = 7;
     command->channel_length = 4;
-    memcpy(buffer + sizeof(aeron_publication_command_t), "test", sizeof("test") + 1);
+    memcpy(buffer + sizeof(aeron_publication_command_t), "test", sizeof("test"));
 
     aeron_driver_agent_conductor_to_driver_interceptor(AERON_COMMAND_ADD_SUBSCRIPTION, command, length, nullptr);
 
@@ -586,7 +586,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommand)
     command->correlated.client_id = 42;
     command->stream_id = 7;
     command->channel_length = 4;
-    memcpy(buffer + sizeof(aeron_publication_command_t), "test", strlen("test") + 1);
+    memcpy(buffer + sizeof(aeron_publication_command_t), "test", strlen("test"));
 
     aeron_driver_agent_conductor_to_client_interceptor(nullptr, AERON_RESPONSE_ON_OPERATION_SUCCESS, command, length);
 
@@ -1246,7 +1246,6 @@ TEST_F(DriverAgentTest, shouldNotAddDynamicDissectorIfDynamicDissectorEventIsDis
     aeron_driver_agent_generic_dissector_func_t dynamic_dissector =
         [](FILE *fpout, const char *log_header_str, const void *message, size_t len)
         {
-
         };
 
     EXPECT_EQ(-1, aeron_driver_agent_add_dynamic_dissector(dynamic_dissector));
@@ -1274,7 +1273,6 @@ TEST_F(DriverAgentTest, shouldAddDynamicDissectorIfDynamicDissectorEventIsEnable
     aeron_driver_agent_generic_dissector_func_t dynamic_dissector =
         [](FILE *fpout, const char *log_header_str, const void *message, size_t len)
         {
-
         };
 
     EXPECT_EQ(0, aeron_driver_agent_add_dynamic_dissector(dynamic_dissector));
@@ -1556,7 +1554,8 @@ TEST_F(DriverAgentTest, shouldInitializeOnNameLookupFunction)
 
 TEST_F(DriverAgentTest, shouldInitializeNameResolverFunctions)
 {
-    EXPECT_TRUE(aeron_driver_agent_logging_events_init("NAME_RESOLUTION_LOOKUP,NAME_RESOLUTION_RESOLVE,NAME_RESOLUTION_HOST_NAME", nullptr));
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init(
+        "NAME_RESOLUTION_LOOKUP,NAME_RESOLUTION_RESOLVE,NAME_RESOLUTION_HOST_NAME", nullptr));
     aeron_driver_agent_init_logging_events_interceptors(m_context);
 
     EXPECT_NE(nullptr, m_context->on_name_resolve_func);

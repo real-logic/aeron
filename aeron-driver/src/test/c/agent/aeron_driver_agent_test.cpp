@@ -241,7 +241,7 @@ TEST_F(DriverAgentTest, shouldDisableMultipleEventsSplitByComma)
     EXPECT_TRUE(aeron_driver_agent_logging_events_init(
         "all", "CMD_IN_REMOVE_COUNTER,33,NAME_RESOLUTION_NEIGHBOR_ADDED,CMD_OUT_ERROR,FRAME_OUT,"));
 
-    for (int i = 0; i < aeron_driver_agent_max_event_count(); i++)
+    for (size_t i = 0; i < aeron_driver_agent_max_event_count(); i++)
     {
         auto event_id = static_cast<aeron_driver_agent_event_t>(i);
         bool expected =

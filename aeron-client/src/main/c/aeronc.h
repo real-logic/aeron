@@ -294,6 +294,8 @@ int aeron_init(aeron_t **client, aeron_context_t *context);
 /**
  * Start an aeron_t. This may spawn a thread for the Client Conductor.
  *
+ * The given aeron_t struct is not thread safe and should not be shared.
+ *
  * @param client to start.
  * @return 0 for success and -1 for error.
  */

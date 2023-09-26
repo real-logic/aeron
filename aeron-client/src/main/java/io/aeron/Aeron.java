@@ -433,9 +433,10 @@ public class Aeron implements AutoCloseable
      *
      * @param registrationId returned from
      *                       {@link #asyncAddSubscription(String, int, AvailableImageHandler, UnavailableImageHandler)}
-     *                       or  {@link #asyncAddSubscription(String, int)}
-     * @return a new {@link ConcurrentPublication} when available otherwise null.
-     * @see #asyncAddPublication(String, int)
+     *                       or {@link #asyncAddSubscription(String, int)}
+     * @return a new {@link Subscription} when available otherwise null.
+     * @see #asyncAddSubscription(String, int)
+     * @see #asyncAddSubscription(String, int, AvailableImageHandler, UnavailableImageHandler)
      */
     public Subscription getSubscription(final long registrationId)
     {

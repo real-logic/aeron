@@ -254,7 +254,7 @@ public final class DriverConductor implements Agent
         final ArrayList<SubscriberPosition> subscriberPositions = createSubscriberPositions(
             sessionId, streamId, channelEndpoint, joinPosition);
 
-        if (subscriberPositions.size() > 0)
+        if (!subscriberPositions.isEmpty())
         {
             RawLog rawLog = null;
             CongestionControl congestionControl = null;

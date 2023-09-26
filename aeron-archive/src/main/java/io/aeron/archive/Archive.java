@@ -3000,7 +3000,7 @@ public final class Archive implements AutoCloseable
          * @param catalog {@link Catalog} describing the contents of the Archive.
          * @return this for a fluent API.
          */
-        public Context catalog(final Catalog catalog)
+        Context catalog(final Catalog catalog)
         {
             this.catalog = catalog;
             return this;
@@ -3011,7 +3011,7 @@ public final class Archive implements AutoCloseable
          *
          * @return the {@link Catalog} describing the contents of the Archive.
          */
-        public Catalog catalog()
+        Catalog catalog()
         {
             return catalog;
         }

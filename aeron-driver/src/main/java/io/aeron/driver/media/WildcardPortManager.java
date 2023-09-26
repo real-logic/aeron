@@ -96,7 +96,7 @@ public class WildcardPortManager implements PortManager
      */
     public static int[] parsePortRange(final String value)
     {
-        if (null == value || value.length() == 0)
+        if (null == value || value.isEmpty())
         {
             return EMPTY_PORT_RANGE;
         }

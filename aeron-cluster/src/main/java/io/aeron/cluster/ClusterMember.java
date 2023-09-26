@@ -536,7 +536,7 @@ public final class ClusterMember
      */
     public static ClusterMember[] parse(final String value)
     {
-        if (null == value || value.length() == 0)
+        if (null == value || value.isEmpty())
         {
             return ClusterMember.EMPTY_MEMBERS;
         }
@@ -653,7 +653,7 @@ public final class ClusterMember
      */
     public static String encodeAsString(final List<ClusterMember> clusterMembers)
     {
-        if (0 == clusterMembers.size())
+        if (clusterMembers.isEmpty())
         {
             return "";
         }

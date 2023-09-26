@@ -1200,7 +1200,7 @@ public class Aeron implements AutoCloseable
          *
          * @return the factory for making log buffers.
          */
-        public LogBuffersFactory logBuffersFactory()
+        LogBuffersFactory logBuffersFactory()
         {
             return logBuffersFactory;
         }

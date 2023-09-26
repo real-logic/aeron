@@ -199,7 +199,7 @@ public class AsciidoctorPreprocessTask extends DefaultTask
 
         errors.forEach((key, value) -> System.out.println("file: " + key + ", error count: " + value));
 
-        if (0 < errors.size())
+        if (!errors.isEmpty())
         {
             throw new Exception("failed due to errors in parsing");
         }

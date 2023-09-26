@@ -24,11 +24,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class WildcardPortManagerTest
+class WildcardPortManagerTest
 {
-    public int[] portRange = new int[]{ 20000, 20003};
-    public UdpChannel udpChannelPort0 = UdpChannel.parse("aeron:udp?endpoint=localhost:0");
-    public UdpChannel udpChannelPubControl = UdpChannel.parse("aeron:udp?control=localhost:0");
+    final int[] portRange = new int[]{ 20000, 20003};
+    final UdpChannel udpChannelPort0 = UdpChannel.parse("aeron:udp?endpoint=localhost:0");
+    final UdpChannel udpChannelPubControl = UdpChannel.parse("aeron:udp?control=localhost:0");
 
     @Test
     void shouldAllocateConsecutivePortsInRange() throws BindException

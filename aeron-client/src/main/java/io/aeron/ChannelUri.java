@@ -313,7 +313,7 @@ public final class ChannelUri
 
         sb.append(AERON_PREFIX).append(media);
 
-        if (params.size() > 0)
+        if (!params.isEmpty())
         {
             sb.append('?');
 

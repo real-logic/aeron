@@ -56,7 +56,6 @@
  * The majority of cluster members determine consensus. Clusters should typically be 3 or 5 in population size.
  * However, 2 node clusters are supported whereby both members must agree the log and in the event of failure the
  * remaining member must be manually reconfigured as a single node cluster to progress.
- *
  * <h2>Protocol</h2>
  * Messages are specified using <a href="https://github.com/real-logic/simple-binary-encoding" target="_blank">SBE</a>
  * in this schema

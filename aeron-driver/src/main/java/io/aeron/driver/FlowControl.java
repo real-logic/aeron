@@ -105,15 +105,15 @@ public interface FlowControl extends AutoCloseable
     boolean hasRequiredReceivers();
 
     /**
-     * Return the maximum bytes allowed to retransmit per NAK.
+     * The maximum window length allowed to retransmit per NAK.
      *
      * @param resendPosition   of the NAK.
      * @param resendLength     of the NAK.
      * @param termBufferLength of the publication.
      * @param mtuLength        of the publication.
-     * @return the number of bytes to allow to be sent for this NAK as a maximum.
+     * @return the maximum window length allowed to retransmit per NAK.
      */
-    int maxResendBytes(
+    int maxRetransmissionLength(
         long resendPosition,
         int resendLength,
         int termBufferLength,

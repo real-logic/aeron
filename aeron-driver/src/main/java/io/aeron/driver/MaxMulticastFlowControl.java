@@ -43,6 +43,11 @@ public class MaxMulticastFlowControl implements FlowControl
     public static final MaxMulticastFlowControl INSTANCE = new MaxMulticastFlowControl();
 
     /**
+     * Multiple of receiver window to allow for a retransmit action.
+     */
+    public static final int RETRANSMIT_RECEIVER_WINDOW_MULTIPLE = 4;
+
+    /**
      * {@inheritDoc}
      */
     public void initialize(
@@ -117,15 +122,15 @@ public class MaxMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public int maxResendBytes(
+    public int maxRetransmissionLength(
         final long resendPosition,
         final int resendLength,
         final int termBufferLength,
         final int mtuLength)
     {
-        final int estimatedWindow = Configuration.receiverWindowLength(
+        final int estimatedWindowLength = Configuration.receiverWindowLength(
             termBufferLength, Configuration.INITIAL_WINDOW_LENGTH_DEFAULT);
 
-        return Math.min(4 * estimatedWindow, resendLength);
+        return Math.min(RETRANSMIT_RECEIVER_WINDOW_MULTIPLE * estimatedWindowLength, resendLength);
     }
 }

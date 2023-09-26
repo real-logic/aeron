@@ -903,12 +903,12 @@ public final class PublicationImage
         if (position > cleanPosition)
         {
             final int bytesForCleaning = (int)(position - cleanPosition);
-            final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
+            final UnsafeBuffer dirtyTermBuffer = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
             final int termOffset = (int)cleanPosition & termLengthMask;
-            final int length = Math.min(bytesForCleaning, dirtyTerm.capacity() - termOffset);
+            final int length = Math.min(bytesForCleaning, dirtyTermBuffer.capacity() - termOffset);
 
-            dirtyTerm.setMemory(termOffset, length - SIZE_OF_LONG, (byte)0);
-            dirtyTerm.putLongOrdered(termOffset + (length - SIZE_OF_LONG), 0);
+            dirtyTermBuffer.setMemory(termOffset, length - SIZE_OF_LONG, (byte)0);
+            dirtyTermBuffer.putLongOrdered(termOffset + (length - SIZE_OF_LONG), 0);
             this.cleanPosition = cleanPosition + length;
         }
     }

@@ -520,14 +520,14 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         final long cleanPosition = this.cleanPosition;
         if (position > cleanPosition)
         {
-            final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
+            final UnsafeBuffer dirtyTermBuffer = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
             final int bytesForCleaning = (int)(position - cleanPosition);
             final int bufferCapacity = termBufferLength;
             final int termOffset = (int)cleanPosition & (bufferCapacity - 1);
             final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
 
-            dirtyTerm.setMemory(termOffset + SIZE_OF_LONG, length - SIZE_OF_LONG, (byte)0);
-            dirtyTerm.putLongOrdered(termOffset, 0);
+            dirtyTermBuffer.setMemory(termOffset + SIZE_OF_LONG, length - SIZE_OF_LONG, (byte)0);
+            dirtyTermBuffer.putLongOrdered(termOffset, 0);
             this.cleanPosition = cleanPosition + length;
         }
     }

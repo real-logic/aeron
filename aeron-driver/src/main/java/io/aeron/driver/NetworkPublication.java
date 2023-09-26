@@ -778,13 +778,13 @@ public final class NetworkPublication
         final long cleanPosition = this.cleanPosition;
         if (position > cleanPosition)
         {
-            final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
+            final UnsafeBuffer dirtyTermBuffer = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
             final int bytesForCleaning = (int)(position - cleanPosition);
             final int termOffset = (int)cleanPosition & termLengthMask;
             final int length = Math.min(bytesForCleaning, termBufferLength - termOffset);
 
-            dirtyTerm.setMemory(termOffset + SIZE_OF_LONG, length - SIZE_OF_LONG, (byte)0);
-            dirtyTerm.putLongOrdered(termOffset, 0);
+            dirtyTermBuffer.setMemory(termOffset + SIZE_OF_LONG, length - SIZE_OF_LONG, (byte)0);
+            dirtyTermBuffer.putLongOrdered(termOffset, 0);
             this.cleanPosition = cleanPosition + length;
         }
     }

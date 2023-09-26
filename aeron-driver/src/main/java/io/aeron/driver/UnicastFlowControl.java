@@ -40,7 +40,7 @@ public class UnicastFlowControl implements FlowControl
     /**
      * Multiple of receiver window to allow for a retransmit action.
      */
-    public static final int RETRANSMIT_RECEIVER_WINDOW_MULTIPLE = 16;
+    private static final int RETRANSMIT_RECEIVER_WINDOW_MULTIPLE = 16;
 
     /**
      * {@inheritDoc}

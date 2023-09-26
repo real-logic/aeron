@@ -70,8 +70,8 @@ public abstract class AbstractMinMulticastFlowControl
     /**
      * Multiple of receiver window to allow for a retransmit action.
      */
-    public static final int RETRANSMIT_RECEIVER_WINDOW_MULTIPLE = 16;
-    static final Receiver[] EMPTY_RECEIVERS = new Receiver[0];
+    private static final int RETRANSMIT_RECEIVER_WINDOW_MULTIPLE = 16;
+    private static final Receiver[] EMPTY_RECEIVERS = new Receiver[0];
 
     private final boolean isGroupTagAware;
     private volatile boolean hasRequiredReceivers;

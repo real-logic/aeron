@@ -111,7 +111,7 @@ public interface ClusteredService
     void onRoleChange(Cluster.Role newRole);
 
     /**
-     * Called when the container is going to terminate.
+     * Called when the container is going to terminate but only after a successful start.
      *
      * @param cluster with which the service can interact.
      */

@@ -155,6 +155,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
 
         recoverState(counters);
         dutyCycleTracker.update(nanoClock.nanoTime());
+        isServiceActive = true;
     }
 
     public void onClose()
@@ -721,7 +722,6 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         clusterTime = RecoveryState.getTimestamp(counters, recoveryCounterId);
         final long leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
         sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
-        isServiceActive = true;
 
         activeLifecycleCallbackName = "onStart";
         try

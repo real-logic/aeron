@@ -264,12 +264,6 @@ public class StressMdcClient implements Agent
 
         final int startMessageLength = 32;
         final int maxMessageLength = 2 * MAX_UDP_PAYLOAD_LENGTH;
-        final int maxMtu = MAX_UDP_PAYLOAD_LENGTH;
-
-//        final int startMessageLength = 2080;
-//        final int maxMessageLength = 2080;
-//        final int maxMtu = 1408;
-
         final int totalToSend = 100;
 
         for (final int mtu : MTU_LENGTHS)
@@ -289,7 +283,6 @@ public class StressMdcClient implements Agent
                     {
                         idleStrategy.idle(client.doWork());
                     }
-
                 }
 
                 info("Complete mtu=" + mtu);

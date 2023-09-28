@@ -87,6 +87,7 @@ int aeron_image_create(
     _image->log_buffer = log_buffer;
 
     _image->subscriber_position = subscriber_position;
+    _image->subscriber_position_id = subscriber_position_id;
 
     _image->conductor = conductor;
     _image->correlation_id = correlation_id;

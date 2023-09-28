@@ -805,7 +805,7 @@ public class CommonContext implements Cloneable
         final long nowMs = System.currentTimeMillis();
         final long timestampAgeMs = nowMs - timestampMs;
 
-        logger.accept("INFO: Aeron toDriver consumer heartbeat is (ms): " + timestampAgeMs);
+        logger.accept("INFO: Aeron toDriver consumer heartbeat age is (ms): " + timestampAgeMs);
 
         return timestampAgeMs <= driverTimeoutMs;
     }

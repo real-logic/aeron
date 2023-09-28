@@ -1430,6 +1430,12 @@ final class ClientConductor implements Agent
             {
                 terminateConductor();
 
+                if (Aeron.NULL_VALUE == lastKeepAliveMs)
+                {
+                    throw new DriverTimeoutException(
+                        "MediaDriver (" + aeron.context().aeronDirectoryName() + ") has been shutdown");
+                }
+
                 throw new DriverTimeoutException(
                     "MediaDriver (" + aeron.context().aeronDirectoryName() + ") keepalive: age=" +
                     (nowMs - lastKeepAliveMs) + "ms > timeout=" + driverTimeoutMs + "ms");

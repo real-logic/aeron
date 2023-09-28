@@ -381,6 +381,18 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
         const long long last_keepalive_ms = aeron_mpsc_rb_consumer_heartbeat_time_value(&conductor->to_driver_buffer);
         const long long now_ms = conductor->epoch_clock();
 
+        if (AERON_NULL_VALUE == last_keepalive_ms)
+        {
+            char buffer[AERON_MAX_PATH];
+
+            conductor->is_terminating = true;
+            aeron_client_conductor_force_close_resources(conductor);
+            snprintf(buffer, sizeof(buffer) - 1, "MediaDriver has been shutdown");
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_DRIVER_TIMEOUT, buffer);
+
+            return -1;
+        }
+
         if (now_ms > (last_keepalive_ms + (long long)conductor->driver_timeout_ms))
         {
             char buffer[AERON_MAX_PATH];

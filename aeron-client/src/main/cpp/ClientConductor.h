@@ -446,16 +446,26 @@ private:
 
         if (nowMs > (m_timeOfLastKeepaliveMs + KEEPALIVE_TIMEOUT_MS))
         {
-            
             int64_t lastKeepaliveMs = m_driverProxy.timeOfLastDriverKeepalive();
             if (nowMs > (lastKeepaliveMs + m_driverTimeoutMs))
             {
                 m_driverActive = false;
+                closeAllResources(nowMs);
 
-                DriverTimeoutException exception(
-                    "MediaDriver keepalive: age=" + std::to_string(nowMs - lastKeepaliveMs) +
-                    "ms > timeout=" + std::to_string(m_driverTimeoutMs) + "ms", SOURCEINFO);
-                m_errorHandler(exception);
+                if (NULL_VALUE == lastKeepaliveMs)
+                {
+                    DriverTimeoutException exception("MediaDriver has been shutdown", SOURCEINFO);
+                    m_errorHandler(exception);
+                }
+                else
+                {
+                    DriverTimeoutException exception(
+                        "MediaDriver keepalive: age=" + std::to_string(nowMs - lastKeepaliveMs) +
+                        "ms > timeout=" + std::to_string(m_driverTimeoutMs) + "ms", SOURCEINFO);
+                    m_errorHandler(exception);
+                }
+
+                return 1;
             }
 
             if (m_heartbeatTimestamp)

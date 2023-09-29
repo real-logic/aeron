@@ -426,7 +426,7 @@ int aeron_async_add_exclusive_publication_poll(
  * @param on_available_image_handler to be called when images become available on the subscription.
  * @param on_available_image_clientd to be passed when images become available on the subscription.
  * @param on_unavailable_image_handler to be called when images go unavailable on the subscription.
- * @param on_available_image_clientd to be called when images go unavailable on the subscription.
+ * @param on_unavailable_image_clientd to be passed when images go unavailable on the subscription.
  * @return 0 for success or -1 for an error.
  */
 int aeron_async_add_subscription(
@@ -702,7 +702,7 @@ int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_reader, in
  * Get the registration id assigned to a counter.
  *
  * @param counters_reader representing the this pointer.
- * @param counter_id      for which the registration id requested.
+ * @param counter_id      for which the registration id is requested.
  * @param registration_id pointer for value to be set on success.
  * @return -1 on failure, 0 on success.
  */
@@ -713,7 +713,7 @@ int aeron_counters_reader_counter_registration_id(
  * Get the owner id assigned to a counter which will typically be the client id.
  *
  * @param counters_reader representing the this pointer.
- * @param counter_id      for which the registration id requested.
+ * @param counter_id      for which the owner id is requested.
  * @param owner_id        pointer for value to be set on success.
  * @return -1 on failure, 0 on success.
  */
@@ -721,11 +721,11 @@ int aeron_counters_reader_counter_owner_id(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t *owner_id);
 
 /**
- * Get the reference id assigned to a counter which typically be the registration id of an associated Image,
+ * Get the reference id assigned to a counter which will typically be the registration id of an associated Image,
  * Subscription, Publication, etc.
  *
  * @param counters_reader representing the this pointer.
- * @param counter_id      for which the registration id requested.
+ * @param counter_id      for which the reference id is requested.
  * @param reference_id    pointer for value to be set on success.
  * @return -1 on failure, 0 on success.
  */
@@ -1592,6 +1592,7 @@ aeron_image_t *aeron_subscription_image_at_index(aeron_subscription_t *subscript
  *
  * @param subscription to iterate over.
  * @param handler to be called for each image.
+ * @param clientd to be passed to the handler.
  */
 void aeron_subscription_for_each_image(
     aeron_subscription_t *subscription, void (*handler)(aeron_image_t *image, void *clientd), void *clientd);

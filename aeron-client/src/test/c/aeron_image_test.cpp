@@ -508,6 +508,8 @@ TEST_F(ImageTest, shouldPollOneFragmentToControlledFragmentHandlerOnBreak)
     aeron_image_constants_t image_constants;
     aeron_image_constants(m_image, &image_constants);
 
+    EXPECT_EQ(image_constants.subscriber_position_id, SUBSCRIBER_POSITION_ID);
+
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {

@@ -647,27 +647,3 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableAndThenRejoin)
 
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
 }
-
-TEST_P(CSystemTest, shouldAddMdsSubscription)
-{
-    aeron_async_add_publication_t *async_pub = nullptr;
-    aeron_async_add_subscription_t *async_sub = nullptr;
-
-    ASSERT_TRUE(connect());
-
-    ASSERT_EQ(aeron_async_add_publication(&async_pub, m_aeron, std::get<0>(GetParam()), STREAM_ID), 0);
-
-    aeron_publication_t *publication = awaitPublicationOrError(async_pub);
-    ASSERT_TRUE(publication) << aeron_errmsg();
-
-    ASSERT_EQ(aeron_async_add_subscription(
-        &async_sub, m_aeron, std::get<0>(GetParam()), STREAM_ID, nullptr, nullptr, nullptr, nullptr), 0);
-
-    aeron_subscription_t *subscription = awaitSubscriptionOrError(async_sub);
-    ASSERT_TRUE(subscription) << aeron_errmsg();
-
-    awaitConnected(subscription);
-
-    EXPECT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
-    EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
-}

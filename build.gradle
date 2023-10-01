@@ -13,6 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+buildscript {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.ow2.asm:asm:9.6'
+        classpath 'org.ow2.asm:asm-commons:9.6'
+    }
+}
 
 plugins {
     id 'java-library'

@@ -413,9 +413,9 @@ int aeron_counters_reader_counter_type_id(
     }
 
     aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)(
-        counters_reader->metadata + AERON_COUNTER_METADATA_OFFSET(counter_id) + AERON_COUNTER_TYPE_ID_OFFSET);
+        counters_reader->metadata + AERON_COUNTER_METADATA_OFFSET(counter_id));
 
-    AERON_GET_VOLATILE(*type_id, metadata->state);
+    AERON_GET_VOLATILE(*type_id, metadata->type_id);
 
     return 0;
 }

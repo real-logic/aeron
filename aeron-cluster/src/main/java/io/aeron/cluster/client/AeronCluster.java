@@ -1747,8 +1747,31 @@ public final class AeronCluster implements AutoCloseable
 
         private void step(final int newStep)
         {
-            //System.out.println("AeronCluster.AsyncConnect " + step + " -> " + newStep);
+            //System.out.println("AeronCluster.AsyncConnect " + stepName(step) + " -> " + stepName(newStep));
             step = newStep;
+        }
+
+        /**
+         * Get the String representation of a step in the connect process.
+         *
+         * @param step to get the string representation for.
+         * @return the String representation of a step in the connect process.
+         * @see #step()
+         */
+        public static String stepName(final int step)
+        {
+            switch (step)
+            {
+                case -1: return "CREATE_EGRESS_SUBSCRIPTION";
+                case 0: return "CREATE_INGRESS_PUBLICATIONS";
+                case 1: return "AWAIT_PUBLICATION_CONNECTED";
+                case 2: return "SEND_MESSAGE";
+                case 3: return "POLL_RESPONSE";
+                case 4: return "CONCLUDE_CONNECT";
+                case 5: return "DONE";
+
+                default: return "<unknown>";
+            }
         }
 
         /**
@@ -1764,7 +1787,7 @@ public final class AeronCluster implements AutoCloseable
             switch (step)
             {
                 case -1:
-                    createSubscription();
+                    createEgressSubscription();
                     break;
 
                 case 0:
@@ -1786,12 +1809,7 @@ public final class AeronCluster implements AutoCloseable
 
             if (4 == step)
             {
-                aeronCluster = newInstance();
-                ingressPublication = null;
-                memberByIdMap.remove(leaderMemberId);
-                CloseHelper.closeAll(memberByIdMap.values());
-
-                step(5);
+                aeronCluster = concludeConnect();
             }
 
             return aeronCluster;
@@ -1805,7 +1823,7 @@ public final class AeronCluster implements AutoCloseable
                 final String endpointPort =
                     null != egressSubscription ? egressSubscription.tryResolveChannelEndpointPort() : "<unknown>";
                 final TimeoutException ex = new TimeoutException(
-                    "cluster connect timeout: step=" + step +
+                    "cluster connect timeout: step=" + stepName(step) +
                     " messageTimeout=" + ctx.messageTimeoutNs() + "ns" +
                     " ingressChannel=" + ctx.ingressChannel() +
                     " ingressEndpoints=" + ctx.ingressEndpoints() +
@@ -1830,7 +1848,7 @@ public final class AeronCluster implements AutoCloseable
             }
         }
 
-        private void createSubscription()
+        private void createEgressSubscription()
         {
             if (NULL_VALUE == egressRegistrationId)
             {
@@ -2060,9 +2078,9 @@ public final class AeronCluster implements AutoCloseable
             step(1);
         }
 
-        private AeronCluster newInstance()
+        private AeronCluster concludeConnect()
         {
-            return new AeronCluster(
+            final AeronCluster aeronCluster = new AeronCluster(
                 ctx,
                 messageHeaderEncoder,
                 ingressPublication,
@@ -2072,6 +2090,14 @@ public final class AeronCluster implements AutoCloseable
                 clusterSessionId,
                 leadershipTermId,
                 leaderMemberId);
+
+            ingressPublication = null;
+            memberByIdMap.remove(leaderMemberId);
+            CloseHelper.closeAll(memberByIdMap.values());
+
+            step(5);
+
+            return aeronCluster;
         }
     }
 

@@ -57,6 +57,7 @@ static aeron_system_counter_t system_counters[] =
         { "Receiver work cycle exceeded threshold count", AERON_SYSTEM_COUNTER_RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED },
         { "NameResolver max time in ns", AERON_SYSTEM_COUNTER_NAME_RESOLVER_MAX_TIME },
         { "NameResolver exceeded threshold count", AERON_SYSTEM_COUNTER_NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED },
+        { "Aeron software: version=" AERON_VERSION_TXT, AERON_SYSTEM_COUNTER_AERON_VERSION },
     };
 
 static size_t num_system_counters = sizeof(system_counters) / sizeof(aeron_system_counter_t);
@@ -83,7 +84,7 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
         return -1;
     }
 
-    for (int32_t i = 0; i < (int32_t)num_system_counters; i++)
+    for (size_t i = 0; i < num_system_counters; i++)
     {
         if ((counters->counter_ids[i] = aeron_counters_manager_allocate(
              manager,

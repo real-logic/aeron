@@ -905,6 +905,10 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         goto error;
     }
 
+    aeron_counter_set_ordered(
+        aeron_system_counter_addr(context->system_counters, AERON_SYSTEM_COUNTER_AERON_VERSION),
+        aeron_semantic_version_compose(aeron_version_major(), aeron_version_minor(), aeron_version_patch()));
+
     if (aeron_driver_sender_init(
         &_driver->sender, context, &_driver->conductor.system_counters, &_driver->conductor.error_log) < 0)
     {

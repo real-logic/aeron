@@ -16,6 +16,7 @@
 package io.aeron.driver.status;
 
 import io.aeron.AeronCounters;
+import io.aeron.AeronVersion;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.status.*;
 
@@ -192,7 +193,12 @@ public enum SystemCounterDescriptor
     /**
      * Count of the number of times the time threshold has been exceeded by the NameResolver.
      */
-    NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED(33, "NameResolver exceeded threshold count");
+    NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED(33, "NameResolver exceeded threshold count"),
+
+    /**
+     * Count of the number of times the time threshold has been exceeded by the NameResolver.
+     */
+    AERON_VERSION(34, "Aeron software: version=" + AeronVersion.VERSION);
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

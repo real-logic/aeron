@@ -46,7 +46,7 @@ class ErrorHandlerTest
     private final MediaDriver.Context context = new MediaDriver.Context();
     {
         context
-            .errorHandler(ignore -> {})
+            .errorHandler((ignore) -> {})
             .dirDeleteOnStart(true)
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
@@ -61,7 +61,7 @@ class ErrorHandlerTest
     {
         driver = TestMediaDriver.launch(context, watcher);
         watcher.dataCollector().add(driver.context().aeronDirectory());
-        watcher.ignoreErrorsMatching(s -> true);
+        watcher.ignoreErrorsMatching((s) -> true);
 
         aeron = Aeron.connect();
     }

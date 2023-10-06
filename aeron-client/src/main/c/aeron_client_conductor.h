@@ -23,6 +23,7 @@
 #include "command/aeron_control_protocol.h"
 #include "aeronc.h"
 #include "concurrent/aeron_counters_manager.h"
+#include "collections/aeron_array_to_ptr_hash_map.h"
 #include "collections/aeron_int64_to_ptr_hash_map.h"
 
 #define AERON_CLIENT_COMMAND_QUEUE_FAIL_THRESHOLD (10)
@@ -158,7 +159,7 @@ typedef struct aeron_client_conductor_stct
 
     aeron_int64_to_ptr_hash_map_t log_buffer_by_id_map;
     aeron_int64_to_ptr_hash_map_t resource_by_id_map;
-    aeron_int64_to_ptr_hash_map_t image_by_id_map;
+    aeron_array_to_ptr_hash_map_t image_by_key_map;
 
     struct available_counter_handlers_stct
     {

@@ -20,8 +20,12 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.codecs.AdminRequestDecoder;
+import io.aeron.cluster.codecs.AdminRequestType;
 import io.aeron.cluster.codecs.BackupQueryDecoder;
+import io.aeron.cluster.codecs.HeartbeatRequestDecoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
+import io.aeron.cluster.codecs.StandbySnapshotDecoder;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
 import io.aeron.driver.DefaultNameResolver;
@@ -3604,25 +3608,25 @@ public final class ConsensusModule implements AutoCloseable
          *         <tr>
          *             <td>Admin requests made through the client API</td>
          *             <td>{@link MessageHeaderDecoder#SCHEMA_ID}</td>
-         *             <td>{@link io.aeron.cluster.codecs.AdminRequestDecoder#TEMPLATE_ID}</td>
-         *             <td>{@link io.aeron.cluster.codecs.AdminRequestType#SNAPSHOT}</td>
+         *             <td>{@link AdminRequestDecoder#TEMPLATE_ID}</td>
+         *             <td>{@link AdminRequestType#SNAPSHOT}</td>
          *         </tr>
          *         <tr>
          *             <td>Backup queries from Cluster Backup &amp; Standby</td>
          *             <td></td>
-         *             <td>{@link io.aeron.cluster.codecs.BackupQueryDecoder#TEMPLATE_ID}</td>
+         *             <td>{@link BackupQueryDecoder#TEMPLATE_ID}</td>
          *             <td><code>(null)</code></td>
          *         </tr>
          *         <tr>
          *             <td>Heartbeat requests from Cluster Standby</td>
          *             <td></td>
-         *             <td>{@link io.aeron.cluster.codecs.HeartbeatRequestDecoder#TEMPLATE_ID}</td>
+         *             <td>{@link HeartbeatRequestDecoder#TEMPLATE_ID}</td>
          *             <td><code>(null)</code></td>
          *         </tr>
          *         <tr>
          *             <td>Standby snapshot notifications from Cluster Standby</td>
          *             <td></td>
-         *             <td>{@link io.aeron.cluster.codecs.BackupQueryDecoder#TEMPLATE_ID}</td>
+         *             <td>{@link StandbySnapshotDecoder#TEMPLATE_ID}</td>
          *             <td><code>(null)</code></td>
          *         </tr>
          *     </tbody>

@@ -16,7 +16,6 @@
 package io.aeron.driver;
 
 import io.aeron.Aeron;
-import io.aeron.AeronVersion;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.FileStoreLogFactory;
@@ -3900,7 +3899,7 @@ public final class MediaDriver implements AutoCloseable
             }
 
             final int aeronVersion = SemanticVersion.compose(
-                AeronVersion.MAJOR_VERSION, AeronVersion.MINOR_VERSION, AeronVersion.PATCH_VERSION);
+                MediaDriverVersion.MAJOR_VERSION, MediaDriverVersion.MINOR_VERSION, MediaDriverVersion.PATCH_VERSION);
             systemCounters.get(AERON_VERSION).set(aeronVersion);
         }
 

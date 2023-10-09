@@ -365,20 +365,22 @@ project(':aeron-client') {
     }
 
     jar {
-        bnd """
-            Automatic-Module-Name:  io.aeron.client
-            Bundle-Name:            io.aeron.client
-            Bundle-SymbolicName:    io.aeron.client
-            Implementation-Title:   Aeron
-            Implementation-Vendor:  Real Logic Limited
-            Implementation-Version: ${aeronVersion}
-
-            -exportcontents: io.aeron, io.aeron.*
-
-            # Suppress headers that reduce reproducibility.
-            -reproducible: true
-            -noextraheaders: true
-        """
+        bundle {
+            bnd """
+                Automatic-Module-Name:  io.aeron.client
+                Bundle-Name:            io.aeron.client
+                Bundle-SymbolicName:    io.aeron.client
+                Implementation-Title:   Aeron
+                Implementation-Vendor:  Real Logic Limited
+                Implementation-Version: ${aeronVersion}
+    
+                -exportcontents: io.aeron, io.aeron.*
+    
+                # Suppress headers that reduce reproducibility.
+                -reproducible: true
+                -noextraheaders: true
+            """
+        }
     }
 
     java {
@@ -426,20 +428,22 @@ project(':aeron-driver') {
     }
 
     jar {
-        bnd """
-            Automatic-Module-Name:  io.aeron.driver
-            Bundle-Name:            io.aeron.driver
-            Bundle-SymbolicName:    io.aeron.driver
-            Implementation-Title:   Aeron
-            Implementation-Vendor:  Real Logic Limited
-            Implementation-Version: ${aeronVersion}
-
-            -exportcontents: io.aeron.driver, io.aeron.driver.*
-
-            # Suppress headers that reduce reproducibility.
-            -reproducible: true
-            -noextraheaders: true
-        """
+        bundle {
+            bnd """
+                Automatic-Module-Name:  io.aeron.driver
+                Bundle-Name:            io.aeron.driver
+                Bundle-SymbolicName:    io.aeron.driver
+                Implementation-Title:   Aeron
+                Implementation-Vendor:  Real Logic Limited
+                Implementation-Version: ${aeronVersion}
+    
+                -exportcontents: io.aeron.driver, io.aeron.driver.*
+    
+                # Suppress headers that reduce reproducibility.
+                -reproducible: true
+                -noextraheaders: true
+            """
+        }
     }
 
     jar.finalizedBy assembleDist
@@ -570,20 +574,22 @@ project(':aeron-archive') {
     jar {
         from sourceSets.generated.output
 
-        bnd """
-            Automatic-Module-Name:  io.aeron.archive
-            Bundle-Name:            io.aeron.archive
-            Bundle-SymbolicName:    io.aeron.archive
-            Implementation-Title:   Aeron
-            Implementation-Vendor:  Real Logic Limited
-            Implementation-Version: ${aeronVersion}
-
-            -exportcontents: io.aeron.archive, io.aeron.archive.*
-
-            # Suppress headers that reduce reproducibility.
-            -reproducible: true
-            -noextraheaders: true
-        """
+        bundle {
+            bnd """
+                Automatic-Module-Name:  io.aeron.archive
+                Bundle-Name:            io.aeron.archive
+                Bundle-SymbolicName:    io.aeron.archive
+                Implementation-Title:   Aeron
+                Implementation-Vendor:  Real Logic Limited
+                Implementation-Version: ${aeronVersion}
+    
+                -exportcontents: io.aeron.archive, io.aeron.archive.*
+    
+                # Suppress headers that reduce reproducibility.
+                -reproducible: true
+                -noextraheaders: true
+            """
+        }
     }
 
     tasks.register('sourcesJar', Jar) {
@@ -681,20 +687,22 @@ project(':aeron-cluster') {
     jar {
         from sourceSets.generated.output
 
-        bnd """
-            Automatic-Module-Name:  io.aeron.cluster
-            Bundle-Name:            io.aeron.cluster
-            Bundle-SymbolicName:    io.aeron.cluster
-            Implementation-Title:   Aeron
-            Implementation-Vendor:  Real Logic Limited
-            Implementation-Version: ${aeronVersion}
-
-            -exportcontents: io.aeron.cluster, io.aeron.cluster.*
-
-            # Suppress headers that reduce reproducibility.
-            -reproducible: true
-            -noextraheaders: true
-        """
+        bundle {
+            bnd """
+                Automatic-Module-Name:  io.aeron.cluster
+                Bundle-Name:            io.aeron.cluster
+                Bundle-SymbolicName:    io.aeron.cluster
+                Implementation-Title:   Aeron
+                Implementation-Vendor:  Real Logic Limited
+                Implementation-Version: ${aeronVersion}
+    
+                -exportcontents: io.aeron.cluster, io.aeron.cluster.*
+    
+                # Suppress headers that reduce reproducibility.
+                -reproducible: true
+                -noextraheaders: true
+            """
+        }
     }
 
     tasks.register('sourcesJar', Jar) {

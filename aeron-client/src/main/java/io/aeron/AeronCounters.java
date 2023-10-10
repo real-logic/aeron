@@ -33,8 +33,6 @@ import org.agrona.concurrent.status.CountersReader;
 public final class AeronCounters
 {
     // Client/driver counters
-    private static final int MAX_COMMIT_SHA_LENGTH = 8;
-
     /**
      * System-wide counters for monitoring. These are separate from counters used for position tracking on streams.
      */
@@ -448,13 +446,11 @@ public final class AeronCounters
      * Format version information to dislay purposes.
      *
      * @param fullVersion of the component.
-     * @param commitHashCode Git commit SHA.
+     * @param commitHash Git commit SHA.
      * @return formatted String.
      */
-    public static String formatVersionInfo(final String fullVersion, final String commitHashCode)
+    public static String formatVersionInfo(final String fullVersion, final String commitHash)
     {
-        final String hash = commitHashCode.length() <= MAX_COMMIT_SHA_LENGTH ? commitHashCode :
-            commitHashCode.substring(0, MAX_COMMIT_SHA_LENGTH);
-        return "version=" + fullVersion + " commit=" + hash;
+        return "version=" + fullVersion + " commit=" + commitHash;
     }
 }

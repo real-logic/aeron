@@ -104,7 +104,8 @@ class AeronCountersTest
 
     @ParameterizedTest
     @CsvSource({
-        "1.42.1, 8165495befc07e997a7f2f7743beab9d3846b0a5, version=1.42.1 commit=8165495b",
+        "1.42.1, 8165495befc07e997a7f2f7743beab9d3846b0a5, version=1.42.1 " +
+            "commit=8165495befc07e997a7f2f7743beab9d3846b0a5",
         "1.43.0-SNAPSHOT, abc, version=1.43.0-SNAPSHOT commit=abc",
         "NIL, 12345678, version=NIL commit=12345678" })
     void shouldFormatVersionInfo(final String fullVersion, final String commitHash, final String expected)
@@ -114,7 +115,7 @@ class AeronCountersTest
 
     @ParameterizedTest
     @CsvSource({
-        "xyz, 1234567890, version=xyz commit=12345678",
+        "xyz, 1234567890, version=xyz commit=1234567890",
         "1.43.0-SNAPSHOT, abc, version=1.43.0-SNAPSHOT commit=abc" })
     void shouldAppendVersionInfo(final String fullVersion, final String commitHash, final String formatted)
     {

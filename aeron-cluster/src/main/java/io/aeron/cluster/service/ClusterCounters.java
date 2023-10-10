@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCounters;
 import io.aeron.Counter;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
@@ -38,24 +39,30 @@ public final class ClusterCounters
      * Allocate a counter to represent component state within a cluster.
      *
      * @param aeron     to allocate the counter.
-     * @param buffer    temporary storage to create label and metadata.
+     * @param tempBuffer    temporary storage to create label and metadata.
      * @param name      of the counter for the label.
      * @param typeId    for the counter.
      * @param clusterId to which the allocated counter belongs.
      * @return the {@link Counter} for the commit position.
      */
     public static Counter allocate(
-        final Aeron aeron, final MutableDirectBuffer buffer, final String name, final int typeId, final int clusterId)
+        final Aeron aeron,
+        final MutableDirectBuffer tempBuffer,
+        final String name,
+        final int typeId,
+        final int clusterId)
     {
         int index = 0;
-        buffer.putInt(index, clusterId);
+        tempBuffer.putInt(index, clusterId);
         index += SIZE_OF_INT;
+        final int keyLength = index;
 
-        index += buffer.putStringWithoutLengthAscii(index, name);
-        index += buffer.putStringWithoutLengthAscii(index, " - clusterId=");
-        index += buffer.putIntAscii(index, clusterId);
+        index += tempBuffer.putStringWithoutLengthAscii(index, name);
+        index += tempBuffer.putStringWithoutLengthAscii(index, " - clusterId=");
+        index += tempBuffer.putIntAscii(index, clusterId);
+        index += AeronCounters.appendVersionInfo(tempBuffer, index, ClusterVersion.VERSION, ClusterVersion.GIT_SHA);
 
-        return aeron.addCounter(typeId, buffer, 0, SIZE_OF_INT, buffer, SIZE_OF_INT, index - SIZE_OF_INT);
+        return aeron.addCounter(typeId, tempBuffer, 0, keyLength, tempBuffer, keyLength, index - keyLength);
     }
 
     /**
@@ -90,4 +97,42 @@ public final class ClusterCounters
 
         return Aeron.NULL_VALUE;
     }
+
+
+    /**
+     * Allocate a counter to represent component state within a cluster.
+     *
+     * @param aeron     to allocate the counter.
+     * @param tempBuffer    temporary storage to create label and metadata.
+     * @param name      of the counter for the label.
+     * @param typeId    for the counter.
+     * @param clusterId to which the allocated counter belongs.
+     * @param serviceId to which the allocated counter belongs.
+     * @return the {@link Counter} for the commit position.
+     */
+    public static Counter allocateServiceCounter(
+        final Aeron aeron,
+        final MutableDirectBuffer tempBuffer,
+        final String name,
+        final int typeId,
+        final int clusterId,
+        final int serviceId)
+    {
+        int index = 0;
+        tempBuffer.putInt(index, clusterId);
+        index += SIZE_OF_INT;
+        tempBuffer.putInt(index, serviceId);
+        index += SIZE_OF_INT;
+        final int keyLength = index;
+
+        index += tempBuffer.putStringWithoutLengthAscii(index, name);
+        index += tempBuffer.putStringWithoutLengthAscii(index, " - clusterId=");
+        index += tempBuffer.putIntAscii(index, clusterId);
+        index += tempBuffer.putStringWithoutLengthAscii(index, " serviceId=");
+        index += tempBuffer.putIntAscii(index, serviceId);
+        index += AeronCounters.appendVersionInfo(tempBuffer, index, ClusterVersion.VERSION, ClusterVersion.GIT_SHA);
+
+        return aeron.addCounter(typeId, tempBuffer, 0, keyLength, tempBuffer, keyLength, index - keyLength);
+    }
+
 }

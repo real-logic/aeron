@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -52,7 +53,9 @@ class ClusteredServiceContainerContextTest
         when(aeronContext.aeronDirectoryName()).thenReturn("funny");
         when(aeronContext.subscriberErrorHandler()).thenReturn(errorHandler);
         final Aeron aeron = mock(Aeron.class);
-        when(aeron.addCounter(anyInt(), any(String.class))).thenAnswer(invocation -> mock(Counter.class));
+        when(aeron.addCounter(
+            anyInt(), any(DirectBuffer.class), anyInt(), anyInt(), any(DirectBuffer.class), anyInt(), anyInt()))
+            .thenAnswer(invocation -> mock(Counter.class));
         when(aeron.context()).thenReturn(aeronContext);
         final AtomicCounter errorCounter = mock(AtomicCounter.class);
         final ClusteredService clusteredService = mock(ClusteredService.class);

@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.status.ChannelEndpointStatus;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 /**
@@ -32,6 +33,7 @@ import org.agrona.concurrent.status.CountersReader;
 public final class AeronCounters
 {
     // Client/driver counters
+    private static final int MAX_COMMIT_SHA_LENGTH = 8;
 
     /**
      * System-wide counters for monitoring. These are separate from counters used for position tracking on streams.
@@ -386,11 +388,11 @@ public final class AeronCounters
      * Checks that the counter specified by {@code counterId} has the counterTypeId that matches the specified value.
      * If not it will throw a {@link io.aeron.exceptions.ConfigurationException}.
      *
-     * @param countersReader to look up the counter type id.
-     * @param counterId counter to reference.
+     * @param countersReader        to look up the counter type id.
+     * @param counterId             counter to reference.
      * @param expectedCounterTypeId the expected type id for the counter.
      * @throws io.aeron.exceptions.ConfigurationException if the type id does not match.
-     * @throws IllegalArgumentException if the counterId is not valid.
+     * @throws IllegalArgumentException                   if the counterId is not valid.
      */
     public static void validateCounterTypeId(
         final CountersReader countersReader,
@@ -409,11 +411,11 @@ public final class AeronCounters
     /**
      * Convenience overload for {@link AeronCounters#validateCounterTypeId(CountersReader, int, int)}
      *
-     * @param aeron to resolve a counters' reader.
-     * @param counter to be checked for the appropriate counterTypeId.
+     * @param aeron                 to resolve a counters' reader.
+     * @param counter               to be checked for the appropriate counterTypeId.
      * @param expectedCounterTypeId the expected type id for the counter.
      * @throws io.aeron.exceptions.ConfigurationException if the type id does not match.
-     * @throws IllegalArgumentException if the counterId is not valid.
+     * @throws IllegalArgumentException                   if the counterId is not valid.
      * @see AeronCounters#validateCounterTypeId(CountersReader, int, int)
      */
     public static void validateCounterTypeId(
@@ -422,5 +424,37 @@ public final class AeronCounters
         final int expectedCounterTypeId)
     {
         validateCounterTypeId(aeron.countersReader(), counter.id(), expectedCounterTypeId);
+    }
+
+    /**
+     * Append {@code archiveId} at the end of the counter label.
+     *
+     * @param tempBuffer     to append label to.
+     * @param offset         at which current label data ends.
+     * @param fullVersion    of the component.
+     * @param commitHashCode Git commit SHA.
+     * @return length of the suffix appended.
+     */
+    public static int appendVersionInfo(
+        final MutableDirectBuffer tempBuffer, final int offset, final String fullVersion, final String commitHashCode)
+    {
+        int length = tempBuffer.putStringWithoutLengthAscii(offset, " ");
+        length += tempBuffer.putStringWithoutLengthAscii(
+            offset + length, formatVersionInfo(fullVersion, commitHashCode));
+        return length;
+    }
+
+    /**
+     * Format version information to dislay purposes.
+     *
+     * @param fullVersion of the component.
+     * @param commitHashCode Git commit SHA.
+     * @return formatted String.
+     */
+    public static String formatVersionInfo(final String fullVersion, final String commitHashCode)
+    {
+        final String hash = commitHashCode.length() <= MAX_COMMIT_SHA_LENGTH ? commitHashCode :
+            commitHashCode.substring(0, MAX_COMMIT_SHA_LENGTH);
+        return "version=" + fullVersion + " commit=" + hash;
     }
 }

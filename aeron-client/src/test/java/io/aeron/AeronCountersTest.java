@@ -15,9 +15,12 @@
  */
 package io.aeron;
 
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -97,5 +100,32 @@ class AeronCountersTest
             .max();
 
         System.out.println(maxValue);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "1.42.1, 8165495befc07e997a7f2f7743beab9d3846b0a5, version=1.42.1 commit=8165495b",
+        "1.43.0-SNAPSHOT, abc, version=1.43.0-SNAPSHOT commit=abc",
+        "NIL, 12345678, version=NIL commit=12345678" })
+    void shouldFormatVersionInfo(final String fullVersion, final String commitHash, final String expected)
+    {
+        assertEquals(expected, AeronCounters.formatVersionInfo(fullVersion, commitHash));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "xyz, 1234567890, version=xyz commit=12345678",
+        "1.43.0-SNAPSHOT, abc, version=1.43.0-SNAPSHOT commit=abc" })
+    void shouldAppendVersionInfo(final String fullVersion, final String commitHash, final String formatted)
+    {
+        final String expected = " " + formatted;
+        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(32);
+        final int offset = 5;
+        buffer.setMemory(0, buffer.capacity(), (byte)-1);
+
+        final int length = AeronCounters.appendVersionInfo(buffer, offset, fullVersion, commitHash);
+
+        assertEquals(expected.length(), length);
+        assertEquals(expected, buffer.getStringWithoutLengthAscii(offset, length));
     }
 }

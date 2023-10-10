@@ -795,10 +795,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 throw new ClusterException("Aeron client must use a RethrowingErrorHandler");
             }
 
+            final ExpandableArrayBuffer tempBuffer = new ExpandableArrayBuffer();
             if (null == errorCounter)
             {
-                final String label = "Cluster Container Errors - clusterId=" + clusterId + " serviceId=" + serviceId;
-                errorCounter = aeron.addCounter(CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID, label);
+                errorCounter = ClusterCounters.allocateServiceCounter(
+                    aeron,
+                    tempBuffer,
+                    "Cluster Container Errors",
+                    CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID,
+                    clusterId,
+                    serviceId);
             }
 
             if (null == countedErrorHandler)
@@ -813,12 +819,20 @@ public final class ClusteredServiceContainer implements AutoCloseable
             if (null == dutyCycleTracker)
             {
                 dutyCycleTracker = new DutyCycleStallTracker(
-                    aeron.addCounter(AeronCounters.CLUSTER_CLUSTERED_SERVICE_MAX_CYCLE_TIME_TYPE_ID,
-                        "Cluster container max cycle time in ns - clusterId=" + clusterId +
-                        " serviceId=" + serviceId),
-                    aeron.addCounter(AeronCounters.CLUSTER_CLUSTERED_SERVICE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
-                        "Cluster container work cycle time exceeded count: threshold=" + cycleThresholdNs +
-                        "ns - clusterId=" + clusterId + " serviceId=" + serviceId),
+                    ClusterCounters.allocateServiceCounter(
+                        aeron,
+                        tempBuffer,
+                        "Cluster container max cycle time in ns",
+                        AeronCounters.CLUSTER_CLUSTERED_SERVICE_MAX_CYCLE_TIME_TYPE_ID,
+                        clusterId,
+                        serviceId),
+                    ClusterCounters.allocateServiceCounter(
+                        aeron,
+                        tempBuffer,
+                        "Cluster container work cycle time exceeded count: threshold=" + cycleThresholdNs,
+                        AeronCounters.CLUSTER_CLUSTERED_SERVICE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
+                        clusterId,
+                        serviceId),
                     cycleThresholdNs);
             }
 

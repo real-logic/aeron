@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCounters;
 import io.aeron.Counter;
 import io.aeron.test.Tests;
 import org.agrona.MutableDirectBuffer;
@@ -42,9 +43,10 @@ class ArchiveCountersTest
         final int typeId = 999;
         final String name = "<test counter>";
         final long archiveId = -1832178932131546L;
-        final String expectedLabel = name + " - archiveId=" + archiveId;
+        final String expectedLabel = name + " - archiveId=" + archiveId + " " +
+            AeronCounters.formatVersionInfo(ArchiveVersion.VERSION, ArchiveVersion.GIT_SHA);
         final Aeron aeron = mock(Aeron.class);
-        final MutableDirectBuffer tempBuffer = new UnsafeBuffer(new byte[SIZE_OF_LONG + expectedLabel.length()]);
+        final MutableDirectBuffer tempBuffer = new UnsafeBuffer(new byte[100]);
         final Counter counter = mock(Counter.class);
         when(aeron.clientId()).thenReturn(archiveId);
         when(aeron.addCounter(typeId, tempBuffer, 0, SIZE_OF_LONG, tempBuffer, SIZE_OF_LONG, expectedLabel.length()))
@@ -58,8 +60,7 @@ class ArchiveCountersTest
         inOrder.verify(aeron).addCounter(anyInt(), any(), anyInt(), anyInt(), any(), anyInt(), anyInt());
         inOrder.verifyNoMoreInteractions();
         assertEquals(archiveId, tempBuffer.getLong(0));
-        assertEquals(expectedLabel,
-            tempBuffer.getStringWithoutLengthAscii(SIZE_OF_LONG, tempBuffer.capacity() - SIZE_OF_LONG));
+        assertEquals(expectedLabel, tempBuffer.getStringWithoutLengthAscii(SIZE_OF_LONG, expectedLabel.length()));
     }
 
     @ParameterizedTest

@@ -103,7 +103,7 @@ public enum SystemCounterDescriptor
     /**
      * Count of errors observed by the driver and an indication to read the distinct error log.
      */
-    ERRORS(15, "Errors"),
+    ERRORS(15, "Errors - " + AeronCounters.formatVersionInfo(MediaDriverVersion.VERSION, MediaDriverVersion.GIT_SHA)),
 
     /**
      * Count of socket send operation which resulted in less than the packet length being sent.
@@ -198,7 +198,8 @@ public enum SystemCounterDescriptor
     /**
      * Count of the number of times the time threshold has been exceeded by the NameResolver.
      */
-    AERON_VERSION(34, "Aeron software: version=" + MediaDriverVersion.VERSION);
+    AERON_VERSION(34, "Aeron software: " +
+        AeronCounters.formatVersionInfo(MediaDriverVersion.VERSION, MediaDriverVersion.GIT_SHA));
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

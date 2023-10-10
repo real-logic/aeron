@@ -1582,6 +1582,8 @@ public final class ConsensusModule implements AutoCloseable
                 recordingLog = new RecordingLog(clusterDir, true);
             }
 
+            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+
             if (null == aeron)
             {
                 ownsAeronClient = true;
@@ -1598,8 +1600,8 @@ public final class ConsensusModule implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    errorCounter = aeron.addCounter(
-                        CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID, "Cluster Errors - clusterId=" + clusterId);
+                    errorCounter = ClusterCounters.allocate(
+                        aeron, buffer, "Cluster Errors", CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID, clusterId);
                 }
             }
             else
@@ -1639,8 +1641,6 @@ public final class ConsensusModule implements AutoCloseable
                     aeron.context().errorHandler(countedErrorHandler);
                 }
             }
-
-            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
             if (null == moduleStateCounter)
             {

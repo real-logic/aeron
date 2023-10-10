@@ -100,7 +100,7 @@ if (NOT DEFINED CMAKE_C_EXTENSIONS)
 endif ()
 
 execute_process(
-    COMMAND git log -1 --format=%H
+    COMMAND git log -1 --format=%h --abbrev=10
     WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
     OUTPUT_VARIABLE AERON_VERSION_GITSHA
     OUTPUT_STRIP_TRAILING_WHITESPACE

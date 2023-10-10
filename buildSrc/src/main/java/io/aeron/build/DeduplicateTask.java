@@ -63,6 +63,7 @@ public class DeduplicateTask extends DefaultTask
      * @throws IOException if an error occurs during the process.
      */
     @TaskAction
+    @SuppressWarnings("NestedTryDepth")
     public void process() throws IOException
     {
         final File newFile = generateUnusedFileName(source, "new");

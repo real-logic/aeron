@@ -78,7 +78,7 @@ final class GithubUtil
         {
             final RevCommit commit = git.log().setMaxCount(1).call().iterator().next();
             final ObjectId commitId = commit.toObjectId();
-            return reader.abbreviate(commitId, 8).name();
+            return reader.abbreviate(commitId, 10).name();
         }
     }
 }

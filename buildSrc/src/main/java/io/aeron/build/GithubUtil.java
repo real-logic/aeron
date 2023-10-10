@@ -17,7 +17,10 @@ package io.aeron.build;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.URIish;
 
@@ -69,8 +72,13 @@ final class GithubUtil
 
     public static String currentGitHash(final String projectDir) throws IOException, GitAPIException
     {
-        final Repository repository = new FileRepositoryBuilder().findGitDir(new File(projectDir)).build();
-        final Git git = new Git(repository);
-        return git.log().setMaxCount(1).call().iterator().next().getName();
+        try (Repository repository = new FileRepositoryBuilder().findGitDir(new File(projectDir)).build();
+            ObjectReader reader = repository.newObjectReader();
+            Git git = new Git(repository))
+        {
+            final RevCommit commit = git.log().setMaxCount(1).call().iterator().next();
+            final ObjectId commitId = commit.toObjectId();
+            return reader.abbreviate(commitId, 8).name();
+        }
     }
 }

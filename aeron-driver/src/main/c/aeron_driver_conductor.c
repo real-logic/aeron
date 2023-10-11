@@ -3633,11 +3633,11 @@ int aeron_driver_conductor_on_add_spy_subscription(
     aeron_driver_conductor_t *conductor, aeron_subscription_command_t *command)
 {
     aeron_udp_channel_t *udp_channel = NULL;
-    const char *uri = (const char *)command + sizeof(aeron_subscription_command_t) + strlen(AERON_SPY_PREFIX);
+    const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_driver_uri_subscription_params_t params;
 
     if (aeron_udp_channel_parse(
-        command->channel_length - strlen(AERON_SPY_PREFIX), uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
+        command->channel_length - strlen(AERON_SPY_PREFIX), uri + strlen(AERON_SPY_PREFIX), &conductor->name_resolver, &udp_channel, false) < 0 ||
         aeron_driver_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
         AERON_APPEND_ERR("%s", "");

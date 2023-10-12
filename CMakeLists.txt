@@ -106,11 +106,22 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+execute_process(
+    COMMAND git diff-index --quiet HEAD --
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    RESULT_VARIABLE AERON_GIT_DIFF_INDEX_RESULT
+)
+
 add_definitions(-DAERON_VERSION_TXT="${AERON_VERSION_TXT}")
 add_definitions(-DAERON_VERSION_MAJOR=${aeron_VERSION_MAJOR})
 add_definitions(-DAERON_VERSION_MINOR=${aeron_VERSION_MINOR})
 add_definitions(-DAERON_VERSION_PATCH=${aeron_VERSION_PATCH})
-add_definitions(-DAERON_VERSION_GITSHA="${AERON_VERSION_GITSHA}")
+
+if (AERON_GIT_DIFF_INDEX_RESULT EQUAL 0)
+  add_definitions(-DAERON_VERSION_GITSHA="${AERON_VERSION_GITSHA}")
+else ()
+  add_definitions(-DAERON_VERSION_GITSHA="${AERON_VERSION_GITSHA}+guilty")
+endif ()
 
 # all UNIX-based platform compiler flags
 if (UNIX)

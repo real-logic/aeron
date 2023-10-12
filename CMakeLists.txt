@@ -112,16 +112,15 @@ execute_process(
     RESULT_VARIABLE AERON_GIT_DIFF_INDEX_RESULT
 )
 
+if (NOT AERON_GIT_DIFF_INDEX_RESULT EQUAL 0)
+    set(AERON_VERSION_GITSHA "${AERON_VERSION_GITSHA}+guilty")
+endif ()
+
 add_definitions(-DAERON_VERSION_TXT="${AERON_VERSION_TXT}")
 add_definitions(-DAERON_VERSION_MAJOR=${aeron_VERSION_MAJOR})
 add_definitions(-DAERON_VERSION_MINOR=${aeron_VERSION_MINOR})
 add_definitions(-DAERON_VERSION_PATCH=${aeron_VERSION_PATCH})
-
-if (AERON_GIT_DIFF_INDEX_RESULT EQUAL 0)
-  add_definitions(-DAERON_VERSION_GITSHA="${AERON_VERSION_GITSHA}")
-else ()
-  add_definitions(-DAERON_VERSION_GITSHA="${AERON_VERSION_GITSHA}+guilty")
-endif ()
+add_definitions(-DAERON_VERSION_GITSHA="${AERON_VERSION_GITSHA}")
 
 # all UNIX-based platform compiler flags
 if (UNIX)

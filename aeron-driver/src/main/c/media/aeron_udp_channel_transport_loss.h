@@ -28,7 +28,7 @@ typedef struct aeron_udp_channel_interceptor_loss_params_stct
 aeron_udp_channel_interceptor_loss_params_t;
 
 aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_loss_load(
-    const aeron_udp_channel_interceptor_bindings_t *delegate_bindings);
+    aeron_udp_channel_interceptor_bindings_t *delegate_bindings);
 
 void aeron_udp_channel_interceptor_loss_incoming(
     void *interceptor_state,

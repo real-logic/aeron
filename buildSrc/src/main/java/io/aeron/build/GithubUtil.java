@@ -16,6 +16,7 @@
 package io.aeron.build;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -78,7 +79,11 @@ final class GithubUtil
         {
             final RevCommit commit = git.log().setMaxCount(1).call().iterator().next();
             final ObjectId commitId = commit.toObjectId();
-            return reader.abbreviate(commitId, 10).name();
+            final String commitSha = reader.abbreviate(commitId, 10).name();
+
+            final Status status = git.status().call();
+
+            return status.isClean() ? commitSha : commitSha + "+guilty";
         }
     }
 }

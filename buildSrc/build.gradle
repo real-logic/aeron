@@ -4,7 +4,7 @@ repositories {
 
 def asciidoctorjVersion = '2.5.8'
 def jgitVersion = '5.13.1.202206130422-r'
-def asmVersion = '9.5'
+def asmVersion = '9.6'
 
 configurations.configureEach {
     resolutionStrategy.eachDependency { details ->

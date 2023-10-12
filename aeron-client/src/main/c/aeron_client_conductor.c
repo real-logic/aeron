@@ -73,10 +73,10 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
         return -1;
     }
 
-    if (aeron_int64_to_ptr_hash_map_init(
-        &conductor->image_by_id_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    if (aeron_array_to_ptr_hash_map_init(
+        &conductor->image_by_key_map, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        AERON_APPEND_ERR("%s", "Unable to init image_by_id_map");
+        AERON_APPEND_ERR("%s", "Unable to init image_by_key_map");
         return -1;
     }
 
@@ -595,6 +595,11 @@ void aeron_client_conductor_delete_log_buffer(void *clientd, int64_t key, void *
     aeron_log_buffer_delete((aeron_log_buffer_t *)value);
 }
 
+void aeron_client_conductor_delete_image(void *clientd, const uint8_t *key, size_t key_len, void *value)
+{
+    aeron_image_delete((aeron_image_t *)value);
+}
+
 void aeron_client_conductor_delete_resource(void *clientd, int64_t key, void *value)
 {
     aeron_client_command_base_t *base = (aeron_client_command_base_t *)value;
@@ -643,8 +648,8 @@ void aeron_client_conductor_on_close(aeron_client_conductor_t *conductor)
         &conductor->log_buffer_by_id_map, aeron_client_conductor_delete_log_buffer, NULL);
     aeron_int64_to_ptr_hash_map_for_each(
         &conductor->resource_by_id_map, aeron_client_conductor_delete_resource, NULL);
-    aeron_int64_to_ptr_hash_map_for_each(
-        &conductor->image_by_id_map, aeron_client_conductor_delete_resource, NULL);
+    aeron_array_to_ptr_hash_map_for_each(
+        &conductor->image_by_key_map, aeron_client_conductor_delete_image, NULL);
 
     for (size_t i = 0, length = conductor->lingering_resources.length; i < length; i++)
     {
@@ -653,12 +658,17 @@ void aeron_client_conductor_on_close(aeron_client_conductor_t *conductor)
 
     aeron_int64_to_ptr_hash_map_delete(&conductor->log_buffer_by_id_map);
     aeron_int64_to_ptr_hash_map_delete(&conductor->resource_by_id_map);
-    aeron_int64_to_ptr_hash_map_delete(&conductor->image_by_id_map);
+    aeron_array_to_ptr_hash_map_delete(&conductor->image_by_key_map);
     aeron_free(conductor->registering_resources.array);
     aeron_free(conductor->lingering_resources.array);
     aeron_free(conductor->available_counter_handlers.array);
     aeron_free(conductor->unavailable_counter_handlers.array);
     aeron_free(conductor->close_handlers.array);
+}
+
+void aeron_client_conductor_force_close_image(void *clientd, const uint8_t *key, size_t key_len, void *value)
+{
+    aeron_image_force_close((aeron_image_t *)value);
 }
 
 void aeron_client_conductor_force_close_resource(void *clientd, int64_t key, void *value)
@@ -701,8 +711,8 @@ void aeron_client_conductor_force_close_resources(aeron_client_conductor_t *cond
      */
     AERON_PUT_VOLATILE(conductor->is_closed, true);
 
-    aeron_int64_to_ptr_hash_map_for_each(
-        &conductor->image_by_id_map, aeron_client_conductor_force_close_resource, NULL);
+    aeron_array_to_ptr_hash_map_for_each(
+        &conductor->image_by_key_map, aeron_client_conductor_force_close_image, NULL);
     aeron_int64_to_ptr_hash_map_for_each(
         &conductor->resource_by_id_map, aeron_client_conductor_force_close_resource, NULL);
 }
@@ -725,7 +735,7 @@ int aeron_client_conductor_linger_image(aeron_client_conductor_t *conductor, aer
         &conductor->lingering_resources.array[conductor->lingering_resources.length++];
     resource->type = AERON_CLIENT_TYPE_IMAGE;
     resource->time_of_last_state_change_ns = conductor->nano_clock();
-    resource->registration_id = image->correlation_id;
+    resource->registration_id = image->key.correlation_id;
     resource->resource.image = image;
     image->is_lingering = true;
 
@@ -745,7 +755,10 @@ int aeron_client_conductor_linger_or_delete_all_images(
         aeron_image_decr_refcnt(image);
         refcnt = aeron_image_refcnt_volatile(image);
 
-        aeron_int64_to_ptr_hash_map_remove(&conductor->image_by_id_map, image->correlation_id);
+        aeron_array_to_ptr_hash_map_remove(
+            &conductor->image_by_key_map,
+            (const uint8_t *)&image->key,
+            sizeof(aeron_image_key_t));
 
         if (refcnt <= 0)
         {
@@ -2208,9 +2221,16 @@ int aeron_client_conductor_on_available_image(
             return -1;
         }
 
-        if (aeron_int64_to_ptr_hash_map_put(&conductor->image_by_id_map, response->correlation_id, image) < 0)
+        if (aeron_array_to_ptr_hash_map_put(
+            &conductor->image_by_key_map,
+            (const uint8_t *)&image->key,
+            sizeof(aeron_image_key_t),
+            image) < 0)
         {
-            AERON_APPEND_ERR("Unable to put into image_by_id_map, correlation_id: %" PRId64, response->correlation_id);
+            AERON_APPEND_ERR(
+                "Unable to put into image_by_key_map, correlation_id: %" PRId64 ", subscription_registration_id: %" PRId64,
+                response->correlation_id,
+                response->subscriber_registration_id);
             return -1;
         }
 
@@ -2237,8 +2257,16 @@ int aeron_client_conductor_on_unavailable_image(aeron_client_conductor_t *conduc
 
     if (NULL != subscription)
     {
-        aeron_image_t *image = aeron_int64_to_ptr_hash_map_remove(
-            &conductor->image_by_id_map, response->correlation_id);
+        aeron_image_key_t key =
+            {
+                .correlation_id = response->correlation_id,
+                .subscription_registration_id = response->subscription_registration_id,
+            };
+
+        aeron_image_t *image = aeron_array_to_ptr_hash_map_remove(
+            &conductor->image_by_key_map,
+            (const uint8_t *)&key,
+            sizeof(aeron_image_key_t));
 
         if (NULL != image)
         {

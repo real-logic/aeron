@@ -99,7 +99,7 @@ public:
 
         if (aeron_image_create(
             &image,
-            nullptr,
+            m_subscription,
             m_conductor,
             log_buffer,
             SUBSCRIBER_POSITION_ID,

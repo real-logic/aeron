@@ -25,6 +25,7 @@
 
 extern "C"
 {
+#include "aeron_subscription.h"
 #include "aeron_image.h"
 }
 
@@ -43,10 +44,18 @@ using namespace aeron::test;
 class ImageTest : public testing::Test
 {
 public:
-    ImageTest() = default;
+    ImageTest() :
+        m_subscription(createSubscription())
+    {
+    }
 
     ~ImageTest() override
     {
+        if (nullptr != m_subscription)
+        {
+            aeron_subscription_delete(m_subscription);
+        }
+
         if (!m_filename.empty())
         {
             aeron_log_buffer_delete(m_image->log_buffer);
@@ -54,6 +63,29 @@ public:
 
             ::unlink(m_filename.c_str());
         }
+    }
+
+    static aeron_subscription_t *createSubscription()
+    {
+        aeron_subscription_t *subscription = nullptr;
+
+        if (aeron_subscription_create(
+            &subscription,
+            nullptr,
+            ::strdup(SUB_URI),
+            STREAM_ID,
+            26,
+            0,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr) < 0)
+        {
+            throw std::runtime_error("could not create subscription: " + std::string(aeron_errmsg()));
+        }
+
+        return subscription;
     }
 
     int64_t createImage()
@@ -71,7 +103,7 @@ public:
 
         if (aeron_image_create(
             &image,
-            nullptr,
+            m_subscription,
             nullptr,
             log_buffer,
             SUBSCRIBER_POSITION_ID,
@@ -220,6 +252,7 @@ protected:
     std::function<aeron_controlled_fragment_handler_action_t(const uint8_t *, size_t, aeron_header_t *)>
         m_controlled_handler = nullptr;
 
+    aeron_subscription_t *m_subscription = nullptr;
     aeron_image_t *m_image = nullptr;
     std::string m_filename;
 };

@@ -17,6 +17,7 @@
 #include <functional>
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #include "aeron_test_base.h"
 
@@ -54,6 +55,12 @@ static int64_t set_reserved_value(void *clientd, uint8_t *buffer, size_t frame_l
     return *(int64_t *)clientd;
 }
 
+static int64_t subscription_registration_id(aeron_subscription_t *subscription)
+{
+    aeron_subscription_constants_t constants;
+    aeron_subscription_constants(subscription, &constants);
+    return constants.registration_id;
+}
 
 TEST_P(CSystemTest, shouldSpinUpDriverAndConnectSuccessfully)
 {
@@ -646,4 +653,67 @@ TEST_P(CSystemTest, shouldAllowImageToGoUnavailableAndThenRejoin)
     createPublicationAndOffer();
 
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
+}
+
+TEST_P(CSystemTest, shouldAddMultipleSubscriptionsUsingSameImage)
+{
+    aeron_async_add_publication_t *async_pub = nullptr;
+    aeron_async_add_subscription_t *async_sub = nullptr;
+
+    ASSERT_TRUE(connect());
+
+    const char *uri = std::get<0>(GetParam());
+    bool isIpc = 0 == strncmp(AERON_IPC_CHANNEL, uri, sizeof(AERON_IPC_CHANNEL));
+    std::string pubUri = isIpc ? std::string(uri) : std::string(uri) + "|linger=0";
+
+    ASSERT_EQ(aeron_async_add_publication(&async_pub, m_aeron, pubUri.c_str(), STREAM_ID), 0);
+    aeron_publication_t *publication = awaitPublicationOrError(async_pub);
+    ASSERT_TRUE(publication) << aeron_errmsg();
+
+    std::vector<std::pair<int64_t, int64_t>> unavailable_images;
+    std::atomic<int64_t> unavailable_count(0);
+
+    m_onUnavailableImage = [&](aeron_subscription_t *sub, aeron_image_t *img)
+    {
+        int64_t sub_id = subscription_registration_id(sub);
+
+        aeron_image_constants_t img_constants;
+        aeron_image_constants(img, &img_constants);
+
+        int64_t img_sub_id = subscription_registration_id(img_constants.subscription);
+
+        unavailable_images.emplace_back(sub_id, img_sub_id);
+        unavailable_count.fetch_add(1, std::memory_order_release);
+    };
+
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async_sub, m_aeron, std::get<0>(GetParam()), STREAM_ID, nullptr, nullptr, onUnavailableImage, this), 0);
+    aeron_subscription_t *subscription1 = awaitSubscriptionOrError(async_sub);
+    ASSERT_TRUE(subscription1) << aeron_errmsg();
+
+    ASSERT_EQ(aeron_async_add_subscription(
+        &async_sub, m_aeron, std::get<0>(GetParam()), STREAM_ID, nullptr, nullptr, onUnavailableImage, this), 0);
+    aeron_subscription_t *subscription2 = awaitSubscriptionOrError(async_sub);
+    ASSERT_TRUE(subscription2) << aeron_errmsg();
+
+    awaitConnected(subscription1);
+    awaitConnected(subscription2);
+
+    EXPECT_EQ(aeron_publication_close(publication, nullptr, nullptr), 0);
+
+    int64_t start_time_ms = aeron_epoch_clock();
+    while (unavailable_count.load(std::memory_order_acquire) < 2)
+    {
+        if (aeron_epoch_clock() - start_time_ms > 10000)
+        {
+            throw std::runtime_error(std::string("timeout, count=").append(std::to_string(unavailable_count)));
+        }
+        std::this_thread::yield();
+    }
+
+    int64_t id1 = subscription_registration_id(subscription1);
+    int64_t id2 = subscription_registration_id(subscription2);
+    EXPECT_THAT(unavailable_images, testing::UnorderedElementsAre(
+        std::pair<int64_t, int64_t>(id1, id1),
+        std::pair<int64_t, int64_t>(id2, id2)));
 }

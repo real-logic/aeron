@@ -23,6 +23,13 @@
 #include "aeron_context.h"
 #include "aeron_client_conductor.h"
 
+typedef struct aeron_image_key_stct
+{
+    int64_t correlation_id;
+    int64_t subscription_registration_id;
+}
+aeron_image_key_t;
+
 typedef struct aeron_image_stct
 {
     aeron_client_command_base_t command_base;
@@ -35,7 +42,7 @@ typedef struct aeron_image_stct
 
     volatile int64_t *subscriber_position;
 
-    int64_t correlation_id;
+    aeron_image_key_t key;
     int64_t removal_change_number;
     int64_t join_position;
     int64_t final_position;

@@ -90,7 +90,8 @@ int aeron_image_create(
     _image->subscriber_position_id = subscriber_position_id;
 
     _image->conductor = conductor;
-    _image->correlation_id = correlation_id;
+    _image->key.correlation_id = correlation_id;
+    _image->key.subscription_registration_id = subscription->registration_id;
     _image->session_id = session_id;
     _image->removal_change_number = INT64_MAX;
     _image->final_position = 0;
@@ -143,7 +144,7 @@ int aeron_image_constants(aeron_image_t *image, aeron_image_constants_t *constan
 
     constants->subscription = image->subscription;
     constants->source_identity = image->source_identity;
-    constants->correlation_id = image->correlation_id;
+    constants->correlation_id = image->key.correlation_id;
     constants->join_position = image->join_position;
     constants->position_bits_to_shift = image->position_bits_to_shift;
     constants->term_buffer_length = (size_t)image->term_length_mask + 1;

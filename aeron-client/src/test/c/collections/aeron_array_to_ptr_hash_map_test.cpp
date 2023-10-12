@@ -74,6 +74,18 @@ TEST_F(ArrToPtrHashMapTest, shouldReplaceExistingValueForTheSameKey)
     EXPECT_EQ(m_map.size, 1u);
 }
 
+TEST_F(ArrToPtrHashMapTest, shouldReplaceKeyWhenReplacingValue)
+{
+    int key1 = 100, key2 = 100;
+    int value = 42, new_value = 43;
+    ASSERT_EQ(aeron_array_to_ptr_hash_map_init(&m_map, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
+
+    EXPECT_EQ(aeron_array_to_ptr_hash_map_put(&m_map, (uint8_t *)&key1, 4, (void *)&value), 0);
+    EXPECT_EQ(aeron_array_to_ptr_hash_map_put(&m_map, (uint8_t *)&key2, 4, (void *)&new_value), 0);
+    key1 = 200;
+    EXPECT_EQ(aeron_array_to_ptr_hash_map_get(&m_map, (uint8_t *)&key2, 4), &new_value);
+}
+
 TEST_F(ArrToPtrHashMapTest, shouldGrowWhenThresholdExceeded)
 {
     int value = 42, value_at_16 = 43;

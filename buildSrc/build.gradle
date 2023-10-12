@@ -2,8 +2,8 @@ repositories {
     mavenCentral()
 }
 
-def asciidoctorjVersion = '2.5.8'
-def jgitVersion = '5.13.1.202206130422-r'
+def asciidoctorjVersion = '2.5.10'
+def jgitVersion = '5.13.2.202306221912-r'
 def asmVersion = '9.6'
 
 configurations.configureEach {

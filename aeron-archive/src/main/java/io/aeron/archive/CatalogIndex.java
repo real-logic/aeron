@@ -105,7 +105,7 @@ final class CatalogIndex
     }
 
     /**
-     * Get recoding file offset by its id.
+     * Get recording file offset by its id.
      *
      * @param recordingId to lookup.
      * @return recording file offset or {@link #NULL_VALUE} if not found.

@@ -119,7 +119,11 @@ public class ArchiveTool
         }
 
         final PrintStream out = System.out;
-        if (args.length == 2 && "describe".equals(args[1]))
+        if (args.length > 1 && "describe-all".equals(args[1]))
+        {
+            describeAll(out, archiveDir);
+        }
+        else if (args.length == 2 && "describe".equals(args[1]))
         {
             describe(out, archiveDir);
         }
@@ -374,7 +378,26 @@ public class ArchiveTool
     }
 
     /**
-     * Describe the metadata for entries in the {@link Catalog}.
+     * Describe the metadata for all entries in the {@link Catalog}.
+     * This will include entries that have been invalidated.
+     *
+     * @param out        to which the entries will be printed.
+     * @param archiveDir containing the {@link Catalog}.
+     */
+    public static void describeAll(final PrintStream out, final File archiveDir)
+    {
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, INSTANCE);
+            ArchiveMarkFile markFile = openMarkFile(archiveDir, out::println))
+        {
+            printMarkInformation(markFile, out);
+            out.println("Catalog capacity in bytes: " + catalog.capacity());
+            catalog.forEach((recordingDescriptorOffset, he, hd, e, d) -> out.println(d + "|" + hd.state()));
+        }
+    }
+
+    /**
+     * Describe the metadata for all valid entries in the {@link Catalog}.
+     * This will not include entries that have been invalidated.
      *
      * @param out        to which the entries will be printed.
      * @param archiveDir containing the {@link Catalog}.
@@ -386,9 +409,16 @@ public class ArchiveTool
         {
             printMarkInformation(markFile, out);
             out.println("Catalog capacity in bytes: " + catalog.capacity());
-            catalog.forEach((recordingDescriptorOffset, he, hd, e, d) -> out.println(d));
+            catalog.forEach((recordingDescriptorOffset, he, hd, e, d) ->
+            {
+                if (hd.state() == VALID)
+                {
+                    out.println(d);
+                }
+            });
         }
     }
+
 
     /**
      * Describe the metadata for an entry in the {@link Catalog} identified by recording id.

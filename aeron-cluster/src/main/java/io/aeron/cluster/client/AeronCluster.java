@@ -24,6 +24,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.security.AuthenticationException;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.NullCredentialsSupplier;
+import io.aeron.version.Versioned;
 import org.agrona.*;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -44,6 +45,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  * <p>
  * <b>Note:</b> Instances of this class are not threadsafe.
  */
+@Versioned
 public final class AeronCluster implements AutoCloseable
 {
     /**

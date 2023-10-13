@@ -26,6 +26,7 @@ import io.aeron.exceptions.ConfigurationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.NullCredentialsSupplier;
+import io.aeron.version.Versioned;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
@@ -53,6 +54,7 @@ import static org.agrona.SystemUtil.getSizeAsInt;
  * Note: This class is threadsafe but the lock can be elided for single threaded access via {@link Context#lock(Lock)}
  * being set to {@link NoOpLock}.
  */
+@Versioned
 public final class AeronArchive implements AutoCloseable
 {
     /**

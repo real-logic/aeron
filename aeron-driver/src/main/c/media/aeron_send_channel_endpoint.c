@@ -39,6 +39,7 @@ struct mmsghdr
 int aeron_send_channel_endpoint_create(
     aeron_send_channel_endpoint_t **endpoint,
     aeron_udp_channel_t *channel,
+    aeron_driver_uri_publication_params_t *params,
     aeron_driver_context_t *context,
     aeron_counters_manager_t *counters_manager,
     int64_t registration_id)
@@ -109,16 +110,21 @@ int aeron_send_channel_endpoint_create(
 
     _endpoint->port_manager = context->sender_port_manager;
 
+    aeron_udp_channel_transport_params_t transport_params = {
+        _endpoint->conductor_fields.socket_rcvbuf,
+        _endpoint->conductor_fields.socket_sndbuf,
+        params->mtu_length,
+        channel->interface_index,
+        0 != channel->multicast_ttl ? channel->multicast_ttl : context->multicast_ttl,
+        false,
+    };
+
     if (context->udp_channel_transport_bindings->init_func(
         &_endpoint->transport,
         &_endpoint->bind_addr,
         channel->is_multicast ? &channel->local_control : &channel->remote_control,
         connect_addr,
-        channel->interface_index,
-        0 != channel->multicast_ttl ? channel->multicast_ttl : context->multicast_ttl,
-        _endpoint->conductor_fields.socket_rcvbuf,
-        _endpoint->conductor_fields.socket_sndbuf,
-        false,
+        &transport_params,
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER) < 0)
     {

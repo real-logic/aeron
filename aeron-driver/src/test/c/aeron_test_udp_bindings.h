@@ -37,11 +37,7 @@ int aeron_test_udp_channel_transport_init(
     struct sockaddr_storage *bind_addr,
     struct sockaddr_storage *multicast_if_addr,
     struct sockaddr_storage *connect_addr,
-    unsigned int multicast_if_index,
-    uint8_t ttl,
-    size_t socket_rcvbuf,
-    size_t socket_sndbuf,
-    bool is_media_timestamping,
+    aeron_udp_channel_transport_params_t *params,
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity)
 {

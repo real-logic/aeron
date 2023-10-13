@@ -92,8 +92,10 @@ protected:
             return nullptr;
         }
 
+        aeron_driver_uri_publication_params_t params = {};
+        params.mtu_length = 1408;
         aeron_send_channel_endpoint_t *endpoint = nullptr;
-        if (aeron_send_channel_endpoint_create(&endpoint, channel, m_context, &m_counters_manager, 1) < 0)
+        if (aeron_send_channel_endpoint_create(&endpoint, channel, &params, m_context, &m_counters_manager, 1) < 0)
         {
             return nullptr;
         }

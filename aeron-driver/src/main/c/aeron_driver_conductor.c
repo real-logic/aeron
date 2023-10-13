@@ -2114,7 +2114,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
         }
 
         if (aeron_send_channel_endpoint_create(
-            &endpoint, channel, conductor->context, &conductor->counters_manager, registration_id) < 0)
+            &endpoint, channel, params, conductor->context, &conductor->counters_manager, registration_id) < 0)
         {
             // the `channel` is now owned by the endpoint
             return NULL;

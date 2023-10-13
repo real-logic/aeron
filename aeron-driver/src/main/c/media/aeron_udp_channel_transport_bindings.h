@@ -32,6 +32,7 @@ typedef enum aeron_udp_channel_transport_affinity_en
 aeron_udp_channel_transport_affinity_t;
 
 struct mmsghdr;
+typedef struct aeron_udp_channel_transport_params_stct aeron_udp_channel_transport_params_t;
 typedef struct aeron_udp_channel_transport_stct aeron_udp_channel_transport_t;
 typedef struct aeron_network_publication_stct aeron_network_publication_t;
 typedef struct aeron_publication_image_stct aeron_publication_image_t;
@@ -44,11 +45,7 @@ typedef int (*aeron_udp_channel_transport_init_func_t)(
     struct sockaddr_storage *bind_addr,
     struct sockaddr_storage *multicast_if_addr,
     struct sockaddr_storage *connect_addr,
-    unsigned int multicast_if_index,
-    uint8_t ttl,
-    size_t socket_rcvbuf,
-    size_t socket_sndbuf,
-    bool is_media_timestamping,
+    aeron_udp_channel_transport_params_t *params,
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity);
 

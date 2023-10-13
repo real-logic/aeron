@@ -57,16 +57,21 @@ int aeron_receive_destination_create(
 
     _destination->port_manager = context->receiver_port_manager;
 
+    aeron_udp_channel_transport_params_t transport_params = {
+        socket_rcvbuf,
+        socket_sndbuf,
+        context->mtu_length,
+        destination_channel->interface_index,
+        0 != destination_channel->multicast_ttl ? destination_channel->multicast_ttl : context->multicast_ttl,
+        is_media_timestamping,
+    };
+
     if (context->udp_channel_transport_bindings->init_func(
         &_destination->transport,
         &_destination->bind_addr,
         &destination_channel->local_data,
         NULL,
-        destination_channel->interface_index,
-        0 != destination_channel->multicast_ttl ? destination_channel->multicast_ttl : context->multicast_ttl,
-        socket_rcvbuf,
-        socket_sndbuf,
-        is_media_timestamping,
+        &transport_params,
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_RECEIVER) < 0)
     {

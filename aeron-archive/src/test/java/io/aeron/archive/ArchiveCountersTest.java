@@ -46,7 +46,7 @@ class ArchiveCountersTest
         final String expectedLabel = name + " - archiveId=" + archiveId + " " +
             AeronCounters.formatVersionInfo(ArchiveVersion.VERSION, ArchiveVersion.GIT_SHA);
         final Aeron aeron = mock(Aeron.class);
-        final MutableDirectBuffer tempBuffer = new UnsafeBuffer(new byte[100]);
+        final MutableDirectBuffer tempBuffer = new UnsafeBuffer(new byte[200]);
         final Counter counter = mock(Counter.class);
         when(aeron.clientId()).thenReturn(archiveId);
         when(aeron.addCounter(typeId, tempBuffer, 0, SIZE_OF_LONG, tempBuffer, SIZE_OF_LONG, expectedLabel.length()))

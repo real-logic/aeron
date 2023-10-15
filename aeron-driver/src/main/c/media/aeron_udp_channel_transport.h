@@ -28,6 +28,17 @@
 #define AERON_UDP_CHANNEL_TRANSPORT_CHANNEL_RCV_TIMESTAMP (0x4)
 #define AERON_UDP_CHANNEL_TRANSPORT_CHANNEL_SND_TIMESTAMP (0x8)
 
+struct aeron_udp_channel_transport_params_stct
+{
+    size_t socket_rcvbuf;
+    size_t socket_sndbuf;
+    size_t mtu_length;
+    unsigned int multicast_if_index;
+    uint8_t ttl;
+    bool is_media_timestamping;
+};
+typedef struct aeron_udp_channel_transport_params_stct aeron_udp_channel_transport_params_t;
+
 typedef struct aeron_udp_channel_transport_stct
 {
     aeron_socket_t fd;
@@ -49,11 +60,7 @@ int aeron_udp_channel_transport_init(
     struct sockaddr_storage *bind_addr,
     struct sockaddr_storage *multicast_if_addr,
     struct sockaddr_storage *connect_addr,
-    unsigned int multicast_if_index,
-    uint8_t ttl,
-    size_t socket_rcvbuf,
-    size_t socket_sndbuf,
-    bool is_media_timestamping,
+    aeron_udp_channel_transport_params_t *params,
     aeron_driver_context_t *context,
     aeron_udp_channel_transport_affinity_t affinity);
 

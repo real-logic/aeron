@@ -270,16 +270,22 @@ int aeron_driver_name_resolver_init(
         goto error_cleanup;
     }
 
+
+    aeron_udp_channel_transport_params_t transport_params = {
+        context->socket_rcvbuf,
+        context->socket_sndbuf,
+        context->mtu_length,
+        _driver_resolver->interface_index,
+        0,
+        false,
+    };
+
     if (_driver_resolver->transport_bindings->init_func(
         &_driver_resolver->transport,
         &_driver_resolver->local_socket_addr,
         NULL, // Unicast only.
         NULL, // No connected
-        _driver_resolver->interface_index,
-        0,
-        context->socket_rcvbuf,
-        context->socket_sndbuf,
-        false,
+        &transport_params,
         context,
         AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_CONDUCTOR) < 0)
     {

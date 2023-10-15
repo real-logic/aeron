@@ -149,7 +149,6 @@ public class ArchiveToolCliTest
         }
 
         final OutputConsole console = runArchiveTool("describe-all");
-        System.out.println("console = " + console.systemOutText());
 
         assertTrue(outputMatches(console, ".*?\\|recordingId=0\\|.*?\\|VALID"));
         assertTrue(outputMatches(console, ".*?\\|recordingId=1\\|.*?\\|INVALID"));

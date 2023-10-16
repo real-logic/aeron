@@ -278,15 +278,6 @@ class ClusterInterceptor
         }
     }
 
-    static class DynamicJoinStateChange
-    {
-        @Advice.OnMethodEnter
-        static <E extends Enum<E>> void logStateChange(final E oldState, final E newState, final int memberId)
-        {
-            LOGGER.logStateChange(DYNAMIC_JOIN_STATE_CHANGE, memberId, oldState, newState);
-        }
-    }
-
     static class ClusterBackupStateChange
     {
         @Advice.OnMethodEnter

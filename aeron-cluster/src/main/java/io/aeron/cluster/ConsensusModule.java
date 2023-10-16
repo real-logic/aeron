@@ -1080,19 +1080,6 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Interval at which a dynamic joining member will send out add cluster members and snapshot recording
-         * queries.
-         *
-         * @return Interval at which a dynamic joining member will send out add cluster members and snapshot recording
-         * queries.
-         * @see #DYNAMIC_JOIN_INTERVAL_PROP_NAME
-         */
-        public static long dynamicJoinIntervalNs()
-        {
-            return getDurationInNanos(DYNAMIC_JOIN_INTERVAL_PROP_NAME, DYNAMIC_JOIN_INTERVAL_DEFAULT_NS);
-        }
-
-        /**
          * Timeout waiting for follower termination by leader.
          *
          * @return timeout in nanoseconds to wait followers to terminate.
@@ -1403,7 +1390,6 @@ public final class ConsensusModule implements AutoCloseable
         private long startupCanvassTimeoutNs = Configuration.startupCanvassTimeoutNs();
         private long electionTimeoutNs = Configuration.electionTimeoutNs();
         private long electionStatusIntervalNs = Configuration.electionStatusIntervalNs();
-        private long dynamicJoinIntervalNs = Configuration.dynamicJoinIntervalNs();
         private long terminationTimeoutNs = Configuration.terminationTimeoutNs();
         private long cycleThresholdNs = Configuration.cycleThresholdNs();
 
@@ -2964,33 +2950,6 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Interval at which a dynamic joining member will send add cluster member and snapshot recording queries.
-         *
-         * @param dynamicJoinIntervalNs between add cluster members and snapshot recording queries.
-         * @return this for a fluent API.
-         * @see Configuration#DYNAMIC_JOIN_INTERVAL_PROP_NAME
-         * @see Configuration#DYNAMIC_JOIN_INTERVAL_DEFAULT_NS
-         */
-        public Context dynamicJoinIntervalNs(final long dynamicJoinIntervalNs)
-        {
-            this.dynamicJoinIntervalNs = dynamicJoinIntervalNs;
-            return this;
-        }
-
-        /**
-         * Interval at which a dynamic joining member will send add cluster member and snapshot recording queries.
-         *
-         * @return the interval at which a dynamic joining member will send add cluster member and snapshot recording
-         * queries.
-         * @see Configuration#DYNAMIC_JOIN_INTERVAL_PROP_NAME
-         * @see Configuration#DYNAMIC_JOIN_INTERVAL_DEFAULT_NS
-         */
-        public long dynamicJoinIntervalNs()
-        {
-            return dynamicJoinIntervalNs;
-        }
-
-        /**
          * Timeout to wait for follower termination by leader.
          *
          * @param terminationTimeoutNs to wait for follower termination.
@@ -4116,7 +4075,6 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    startupCanvassTimeoutNs=" + startupCanvassTimeoutNs +
                 "\n    electionTimeoutNs=" + electionTimeoutNs +
                 "\n    electionStatusIntervalNs=" + electionStatusIntervalNs +
-                "\n    dynamicJoinIntervalNs=" + dynamicJoinIntervalNs +
                 "\n    terminationTimeoutNs=" + terminationTimeoutNs +
                 "\n    threadFactory=" + threadFactory +
                 "\n    idleStrategySupplier=" + idleStrategySupplier +

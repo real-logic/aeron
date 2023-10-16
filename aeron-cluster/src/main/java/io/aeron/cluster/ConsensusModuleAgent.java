@@ -148,7 +148,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private final ConsensusModule.Context ctx;
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
-    private final ArrayList<RecordingLog.Snapshot> dynamicJoinSnapshots = new ArrayList<>();
     private final DutyCycleTracker dutyCycleTracker;
     private RecordingLog.RecoveryPlan recoveryPlan;
     private AeronArchive archive;
@@ -1714,8 +1713,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
         if (tryCreateAppendPosition(image.sessionId()))
         {
-            appendDynamicJoinTermAndSnapshots();
-
             logAdapter.image(image);
             lastAppendPosition = image.joinPosition();
             timeOfLastAppendPositionUpdateNs = nowNs;
@@ -1972,30 +1969,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 member.catchupReplayCorrelationId(NULL_VALUE);
             }
         }
-    }
-
-    void retrievedSnapshot(final long localRecordingId, final RecordingLog.Snapshot leaderSnapshot)
-    {
-        dynamicJoinSnapshots.add(new RecordingLog.Snapshot(
-            localRecordingId,
-            leaderSnapshot.leadershipTermId,
-            leaderSnapshot.termBaseLogPosition,
-            leaderSnapshot.logPosition,
-            leaderSnapshot.timestamp,
-            leaderSnapshot.serviceId));
-    }
-
-    Counter loadSnapshotsForDynamicJoin()
-    {
-        recoveryPlan = RecordingLog.createRecoveryPlan(dynamicJoinSnapshots);
-
-        final Counter recoveryStateCounter = addRecoveryStateCounter(recoveryPlan);
-        if (!recoveryPlan.snapshots.isEmpty())
-        {
-            loadSnapshot(recoveryPlan.snapshots.get(0), archive);
-        }
-
-        return recoveryStateCounter;
     }
 
     boolean pollForSnapshotLoadAck(final Counter recoveryStateCounter, final long nowNs)
@@ -3610,53 +3583,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             }
 
             idle();
-        }
-    }
-
-    private void appendDynamicJoinTermAndSnapshots()
-    {
-        if (!dynamicJoinSnapshots.isEmpty())
-        {
-            final RecordingLog.Snapshot lastSnapshot = dynamicJoinSnapshots.get(dynamicJoinSnapshots.size() - 1);
-            final RecordingLog.Entry termEntry = recordingLog.findTermEntry(lastSnapshot.leadershipTermId);
-
-            if (null == termEntry)
-            {
-                recordingLog.appendTerm(
-                    logRecordingId,
-                    lastSnapshot.leadershipTermId,
-                    lastSnapshot.termBaseLogPosition,
-                    lastSnapshot.timestamp);
-            }
-            else
-            {
-                if (termEntry.recordingId != logRecordingId ||
-                    termEntry.termBaseLogPosition != lastSnapshot.termBaseLogPosition)
-                {
-                    throw new ClusterException(
-                        "Unexpected termEntry found leadershipTermId=" + termEntry.leadershipTermId +
-                        " recordingId=" + termEntry.recordingId +
-                        " termBaseLogPosition=" + termEntry.termBaseLogPosition +
-                        " expected leadershipTermId=" + lastSnapshot.leadershipTermId +
-                        " recordingId=" + logRecordingId +
-                        " termBaseLogPosition=" + lastSnapshot.termBaseLogPosition);
-                }
-            }
-
-            for (int i = dynamicJoinSnapshots.size() - 1; i >= 0; i--)
-            {
-                final RecordingLog.Snapshot snapshot = dynamicJoinSnapshots.get(i);
-
-                recordingLog.appendSnapshot(
-                    snapshot.recordingId,
-                    snapshot.leadershipTermId,
-                    snapshot.termBaseLogPosition,
-                    snapshot.logPosition,
-                    snapshot.timestamp,
-                    snapshot.serviceId);
-            }
-
-            dynamicJoinSnapshots.clear();
         }
     }
 

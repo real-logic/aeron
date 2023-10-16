@@ -154,7 +154,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private AeronArchive archive;
     private RecordingSignalPoller recordingSignalPoller;
     private Election election;
-    private DynamicJoin dynamicJoin;
     private ClusterTermination clusterTermination;
     private long logSubscriptionId = NULL_VALUE;
     private long logRecordingId = NULL_VALUE;
@@ -276,49 +275,46 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         recordingSignalPoller = new RecordingSignalPoller(
             archive.controlSessionId(), archive.controlResponsePoller().subscription());
 
-        if (null == (dynamicJoin = requiresDynamicJoin()))
+        final long lastTermRecordingId = recordingLog.findLastTermRecordingId();
+        if (NULL_VALUE != lastTermRecordingId)
         {
-            final long lastTermRecordingId = recordingLog.findLastTermRecordingId();
-            if (NULL_VALUE != lastTermRecordingId)
-            {
-                archive.tryStopRecordingByIdentity(lastTermRecordingId);
-            }
-
-            if (null == ctx.boostrapState())
-            {
-                replicateStandbySnapshotsForStartup();
-                recoveryPlan = recoverFromSnapshotAndLog();
-            }
-            else
-            {
-                recoveryPlan = recoverFromBootstrapState();
-            }
-
-            ClusterMember.addConsensusPublications(
-                activeMembers,
-                thisMember,
-                ctx.consensusChannel(),
-                ctx.consensusStreamId(),
-                aeron,
-                ctx.countedErrorHandler());
-
-            election = new Election(
-                true,
-                NULL_VALUE,
-                recoveryPlan.lastLeadershipTermId,
-                recoveryPlan.lastTermBaseLogPosition,
-                commitPosition.getWeak(),
-                recoveryPlan.appendedLogPosition,
-                activeMembers,
-                clusterMemberByIdMap,
-                thisMember,
-                consensusPublisher,
-                ctx,
-                this);
-
-            election.doWork(clusterClock.timeNanos());
-            state(ConsensusModule.State.ACTIVE);
+            archive.tryStopRecordingByIdentity(lastTermRecordingId);
         }
+
+        if (null == ctx.boostrapState())
+        {
+            replicateStandbySnapshotsForStartup();
+            recoveryPlan = recoverFromSnapshotAndLog();
+        }
+        else
+        {
+            recoveryPlan = recoverFromBootstrapState();
+        }
+
+        ClusterMember.addConsensusPublications(
+            activeMembers,
+            thisMember,
+            ctx.consensusChannel(),
+            ctx.consensusStreamId(),
+            aeron,
+            ctx.countedErrorHandler());
+
+        election = new Election(
+            true,
+            NULL_VALUE,
+            recoveryPlan.lastLeadershipTermId,
+            recoveryPlan.lastTermBaseLogPosition,
+            commitPosition.getWeak(),
+            recoveryPlan.appendedLogPosition,
+            activeMembers,
+            clusterMemberByIdMap,
+            thisMember,
+            consensusPublisher,
+            ctx,
+            this);
+
+        election.doWork(clusterClock.timeNanos());
+        state(ConsensusModule.State.ACTIVE);
 
         unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this::onUnavailableCounter);
 
@@ -346,11 +342,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
             workCount += consensusAdapter.poll();
 
-            if (null != dynamicJoin)
-            {
-                workCount += dynamicJoin.doWork(nowNs);
-            }
-            else if (null != election)
+            if (null != election)
             {
                 workCount += election.doWork(nowNs);
             }
@@ -774,7 +766,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         {
             election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId, protocolVersion);
         }
-        else if (candidateTermId > leadershipTermId && null == dynamicJoin)
+        else if (candidateTermId > leadershipTermId)
         {
             ctx.countedErrorHandler().onError(new ClusterEvent("unexpected vote request"));
             enterElection(false);
@@ -864,7 +856,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             notifiedCommitPosition = Math.max(notifiedCommitPosition, logPosition);
             timeOfLastLogUpdateNs = nowNs;
         }
-        else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
+        else if (leadershipTermId > this.leadershipTermId)
         {
             ctx.countedErrorHandler().onError(new ClusterEvent("unexpected new leadership term event"));
             enterElection(false);
@@ -916,7 +908,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             notifiedCommitPosition = logPosition;
             timeOfLastLogUpdateNs = nowNs;
         }
-        else if (leadershipTermId > this.leadershipTermId && null == dynamicJoin)
+        else if (leadershipTermId > this.leadershipTermId)
         {
             ctx.countedErrorHandler().onError(new ClusterEvent("unexpected commit position from new leader"));
             enterElection(false);
@@ -962,7 +954,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
         logOnAddPassiveMember(memberId, correlationId, memberEndpoints);
 
-        if (null == election && null == dynamicJoin)
+        if (null == election)
         {
             if (Cluster.Role.LEADER == role)
             {
@@ -990,10 +982,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     void onClusterMembersChange(
         final long correlationId, final int leaderMemberId, final String activeMembers, final String passiveMembers)
     {
-        if (null != dynamicJoin)
-        {
-            dynamicJoin.onClusterMembersChange(correlationId, leaderMemberId, activeMembers, passiveMembers);
-        }
     }
 
     void onSnapshotRecordingQuery(final long correlationId, final int requestMemberId)
@@ -1014,10 +1002,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
     void onSnapshotRecordings(final long correlationId, final SnapshotRecordingsDecoder decoder)
     {
-        if (null != dynamicJoin)
-        {
-            dynamicJoin.onSnapshotRecordings(correlationId, decoder);
-        }
     }
 
     void onJoinCluster(final long leadershipTermId, final int memberId)
@@ -1082,7 +1066,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final String responseChannel,
         final byte[] encodedCredentials)
     {
-        if (null == election && null == dynamicJoin)
+        if (null == election)
         {
             if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
@@ -1118,7 +1102,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final String responseChannel,
         final byte[] encodedCredentials)
     {
-        if (null == election && null == dynamicJoin)
+        if (null == election)
         {
             if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
@@ -1204,7 +1188,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final String responseChannel,
         final byte[] encodedCredentials)
     {
-        if (null == election && null == dynamicJoin)
+        if (null == election)
         {
             if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
@@ -1887,51 +1871,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         connectIngress();
     }
 
-    boolean dynamicJoinComplete(final long nowNs)
-    {
-        if (0 == activeMembers.length)
-        {
-            activeMembers = dynamicJoin.clusterMembers();
-            ClusterMember.addClusterMemberIds(activeMembers, clusterMemberByIdMap);
-            leaderMember = dynamicJoin.leader();
-
-            ClusterMember.addConsensusPublications(
-                activeMembers,
-                thisMember,
-                ctx.consensusChannel(),
-                ctx.consensusStreamId(),
-                aeron,
-                ctx.countedErrorHandler());
-        }
-
-        if (NULL_VALUE == memberId)
-        {
-            memberId = dynamicJoin.memberId();
-            ctx.clusterMarkFile().memberId(memberId);
-            thisMember.id(memberId);
-        }
-
-        dynamicJoin = null;
-
-        election = new Election(
-            false,
-            NULL_VALUE,
-            leadershipTermId,
-            recoveryPlan.lastTermBaseLogPosition,
-            commitPosition.getWeak(),
-            recoveryPlan.appendedLogPosition,
-            activeMembers,
-            clusterMemberByIdMap,
-            thisMember,
-            consensusPublisher,
-            ctx,
-            this);
-
-        election.doWork(nowNs);
-
-        return true;
-    }
-
     void trackCatchupCompletion(
         final ClusterMember follower, final long leadershipTermId, final short appendPositionFlags)
     {
@@ -2146,11 +2085,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                     if (null != election)
                     {
                         election.onRecordingSignal(poller.correlationId(), recordingId, position, signal);
-                    }
-
-                    if (null != dynamicJoin)
-                    {
-                        dynamicJoin.onRecordingSignal(poller.correlationId(), recordingId, position, signal);
                     }
                 }
             }
@@ -3166,18 +3100,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
 
         return RecoveryState.allocate(aeron, leadershipTermId, 0, 0, ctx.clusterId());
-    }
-
-    @SuppressWarnings("deprecation")
-    private DynamicJoin requiresDynamicJoin()
-    {
-        if (0 == activeMembers.length && null != ctx.clusterConsensusEndpoints())
-        {
-            fallbackLogger().println("WARNING: Dynamic join is deprecated and will be removed in a later release.");
-            return new DynamicJoin(ctx.clusterConsensusEndpoints(), archive, consensusPublisher, ctx, this);
-        }
-
-        return null;
     }
 
     private void captureServiceClientIds()

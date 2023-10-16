@@ -502,8 +502,10 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
             final int type =
                 bufferForTimestamping.getShort(DataHeaderFlyweight.TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
+            final int flags = bufferForTimestamping.getByte(DataHeaderFlyweight.FLAGS_FIELD_OFFSET) & 0xFF;
 
             if (DataHeaderFlyweight.HDR_TYPE_DATA == type &&
+                0 != (DataHeaderFlyweight.BEGIN_FLAG & flags) &&
                 !DataHeaderFlyweight.isHeartbeat(bufferForTimestamping, length))
             {
                 final int offset = udpChannel.channelSendTimestampOffset();

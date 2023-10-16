@@ -669,7 +669,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {
-        if (isChannelReceiveTimestampEnabled)
+        if (isChannelReceiveTimestampEnabled && 0 != (header.flags() & DataHeaderFlyweight.BEGIN_FLAG))
         {
             applyChannelReceiveTimestamp(buffer, length);
         }

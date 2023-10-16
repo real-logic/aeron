@@ -148,15 +148,6 @@ final class ConsensusModuleAdapter implements AutoCloseable
                 break;
 
             case RemoveMemberDecoder.TEMPLATE_ID:
-                removeMemberDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onRemoveMember(
-                    removeMemberDecoder.memberId(),
-                    BooleanType.TRUE == removeMemberDecoder.isPassive());
                 break;
         }
 

@@ -1046,46 +1046,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    void onRemoveMember(final int memberId, final boolean isPassive)
-    {
-        if (null == election && Cluster.Role.LEADER == role)
-        {
-            final ClusterMember member = clusterMemberByIdMap.get(memberId);
-            if (null != member)
-            {
-                if (isPassive)
-                {
-                    passiveMembers = ClusterMember.removeMember(passiveMembers, memberId);
-                    member.closePublication(ctx.countedErrorHandler());
-
-                    logPublisher.removeDestination(ctx.isLogMdc(), member.logEndpoint());
-
-                    clusterMemberByIdMap.remove(memberId);
-                    clusterMemberByIdMap.compact();
-                }
-                else
-                {
-                    final long now = clusterClock.time();
-                    final long position = logPublisher.appendMembershipChangeEvent(
-                        leadershipTermId,
-                        now,
-                        this.memberId,
-                        activeMembers.length,
-                        ChangeType.QUIT,
-                        memberId,
-                        ClusterMember.encodeAsString(ClusterMember.removeMember(activeMembers, memberId)));
-
-                    if (position > 0)
-                    {
-                        timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(now) - leaderHeartbeatIntervalNs;
-                        member.removalPosition(position);
-                        pendingMemberRemovals++;
-                    }
-                }
-            }
-        }
-    }
-
     void onClusterMembersQuery(final long correlationId, final boolean isExtendedRequest)
     {
         if (isExtendedRequest)

@@ -949,60 +949,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    void onAddPassiveMember(final long correlationId, final String memberEndpoints)
-    {
-        logOnAddPassiveMember(memberId, correlationId, memberEndpoints);
-
-        if (null == election)
-        {
-            if (Cluster.Role.LEADER == role)
-            {
-                if (ClusterMember.notDuplicateEndpoint(passiveMembers, memberEndpoints) &&
-                    ClusterMember.notDuplicateEndpoint(activeMembers, memberEndpoints))
-                {
-                    final ClusterMember newMember = ClusterMember.parseEndpoints(++highMemberId, memberEndpoints);
-
-                    newMember.correlationId(correlationId);
-                    passiveMembers = ClusterMember.addMember(passiveMembers, newMember);
-                    clusterMemberByIdMap.put(newMember.id(), newMember);
-
-                    ClusterMember.addConsensusPublication(
-                        newMember, ctx.consensusChannel(), ctx.consensusStreamId(), aeron, ctx.countedErrorHandler());
-                    logPublisher.addDestination(ctx.isLogMdc(), newMember.logEndpoint());
-                }
-            }
-            else if (Cluster.Role.FOLLOWER == role)
-            {
-                consensusPublisher.addPassiveMember(leaderMember.publication(), correlationId, memberEndpoints);
-            }
-        }
-    }
-
-    void onClusterMembersChange(
-        final long correlationId, final int leaderMemberId, final String activeMembers, final String passiveMembers)
-    {
-    }
-
-    void onSnapshotRecordingQuery(final long correlationId, final int requestMemberId)
-    {
-        if (null == election && Cluster.Role.LEADER == role)
-        {
-            final ClusterMember requester = clusterMemberByIdMap.get(requestMemberId);
-            if (null != requester)
-            {
-                consensusPublisher.snapshotRecording(
-                    requester.publication(),
-                    correlationId,
-                    recoveryPlan,
-                    ClusterMember.encodeAsString(activeMembers));
-            }
-        }
-    }
-
-    void onSnapshotRecordings(final long correlationId, final SnapshotRecordingsDecoder decoder)
-    {
-    }
-
     void onJoinCluster(final long leadershipTermId, final int memberId)
     {
         if (null == election && Cluster.Role.LEADER == role)

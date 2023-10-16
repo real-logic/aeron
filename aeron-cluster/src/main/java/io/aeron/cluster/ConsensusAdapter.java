@@ -219,51 +219,10 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     stopCatchupDecoder.followerMemberId());
                 break;
 
-            case AddPassiveMemberDecoder.TEMPLATE_ID:
-                addPassiveMemberDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onAddPassiveMember(
-                    addPassiveMemberDecoder.correlationId(), addPassiveMemberDecoder.memberEndpoints());
-                break;
-
-            case ClusterMembersChangeDecoder.TEMPLATE_ID:
-                clusterMembersChangeDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onClusterMembersChange(
-                    clusterMembersChangeDecoder.correlationId(),
-                    clusterMembersChangeDecoder.leaderMemberId(),
-                    clusterMembersChangeDecoder.activeMembers(),
-                    clusterMembersChangeDecoder.passiveMembers());
-                break;
-
             case SnapshotRecordingQueryDecoder.TEMPLATE_ID:
-                snapshotRecordingQueryDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onSnapshotRecordingQuery(
-                    snapshotRecordingQueryDecoder.correlationId(), snapshotRecordingQueryDecoder.requestMemberId());
-                break;
-
+            case AddPassiveMemberDecoder.TEMPLATE_ID:
+            case ClusterMembersChangeDecoder.TEMPLATE_ID:
             case SnapshotRecordingsDecoder.TEMPLATE_ID:
-                snapshotRecordingsDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onSnapshotRecordings(
-                    snapshotRecordingsDecoder.correlationId(), snapshotRecordingsDecoder);
                 break;
 
             case JoinClusterDecoder.TEMPLATE_ID:

@@ -949,28 +949,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    void onJoinCluster(final long leadershipTermId, final int memberId)
-    {
-        if (null == election && Cluster.Role.LEADER == role)
-        {
-            final ClusterMember member = clusterMemberByIdMap.get(memberId);
-            final long snapshotLeadershipTermId = recoveryPlan.snapshots.isEmpty() ?
-                NULL_VALUE : recoveryPlan.snapshots.get(0).leadershipTermId;
-
-            if (null != member && !member.hasRequestedJoin() && leadershipTermId <= snapshotLeadershipTermId)
-            {
-                if (null == member.publication())
-                {
-                    ClusterMember.addConsensusPublication(
-                        member, ctx.consensusChannel(), ctx.consensusStreamId(), aeron, ctx.countedErrorHandler());
-                    logPublisher.addDestination(ctx.isLogMdc(), member.logEndpoint());
-                }
-
-                member.hasRequestedJoin(true);
-            }
-        }
-    }
-
     void onTerminationPosition(final long leadershipTermId, final long logPosition)
     {
         logOnTerminationPosition(memberId, leadershipTermId, logPosition);

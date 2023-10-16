@@ -223,17 +223,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
             case AddPassiveMemberDecoder.TEMPLATE_ID:
             case ClusterMembersChangeDecoder.TEMPLATE_ID:
             case SnapshotRecordingsDecoder.TEMPLATE_ID:
-                break;
-
             case JoinClusterDecoder.TEMPLATE_ID:
-                joinClusterDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onJoinCluster(
-                    joinClusterDecoder.leadershipTermId(), joinClusterDecoder.memberId());
                 break;
 
             case TerminationPositionDecoder.TEMPLATE_ID:

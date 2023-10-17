@@ -1286,7 +1286,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
         role(Cluster.Role.FOLLOWER);
 
-        final long ingressSubscriptionRegistrationId = ingressAdapter.subscriptionRegistrationId();
         CloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
 
         if (null != catchupLogDestination)
@@ -1301,7 +1300,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             liveLogDestination = null;
         }
 
-        logAdapter.disconnect(ctx.countedErrorHandler());
+        final long logSubRegId = logAdapter.disconnect(ctx.countedErrorHandler());
         logPublisher.disconnect(ctx.countedErrorHandler());
         ClusterControl.ToggleState.deactivate(controlToggle);
 
@@ -1328,9 +1327,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             }
         }
 
-        if (NULL_VALUE != ingressSubscriptionRegistrationId)
+        if (NULL_VALUE != logSubRegId)
         {
-            awaitLocalSocketsClosed(ingressSubscriptionRegistrationId);
+            awaitLocalSocketsClosed(logSubRegId);
         }
 
         return lastAppendPosition;
@@ -2462,7 +2461,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
             if (ConsensusModule.State.ACTIVE == state)
             {
-                workCount += checkNodeControlToggle(nowNs);
+                workCount += checkNodeControlToggle();
             }
         }
 
@@ -2592,7 +2591,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return 1;
     }
 
-    private int checkNodeControlToggle(final long nowNs)
+    private int checkNodeControlToggle()
     {
         //noinspection SwitchStatementWithTooFewBranches
         switch (NodeControl.ToggleState.get(nodeControlToggle))
@@ -3762,34 +3761,22 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             return; // don't subscribe to ingress if follower and multicast ingress
         }
 
-        String ingressNetworkEndpoint = ingressUri.get(ENDPOINT_PARAM_NAME);
-        final String ingressNetworkInterface = ingressUri.get(INTERFACE_PARAM_NAME);
-        if (null == ingressNetworkEndpoint)
+        if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
         {
-            ingressNetworkEndpoint = thisMember.ingressEndpoint();
+            ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.ingressEndpoint());
         }
 
-        ingressUri.remove(ENDPOINT_PARAM_NAME);
-        ingressUri.remove(INTERFACE_PARAM_NAME);
-        ingressUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
-
-        final Subscription ingressSubscription = aeron.addSubscription(
+        final Subscription subscription = aeron.addSubscription(
             ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage);
 
-        final String ingressNetworkDestination = new ChannelUriStringBuilder()
-            .media(UDP_MEDIA)
-            .endpoint(ingressNetworkEndpoint)
-            .networkInterface(ingressNetworkInterface)
-            .build();
-
-        ingressSubscription.addDestination(ingressNetworkDestination);
-
-        if (ctx.isIpcIngressAllowed() && Cluster.Role.LEADER == role)
+        Subscription ipcSubscription = null;
+        if (Cluster.Role.LEADER == role && ctx.isIpcIngressAllowed())
         {
-            ingressSubscription.addDestination(IPC_CHANNEL);
+            ipcSubscription = aeron.addSubscription(
+                IPC_CHANNEL, ctx.ingressStreamId(), null, this::onUnavailableIngressImage);
         }
 
-        ingressAdapter.connect(ingressSubscription);
+        ingressAdapter.connect(subscription, ipcSubscription);
     }
 
     private void ensureConsistentInitialTermId(final ChannelUri channelUri)

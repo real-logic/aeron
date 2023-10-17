@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.cluster.client.AeronCluster;
@@ -39,7 +38,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final ConsensusModuleAgent consensusModuleAgent;
     private Subscription subscription;
-    private long subscriptionRegistrationId = Aeron.NULL_VALUE;
+    private Subscription ipcSubscription;
 
     IngressAdapter(final int fragmentPollLimit, final ConsensusModuleAgent consensusModuleAgent)
     {
@@ -50,14 +49,22 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     public void close()
     {
         final Subscription subscription = this.subscription;
+        final Subscription ipcSubscription = this.ipcSubscription;
 
         this.subscription = null;
-        subscriptionRegistrationId = Aeron.NULL_VALUE;
-        fragmentAssembler.clear();
+        this.ipcSubscription = null;
+
         if (null != subscription)
         {
             subscription.close();
         }
+
+        if (null != ipcSubscription)
+        {
+            ipcSubscription.close();
+        }
+
+        fragmentAssembler.clear();
     }
 
     @SuppressWarnings("MethodLength")
@@ -100,15 +107,11 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 
                 final String responseChannel = connectRequestDecoder.responseChannel();
                 final int credentialsLength = connectRequestDecoder.encodedCredentialsLength();
-                final byte[] credentials;
+                byte[] credentials = ArrayUtil.EMPTY_BYTE_ARRAY;
                 if (credentialsLength > 0)
                 {
                     credentials = new byte[credentialsLength];
                     connectRequestDecoder.getEncodedCredentials(credentials, 0, credentialsLength);
-                }
-                else
-                {
-                    credentials = ArrayUtil.EMPTY_BYTE_ARRAY;
                 }
 
                 consensusModuleAgent.onSessionConnect(
@@ -192,25 +195,27 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         return Action.CONTINUE;
     }
 
-    long subscriptionRegistrationId()
-    {
-        return subscriptionRegistrationId;
-    }
-
-    void connect(final Subscription subscription)
+    void connect(final Subscription subscription, final Subscription ipcSubscription)
     {
         this.subscription = subscription;
-        subscriptionRegistrationId = subscription.registrationId();
+        this.ipcSubscription = ipcSubscription;
     }
 
     int poll()
     {
+        int fragmentsRead = 0;
+
         if (null != subscription)
         {
-            return subscription.controlledPoll(fragmentAssembler, fragmentPollLimit);
+            fragmentsRead += subscription.controlledPoll(fragmentAssembler, fragmentPollLimit);
         }
 
-        return 0;
+        if (null != ipcSubscription)
+        {
+            fragmentsRead += ipcSubscription.controlledPoll(fragmentAssembler, fragmentPollLimit);
+        }
+
+        return fragmentsRead;
     }
 
     void freeSessionBuffer(final int imageSessionId)

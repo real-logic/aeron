@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.BufferBuilder;
 import io.aeron.Image;
 import io.aeron.Subscription;
@@ -53,20 +54,24 @@ final class LogAdapter implements ControlledFragmentHandler
         this.fragmentLimit = fragmentLimit;
     }
 
-    void disconnect(final ErrorHandler errorHandler)
+    long disconnect(final ErrorHandler errorHandler)
     {
+        long registrationId = Aeron.NULL_VALUE;
+
         if (null != image)
         {
             logPosition = image.position();
             CloseHelper.close(errorHandler, image.subscription());
-            consensusModuleAgent.awaitLocalSocketsClosed(image.subscription().registrationId());
+            registrationId = image.subscription().registrationId();
             image = null;
         }
+
+        return registrationId;
     }
 
     void disconnect(final ErrorHandler errorHandler, final long maxLogPosition)
     {
-        disconnect(errorHandler);
+        consensusModuleAgent.awaitLocalSocketsClosed(disconnect(errorHandler));
         logPosition = Math.min(logPosition, maxLogPosition);
     }
 

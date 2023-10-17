@@ -323,13 +323,7 @@ public class NodeStateFile implements AutoCloseable
         return candidateTerm;
     }
 
-    /**
-     * Get the reference to the ClusterMembers wrapper that can be used to fetch the values associated with the most
-     * recent change to the list of cluster members.
-     *
-     * @return the most recently updated cluster members, <code>null</code> if it has never changed.
-     */
-    public ClusterMembers clusterMembers()
+    ClusterMembers clusterMembers()
     {
         if (Aeron.NULL_VALUE == clusterMembersDecoder.leadershipTermId())
         {
@@ -339,18 +333,7 @@ public class NodeStateFile implements AutoCloseable
         return clusterMembers;
     }
 
-    /**
-     * Update the cluster members entry with the supplied values. This is a slow operation as the cluster members entry
-     * is a dynamically sized record. To work correctly it will need to move all the trailing records in the file so
-     * that they line up correctly. After updating the file it will rescan to ensure all the cached decoders have
-     * the correct offsets.
-     *
-     * @param leadershipTermId leadership where the new set of cluster members reached consensus.
-     * @param memberId         current member id.
-     * @param highMemberId     high member id.
-     * @param clusterMembers   list of all the members in the cluster with the associated endpoints.
-     */
-    public void updateClusterMembers(
+    void updateClusterMembers(
         final long leadershipTermId,
         final int memberId,
         final int highMemberId,

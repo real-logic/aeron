@@ -74,7 +74,7 @@ class Election
     private ElectionState state = INIT;
     private Subscription logSubscription = null;
     private LogReplay logReplay = null;
-    private ClusterMember[] clusterMembers;
+    private final ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
     private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap;
     private final ConsensusPublisher consensusPublisher;

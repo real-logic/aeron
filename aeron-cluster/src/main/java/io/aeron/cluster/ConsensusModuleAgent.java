@@ -2214,7 +2214,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                     workCount += processPendingSessions(pendingUserSessions, rejectedUserSessions, nowNs);
                     workCount += processPendingSessions(pendingBackupSessions, rejectedBackupSessions, nowNs);
                     workCount += checkSessions(sessions, nowNs);
-                    workCount += processPassiveMembers(passiveMembers);
 
                     if (!ClusterMember.hasActiveQuorum(activeMembers, nowNs, leaderHeartbeatTimeoutNs))
                     {
@@ -2627,54 +2626,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 ArrayListUtil.fastUnorderedRemove(redirectSessions, i, lastIndex--);
                 session.close(aeron, ctx.countedErrorHandler());
                 workCount++;
-            }
-        }
-
-        return workCount;
-    }
-
-    private int processPassiveMembers(final ClusterMember[] passiveMembers)
-    {
-        int workCount = 0;
-
-        for (final ClusterMember member : passiveMembers)
-        {
-            if (member.correlationId() != NULL_VALUE)
-            {
-                if (consensusPublisher.clusterMemberChange(
-                    member.publication(),
-                    member.correlationId(),
-                    leaderMember.id(),
-                    ClusterMember.encodeAsString(activeMembers),
-                    ClusterMember.encodeAsString(passiveMembers)))
-                {
-                    member.correlationId(NULL_VALUE);
-                    workCount++;
-                }
-            }
-            else if (member.hasRequestedJoin() && member.logPosition() == logPublisher.position())
-            {
-                final ClusterMember[] newMembers = ClusterMember.addMember(activeMembers, member);
-                final long timestamp = clusterClock.time();
-
-                if (logPublisher.appendMembershipChangeEvent(
-                    leadershipTermId,
-                    timestamp,
-                    leaderMember.id(),
-                    newMembers.length,
-                    ChangeType.JOIN,
-                    member.id(),
-                    ClusterMember.encodeAsString(newMembers)) > 0)
-                {
-                    timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(timestamp) - leaderHeartbeatIntervalNs;
-                    this.passiveMembers = ClusterMember.removeMember(this.passiveMembers, member.id());
-                    activeMembers = newMembers;
-                    rankedPositions = new long[ClusterMember.quorumThreshold(activeMembers.length)];
-                    member.hasRequestedJoin(false);
-
-                    workCount++;
-                    break;
-                }
             }
         }
 

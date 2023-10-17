@@ -93,7 +93,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private long slowTickDeadlineNs = 0;
     private long markFileUpdateDeadlineNs = 0;
 
-    private int memberId;
+    private final int memberId;
     private int highMemberId;
     private int pendingMemberRemovals = 0;
     private long logPublicationChannelTag;
@@ -102,7 +102,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private ConsensusModule.State state = ConsensusModule.State.INIT;
     private Cluster.Role role = Cluster.Role.FOLLOWER;
     private ClusterMember[] activeMembers;
-    private ClusterMember[] passiveMembers = ClusterMember.EMPTY_MEMBERS;
     private ClusterMember leaderMember;
     private ClusterMember thisMember;
     private long[] rankedPositions;
@@ -1051,15 +1050,15 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         if (isExtendedRequest)
         {
             serviceProxy.clusterMembersExtendedResponse(
-                correlationId, clusterClock.timeNanos(), leaderMember.id(), memberId, activeMembers, passiveMembers);
+                correlationId, clusterClock.timeNanos(), leaderMember.id(), memberId, activeMembers);
         }
         else
         {
             serviceProxy.clusterMembersResponse(
                 correlationId,
                 leaderMember.id(),
-                ClusterMember.encodeAsString(activeMembers),
-                ClusterMember.encodeAsString(passiveMembers));
+                ClusterMember.encodeAsString(activeMembers)
+            );
         }
     }
 
@@ -1532,11 +1531,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                     logPublisher.addDestination(true, member.logEndpoint());
                 }
             }
-
-            for (final ClusterMember member : passiveMembers)
-            {
-                logPublisher.addDestination(true, member.logEndpoint());
-            }
         }
 
         return publication.sessionId();
@@ -1727,8 +1721,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         if (Cluster.Role.LEADER == role)
         {
             timeOfLastLogUpdateNs = nowNs - leaderHeartbeatIntervalNs;
-            highMemberId = Math.max(
-                ClusterMember.highMemberId(activeMembers), ClusterMember.highMemberId(passiveMembers));
+            highMemberId = ClusterMember.highMemberId(activeMembers);
             timerService.currentTime(clusterClock.timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
             ClusterControl.ToggleState.activate(controlToggle);
             prepareSessionsForNewTerm(election.isLeaderStartup());
@@ -1853,24 +1846,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 member.catchupReplayCorrelationId(NULL_VALUE);
             }
         }
-    }
-
-    boolean pollForSnapshotLoadAck(final Counter recoveryStateCounter, final long nowNs)
-    {
-        consensusModuleAdapter.poll();
-
-        if (ServiceAck.hasReached(expectedAckPosition, serviceAckId, serviceAckQueues))
-        {
-            captureServiceClientIds();
-            ++serviceAckId;
-            timeOfLastLogUpdateNs = nowNs;
-            CloseHelper.close(ctx.countedErrorHandler(), recoveryStateCounter);
-            state(ConsensusModule.State.ACTIVE);
-
-            return true;
-        }
-
-        return false;
     }
 
     int pollArchiveEvents()
@@ -2997,14 +2972,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         for (final ClusterMember member : activeMembers)
         {
             if (member.id() != memberId)
-            {
-                consensusPublisher.commitPosition(member.publication(), leadershipTermId, commitPosition, memberId);
-            }
-        }
-
-        for (final ClusterMember member : passiveMembers)
-        {
-            if (member.id() != memberId && member.hasRequestedJoin())
             {
                 consensusPublisher.commitPosition(member.publication(), leadershipTermId, commitPosition, memberId);
             }

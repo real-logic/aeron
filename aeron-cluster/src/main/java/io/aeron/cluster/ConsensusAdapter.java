@@ -42,11 +42,6 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
     private final CatchupPositionDecoder catchupPositionDecoder = new CatchupPositionDecoder();
     private final StopCatchupDecoder stopCatchupDecoder = new StopCatchupDecoder();
 
-    private final AddPassiveMemberDecoder addPassiveMemberDecoder = new AddPassiveMemberDecoder();
-    private final ClusterMembersChangeDecoder clusterMembersChangeDecoder = new ClusterMembersChangeDecoder();
-    private final SnapshotRecordingQueryDecoder snapshotRecordingQueryDecoder = new SnapshotRecordingQueryDecoder();
-    private final SnapshotRecordingsDecoder snapshotRecordingsDecoder = new SnapshotRecordingsDecoder();
-    private final JoinClusterDecoder joinClusterDecoder = new JoinClusterDecoder();
     private final TerminationPositionDecoder terminationPositionDecoder = new TerminationPositionDecoder();
     private final TerminationAckDecoder terminationAckDecoder = new TerminationAckDecoder();
     private final BackupQueryDecoder backupQueryDecoder = new BackupQueryDecoder();
@@ -224,6 +219,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
             case ClusterMembersChangeDecoder.TEMPLATE_ID:
             case SnapshotRecordingsDecoder.TEMPLATE_ID:
             case JoinClusterDecoder.TEMPLATE_ID:
+                // Removed Dynamic Join.
                 break;
 
             case TerminationPositionDecoder.TEMPLATE_ID:

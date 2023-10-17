@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BitUtil.align;
 
 final class LogPublisher
@@ -47,7 +46,6 @@ final class LogPublisher
     private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();
     private final ClusterActionRequestEncoder clusterActionRequestEncoder = new ClusterActionRequestEncoder();
     private final NewLeadershipTermEventEncoder newLeadershipTermEventEncoder = new NewLeadershipTermEventEncoder();
-    private final MembershipChangeEventEncoder membershipChangeEventEncoder = new MembershipChangeEventEncoder();
     private final UnsafeBuffer sessionHeaderBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
@@ -328,64 +326,6 @@ final class LogPublisher
         while (--attempts > 0);
 
         return false;
-    }
-
-    long appendMembershipChangeEvent(
-        final long leadershipTermId,
-        final long timestamp,
-        final int leaderMemberId,
-        final int clusterSize,
-        final ChangeType changeType,
-        final int memberId,
-        final String clusterMembers)
-    {
-        final int fragmentedLength = computeMembershipChangeEventFragmentedLength(clusterMembers);
-
-        membershipChangeEventEncoder
-            .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
-            .leadershipTermId(leadershipTermId)
-            .timestamp(timestamp)
-            .leaderMemberId(leaderMemberId)
-            .clusterSize(clusterSize)
-            .changeType(changeType)
-            .memberId(memberId)
-            .clusterMembers(clusterMembers);
-
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + membershipChangeEventEncoder.encodedLength();
-        int attempts = SEND_ATTEMPTS;
-        long result;
-        do
-        {
-            membershipChangeEventEncoder
-                .wrap(expandableArrayBuffer, MessageHeaderEncoder.ENCODED_LENGTH)
-                .logPosition(publication.position() + fragmentedLength);
-
-            result = publication.offer(expandableArrayBuffer, 0, length, null);
-            if (result > 0)
-            {
-                break;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return result;
-    }
-
-    private int computeMembershipChangeEventFragmentedLength(final String clusterMembers)
-    {
-        final int messageLength = MessageHeaderEncoder.ENCODED_LENGTH +
-            MembershipChangeEventEncoder.BLOCK_LENGTH +
-            MembershipChangeEventEncoder.clusterMembersHeaderLength() +
-            clusterMembers.length();
-
-        final int maxPayloadLength = publication.maxPayloadLength();
-        final int numMaxPayloads = messageLength / maxPayloadLength;
-        final int remainingPayload = messageLength % maxPayloadLength;
-        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
-
-        return (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
     }
 
     private static void checkResult(final long result)

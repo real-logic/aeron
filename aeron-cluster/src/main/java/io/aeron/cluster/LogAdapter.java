@@ -45,7 +45,6 @@ final class LogAdapter implements ControlledFragmentHandler
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ClusterActionRequestDecoder clusterActionRequestDecoder = new ClusterActionRequestDecoder();
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
-    private final MembershipChangeEventDecoder membershipChangeEventDecoder = new MembershipChangeEventDecoder();
 
     LogAdapter(final ConsensusModuleAgent consensusModuleAgent, final int fragmentLimit)
     {
@@ -270,19 +269,7 @@ final class LogAdapter implements ControlledFragmentHandler
                 break;
 
             case MembershipChangeEventDecoder.TEMPLATE_ID:
-                membershipChangeEventDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onReplayMembershipChange(
-                    membershipChangeEventDecoder.leadershipTermId(),
-                    membershipChangeEventDecoder.logPosition(),
-                    membershipChangeEventDecoder.leaderMemberId(),
-                    membershipChangeEventDecoder.changeType(),
-                    membershipChangeEventDecoder.memberId(),
-                    membershipChangeEventDecoder.clusterMembers());
+                // Removed Dynamic Join.
                 return Action.BREAK;
 
             case ClusterActionRequestDecoder.TEMPLATE_ID:

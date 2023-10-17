@@ -252,17 +252,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                 break;
 
             case MembershipChangeEventDecoder.TEMPLATE_ID:
-                membershipChangeEventDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                agent.onMembershipChange(
-                    membershipChangeEventDecoder.logPosition(),
-                    membershipChangeEventDecoder.timestamp(),
-                    membershipChangeEventDecoder.changeType(),
-                    membershipChangeEventDecoder.memberId());
+                // Removed Dynamic Join.
                 break;
         }
 

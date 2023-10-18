@@ -73,11 +73,9 @@ public class NodeStateFile implements AutoCloseable
     public static final String FILENAME = "node-state.dat";
     private static final int MINIMUM_FILE_LENGTH = 1 << 20;
     private final CandidateTerm candidateTerm = new CandidateTerm();
-    private final ClusterMembers clusterMembers = new ClusterMembers();
     private final MappedByteBuffer mappedFile;
     private final int fileSyncLevel;
     private final NodeStateHeaderDecoder nodeStateHeaderDecoder = new NodeStateHeaderDecoder();
-    private final ClusterMembersDecoder clusterMembersDecoder = new ClusterMembersDecoder();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final CandidateTermDecoder candidateTermDecoder = new CandidateTermDecoder();
     private final UnsafeBuffer buffer;
@@ -117,8 +115,7 @@ public class NodeStateFile implements AutoCloseable
                     buffer,
                     nodeStateHeaderDecoder,
                     messageHeaderDecoder,
-                    candidateTermDecoder,
-                    clusterMembersDecoder);
+                    candidateTermDecoder);
 
                 candidateTermIdOffset = calculateAndVerifyCandidateTermIdOffset();
                 buffer.putLongVolatile(candidateTermIdOffset, Aeron.NULL_VALUE);
@@ -167,7 +164,6 @@ public class NodeStateFile implements AutoCloseable
         final MutableDirectBuffer buffer,
         final NodeStateHeaderDecoder nodeStateHeaderDecoder,
         final CandidateTermDecoder candidateTermDecoder,
-        final ClusterMembersDecoder clusterMembersDecoder,
         final MessageHeaderDecoder messageHeaderDecoder)
     {
         nodeStateHeaderDecoder.wrap(
@@ -204,27 +200,13 @@ public class NodeStateFile implements AutoCloseable
         }
 
         candidateTermDecoder.wrapAndApplyHeader(buffer, candidateTermOffset, messageHeaderDecoder);
-
-        final int clusterMembersOffset = scanForMessageTypeOffset(
-            nodeStateHeaderDecoder.sbeBlockLength(),
-            ClusterMembersDecoder.TEMPLATE_ID,
-            buffer,
-            messageHeaderDecoder);
-
-        if (Aeron.NULL_VALUE == clusterMembersOffset)
-        {
-            throw new IllegalStateException("failed to find ClusterMembers entry");
-        }
-
-        clusterMembersDecoder.wrapAndApplyHeader(buffer, clusterMembersOffset, messageHeaderDecoder);
     }
 
     private static void initialiseDecodersOnCreation(
         final MutableDirectBuffer buffer,
         final NodeStateHeaderDecoder nodeStateHeaderDecoder,
         final MessageHeaderDecoder messageHeaderDecoder,
-        final CandidateTermDecoder candidateTermDecoder,
-        final ClusterMembersDecoder clusterMembersDecoder)
+        final CandidateTermDecoder candidateTermDecoder)
     {
         final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
 
@@ -247,21 +229,7 @@ public class NodeStateFile implements AutoCloseable
             .candidateTermId(Aeron.NULL_VALUE);
         messageHeaderEncoder.frameLength(MessageHeaderEncoder.ENCODED_LENGTH + candidateTermEncoder.encodedLength());
 
-        final int clusterMembersFrameOffset = candidateTermFrameOffset +
-            align(messageHeaderDecoder.frameLength(), ALIGNMENT);
-        verifyAlignment(candidateTermFrameOffset);
-
-        final ClusterMembersEncoder clusterMembersEncoder = new ClusterMembersEncoder();
-        clusterMembersEncoder.wrapAndApplyHeader(buffer, clusterMembersFrameOffset, messageHeaderEncoder);
-        clusterMembersDecoder.wrapAndApplyHeader(buffer, clusterMembersFrameOffset, messageHeaderDecoder);
-        clusterMembersEncoder
-            .leadershipTermId(Aeron.NULL_VALUE)
-            .memberId(Aeron.NULL_VALUE)
-            .highMemberId(Aeron.NULL_VALUE)
-            .clusterMembers("");
-        messageHeaderEncoder.frameLength(MessageHeaderEncoder.ENCODED_LENGTH + clusterMembersEncoder.encodedLength());
-
-        final int footerOffset = clusterMembersFrameOffset + align(messageHeaderDecoder.frameLength(), ALIGNMENT);
+        final int footerOffset = candidateTermFrameOffset + align(messageHeaderDecoder.frameLength(), ALIGNMENT);
         final NodeStateFooterEncoder nodeStateFooterEncoder = new NodeStateFooterEncoder();
         nodeStateFooterEncoder.wrapAndApplyHeader(buffer, footerOffset, messageHeaderEncoder);
         messageHeaderEncoder
@@ -323,106 +291,15 @@ public class NodeStateFile implements AutoCloseable
         return candidateTerm;
     }
 
-    ClusterMembers clusterMembers()
-    {
-        if (Aeron.NULL_VALUE == clusterMembersDecoder.leadershipTermId())
-        {
-            return null;
-        }
-
-        return clusterMembers;
-    }
-
-    void updateClusterMembers(
-        final long leadershipTermId,
-        final int memberId,
-        final int highMemberId,
-        final String clusterMembers)
-    {
-        final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-        final ClusterMembersEncoder clusterMembersEncoder = new ClusterMembersEncoder();
-        final MutableDirectBuffer tempBuffer = new ExpandableArrayBuffer(128);
-        clusterMembersEncoder.wrapAndApplyHeader(tempBuffer, 0, messageHeaderEncoder);
-        clusterMembersEncoder
-            .leadershipTermId(leadershipTermId)
-            .memberId(memberId)
-            .highMemberId(highMemberId)
-            .clusterMembers(clusterMembers);
-        final int newFrameLength = messageHeaderEncoder.encodedLength() + clusterMembersEncoder.encodedLength();
-        messageHeaderEncoder.frameLength(newFrameLength);
-
-        final int clusterMembersOffset = clusterMembersDecoder.offset();
-
-        insertRecord(tempBuffer, clusterMembersOffset, newFrameLength);
-    }
-
-    private void insertRecord(
-        final MutableDirectBuffer record,
-        final int recordOffset,
-        final int recordLength)
-    {
-        final int frameOffset = recordOffset - MessageHeaderDecoder.ENCODED_LENGTH;
-        messageHeaderDecoder.wrap(buffer, frameOffset);
-        final int existingFrameLengthAligned = align(messageHeaderDecoder.frameLength(), ALIGNMENT);
-        final int nextRecordOffset = frameOffset + existingFrameLengthAligned;
-        final int amountToMoveTrailingRecords = align(recordLength, ALIGNMENT) - existingFrameLengthAligned;
-        final int newNextRecordOffset = nextRecordOffset + amountToMoveTrailingRecords;
-
-        final int footerOffset = scanForMessageTypeOffset(
-            nodeStateHeaderDecoder.encodedLength(),
-            NodeStateFooterDecoder.TEMPLATE_ID,
-            buffer,
-            messageHeaderDecoder);
-        if (Aeron.NULL_VALUE == footerOffset)
-        {
-            throw new IllegalStateException("failed to find footer, file corrupt?");
-        }
-
-        final int footerEndOffset =
-            footerOffset + MessageHeaderDecoder.ENCODED_LENGTH + NodeStateFooterDecoder.BLOCK_LENGTH;
-        final int lengthOfTrailingRecords = footerEndOffset - nextRecordOffset;
-        moveTrailingRecords(buffer, nextRecordOffset, lengthOfTrailingRecords, newNextRecordOffset);
-
-        buffer.putBytes(frameOffset, record, 0, recordLength);
-        loadDecodersAndOffsets(buffer);
-
-        syncFile(mappedFile);
-    }
-
     private void loadDecodersAndOffsets(final UnsafeBuffer buffer)
     {
         loadInitialState(
             buffer,
             nodeStateHeaderDecoder,
             candidateTermDecoder,
-            clusterMembersDecoder,
             messageHeaderDecoder);
 
         candidateTermIdOffset = calculateAndVerifyCandidateTermIdOffset();
-    }
-
-    static void moveTrailingRecords(
-        final UnsafeBuffer buffer,
-        final int srcOffset,
-        final int length,
-        final int dstOffset)
-    {
-        verifyAlignment(length);
-
-        if (dstOffset < srcOffset)
-        {
-            for (int i = 0; i < length; i += ALIGNMENT)
-            {
-                buffer.putLong(dstOffset + i, buffer.getLong(srcOffset + i));
-            }
-        }
-        else if (srcOffset < dstOffset)
-        {
-            for (int i = (length - ALIGNMENT); 0 <= i; i -= ALIGNMENT)
-            {
-                buffer.putLong(dstOffset + i, buffer.getLong(srcOffset + i));
-            }
-        }
     }
 
     private static int scanForMessageTypeOffset(
@@ -501,54 +378,6 @@ public class NodeStateFile implements AutoCloseable
         public long logPosition()
         {
             return candidateTermDecoder.logPosition();
-        }
-    }
-
-    /**
-     * Wrapper class for the most recent set of cluster members.
-     */
-    public final class ClusterMembers
-    {
-        /**
-         * This node's cluster member id.
-         *
-         * @return this node's cluster member id.
-         */
-        public int memberId()
-        {
-            return clusterMembersDecoder.memberId();
-        }
-
-        /**
-         * High member id.
-         *
-         * @return high member id.
-         */
-        public int highMemberId()
-        {
-            return clusterMembersDecoder.highMemberId();
-        }
-
-        /**
-         * Leadership term when the new set of cluster members reached consensus.
-         *
-         * @return id of the leadership term.
-         */
-        public long leadershipTermId()
-        {
-            return clusterMembersDecoder.leadershipTermId();
-        }
-
-        /**
-         * List of the cluster members along with their associated endpoints in the format specified by
-         * {@link ConsensusModule.Configuration#CLUSTER_MEMBERS_PROP_NAME}.
-         *
-         * @return cluster members list.
-         * @see ConsensusModule.Configuration#CLUSTER_MEMBERS_PROP_NAME
-         */
-        public String clusterMembers()
-        {
-            return clusterMembersDecoder.clusterMembers();
         }
     }
 

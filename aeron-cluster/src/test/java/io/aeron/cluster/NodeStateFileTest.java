@@ -27,13 +27,22 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.MappedByteBuffer;
-import java.util.Objects;
+import java.nio.file.Files;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class NodeStateFileTest
 {
+    private static final long V_1_42_X_CANDIDATE_TERM_ID = 982374;
+    private static final long V_1_42_X_LOG_POSITION = 89723648762342L;
+    private static final long V_1_42_X_TIMESTAMP_MS = 9878967687234L;
+
     private final int syncLevel = 1;
 
     @Test
@@ -45,10 +54,10 @@ class NodeStateFileTest
     @Test
     void shouldCreateIfCreateNewTrueAndFileDoesNotExist(@TempDir final File clusterDir) throws IOException
     {
-        assertEquals(0, Objects.requireNonNull(clusterDir.list()).length);
+        assertEquals(0, requireNonNull(clusterDir.list()).length);
         try (NodeStateFile ignore = new NodeStateFile(clusterDir, true, syncLevel))
         {
-            Objects.requireNonNull(ignore);
+            requireNonNull(ignore);
             assertTrue(new File(clusterDir, NodeStateFile.FILENAME).exists());
         }
     }
@@ -86,7 +95,7 @@ class NodeStateFileTest
     {
         try (NodeStateFile ignore = new NodeStateFile(clusterDir, true, syncLevel))
         {
-            Objects.requireNonNull(ignore);
+            requireNonNull(ignore);
         }
 
         final int invalidVersion = SemanticVersion.compose(
@@ -95,7 +104,7 @@ class NodeStateFileTest
 
         try (NodeStateFile ignore = new NodeStateFile(clusterDir, false, syncLevel))
         {
-            Objects.requireNonNull(ignore);
+            requireNonNull(ignore);
             fail("ClusterException should have been thrown");
         }
         catch (final ClusterException ignore)
@@ -123,89 +132,50 @@ class NodeStateFileTest
         }
     }
 
+    /**
+     * Old node state file created using 1.42.x format with the following code.
+     * <code>
+     * try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
+     * {
+     *     nodeStateFile.updateCandidateTermId(
+     *         V_1_42_X_CANDIDATE_TERM_ID, V_1_42_X_LOG_POSITION, V_1_42_X_TIMESTAMP_MS);
+     *     nodeStateFile.updateClusterMembers(
+     *         10001, 10002, 10003,
+     *         "10001,localhost:20110,localhost:20220,localhost:20330,localhost:20440,localhost:8010" +
+     *         "10002,localhost:20111,localhost:20221,localhost:20331,localhost:20441,localhost:8011" +
+     *         "10003,localhost:20112,localhost:20222,localhost:20332,localhost:20442,localhost:8012");
+     * }
+     * </code>
+     *
+     * @param clusterDir temporary cluster directory
+     * @throws IOException if an I/O exception occurs
+     */
     @Test
-    void shouldHaveNullClusterMembersOnCreation(@TempDir final File clusterDir) throws IOException
+    void shouldHandleNodeStateFileCreatedWithEarlierVersion(@TempDir final File clusterDir) throws IOException
     {
-        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
-        {
-            assertNull(nodeStateFile.clusterMembers());
-        }
-    }
+        final URL resource = this.getClass().getResource("/v1_42_x/node-state.dat");
+        Files.copy(requireNonNull(resource).openStream(), new File(clusterDir, NodeStateFile.FILENAME).toPath());
+        final long candidateTermId = 10L;
+        final long logPosition = 20L;
+        final long timestampMs = 30L;
+        final long newCandidateTermId = candidateTermId + 100;
 
-    @Test
-    void shouldHaveNullClusterMembersIfNotSet(@TempDir final File clusterDir) throws IOException
-    {
-        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
+        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, false, syncLevel))
         {
-            nodeStateFile.updateCandidateTermId(1, 2, 3);
-        }
+            final NodeStateFile.CandidateTerm candidateTerm = nodeStateFile.candidateTerm();
+            assertEquals(V_1_42_X_CANDIDATE_TERM_ID, candidateTerm.candidateTermId());
+            assertEquals(V_1_42_X_LOG_POSITION, candidateTerm.logPosition());
+            assertEquals(V_1_42_X_TIMESTAMP_MS, candidateTerm.timestamp());
 
-        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
-        {
-            assertNull(nodeStateFile.clusterMembers());
-        }
-    }
-
-    @Test
-    void shouldHandleReloadOfEmptyFile(@TempDir final File clusterDir) throws IOException
-    {
-        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
-        {
-            Objects.requireNonNull(nodeStateFile);
-        }
-
-        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
-        {
-            assertEquals(Aeron.NULL_VALUE, nodeStateFile.candidateTerm().candidateTermId());
-            assertNull(nodeStateFile.clusterMembers());
-        }
-    }
-
-    @Test
-    void shouldShouldPersistClusterMembers(@TempDir final File clusterDir) throws IOException
-    {
-        final long candidateTermId = 832234;
-        final long timestampMs = 324234;
-        final long logPosition = 8923423;
-        final long leadershipTermId = 82734982734L;
-        final int memberId = 32;
-        final int highClusterMemberId = 65;
-        final String longClusterMembers =
-            "0,host0:20000,host0:20001,host0:20002,host0:220003,host0:20004|" +
-            "1,host1:20000,host1:20001,host1:20002,host1:220003,host1:20004|" +
-            "2,host2:20000,host2:20001,host2:20002,host2:220003,host2:20004|";
-        final String shortClusterMembers =
-            "0,host0:20000,host0:20001,host0:20002,host0:220003,host0:20004|";
-
-        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
-        {
             nodeStateFile.updateCandidateTermId(candidateTermId, logPosition, timestampMs);
-            nodeStateFile.updateClusterMembers(leadershipTermId, memberId, highClusterMemberId, longClusterMembers);
-        }
+            assertEquals(candidateTermId, candidateTerm.candidateTermId());
+            assertEquals(logPosition, candidateTerm.logPosition());
+            assertEquals(timestampMs, candidateTerm.timestamp());
 
-        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
-        {
-            assertEquals(candidateTermId, nodeStateFile.candidateTerm().candidateTermId());
-            assertEquals(timestampMs, nodeStateFile.candidateTerm().timestamp());
-            assertEquals(logPosition, nodeStateFile.candidateTerm().logPosition());
-
-            assertNotNull(nodeStateFile.clusterMembers());
-            assertEquals(memberId, nodeStateFile.clusterMembers().memberId());
-            assertEquals(highClusterMemberId, nodeStateFile.clusterMembers().highMemberId());
-            assertEquals(longClusterMembers, nodeStateFile.clusterMembers().clusterMembers());
-        }
-
-        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
-        {
-            nodeStateFile.updateClusterMembers(leadershipTermId, memberId, highClusterMemberId, shortClusterMembers);
-        }
-
-        try (NodeStateFile nodeStateFile = new NodeStateFile(clusterDir, true, syncLevel))
-        {
-            assertNotNull(nodeStateFile.clusterMembers());
-            assertEquals(memberId, nodeStateFile.clusterMembers().memberId());
-            assertEquals(highClusterMemberId, nodeStateFile.clusterMembers().highMemberId());
-            assertEquals(shortClusterMembers, nodeStateFile.clusterMembers().clusterMembers());
+            final long candidateTermIdPostPropose = nodeStateFile.proposeMaxCandidateTermId(
+                newCandidateTermId, logPosition, timestampMs);
+            assertEquals(newCandidateTermId, candidateTermIdPostPropose);
+            assertEquals(newCandidateTermId, candidateTerm.candidateTermId());
         }
     }
 

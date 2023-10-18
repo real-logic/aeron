@@ -35,7 +35,22 @@ final class GithubUtil
     {
     }
 
-    public static String getWikiUriFromOriginUri(final String remoteUri) throws URISyntaxException
+    public static String currentGitHash(final String projectDir) throws IOException, GitAPIException
+    {
+        try (Repository repository = new FileRepositoryBuilder().findGitDir(new File(projectDir)).build();
+            ObjectReader reader = repository.newObjectReader();
+            Git git = new Git(repository))
+        {
+            final RevCommit commit = git.log().setMaxCount(1).call().iterator().next();
+            final ObjectId commitId = commit.toObjectId();
+            final String commitSha = reader.abbreviate(commitId, 10).name();
+            final Status status = git.status().call();
+
+            return status.isClean() ? commitSha : commitSha + "+guilty";
+        }
+    }
+
+    static String getWikiUriFromOriginUri(final String remoteUri) throws URISyntaxException
     {
         final URIish urIish = new URIish(remoteUri);
         final String uriPath = urIish.getPath();
@@ -69,21 +84,5 @@ final class GithubUtil
         }
 
         return s;
-    }
-
-    public static String currentGitHash(final String projectDir) throws IOException, GitAPIException
-    {
-        try (Repository repository = new FileRepositoryBuilder().findGitDir(new File(projectDir)).build();
-            ObjectReader reader = repository.newObjectReader();
-            Git git = new Git(repository))
-        {
-            final RevCommit commit = git.log().setMaxCount(1).call().iterator().next();
-            final ObjectId commitId = commit.toObjectId();
-            final String commitSha = reader.abbreviate(commitId, 10).name();
-
-            final Status status = git.status().call();
-
-            return status.isClean() ? commitSha : commitSha + "+guilty";
-        }
     }
 }

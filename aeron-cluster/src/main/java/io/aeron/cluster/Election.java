@@ -625,12 +625,12 @@ class Election
         }
         else
         {
-            cleanupLogReplication();
-            resetCatchup();
+            stopLogReplication();
+            stopCatchup();
 
             prepareForNewLeadership(nowNs);
             logSessionId = NULL_SESSION_ID;
-            cleanupReplay();
+            stopReplay();
 
             if (null != logSubscription)
             {
@@ -836,7 +836,7 @@ class Election
             workCount += logReplay.doWork();
             if (logReplay.isDone())
             {
-                cleanupReplay();
+                stopReplay();
                 logPosition = appendPosition;
                 state(LEADER_INIT, nowNs);
             }
@@ -920,7 +920,7 @@ class Election
                         logReplication.hasSynced());
 
                     appendPosition = logReplication.position();
-                    cleanupLogReplication();
+                    stopLogReplication();
                     updateRecordingLogForReplication(
                         replicationLeadershipTermId, replicationTermBaseLogPosition, replicationStopPosition, nowNs);
                     state(CANVASS, nowNs);
@@ -957,7 +957,7 @@ class Election
             workCount += logReplay.doWork();
             if (logReplay.isDone())
             {
-                cleanupReplay();
+                stopReplay();
                 logPosition = appendPosition;
                 state(NULL_POSITION != catchupJoinPosition ? FOLLOWER_CATCHUP_INIT : FOLLOWER_LOG_INIT, nowNs);
             }
@@ -1331,7 +1331,7 @@ class Election
         }
     }
 
-    private void resetCatchup()
+    private void stopCatchup()
     {
         consensusModuleAgent.stopAllCatchups();
         catchupJoinPosition = NULL_POSITION;
@@ -1345,7 +1345,7 @@ class Election
         leaderMember = null;
     }
 
-    private void cleanupReplay()
+    private void stopReplay()
     {
         if (null != logReplay)
         {
@@ -1354,7 +1354,7 @@ class Election
         }
     }
 
-    private void cleanupLogReplication()
+    private void stopLogReplication()
     {
         if (null != logReplication)
         {

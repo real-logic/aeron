@@ -37,7 +37,6 @@ final class ConsensusModuleAdapter implements AutoCloseable
     private final ServiceAckDecoder serviceAckDecoder = new ServiceAckDecoder();
     private final CloseSessionDecoder closeSessionDecoder = new CloseSessionDecoder();
     private final ClusterMembersQueryDecoder clusterMembersQueryDecoder = new ClusterMembersQueryDecoder();
-    private final RemoveMemberDecoder removeMemberDecoder = new RemoveMemberDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onFragment);
 
     ConsensusModuleAdapter(final Subscription subscription, final ConsensusModuleAgent consensusModuleAgent)
@@ -56,7 +55,7 @@ final class ConsensusModuleAdapter implements AutoCloseable
         return subscription.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
-    @SuppressWarnings("MethodLength")
+    @SuppressWarnings({ "MethodLength", "deprecation" })
     private ControlledFragmentHandler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
@@ -148,6 +147,7 @@ final class ConsensusModuleAdapter implements AutoCloseable
                 break;
 
             case RemoveMemberDecoder.TEMPLATE_ID:
+                // Remove Dynamic Join.
                 break;
         }
 

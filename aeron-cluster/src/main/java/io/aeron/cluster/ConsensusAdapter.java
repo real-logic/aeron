@@ -74,7 +74,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
         return subscription.poll(fragmentAssembler, limit);
     }
 
-    @SuppressWarnings("MethodLength")
+    @SuppressWarnings({ "MethodLength", "deprecation" })
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);

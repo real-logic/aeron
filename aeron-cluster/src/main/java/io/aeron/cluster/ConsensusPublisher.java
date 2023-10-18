@@ -41,7 +41,6 @@ final class ConsensusPublisher
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
     private final CatchupPositionEncoder catchupPositionEncoder = new CatchupPositionEncoder();
     private final StopCatchupEncoder stopCatchupEncoder = new StopCatchupEncoder();
-    private final ClusterMembersChangeEncoder clusterMembersChangeEncoder = new ClusterMembersChangeEncoder();
     private final TerminationPositionEncoder terminationPositionEncoder = new TerminationPositionEncoder();
     private final TerminationAckEncoder terminationAckEncoder = new TerminationAckEncoder();
     private final BackupQueryEncoder backupQueryEncoder = new BackupQueryEncoder();
@@ -375,29 +374,6 @@ final class ConsensusPublisher
         while (--attempts > 0);
 
         return false;
-    }
-
-    boolean clusterMemberChange(
-        final ExclusivePublication publication,
-        final long correlationId,
-        final int leaderMemberId,
-        final String activeMembers,
-        final String passiveMembers)
-    {
-        if (null == publication)
-        {
-            return true;
-        }
-
-        clusterMembersChangeEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .correlationId(correlationId)
-            .leaderMemberId(leaderMemberId)
-            .activeMembers(activeMembers)
-            .passiveMembers(passiveMembers);
-
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + clusterMembersChangeEncoder.encodedLength();
-        return sendPublication(publication, buffer, length);
     }
 
     boolean terminationPosition(

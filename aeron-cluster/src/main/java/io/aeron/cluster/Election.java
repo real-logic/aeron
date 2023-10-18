@@ -362,8 +362,14 @@ class Election
         {
             this.candidateTermId = ctx.nodeStateFile().proposeMaxCandidateTermId(
                 candidateTermId, logPosition, ctx.epochClock().time());
+
             placeVote(candidateTermId, candidateId, false);
-            state(INIT, ctx.clusterClock().timeNanos());
+
+            final ClusterMember candidateMember = clusterMemberByIdMap.get(candidateId);
+            if (null != candidateMember && Cluster.Role.LEADER == consensusModuleAgent.role())
+            {
+                publishNewLeadershipTerm(candidateMember, logLeadershipTermId, ctx.clusterClock().time());
+            }
         }
         else if (CANVASS == state || NOMINATE == state || CANDIDATE_BALLOT == state || FOLLOWER_BALLOT == state)
         {

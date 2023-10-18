@@ -42,11 +42,6 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
     private final CatchupPositionDecoder catchupPositionDecoder = new CatchupPositionDecoder();
     private final StopCatchupDecoder stopCatchupDecoder = new StopCatchupDecoder();
 
-    private final AddPassiveMemberDecoder addPassiveMemberDecoder = new AddPassiveMemberDecoder();
-    private final ClusterMembersChangeDecoder clusterMembersChangeDecoder = new ClusterMembersChangeDecoder();
-    private final SnapshotRecordingQueryDecoder snapshotRecordingQueryDecoder = new SnapshotRecordingQueryDecoder();
-    private final SnapshotRecordingsDecoder snapshotRecordingsDecoder = new SnapshotRecordingsDecoder();
-    private final JoinClusterDecoder joinClusterDecoder = new JoinClusterDecoder();
     private final TerminationPositionDecoder terminationPositionDecoder = new TerminationPositionDecoder();
     private final TerminationAckDecoder terminationAckDecoder = new TerminationAckDecoder();
     private final BackupQueryDecoder backupQueryDecoder = new BackupQueryDecoder();
@@ -79,7 +74,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
         return subscription.poll(fragmentAssembler, limit);
     }
 
-    @SuppressWarnings("MethodLength")
+    @SuppressWarnings({ "MethodLength", "deprecation" })
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
@@ -219,62 +214,12 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     stopCatchupDecoder.followerMemberId());
                 break;
 
-            case AddPassiveMemberDecoder.TEMPLATE_ID:
-                addPassiveMemberDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onAddPassiveMember(
-                    addPassiveMemberDecoder.correlationId(), addPassiveMemberDecoder.memberEndpoints());
-                break;
-
-            case ClusterMembersChangeDecoder.TEMPLATE_ID:
-                clusterMembersChangeDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onClusterMembersChange(
-                    clusterMembersChangeDecoder.correlationId(),
-                    clusterMembersChangeDecoder.leaderMemberId(),
-                    clusterMembersChangeDecoder.activeMembers(),
-                    clusterMembersChangeDecoder.passiveMembers());
-                break;
-
             case SnapshotRecordingQueryDecoder.TEMPLATE_ID:
-                snapshotRecordingQueryDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onSnapshotRecordingQuery(
-                    snapshotRecordingQueryDecoder.correlationId(), snapshotRecordingQueryDecoder.requestMemberId());
-                break;
-
+            case AddPassiveMemberDecoder.TEMPLATE_ID:
+            case ClusterMembersChangeDecoder.TEMPLATE_ID:
             case SnapshotRecordingsDecoder.TEMPLATE_ID:
-                snapshotRecordingsDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onSnapshotRecordings(
-                    snapshotRecordingsDecoder.correlationId(), snapshotRecordingsDecoder);
-                break;
-
             case JoinClusterDecoder.TEMPLATE_ID:
-                joinClusterDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onJoinCluster(
-                    joinClusterDecoder.leadershipTermId(), joinClusterDecoder.memberId());
+                // Removed Dynamic Join.
                 break;
 
             case TerminationPositionDecoder.TEMPLATE_ID:

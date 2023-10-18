@@ -554,18 +554,6 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
             appVersion);
     }
 
-    void onMembershipChange(
-        final long logPosition, final long timestamp, final ChangeType changeType, final int memberId)
-    {
-        this.logPosition = logPosition;
-        clusterTime = timestamp;
-
-        if (memberId == this.memberId && changeType == ChangeType.QUIT)
-        {
-            terminate(true);
-        }
-    }
-
     void addSession(
         final long clusterSessionId,
         final int responseStreamId,

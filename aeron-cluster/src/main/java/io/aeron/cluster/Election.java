@@ -23,7 +23,6 @@ import io.aeron.Subscription;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.codecs.ChangeType;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
@@ -75,7 +74,7 @@ class Election
     private ElectionState state = INIT;
     private Subscription logSubscription = null;
     private LogReplay logReplay = null;
-    private ClusterMember[] clusterMembers;
+    private final ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
     private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap;
     private final ConsensusPublisher consensusPublisher;
@@ -262,24 +261,6 @@ class Election
         {
             logReplication.onSignal(correlationId, recordingId, position, signal);
             consensusModuleAgent.logRecordingId(logReplication.recordingId());
-        }
-    }
-
-    void onMembershipChange(
-        final ClusterMember[] clusterMembers, final ChangeType changeType, final int memberId, final long logPosition)
-    {
-        if (INIT == state)
-        {
-            return;
-        }
-
-        ClusterMember.copyVotes(this.clusterMembers, clusterMembers);
-        this.clusterMembers = clusterMembers;
-
-        if (ChangeType.QUIT == changeType && FOLLOWER_CATCHUP == state && leaderMember.id() == memberId)
-        {
-            this.logPosition = logPosition;
-            state(INIT, ctx.clusterClock().timeNanos());
         }
     }
 

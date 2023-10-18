@@ -18,7 +18,6 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.codecs.BooleanType;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
@@ -196,24 +195,6 @@ public class ClusterTool
 
             case "list-members":
                 listMembers(System.out, clusterDir);
-                break;
-
-            case "remove-member":
-                if (args.length < 3)
-                {
-                    printHelp();
-                    System.exit(-1);
-                }
-                removeMember(System.out, clusterDir, Integer.parseInt(args[2]), false);
-                break;
-
-            case "remove-passive":
-                if (args.length < 3)
-                {
-                    printHelp();
-                    System.exit(-1);
-                }
-                removeMember(System.out, clusterDir, Integer.parseInt(args[2]), true);
                 break;
 
             case "backup-query":
@@ -518,33 +499,6 @@ public class ClusterTool
     }
 
     /**
-     * Remove a member from the cluster.
-     *
-     * @param out        to print the output to.
-     * @param clusterDir where the cluster is running.
-     * @param memberId   to be removed.
-     * @param isPassive  true if the member is a passive member or false if not.
-     */
-    public static void removeMember(
-        final PrintStream out, final File clusterDir, final int memberId, final boolean isPassive)
-    {
-        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
-        {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
-            {
-                if (!removeMember(markFile, memberId, isPassive))
-                {
-                    out.println("could not send remove member request");
-                }
-            }
-        }
-        else
-        {
-            out.println(ClusterMarkFile.FILENAME + " does not exist.");
-        }
-    }
-
-    /**
      * Print out the time of the next backup query.
      *
      * @param out        to print the output to.
@@ -812,54 +766,6 @@ public class ClusterTool
         }
 
         return id.get() == NULL_VALUE;
-    }
-
-    /**
-     * Remove a member from a running cluster.
-     *
-     * @param clusterDir where the cluster component is running.
-     * @param memberId   to be removed.
-     * @param isPassive  true if the member to be removed is a passive member.
-     * @return true if the removal request was successful.
-     */
-    public static boolean removeMember(final File clusterDir, final int memberId, final boolean isPassive)
-    {
-        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
-        {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
-            {
-                return removeMember(markFile, memberId, isPassive);
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Remove a member from a running cluster.
-     *
-     * @param markFile  for the cluster component.
-     * @param memberId  to be removed.
-     * @param isPassive true if the member to be removed is a passive member.
-     * @return true if the removal request was successful.
-     */
-    public static boolean removeMember(final ClusterMarkFile markFile, final int memberId, final boolean isPassive)
-    {
-        final String aeronDirectoryName = markFile.decoder().aeronDirectory();
-        final String controlChannel = markFile.decoder().controlChannel();
-        final int consensusModuleStreamId = markFile.decoder().consensusModuleStreamId();
-
-        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
-            ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(
-                aeron.addPublication(controlChannel, consensusModuleStreamId)))
-        {
-            if (consensusModuleProxy.removeMember(memberId, isPassive ? BooleanType.TRUE : BooleanType.FALSE))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

@@ -140,7 +140,6 @@ public final class TestCluster implements AutoCloseable
     private final String[] receiverWildcardPortRanges;
     private final String clusterConsensusEndpoints;
     private final int staticMemberCount;
-    private final int dynamicMemberCount;
     private final int appointedLeaderId;
     private final int backupNodeIndex;
     private final IntFunction<TestNode.TestService[]> serviceSupplier;
@@ -162,28 +161,25 @@ public final class TestCluster implements AutoCloseable
 
     private TestCluster(
         final int staticMemberCount,
-        final int dynamicMemberCount,
         final int appointedLeaderId,
         final IntHashSet byHostInvalidInitialResolutions,
         final IntFunction<TestNode.TestService[]> serviceSupplier)
     {
         this.serviceSupplier = requireNonNull(serviceSupplier);
-        final int memberCount = staticMemberCount + dynamicMemberCount;
-        if ((memberCount + 1) >= 10)
+        if ((staticMemberCount + 1) >= 10)
         {
-            throw new IllegalArgumentException("max members exceeded: max=9 count=" + memberCount);
+            throw new IllegalArgumentException("max members exceeded: max=9 count=" + staticMemberCount);
         }
 
-        this.nodes = new TestNode[memberCount + 1];
-        this.backupNodeIndex = memberCount;
+        this.nodes = new TestNode[staticMemberCount + 1];
+        this.backupNodeIndex = staticMemberCount;
         this.staticClusterMembers = clusterMembers(0, staticMemberCount);
         this.staticClusterMemberEndpoints = ingressEndpoints(0, staticMemberCount);
-        this.clusterMembersEndpoints = clusterMembersEndpoints(0, memberCount);
-        this.senderWildcardPortRanges = senderWildcardPortRanges(0, memberCount);
-        this.receiverWildcardPortRanges = receiverWildcardPortRanges(0, memberCount);
+        this.clusterMembersEndpoints = clusterMembersEndpoints(0, staticMemberCount);
+        this.senderWildcardPortRanges = senderWildcardPortRanges(0, staticMemberCount);
+        this.receiverWildcardPortRanges = receiverWildcardPortRanges(0, staticMemberCount);
         this.clusterConsensusEndpoints = clusterConsensusEndpoints(0, 0, staticMemberCount);
         this.staticMemberCount = staticMemberCount;
-        this.dynamicMemberCount = dynamicMemberCount;
         this.appointedLeaderId = appointedLeaderId;
         this.byHostInvalidInitialResolutions = byHostInvalidInitialResolutions;
     }
@@ -334,203 +330,6 @@ public final class TestCluster implements AutoCloseable
         return nodes[index];
     }
 
-    public TestNode startDynamicNode(final int index, final boolean cleanStart)
-    {
-        return startDynamicNode(index, cleanStart, serviceSupplier);
-    }
-
-    @SuppressWarnings("deprecation")
-    public TestNode startDynamicNode(
-        final int index, final boolean cleanStart, final IntFunction<TestNode.TestService[]> serviceSupplier)
-    {
-        final String baseDirName = clusterBaseDir + "-" + index;
-        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-        final File markFileDir = null != markFileBaseDir ? new File(markFileBaseDir, "mark-" + index) : null;
-        final TestNode.Context context = new TestNode.Context(serviceSupplier.apply(index), nodeNameMappings());
-
-        context.aeronArchiveContext
-            .lock(NoOpLock.INSTANCE)
-            .controlRequestChannel(archiveControlRequestChannel(index))
-            .controlResponseChannel(archiveControlResponseChannel(index))
-            .aeronDirectoryName(aeronDirName);
-
-        context.mediaDriverContext
-            .aeronDirectoryName(aeronDirName)
-            .threadingMode(ThreadingMode.SHARED)
-            .termBufferSparseFile(true)
-            .senderWildcardPortRange(senderWildcardPortRanges[index])
-            .receiverWildcardPortRange(receiverWildcardPortRanges[index])
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(false);
-
-        context.archiveContext
-            .catalogCapacity(CATALOG_CAPACITY)
-            .archiveDir(new File(baseDirName, "archive"))
-            .controlChannel(context.aeronArchiveContext.controlRequestChannel())
-            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
-            .recordingEventsEnabled(false)
-            .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(cleanStart)
-            .segmentFileLength(archiveSegmentFileLength)
-            .replicationChannel(archiveReplicationChannel(index));
-
-        context.consensusModuleContext
-            .clusterMemberId(NULL_VALUE)
-            .clusterMembers("")
-            .clusterConsensusEndpoints(clusterConsensusEndpoints)
-            .memberEndpoints(clusterMembersEndpoints[index])
-            .clusterDir(new File(baseDirName, "consensus-module"))
-            .ingressChannel(ingressChannel)
-            .logChannel(logChannel)
-            .replicationChannel(clusterReplicationChannel(0, index))
-            .archiveContext(context.aeronArchiveContext.clone()
-                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
-                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
-            .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
-            .authenticatorSupplier(authenticationSupplier)
-            .authorisationServiceSupplier(authorisationServiceSupplier)
-            .timerServiceSupplier(timerServiceSupplier)
-            .acceptStandbySnapshots(acceptStandbySnapshots)
-            .markFileDir(markFileDir)
-            .deleteDirOnStart(cleanStart);
-
-        nodes[index] = new TestNode(context, dataCollector);
-
-        return nodes[index];
-    }
-
-    public TestNode startDynamicNodeConsensusEndpoints(final int index, final boolean cleanStart)
-    {
-        return startDynamicNodeConsensusEndpoints(index, cleanStart, serviceSupplier);
-    }
-
-    @SuppressWarnings("deprecation")
-    public TestNode startDynamicNodeConsensusEndpoints(
-        final int index, final boolean cleanStart, final IntFunction<TestNode.TestService[]> serviceSupplier)
-    {
-        final String baseDirName = clusterBaseDir + "-" + index;
-        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-        final File markFileDir = null != markFileBaseDir ? new File(markFileBaseDir, "mark-" + index) : null;
-        final TestNode.Context context = new TestNode.Context(serviceSupplier.apply(index), nodeNameMappings());
-
-        context.aeronArchiveContext
-            .lock(NoOpLock.INSTANCE)
-            .controlRequestChannel(archiveControlRequestChannel(index))
-            .controlResponseChannel(archiveControlResponseChannel(index))
-            .aeronDirectoryName(aeronDirName);
-
-        context.mediaDriverContext
-            .aeronDirectoryName(aeronDirName)
-            .threadingMode(ThreadingMode.SHARED)
-            .termBufferSparseFile(true)
-            .senderWildcardPortRange(senderWildcardPortRanges[index])
-            .receiverWildcardPortRange(receiverWildcardPortRanges[index])
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(false);
-
-        context.archiveContext
-            .catalogCapacity(CATALOG_CAPACITY)
-            .archiveDir(new File(baseDirName, "archive"))
-            .controlChannel(context.aeronArchiveContext.controlRequestChannel())
-            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
-            .recordingEventsEnabled(false)
-            .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(cleanStart)
-            .segmentFileLength(archiveSegmentFileLength)
-            .replicationChannel(archiveReplicationChannel(index));
-
-        final String dynamicOnlyConsensusEndpoints = clusterConsensusEndpoints(0, 3, index);
-
-        context.consensusModuleContext
-            .clusterMemberId(NULL_VALUE)
-            .clusterMembers("")
-            .clusterConsensusEndpoints(dynamicOnlyConsensusEndpoints)
-            .memberEndpoints(clusterMembersEndpoints[index])
-            .clusterDir(new File(baseDirName, "consensus-module"))
-            .ingressChannel(ingressChannel)
-            .logChannel(logChannel)
-            .replicationChannel(clusterReplicationChannel(0, index))
-            .archiveContext(context.aeronArchiveContext.clone()
-                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
-                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
-            .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
-            .authenticatorSupplier(authenticationSupplier)
-            .authorisationServiceSupplier(authorisationServiceSupplier)
-            .timerServiceSupplier(timerServiceSupplier)
-            .acceptStandbySnapshots(acceptStandbySnapshots)
-            .markFileDir(markFileDir)
-            .deleteDirOnStart(cleanStart);
-
-        nodes[index] = new TestNode(context, dataCollector);
-
-        return nodes[index];
-    }
-
-    public TestNode startStaticNodeFromDynamicNode(final int index)
-    {
-        return startStaticNodeFromDynamicNode(index, serviceSupplier);
-    }
-
-    public TestNode startStaticNodeFromDynamicNode(
-        final int index, final IntFunction<TestNode.TestService[]> serviceSupplier)
-    {
-        final String baseDirName = clusterBaseDir + "-" + index;
-        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-        final File markFileDir = null != markFileBaseDir ? new File(markFileBaseDir, "mark-" + index) : null;
-        final TestNode.Context context = new TestNode.Context(serviceSupplier.apply(index), nodeNameMappings());
-
-        context.aeronArchiveContext
-            .lock(NoOpLock.INSTANCE)
-            .controlRequestChannel(archiveControlRequestChannel(index))
-            .controlResponseChannel(archiveControlResponseChannel(index))
-            .aeronDirectoryName(aeronDirName);
-
-        context.mediaDriverContext
-            .aeronDirectoryName(aeronDirName)
-            .threadingMode(ThreadingMode.SHARED)
-            .termBufferSparseFile(true)
-            .senderWildcardPortRange(senderWildcardPortRanges[index])
-            .receiverWildcardPortRange(receiverWildcardPortRanges[index])
-            .dirDeleteOnShutdown(false)
-            .dirDeleteOnStart(true);
-
-        context.archiveContext
-            .catalogCapacity(CATALOG_CAPACITY)
-            .archiveDir(new File(baseDirName, "archive"))
-            .controlChannel(context.aeronArchiveContext.controlRequestChannel())
-            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
-            .recordingEventsEnabled(false)
-            .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(false)
-            .segmentFileLength(archiveSegmentFileLength)
-            .replicationChannel(archiveReplicationChannel(index));
-
-        context.consensusModuleContext
-            .clusterMemberId(index)
-            .clusterMembers(clusterMembers(0, staticMemberCount + 1))
-            .startupCanvassTimeoutNs(STARTUP_CANVASS_TIMEOUT_NS)
-            .leaderHeartbeatTimeoutNs(LEADER_HEARTBEAT_TIMEOUT_NS)
-            .appointedLeaderId(appointedLeaderId)
-            .clusterDir(new File(baseDirName, "consensus-module"))
-            .ingressChannel(ingressChannel)
-            .logChannel(logChannel)
-            .replicationChannel(clusterReplicationChannel(0, index))
-            .archiveContext(context.aeronArchiveContext.clone()
-                .controlRequestChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
-                .controlResponseChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL))
-            .sessionTimeoutNs(TimeUnit.SECONDS.toNanos(10))
-            .authenticatorSupplier(authenticationSupplier)
-            .authorisationServiceSupplier(authorisationServiceSupplier)
-            .timerServiceSupplier(timerServiceSupplier)
-            .acceptStandbySnapshots(acceptStandbySnapshots)
-            .markFileDir(markFileDir)
-            .deleteDirOnStart(false);
-
-        nodes[index] = new TestNode(context, dataCollector);
-
-        return nodes[index];
-    }
-
     public TestBackupNode startClusterBackupNode(final boolean cleanStart)
     {
         return startClusterBackupNode(cleanStart, new NullCredentialsSupplier());
@@ -553,7 +352,7 @@ public final class TestCluster implements AutoCloseable
         final CredentialsSupplier credentialsSupplier,
         final ClusterBackup.SourceType sourceType)
     {
-        final int index = staticMemberCount + dynamicMemberCount;
+        final int index = staticMemberCount;
         final String baseDirName = clusterBaseDir + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
         final File markFileDir = null != markFileBaseDir ? new File(markFileBaseDir, "mark-" + index) : null;
@@ -746,11 +545,6 @@ public final class TestCluster implements AutoCloseable
     private void segmentFileLength(final int archiveSegmentFileLength)
     {
         this.archiveSegmentFileLength = archiveSegmentFileLength;
-    }
-
-    public String staticClusterMembers()
-    {
-        return staticClusterMembers;
     }
 
     public AeronCluster client()
@@ -2084,7 +1878,6 @@ public final class TestCluster implements AutoCloseable
     public static final class Builder
     {
         private int nodeCount = 3;
-        private int dynamicNodeCount = 0;
         private int appointedLeaderId = NULL_VALUE;
         private String logChannel = LOG_CHANNEL;
         private String ingressChannel = INGRESS_CHANNEL;
@@ -2105,12 +1898,6 @@ public final class TestCluster implements AutoCloseable
         public Builder withStaticNodes(final int nodeCount)
         {
             this.nodeCount = nodeCount;
-            return this;
-        }
-
-        public Builder withDynamicNodes(final int nodeCount)
-        {
-            this.dynamicNodeCount = nodeCount;
             return this;
         }
 
@@ -2218,7 +2005,6 @@ public final class TestCluster implements AutoCloseable
 
             final TestCluster testCluster = new TestCluster(
                 nodeCount,
-                dynamicNodeCount,
                 appointedLeaderId,
                 byHostInvalidInitialResolutions,
                 serviceSupplier);

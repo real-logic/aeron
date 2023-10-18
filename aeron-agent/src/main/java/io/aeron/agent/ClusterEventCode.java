@@ -99,9 +99,9 @@ public enum ClusterEventCode implements EventCode
     APPEND_SESSION_CLOSE(14, ClusterEventDissector::dissectAppendCloseSession),
 
     /**
-     * Event when the DynamicJoin changes state
+     * Event when the DynamicJoin changes state (Unused)
      */
-    DYNAMIC_JOIN_STATE_CHANGE(15, ClusterEventDissector::dissectStateChange),
+    DYNAMIC_JOIN_STATE_CHANGE_UNUSED(15, ClusterEventDissector::dissectNoOp),
 
     /**
      * Event when the ClusterBackup changes state

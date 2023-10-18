@@ -316,16 +316,6 @@ public final class TestNode implements AutoCloseable
         return clusterMembership;
     }
 
-    public void removeMember(final int followerMemberId, final boolean isPassive)
-    {
-        final File clusterDir = consensusModule.context().clusterDir();
-
-        if (!ClusterTool.removeMember(clusterDir, followerMemberId, isPassive))
-        {
-            throw new IllegalStateException("could not remove member");
-        }
-    }
-
     public String hostname()
     {
         return TestCluster.hostname(index());

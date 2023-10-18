@@ -123,14 +123,6 @@ public class ClusterComponentLogger implements ComponentLogger
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
-            DYNAMIC_JOIN_STATE_CHANGE,
-            "DynamicJoin",
-            ClusterInterceptor.DynamicJoinStateChange.class,
-            "logStateChange"
-        );
-
-        tempBuilder = addEventInstrumentation(
-            tempBuilder,
             CLUSTER_BACKUP_STATE_CHANGE,
             "ClusterBackupAgent",
             ClusterInterceptor.ClusterBackupStateChange.class,

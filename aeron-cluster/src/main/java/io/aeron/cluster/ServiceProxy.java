@@ -97,8 +97,9 @@ final class ServiceProxy implements AutoCloseable
     }
 
     void clusterMembersResponse(
-        final long correlationId, final int leaderMemberId, final String activeMembers, final String passiveFollowers)
+        final long correlationId, final int leaderMemberId, final String activeMembers)
     {
+        final String passiveFollowers = "";
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersResponseEncoder.BLOCK_LENGTH +
             ClusterMembersResponseEncoder.activeMembersHeaderLength() + activeMembers.length() +
             ClusterMembersResponseEncoder.passiveFollowersHeaderLength() + passiveFollowers.length();
@@ -137,8 +138,7 @@ final class ServiceProxy implements AutoCloseable
         final long currentTimeNs,
         final int leaderMemberId,
         final int memberId,
-        final ClusterMember[] activeMembers,
-        final ClusterMember[] passiveMembers)
+        final ClusterMember[] activeMembers)
     {
         clusterMembersExtendedResponseEncoder
             .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
@@ -163,21 +163,7 @@ final class ServiceProxy implements AutoCloseable
                 .archiveEndpoint(member.archiveEndpoint());
         }
 
-        final ClusterMembersExtendedResponseEncoder.PassiveMembersEncoder passiveMembersEncoder =
-            clusterMembersExtendedResponseEncoder.passiveMembersCount(passiveMembers.length);
-        for (final ClusterMember member : passiveMembers)
-        {
-            passiveMembersEncoder.next()
-                .leadershipTermId(member.leadershipTermId())
-                .logPosition(member.logPosition())
-                .timeOfLastAppendNs(member.timeOfLastAppendPositionNs())
-                .memberId(member.id())
-                .ingressEndpoint(member.ingressEndpoint())
-                .consensusEndpoint(member.consensusEndpoint())
-                .logEndpoint(member.logEndpoint())
-                .catchupEndpoint(member.catchupEndpoint())
-                .archiveEndpoint(member.archiveEndpoint());
-        }
+        clusterMembersExtendedResponseEncoder.passiveMembersCount(0);
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + clusterMembersExtendedResponseEncoder.encodedLength();
 

@@ -123,6 +123,14 @@ final class ClusterEventDissector
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
+    static void dissectNoOp(
+        final ClusterEventCode eventCode,
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final StringBuilder builder)
+    {
+    }
+
     static void dissectElectionStateChange(
         final MutableDirectBuffer buffer,
         final int offset,

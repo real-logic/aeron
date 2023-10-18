@@ -40,7 +40,6 @@ public final class ConsensusModuleProxy implements AutoCloseable
     private final ServiceAckEncoder serviceAckEncoder = new ServiceAckEncoder();
     private final CloseSessionEncoder closeSessionEncoder = new CloseSessionEncoder();
     private final ClusterMembersQueryEncoder clusterMembersQueryEncoder = new ClusterMembersQueryEncoder();
-    private final RemoveMemberEncoder removeMemberEncoder = new RemoveMemberEncoder();
     private final Publication publication;
 
     /**
@@ -218,40 +217,6 @@ public final class ConsensusModuleProxy implements AutoCloseable
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .correlationId(correlationId)
                     .extended(BooleanType.TRUE);
-
-                bufferClaim.commit();
-
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
-    }
-
-    /**
-     * Remove a member by id from the cluster.
-     *
-     * @param memberId  to be removed.
-     * @param isPassive to indicate if the member is passive or not.
-     * @return true of the request was successfully sent, otherwise false.
-     */
-    public boolean removeMember(final int memberId, final BooleanType isPassive)
-    {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + RemoveMemberEncoder.BLOCK_LENGTH;
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                removeMemberEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .memberId(memberId)
-                    .isPassive(isPassive);
 
                 bufferClaim.commit();
 

@@ -50,6 +50,8 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 public class StressMdcClient implements Agent
 {
+    private static final long TIMEOUT_MS = 5_000;
+    private static final int EXPECTED_RESPONSE_COUNT = 4;
     private final String serverAddress;
     private final String clientAddress;
     private final EpochClock clock;
@@ -61,9 +63,7 @@ public class StressMdcClient implements Agent
     private final int totalToSend;
     private final int mtu;
     private final byte[] buffer = new byte[2 * MAX_UDP_PAYLOAD_LENGTH];
-    private final long timeoutMs = 5_000;
     private final CRC64 crc = new CRC64();
-    private final int expectedResponseCount = 4;
 
     private Aeron aeron;
     private Publication mdcPublication;
@@ -77,12 +77,13 @@ public class StressMdcClient implements Agent
 
     /**
      * Construct Stress Client
-     * @param serverAddress         server address to connect to.
-     * @param clientAddress         local address to get responses.
-     * @param clock                 for timing.
-     * @param maxInflight           maximum number of messages in flight.
-     * @param totalToSend           total number of messages to send.
-     * @param mtu                   the mtu to use.
+     *
+     * @param serverAddress server address to connect to.
+     * @param clientAddress local address to get responses.
+     * @param clock         for timing.
+     * @param maxInflight   maximum number of messages in flight.
+     * @param totalToSend   total number of messages to send.
+     * @param mtu           the mtu to use.
      */
     public StressMdcClient(
         final String serverAddress,
@@ -132,7 +133,7 @@ public class StressMdcClient implements Agent
     /**
      * {@inheritDoc}
      */
-    public int doWork() throws Exception
+    public int doWork()
     {
         if (!mdcSubscription1.isConnected() || !mdcSubscription2.isConnected())
         {
@@ -167,7 +168,7 @@ public class StressMdcClient implements Agent
         if (0 < correlationId && 0 == recvCount && !inflightMessages.isEmpty())
         {
             final long timeSinceLastMessageMs = clock.time() - lastMessageSent;
-            if (timeoutMs < timeSinceLastMessageMs)
+            if (TIMEOUT_MS < timeSinceLastMessageMs)
             {
                 throw new RuntimeException("No response received for " + timeSinceLastMessageMs + "ms, client=" + this);
             }
@@ -202,7 +203,7 @@ public class StressMdcClient implements Agent
         clientReceiveCount.increment();
 
         final long responseCount = inflightMessages.incrementAndGet(correlationId);
-        if (expectedResponseCount <= responseCount)
+        if (EXPECTED_RESPONSE_COUNT <= responseCount)
         {
             inflightMessages.remove(correlationId);
         }

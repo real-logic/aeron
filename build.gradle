@@ -66,7 +66,7 @@ def mockitoVersion = '4.11.0'
 def byteBuddyVersion = '1.14.9'
 def findbugsAnnotationsVersion = '3.0.1'
 def hdrHistogramVersion = '2.1.12'
-def gitCommitHash = io.aeron.build.GithubUtil.currentGitHash("${projectDir}");
+def gitCommitHash = io.aeron.build.GithubUtil.currentGitHash("${projectDir}")
 
 ext {
     isReleaseVersion = !version.endsWith('-SNAPSHOT')
@@ -214,7 +214,7 @@ subprojects {
         classpath = testing.suites.test.sources.runtimeClasspath
 
         useJUnitPlatform {
-            if (!test.name.equals('slowTest') && !test.name.equals('bindingsTest') && !test.name.equals('topologyTest'))
+            if (test.name != 'slowTest' && test.name != 'bindingsTest' && test.name != 'topologyTest')
             {
                 excludeTags 'any()'
             }

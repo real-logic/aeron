@@ -48,8 +48,7 @@ public class ArchiveToolCliTest
     void before(
         @TempDir final File aeronDir,
         @TempDir final File markFileDir,
-        @TempDir final File archiveDir
-    ) throws IOException
+        @TempDir final File archiveDir)
     {
         this.archiveDir = archiveDir;
 
@@ -78,7 +77,7 @@ public class ArchiveToolCliTest
     }
 
     @AfterEach
-    void after() throws IOException
+    void after()
     {
         CloseHelper.close(mediaDriver);
     }

@@ -77,7 +77,7 @@ public class StressUtil
     }
 
     /**
-     * Start forming unicast respopnse channel for the specific server.
+     * Start forming unicast response channel for the specific server.
      *
      * @param clientAddress as the endpoint receiver of the unicast traffic.
      * @return a partially constructed URI with the endpoint set.
@@ -172,8 +172,8 @@ public class StressUtil
     {
         final long recvCrc = msg.getLong(offset, LITTLE_ENDIAN);
         final long calcCrc = crc.recalculate(msg, offset + BitUtil.SIZE_OF_LONG, length - BitUtil.SIZE_OF_LONG);
-        final boolean dataMatches = calcCrc == recvCrc;
-        return dataMatches;
+
+        return calcCrc == recvCrc;
     }
 
     static void validateMessage(

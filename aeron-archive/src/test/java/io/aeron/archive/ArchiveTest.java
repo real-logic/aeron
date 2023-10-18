@@ -373,10 +373,7 @@ class ArchiveTest
             .threadingMode(ThreadingMode.SHARED);
 
         final AuthorisationServiceSupplier authorisationServiceSupplier = () ->
-            (protocolId, actionId, type, encodedPrincipal) ->
-            {
-                return actionId != TruncateRecordingRequestDecoder.TEMPLATE_ID;
-            };
+            (protocolId, actionId, type, encodedPrincipal) -> actionId != TruncateRecordingRequestDecoder.TEMPLATE_ID;
 
         final Archive.Context archiveCtx = TestContexts.localhostArchive()
             .deleteArchiveOnStart(true)

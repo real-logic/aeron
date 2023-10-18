@@ -72,10 +72,7 @@ class ArchiveCountersTest
         countersManager.allocate(
             "test",
             42,
-            (keyBuffer) ->
-            {
-                keyBuffer.putLong(0, 61312936129398123L);
-            });
+            (keyBuffer) -> keyBuffer.putLong(0, 61312936129398123L));
 
         assertEquals(NULL_VALUE, ArchiveCounters.find(countersManager, typeId, archiveId));
     }

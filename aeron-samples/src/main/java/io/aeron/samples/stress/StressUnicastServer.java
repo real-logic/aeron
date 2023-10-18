@@ -84,7 +84,7 @@ public class StressUnicastServer implements Agent
     /**
      * {@inheritDoc}
      */
-    public int doWork() throws Exception
+    public int doWork()
     {
         int count = 0;
 

@@ -51,6 +51,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 public class StressUnicastClient implements Agent
 {
+    private static final long TIMEOUT_MS = 5_000;
     private final String serverAddress;
     private final String clientAddress;
     private final EpochClock clock;
@@ -62,7 +63,6 @@ public class StressUnicastClient implements Agent
     private final int mtu;
     private final byte[] buffer = new byte[2 * MAX_UDP_PAYLOAD_LENGTH];
     private int messageLength;
-    private final long timeoutMs = 5_000;
     private final CRC64 crc = new CRC64();
 
     private Aeron aeron;
@@ -119,7 +119,7 @@ public class StressUnicastClient implements Agent
     /**
      * {@inheritDoc}
      */
-    public int doWork() throws Exception
+    public int doWork()
     {
         if (0 == messageLength)
         {
@@ -147,7 +147,7 @@ public class StressUnicastClient implements Agent
         if (0 < correlationId && 0 == recvCount && !inflightMessages.isEmpty())
         {
             final long timeSinceLastMessageMs = clock.time() - lastMessageSent;
-            if (timeoutMs < timeSinceLastMessageMs)
+            if (TIMEOUT_MS < timeSinceLastMessageMs)
             {
                 throw new RuntimeException("No response received for " + timeSinceLastMessageMs + "ms, client=" + this);
             }

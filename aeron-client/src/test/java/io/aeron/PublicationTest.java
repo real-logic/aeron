@@ -378,8 +378,7 @@ class PublicationTest
                 termId,
                 termCount,
                 tailAfterUpdate,
-                expectedPosition
-            );
+                expectedPosition);
         }
     }
 

@@ -95,7 +95,7 @@ public class StressMdcServer implements Agent
     /**
      * {@inheritDoc}
      */
-    public int doWork() throws Exception
+    public int doWork()
     {
         if (!mdcSubscription1.isConnected() || !mdcSubscription2.isConnected())
         {

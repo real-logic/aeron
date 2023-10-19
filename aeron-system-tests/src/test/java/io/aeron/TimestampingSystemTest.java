@@ -25,6 +25,7 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.LongArrayList;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -39,6 +40,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.function.Predicate;
 
+import static io.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -54,8 +56,15 @@ class TimestampingSystemTest
     private static final long SENTINEL_VALUE = -1L;
     private static final String CHANNEL_WITH_MEDIA_TIMESTAMP =
         "aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=reserved";
-    private static final String CHANNEL_WITH_CHANNEL_TIMESTAMPS =
-        "aeron:udp?endpoint=localhost:0|channel-rcv-ts-offset=0|channel-snd-ts-offset=8";
+    private static final int RECEIVE_TIMESTAMP_OFFSET = 0;
+    private static final int SEND_TIMESTAMP_OFFSET = 8;
+
+    private static final String CHANNEL_WITH_CHANNEL_TIMESTAMPS = new ChannelUriStringBuilder()
+        .media("udp")
+        .endpoint("localhost:0")
+        .channelReceiveTimestampOffset(RECEIVE_TIMESTAMP_OFFSET + "")
+        .channelSendTimestampOffset(SEND_TIMESTAMP_OFFSET + "")
+        .build();
 
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
@@ -152,8 +161,8 @@ class TimestampingSystemTest
 
             Tests.awaitConnected(pub);
 
-            buffer.putLong(0, SENTINEL_VALUE);
-            buffer.putLong(8, SENTINEL_VALUE);
+            buffer.putLong(RECEIVE_TIMESTAMP_OFFSET, SENTINEL_VALUE);
+            buffer.putLong(SEND_TIMESTAMP_OFFSET, SENTINEL_VALUE);
 
             while (0 > pub.offer(buffer, 0, buffer.capacity()))
             {
@@ -164,8 +173,8 @@ class TimestampingSystemTest
             final MutableLong sendTimestamp = new MutableLong(SENTINEL_VALUE);
             final FragmentHandler fragmentHandler = (buffer1, offset, length, header) ->
             {
-                receiveTimestamp.set(buffer1.getLong(offset));
-                sendTimestamp.set(buffer1.getLong(offset + 8));
+                receiveTimestamp.set(buffer1.getLong(offset + RECEIVE_TIMESTAMP_OFFSET));
+                sendTimestamp.set(buffer1.getLong(offset + SEND_TIMESTAMP_OFFSET));
             };
 
             while (1 > sub.poll(fragmentHandler, 1))
@@ -178,22 +187,92 @@ class TimestampingSystemTest
         }
     }
 
+    @Test
+    @InterruptAfter(10)
+    void shouldHandleTimestampWithFragmentedPackets()
+    {
+        final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[4096]);
+        final LongArrayList recvTimestamps = new LongArrayList();
+        final LongArrayList sendTimestamps = new LongArrayList();
+
+        buffer.setMemory(0, buffer.capacity(), (byte)0xFF);
+
+        try (TestMediaDriver driver = driver();
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            final Subscription sub = aeron.addSubscription(CHANNEL_WITH_CHANNEL_TIMESTAMPS, 1000);
+
+            while (null == sub.resolvedEndpoint())
+            {
+                Tests.yieldingIdle("Failed to resolve endpoint");
+            }
+
+            final String uri = new ChannelUriStringBuilder(CHANNEL_WITH_CHANNEL_TIMESTAMPS)
+                .endpoint(requireNonNull(sub.resolvedEndpoint()))
+                .mtu(MTU_LENGTH_DEFAULT)
+                .build();
+
+            final Publication pub = aeron.addPublication(uri, 1000);
+
+            Tests.awaitConnected(pub);
+
+            for (int i = 0; i < 1000; i++)
+            {
+                recvTimestamps.clear();
+                sendTimestamps.clear();
+
+                while (0 > pub.offer(buffer, 0, pub.maxPayloadLength() + 16))
+                {
+                    Tests.yieldingIdle("Failed to offer message");
+                }
+
+                while (0 > pub.offer(buffer, 0, pub.maxPayloadLength() + 16))
+                {
+                    Tests.yieldingIdle("Failed to offer message");
+                }
+
+                final FragmentHandler fragmentHandler = (buffer1, offset, length, header) ->
+                {
+                    recvTimestamps.addLong(buffer1.getLong(offset + RECEIVE_TIMESTAMP_OFFSET));
+                    sendTimestamps.addLong(buffer1.getLong(offset + SEND_TIMESTAMP_OFFSET));
+                };
+
+                int totalFragmentsReceived = 0;
+                do
+                {
+                    final int fragmentsReceived = sub.poll(fragmentHandler, 1);
+                    if (0 == fragmentsReceived)
+                    {
+                        Tests.yieldingIdle("Failed to receive message");
+                    }
+
+                    totalFragmentsReceived += fragmentsReceived;
+                }
+                while (totalFragmentsReceived < 4);
+
+                assertNotEquals(-1, recvTimestamps.get(0));
+                assertNotEquals(-1, recvTimestamps.get(2));
+                assertNotEquals(-1, sendTimestamps.get(0));
+                assertNotEquals(-1, sendTimestamps.get(2));
+            }
+        }
+    }
+
     @ParameterizedTest
     @InterruptAfter(10)
-    @ValueSource(strings = { CHANNEL_WITH_CHANNEL_TIMESTAMPS, CHANNEL_WITH_MEDIA_TIMESTAMP })
+    @ValueSource(booleans = { true, false })
     @EnabledOnOs(OS.LINUX)
-    void shouldNotCorruptFragmentedMessagesWhenTimestampsAreEnabled(final String channel)
+    void shouldNotCorruptFragmentedMessagesWhenTimestampsAreEnabled(final boolean testMediaTimestamps)
     {
+        final String channel = testMediaTimestamps ? CHANNEL_WITH_MEDIA_TIMESTAMP : CHANNEL_WITH_CHANNEL_TIMESTAMPS;
+
         systemTestWatcher.ignoreErrorsMatching(IGNORE_MEDIA_TIMESTAMPS_PREDICATE);
 
         try (TestMediaDriver driver = driver();
             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
             final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[16 + driver.context().mtuLength() * 2]);
-            for (int i = 16, n = buffer.capacity(); i < n; i++)
-            {
-                buffer.putByte(i, (byte)0xFF);
-            }
+            setAll(buffer, (byte)0xFF);
 
             final Subscription sub;
             try
@@ -251,11 +330,6 @@ class TimestampingSystemTest
                 }
             }
         }
-    }
-
-    private static boolean thisIsTheJavaDriverThenIgnoreMediaTimestampParameter(final Exception e)
-    {
-        return IGNORE_MEDIA_TIMESTAMPS_PREDICATE.test(e.getMessage());
     }
 
     @Test
@@ -465,5 +539,18 @@ class TimestampingSystemTest
 
             assertNotEquals(SENTINEL_VALUE, sendTimestamp.longValue());
         }
+    }
+
+    private static void setAll(final MutableDirectBuffer buffer, final byte value)
+    {
+        for (int i = 0, n = buffer.capacity(); i < n; i++)
+        {
+            buffer.putByte(i, value);
+        }
+    }
+
+    private static boolean thisIsTheJavaDriverThenIgnoreMediaTimestampParameter(final Exception e)
+    {
+        return IGNORE_MEDIA_TIMESTAMPS_PREDICATE.test(e.getMessage());
     }
 }

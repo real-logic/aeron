@@ -25,7 +25,6 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.LongArrayList;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -40,7 +39,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.function.Predicate;
 
-import static io.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

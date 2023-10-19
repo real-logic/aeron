@@ -131,9 +131,8 @@ public class StressUnicastServer implements Agent
     /**
      * Entry point
      * @param args command line args.
-     * @throws Exception if any terminal error occurs.
      */
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         final StressUnicastServer server = new StressUnicastServer(serverAddress(), clientAddress());
         server.onStart();

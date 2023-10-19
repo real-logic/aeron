@@ -221,9 +221,8 @@ public class StressUnicastClient implements Agent
      * Entry point.
      *
      * @param args command line arguments.
-     * @throws Exception on failure.
      */
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         final IdleStrategy idleStrategy = new YieldingIdleStrategy();
         final int maxMessageLength = 2 * MAX_UDP_PAYLOAD_LENGTH;

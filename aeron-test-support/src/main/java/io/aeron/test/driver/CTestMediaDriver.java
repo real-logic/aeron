@@ -493,7 +493,7 @@ public final class CTestMediaDriver implements TestMediaDriver
                 String exitMessage = "Process exited early";
                 if (!SystemUtil.isWindows())
                 {
-                    final int exitSignal = (0x7F & exitCode); // Essentially the same on Linux and MacOS.
+                    final int exitSignal = (0x7F & exitCode); // Essentially the same on Linux and macOS.
                     if (0 != exitSignal)
                     {
                         exitMessage += " - signal " + exitSignal;

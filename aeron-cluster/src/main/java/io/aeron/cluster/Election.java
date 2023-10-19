@@ -156,6 +156,11 @@ class Election
         return isLeaderStartup;
     }
 
+    int thisMemberId()
+    {
+        return thisMember.id();
+    }
+
     int doWork(final long nowNs)
     {
         int workCount = 0;
@@ -290,17 +295,9 @@ class Election
 
             if (logLeadershipTermId < this.leadershipTermId)
             {
-                switch (state)
+                if (Cluster.Role.LEADER == consensusModuleAgent.role())
                 {
-                    case LEADER_LOG_REPLICATION:
-                    case LEADER_INIT:
-                    case LEADER_READY:
-                    case LEADER_REPLAY:
-                        publishNewLeadershipTerm(follower, logLeadershipTermId, ctx.clusterClock().time());
-                        break;
-
-                    default:
-                        break;
+                    publishNewLeadershipTerm(follower, logLeadershipTermId, ctx.clusterClock().time());
                 }
             }
             else if (logLeadershipTermId > this.leadershipTermId)
@@ -644,15 +641,6 @@ class Election
         return 1;
     }
 
-    private void prepareForNewLeadership(final long nowNs)
-    {
-        final long lastAppendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition, nowNs);
-        if (NULL_POSITION != lastAppendPosition)
-        {
-            appendPosition = lastAppendPosition;
-        }
-    }
-
     private int canvass(final long nowNs)
     {
         int workCount = 0;
@@ -771,14 +759,6 @@ class Election
         return workCount;
     }
 
-    /**
-     * Leader log replication must wait until we have consensus on the leaders append position. However,
-     * we want to be careful about updating the commit position as this will cause the clustered service to progress
-     * forward to early.
-     *
-     * @param nowNs current time
-     * @return work done
-     */
     private int leaderLogReplication(final long nowNs)
     {
         int workCount = 0;
@@ -898,7 +878,7 @@ class Election
                 if (replicationCommitPosition >= appendPosition)
                 {
                     ConsensusModuleAgent.logReplicationEnded(
-                        thisMemberId(),
+                        thisMember.id(),
                         "ELECTION",
                         logReplication.srcArchiveChannel(),
                         logReplication.recordingId(),
@@ -1294,11 +1274,8 @@ class Election
                     break;
 
                 case LEADER_LOG_REPLICATION:
-                    logSessionId = consensusModuleAgent.addLogPublication(appendPosition);
-                    break;
-
-                case LEADER_INIT:
                     consensusModuleAgent.role(Cluster.Role.LEADER);
+                    logSessionId = consensusModuleAgent.addLogPublication(appendPosition);
                     break;
 
                 case FOLLOWER_LOG_REPLICATION:
@@ -1467,9 +1444,13 @@ class Election
          */
     }
 
-    int thisMemberId()
+    private void prepareForNewLeadership(final long nowNs)
     {
-        return thisMember.id();
+        final long lastAppendPosition = consensusModuleAgent.prepareForNewLeadership(logPosition, nowNs);
+        if (NULL_POSITION != lastAppendPosition)
+        {
+            appendPosition = lastAppendPosition;
+        }
     }
 
     public String toString()

@@ -303,8 +303,8 @@ static void aeron_send_channel_apply_timestamps(
                 aeron_timestamps_set_timestamp(
                     &send_timestamp,
                     offset,
-                    (uint8_t *)iov[0].iov_base,
-                    iov[0].iov_len);
+                    (uint8_t *)iov[i].iov_base,
+                    iov[i].iov_len);
             }
         }
     }

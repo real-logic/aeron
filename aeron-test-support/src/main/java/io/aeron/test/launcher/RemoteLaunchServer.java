@@ -149,6 +149,7 @@ public class RemoteLaunchServer
         private final AtomicReference<State> currentState = new AtomicReference<>(State.CREATED);
         private volatile ProcessResponseReader responseReader;
         private Process process = null;
+        private Thread responseThread = null;
 
         private enum State
         {
@@ -344,7 +345,8 @@ public class RemoteLaunchServer
                 final PrintStream stdOutputStream = parseBaseDirectory(command);
 
                 responseReader = new ProcessResponseReader(connectionChannel, pid(), stdOutputStream);
-                final Thread responseThread = new Thread(() -> responseReader.runResponses(p.getInputStream()));
+                responseThread = new Thread(() -> responseReader.runResponses(p.getInputStream()));
+                responseThread.setDaemon(true);
                 responseThread.start();
 
                 final Thread processMonitorThread = new Thread(

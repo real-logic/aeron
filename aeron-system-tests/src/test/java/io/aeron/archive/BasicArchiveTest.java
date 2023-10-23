@@ -39,6 +39,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.ArchiveSystemTests.*;
@@ -674,46 +676,54 @@ class BasicArchiveTest
 
         final String channel = new ChannelUriStringBuilder(REPLAY_CHANNEL).sessionId((int)replaySessionId).build();
 
-        long subscriptionPosition = 0;
-        final MutableReference<Image> replayImage = new MutableReference<>();
+        final AtomicReference<Image> replayImage = new AtomicReference<>();
         try (Subscription replaySubscription = aeron.addSubscription(
             channel, REPLAY_STREAM_ID, replayImage::set, image -> {}))
         {
             boundingCounter.setOrdered(halfPosition);
 
+            while (null == replayImage.get())
+            {
+                Tests.yieldingIdle("replay image did not become available");
+            }
+
+            final Supplier<String> halfErrorMessage =
+                () -> "replayImage.position(" + replayImage.get().position() + ") < halfPosition(" + halfPosition + ")";
+
+            while (replayImage.get().position() < halfPosition)
+            {
+                if (0 == replaySubscription.poll((buffer, offset, length, header) -> {}, 20))
+                {
+                    Tests.yieldingIdle(halfErrorMessage);
+                }
+            }
+
             final long halfPollDeadline = System.currentTimeMillis() + timeout;
             while (System.currentTimeMillis() < halfPollDeadline)
             {
-                if (0 < replaySubscription.poll((buffer, offset, length, header) -> {}, 20))
-                {
-                    if (null != replayImage.get())
-                    {
-                        subscriptionPosition = replayImage.get().position();
-                    }
-                }
-
-                assertThat(subscriptionPosition, Matchers.lessThanOrEqualTo(halfPosition));
+                replaySubscription.poll((buffer, offset, length, header) -> {}, 20);
+                assertThat(replayImage.get().position(), Matchers.lessThanOrEqualTo(halfPosition));
             }
 
-            assertThat(subscriptionPosition, Matchers.greaterThan(0L));
-
             boundingCounter.setOrdered(tqPosition);
+
+            final Supplier<String> tqErrorMessage =
+                () -> "replayImage.position(" + replayImage.get().position() + ") < tqPosition(" + tqPosition + ")";
+
+            while (replayImage.get().position() < tqPosition)
+            {
+                if (0 == replaySubscription.poll((buffer, offset, length, header) -> {}, 20))
+                {
+                    Tests.yieldingIdle(tqErrorMessage);
+                }
+            }
 
             final long tqPollDeadline = System.currentTimeMillis() + timeout;
             while (System.currentTimeMillis() < tqPollDeadline)
             {
-                if (0 < replaySubscription.poll((buffer, offset, length, header) -> {}, 20))
-                {
-                    if (null != replayImage.get())
-                    {
-                        subscriptionPosition = replayImage.get().position();
-                    }
-                }
-
-                assertThat(subscriptionPosition, Matchers.lessThanOrEqualTo(tqPosition));
+                replaySubscription.poll((buffer, offset, length, header) -> {}, 20);
+                assertThat(replayImage.get().position(), Matchers.lessThanOrEqualTo(tqPosition));
             }
-
-            assertThat(subscriptionPosition, Matchers.greaterThan(halfPosition));
         }
     }
 

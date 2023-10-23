@@ -28,7 +28,6 @@ import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
-import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.status.CountersReader;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;

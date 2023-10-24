@@ -74,6 +74,8 @@ public final class ChannelUriStringBuilder
     private String mediaReceiveTimestampOffset;
     private String channelReceiveTimestampOffset;
     private String channelSendTimestampOffset;
+    private String responseEndpoint;
+    private Long responseCorrelationId;
 
     /**
      * Default constructor
@@ -134,6 +136,7 @@ public final class ChannelUriStringBuilder
         mediaReceiveTimestampOffset(channelUri);
         channelReceiveTimestampOffset(channelUri);
         channelSendTimestampOffset(channelUri);
+        responseEndpoint(channelUri);
     }
 
     /**
@@ -1892,6 +1895,74 @@ public final class ChannelUriStringBuilder
     }
 
     /**
+     * Set the response endpoint to be used for a response channel subscription or publication.
+     *
+     * @param responseEndpoint  response endpoint to be used in this channel URI.
+     * @return this for a fluent API.
+     * @see CommonContext#RESPONSE_ENDPOINT_PARAM_NAME
+     */
+    public ChannelUriStringBuilder responseEndpoint(final String responseEndpoint)
+    {
+        this.responseEndpoint = responseEndpoint;
+        return this;
+    }
+
+    /**
+     * Set the response endpoint to be used for a response channel subscription or publication by extracting it from the
+     * ChannelUri.
+     *
+     * @param channelUri the existing URI to extract the responseEndpoint from.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder responseEndpoint(final ChannelUri channelUri)
+    {
+        return responseEndpoint(channelUri.get(RESPONSE_ENDPOINT_PARAM_NAME));
+    }
+
+    /**
+     * The response endpoint to be used for a response channel subscription or publication.
+     *
+     * @return response endpoint.
+     */
+    public String responseEndpoint()
+    {
+        return this.responseEndpoint;
+    }
+
+    /**
+     * Set the correlation id from the image received on the response "server's" subscription to be used by a response
+     * publication.
+     *
+     * @param responseCorrelationId correlation id of an image from the response "server's" subscription.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder responseCorrelationId(final Long responseCorrelationId)
+    {
+        this.responseCorrelationId = responseCorrelationId;
+        return this;
+    }
+
+
+    /**
+     * Set the correlation id from the image received on the response "server's" subscription to be used by a response
+     * publication extracted from the channelUri.
+     *
+     * @param channelUri the existing URI to extract the responseCorrelationId from.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder responseCorrelationId(final ChannelUri channelUri)
+    {
+        final String responseCorrelationIdString = channelUri.get(RESPONSE_CORRELATION_ID_PARAM_NAME);
+
+        if (null != responseCorrelationIdString)
+        {
+            responseCorrelationId(Long.valueOf(responseCorrelationIdString));
+        }
+
+        return this;
+    }
+
+    /**
      * Offset into a message to store the channel send timestamp. May also be the special value 'reserved' which means
      * to store the timestamp in the reserved value field.
      *
@@ -1983,6 +2054,14 @@ public final class ChannelUriStringBuilder
         appendParameter(sb, MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME, mediaReceiveTimestampOffset);
         appendParameter(sb, CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME, channelReceiveTimestampOffset);
         appendParameter(sb, CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME, channelSendTimestampOffset);
+
+        if (null != responseEndpoint)
+        {
+            sb.append(RESPONSE_ENDPOINT_PARAM_NAME)
+                .append('=')
+                .append(responseEndpoint)
+                .append('|');
+        }
 
         final char lastChar = sb.charAt(sb.length() - 1);
         if (lastChar == '|' || lastChar == '?')

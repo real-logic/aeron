@@ -1948,164 +1948,41 @@ public final class ChannelUriStringBuilder
 
         sb.append(ChannelUri.AERON_SCHEME).append(':').append(media).append('?');
 
-        if (null != tags)
-        {
-            sb.append(TAGS_PARAM_NAME).append('=').append(tags).append('|');
-        }
-
-        if (null != endpoint)
-        {
-            sb.append(ENDPOINT_PARAM_NAME).append('=').append(endpoint).append('|');
-        }
-
-        if (null != networkInterface)
-        {
-            sb.append(INTERFACE_PARAM_NAME).append('=').append(networkInterface).append('|');
-        }
-
-        if (null != controlEndpoint)
-        {
-            sb.append(MDC_CONTROL_PARAM_NAME).append('=').append(controlEndpoint).append('|');
-        }
-
-        if (null != controlMode)
-        {
-            sb.append(MDC_CONTROL_MODE_PARAM_NAME).append('=').append(controlMode).append('|');
-        }
-
-        if (null != mtu)
-        {
-            sb.append(MTU_LENGTH_PARAM_NAME).append('=').append(mtu.intValue()).append('|');
-        }
-
-        if (null != termLength)
-        {
-            sb.append(TERM_LENGTH_PARAM_NAME).append('=').append(termLength.intValue()).append('|');
-        }
-
-        if (null != initialTermId)
-        {
-            sb.append(INITIAL_TERM_ID_PARAM_NAME).append('=').append(initialTermId.intValue()).append('|');
-        }
-
-        if (null != termId)
-        {
-            sb.append(TERM_ID_PARAM_NAME).append('=').append(termId.intValue()).append('|');
-        }
-
-        if (null != termOffset)
-        {
-            sb.append(TERM_OFFSET_PARAM_NAME).append('=').append(termOffset.intValue()).append('|');
-        }
+        appendParameter(sb, TAGS_PARAM_NAME, tags);
+        appendParameter(sb, ENDPOINT_PARAM_NAME, endpoint);
+        appendParameter(sb, INTERFACE_PARAM_NAME, networkInterface);
+        appendParameter(sb, MDC_CONTROL_PARAM_NAME, controlEndpoint);
+        appendParameter(sb, MDC_CONTROL_MODE_PARAM_NAME, controlMode);
+        appendParameter(sb, MTU_LENGTH_PARAM_NAME, mtu);
+        appendParameter(sb, TERM_LENGTH_PARAM_NAME, termLength);
+        appendParameter(sb, INITIAL_TERM_ID_PARAM_NAME, initialTermId);
+        appendParameter(sb, TERM_ID_PARAM_NAME, termId);
+        appendParameter(sb, TERM_OFFSET_PARAM_NAME, termOffset);
 
         if (null != sessionId)
         {
-            sb.append(SESSION_ID_PARAM_NAME).append('=').append(prefixTag(isSessionIdTagged, sessionId)).append('|');
+            appendParameter(sb, SESSION_ID_PARAM_NAME, prefixTag(isSessionIdTagged, sessionId));
         }
 
-        if (null != ttl)
-        {
-            sb.append(TTL_PARAM_NAME).append('=').append(ttl.intValue()).append('|');
-        }
-
-        if (null != reliable)
-        {
-            sb.append(RELIABLE_STREAM_PARAM_NAME).append('=').append(reliable).append('|');
-        }
-
-        if (null != linger)
-        {
-            sb.append(LINGER_PARAM_NAME).append('=').append(linger).append('|');
-        }
-
-        if (null != alias)
-        {
-            sb.append(ALIAS_PARAM_NAME).append('=').append(alias).append('|');
-        }
-
-        if (null != cc)
-        {
-            sb.append(CONGESTION_CONTROL_PARAM_NAME).append('=').append(cc).append('|');
-        }
-
-        if (null != fc)
-        {
-            sb.append(FLOW_CONTROL_PARAM_NAME).append('=').append(fc).append('|');
-        }
-
-        if (null != groupTag)
-        {
-            sb.append(GROUP_TAG_PARAM_NAME).append('=').append(groupTag).append('|');
-        }
-
-        if (null != sparse)
-        {
-            sb.append(SPARSE_PARAM_NAME).append('=').append(sparse).append('|');
-        }
-
-        if (null != eos)
-        {
-            sb.append(EOS_PARAM_NAME).append('=').append(eos).append('|');
-        }
-
-        if (null != tether)
-        {
-            sb.append(TETHER_PARAM_NAME).append('=').append(tether).append('|');
-        }
-
-        if (null != group)
-        {
-            sb.append(GROUP_PARAM_NAME).append('=').append(group).append('|');
-        }
-
-        if (null != rejoin)
-        {
-            sb.append(REJOIN_PARAM_NAME).append('=').append(rejoin).append('|');
-        }
-
-        if (null != ssc)
-        {
-            sb.append(SPIES_SIMULATE_CONNECTION_PARAM_NAME).append('=').append(ssc).append('|');
-        }
-
-        if (null != socketSndbufLength)
-        {
-            sb.append(SOCKET_SNDBUF_PARAM_NAME).append('=').append(socketSndbufLength).append('|');
-        }
-
-        if (null != socketRcvbufLength)
-        {
-            sb.append(SOCKET_RCVBUF_PARAM_NAME).append('=').append(socketRcvbufLength).append('|');
-        }
-
-        if (null != receiverWindowLength)
-        {
-            sb.append(RECEIVER_WINDOW_LENGTH_PARAM_NAME).append('=').append(receiverWindowLength).append('|');
-        }
-
-        if (null != mediaReceiveTimestampOffset)
-        {
-            sb.append(MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME)
-                .append('=')
-                .append(mediaReceiveTimestampOffset)
-                .append('|');
-        }
-
-        if (null != channelReceiveTimestampOffset)
-        {
-            sb.append(CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME)
-                .append('=')
-                .append(channelReceiveTimestampOffset)
-                .append('|');
-        }
-
-        if (null != channelSendTimestampOffset)
-        {
-            sb.append(CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME)
-                .append('=')
-                .append(channelSendTimestampOffset)
-                .append('|');
-        }
+        appendParameter(sb, TTL_PARAM_NAME, ttl);
+        appendParameter(sb, RELIABLE_STREAM_PARAM_NAME, reliable);
+        appendParameter(sb, LINGER_PARAM_NAME, linger);
+        appendParameter(sb, ALIAS_PARAM_NAME, alias);
+        appendParameter(sb, CONGESTION_CONTROL_PARAM_NAME, cc);
+        appendParameter(sb, FLOW_CONTROL_PARAM_NAME, fc);
+        appendParameter(sb, GROUP_TAG_PARAM_NAME, groupTag);
+        appendParameter(sb, SPARSE_PARAM_NAME, sparse);
+        appendParameter(sb, EOS_PARAM_NAME, eos);
+        appendParameter(sb, TETHER_PARAM_NAME, tether);
+        appendParameter(sb, GROUP_PARAM_NAME, group);
+        appendParameter(sb, REJOIN_PARAM_NAME, rejoin);
+        appendParameter(sb, SPIES_SIMULATE_CONNECTION_PARAM_NAME, ssc);
+        appendParameter(sb, SOCKET_SNDBUF_PARAM_NAME, socketSndbufLength);
+        appendParameter(sb, SOCKET_RCVBUF_PARAM_NAME, socketRcvbufLength);
+        appendParameter(sb, RECEIVER_WINDOW_LENGTH_PARAM_NAME, receiverWindowLength);
+        appendParameter(sb, MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME, mediaReceiveTimestampOffset);
+        appendParameter(sb, CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME, channelReceiveTimestampOffset);
+        appendParameter(sb, CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME, channelSendTimestampOffset);
 
         final char lastChar = sb.charAt(sb.length() - 1);
         if (lastChar == '|' || lastChar == '?')
@@ -2114,6 +1991,14 @@ public final class ChannelUriStringBuilder
         }
 
         return sb.toString();
+    }
+
+    private static void appendParameter(final StringBuilder sb, final String paramName, final Object paramValue)
+    {
+        if (null != paramValue)
+        {
+            sb.append(paramName).append('=').append(paramValue).append('|');
+        }
     }
 
     /**

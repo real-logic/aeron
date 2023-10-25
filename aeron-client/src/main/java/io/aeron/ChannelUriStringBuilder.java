@@ -76,6 +76,8 @@ public final class ChannelUriStringBuilder
     private String channelSendTimestampOffset;
     private String responseEndpoint;
     private Long responseCorrelationId;
+    private Boolean isResponseChannel;
+    private Long responseSubscriptionId;
 
     /**
      * Default constructor
@@ -137,6 +139,9 @@ public final class ChannelUriStringBuilder
         channelReceiveTimestampOffset(channelUri);
         channelSendTimestampOffset(channelUri);
         responseEndpoint(channelUri);
+        responseCorrelationId(channelUri);
+        isResponseChannel(channelUri);
+        responseSubscriptionId(channelUri);
     }
 
     /**
@@ -178,6 +183,10 @@ public final class ChannelUriStringBuilder
         mediaReceiveTimestampOffset = null;
         channelReceiveTimestampOffset = null;
         channelSendTimestampOffset = null;
+        responseEndpoint = null;
+        responseCorrelationId = null;
+        isResponseChannel = null;
+        responseSubscriptionId = null;
 
         return this;
     }
@@ -1942,7 +1951,6 @@ public final class ChannelUriStringBuilder
         return this;
     }
 
-
     /**
      * Set the correlation id from the image received on the response "server's" subscription to be used by a response
      * publication extracted from the channelUri.
@@ -1957,6 +1965,55 @@ public final class ChannelUriStringBuilder
         if (null != responseCorrelationIdString)
         {
             responseCorrelationId(Long.valueOf(responseCorrelationIdString));
+        }
+
+        return this;
+    }
+
+    public ChannelUriStringBuilder isResponseChannel(final Boolean isResponseChannel)
+    {
+        this.isResponseChannel = isResponseChannel;
+        return this;
+    }
+
+    public ChannelUriStringBuilder isResponseChannel(final ChannelUri channelUri)
+    {
+        final String isResponseChannelString = channelUri.get(IS_RESPONSE_CHANNEL_PARAM_NAME);
+
+        if (null != isResponseChannelString)
+        {
+            isResponseChannel(Boolean.valueOf(isResponseChannelString));
+        }
+
+        return this;
+    }
+
+    /**
+     * Set the subscription id from "client's" response subscription to be passed to the request publication.
+     *
+     * @param responseSubscriptionId id of the subscription used to receive responses on the "client".
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder responseSubscriptionId(final Long responseSubscriptionId)
+    {
+        this.responseSubscriptionId = responseSubscriptionId;
+        return this;
+    }
+
+    /**
+     * Set the subscription id from "client's" response subscription to be passed to the request publication by
+     * extracting it from an existing ChannelUri
+     *
+     * @param channelUri the existing URI to extract the responseSubscriptionId from.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder responseSubscriptionId(final ChannelUri channelUri)
+    {
+        final String responseSubscriptionIdString = channelUri.get(RESPONSE_SUBSCRIPTION_ID_PARAM_NAME);
+
+        if (null != responseSubscriptionIdString)
+        {
+            responseSubscriptionId(Long.valueOf(responseSubscriptionIdString));
         }
 
         return this;
@@ -2060,6 +2117,30 @@ public final class ChannelUriStringBuilder
             sb.append(RESPONSE_ENDPOINT_PARAM_NAME)
                 .append('=')
                 .append(responseEndpoint)
+                .append('|');
+        }
+
+        if (null != responseCorrelationId)
+        {
+            sb.append(RESPONSE_CORRELATION_ID_PARAM_NAME)
+                .append('=')
+                .append(responseCorrelationId)
+                .append('|');
+        }
+
+        if (null != isResponseChannel)
+        {
+            sb.append(IS_RESPONSE_CHANNEL_PARAM_NAME)
+                .append('=')
+                .append(isResponseChannel)
+                .append('|');
+        }
+
+        if (null != responseSubscriptionId)
+        {
+            sb.append(RESPONSE_SUBSCRIPTION_ID_PARAM_NAME)
+                .append('=')
+                .append(responseSubscriptionId)
                 .append('|');
         }
 

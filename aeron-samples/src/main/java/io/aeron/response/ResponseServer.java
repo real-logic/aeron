@@ -35,7 +35,7 @@ import java.util.function.Function;
  * certain types of response servers, e.g. returning a large volume of data from a database, this pattern will be
  * ineffective. For those types of use cases, something more complex, likely involving thread pooling would be required.
  */
-public class ResponseServer
+public class ResponseServer implements AutoCloseable
 {
     private final Aeron aeron;
     private final Long2ObjectHashMap<ResponseSession> clientToPublicationMap =
@@ -45,9 +45,7 @@ public class ResponseServer
     private final OneToOneConcurrentArrayQueue<Image> unavailableImages =
         new OneToOneConcurrentArrayQueue<>(1024);
     private final Function<Image, ResponseHandler> handlerFactory;
-//    private final String endpoint = "192.168.0.1:10000";
-//    private final String responseEndpoint = "192.168.0.1:10001";
-    private final ChannelUriStringBuilder subscriptionUriBuilder;
+    private final ChannelUriStringBuilder requestUriBuilder;
     private final ChannelUriStringBuilder responseUriBuilder;
 
     private Subscription serverSubscription;
@@ -57,30 +55,30 @@ public class ResponseServer
      *
      * @param aeron                 connected Aeron client.
      * @param handlerFactory        factor to produce handler instances for each incoming session.
-     * @param subscriptionEndpoint  channel to listen for requests and new connections.
+     * @param requestEndpoint  channel to listen for requests and new connections.
      * @param responseEndpoint      channel to send responses back on.
-     * @param subscriptionChannel   fragment to aid in configuration of the subscription (can be null)
+     * @param requestChannel   fragment to aid in configuration of the subscription (can be null)
      * @param responseChannel       fragment to aid in configuration of the response publication (can be null)
      */
     public ResponseServer(
         final Aeron aeron,
         final Function<Image, ResponseHandler> handlerFactory,
-        final String subscriptionEndpoint,
+        final String requestEndpoint,
         final String responseEndpoint,
-        final String subscriptionChannel,
+        final String requestChannel,
         final String responseChannel)
     {
         this.aeron = aeron;
         this.handlerFactory = handlerFactory;
 
-        Objects.requireNonNull(subscriptionEndpoint, "subscriptionEndpoint must not be null");
+        Objects.requireNonNull(requestEndpoint, "subscriptionEndpoint must not be null");
         Objects.requireNonNull(responseEndpoint, "responseEndpoint must not be null");
 
-        subscriptionUriBuilder = null == subscriptionChannel ?
-            new ChannelUriStringBuilder() : new ChannelUriStringBuilder(subscriptionChannel);
-        subscriptionUriBuilder
+        requestUriBuilder = null == requestChannel ?
+            new ChannelUriStringBuilder() : new ChannelUriStringBuilder(requestChannel);
+        requestUriBuilder
             .media("udp")
-            .endpoint(subscriptionEndpoint)
+            .endpoint(requestEndpoint)
             .responseEndpoint(responseEndpoint);
         responseUriBuilder = null == responseChannel ?
             new ChannelUriStringBuilder() : new ChannelUriStringBuilder(responseChannel);
@@ -97,8 +95,7 @@ public class ResponseServer
         if (null == session)
         {
             final Publication responsePublication = aeron.addPublication(
-//                responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
-                "",
+                responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
                 10002);
 
             final ResponseHandler handler = handlerFactory.apply(image);
@@ -112,13 +109,12 @@ public class ResponseServer
 
     int poll()
     {
-
         int workCount = 0;
 
         if (null == serverSubscription)
         {
             serverSubscription = aeron.addSubscription(
-                responseUriBuilder.build(),
+                requestUriBuilder.build(),
                 10001,
                 availableImages::offer,
                 unavailableImages::offer);
@@ -152,22 +148,33 @@ public class ResponseServer
         return workCount;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public void close()
+    {
+        CloseHelper.quietClose(serverSubscription);
+        clientToPublicationMap.values().forEach(CloseHelper::quietClose);
+    }
+
+    /**
+     * Interface to manage callback from the response server onto a session.
+     */
     public interface ResponseHandler
     {
+        /**
+         * Called when a message is received via the request subscription.
+         *
+         * @param buffer                containing the data.
+         * @param offset                at which the data begins.
+         * @param length                of the data in bytes.
+         * @param header                representing the metadata for the data.
+         * @param responsePublication   to send responses back to the client.
+         */
         void onMessage(DirectBuffer buffer, int offset, int length, Header header, Publication responsePublication);
     }
 
-    private void doApplicationStuff(
-        final DirectBuffer buffer,
-        final int offset,
-        final int length,
-        final Header header,
-        final Publication responsePublication)
-    {
-        // Do application work...
-    }
-
-    private final class ResponseSession
+    private static final class ResponseSession implements AutoCloseable
     {
         private final Publication publication;
         private final ResponseHandler handler;
@@ -181,6 +188,14 @@ public class ResponseServer
         public void process(final DirectBuffer buffer, final int offset, final int length, final Header header)
         {
             handler.onMessage(buffer, offset, length, header, publication);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public void close()
+        {
+            CloseHelper.close(publication);
         }
     }
 }

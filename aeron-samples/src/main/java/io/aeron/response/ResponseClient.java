@@ -16,41 +16,82 @@
 package io.aeron.response;
 
 import io.aeron.Aeron;
+import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 
-class ResponseClient
+/**
+ * Sample client to be used with the response server.
+ */
+public class ResponseClient implements AutoCloseable
 {
     private final Aeron aeron;
+    private final String requestEndpoint;
+    private final ChannelUriStringBuilder requestUriBuilder;
+    private final ChannelUriStringBuilder responseUriBuilder;
     private Publication publication;
     private Subscription subscription;
 
-    ResponseClient(final Aeron aeron)
+    /**
+     * Construct a response client with the associated request endpoint. The response endpoint is not required as
+     * the server will manage sending this to the client
+     *
+     * @param aeron             client to use to connect to the server.
+     * @param requestEndpoint   server's subscription endpoint.
+     * @param requestChannel    channel fragment to allow for configuration of parameters on the request publication.
+     *                          May be null. The 'endpoint' parameter is not required and will be replaced by the
+     *                          <code>requestEndpoint</code> if specified.
+     * @param responseChannel   channel fragment to allow for configuration parameters on the response subscription.
+     *                          May be null. The 'control' parameter is not required and will be removed if specified.
+     */
+    public ResponseClient(
+        final Aeron aeron,
+        final String requestEndpoint,
+        final String requestChannel,
+        final String responseChannel)
     {
         this.aeron = aeron;
+        this.requestEndpoint = requestEndpoint;
+
+        requestUriBuilder = null != requestChannel ?
+            new ChannelUriStringBuilder(requestChannel) : new ChannelUriStringBuilder();
+        requestUriBuilder
+            .media("udp")
+            .endpoint(requestEndpoint);
+        responseUriBuilder = null != responseChannel ?
+            new ChannelUriStringBuilder(responseChannel) : new ChannelUriStringBuilder();
+        responseUriBuilder
+            .media("udp")
+            .controlEndpoint((String)null)
+            .isResponseChannel(Boolean.TRUE);
     }
 
     int poll()
     {
-        final String endpoint = "192.168.0.1:10000";
-
         int workCount = 0;
 
         if (null == subscription)
         {
-            subscription = aeron.addSubscription("aeron:udp?is-response-channel=true", 10001);
+            subscription = aeron.addSubscription(responseUriBuilder.build(), 10001);
         }
 
-        if (null == publication)
+        if (null == publication && null != subscription)
         {
             publication = aeron.addPublication(
-                "aeron:udp?endpoint=" + endpoint + "|" +
-                "response-subscription=" + subscription.registrationId(),
+                requestUriBuilder.responseSubscriptionId(subscription.registrationId()).build(),
                 10001);
 
             workCount++;
         }
 
         return workCount;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void close()
+    {
+
     }
 }

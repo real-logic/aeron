@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
+import io.aeron.CommonContext;
 import io.aeron.ConcurrentPublication;
 import io.aeron.Publication;
 import io.aeron.Subscription;
@@ -27,10 +28,12 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.test.CountersAnswer;
 import io.aeron.test.Tests;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.ErrorLogReader;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -77,15 +80,21 @@ class ClusteredServiceAgentTest
         final Aeron aeron = mock(Aeron.class);
         final DistinctErrorLog distinctErrorLog = new DistinctErrorLog(
             new UnsafeBuffer(ByteBuffer.allocateDirect(16384)), new SystemEpochClock());
+        final CountersManager countersManager = Tests.newCountersMananger(16 * 1024);
+        final AtomicCounter errorCounter = countersManager.newCounter("test");
+        final long originalErrorCount = errorCounter.get();
 
+        final ErrorHandler errorHandler = CommonContext.setupErrorHandler(null, distinctErrorLog);
+        final CountedErrorHandler countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
         final ClusteredServiceContainer.Context ctx = new ClusteredServiceContainer.Context()
             .aeron(aeron)
             .idleStrategySupplier(() -> YieldingIdleStrategy.INSTANCE)
-            .errorLog(distinctErrorLog);
+            .countedErrorHandler(countedErrorHandler);
         final ClusteredServiceAgent clusteredServiceAgent = new ClusteredServiceAgent(ctx);
 
         clusteredServiceAgent.onSessionClose(99, 999, 9999, 99999, CloseReason.CLIENT_ACTION);
 
+        assertEquals(originalErrorCount + 1, errorCounter.get());
         assertTrue(ErrorLogReader.hasErrors(distinctErrorLog.buffer()));
     }
 

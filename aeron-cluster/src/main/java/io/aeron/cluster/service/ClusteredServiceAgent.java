@@ -490,7 +490,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
 
         if (null == session)
         {
-            ctx.errorLog().record(new ClusterException(
+            ctx.countedErrorHandler().onError(new ClusterException(
                 "unknown clusterSessionId=" + clusterSessionId + " for close reason=" + closeReason +
                 " leadershipTermId=" + leadershipTermId + " logPosition=" + logPosition));
 

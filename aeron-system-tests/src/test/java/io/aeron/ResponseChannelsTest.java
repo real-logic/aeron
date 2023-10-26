@@ -21,16 +21,27 @@ import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.response.ResponseClient;
 import io.aeron.response.ResponseServer;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Objects;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+@ExtendWith(InterruptingTestCallback.class)
 public class ResponseChannelsTest
 {
     private static final String REQUEST_ENDPOINT = "localhost:10000";
@@ -59,16 +70,94 @@ public class ResponseChannelsTest
     }
 
     @Test
+    @InterruptAfter(10)
     void shouldReceiveResponsesOnAPerClientBasis()
     {
+        final MutableDirectBuffer messageA = new UnsafeBuffer("hello from client A".getBytes(UTF_8));
+        final MutableDirectBuffer messageB = new UnsafeBuffer("hello from client B".getBytes(UTF_8));
+
         try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Aeron clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             ResponseServer responseServer = new ResponseServer(
                 server, (image) -> new EchoHandler(), REQUEST_ENDPOINT, RESPONSE_ENDPOINT, null, null);
-            ResponseClient responseClientA = new ResponseClient(clientA, REQUEST_ENDPOINT, null, null))
+            ResponseClient responseClientA = new ResponseClient(clientA, REQUEST_ENDPOINT, null, null);
+            ResponseClient responseClientB = new ResponseClient(clientB, REQUEST_ENDPOINT, null, null))
         {
+            while (2 < responseServer.sessionCount() || !responseClientA.isConnected() || responseClientB.isConnected())
+            {
+                Tests.yieldingIdle("failed to connect server and clients");
+            }
 
+//            while (0 > responseClientA.offer(messageA))
+//            {
+//                Tests.yieldingIdle("unable to offer message to client A");
+//            }
+//
+//            while (0 > responseClientB.offer(messageB))
+//            {
+//                Tests.yieldingIdle("unable to offer message to client B");
+//            }
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldResolvePublicationImageViaCorrelationId()
+    {
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Publication pub = aeron.addPublication("aeron:udp?endpoint=localhost:10000", 10001);
+            Subscription sub = aeron.addSubscription("aeron:udp?endpoint=localhost:10000", 10001))
+        {
+            Tests.awaitConnected(pub);
+            Tests.awaitConnected(sub);
+
+            final long correlationId = sub.imageAtIndex(0).correlationId();
+
+            try (Publication pubA = aeron.addPublication(
+                "aeron:udp?endpoint=localhost:10001|response-correlation-id=" + correlationId,
+                10001))
+            {
+                Objects.requireNonNull(pubA);
+                Tests.sleep(5_000);
+            }
+        }
+    }
+
+    @Test
+    @InterruptAfter(5)
+    void shouldMultiplePublicationsWithTheSameControlAddress()
+    {
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Publication pubA = aeron.addExclusivePublication(
+                "aeron:udp?control-mode=response|control=localhost:10000", 10001);
+            Publication pubB = aeron.addExclusivePublication(
+                "aeron:udp?control-mode=response|control=localhost:10000", 10001);
+            )
+        {
+            Objects.requireNonNull(pubA);
+            Objects.requireNonNull(pubB);
+
+            final String channelA = "aeron:udp?control=localhost:10000|session-id=" + pubA.sessionId();
+            final String channelB = "aeron:udp?control=localhost:10000|session-id=" + pubB.sessionId();
+            try (Subscription subA = aeron.addSubscription(channelA, 10001);
+                Subscription subB = aeron.addSubscription(channelB, 10001))
+            {
+                Tests.awaitConnected(subA);
+                Tests.awaitConnected(pubA);
+                Tests.awaitConnected(subB);
+                Tests.awaitConnected(pubB);
+
+//                while (0 > pubA.offer(new UnsafeBuffer("hello".getBytes(UTF_8))))
+//                {
+//                    Tests.sleep(1);
+//                }
+
+//                while (0 > pubB.offer(new UnsafeBuffer("hello".getBytes(UTF_8))))
+//                {
+//                    Tests.sleep(1);
+//                }
+            }
         }
     }
 

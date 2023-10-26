@@ -298,6 +298,44 @@ public class SendChannelEndpoint extends UdpChannelTransport
     }
 
     /**
+     * Send contents of a {@link ByteBuffer} to connected address.
+     * This is used on the sender side for performance over send(ByteBuffer, SocketAddress).
+     *
+     * @param buffer to send
+     * @param endpointAddress to send data to.
+     * @return number of bytes sent
+     */
+    public int send(final ByteBuffer buffer, final InetSocketAddress endpointAddress)
+    {
+        int bytesSent = 0;
+
+        if (isChannelSendTimestampEnabled)
+        {
+            applyChannelSendTimestamp(buffer);
+        }
+
+        if (null != sendDatagramChannel)
+        {
+            final int bytesToSend = buffer.remaining();
+
+            try
+            {
+                sendHook(buffer, endpointAddress);
+                bytesSent = sendDatagramChannel.send(buffer, endpointAddress);
+            }
+            catch (final PortUnreachableException ignore)
+            {
+            }
+            catch (final IOException ex)
+            {
+                sendError(bytesToSend, ex, connectAddress);
+            }
+        }
+
+        return bytesSent;
+    }
+
+    /**
      * Check sockets may need to be re-resolved due to no activity.
      *
      * @param nowNs          to test against for activity.

@@ -220,6 +220,11 @@ public class CommonContext implements Cloneable
     public static final String MDC_CONTROL_MODE_DYNAMIC = "dynamic";
 
     /**
+     * Valid value for {@link #MDC_CONTROL_MODE_PARAM_NAME} when response control is desired.
+     */
+    public static final String MDC_CONTROL_MODE_RESPONSE = "response";
+
+    /**
      * Key for the session id for a publication or restricted subscription.
      */
     public static final String SESSION_ID_PARAM_NAME = "session-id";

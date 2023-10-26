@@ -522,6 +522,19 @@ public final class DriverConductor implements Agent
         {
             linkSpies(subscriptionLinks, publication);
         }
+
+        final String imageCorrelationIdString = channelUri.get(RESPONSE_CORRELATION_ID_PARAM_NAME);
+        if (null != imageCorrelationIdString)
+        {
+            final long imageCorrelationId = Long.parseLong(imageCorrelationIdString);
+            for (final PublicationImage publicationImage : publicationImages)
+            {
+                if (publicationImage.correlationId() == imageCorrelationId)
+                {
+                    System.out.println("Found publicationImage: " + publicationImage);
+                }
+            }
+        }
     }
 
     void cleanupSpies(final NetworkPublication publication)

@@ -86,6 +86,7 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
     boolean trackSenderLimits = false;
     boolean isSetupElicited = false;
     boolean hasInitialConnection = false;
+    InetSocketAddress endpointAddress = null;
 }
 
 class NetworkPublicationPadding3 extends NetworkPublicationSenderFields
@@ -128,6 +129,7 @@ public final class NetworkPublication
     private final boolean isExclusive;
     private final boolean spiesSimulateConnection;
     private final boolean signalEos;
+    private final boolean isResponse;
     private volatile boolean hasReceivers;
     private volatile boolean hasSpies;
     private volatile boolean isConnected;
@@ -207,6 +209,7 @@ public final class NetworkPublication
         this.isExclusive = isExclusive;
         this.startingTermId = params.hasPosition ? params.termId : initialTermId;
         this.startingTermOffset = params.hasPosition ? params.termOffset : 0;
+        this.isResponse = params.isResponse;
 
         metaDataBuffer = rawLog.metaData();
         setupBuffer = threadLocals.setupBuffer();
@@ -335,6 +338,11 @@ public final class NetworkPublication
             timeOfLastStatusMessageNs = cachedNanoClock.nanoTime();
             isSetupElicited = true;
             flowControl.onTriggerSendSetup(msg, srcAddress, timeOfLastStatusMessageNs);
+
+            if (isResponse)
+            {
+                this.endpointAddress = srcAddress;
+            }
         }
     }
 
@@ -409,6 +417,8 @@ public final class NetworkPublication
      */
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
+        System.out.println("msg=" + msg + " src=" + srcAddress);
+
         if (!hasReceivers)
         {
             hasReceivers = true;
@@ -463,7 +473,7 @@ public final class NetworkPublication
                 .streamId(streamId)
                 .flags((short)0x0);
 
-            final int bytesSent = channelEndpoint.send(rttMeasurementBuffer);
+            final int bytesSent = doSend(rttMeasurementBuffer);
             if (RttMeasurementFlyweight.HEADER_LENGTH != bytesSent)
             {
                 shortSends.increment();
@@ -471,6 +481,25 @@ public final class NetworkPublication
         }
 
         // handling of RTT measurements would be done in an else clause here.
+    }
+
+    private int doSend(final ByteBuffer message)
+    {
+        if (isResponse)
+        {
+            if (null != endpointAddress)
+            {
+                return channelEndpoint.send(message, endpointAddress);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            return channelEndpoint.send(message);
+        }
     }
 
     /**
@@ -506,7 +535,7 @@ public final class NetworkPublication
 
                 sendBuffer.limit(offset + available).position(offset);
 
-                if (available != channelEndpoint.send(sendBuffer))
+                if (available != doSend(sendBuffer))
                 {
                     shortSends.increment();
                     break;
@@ -695,7 +724,7 @@ public final class NetworkPublication
                 final ByteBuffer sendBuffer = sendBuffers[activeIndex];
                 sendBuffer.limit(termOffset + available).position(termOffset);
 
-                if (available == channelEndpoint.send(sendBuffer))
+                if (available == doSend(sendBuffer))
                 {
                     timeOfLastDataOrHeartbeatNs = nowNs;
                     trackSenderLimits = true;
@@ -750,7 +779,7 @@ public final class NetworkPublication
                 flowControl.onSetup(setupHeader, senderLimit.get(), senderPosition.get(), positionBitsToShift, nowNs);
             }
 
-            if (SetupFlyweight.HEADER_LENGTH != channelEndpoint.send(setupBuffer))
+            if (SetupFlyweight.HEADER_LENGTH != doSend(setupBuffer))
             {
                 shortSends.increment();
             }
@@ -777,7 +806,7 @@ public final class NetworkPublication
                 .termOffset(termOffset)
                 .flags((byte)(signalEos ? BEGIN_END_AND_EOS_FLAGS : BEGIN_AND_END_FLAGS));
 
-            bytesSent = channelEndpoint.send(heartbeatBuffer);
+            bytesSent = doSend(heartbeatBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 shortSends.increment();

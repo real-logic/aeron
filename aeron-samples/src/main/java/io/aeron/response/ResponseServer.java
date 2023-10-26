@@ -149,6 +149,16 @@ public class ResponseServer implements AutoCloseable
     }
 
     /**
+     * The number of connected clients.
+     *
+     * @return the number of connected clients.
+     */
+    public int sessionCount()
+    {
+        return clientToPublicationMap.size();
+    }
+
+    /**
      * {@inheritDoc}
      */
     public void close()

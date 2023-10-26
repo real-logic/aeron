@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
 import io.aeron.Subscription;
+import org.agrona.DirectBuffer;
 
 /**
  * Sample client to be used with the response server.
@@ -93,5 +94,26 @@ public class ResponseClient implements AutoCloseable
     public void close()
     {
 
+    }
+
+    /**
+     * Check that the client is connected.
+     *
+     * @return true if the client is connected.
+     */
+    public boolean isConnected()
+    {
+        return null != subscription && subscription.isConnected() && null != publication && publication.isConnected();
+    }
+
+    /**
+     * Offer a message on the request channel.
+     *
+     * @param message to be sent
+     * @return result code from the publication.
+     */
+    public long offer(final DirectBuffer message)
+    {
+        return publication.offer(message);
     }
 }

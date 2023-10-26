@@ -461,6 +461,14 @@ class UdpChannelTest
     }
 
     @Test
+    void shouldParseResponseControlMode()
+    {
+        final UdpChannel channel = UdpChannel.parse("aeron:udp?control-mode=response|control=127.0.0.1:10001");
+        assertEquals("UDP-127.0.0.1:10001-0.0.0.0:0", channel.canonicalForm());
+        assertTrue(channel.isResponseControlMode());
+    }
+
+    @Test
     void shouldUseTagsInCanonicalFormForWildcardPorts()
     {
         assertEquals(

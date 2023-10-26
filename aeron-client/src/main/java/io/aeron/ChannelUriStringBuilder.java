@@ -440,8 +440,9 @@ public final class ChannelUriStringBuilder
     public ChannelUriStringBuilder controlMode(final String controlMode)
     {
         if (null != controlMode &&
-            !controlMode.equals(CommonContext.MDC_CONTROL_MODE_MANUAL) &&
-            !controlMode.equals(CommonContext.MDC_CONTROL_MODE_DYNAMIC))
+            !controlMode.equals(MDC_CONTROL_MODE_MANUAL) &&
+            !controlMode.equals(MDC_CONTROL_MODE_DYNAMIC) &&
+            !controlMode.equals(MDC_CONTROL_MODE_RESPONSE))
         {
             throw new IllegalArgumentException("invalid control mode: " + controlMode);
         }
@@ -1970,12 +1971,26 @@ public final class ChannelUriStringBuilder
         return this;
     }
 
+    /**
+     * Flag that this channel (used for a subscription) will be by a client used to receive responses from a "server".
+     *
+     * @param isResponseChannel flags that this channel will receive responses.
+     * @return this for a fluent API.
+     */
     public ChannelUriStringBuilder isResponseChannel(final Boolean isResponseChannel)
     {
         this.isResponseChannel = isResponseChannel;
         return this;
     }
 
+
+    /**
+     * Flag that this channel (used for a subscription) will be by a client used to receive responses from a "server".
+     * The value is retrieved by extracting it from a ChannelUri.
+     *
+     * @param channelUri the existing URI to extract the isResponseChanel from.
+     * @return this for a fluent API.
+     */
     public ChannelUriStringBuilder isResponseChannel(final ChannelUri channelUri)
     {
         final String isResponseChannelString = channelUri.get(IS_RESPONSE_CHANNEL_PARAM_NAME);
@@ -2064,7 +2079,7 @@ public final class ChannelUriStringBuilder
      *
      * @return a channel URI String for the given parameters.
      */
-    @SuppressWarnings("MethodLength")
+    @SuppressWarnings({ "MethodLength", "DuplicatedCode" })
     public String build()
     {
         sb.setLength(0);
@@ -2111,38 +2126,10 @@ public final class ChannelUriStringBuilder
         appendParameter(sb, MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME, mediaReceiveTimestampOffset);
         appendParameter(sb, CHANNEL_RECEIVE_TIMESTAMP_OFFSET_PARAM_NAME, channelReceiveTimestampOffset);
         appendParameter(sb, CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME, channelSendTimestampOffset);
-
-        if (null != responseEndpoint)
-        {
-            sb.append(RESPONSE_ENDPOINT_PARAM_NAME)
-                .append('=')
-                .append(responseEndpoint)
-                .append('|');
-        }
-
-        if (null != responseCorrelationId)
-        {
-            sb.append(RESPONSE_CORRELATION_ID_PARAM_NAME)
-                .append('=')
-                .append(responseCorrelationId)
-                .append('|');
-        }
-
-        if (null != isResponseChannel)
-        {
-            sb.append(IS_RESPONSE_CHANNEL_PARAM_NAME)
-                .append('=')
-                .append(isResponseChannel)
-                .append('|');
-        }
-
-        if (null != responseSubscriptionId)
-        {
-            sb.append(RESPONSE_SUBSCRIPTION_ID_PARAM_NAME)
-                .append('=')
-                .append(responseSubscriptionId)
-                .append('|');
-        }
+        appendParameter(sb, RESPONSE_ENDPOINT_PARAM_NAME, responseEndpoint);
+        appendParameter(sb, RESPONSE_CORRELATION_ID_PARAM_NAME, responseCorrelationId);
+        appendParameter(sb, IS_RESPONSE_CHANNEL_PARAM_NAME, isResponseChannel);
+        appendParameter(sb, RESPONSE_SUBSCRIPTION_ID_PARAM_NAME, responseSubscriptionId);
 
         final char lastChar = sb.charAt(sb.length() - 1);
         if (lastChar == '|' || lastChar == '?')

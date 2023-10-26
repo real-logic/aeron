@@ -175,6 +175,11 @@ public final class Receiver implements Agent
     void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
     {
         channelEndpoint.dispatcher().addSubscription(streamId, sessionId);
+        if (channelEndpoint.hasExplicitControl())
+        {
+            addPendingSetupMessage(
+                sessionId, streamId, 0, channelEndpoint, true, channelEndpoint.explicitControlAddress());
+        }
     }
 
     void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)

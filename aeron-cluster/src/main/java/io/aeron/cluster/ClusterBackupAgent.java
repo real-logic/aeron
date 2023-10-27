@@ -50,6 +50,7 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -362,8 +363,7 @@ public final class ClusterBackupAgent implements Agent
             }
             catch (final Exception ex)
             {
-                ctx.countedErrorHandler().onError(new ClusterException(
-                    "failed to stop log replay", ex, Category.WARN));
+                ctx.countedErrorHandler().onError(new ClusterException("failed to stop log replay", ex, Category.WARN));
             }
             liveLogReplaySessionId = NULL_VALUE;
         }
@@ -503,7 +503,7 @@ public final class ClusterBackupAgent implements Agent
             }
 
             if (null == logSupplierMember ||
-                logSupplierMember.id() != memberId ||
+                memberId != logSupplierMember.id() ||
                 logRecordingId != clusterLogRecordingId)
             {
                 clusterLogRecordingId = logRecordingId;
@@ -545,6 +545,11 @@ public final class ClusterBackupAgent implements Agent
             ClusterMember.setIsLeader(clusterMembers, leaderMemberId);
 
             logSupplierMember = ClusterMember.findMember(clusterMembers, memberId);
+            if (null == logSupplierMember)
+            {
+                throw new ClusterException(memberId + " not found in " + Arrays.asList(clusterMembers));
+            }
+
             logSupplierMember.leadershipTermId(logLeadershipTermId);
 
             if (null != eventsListener)
@@ -1039,8 +1044,7 @@ public final class ClusterBackupAgent implements Agent
             }
             else if (0 == workCount && !poller.subscription().isConnected())
             {
-                ctx.countedErrorHandler().onError(new ClusterException(
-                    "local archive is not connected", Category.WARN));
+                ctx.countedErrorHandler().onError(new ClusterException("local archive not connected", Category.WARN));
                 throw new AgentTerminationException();
             }
         }

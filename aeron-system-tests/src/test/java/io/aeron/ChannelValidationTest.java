@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
-class ChannelValidationTests
+class ChannelValidationTest
 {
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();
@@ -438,6 +438,26 @@ class ChannelValidationTests
         assertThrows(
             RegistrationException.class,
             () -> addSubscription("aeron:udp?control=localhost:0|endpoint=localhost:20000", 10001));
+    }
+
+    @Test
+    void shouldDisallowControlEndpointWithoutControlModeOrEndpoint()
+    {
+        launch();
+
+        assertThrows(
+            RegistrationException.class,
+            () -> addPublication("aeron:udp?control=localhost:9999", 10001));
+    }
+
+    @Test
+    void shouldDisallowControlModeDynamicWithoutControl()
+    {
+        launch();
+
+        assertThrows(
+            RegistrationException.class,
+            () -> addPublication("aeron:udp?control-mode=dynamic", 10001));
     }
 
     private Publication addPublication(final String channel, final int streamId)

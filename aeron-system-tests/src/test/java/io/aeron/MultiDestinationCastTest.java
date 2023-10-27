@@ -509,6 +509,33 @@ class MultiDestinationCastTest
         }
     }
 
+    @Test
+//    @SlowTest
+    @InterruptAfter(5)
+    void shouldNotAllowMdcSubscriptionsWhenChannelHasControlButNotSpecifiedAsMdc()
+    {
+        launch(Tests::onError);
+
+        try (
+            Publication pub = clientA.addPublication(
+                "aeron:udp?control=localhost:24325|endpoint=localhost:10000", STREAM_ID);
+            Subscription subOk = clientA.addSubscription(
+                "aeron:udp?control=localhost:24325|endpoint=localhost:10000", STREAM_ID);
+            Subscription subWrong = clientA.addSubscription(
+                "aeron:udp?control=localhost:24325|endpoint=localhost:10001", STREAM_ID))
+        {
+            Tests.awaitConnected(pub);
+            Tests.awaitConnected(subOk);
+
+            final long deadlineMs = System.currentTimeMillis() + 2_000;
+            while (System.currentTimeMillis() < deadlineMs)
+            {
+                assertFalse(subWrong.isConnected());
+                Tests.sleep(1);
+            }
+        }
+    }
+
     private static void pollForFragment(final Subscription subscription, final FragmentHandler handler)
     {
         final long startNs = System.nanoTime();

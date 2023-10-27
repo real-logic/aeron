@@ -95,7 +95,7 @@ public class WildcardPortManagerSystemTest
         final String endpoint3 = awaitResolvedEndpoint(subscription3);
         assertEquals("127.0.0.1:20701", endpoint3);
 
-        final String publicationChannel = "aeron:udp?control=127.0.0.1:0|linger=0";
+        final String publicationChannel = "aeron:udp?control=127.0.0.1:0|control-mode=dynamic|linger=0";
 
         final Publication publication1 = aeron.addPublication(publicationChannel, 5);
         final String controlEndpoint1 = awaitResolvedEndpoint(publication1);

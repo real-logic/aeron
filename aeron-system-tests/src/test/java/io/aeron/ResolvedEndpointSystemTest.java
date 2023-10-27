@@ -265,7 +265,7 @@ class ResolvedEndpointSystemTest
     @InterruptAfter(5)
     void shouldAllowSystemAssignedPortOnDynamicMultiDestinationPublication()
     {
-        final String mdcUri = "aeron:udp?control=localhost:0";
+        final String mdcUri = "aeron:udp?control=localhost:0|control-mode=dynamic";
 
         try (Publication pub = client.addPublication(mdcUri, STREAM_ID))
         {

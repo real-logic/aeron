@@ -478,26 +478,28 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
     {
         this.logPosition = logPosition;
         clusterTime = timestamp;
-        final ContainerClientSession session = sessionByIdMap.remove(clusterSessionId);
 
+        final ContainerClientSession session = sessionByIdMap.remove(clusterSessionId);
         if (null == session)
         {
-            throw new ClusterException(
-                "unknown clusterSessionId=" + clusterSessionId + " for close reason=" + closeReason +
-                " leadershipTermId=" + leadershipTermId + " logPosition=" + logPosition);
+            ctx.countedErrorHandler().onError(new ClusterEvent(
+                "unknown session close: clusterSessionId=" + clusterSessionId + " closeReason=" + closeReason +
+                " leadershipTermId=" + leadershipTermId + " logPosition=" + logPosition));
         }
-
-        for (int i = 0, size = sessions.size(); i < size; i++)
+        else
         {
-            if (sessions.get(i).id() == clusterSessionId)
+            for (int i = 0, size = sessions.size(); i < size; i++)
             {
-                sessions.remove(i);
-                break;
+                if (sessions.get(i).id() == clusterSessionId)
+                {
+                    sessions.remove(i);
+                    break;
+                }
             }
-        }
 
-        session.disconnect(ctx.countedErrorHandler());
-        service.onSessionClose(session, timestamp, closeReason);
+            session.disconnect(ctx.countedErrorHandler());
+            service.onSessionClose(session, timestamp, closeReason);
+        }
     }
 
     void onServiceAction(

@@ -306,6 +306,20 @@ public class ArchiveTool
                 deleteOrphanedSegments(out, archiveDir);
             }
         }
+        else if (args.length == 3 && "mark-valid".equals(args[1]))
+        {
+            markRecordingValid(
+                out,
+                archiveDir,
+                Long.parseLong(args[2]));
+        }
+        else if (args.length == 3 && "mark-invalid".equals(args[1]))
+        {
+            markRecordingInvalid(
+                out,
+                archiveDir,
+                Long.parseLong(args[2]));
+        }
         else
         {
             System.err.println("ERR: Invalid command");
@@ -678,6 +692,66 @@ public class ArchiveTool
     }
 
     /**
+     * Mark a recording valid by marking it as {@link RecordingState#VALID} in the catalog.
+     *
+     * @param out         stream to print results and errors to.
+     * @param archiveDir  that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
+     * @param recordingId to revive
+     * @throws AeronException if there is no recording with {@code recordingId} in the archive
+     */
+    public static void markRecordingValid(
+        final PrintStream out,
+        final File archiveDir,
+        final long recordingId)
+    {
+        final EpochClock epochClock = INSTANCE;
+        try (Catalog catalog = openCatalogWithInvalidEntries(archiveDir, epochClock, MIN_CAPACITY, null, null))
+        {
+            final CatalogEntryProcessor catalogEntryProcessor =
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                {
+                    headerEncoder.state(VALID);
+                    out.println("(recordingId=" + recordingId + ") OK");
+                };
+
+            if (!catalog.forEntry(recordingId, catalogEntryProcessor))
+            {
+                throw new AeronException("no recording found with recordingId: " + recordingId);
+            }
+        }
+    }
+
+    /**
+     * Mark a recording invalid by marking it as {@link RecordingState#INVALID} in the catalog.
+     *
+     * @param out         stream to print results and errors to.
+     * @param archiveDir  that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
+     * @param recordingId to invalidate
+     * @throws AeronException if there is no recording with {@code recordingId} in the archive
+     */
+    public static void markRecordingInvalid(
+        final PrintStream out,
+        final File archiveDir,
+        final long recordingId)
+    {
+        final EpochClock epochClock = INSTANCE;
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
+        {
+            final CatalogEntryProcessor catalogEntryProcessor =
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                {
+                    headerEncoder.state(INVALID);
+                    out.println("(recordingId=" + recordingId + ") OK: Invalidated");
+                };
+
+            if (!catalog.forEntry(recordingId, catalogEntryProcessor))
+            {
+                throw new AeronException("no recording found with recordingId: " + recordingId);
+            }
+        }
+    }
+
+    /**
      * Migrate previous archive {@link org.agrona.MarkFile}, {@link Catalog}, and recordings from previous version
      * to the latest version.
      *
@@ -885,7 +959,17 @@ public class ArchiveTool
         final Checksum checksum,
         final IntConsumer versionCheck)
     {
-        return new Catalog(archiveDir, epochClock, capacity, true, checksum, versionCheck);
+        return new Catalog(archiveDir, epochClock, capacity, true, checksum, versionCheck, false);
+    }
+
+    static Catalog openCatalogWithInvalidEntries(
+        final File archiveDir,
+        final EpochClock epochClock,
+        final long capacity,
+        final Checksum checksum,
+        final IntConsumer versionCheck)
+    {
+        return new Catalog(archiveDir, epochClock, capacity, true, checksum, versionCheck, true);
     }
 
     private static String validateChecksumClass(final String checksumClassName)
@@ -1600,7 +1684,9 @@ public class ArchiveTool
             "     verified unless flag '-a' is specified, i.e. meaning verify all segment files.%n" +
             "     To perform checksum for each data frame specify the '-checksum' flag together with%n" +
             "     the Checksum implementation class name (e.g. io.aeron.archive.checksum.Crc32).%n" +
-            "     Faulty entries are marked as `INVALID`.%n%n");
+            "     Faulty entries are marked as `INVALID`.%n%n" +
+            "  mark-invalid <recordingId>: marks a recording as invalid. %n%n" +
+            "  mark-valid <recordingId>: marks a previously invalidated recording as valid. %n%n");
         System.out.flush();
     }
 }

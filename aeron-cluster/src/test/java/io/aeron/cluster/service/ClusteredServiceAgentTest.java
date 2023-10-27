@@ -15,24 +15,25 @@
  */
 package io.aeron.cluster.service;
 
-import io.aeron.Aeron;
-import io.aeron.ConcurrentPublication;
-import io.aeron.Publication;
-import io.aeron.Subscription;
-import io.aeron.UnavailableCounterHandler;
+import io.aeron.*;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.driver.DutyCycleTracker;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.test.CountersAnswer;
 import io.aeron.test.Tests;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
+import org.agrona.concurrent.errors.ErrorLogReader;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -40,6 +41,7 @@ import static io.aeron.AeronCounters.CLUSTER_COMMIT_POSITION_TYPE_ID;
 import static io.aeron.AeronCounters.CLUSTER_RECOVERY_STATE_TYPE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 class ClusteredServiceAgentTest
@@ -123,5 +125,29 @@ class ClusteredServiceAgentTest
 
         nanoClock.advance(TimeUnit.MILLISECONDS.toNanos(2));
         assertThrowsExactly(ClusterTerminationException.class, clusteredServiceAgent::doWork);
+    }
+
+    @Test
+    void shouldLogErrorInsteadOfThrowingIfSessionIsNotFoundOnClose()
+    {
+        final Aeron aeron = mock(Aeron.class);
+        final DistinctErrorLog distinctErrorLog = new DistinctErrorLog(
+            new UnsafeBuffer(ByteBuffer.allocateDirect(16384)), new SystemEpochClock());
+        final CountersManager countersManager = Tests.newCountersMananger(16 * 1024);
+        final AtomicCounter errorCounter = countersManager.newCounter("test");
+        final long originalErrorCount = errorCounter.get();
+
+        final ErrorHandler errorHandler = CommonContext.setupErrorHandler(null, distinctErrorLog);
+        final CountedErrorHandler countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
+        final ClusteredServiceContainer.Context ctx = new ClusteredServiceContainer.Context()
+            .aeron(aeron)
+            .idleStrategySupplier(() -> YieldingIdleStrategy.INSTANCE)
+            .countedErrorHandler(countedErrorHandler);
+        final ClusteredServiceAgent clusteredServiceAgent = new ClusteredServiceAgent(ctx);
+
+        clusteredServiceAgent.onSessionClose(99, 999, 9999, 99999, CloseReason.CLIENT_ACTION);
+
+        assertEquals(originalErrorCount + 1, errorCounter.get());
+        assertTrue(ErrorLogReader.hasErrors(distinctErrorLog.buffer()));
     }
 }

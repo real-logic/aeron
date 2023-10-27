@@ -547,7 +547,7 @@ public final class ClusterBackupAgent implements Agent
             logSupplierMember = ClusterMember.findMember(clusterMembers, memberId);
             if (null == logSupplierMember)
             {
-                throw new ClusterException(memberId + " not found in " + Arrays.asList(clusterMembers));
+                throw new ClusterException(memberId + " not found in " + Arrays.toString(clusterMembers));
             }
 
             logSupplierMember.leadershipTermId(logLeadershipTermId);

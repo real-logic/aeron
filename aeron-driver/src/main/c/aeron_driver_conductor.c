@@ -379,6 +379,33 @@ static inline int aeron_driver_conductor_validate_endpoint_for_publication(aeron
     return 0;
 }
 
+static inline int aeron_driver_conductor_validate_control_for_publication(aeron_udp_channel_t *udp_channel)
+{
+    if (udp_channel->is_dynamic_control_mode && !udp_channel->has_explicit_control)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "'control-mode=dynamic' requires that 'control' parameter is set, channel=%.*s",
+            (int)udp_channel->uri_length,
+            udp_channel->original_uri);
+        return -1;
+    }
+
+    if (udp_channel->has_explicit_control &&
+        !udp_channel->has_explicit_endpoint &&
+        NULL == udp_channel->uri.params.udp.control_mode)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "'control' parameter requires that either 'endpoint' or 'control-mode' is specified, channel=%.*s",
+            (int)udp_channel->uri_length,
+            udp_channel->original_uri);
+        return -1;
+    }
+
+    return 0;
+}
+
 static inline int aeron_driver_conductor_validate_control_for_subscription(aeron_udp_channel_t *udp_channel)
 {
     if (udp_channel->has_explicit_control &&
@@ -3400,7 +3427,8 @@ int aeron_driver_conductor_on_add_network_publication(
 
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
         aeron_diver_uri_publication_params(&udp_channel->uri, &params, conductor, is_exclusive) < 0 ||
-        aeron_driver_conductor_validate_endpoint_for_publication(udp_channel) < 0)
+        aeron_driver_conductor_validate_endpoint_for_publication(udp_channel) < 0 ||
+        aeron_driver_conductor_validate_control_for_publication(udp_channel) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         aeron_udp_channel_delete(udp_channel);

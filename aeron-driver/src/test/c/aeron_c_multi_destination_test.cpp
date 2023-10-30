@@ -29,8 +29,9 @@ extern "C"
 
 #define PUB_URI_1 "aeron:udp?endpoint=localhost:24324"
 #define PUB_URI_2 "aeron:udp?endpoint=localhost:24325"
-#define MDC_URI "aeron:udp?control=localhost:24326"
-#define MDC_DEST_URI (MDC_URI "|endpoint=localhost:24327")
+#define CONTROL_URI "aeron:udp?control=localhost:24326"
+#define MDC_URI (CONTROL_URI "|control-mode=dynamic")
+#define MDC_DEST_URI (CONTROL_URI "|endpoint=localhost:24327")
 #define MDS_URI "aeron:udp?control-mode=manual"
 #define STREAM_ID (117)
 
@@ -159,4 +160,25 @@ TEST_F(CMultiDestinationTest, shouldAddPublicationAndMdcPublicationForMds)
     EXPECT_EQ(aeron_exclusive_publication_close(pub1, nullptr, nullptr), 0);
     EXPECT_EQ(aeron_exclusive_publication_close(pub2, nullptr, nullptr), 0);
     EXPECT_EQ(aeron_subscription_close(subscription, nullptr, nullptr), 0);
+}
+
+TEST_F(CMultiDestinationTest, shouldNotAllowChannelsWithControlButWithoutEndpointOrControlMode)
+{
+    ASSERT_TRUE(connect());
+
+    aeron_async_add_exclusive_publication_t *async_pub1 = nullptr;
+    ASSERT_EQ(aeron_async_add_exclusive_publication(&async_pub1, m_aeron, CONTROL_URI, STREAM_ID), 0);
+    aeron_exclusive_publication_t *pub1 = awaitExclusivePublicationOrError(async_pub1);
+    ASSERT_EQ(nullptr, pub1);
+}
+
+TEST_F(CMultiDestinationTest, shouldNotAllowChannelsWithControlModeDynamicButWithoutControl)
+{
+    ASSERT_TRUE(connect());
+
+    aeron_async_add_exclusive_publication_t *async_pub1 = nullptr;
+    ASSERT_EQ(aeron_async_add_exclusive_publication(
+        &async_pub1, m_aeron, "aeron:udp?control-mode=dynamic", STREAM_ID), 0);
+    aeron_exclusive_publication_t *pub1 = awaitExclusivePublicationOrError(async_pub1);
+    ASSERT_EQ(nullptr, pub1);
 }

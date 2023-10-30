@@ -460,6 +460,82 @@ class ChannelValidationTest
             () -> addPublication("aeron:udp?control-mode=dynamic", 10001));
     }
 
+    @Test
+    void shouldAllowDynamicControlModeWithTags()
+    {
+        launch();
+
+        addPublication("aeron:udp?control-mode=dynamic|control=localhost:23454|tags=200", 10001);
+        addPublication("aeron:udp?control-mode=dynamic|control=localhost:23454|tags=200", 10001);
+        addPublication("aeron:udp?tags=200", 10001);
+    }
+
+    @Test
+    void shouldNotAllowNormalToControlModeDynamicChangeWithTags()
+    {
+        launch();
+
+        addPublication("aeron:udp?control=localhost:23454|endpoint=localhost:23455|tags=200", 10001);
+        assertThrows(
+            RegistrationException.class,
+            () -> addPublication("aeron:udp?control-mode=dynamic|control=localhost:23454|tags=200", 10001));
+    }
+
+    @Test
+    void shouldNotAllowDynamicToControlModelNormalChangeWithTags()
+    {
+        launch();
+
+        addPublication("aeron:udp?control-mode=dynamic|control=localhost:23454|tags=200", 10001);
+        assertThrows(
+            RegistrationException.class,
+            () -> addPublication("aeron:udp?control=localhost:23454|endpoint=localhost:23455|tags=200", 10001));
+    }
+
+    @Test
+    void shouldNotAllowDynamicToControlModelManualChangeWithTags()
+    {
+        launch();
+
+        addPublication("aeron:udp?control-mode=dynamic|control=localhost:23454|tags=200", 10001);
+        assertThrows(
+            RegistrationException.class,
+            () -> addPublication("aeron:udp?control-mode=manual|control=localhost:23454|tags=200", 10001));
+    }
+
+    @Test
+    void shouldNotAllowManualToControlModelDynamicChangeWithTags()
+    {
+        launch();
+
+        addPublication("aeron:udp?control-mode=manual|control=localhost:23454|tags=200", 10001);
+        assertThrows(
+            RegistrationException.class,
+            () -> addPublication("aeron:udp?control-mode=dynamic|control=localhost:23454|tags=200", 10001));
+    }
+
+    @Test
+    void shouldNotAllowNormalToControlModelDynamicChangeWithTags()
+    {
+        launch();
+
+        addPublication("aeron:udp?endpoint=localhost:23455|control=localhost:23454|tags=200", 10001);
+        assertThrows(
+            RegistrationException.class,
+            () -> addPublication("aeron:udp?control-mode=dynamic|control=localhost:23454|tags=200", 10001));
+    }
+
+    @Test
+    void shouldNotAllowNormalToControlModelManualChangeWithTags()
+    {
+        launch();
+
+        addPublication("aeron:udp?endpoint=localhost:23455|control=localhost:23454|tags=200", 10001);
+        assertThrows(
+            RegistrationException.class,
+            () -> addPublication("aeron:udp?control-mode=manual|control=localhost:23454|tags=200", 10001));
+    }
+
     private Publication addPublication(final String channel, final int streamId)
     {
         final Publication pub = aeron.addPublication(channel, streamId);

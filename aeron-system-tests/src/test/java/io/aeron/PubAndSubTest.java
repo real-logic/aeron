@@ -693,7 +693,7 @@ class PubAndSubTest
     @Test
     void shouldRejectSubscriptionsIfUsingTagsAndParametersAndEndpointDoesNotMatchEndpointWithExplicitControl()
     {
-        watcher.ignoreErrorsMatching((s) -> s.contains("has explicit endpoint or control"));
+        watcher.ignoreErrorsMatching((s) -> s.contains("has mismatched endpoint or control"));
         launch("aeron:ipc");
 
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
@@ -714,7 +714,7 @@ class PubAndSubTest
     @Test
     void shouldRejectSubscriptionsIfUsingTagsAndParametersAndEndpointDoesNotMatchEndpointWithoutControl()
     {
-        watcher.ignoreErrorsMatching((s) -> s.contains("has explicit endpoint or control"));
+        watcher.ignoreErrorsMatching((s) -> s.contains("has mismatched endpoint or control"));
         launch("aeron:ipc");
 
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
@@ -735,7 +735,7 @@ class PubAndSubTest
     @Test
     void shouldRejectSubscriptionsIfUsingTagsAndParametersAndEndpointDoesNotMatchControl()
     {
-        watcher.ignoreErrorsMatching((s) -> s.contains("has explicit endpoint or control"));
+        watcher.ignoreErrorsMatching((s) -> s.contains("has mismatched endpoint or control"));
         launch("aeron:ipc");
 
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
@@ -789,7 +789,7 @@ class PubAndSubTest
     @Test
     void shouldRejectPublicationsIfUsingTagsAndParametersAndEndpointDoesNotMatchEndpointWithExplicitControl()
     {
-        watcher.ignoreErrorsMatching((s) -> s.contains("has explicit endpoint or control"));
+        watcher.ignoreErrorsMatching((s) -> s.contains("has mismatched endpoint or control"));
         launch("aeron:ipc");
 
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
@@ -810,7 +810,7 @@ class PubAndSubTest
     @Test
     void shouldRejectPublicationsIfUsingTagsAndParametersAndEndpointDoesNotMatchEndpointWithoutControl()
     {
-        watcher.ignoreErrorsMatching((s) -> s.contains("has explicit endpoint or control"));
+        watcher.ignoreErrorsMatching((s) -> s.contains("has mismatched endpoint or control"));
         launch("aeron:ipc");
 
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(
@@ -831,7 +831,7 @@ class PubAndSubTest
     @Test
     void shouldRejectPublicationsIfUsingTagsAndParametersAndEndpointDoesNotMatchControl()
     {
-        watcher.ignoreErrorsMatching((s) -> s.contains("has explicit endpoint or control"));
+        watcher.ignoreErrorsMatching((s) -> s.contains("has mismatched endpoint or control"));
         launch("aeron:ipc");
 
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(

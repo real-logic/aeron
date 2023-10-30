@@ -510,7 +510,7 @@ class MultiDestinationCastTest
     }
 
     @Test
-//    @SlowTest
+    @SlowTest
     @InterruptAfter(5)
     void shouldNotAllowMdcSubscriptionsWhenChannelHasControlButNotSpecifiedAsMdc()
     {

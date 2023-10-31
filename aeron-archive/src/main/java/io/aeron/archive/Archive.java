@@ -1077,10 +1077,7 @@ public final class Archive implements AutoCloseable
             if (null == markFileDir)
             {
                 final String dir = Configuration.markFileDir();
-                if (!Strings.isEmpty(dir))
-                {
-                    markFileDir = new File(dir);
-                }
+                markFileDir = !Strings.isEmpty(dir) ? new File(dir) : archiveDir;
             }
 
             if (deleteArchiveOnStart)
@@ -1093,7 +1090,7 @@ public final class Archive implements AutoCloseable
                 throw new ArchiveException("failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
-            if (null != markFileDir && !markFileDir.exists() && !markFileDir.mkdirs())
+            if (!markFileDir.exists() && !markFileDir.mkdirs())
             {
                 throw new ArchiveException("failed to create mark file dir: " + markFileDir.getAbsolutePath());
             }
@@ -1544,7 +1541,7 @@ public final class Archive implements AutoCloseable
          */
         public File markFileDir()
         {
-            return null != markFileDir ? markFileDir : archiveDir;
+            return markFileDir;
         }
 
         /**

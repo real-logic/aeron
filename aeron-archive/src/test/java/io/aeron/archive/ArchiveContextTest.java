@@ -28,6 +28,7 @@ import io.aeron.test.TestContexts;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.CountedErrorHandler;
+import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -44,6 +45,7 @@ import org.mockito.InOrder;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
@@ -55,6 +57,7 @@ import static io.aeron.driver.Configuration.MAX_UDP_PAYLOAD_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -225,14 +228,6 @@ class ArchiveContextTest
             .thenReturn(AeronCounters.ARCHIVE_ERROR_COUNT_TYPE_ID);
 
         assertThrows(ConfigurationException.class, context::conclude);
-    }
-
-    @Test
-    void markFileDirShouldReturnArchiveDirWhenNotSet(final @TempDir File archiveDir)
-    {
-        context.archiveDir(archiveDir);
-
-        assertSame(archiveDir, context.markFileDir());
     }
 
     @Test
@@ -712,14 +707,15 @@ class ArchiveContextTest
         final AtomicCounter errorCounter = mock(AtomicCounter.class);
         final ErrorHandler errorHandler = mock(ErrorHandler.class, withSettings().extraInterfaces(AutoCloseable.class));
         final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
-        context.aeron(aeron).ownsAeronClient(true);
-        context.archiveMarkFile(archiveMarkFile);
-        context.archiveDirChannel(archiveDirChannel);
-        context.catalog(catalog);
-        context.errorHandler(errorHandler);
-        context.countedErrorHandler(countedErrorHandler);
-        context.controlSessionsCounter(controlSessionsCounter);
-        context.errorCounter(errorCounter);
+        context.aeron(aeron)
+            .ownsAeronClient(true)
+            .archiveMarkFile(archiveMarkFile)
+            .archiveDirChannel(archiveDirChannel)
+            .catalog(catalog)
+            .errorHandler(errorHandler)
+            .countedErrorHandler(countedErrorHandler)
+            .controlSessionsCounter(controlSessionsCounter)
+            .errorCounter(errorCounter);
 
         context.close();
 
@@ -799,25 +795,25 @@ class ArchiveContextTest
             new UnsupportedOperationException("replayerDutyCycleTrackerCycleTimeThresholdExceededCount"));
         final ErrorHandler errorHandler = mock(ErrorHandler.class, withSettings().extraInterfaces(AutoCloseable.class));
         final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
-        context.aeron(aeron);
-        context.archiveMarkFile(archiveMarkFile);
-        context.archiveDirChannel(archiveDirChannel);
-        context.catalog(catalog);
-        context.errorHandler(errorHandler);
-        context.errorCounter(errorCounter);
-        context.countedErrorHandler(countedErrorHandler);
-        context.controlSessionsCounter(controlSessionsCounter);
-        context.totalWriteBytesCounter(totalWriteBytesCounter);
-        context.totalWriteTimeCounter(totalWriteTimeCounter);
-        context.maxWriteTimeCounter(maxWriteTimeCounter);
-        context.totalReadBytesCounter(totalReadBytesCounter);
-        context.totalReadTimeCounter(totalReadTimeCounter);
-        context.maxReadTimeCounter(maxReadTimeCounter);
-        context.conductorDutyCycleTracker(new DutyCycleStallTracker(
-            conductorDutyCycleTrackerMaxCycleTime, conductorDutyCycleTrackerCycleTimeThresholdExceededCount, 1));
-        context.recorderDutyCycleTracker(new DutyCycleStallTracker(
-            recorderDutyCycleTrackerMaxCycleTime, recorderDutyCycleTrackerCycleTimeThresholdExceededCount, 1));
-        context.replayerDutyCycleTracker(new DutyCycleStallTracker(
+        context.aeron(aeron)
+            .archiveMarkFile(archiveMarkFile)
+            .archiveDirChannel(archiveDirChannel)
+            .catalog(catalog)
+            .errorHandler(errorHandler)
+            .errorCounter(errorCounter)
+            .countedErrorHandler(countedErrorHandler)
+            .controlSessionsCounter(controlSessionsCounter)
+            .totalWriteBytesCounter(totalWriteBytesCounter)
+            .totalWriteTimeCounter(totalWriteTimeCounter)
+            .maxWriteTimeCounter(maxWriteTimeCounter)
+            .totalReadBytesCounter(totalReadBytesCounter)
+            .totalReadTimeCounter(totalReadTimeCounter)
+            .maxReadTimeCounter(maxReadTimeCounter)
+            .conductorDutyCycleTracker(new DutyCycleStallTracker(
+            conductorDutyCycleTrackerMaxCycleTime, conductorDutyCycleTrackerCycleTimeThresholdExceededCount, 1))
+            .recorderDutyCycleTracker(new DutyCycleStallTracker(
+            recorderDutyCycleTrackerMaxCycleTime, recorderDutyCycleTrackerCycleTimeThresholdExceededCount, 1))
+            .replayerDutyCycleTracker(new DutyCycleStallTracker(
             replayerDutyCycleTrackerMaxCycleTime, replayerDutyCycleTrackerCycleTimeThresholdExceededCount, 1));
 
         context.close();
@@ -877,6 +873,71 @@ class ArchiveContextTest
         inOrder.verify((AutoCloseable)errorHandler).close();
         inOrder.verify(archiveMarkFile).close();
         inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void shouldNotCreateLinkToTheDefaultMarkFile(@TempDir final Path tempDir) throws IOException
+    {
+        final Path archiveDir = tempDir.resolve("archive-dir");
+        Files.createDirectories(archiveDir);
+        final Path linkFile = archiveDir.resolve(ArchiveMarkFile.LINK_FILENAME);
+        Files.createFile(linkFile);
+        context.archiveDir(archiveDir.toFile());
+
+        context.conclude();
+
+        assertEquals(archiveDir.toFile(), context.markFileDir());
+        final ArchiveMarkFile archiveMarkFile = context.archiveMarkFile();
+        assertNotNull(archiveMarkFile);
+        assertEquals(archiveDir.toFile(), archiveMarkFile.parentDirectory());
+        final Path markFile = archiveDir.resolve(ArchiveMarkFile.FILENAME);
+        assertTrue(Files.exists(markFile));
+        assertTrue(Files.notExists(linkFile));
+    }
+
+    @Test
+    void shouldCreateALinkToTheArchiveMarkFileInAnotherDirectory(
+        @TempDir final Path archiveDir, @TempDir final Path markFileDir) throws IOException
+    {
+        context.archiveDir(archiveDir.toFile()).markFileDir(markFileDir.toFile());
+
+        context.conclude();
+
+        assertEquals(archiveDir.toFile(), context.archiveDir());
+        assertEquals(markFileDir.toFile(), context.markFileDir());
+        final ArchiveMarkFile archiveMarkFile = context.archiveMarkFile();
+        assertNotNull(archiveMarkFile);
+        assertEquals(markFileDir.toFile(), archiveMarkFile.parentDirectory());
+        final Path markFile = markFileDir.resolve(ArchiveMarkFile.FILENAME);
+        assertTrue(Files.exists(markFile));
+        final Path linkFile = archiveDir.resolve(ArchiveMarkFile.LINK_FILENAME);
+        assertTrue(Files.exists(linkFile));
+        assertEquals(markFileDir.toAbsolutePath().toString(), new String(Files.readAllBytes(linkFile), US_ASCII));
+    }
+
+    @Test
+    void shouldCreateALinkToTheArchiveMarkFileWhichIsExplicitlyAssigned(
+        @TempDir final Path archiveDir,
+        @TempDir final Path markFileDir,
+        @TempDir final Path archiveMarkFileDir) throws IOException
+    {
+        final ArchiveMarkFile archiveMarkFile = new ArchiveMarkFile(
+            archiveMarkFileDir.resolve("my-funny-file.txt").toFile(), 1024 * 1024, 8096, SystemEpochClock.INSTANCE, 0);
+        context
+            .archiveDir(archiveDir.toFile())
+            .markFileDir(markFileDir.toFile())
+            .archiveMarkFile(archiveMarkFile);
+
+        context.conclude();
+
+        assertEquals(archiveDir.toFile(), context.archiveDir());
+        assertEquals(markFileDir.toFile(), context.markFileDir());
+        assertSame(archiveMarkFile, context.archiveMarkFile());
+        assertEquals(archiveMarkFileDir.toFile(), archiveMarkFile.parentDirectory());
+        final Path linkFile = archiveDir.resolve(ArchiveMarkFile.LINK_FILENAME);
+        assertTrue(Files.exists(linkFile));
+        assertEquals(
+            archiveMarkFileDir.toAbsolutePath().toString(), new String(Files.readAllBytes(linkFile), US_ASCII));
     }
 
     private Counter mockArchiveCounter(

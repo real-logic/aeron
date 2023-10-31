@@ -38,6 +38,7 @@ import io.aeron.test.cluster.TestClusterClock;
 import org.agrona.DirectBuffer;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
@@ -53,6 +54,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
@@ -60,6 +62,7 @@ import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE;
 import static io.aeron.cluster.service.ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_DIR_PROP_NAME;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -573,6 +576,29 @@ class ConsensusModuleContextTest
         context.conclude();
 
         assertFalse(oldLinkFile.exists());
+    }
+
+    @Test
+    void concludeShouldCreateLinkPointingToTheParentDirectoryOfTheMarkFile(
+        final @TempDir File clusterDir,
+        final @TempDir File markFileDir,
+        final @TempDir File otherDir) throws IOException
+    {
+        final ClusterMarkFile clusterMarkFile = new ClusterMarkFile(
+            new File(otherDir, "test.me"), CONSENSUS_MODULE, ERROR_BUFFER_MIN_LENGTH, SystemEpochClock.INSTANCE, 10);
+        context
+            .clusterDir(clusterDir)
+            .markFileDir(markFileDir)
+            .clusterMarkFile(clusterMarkFile);
+
+        context.conclude();
+
+        assertEquals(clusterDir, context.clusterDir());
+        assertEquals(markFileDir, context.markFileDir());
+        assertEquals(otherDir, context.clusterMarkFile().parentDirectory());
+        final File linkFile = new File(context.clusterDir(), ClusterMarkFile.LINK_FILENAME);
+        assertTrue(linkFile.exists());
+        assertEquals(otherDir.getCanonicalPath(), new String(Files.readAllBytes(linkFile.toPath()), US_ASCII));
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

@@ -1532,7 +1532,7 @@ public final class ConsensusModule implements AutoCloseable
 
             MarkFile.ensureMarkFileLink(
                 clusterDir,
-                new File(markFileDir, ClusterMarkFile.FILENAME),
+                new File(markFile.parentDirectory(), ClusterMarkFile.FILENAME),
                 ClusterMarkFile.LINK_FILENAME);
 
             if (null == nodeStateFile)

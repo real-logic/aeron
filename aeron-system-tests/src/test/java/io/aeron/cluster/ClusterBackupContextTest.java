@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.RethrowingErrorHandler;
 import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,8 +31,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
+import static io.aeron.cluster.codecs.mark.ClusterComponentType.BACKUP;
+import static io.aeron.cluster.service.ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_DIR_PROP_NAME;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -156,5 +161,28 @@ class ClusterBackupContextTest
         context.conclude();
 
         assertFalse(oldLinkFile.exists());
+    }
+
+    @Test
+    void concludeShouldCreateLinkFilePointingToTheParentDirectoryOfTheMarkFile(
+        final @TempDir File clusterDir,
+        final @TempDir File markFileDir,
+        final @TempDir File otherDir) throws IOException
+    {
+        final ClusterMarkFile clusterMarkFile = new ClusterMarkFile(
+            new File(otherDir, "abc.xyz"), BACKUP, ERROR_BUFFER_MIN_LENGTH, SystemEpochClock.INSTANCE, 4);
+        context
+            .clusterDir(clusterDir)
+            .markFileDir(markFileDir)
+            .clusterMarkFile(clusterMarkFile);
+
+        context.conclude();
+
+        assertEquals(clusterDir, context.clusterDir());
+        assertEquals(markFileDir, context.markFileDir());
+        assertEquals(otherDir, context.clusterMarkFile().parentDirectory());
+        final File linkFile = new File(context.clusterDir(), ClusterMarkFile.LINK_FILENAME);
+        assertTrue(linkFile.exists());
+        assertEquals(otherDir.getCanonicalPath(), new String(Files.readAllBytes(linkFile.toPath()), US_ASCII));
     }
 }

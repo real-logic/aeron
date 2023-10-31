@@ -18,8 +18,10 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
+import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -30,8 +32,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
+import static io.aeron.cluster.service.ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_DIR_PROP_NAME;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -154,6 +159,43 @@ class ClusteredServiceContainerContextTest
             context.conclude();
 
             assertFalse(oldLinkFile.exists());
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
+        }
+    }
+
+    @Test
+    void concludeShouldCreateMarkFileLinkInTheParentDirectoryOfTheClusterMarkFile(
+        final @TempDir File clusterDir,
+        final @TempDir File markFileDir,
+        final @TempDir File otherDir) throws IOException
+    {
+        final ClusterMarkFile clusterMarkFile = new ClusterMarkFile(
+            new File(otherDir, "test.not"),
+            ClusterComponentType.CONSENSUS_MODULE,
+            ERROR_BUFFER_MIN_LENGTH,
+            SystemEpochClock.INSTANCE,
+            10);
+        context
+            .serviceId(serviceId)
+            .clusterDir(clusterDir)
+            .markFileDir(markFileDir)
+            .clusterMarkFile(clusterMarkFile);
+
+        try
+        {
+            context.conclude();
+
+            assertEquals(clusterDir, context.clusterDir());
+            assertEquals(markFileDir, context.markFileDir());
+            assertEquals(otherDir, context.clusterMarkFile().parentDirectory());
+            assertTrue(clusterDir.exists());
+            assertTrue(markFileDir.exists());
+            final File linkFile = new File(context.clusterDir(), ClusterMarkFile.linkFilenameForService(serviceId));
+            assertTrue(linkFile.exists());
+            assertEquals(otherDir.getCanonicalPath(), new String(Files.readAllBytes(linkFile.toPath()), US_ASCII));
         }
         finally
         {

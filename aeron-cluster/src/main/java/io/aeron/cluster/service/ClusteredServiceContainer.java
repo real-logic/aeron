@@ -752,7 +752,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             MarkFile.ensureMarkFileLink(
                 clusterDir,
-                new File(markFileDir, ClusterMarkFile.markFilenameForService(serviceId)),
+                new File(markFile.parentDirectory(), ClusterMarkFile.markFilenameForService(serviceId)),
                 ClusterMarkFile.linkFilenameForService(serviceId));
 
             if (null == errorLog)

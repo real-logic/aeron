@@ -699,16 +699,16 @@ public final class UdpChannel
             return false;
         }
 
-        if (!hasMatchingAddress(udpChannel))
-        {
-            throw new IllegalArgumentException(
-                "matching tag=" + tag + " has mismatched endpoint or control: " + uriStr + " <> " + udpChannel.uriStr);
-        }
-
         if (!matchesControlMode(udpChannel))
         {
             throw new IllegalArgumentException(
                 "matching tag=" + tag + " has mismatched control-mode: " + uriStr + " <> " + udpChannel.uriStr);
+        }
+
+        if (!hasMatchingAddress(udpChannel))
+        {
+            throw new IllegalArgumentException(
+                "matching tag=" + tag + " has mismatched endpoint or control: " + uriStr + " <> " + udpChannel.uriStr);
         }
 
         return true;

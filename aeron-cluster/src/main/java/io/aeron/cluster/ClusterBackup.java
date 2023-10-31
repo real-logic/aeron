@@ -664,7 +664,7 @@ public final class ClusterBackup implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    errorCounter = ClusterCounters.allocate(
+                    errorCounter = ClusterCounters.allocateVersioned(
                         aeron, buffer, "ClusterBackup Errors", CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID, clusterId);
                 }
             }

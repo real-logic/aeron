@@ -798,13 +798,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
             final ExpandableArrayBuffer tempBuffer = new ExpandableArrayBuffer();
             if (null == errorCounter)
             {
-                errorCounter = ClusterCounters.allocateServiceCounter(
-                    aeron,
-                    tempBuffer,
-                    "Cluster Container Errors",
-                    CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID,
-                    clusterId,
-                    serviceId);
+                errorCounter = ClusterCounters.allocateServiceErrorCounter(aeron, tempBuffer, clusterId, serviceId);
             }
 
             if (null == countedErrorHandler)

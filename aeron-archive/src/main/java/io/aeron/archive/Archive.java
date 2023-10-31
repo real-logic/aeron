@@ -1167,8 +1167,7 @@ public final class Archive implements AutoCloseable
                 if (null == errorCounter)
                 {
                     concludeArchiveId();
-                    errorCounter = ArchiveCounters.allocate(
-                        aeron, tempBuffer, Configuration.ARCHIVE_ERROR_COUNT_TYPE_ID, "Archive Errors", archiveId);
+                    errorCounter = ArchiveCounters.allocateErrorCounter(aeron, tempBuffer, archiveId);
                 }
             }
 

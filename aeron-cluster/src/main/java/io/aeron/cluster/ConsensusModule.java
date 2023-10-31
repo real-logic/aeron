@@ -1583,7 +1583,7 @@ public final class ConsensusModule implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    errorCounter = ClusterCounters.allocate(
+                    errorCounter = ClusterCounters.allocateVersioned(
                         aeron, buffer, "Cluster Errors", CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID, clusterId);
                 }
             }

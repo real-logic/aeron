@@ -63,9 +63,32 @@ public final class ArchiveCounters
 
         index += tempBuffer.putStringWithoutLengthAscii(index, name);
         index += appendArchiveIdLabel(tempBuffer, index, archiveId);
-        index += AeronCounters.appendVersionInfo(tempBuffer, index, ArchiveVersion.VERSION, ArchiveVersion.GIT_SHA);
 
         return aeron.addCounter(typeId, tempBuffer, 0, keyLength, tempBuffer, keyLength, index - keyLength);
+    }
+
+    static Counter allocateErrorCounter(
+        final Aeron aeron,
+        final MutableDirectBuffer tempBuffer,
+        final long archiveId)
+    {
+        int index = 0;
+        tempBuffer.putLong(index, archiveId);
+        index += SIZE_OF_LONG;
+        final int keyLength = index;
+
+        index += tempBuffer.putStringWithoutLengthAscii(index, "Archive Errors");
+        index += appendArchiveIdLabel(tempBuffer, index, archiveId);
+        index += AeronCounters.appendVersionInfo(tempBuffer, index, ArchiveVersion.VERSION, ArchiveVersion.GIT_SHA);
+
+        return aeron.addCounter(
+            AeronCounters.ARCHIVE_ERROR_COUNT_TYPE_ID,
+            tempBuffer,
+            0,
+            keyLength,
+            tempBuffer,
+            keyLength,
+            index - keyLength);
     }
 
     /**

@@ -2069,14 +2069,14 @@ static int aeron_driver_conductor_tagged_channels_match(aeron_udp_channel_t *exi
         return -1;
     }
 
-    bool endpoints_match = false;
-    if (aeron_udp_channel_endpoints_match(existing, other, &endpoints_match) < 0)
+    bool has_matching_endpoints = false;
+    if (aeron_udp_channel_endpoints_match(existing, other, &has_matching_endpoints) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
-    if (!endpoints_match)
+    if (!has_matching_endpoints)
     {
         AERON_SET_ERR(
             EINVAL,

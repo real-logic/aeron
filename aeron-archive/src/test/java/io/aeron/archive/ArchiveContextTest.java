@@ -912,7 +912,7 @@ class ArchiveContextTest
         assertTrue(Files.exists(markFile));
         final Path linkFile = archiveDir.resolve(ArchiveMarkFile.LINK_FILENAME);
         assertTrue(Files.exists(linkFile));
-        assertEquals(markFileDir.toAbsolutePath().toString(), new String(Files.readAllBytes(linkFile), US_ASCII));
+        assertEquals(markFileDir.toFile().getCanonicalPath(), new String(Files.readAllBytes(linkFile), US_ASCII));
     }
 
     @Test
@@ -937,7 +937,7 @@ class ArchiveContextTest
         final Path linkFile = archiveDir.resolve(ArchiveMarkFile.LINK_FILENAME);
         assertTrue(Files.exists(linkFile));
         assertEquals(
-            archiveMarkFileDir.toAbsolutePath().toString(), new String(Files.readAllBytes(linkFile), US_ASCII));
+            archiveMarkFileDir.toFile().getCanonicalPath(), new String(Files.readAllBytes(linkFile), US_ASCII));
     }
 
     private Counter mockArchiveCounter(

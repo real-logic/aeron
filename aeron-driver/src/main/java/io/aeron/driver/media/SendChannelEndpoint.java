@@ -94,7 +94,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             udpChannel,
             udpChannel.remoteControl(),
             udpChannel.localControl(),
-            udpChannel.isDynamicControlMode() || udpChannel.isManualControlMode() ? null : udpChannel.remoteData(),
+            udpChannel.isMultiDestination() ? null : udpChannel.remoteData(),
             context.senderPortManager(),
             context);
 
@@ -109,7 +109,6 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
         else if (udpChannel.isDynamicControlMode())
         {
-            assert udpChannel.hasExplicitControl();
             multiSndDestination = new DynamicSndMultiDestination(context.senderCachedNanoClock());
         }
 

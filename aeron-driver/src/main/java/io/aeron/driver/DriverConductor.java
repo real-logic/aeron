@@ -22,6 +22,7 @@ import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.exceptions.InvalidChannelException;
+import io.aeron.driver.media.ControlMode;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.media.SendChannelEndpoint;
@@ -2117,28 +2118,25 @@ public final class DriverConductor implements Agent
 
     private static void validateEndpointForPublication(final UdpChannel udpChannel)
     {
-        if (!udpChannel.isManualControlMode() &&
-            !udpChannel.isDynamicControlMode() &&
-            udpChannel.hasExplicitEndpoint() &&
+        if (!udpChannel.isMultiDestination() && udpChannel.hasExplicitEndpoint() &&
             0 == udpChannel.remoteData().getPort())
         {
-            throw new IllegalArgumentException(ENDPOINT_PARAM_NAME + " has port=0 for publication: channel=" +
-                udpChannel.originalUriString());
+            throw new IllegalArgumentException(
+                ENDPOINT_PARAM_NAME + " has port=0 for publication: channel=" + udpChannel.originalUriString());
         }
     }
 
     private static void validateControlForPublication(final UdpChannel udpChannel)
     {
-        if (udpChannel.isDynamicControlMode() && null == udpChannel.channelUri().get(MDC_CONTROL_PARAM_NAME))
+        if (udpChannel.isDynamicControlMode() && !udpChannel.hasExplicitControl())
         {
             throw new IllegalArgumentException(
                 "'control-mode=dynamic' requires that 'control' parameter is set, channel=" +
                 udpChannel.originalUriString());
         }
 
-        if (null != udpChannel.channelUri().get(MDC_CONTROL_PARAM_NAME) &&
-            null == udpChannel.channelUri().get(ENDPOINT_PARAM_NAME) &&
-            null == udpChannel.channelUri().get(MDC_CONTROL_MODE_PARAM_NAME))
+        if (udpChannel.hasExplicitControl() && !udpChannel.hasExplicitEndpoint() &&
+            ControlMode.NONE == udpChannel.controlMode())
         {
             throw new IllegalArgumentException(
                 "'control' parameter requires that either 'endpoint' or 'control-mode' is specified, channel=" +

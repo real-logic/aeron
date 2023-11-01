@@ -50,8 +50,7 @@ public final class UdpChannel
     private static final InetSocketAddress ANY_IPV4 = new InetSocketAddress("0.0.0.0", 0);
     private static final InetSocketAddress ANY_IPV6 = new InetSocketAddress("::", 0);
 
-    private final boolean isManualControlMode;
-    private final boolean isDynamicControlMode;
+    private final ControlMode controlMode;
     private final boolean hasExplicitControl;
     private final boolean hasExplicitEndpoint;
     private final boolean isMulticast;
@@ -77,8 +76,7 @@ public final class UdpChannel
 
     private UdpChannel(final Context context)
     {
-        isManualControlMode = context.isManualControlMode;
-        isDynamicControlMode = context.isDynamicControlMode;
+        controlMode = context.controlMode;
         hasExplicitEndpoint = context.hasExplicitEndpoint;
         hasExplicitControl = context.hasExplicitControl;
         isMulticast = context.isMulticast;
@@ -150,9 +148,7 @@ public final class UdpChannel
             final InetSocketAddress controlAddress = getExplicitControlAddress(channelUri, nameResolver);
 
             final String tagIdStr = channelUri.channelTag();
-            final String controlMode = channelUri.get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
-            final boolean isManualControlMode = CommonContext.MDC_CONTROL_MODE_MANUAL.equals(controlMode);
-            final boolean isDynamicControlMode = CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(controlMode);
+            final ControlMode controlMode = parseControlMode(channelUri);
 
             final int socketRcvbufLength = parseBufferLength(channelUri, CommonContext.SOCKET_RCVBUF_PARAM_NAME);
             final int socketSndbufLength = parseBufferLength(channelUri, CommonContext.SOCKET_SNDBUF_PARAM_NAME);
@@ -167,13 +163,13 @@ public final class UdpChannel
             final boolean hasNoDistinguishingCharacteristic =
                 null == endpointAddress && null == controlAddress && null == tagIdStr;
 
-            if (isDynamicControlMode && null == controlAddress)
+            if (ControlMode.DYNAMIC == controlMode && null == controlAddress)
             {
                 throw new IllegalArgumentException(
                     "explicit control expected with dynamic control mode: " + channelUriString);
             }
 
-            if (hasNoDistinguishingCharacteristic && !isManualControlMode)
+            if (hasNoDistinguishingCharacteristic && ControlMode.MANUAL != controlMode)
             {
                 throw new IllegalArgumentException(
                     "URIs for UDP must specify an endpoint, control, tags, or control-mode=manual: " +
@@ -205,8 +201,7 @@ public final class UdpChannel
                 .hasTagId(false)
                 .uriStr(channelUriString)
                 .channelUri(channelUri)
-                .isManualControlMode(isManualControlMode)
-                .isDynamicControlMode(isDynamicControlMode)
+                .controlMode(controlMode)
                 .hasExplicitEndpoint(hasExplicitEndpoint)
                 .hasNoDistinguishingCharacteristic(hasNoDistinguishingCharacteristic)
                 .socketRcvbufLength(socketRcvbufLength)
@@ -370,6 +365,32 @@ public final class UdpChannel
         }
 
         return socketBufferLength;
+    }
+
+    /**
+     * Parse the control mode from the channel URI. If the value is null or unknown then {@link ControlMode#NONE} will
+     * be used.
+     *
+     * @param channelUri to parse the control mode from.
+     * @return an enum value representing the control mode.
+     */
+    public static ControlMode parseControlMode(final ChannelUri channelUri)
+    {
+        final String paramValue = channelUri.get(MDC_CONTROL_MODE_PARAM_NAME);
+        if (null == paramValue)
+        {
+            return ControlMode.NONE;
+        }
+
+        switch (paramValue)
+        {
+            case MDC_CONTROL_MODE_DYNAMIC:
+                return ControlMode.DYNAMIC;
+            case MDC_CONTROL_MODE_MANUAL:
+                return ControlMode.MANUAL;
+            default:
+                return ControlMode.NONE;
+        }
     }
 
     /**
@@ -564,13 +585,24 @@ public final class UdpChannel
     }
 
     /**
+     * The channel's control mode.
+     *
+     * @return the control mode for the channel.
+     */
+    public ControlMode controlMode()
+    {
+        return controlMode;
+    }
+
+
+    /**
      * Does the channel have manual control mode specified.
      *
      * @return does channel have manual control mode specified.
      */
     public boolean isManualControlMode()
     {
-        return isManualControlMode;
+        return ControlMode.MANUAL == controlMode;
     }
 
     /**
@@ -580,7 +612,7 @@ public final class UdpChannel
      */
     public boolean isDynamicControlMode()
     {
-        return isDynamicControlMode;
+        return ControlMode.DYNAMIC == controlMode;
     }
 
     /**
@@ -620,7 +652,7 @@ public final class UdpChannel
      */
     public boolean isMultiDestination()
     {
-        return isDynamicControlMode || isManualControlMode || hasExplicitControl;
+        return controlMode.isMultiDestination();
     }
 
     /**
@@ -731,9 +763,7 @@ public final class UdpChannel
 
     private boolean matchesControlMode(final UdpChannel udpChannel)
     {
-        return null == udpChannel.channelUri().get(MDC_CONTROL_MODE_PARAM_NAME) ||
-            (isDynamicControlMode() == udpChannel.isDynamicControlMode() &&
-                isManualControlMode() == udpChannel.isManualControlMode());
+        return udpChannel.controlMode() == ControlMode.NONE || controlMode() == udpChannel.controlMode();
     }
 
     /**
@@ -1019,8 +1049,7 @@ public final class UdpChannel
 
     static final class Context
     {
-        boolean isManualControlMode = false;
-        boolean isDynamicControlMode = false;
+        ControlMode controlMode = ControlMode.NONE;
         boolean hasExplicitEndpoint = false;
         boolean hasExplicitControl = false;
         boolean isMulticast = false;
@@ -1120,15 +1149,9 @@ public final class UdpChannel
             return this;
         }
 
-        Context isManualControlMode(final boolean isManualControlMode)
+        Context controlMode(final ControlMode controlMode)
         {
-            this.isManualControlMode = isManualControlMode;
-            return this;
-        }
-
-        Context isDynamicControlMode(final boolean isDynamicControlMode)
-        {
-            this.isDynamicControlMode = isDynamicControlMode;
+            this.controlMode = controlMode;
             return this;
         }
 

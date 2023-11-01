@@ -81,6 +81,7 @@ class ReplicateRecordingTest
     private static final int LIVE_STREAM_ID = 1033;
     private static final String LIVE_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
+        .controlMode("dynamic")
         .controlEndpoint("localhost:8100")
         .termLength(TERM_LENGTH)
         .build();

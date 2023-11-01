@@ -462,6 +462,7 @@ public final class DriverConductor implements Agent
         final ChannelUri channelUri = udpChannel.channelUri();
         final PublicationParams params = getPublicationParams(channelUri, ctx, this, false);
         validateEndpointForPublication(udpChannel);
+        validateControlForPublication(udpChannel);
         validateMtuForMaxMessage(params, channel);
 
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(params, udpChannel, correlationId);
@@ -2122,6 +2123,25 @@ public final class DriverConductor implements Agent
             0 == udpChannel.remoteData().getPort())
         {
             throw new IllegalArgumentException(ENDPOINT_PARAM_NAME + " has port=0 for publication: channel=" +
+                udpChannel.originalUriString());
+        }
+    }
+
+    private static void validateControlForPublication(final UdpChannel udpChannel)
+    {
+        if (udpChannel.isDynamicControlMode() && null == udpChannel.channelUri().get(MDC_CONTROL_PARAM_NAME))
+        {
+            throw new IllegalArgumentException(
+                "'control-mode=dynamic' requires that 'control' parameter is set, channel=" +
+                udpChannel.originalUriString());
+        }
+
+        if (null != udpChannel.channelUri().get(MDC_CONTROL_PARAM_NAME) &&
+            null == udpChannel.channelUri().get(ENDPOINT_PARAM_NAME) &&
+            null == udpChannel.channelUri().get(MDC_CONTROL_MODE_PARAM_NAME))
+        {
+            throw new IllegalArgumentException(
+                "'control' parameter requires that either 'endpoint' or 'control-mode' is specified, channel=" +
                 udpChannel.originalUriString());
         }
     }

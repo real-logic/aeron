@@ -379,6 +379,33 @@ static inline int aeron_driver_conductor_validate_endpoint_for_publication(aeron
     return 0;
 }
 
+static inline int aeron_driver_conductor_validate_control_for_publication(aeron_udp_channel_t *udp_channel)
+{
+    if (udp_channel->is_dynamic_control_mode && !udp_channel->has_explicit_control)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "'control-mode=dynamic' requires that 'control' parameter is set, channel=%.*s",
+            (int)udp_channel->uri_length,
+            udp_channel->original_uri);
+        return -1;
+    }
+
+    if (udp_channel->has_explicit_control &&
+        !udp_channel->has_explicit_endpoint &&
+        NULL == udp_channel->uri.params.udp.control_mode)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "'control' parameter requires that either 'endpoint' or 'control-mode' is specified, channel=%.*s",
+            (int)udp_channel->uri_length,
+            udp_channel->original_uri);
+        return -1;
+    }
+
+    return 0;
+}
+
 static inline int aeron_driver_conductor_validate_control_for_subscription(aeron_udp_channel_t *udp_channel)
 {
     if (udp_channel->has_explicit_control &&
@@ -2027,6 +2054,44 @@ int aeron_driver_conductor_update_and_check_ats_status(
     return 0;
 }
 
+static int aeron_driver_conductor_tagged_channels_match(aeron_udp_channel_t *existing, aeron_udp_channel_t *other)
+{
+    if (!aeron_udp_channel_control_modes_match(existing, other))
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "matching tag %" PRId64 " has mismatched control-mode: %.*s <> %.*s",
+            other->tag_id,
+            (int)existing->uri_length,
+            existing->original_uri,
+            (int)other->uri_length,
+            other->original_uri);
+        return -1;
+    }
+
+    bool has_matching_endpoints = false;
+    if (aeron_udp_channel_endpoints_match(existing, other, &has_matching_endpoints) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (!has_matching_endpoints)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "matching tag %" PRId64 " has mismatched endpoint or control: %.*s <> %.*s",
+            other->tag_id,
+            (int)existing->uri_length,
+            existing->original_uri,
+            (int)other->uri_length,
+            other->original_uri);
+        return -1;
+    }
+
+    return 0;
+}
+
 aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_endpoint(
     aeron_driver_conductor_t *conductor,
     aeron_udp_channel_t *channel,
@@ -2038,23 +2103,9 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 
     if (NULL != endpoint)
     {
-        bool endpoints_match = false;
-        if (aeron_udp_channel_endpoints_match(channel, endpoint->conductor_fields.udp_channel, &endpoints_match) < 0)
+        if (aeron_driver_conductor_tagged_channels_match(endpoint->conductor_fields.udp_channel, channel) < 0)
         {
             AERON_APPEND_ERR("%s", "");
-            goto error_cleanup;
-        }
-
-        if (!aeron_udp_channel_is_wildcard(channel) && !endpoints_match)
-        {
-            AERON_SET_ERR(
-                EINVAL,
-                "matching tag %" PRId64 " has explicit endpoint or control: %.*s <> %.*s",
-                channel->tag_id,
-                (int)endpoint->conductor_fields.udp_channel->uri_length,
-                endpoint->conductor_fields.udp_channel->original_uri,
-                (int)channel->uri_length,
-                channel->original_uri);
             goto error_cleanup;
         }
     }
@@ -2186,21 +2237,9 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
 
     if (NULL != endpoint)
     {
-        bool endpoints_match = false;
-        if (aeron_udp_channel_endpoints_match(channel, endpoint->conductor_fields.udp_channel, &endpoints_match) < 0)
+        if (aeron_driver_conductor_tagged_channels_match(endpoint->conductor_fields.udp_channel, channel) < 0)
         {
             AERON_APPEND_ERR("%s", "");
-            goto error_cleanup;
-        }
-
-        if (!aeron_udp_channel_is_wildcard(channel) && !endpoints_match)
-        {
-            AERON_SET_ERR(
-                EINVAL,
-                "matching tag=%" PRId64 " has explicit endpoint or control - %.*s",
-                channel->tag_id,
-                (int)channel->uri_length,
-                channel->original_uri);
             goto error_cleanup;
         }
     }
@@ -3400,7 +3439,8 @@ int aeron_driver_conductor_on_add_network_publication(
 
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
         aeron_diver_uri_publication_params(&udp_channel->uri, &params, conductor, is_exclusive) < 0 ||
-        aeron_driver_conductor_validate_endpoint_for_publication(udp_channel) < 0)
+        aeron_driver_conductor_validate_endpoint_for_publication(udp_channel) < 0 ||
+        aeron_driver_conductor_validate_control_for_publication(udp_channel) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         aeron_udp_channel_delete(udp_channel);

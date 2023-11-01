@@ -585,6 +585,12 @@ class UdpChannelTest
         assertEquals(1234L, channel.groupTag());
     }
 
+    @Test
+    void shouldSpecifyControlIfDynamicControlModeSpecified()
+    {
+        assertThrows(InvalidChannelException.class, () -> UdpChannel.parse("aeron:udp?control-mode=dynamic"));
+    }
+
     private static Matcher<NetworkInterface> supportsMulticastOrIsLoopback()
     {
         return new NetworkInterfaceTypeSafeMatcher();

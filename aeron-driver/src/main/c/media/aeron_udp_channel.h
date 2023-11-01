@@ -74,6 +74,12 @@ inline int aeron_udp_channel_endpoints_match(aeron_udp_channel_t *channel, aeron
     bool cmp = false;
     int rc = 0;
 
+    if (aeron_udp_channel_is_wildcard(other))
+    {
+        *result = true;
+        return rc;
+    }
+
     rc = aeron_sockaddr_storage_cmp(&channel->remote_data, &other->remote_data, &cmp);
     if (rc < 0)
     {
@@ -96,6 +102,13 @@ inline int aeron_udp_channel_endpoints_match(aeron_udp_channel_t *channel, aeron
 
     *result = cmp;
     return 0;
+}
+
+inline bool aeron_udp_channel_control_modes_match(aeron_udp_channel_t *channel, aeron_udp_channel_t *other)
+{
+    return (!other->is_dynamic_control_mode && !other->is_manual_control_mode) ||
+        (channel->is_manual_control_mode == other->is_manual_control_mode &&
+        channel->is_dynamic_control_mode == other->is_dynamic_control_mode);
 }
 
 inline bool aeron_udp_channel_equals(aeron_udp_channel_t *a, aeron_udp_channel_t *b)

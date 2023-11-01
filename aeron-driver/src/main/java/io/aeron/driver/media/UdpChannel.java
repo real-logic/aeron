@@ -699,24 +699,41 @@ public final class UdpChannel
             return false;
         }
 
-        if (udpChannel.remoteData().getAddress().isAnyLocalAddress() &&
+        if (!matchesControlMode(udpChannel))
+        {
+            throw new IllegalArgumentException(
+                "matching tag=" + tag + " has mismatched control-mode: " + uriStr + " <> " + udpChannel.uriStr);
+        }
+
+        if (!hasMatchingAddress(udpChannel))
+        {
+            throw new IllegalArgumentException(
+                "matching tag=" + tag + " has mismatched endpoint or control: " + uriStr + " <> " + udpChannel.uriStr);
+        }
+
+        return true;
+    }
+
+    private boolean hasMatchingAddress(final UdpChannel udpChannel)
+    {
+        final boolean otherChannelIsWildcard = udpChannel.remoteData().getAddress().isAnyLocalAddress() &&
             udpChannel.remoteData().getPort() == 0 &&
             udpChannel.localData().getAddress().isAnyLocalAddress() &&
-            udpChannel.localData().getPort() == 0)
-        {
-            return true;
-        }
+            udpChannel.localData().getPort() == 0;
 
-        if (udpChannel.remoteData().getAddress().equals(remoteData.getAddress()) &&
+        final boolean otherChannelMatches = udpChannel.remoteData().getAddress().equals(remoteData.getAddress()) &&
             udpChannel.remoteData().getPort() == remoteData.getPort() &&
             udpChannel.localData().getAddress().equals(localData.getAddress()) &&
-            udpChannel.localData().getPort() == localData.getPort())
-        {
-            return true;
-        }
+            udpChannel.localData().getPort() == localData.getPort();
 
-        throw new IllegalArgumentException(
-            "matching tag=" + tag + " has explicit endpoint or control: " + uriStr + " <> " + udpChannel.uriStr);
+        return otherChannelIsWildcard || otherChannelMatches;
+    }
+
+    private boolean matchesControlMode(final UdpChannel udpChannel)
+    {
+        return null == udpChannel.channelUri().get(MDC_CONTROL_MODE_PARAM_NAME) ||
+            (isDynamicControlMode() == udpChannel.isDynamicControlMode() &&
+                isManualControlMode() == udpChannel.isManualControlMode());
     }
 
     /**

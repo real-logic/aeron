@@ -471,6 +471,8 @@ extern bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel);
 
 extern int aeron_udp_channel_endpoints_match(aeron_udp_channel_t *channel, aeron_udp_channel_t *other, bool *result);
 
+extern bool aeron_udp_channel_control_modes_match(aeron_udp_channel_t *channel, aeron_udp_channel_t *other);
+
 extern bool aeron_udp_channel_equals(aeron_udp_channel_t *a, aeron_udp_channel_t *b);
 
 extern size_t aeron_udp_channel_socket_so_sndbuf(aeron_udp_channel_t *channel, size_t default_so_sndbuf);

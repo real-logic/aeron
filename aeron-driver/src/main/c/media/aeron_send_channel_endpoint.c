@@ -58,7 +58,7 @@ int aeron_send_channel_endpoint_create(
     _endpoint->data_paths = &context->sender_proxy->sender->data_paths;
 
     struct sockaddr_storage *connect_addr = NULL;
-    if (channel->has_explicit_control || channel->is_dynamic_control_mode || channel->is_manual_control_mode)
+    if (channel->is_dynamic_control_mode || channel->is_manual_control_mode)
     {
         if (aeron_alloc((void **)&_endpoint->destination_tracker, sizeof(aeron_udp_destination_tracker_t)) < 0 ||
             aeron_udp_destination_tracker_init(

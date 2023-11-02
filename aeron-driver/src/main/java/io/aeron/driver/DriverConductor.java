@@ -231,6 +231,7 @@ public final class DriverConductor implements Agent
         return senderProxy.isApplyingBackpressure() || receiverProxy.isApplyingBackpressure();
     }
 
+    @SuppressWarnings("MethodLength")
     void onCreatePublicationImage(
         final int sessionId,
         final int streamId,
@@ -325,12 +326,15 @@ public final class DriverConductor implements Agent
                     final SubscriberPosition position = subscriberPositions.get(i);
                     position.addLink(image);
 
+                    final int positionCounterId = position.positionCounterId();
+                    countersManager.setCounterReferenceId(positionCounterId, registrationId);
+
                     clientProxy.onAvailableImage(
                         registrationId,
                         streamId,
                         sessionId,
                         position.subscription().registrationId(),
-                        position.positionCounterId(),
+                        positionCounterId,
                         rawLog.fileName(),
                         sourceIdentity);
                 }
@@ -1619,6 +1623,8 @@ public final class DriverConductor implements Agent
                     subscriptionLink.channel(),
                     joinPosition);
 
+                countersManager.setCounterReferenceId(position.id(), image.correlationId());
+
                 position.setOrdered(joinPosition);
                 subscriptionLink.link(image, position);
                 image.addSubscriber(subscriptionLink, position, cachedNanoClock.nanoTime());
@@ -1666,6 +1672,8 @@ public final class DriverConductor implements Agent
         final Position position = SubscriberPos.allocate(
             tempBuffer, countersManager, clientId, registrationId, sessionId, streamId, channel, joinPosition);
 
+        countersManager.setCounterReferenceId(position.id(), publication.registrationId());
+
         position.setOrdered(joinPosition);
         subscription.link(publication, position);
         publication.addSubscriber(subscription, position, cachedNanoClock.nanoTime());
@@ -1684,6 +1692,8 @@ public final class DriverConductor implements Agent
 
         final Position position = SubscriberPos.allocate(
             tempBuffer, countersManager, clientId, registrationId, sessionId, streamId, channel, joinPosition);
+
+        countersManager.setCounterReferenceId(position.id(), publication.registrationId());
 
         position.setOrdered(joinPosition);
         subscription.link(publication, position);

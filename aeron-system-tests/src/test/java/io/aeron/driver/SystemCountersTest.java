@@ -29,7 +29,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SystemCountersTest
 {
@@ -71,20 +70,10 @@ public class SystemCountersTest
             }
         });
 
-        boolean result = true;
         for (final SystemCounterDescriptor counter : SystemCounterDescriptor.values())
         {
             final String counterLabel = idToLabel.get(counter.id());
-            if (!counterLabel.startsWith(counter.label()))
-            {
-                result = false;
-                System.out.println(counter.name() + ": expected=" + counter.label() + ", got=" + counterLabel);
-            }
-            else
-            {
-                assertThat(counterLabel, startsWith(counter.label()));
-            }
+            assertThat(counterLabel, startsWith(counter.label()));
         }
-        assertTrue(result);
     }
 }

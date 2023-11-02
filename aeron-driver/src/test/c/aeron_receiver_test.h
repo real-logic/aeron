@@ -138,7 +138,7 @@ protected:
         status_indicator.value_addr = aeron_counters_manager_addr(&m_counters_manager, status_indicator.counter_id);
 
         aeron_receive_destination_t *destination = nullptr;
-        if (!channel->is_manual_control_mode)
+        if (AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL != channel->control_mode)
         {
             if (0 != aeron_receive_destination_create(
                 &destination, channel, channel, m_context, &m_counters_manager, 0, status_indicator.counter_id))

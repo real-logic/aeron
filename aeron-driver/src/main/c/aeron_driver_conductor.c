@@ -362,8 +362,7 @@ static inline int aeron_driver_conductor_validate_channel_buffer_length(
 
 static inline int aeron_driver_conductor_validate_endpoint_for_publication(aeron_udp_channel_t *udp_channel)
 {
-    if (!udp_channel->is_dynamic_control_mode &&
-        !udp_channel->is_manual_control_mode &&
+    if (!aeron_udp_channel_is_multi_destination(udp_channel) &&
         udp_channel->has_explicit_endpoint &&
         aeron_is_wildcard_port(&udp_channel->remote_data))
     {
@@ -381,7 +380,7 @@ static inline int aeron_driver_conductor_validate_endpoint_for_publication(aeron
 
 static inline int aeron_driver_conductor_validate_control_for_publication(aeron_udp_channel_t *udp_channel)
 {
-    if (udp_channel->is_dynamic_control_mode && !udp_channel->has_explicit_control)
+    if (AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC == udp_channel->control_mode && !udp_channel->has_explicit_control)
     {
         AERON_SET_ERR(
             EINVAL,
@@ -2113,7 +2112,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
     {
         if (AERON_URI_INVALID_TAG != channel->tag_id &&
             !channel->has_explicit_control &&
-            !channel->is_manual_control_mode &&
+            AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL != channel->control_mode &&
             NULL == channel->uri.params.udp.endpoint)
         {
             AERON_SET_ERR(
@@ -2293,7 +2292,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
 
         aeron_receive_destination_t *destination = NULL;
 
-        if (!channel->is_manual_control_mode)
+        if (AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL != channel->control_mode)
         {
             if (aeron_receive_destination_create(
                 &destination,
@@ -2352,7 +2351,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
     }
     else
     {
-        if (!channel->is_manual_control_mode && 1 == endpoint->destinations.length)
+        if (AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL != channel->control_mode && 1 == endpoint->destinations.length)
         {
             const size_t socket_sndbuf_existing = aeron_udp_channel_socket_so_sndbuf(
                 endpoint->conductor_fields.udp_channel, conductor->context->socket_sndbuf);
@@ -4185,7 +4184,7 @@ aeron_subscription_link_t *aeron_driver_conductor_find_mds_subscription(
         return NULL;
     }
 
-    if (!mds_subscription_link->endpoint->conductor_fields.udp_channel->is_manual_control_mode)
+    if (AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL != mds_subscription_link->endpoint->conductor_fields.udp_channel->control_mode)
     {
         AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s", "channel does not allow manual control");
         return NULL;

@@ -229,8 +229,7 @@ int aeron_udp_channel_parse(
 
     _channel->has_explicit_endpoint = NULL != _channel->uri.params.udp.endpoint;
     _channel->has_explicit_control = false;
-    _channel->is_manual_control_mode = false;
-    _channel->is_dynamic_control_mode = false;
+    _channel->control_mode = AERON_UDP_CHANNEL_CONTROL_MODE_NONE;
     _channel->is_multicast = false;
     _channel->tag_id = AERON_URI_INVALID_TAG;
     _channel->ats_status = AERON_URI_ATS_STATUS_DEFAULT;
@@ -249,13 +248,17 @@ int aeron_udp_channel_parse(
 
     if (NULL != _channel->uri.params.udp.control_mode)
     {
-        _channel->is_manual_control_mode =
-            strcmp(_channel->uri.params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE) == 0;
-        _channel->is_dynamic_control_mode =
-            strcmp(_channel->uri.params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC_VALUE) == 0;
+        if (strcmp(_channel->uri.params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE) == 0)
+        {
+            _channel->control_mode = AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL;
+        }
+        else if (strcmp(_channel->uri.params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC_VALUE) == 0)
+        {
+            _channel->control_mode = AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC;
+        }
     }
 
-    if (_channel->is_dynamic_control_mode && NULL == _channel->uri.params.udp.control)
+    if (AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC == _channel->control_mode && NULL == _channel->uri.params.udp.control)
     {
         AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s", "explicit control expected with dynamic control mode");
         goto error_cleanup;
@@ -266,7 +269,7 @@ int aeron_udp_channel_parse(
         NULL == _channel->uri.params.udp.control &&
         NULL == _channel->uri.params.udp.channel_tag;
 
-    if (has_no_distinguishing_characteristic && !_channel->is_manual_control_mode)
+    if (has_no_distinguishing_characteristic && AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL != _channel->control_mode)
     {
         AERON_SET_ERR(
             -AERON_ERROR_CODE_INVALID_CHANNEL,
@@ -486,4 +489,6 @@ extern bool aeron_udp_channel_is_media_rcv_timestamps_enabled(aeron_udp_channel_
 extern bool aeron_udp_channel_is_channel_rcv_timestamps_enabled(aeron_udp_channel_t *channel);
 
 extern bool aeron_udp_channel_is_channel_snd_timestamps_enabled(aeron_udp_channel_t *channel);
+
+extern bool aeron_udp_channel_is_multi_destination(const aeron_udp_channel_t *channel);
 

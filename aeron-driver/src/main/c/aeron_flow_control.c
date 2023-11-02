@@ -209,9 +209,7 @@ int aeron_default_multicast_flow_control_strategy_supplier(
 {
     aeron_flow_control_strategy_supplier_func_t flow_control_strategy_supplier_func;
 
-    if (channel->is_manual_control_mode ||
-        channel->is_dynamic_control_mode ||
-        channel->has_explicit_control ||
+    if (aeron_udp_channel_is_multi_destination(channel) ||
         channel->is_multicast)
     {
         const char *flow_control_options = aeron_uri_find_param_value(

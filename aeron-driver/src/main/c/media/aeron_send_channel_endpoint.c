@@ -58,14 +58,14 @@ int aeron_send_channel_endpoint_create(
     _endpoint->data_paths = &context->sender_proxy->sender->data_paths;
 
     struct sockaddr_storage *connect_addr = NULL;
-    if (channel->is_dynamic_control_mode || channel->is_manual_control_mode)
+    if (aeron_udp_channel_is_multi_destination(channel))
     {
         if (aeron_alloc((void **)&_endpoint->destination_tracker, sizeof(aeron_udp_destination_tracker_t)) < 0 ||
             aeron_udp_destination_tracker_init(
                 _endpoint->destination_tracker,
                 _endpoint->data_paths,
                 context->sender_cached_clock,
-                channel->is_manual_control_mode,
+                AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL == channel->control_mode,
                 AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS) < 0)
         {
             aeron_udp_channel_delete(channel);
@@ -486,7 +486,7 @@ void aeron_send_channel_endpoint_on_rttm(
 int aeron_send_channel_endpoint_check_for_re_resolution(
     aeron_send_channel_endpoint_t *endpoint, int64_t now_ns, aeron_driver_conductor_proxy_t *conductor_proxy)
 {
-    if (endpoint->conductor_fields.udp_channel->is_manual_control_mode)
+    if (AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL == endpoint->conductor_fields.udp_channel->control_mode)
     {
         aeron_udp_destination_tracker_check_for_re_resolution(
             endpoint->destination_tracker, endpoint, now_ns, conductor_proxy);

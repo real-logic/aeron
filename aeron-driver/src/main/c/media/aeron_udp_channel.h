@@ -25,6 +25,15 @@
 
 #define AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET (-8)
 
+enum aeron_udp_channel_control_mode_en
+{
+    AERON_UDP_CHANNEL_CONTROL_MODE_NONE,
+    AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC,
+    AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL
+};
+
+typedef enum aeron_udp_channel_control_mode_en aeron_udp_channel_control_mode;
+
 typedef struct aeron_udp_channel_stct
 {
     char original_uri[AERON_MAX_PATH];
@@ -41,8 +50,7 @@ typedef struct aeron_udp_channel_stct
     uint8_t multicast_ttl;
     bool has_explicit_endpoint;
     bool has_explicit_control;
-    bool is_manual_control_mode;
-    bool is_dynamic_control_mode;
+    aeron_udp_channel_control_mode control_mode;
     bool is_multicast;
     aeron_uri_ats_status_t ats_status;
     size_t socket_sndbuf_length;
@@ -106,9 +114,7 @@ inline int aeron_udp_channel_endpoints_match(aeron_udp_channel_t *channel, aeron
 
 inline bool aeron_udp_channel_control_modes_match(aeron_udp_channel_t *channel, aeron_udp_channel_t *other)
 {
-    return (!other->is_dynamic_control_mode && !other->is_manual_control_mode) ||
-        (channel->is_manual_control_mode == other->is_manual_control_mode &&
-        channel->is_dynamic_control_mode == other->is_dynamic_control_mode);
+    return AERON_UDP_CHANNEL_CONTROL_MODE_NONE == other->control_mode || channel->control_mode == other->control_mode;
 }
 
 inline bool aeron_udp_channel_equals(aeron_udp_channel_t *a, aeron_udp_channel_t *b)
@@ -147,6 +153,12 @@ inline bool aeron_udp_channel_is_channel_snd_timestamps_enabled(aeron_udp_channe
 {
     return AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET == channel->channel_snd_timestamp_offset ||
         0 <= channel->channel_snd_timestamp_offset;
+}
+
+inline bool aeron_udp_channel_is_multi_destination(const aeron_udp_channel_t *channel)
+{
+    return AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC == channel->control_mode ||
+        AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL == channel->control_mode;
 }
 
 #endif //AERON_UDP_CHANNEL_H

@@ -46,7 +46,7 @@ final class GithubUtil
             final String commitSha = reader.abbreviate(commitId, 10).name();
             final Status status = git.status().call();
 
-            return status.isClean() ? commitSha : commitSha + "+guilty";
+            return status.hasUncommittedChanges() ? commitSha + "+guilty" : commitSha;
         }
     }
 

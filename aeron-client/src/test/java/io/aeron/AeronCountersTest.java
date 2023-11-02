@@ -15,15 +15,22 @@
  */
 package io.aeron;
 
+import io.aeron.test.Tests;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -128,5 +135,88 @@ class AeronCountersTest
 
         assertEquals(expected.length(), length);
         assertEquals(expected, buffer.getStringWithoutLengthAscii(offset, length));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { Integer.MIN_VALUE, -1 })
+    void appendToLabelThrowsIllegalArgumentExceptionIfCounterIsNegative(final int counterId)
+    {
+        final IllegalArgumentException exception = assertThrowsExactly(
+            IllegalArgumentException.class, () -> AeronCounters.appendToLabel(null, counterId, "test"));
+        assertEquals("counter id " + counterId + " is negative", exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 1_000_000, Integer.MAX_VALUE })
+    void appendToLabelThrowsIllegalArgumentExceptionIfCounterIsOutOfRange(final int counterId)
+    {
+        final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(new byte[CountersReader.METADATA_LENGTH * 3]);
+
+        final IllegalArgumentException exception = assertThrowsExactly(
+            IllegalArgumentException.class, () -> AeronCounters.appendToLabel(metaDataBuffer, counterId, "test"));
+        assertEquals("counter id " + counterId + " out of range: 0 - maxCounterId=2", exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { CountersReader.RECORD_UNUSED, CountersReader.RECORD_RECLAIMED })
+    void appendToLabelThrowsIllegalArgumentExceptionIfCounterIsInWrongState(final int state)
+    {
+        final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(new byte[CountersReader.METADATA_LENGTH * 2]);
+        final int counterId = 1;
+        final int metaDataOffset = CountersReader.metaDataOffset(counterId);
+        metaDataBuffer.putInt(metaDataOffset, state);
+
+        final IllegalArgumentException exception = assertThrowsExactly(
+            IllegalArgumentException.class, () -> AeronCounters.appendToLabel(metaDataBuffer, counterId, "test"));
+        assertEquals("counter id 1 state != RECORD_ALLOCATED", exception.getMessage());
+    }
+
+    @Test
+    void appendToLabelShouldAddSuffix()
+    {
+        final CountersManager countersManager = new CountersManager(
+            new UnsafeBuffer(new byte[CountersReader.METADATA_LENGTH]),
+            new UnsafeBuffer(ByteBuffer.allocateDirect(CountersReader.COUNTER_LENGTH)),
+            StandardCharsets.US_ASCII);
+        final int counterId = countersManager.allocate("initial value: ");
+
+        final int length = AeronCounters.appendToLabel(countersManager.metaDataBuffer(), counterId, "test");
+
+        assertEquals(4, length);
+        assertEquals("initial value: test", countersManager.getCounterLabel(counterId));
+    }
+
+    @Test
+    void appendToLabelShouldAddAPortionOfSuffixUpToTheMaxLength()
+    {
+        final CountersManager countersManager = new CountersManager(
+            new UnsafeBuffer(new byte[CountersReader.METADATA_LENGTH]),
+            new UnsafeBuffer(ByteBuffer.allocateDirect(CountersReader.COUNTER_LENGTH)),
+            StandardCharsets.US_ASCII);
+        final String initialLabel = "this is a test counter";
+        final int counterId = countersManager.allocate(initialLabel);
+        final String hugeSuffix = Tests.generateStringWithSuffix(" - 42", "x", CountersReader.MAX_LABEL_LENGTH);
+
+        final int length = AeronCounters.appendToLabel(countersManager.metaDataBuffer(), counterId, hugeSuffix);
+
+        assertNotEquals(hugeSuffix.length(), length);
+        assertEquals(CountersReader.MAX_LABEL_LENGTH - initialLabel.length(), length);
+        assertEquals(initialLabel + hugeSuffix.substring(0, length), countersManager.getCounterLabel(counterId));
+    }
+
+    @Test
+    void appendToLabelIsANoOpIfThereIsNoSpaceInTheLabel()
+    {
+        final CountersManager countersManager = new CountersManager(
+            new UnsafeBuffer(new byte[CountersReader.METADATA_LENGTH]),
+            new UnsafeBuffer(ByteBuffer.allocateDirect(CountersReader.COUNTER_LENGTH)),
+            StandardCharsets.US_ASCII);
+        final String label = Tests.generateStringWithSuffix("", "a", CountersReader.MAX_LABEL_LENGTH);
+        final int counterId = countersManager.allocate(label);
+
+        final int length = AeronCounters.appendToLabel(countersManager.metaDataBuffer(), counterId, "test");
+
+        assertEquals(0, length);
+        assertEquals(label, countersManager.getCounterLabel(counterId));
     }
 }

@@ -1446,10 +1446,14 @@ final class ClientConductor implements Agent
                 final int counterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
                     countersReader, HEARTBEAT_TYPE_ID, ctx.clientId());
 
-                if (counterId != CountersReader.NULL_COUNTER_ID)
+                if (CountersReader.NULL_COUNTER_ID != counterId)
                 {
                     heartbeatTimestamp = new AtomicCounter(counterValuesBuffer, counterId);
                     heartbeatTimestamp.setOrdered(nowMs);
+                    AeronCounters.appendToLabel(
+                        countersReader.metaDataBuffer(),
+                        counterId,
+                        " " + AeronCounters.formatVersionInfo(AeronVersion.VERSION, AeronVersion.GIT_SHA));
                     timeOfLastKeepAliveNs = nowNs;
                 }
             }

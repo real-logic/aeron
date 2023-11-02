@@ -16,16 +16,24 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.status.ClientHeartbeatTimestamp;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
+import io.aeron.status.HeartbeatTimestamp;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import org.agrona.concurrent.NoOpLock;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(InterruptingTestCallback.class)
+@InterruptAfter(10)
 class ClientContextTest
 {
     @Test
@@ -102,6 +110,49 @@ class ClientContextTest
                 Aeron aeron1 = Aeron.connect(ctx.clone()))
             {
                 assertNotEquals(aeron0.nextCorrelationId(), aeron1.nextCorrelationId());
+            }
+        }
+    }
+
+    @Test
+    void shouldAddClientVersionInfoToTheHeartbeatTimestampCounter()
+    {
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true);
+
+        try (MediaDriver mediaDriver = MediaDriver.launch(driverCtx);
+            Aeron aeron = Aeron.connect(new Aeron.Context()
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .keepAliveIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))))
+        {
+            // trigger creation of the timestamp counter on the driver side
+            assertNotNull(aeron.addCounter(1000, "test"));
+
+            final long clientId = aeron.clientId();
+            int counterId = Aeron.NULL_VALUE;
+            final CountersReader countersReader = aeron.countersReader();
+            final String expectedLabel = ClientHeartbeatTimestamp.NAME + ": " + clientId + " " +
+                AeronCounters.formatVersionInfo(AeronVersion.VERSION, AeronVersion.GIT_SHA);
+            while (true)
+            {
+                if (Aeron.NULL_VALUE == counterId)
+                {
+                    counterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
+                        countersReader, HeartbeatTimestamp.HEARTBEAT_TYPE_ID, clientId);
+                }
+                else
+                {
+                    final int labelLength =
+                        countersReader.metaDataBuffer().getInt(
+                        CountersReader.metaDataOffset(counterId) + CountersReader.LABEL_OFFSET);
+                    if (expectedLabel.length() == labelLength &&
+                        expectedLabel.equals(countersReader.getCounterLabel(counterId)))
+                    {
+                        break;
+                    }
+                }
+                Thread.yield();
             }
         }
     }

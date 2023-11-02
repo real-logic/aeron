@@ -142,8 +142,15 @@ class AeronCountersTest
     void appendToLabelThrowsIllegalArgumentExceptionIfCounterIsNegative(final int counterId)
     {
         final IllegalArgumentException exception = assertThrowsExactly(
-            IllegalArgumentException.class, () -> AeronCounters.appendToLabel(null, counterId, "test"));
+            IllegalArgumentException.class, () -> AeronCounters.appendToLabel(new UnsafeBuffer(), counterId, "test"));
         assertEquals("counter id " + counterId + " is negative", exception.getMessage());
+    }
+
+    @Test
+    void appendToLabelThrowsNullPointerExceptionIfBufferIsNull()
+    {
+        assertThrowsExactly(
+            NullPointerException.class, () -> AeronCounters.appendToLabel(null, 5, "test"));
     }
 
     @ParameterizedTest

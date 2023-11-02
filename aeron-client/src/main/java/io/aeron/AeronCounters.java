@@ -21,6 +21,8 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
+import java.util.Objects;
+
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
@@ -458,6 +460,7 @@ public final class AeronCounters
     public static int appendToLabel(
         final AtomicBuffer metaDataBuffer, final int counterId, final String value)
     {
+        Objects.requireNonNull(metaDataBuffer);
         if (counterId < 0)
         {
             throw new IllegalArgumentException("counter id " + counterId + " is negative");

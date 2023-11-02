@@ -32,6 +32,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -190,7 +191,7 @@ public final class CTestMediaDriver implements TestMediaDriver
                 .keepAliveIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
                 .conclude();
             countersReader = new CountersReader(
-                aeronContext.countersMetaDataBuffer(), aeronContext.countersValuesBuffer());
+                aeronContext.countersMetaDataBuffer(), aeronContext.countersValuesBuffer(), StandardCharsets.US_ASCII);
         }
 
         return countersReader;

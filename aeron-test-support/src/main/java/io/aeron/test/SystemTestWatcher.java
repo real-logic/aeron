@@ -42,6 +42,7 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.net.UnknownHostException;
 import java.nio.MappedByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -472,7 +473,8 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 {
                     final CountersReader countersReader = new CountersReader(
                         createCountersMetaDataBuffer(mappedByteBuffer, metaDataBuffer),
-                        createCountersValuesBuffer(mappedByteBuffer, metaDataBuffer));
+                        createCountersValuesBuffer(mappedByteBuffer, metaDataBuffer),
+                        StandardCharsets.US_ASCII);
                     countersReader.forEach(
                         (counterId, label) ->
                         {

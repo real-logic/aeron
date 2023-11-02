@@ -357,7 +357,7 @@ int64_t aeron_spsc_rb_next_correlation_id(aeron_spsc_rb_t *ring_buffer)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Watomic-alignment"
 #endif
-    AERON_GET_AND_ADD_INT64(result, ring_buffer->descriptor->correlation_counter, 1);
+    AERON_GET_AND_ADD_INT64(result, ring_buffer->descriptor->correlation_counter, INT64_C(1));
 #if defined(__clang__) && defined(AERON_CPU_ARM)
 #pragma clang diagnostic pop
 #endif

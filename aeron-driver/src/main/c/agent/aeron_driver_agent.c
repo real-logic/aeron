@@ -2229,7 +2229,7 @@ int64_t aeron_driver_agent_add_dynamic_dissector(aeron_driver_agent_generic_diss
             (aeron_driver_agent_add_dissector_header_t *)ptr;
 
         hdr->time_ns = aeron_nano_clock();
-        AERON_GET_AND_ADD_INT64(hdr->index, dynamic_dissector_index, 1);
+        AERON_GET_AND_ADD_INT64(hdr->index, dynamic_dissector_index, INT64_C(1));
         hdr->dissector_func = func;
 
         aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);

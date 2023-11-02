@@ -19,8 +19,10 @@ import io.aeron.Aeron;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.driver.TestMediaDriver;
+import org.agrona.CloseHelper;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.status.CountersReader;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -40,11 +42,18 @@ public class SystemCountersTest
     {
         final MediaDriver.Context context = new MediaDriver.Context()
             .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true);
+            .dirDeleteOnShutdown(true)
+            .threadingMode(ThreadingMode.SHARED);
         driver = TestMediaDriver.launch(context, systemTestWatcher);
         systemTestWatcher.dataCollector().add(driver.context().aeronDirectory());
 
         aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(context.aeronDirectoryName()));
+    }
+
+    @AfterEach
+    void after()
+    {
+        CloseHelper.closeAll(aeron, driver);
     }
 
     @Test

@@ -16,16 +16,23 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.ClientHeartbeatTimestamp;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.status.HeartbeatTimestamp;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.driver.TestMediaDriver;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.status.CountersReader;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -36,23 +43,38 @@ import static org.junit.jupiter.api.Assertions.*;
 @InterruptAfter(10)
 class ClientContextTest
 {
+    @RegisterExtension
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    private TestMediaDriver mediaDriver;
+
+    @BeforeEach
+    void before()
+    {
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
+            .threadingMode(ThreadingMode.SHARED);
+
+        mediaDriver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
+        systemTestWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());
+    }
+
+    @AfterEach
+    void after()
+    {
+        CloseHelper.close(mediaDriver);
+    }
+
     @Test
     @SuppressWarnings("try")
     void shouldPreventCreatingMultipleClientsWithTheSameContext()
     {
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true);
+        final Aeron.Context ctx = new Aeron.Context()
+            .aeronDirectoryName(mediaDriver.aeronDirectoryName());
 
-        try (MediaDriver mediaDriver = MediaDriver.launch(driverCtx))
+        try (Aeron ignore = Aeron.connect(ctx))
         {
-            final Aeron.Context ctx = new Aeron.Context()
-                .aeronDirectoryName(mediaDriver.aeronDirectoryName());
-
-            try (Aeron ignore = Aeron.connect(ctx))
-            {
-                assertThrows(ConcurrentConcludeException.class, () -> Aeron.connect(ctx));
-            }
+            assertThrows(ConcurrentConcludeException.class, () -> Aeron.connect(ctx));
         }
     }
 
@@ -60,71 +82,46 @@ class ClientContextTest
     @SuppressWarnings("try")
     void shouldRequireInvokerModeIfClientLockIsSet()
     {
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true);
+        final Aeron.Context ctx = new Aeron.Context()
+            .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+            .clientLock(NoOpLock.INSTANCE);
 
-        try (MediaDriver mediaDriver = MediaDriver.launch(driverCtx))
-        {
-            final Aeron.Context ctx = new Aeron.Context()
-                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
-                .clientLock(NoOpLock.INSTANCE);
-
-            assertThrows(AeronException.class, () -> Aeron.connect(ctx));
-        }
+        assertThrows(AeronException.class, () -> Aeron.connect(ctx));
     }
 
     @Test
     @SuppressWarnings("try")
     void shouldAllowCustomLockInAgentRunnerModeIfNotInstanceOfNoOpLock()
     {
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true);
+        final Aeron.Context ctx = new Aeron.Context()
+            .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+            .clientLock(new ReentrantLock());
 
-        try (MediaDriver mediaDriver = MediaDriver.launch(driverCtx))
+        try (Aeron aeron = Aeron.connect(ctx))
         {
-            final Aeron.Context ctx = new Aeron.Context()
-                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
-                .clientLock(new ReentrantLock());
-
-            try (Aeron aeron = Aeron.connect(ctx))
-            {
-                aeron.clientId();
-            }
+            aeron.clientId();
         }
     }
 
     @Test
     void shouldHaveUniqueCorrelationIdsAcrossMultipleClientsToTheSameDriver()
     {
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true);
+        final Aeron.Context ctx = new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName());
 
-        try (MediaDriver mediaDriver = MediaDriver.launch(driverCtx))
+        try (Aeron aeron0 = Aeron.connect(ctx.clone());
+            Aeron aeron1 = Aeron.connect(ctx.clone()))
         {
-            final Aeron.Context ctx = new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName());
+            assertNotEquals(aeron0.nextCorrelationId(), aeron1.nextCorrelationId());
 
-            try (Aeron aeron0 = Aeron.connect(ctx.clone());
-                Aeron aeron1 = Aeron.connect(ctx.clone()))
-            {
-                assertNotEquals(aeron0.nextCorrelationId(), aeron1.nextCorrelationId());
-            }
         }
     }
 
     @Test
     void shouldAddClientVersionInfoToTheHeartbeatTimestampCounter()
     {
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true);
-
-        try (MediaDriver mediaDriver = MediaDriver.launch(driverCtx);
-            Aeron aeron = Aeron.connect(new Aeron.Context()
-                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
-                .keepAliveIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))))
+        try (Aeron aeron = Aeron.connect(new Aeron.Context()
+            .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+            .keepAliveIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))))
         {
             // trigger creation of the timestamp counter on the driver side
             assertNotNull(aeron.addCounter(1000, "test"));

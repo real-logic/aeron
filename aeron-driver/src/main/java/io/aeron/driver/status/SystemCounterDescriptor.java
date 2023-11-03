@@ -103,7 +103,7 @@ public enum SystemCounterDescriptor
     /**
      * Count of errors observed by the driver and an indication to read the distinct error log.
      */
-    ERRORS(15, "Errors - " + AeronCounters.formatVersionInfo(MediaDriverVersion.VERSION, MediaDriverVersion.GIT_SHA)),
+    ERRORS(15, "Errors: " + AeronCounters.formatVersionInfo(MediaDriverVersion.VERSION, MediaDriverVersion.GIT_SHA)),
 
     /**
      * Count of socket send operation which resulted in less than the packet length being sent.

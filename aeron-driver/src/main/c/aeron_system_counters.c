@@ -38,7 +38,7 @@ static aeron_system_counter_t system_counters[] =
         { "Flow control under runs", AERON_SYSTEM_COUNTER_FLOW_CONTROL_UNDER_RUNS },
         { "Flow control over runs", AERON_SYSTEM_COUNTER_FLOW_CONTROL_OVER_RUNS },
         { "Invalid packets", AERON_SYSTEM_COUNTER_INVALID_PACKETS },
-        { "Errors - version=" AERON_VERSION_TXT " commit=" AERON_VERSION_GITSHA, AERON_SYSTEM_COUNTER_ERRORS },
+        { "Errors: version=" AERON_VERSION_TXT " commit=" AERON_VERSION_GITSHA, AERON_SYSTEM_COUNTER_ERRORS },
         { "Short sends", AERON_SYSTEM_COUNTER_SHORT_SENDS },
         { "Failed attempts to free log buffers", AERON_SYSTEM_COUNTER_FREE_FAILS },
         { "Sender flow control limits, i.e. back-pressure events", AERON_SYSTEM_COUNTER_SENDER_FLOW_CONTROL_LIMITS },

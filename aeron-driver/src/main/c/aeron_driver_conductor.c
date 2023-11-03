@@ -3068,12 +3068,13 @@ int aeron_driver_conductor_do_work(void *clientd)
 
     for (size_t i = 0, length = conductor->ipc_publications.length; i < length; i++)
     {
-        work_count += aeron_ipc_publication_update_pub_lmt(conductor->ipc_publications.array[i].publication);
+        work_count += aeron_ipc_publication_update_pub_pos_and_lmt(conductor->ipc_publications.array[i].publication);
     }
 
     for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
     {
-        work_count += aeron_network_publication_update_pub_lmt(conductor->network_publications.array[i].publication);
+        work_count +=
+            aeron_network_publication_update_pub_pos_and_lmt(conductor->network_publications.array[i].publication);
     }
 
     for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)

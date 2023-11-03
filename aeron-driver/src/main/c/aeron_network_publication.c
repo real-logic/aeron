@@ -728,13 +728,16 @@ void aeron_network_publication_clean_buffer(aeron_network_publication_t *publica
     }
 }
 
-int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *publication)
+int aeron_network_publication_update_pub_pos_and_lmt(aeron_network_publication_t *publication)
 {
     int work_count = 0;
 
     if (AERON_NETWORK_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state)
     {
+        const int64_t producer_position = aeron_network_publication_producer_position(publication);
         int64_t snd_pos = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
+
+        aeron_counter_set_ordered(publication->pub_pos_position.value_addr, producer_position);
 
         if (aeron_network_publication_has_required_receivers(publication) ||
             (publication->spies_simulate_connection &&

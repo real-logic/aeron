@@ -97,7 +97,7 @@ void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aer
 
 bool aeron_ipc_publication_free(aeron_ipc_publication_t *publication);
 
-int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication);
+int aeron_ipc_publication_update_pub_pos_and_lmt(aeron_ipc_publication_t *publication);
 
 void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, int64_t position);
 
@@ -121,7 +121,7 @@ inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, volatile
 {
     aeron_ipc_publication_t *publication = (aeron_ipc_publication_t *)clientd;
 
-    aeron_ipc_publication_update_pub_lmt(publication);
+    aeron_ipc_publication_update_pub_pos_and_lmt(publication);
 
     if (1 == publication->conductor_fields.subscribable.length && NULL != publication->mapped_raw_log.mapped_file.addr)
     {

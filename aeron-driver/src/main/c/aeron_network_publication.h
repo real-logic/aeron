@@ -168,7 +168,7 @@ void aeron_network_publication_on_rttm(
 
 void aeron_network_publication_clean_buffer(aeron_network_publication_t *publication, int64_t position);
 
-int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *publication);
+int aeron_network_publication_update_pub_pos_and_lmt(aeron_network_publication_t *publication);
 
 void aeron_network_publication_check_for_blocked_publisher(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t producer_position, int64_t snd_pos);

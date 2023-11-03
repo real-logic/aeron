@@ -222,13 +222,16 @@ bool aeron_ipc_publication_free(aeron_ipc_publication_t *publication)
     return true;
 }
 
-int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
+int aeron_ipc_publication_update_pub_pos_and_lmt(aeron_ipc_publication_t *publication)
 {
     int work_count = 0;
 
     if (AERON_IPC_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state)
     {
+        const int64_t producer_position = aeron_ipc_publication_producer_position(publication);
         int64_t consumer_position = publication->conductor_fields.consumer_position;
+
+        aeron_counter_set_ordered(publication->pub_pos_position.value_addr, producer_position);
 
         if (aeron_driver_subscribable_has_working_positions(&publication->conductor_fields.subscribable))
         {

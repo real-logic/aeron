@@ -10,7 +10,7 @@ RUN adduser --uid $USER_ID --system --gid $GROUP_ID athena
 
 # Install dev tools
 RUN yum install -y scl-utils && \
-    yum install -y "gcc-toolset-${GCC_VERSION}-gcc" "gcc-toolset-${GCC_VERSION}-gcc-c++" make findutils
+    yum install -y "gcc-toolset-${GCC_VERSION}-gcc" "gcc-toolset-${GCC_VERSION}-gcc-c++" make findutils git
 
 # Install Java
 RUN yum install -y https://cdn.azul.com/zulu/bin/zulu-repo-1.0.0-1.noarch.rpm && \

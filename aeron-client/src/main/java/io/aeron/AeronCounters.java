@@ -18,7 +18,12 @@ package io.aeron;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.CountersReader;
+
+import java.util.Objects;
+
+import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * This class serves as a registry for all counter type IDs used by Aeron.
@@ -425,7 +430,7 @@ public final class AeronCounters
     }
 
     /**
-     * Append {@code archiveId} at the end of the counter label.
+     * Append version information at the end of the counter's label.
      *
      * @param tempBuffer     to append label to.
      * @param offset         at which current label data ends.
@@ -443,10 +448,60 @@ public final class AeronCounters
     }
 
     /**
+     * Append specified {@code value} at the end of the counter's label as ASCII encoded value up to the
+     * {@link CountersReader#MAX_LABEL_LENGTH}.
+     *
+     * @param metaDataBuffer containing the counter metadata.
+     * @param counterId      to append version info to.
+     * @param value          to be appended to the label.
+     * @return number of bytes that got appended.
+     * @throws IllegalArgumentException if {@code counterId} is invalid or points to non-allocated counter.
+     */
+    public static int appendToLabel(
+        final AtomicBuffer metaDataBuffer, final int counterId, final String value)
+    {
+        Objects.requireNonNull(metaDataBuffer);
+        if (counterId < 0)
+        {
+            throw new IllegalArgumentException("counter id " + counterId + " is negative");
+        }
+
+        final int maxCounterId = (metaDataBuffer.capacity() / CountersReader.METADATA_LENGTH) - 1;
+        if (counterId > maxCounterId)
+        {
+            throw new IllegalArgumentException(
+                "counter id " + counterId + " out of range: 0 - maxCounterId=" + maxCounterId);
+        }
+
+        final int counterMetaDataOffset = CountersReader.metaDataOffset(counterId);
+        final int state = metaDataBuffer.getIntVolatile(counterMetaDataOffset);
+        if (CountersReader.RECORD_ALLOCATED != state)
+        {
+            throw new IllegalArgumentException("counter id " + counterId + " state != RECORD_ALLOCATED");
+        }
+
+        final int existingLabelLength = metaDataBuffer.getInt(counterMetaDataOffset + CountersReader.LABEL_OFFSET);
+        final int remainingLabelLength = CountersReader.MAX_LABEL_LENGTH - existingLabelLength;
+
+        final int writtenLength = metaDataBuffer.putStringWithoutLengthAscii(
+            counterMetaDataOffset + CountersReader.LABEL_OFFSET + SIZE_OF_INT + existingLabelLength,
+            value,
+            0,
+            remainingLabelLength);
+        if (writtenLength > 0)
+        {
+            metaDataBuffer.putIntOrdered(
+                counterMetaDataOffset + CountersReader.LABEL_OFFSET, existingLabelLength + writtenLength);
+        }
+
+        return writtenLength;
+    }
+
+    /**
      * Format version information to dislay purposes.
      *
      * @param fullVersion of the component.
-     * @param commitHash Git commit SHA.
+     * @param commitHash  Git commit SHA.
      * @return formatted String.
      */
     public static String formatVersionInfo(final String fullVersion, final String commitHash)

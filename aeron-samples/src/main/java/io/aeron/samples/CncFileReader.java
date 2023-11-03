@@ -27,6 +27,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import static io.aeron.CncFileDescriptor.*;
 import static io.aeron.samples.SamplesUtil.mapExistingFileReadOnly;
@@ -67,7 +68,8 @@ public final class CncFileReader implements AutoCloseable
 
         this.countersReader = new CountersReader(
             createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer),
-            createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+            createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer),
+            StandardCharsets.US_ASCII);
     }
 
     /**

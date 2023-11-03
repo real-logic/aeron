@@ -39,10 +39,12 @@ import org.opentest4j.AssertionFailedError;
 import org.opentest4j.TestAbortedException;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.UnknownHostException;
 import java.nio.MappedByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -275,7 +277,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
     }
 
-    private void filterErrors(final MutableInteger count, final StringBuilder errors)
+    private void filterErrors(final MutableInteger count, final StringBuilder errors) throws IOException
     {
         filterCncFileErrors(dataCollector.cncFiles(), count, errors);
         filterArchiveMarkFileErrors(dataCollector.archiveMarkFiles(), count, errors);
@@ -288,41 +290,54 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         for (final Path path : paths)
         {
             final File file = path.toFile();
-            final MappedByteBuffer mmap = SamplesUtil.mapExistingFileReadOnly(file);
-            try
+            if (file.exists() && file.length() > 0)
             {
-                final AtomicBuffer buffer = CommonContext.errorLogBuffer(mmap);
-                readErrors(path, buffer, count, errors);
-            }
-            finally
-            {
-                IoUtil.unmap(mmap);
+                final MappedByteBuffer mmap = SamplesUtil.mapExistingFileReadOnly(file);
+                try
+                {
+                    final UnsafeBuffer metaDataBuffer = createMetaDataBuffer(mmap);
+                    final int errorLogBufferLength = metaDataBuffer.getInt(errorLogBufferLengthOffset(0));
+                    if (errorLogBufferLength > 0)
+                    {
+                        readErrors(path, CommonContext.errorLogBuffer(mmap), count, errors);
+                    }
+                }
+                finally
+                {
+                    IoUtil.unmap(mmap);
+                }
             }
         }
     }
 
     private void filterClusterMarkFileErrors(
-        final List<Path> paths, final MutableInteger count, final StringBuilder errors)
+        final List<Path> paths, final MutableInteger count, final StringBuilder errors) throws IOException
     {
         for (final Path path : paths)
         {
-            try (ClusterMarkFile clusterMarkFile = openClusterMarkFile(path))
+            if (Files.exists(path) && Files.size(path) > 0)
             {
-                final AtomicBuffer buffer = clusterMarkFile.errorBuffer();
-                readErrors(path, buffer, count, errors);
+                try (ClusterMarkFile clusterMarkFile = openClusterMarkFile(path))
+                {
+                    final AtomicBuffer buffer = clusterMarkFile.errorBuffer();
+                    readErrors(path, buffer, count, errors);
+                }
             }
         }
     }
 
     private void filterArchiveMarkFileErrors(
-        final List<Path> paths, final MutableInteger count, final StringBuilder errors)
+        final List<Path> paths, final MutableInteger count, final StringBuilder errors) throws IOException
     {
         for (final Path path : paths)
         {
-            try (ArchiveMarkFile archive = openArchiveMarkFile(path))
+            if (Files.exists(path) && Files.size(path) > 0)
             {
-                final AtomicBuffer buffer = archive.errorBuffer();
-                readErrors(path, buffer, count, errors);
+                try (ArchiveMarkFile archive = openArchiveMarkFile(path))
+                {
+                    final AtomicBuffer buffer = archive.errorBuffer();
+                    readErrors(path, buffer, count, errors);
+                }
             }
         }
     }

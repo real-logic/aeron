@@ -141,7 +141,8 @@ public class FileStoreLogFactory implements LogFactory
             if (usableSpace < logLength)
             {
                 throw new StorageSpaceException(
-                    "insufficient usable storage for new log of length=" + logLength + " in " + fileStore);
+                    "insufficient usable storage for new log of length=" + logLength + " usable=" + usableSpace +
+                    " in " + fileStore);
             }
 
             if (usableSpace <= lowStorageWarningThreshold)

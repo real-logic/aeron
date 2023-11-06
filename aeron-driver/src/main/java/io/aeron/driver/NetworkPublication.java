@@ -619,17 +619,21 @@ public final class NetworkPublication
     }
 
     /**
-     * Update the publishers limit for flow control as part of the conductor duty cycle.
+     * Update the publisher position and limit for flow control as part of the conductor duty cycle.
      *
      * @return 1 if the limit has been updated otherwise 0.
      */
-    int updatePublisherLimit()
+    int updatePublisherPositionAndLimit()
     {
         int workCount = 0;
 
         if (State.ACTIVE == state)
         {
+            final long producerPosition = producerPosition();
             final long senderPosition = this.senderPosition.getVolatile();
+
+            publisherPos.setOrdered(producerPosition);
+
             if (hasRequiredReceivers() || (spiesSimulateConnection && spyPositions.length > 0))
             {
                 long minConsumerPosition = senderPosition;

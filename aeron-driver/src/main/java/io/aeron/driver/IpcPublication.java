@@ -251,7 +251,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
      */
     public void removeSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition)
     {
-        updatePublisherLimit();
+        updatePublisherPositionAndLimit();
         subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
         subscriberPosition.close();
 
@@ -343,12 +343,15 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         }
     }
 
-    int updatePublisherLimit()
+    int updatePublisherPositionAndLimit()
     {
         int workCount = 0;
 
         if (State.ACTIVE == state)
         {
+            final long producerPosition = producerPosition();
+            publisherPos.setOrdered(producerPosition);
+
             if (subscriberPositions.length > 0)
             {
                 long minSubscriberPosition = Long.MAX_VALUE;

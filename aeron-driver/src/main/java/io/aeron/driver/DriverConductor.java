@@ -2098,13 +2098,13 @@ public final class DriverConductor implements Agent
         final ArrayList<NetworkPublication> networkPublications = this.networkPublications;
         for (int i = 0, size = networkPublications.size(); i < size; i++)
         {
-            workCount += networkPublications.get(i).updatePublisherLimit();
+            workCount += networkPublications.get(i).updatePublisherPositionAndLimit();
         }
 
         final ArrayList<IpcPublication> ipcPublications = this.ipcPublications;
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
-            workCount += ipcPublications.get(i).updatePublisherLimit();
+            workCount += ipcPublications.get(i).updatePublisherPositionAndLimit();
         }
 
         return workCount;

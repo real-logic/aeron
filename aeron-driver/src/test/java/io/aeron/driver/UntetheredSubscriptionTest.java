@@ -84,7 +84,7 @@ class UntetheredSubscriptionTest
         ipcPublication.addSubscriber(untetheredLink, untetheredPosition, ctx.cachedNanoClock().nanoTime());
 
         final DriverConductor conductor = mock(DriverConductor.class);
-        ipcPublication.updatePublisherLimit();
+        ipcPublication.updatePublisherPositionAndLimit();
 
         final long timeNs = TIME_NS + 1;
         ipcPublication.onTimeEvent(timeNs, 0, conductor);
@@ -94,12 +94,12 @@ class UntetheredSubscriptionTest
         ipcPublication.onTimeEvent(windowLimitTimeoutNs, 0, conductor);
         verify(conductor, times(1)).notifyUnavailableImageLink(REGISTRATION_ID, untetheredLink);
 
-        ipcPublication.updatePublisherLimit();
+        ipcPublication.updatePublisherPositionAndLimit();
         assertEquals(TERM_WINDOW_LENGTH, publisherLimit.get());
 
         final long afterLingerTimeoutNs = windowLimitTimeoutNs + UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS;
         ipcPublication.onTimeEvent(afterLingerTimeoutNs, 0, conductor);
-        ipcPublication.updatePublisherLimit();
+        ipcPublication.updatePublisherPositionAndLimit();
         assertEquals(tetheredPosition.get() + TERM_WINDOW_LENGTH, publisherLimit.get());
 
         final long afterRestingTimeoutNs = afterLingerTimeoutNs + UNTETHERED_RESTING_TIMEOUT_NS;

@@ -125,7 +125,8 @@ class FileStoreLogFactoryTest
     void shouldThrowInsufficientUsableStorageExceptionIfNotEnoughSpaceOnDisc() throws IOException
     {
         final FileStore fileStore = mock(FileStore.class);
-        when(fileStore.getUsableSpace()).thenReturn(1L);
+        final long usableSpace = 117L;
+        when(fileStore.getUsableSpace()).thenReturn(usableSpace);
         when(fileStore.toString()).thenReturn("test-fs");
         final ErrorHandler errorHandler = mock(ErrorHandler.class);
 
@@ -140,12 +141,14 @@ class FileStoreLogFactoryTest
                 assertThrowsStorageSpaceException(
                     fileStore,
                     imageTermBufferLength,
+                    usableSpace,
                     () -> logFactory.newImage(1, imageTermBufferLength, true));
 
                 final int publicationTermBufferLength = 1024 * 1024;
                 assertThrowsStorageSpaceException(
                     fileStore,
                     publicationTermBufferLength,
+                    usableSpace,
                     () -> logFactory.newPublication(2, publicationTermBufferLength, false));
 
             }
@@ -198,12 +201,12 @@ class FileStoreLogFactoryTest
     }
 
     private static void assertThrowsStorageSpaceException(
-        final FileStore fileStore, final int termBufferLength, final Executable executable)
+        final FileStore fileStore, final int termBufferLength, final long usableSpace, final Executable executable)
     {
         final StorageSpaceException exception = assertThrowsExactly(StorageSpaceException.class, executable);
         assertEquals(
             "ERROR - insufficient usable storage for new log of length=" +
-            computeLogLength(termBufferLength, PAGE_SIZE) + " in " + fileStore,
+            computeLogLength(termBufferLength, PAGE_SIZE) + " usable=" + usableSpace + " in " + fileStore,
             exception.getMessage());
     }
 }

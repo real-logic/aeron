@@ -67,6 +67,11 @@ public final class LogBuffers implements AutoCloseable
         {
             fileChannel = FileChannel.open(Paths.get(logFileName), FILE_OPTIONS);
             final long logLength = fileChannel.size();
+            if (logLength < LOG_META_DATA_LENGTH)
+            {
+                throw new IllegalStateException(
+                    "Log file length less than min length of " + LOG_META_DATA_LENGTH + ": length=" + logLength);
+            }
 
             if (logLength < Integer.MAX_VALUE)
             {
@@ -140,7 +145,7 @@ public final class LogBuffers implements AutoCloseable
         }
         catch (final IllegalStateException ex)
         {
-            close();
+            close(fileChannel, logMetaDataBuffer, mappedByteBuffers);
             throw ex;
         }
 
@@ -212,29 +217,7 @@ public final class LogBuffers implements AutoCloseable
      */
     public void close()
     {
-        Throwable error = null;
-        try
-        {
-            CloseHelper.close(fileChannel);
-        }
-        catch (final Exception ex)
-        {
-            error = ex;
-        }
-
-        for (int i = 0, length = mappedByteBuffers.length; i < length; i++)
-        {
-            final MappedByteBuffer mappedByteBuffer = mappedByteBuffers[i];
-            mappedByteBuffers[i] = null;
-            BufferUtil.free(mappedByteBuffer);
-        }
-
-        logMetaDataBuffer.wrap(0, 0);
-
-        if (error != null)
-        {
-            LangUtil.rethrowUnchecked(error);
-        }
+        close(fileChannel, logMetaDataBuffer, mappedByteBuffers);
     }
 
     /**
@@ -285,5 +268,39 @@ public final class LogBuffers implements AutoCloseable
     public long lingerDeadlineNs()
     {
         return lingerDeadlineNs;
+    }
+
+    private static void close(
+        final FileChannel fileChannel, final UnsafeBuffer logMetaDataBuffer, final MappedByteBuffer[] mappedByteBuffers)
+    {
+        Throwable error = null;
+        try
+        {
+            CloseHelper.close(fileChannel);
+        }
+        catch (final Exception ex)
+        {
+            error = ex;
+        }
+
+        if (logMetaDataBuffer != null)
+        {
+            logMetaDataBuffer.wrap(0, 0);
+        }
+
+        if (null != mappedByteBuffers)
+        {
+            for (int i = 0, length = mappedByteBuffers.length; i < length; i++)
+            {
+                final MappedByteBuffer mappedByteBuffer = mappedByteBuffers[i];
+                mappedByteBuffers[i] = null;
+                BufferUtil.free(mappedByteBuffer);
+            }
+        }
+
+        if (error != null)
+        {
+            LangUtil.rethrowUnchecked(error);
+        }
     }
 }

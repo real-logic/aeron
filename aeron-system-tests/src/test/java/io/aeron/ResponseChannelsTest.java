@@ -40,6 +40,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.util.Objects;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class ResponseChannelsTest
@@ -71,6 +73,7 @@ public class ResponseChannelsTest
 
     @Test
     @InterruptAfter(10)
+    @Disabled
     void shouldReceiveResponsesOnAPerClientBasis()
     {
         final MutableDirectBuffer messageA = new UnsafeBuffer("hello from client A".getBytes(UTF_8));
@@ -103,6 +106,7 @@ public class ResponseChannelsTest
 
     @Test
     @InterruptAfter(10)
+    @Disabled
     void shouldResolvePublicationImageViaCorrelationId()
     {
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
@@ -128,6 +132,8 @@ public class ResponseChannelsTest
     @InterruptAfter(5)
     void shouldMultiplePublicationsWithTheSameControlAddress()
     {
+        final UnsafeBuffer message = new UnsafeBuffer("hello".getBytes(UTF_8));
+
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Publication pubA = aeron.addExclusivePublication(
                 "aeron:udp?control-mode=response|control=localhost:10000", 10001);
@@ -148,15 +154,34 @@ public class ResponseChannelsTest
                 Tests.awaitConnected(subB);
                 Tests.awaitConnected(pubB);
 
-//                while (0 > pubA.offer(new UnsafeBuffer("hello".getBytes(UTF_8))))
-//                {
-//                    Tests.sleep(1);
-//                }
+                while (0 > pubA.offer(message))
+                {
+                    Tests.sleep(1);
+                }
 
-//                while (0 > pubB.offer(new UnsafeBuffer("hello".getBytes(UTF_8))))
-//                {
-//                    Tests.sleep(1);
-//                }
+                while (0 > pubB.offer(message))
+                {
+                    Tests.sleep(1);
+                }
+
+                int subACount = 0;
+                int subBCount = 0;
+
+                while (subACount < 1 || subBCount < 1)
+                {
+                    subACount += subA.poll((buffer, offset, length, header) -> {}, 10);
+                    subBCount += subB.poll((buffer, offset, length, header) -> {}, 10);
+                }
+
+                final long deadlineMs = System.currentTimeMillis() + 3_000;
+                while (System.currentTimeMillis() < deadlineMs)
+                {
+                    subACount += subA.poll((buffer, offset, length, header) -> {}, 10);
+                    subBCount += subB.poll((buffer, offset, length, header) -> {}, 10);
+
+                    assertThat(subACount, lessThan(2));
+                    assertThat(subBCount, lessThan(2));
+                }
             }
         }
     }

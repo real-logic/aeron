@@ -94,7 +94,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             udpChannel,
             udpChannel.remoteControl(),
             udpChannel.localControl(),
-            udpChannel.isMultiDestination() ? null : udpChannel.remoteData(),
+            udpChannel.isMultiDestination() || udpChannel.isResponseControlMode() ? null : udpChannel.remoteData(),
             context.senderPortManager(),
             context);
 

@@ -387,6 +387,8 @@ public final class UdpChannel
                 return ControlMode.DYNAMIC;
             case MDC_CONTROL_MODE_MANUAL:
                 return ControlMode.MANUAL;
+            case CONTROL_MODE_RESPONSE:
+                return ControlMode.RESPONSE;
             default:
                 return ControlMode.NONE;
         }
@@ -621,7 +623,7 @@ public final class UdpChannel
      */
     public boolean isResponseControlMode()
     {
-        return isResponseControlMode;
+        return ControlMode.RESPONSE == controlMode;
     }
 
     /**
@@ -1223,12 +1225,6 @@ public final class UdpChannel
         Context channelSendTimestampOffset(final int timestampOffset)
         {
             this.channelSendTimestampOffset = timestampOffset;
-            return this;
-        }
-
-        Context isResponseControlMode(final boolean isResponseControlMode)
-        {
-            this.isResponseControlMode = isResponseControlMode;
             return this;
         }
 

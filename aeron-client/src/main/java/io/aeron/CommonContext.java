@@ -222,7 +222,7 @@ public class CommonContext implements Cloneable
     /**
      * Valid value for {@link #MDC_CONTROL_MODE_PARAM_NAME} when response control is desired.
      */
-    public static final String MDC_CONTROL_MODE_RESPONSE = "response";
+    public static final String CONTROL_MODE_RESPONSE = "response";
 
     /**
      * Key for the session id for a publication or restricted subscription.

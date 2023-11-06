@@ -417,8 +417,6 @@ public final class NetworkPublication
      */
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        System.out.println("msg=" + msg + " src=" + srcAddress);
-
         if (!hasReceivers)
         {
             hasReceivers = true;

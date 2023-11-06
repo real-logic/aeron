@@ -16,7 +16,6 @@
 package io.aeron.driver;
 
 import io.aeron.ChannelUri;
-import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -119,7 +118,7 @@ final class PublicationParams
             params.hasPosition = true;
         }
 
-        params.isResponse = MDC_CONTROL_MODE_RESPONSE.equals(channelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
+        params.isResponse = CONTROL_MODE_RESPONSE.equals(channelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
 
         return params;
     }

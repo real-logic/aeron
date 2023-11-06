@@ -119,7 +119,7 @@ int main(int argc, char **argv)
                 settings.update_interval_ms = strtoll(optarg, &endptr, 10);
                 if (0 != errno || '\0' != endptr[0])
                 {
-                    aeron_stat_print_error_and_usage("Invalid timeout");
+                    aeron_stat_print_error_and_usage("Invalid update interval");
                     return EXIT_FAILURE;
                 }
                 break;
@@ -168,7 +168,7 @@ int main(int argc, char **argv)
 
         aeron_counters_reader_foreach_counter(counters_reader, aeron_stat_print_counter, NULL);
 
-        aeron_micro_sleep((unsigned int)(settings.timeout_ms * 1000));
+        aeron_micro_sleep((unsigned int)(settings.update_interval_ms * 1000));
     }
 
     aeron_cnc_close(aeron_cnc);

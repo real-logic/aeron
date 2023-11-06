@@ -82,14 +82,17 @@ int aeron_publication_image_create(
 
     *image = NULL;
 
-    if (context->perform_storage_checks && context->usable_fs_space_func(context->aeron_dir) < log_length)
+    if (context->perform_storage_checks)
     {
-        AERON_SET_ERR(
-            -AERON_ERROR_CODE_STORAGE_SPACE,
-            "Insufficient usable storage for new log of length=%" PRId64 " in %s",
-            log_length,
-            context->aeron_dir);
-        return -1;
+        const uint64_t usable_space = context->usable_fs_space_func(context->aeron_dir);
+        if (usable_space < log_length)
+        {
+            AERON_SET_ERR(
+                -AERON_ERROR_CODE_STORAGE_SPACE,
+                "Insufficient usable storage for new log of length=%" PRId64 " usable=%" PRId64
+                " in %s", log_length, usable_space, context->aeron_dir);
+            return -1;
+        }
     }
 
     if (aeron_alloc((void **)&_image, sizeof(aeron_publication_image_t)) < 0)

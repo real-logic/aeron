@@ -38,9 +38,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -130,7 +132,7 @@ public class ResponseChannelsTest
 
     @Test
     @InterruptAfter(5)
-    void shouldMultiplePublicationsWithTheSameControlAddress()
+    void shouldHandleMultiplePublicationsWithTheSameControlAddress()
     {
         final UnsafeBuffer message = new UnsafeBuffer("hello".getBytes(UTF_8));
 
@@ -141,9 +143,6 @@ public class ResponseChannelsTest
                 "aeron:udp?control-mode=response|control=localhost:10000", 10001);
             )
         {
-            Objects.requireNonNull(pubA);
-            Objects.requireNonNull(pubB);
-
             final String channelA = "aeron:udp?control=localhost:10000|session-id=" + pubA.sessionId();
             final String channelB = "aeron:udp?control=localhost:10000|session-id=" + pubB.sessionId();
             try (Subscription subA = aeron.addSubscription(channelA, 10001);
@@ -182,6 +181,86 @@ public class ResponseChannelsTest
                     assertThat(subACount, lessThan(2));
                     assertThat(subBCount, lessThan(2));
                 }
+            }
+        }
+    }
+
+    @Test
+    @InterruptAfter(5)
+    void shouldBeAbleToProcessMultipleTermsWithMultiplePublicationsWithTheSameControlAddress()
+    {
+        final UnsafeBuffer message = new UnsafeBuffer(new byte[4096]);
+        message.setMemory(0, 4096, (byte)'x');
+        final long stopPosition = 4 * 64 * 1024;
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            ExclusivePublication pubA = aeron.addExclusivePublication(
+                "aeron:udp?control-mode=response|control=localhost:10000|term-length=64k", 10001);
+            ExclusivePublication pubB = aeron.addExclusivePublication(
+                "aeron:udp?control-mode=response|control=localhost:10000|term-length=64k", 10001))
+        {
+            final String channelA = "aeron:udp?control=localhost:10000|session-id=" + pubA.sessionId();
+            final String channelB = "aeron:udp?control=localhost:10000|session-id=" + pubB.sessionId();
+            try (Subscription subA = aeron.addSubscription(channelA, 10001);
+                Subscription subB = aeron.addSubscription(channelB, 10001))
+            {
+                Tests.awaitConnected(subA);
+                Tests.awaitConnected(pubA);
+                Tests.awaitConnected(subB);
+                Tests.awaitConnected(pubB);
+
+                final int termIdA = pubA.termId();
+                final int termIdB = pubB.termId();
+
+                long subAStopPosition = 0;
+                long subBStopPosition = 0;
+
+                final Supplier<String> errorMessage = () ->
+                {
+                    return "pubA.position=" + pubA.position() + ", subA.position=" + subA.imageAtIndex(0).position() +
+                        ", pubB.position=" + pubB.position() + ", subB.position=" + subB.imageAtIndex(0).position();
+                };
+
+                while (0 == subAStopPosition || subA.imageAtIndex(0).position() >= subAStopPosition ||
+                    0 == subBStopPosition || subB.imageAtIndex(0).position() >= subBStopPosition)
+                {
+                    if (pubA.position() < stopPosition)
+                    {
+                        if (0 > pubA.offer(message, 0, pubA.maxPayloadLength()))
+                        {
+                            Tests.yieldingIdle(errorMessage);
+                        }
+                    }
+                    else if (0 == subAStopPosition)
+                    {
+                        subAStopPosition = pubA.position();
+                    }
+
+                    if (pubB.position() < stopPosition)
+                    {
+                        if (0 > pubB.offer(message, 0, pubB.maxPayloadLength()))
+                        {
+                            Tests.yieldingIdle(errorMessage);
+                        }
+                    }
+                    else if (0 == subBStopPosition)
+                    {
+                        subBStopPosition = pubB.position();
+                    }
+
+                    if (0 == subA.poll((buffer, offset, length, header) -> {}, 10))
+                    {
+                        Tests.yieldingIdle(errorMessage);
+                    }
+
+                    if (0 == subB.poll((buffer, offset, length, header) -> {}, 10))
+                    {
+                        Tests.yieldingIdle(errorMessage);
+                    }
+                }
+
+                assertThat(pubA.termId(), greaterThan(termIdA));
+                assertThat(pubB.termId(), greaterThan(termIdB));
             }
         }
     }

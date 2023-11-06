@@ -108,7 +108,6 @@ public class ResponseChannelsTest
 
     @Test
     @InterruptAfter(10)
-    @Disabled
     void shouldResolvePublicationImageViaCorrelationId()
     {
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));

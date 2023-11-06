@@ -523,6 +523,7 @@ public final class DriverConductor implements Agent
             linkSpies(subscriptionLinks, publication);
         }
 
+        // TODO: Use this to locate image when setting up the response channel from the server...
         final String imageCorrelationIdString = channelUri.get(RESPONSE_CORRELATION_ID_PARAM_NAME);
         if (null != imageCorrelationIdString)
         {

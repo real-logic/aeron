@@ -979,11 +979,11 @@ project(':aeron-test-support') {
     apply plugin: 'signing'
 
     dependencies {
-        api project(':aeron-client')
-        api project(':aeron-cluster')
-        api project(':aeron-samples')
-        api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
-        api "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
+        implementation project(':aeron-client')
+        implementation project(':aeron-cluster')
+        implementation project(':aeron-samples')
+        implementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+        implementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
         implementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 

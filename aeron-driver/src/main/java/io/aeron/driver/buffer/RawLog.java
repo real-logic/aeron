@@ -20,8 +20,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.nio.ByteBuffer;
 
 /**
- * Represents the collection of term and associated state buffers for the image between a publisher and subscriber
- * image for the replicated log.
+ * Represents the collection of raw metadata and associated term buffers for publication and image logs.
  */
 public interface RawLog extends AutoCloseable
 {
@@ -31,6 +30,13 @@ public interface RawLog extends AutoCloseable
      * @return the length of each term in bytes.
      */
     int termLength();
+
+    /**
+     * Total length of the raw log which encompasses metadata and term buffers.
+     *
+     * @return length of the raw log which encompasses metadata and term buffers.
+     */
+    long length();
 
     /**
      * An array of term buffer partitions.

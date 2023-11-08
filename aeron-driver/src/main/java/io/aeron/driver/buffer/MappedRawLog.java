@@ -46,6 +46,7 @@ class MappedRawLog implements RawLog
     private static final EnumSet<StandardOpenOption> SPARSE_FILE_OPTIONS = EnumSet.of(CREATE_NEW, READ, WRITE, SPARSE);
 
     private final int termLength;
+    private final long logLength;
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
     private final UnsafeBuffer logMetaDataBuffer;
     private final ErrorHandler errorHandler;
@@ -63,6 +64,7 @@ class MappedRawLog implements RawLog
         this.termLength = termLength;
         this.errorHandler = errorHandler;
         this.logFile = location;
+        this.logLength = logLength;
 
         final EnumSet<StandardOpenOption> options = useSparseFiles ? SPARSE_FILE_OPTIONS : FILE_OPTIONS;
         try
@@ -126,6 +128,11 @@ class MappedRawLog implements RawLog
     public int termLength()
     {
         return termLength;
+    }
+
+    public long length()
+    {
+        return logLength;
     }
 
     public boolean free()

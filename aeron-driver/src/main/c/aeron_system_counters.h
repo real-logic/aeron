@@ -56,6 +56,7 @@ typedef enum aeron_system_counter_enum_stct
     AERON_SYSTEM_COUNTER_NAME_RESOLVER_MAX_TIME = 32,
     AERON_SYSTEM_COUNTER_NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED = 33,
     AERON_SYSTEM_COUNTER_AERON_VERSION = 34,
+    AERON_SYSTEM_COUNTER_BYTES_CURRENTLY_MAPPED = 35,
 
     // Add all new counters before this one (used for a static assertion).
     AERON_SYSTEM_COUNTER_DUMMY_LAST,

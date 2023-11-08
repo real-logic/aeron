@@ -67,13 +67,11 @@ public final class ClusterCounters
     /**
      * Allocate a counter to represent component state within a cluster and append a version info to its label.
      *
-     * @param aeron          to allocate the counter.
-     * @param tempBuffer     temporary storage to create label and metadata.
-     * @param name           of the counter for the label.
-     * @param typeId         for the counter.
-     * @param clusterId      to which the allocated counter belongs.
-     * @param version        of the component.
-     * @param commitHashCode Git commit SHA of the component.
+     * @param aeron      to allocate the counter.
+     * @param tempBuffer temporary storage to create label and metadata.
+     * @param name       of the counter for the label.
+     * @param typeId     for the counter.
+     * @param clusterId  to which the allocated counter belongs.
      * @return the new {@link Counter}.
      */
     public static Counter allocateVersioned(
@@ -81,9 +79,7 @@ public final class ClusterCounters
         final MutableDirectBuffer tempBuffer,
         final String name,
         final int typeId,
-        final int clusterId,
-        final String version,
-        final String commitHashCode)
+        final int clusterId)
     {
         int index = 0;
         tempBuffer.putInt(index, clusterId);
@@ -93,7 +89,7 @@ public final class ClusterCounters
         index += tempBuffer.putStringWithoutLengthAscii(index, name);
         index += tempBuffer.putStringWithoutLengthAscii(index, " - clusterId=");
         index += tempBuffer.putIntAscii(index, clusterId);
-        index += AeronCounters.appendVersionInfo(tempBuffer, index, version, commitHashCode);
+        index += AeronCounters.appendVersionInfo(tempBuffer, index, ClusterVersion.VERSION, ClusterVersion.GIT_SHA);
 
         return aeron.addCounter(typeId, tempBuffer, 0, keyLength, tempBuffer, keyLength, index - keyLength);
     }
@@ -184,8 +180,7 @@ public final class ClusterCounters
         index += tempBuffer.putIntAscii(index, clusterId);
         index += tempBuffer.putStringWithoutLengthAscii(index, " serviceId=");
         index += tempBuffer.putIntAscii(index, serviceId);
-        index += AeronCounters.appendVersionInfo(
-            tempBuffer, index, ClusteredServiceContainerVersion.VERSION, ClusteredServiceContainerVersion.GIT_SHA);
+        index += AeronCounters.appendVersionInfo(tempBuffer, index, ClusterVersion.VERSION, ClusterVersion.GIT_SHA);
 
         return aeron.addCounter(
             AeronCounters.CLUSTER_CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID,

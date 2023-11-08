@@ -39,7 +39,6 @@ import io.aeron.security.AuthenticatorSupplier;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.security.DefaultAuthenticatorSupplier;
-import io.aeron.version.Versioned;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -60,7 +59,6 @@ import static io.aeron.AeronCounters.CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID;
 import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.AeronCounters.validateCounterTypeId;
 import static io.aeron.CommonContext.*;
-import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.COMMIT_POSITION_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
@@ -74,7 +72,6 @@ import static org.agrona.SystemUtil.*;
  * Component which resides on each node and is responsible for coordinating consensus within a cluster in concert
  * with the lifecycle of clustered services.
  */
-@Versioned
 public final class ConsensusModule implements AutoCloseable
 {
     /**
@@ -1587,13 +1584,7 @@ public final class ConsensusModule implements AutoCloseable
                 if (null == errorCounter)
                 {
                     errorCounter = ClusterCounters.allocateVersioned(
-                        aeron,
-                        buffer,
-                        "Cluster Errors",
-                        CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID,
-                        clusterId,
-                        ConsensusModuleVersion.VERSION,
-                        ConsensusModuleVersion.GIT_SHA);
+                        aeron, buffer, "Cluster Errors", CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID, clusterId);
                 }
             }
             else

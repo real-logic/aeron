@@ -25,7 +25,6 @@ import io.aeron.driver.DutyCycleTracker;
 import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
-import io.aeron.version.Versioned;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -49,7 +48,6 @@ import static org.agrona.SystemUtil.*;
  * loaded via {@link ClusteredServiceContainer.Configuration#SERVICE_CLASS_NAME_PROP_NAME} or
  * {@link ClusteredServiceContainer.Context#clusteredService(ClusteredService)}.
  */
-@Versioned
 public final class ClusteredServiceContainer implements AutoCloseable
 {
     /**

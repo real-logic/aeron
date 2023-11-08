@@ -28,7 +28,6 @@ import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.NullCredentialsSupplier;
-import io.aeron.version.Versioned;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
@@ -56,7 +55,6 @@ import static org.agrona.SystemUtil.getDurationInNanos;
 /**
  * Backup component which can run remote from a cluster which polls for snapshots and replicates the log.
  */
-@Versioned
 public final class ClusterBackup implements AutoCloseable
 {
     /**
@@ -667,13 +665,7 @@ public final class ClusterBackup implements AutoCloseable
                 if (null == errorCounter)
                 {
                     errorCounter = ClusterCounters.allocateVersioned(
-                        aeron,
-                        buffer,
-                        "ClusterBackup Errors",
-                        CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID,
-                        clusterId,
-                        ClusterBackupVersion.VERSION,
-                        ClusterBackupVersion.GIT_SHA);
+                        aeron, buffer, "ClusterBackup Errors", CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID, clusterId);
                 }
             }
 
@@ -1727,7 +1719,6 @@ public final class ClusterBackup implements AutoCloseable
 
         /**
          * Get the currently configured source type
-         *
          * @return source type for this backup instance.
          * @throws IllegalArgumentException if the configured source type is not one of {@link SourceType}
          */

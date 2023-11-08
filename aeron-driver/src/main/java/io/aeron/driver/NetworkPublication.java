@@ -324,13 +324,17 @@ public final class NetworkPublication
 
     /**
      * Trigger the sending of a SETUP frame so a connection can be established.
+     *
+     * @param msg that triggers the SETUP.
+     * @param srcAddress of the source that triggers the SETUP.
      */
-    public void triggerSendSetupFrame()
+    public void triggerSendSetupFrame(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
         if (!isEndOfStream)
         {
             timeOfLastStatusMessageNs = cachedNanoClock.nanoTime();
             isSetupElicited = true;
+            flowControl.onTriggerSendSetup(msg, srcAddress, timeOfLastStatusMessageNs);
         }
     }
 

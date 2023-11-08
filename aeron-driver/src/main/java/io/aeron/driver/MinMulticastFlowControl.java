@@ -48,4 +48,15 @@ public class MinMulticastFlowControl extends AbstractMinMulticastFlowControl
     {
         return processStatusMessage(flyweight, senderLimit, initialTermId, positionBitsToShift, timeNs, true);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void onTriggerSendSetup(
+        final StatusMessageFlyweight flyweight,
+        final InetSocketAddress receiverAddress,
+        final long timeNs)
+    {
+        processTriggerSendSetup(flyweight, receiverAddress, timeNs, true);
+    }
 }

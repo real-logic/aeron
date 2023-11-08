@@ -47,6 +47,18 @@ public interface FlowControl extends AutoCloseable
         long timeNs);
 
     /**
+     * Update the sender flow control strategy based on a Status Message received triggering a setup to be sent.
+     *
+     * @param flyweight       over the Status Message received
+     * @param receiverAddress of the receiver.
+     * @param timeNs          current time (in nanoseconds).
+     */
+    void onTriggerSendSetup(
+        StatusMessageFlyweight flyweight,
+        InetSocketAddress receiverAddress,
+        long timeNs);
+
+    /**
      * Update the sender flow control strategy based on an elicited setup message being sent out.
      *
      * @param flyweight             over the setup to be sent.

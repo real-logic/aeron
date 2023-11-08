@@ -253,7 +253,7 @@ class SenderTest
         assertThat(receivedFrames.size(), is(1)); // data
         receivedFrames.remove();
 
-        publication.triggerSendSetupFrame();
+        publication.triggerSendSetupFrame(msg, rcvAddress);
 
         sender.doWork();
         assertThat(receivedFrames.size(), is(0)); // setup has been sent already, have to wait
@@ -285,7 +285,7 @@ class SenderTest
         assertThat(receivedFrames.size(), is(1)); // heartbeat
         receivedFrames.remove();
 
-        publication.triggerSendSetupFrame();
+        publication.triggerSendSetupFrame(msg, rcvAddress);
         nanoClock.advance(Configuration.PUBLICATION_SETUP_TIMEOUT_NS + 10);
         sender.doWork();
 

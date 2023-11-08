@@ -57,6 +57,18 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
         return processStatusMessage(flyweight, senderLimit, initialTermId, positionBitsToShift, timeNs, matchesTag);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public void onTriggerSendSetup(
+        final StatusMessageFlyweight flyweight,
+        final InetSocketAddress receiverAddress,
+        final long timeNs)
+    {
+        final boolean matchesTag = matchesTag(flyweight);
+        processTriggerSendSetup(flyweight, receiverAddress, timeNs, matchesTag);
+    }
+
     @SuppressWarnings("deprecation")
     private boolean matchesTag(final StatusMessageFlyweight flyweight)
     {

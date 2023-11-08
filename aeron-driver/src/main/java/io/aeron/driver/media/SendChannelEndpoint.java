@@ -349,7 +349,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         {
             if (SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
             {
-                publication.triggerSendSetupFrame();
+                publication.triggerSendSetupFrame(msg, srcAddress);
             }
             else
             {

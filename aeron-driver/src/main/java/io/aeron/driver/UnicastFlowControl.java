@@ -65,6 +65,16 @@ public class UnicastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
+    public void onTriggerSendSetup(
+        final StatusMessageFlyweight flyweight,
+        final InetSocketAddress receiverAddress,
+        final long timeNs)
+    {
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public long onSetup(
         final SetupFlyweight flyweight,
         final long senderLimit,

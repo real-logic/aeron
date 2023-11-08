@@ -102,7 +102,7 @@ void aeron_loss_reporter_record_observation(
 #pragma clang diagnostic ignored "-Watomic-alignment"
 #endif
         AERON_GET_AND_ADD_INT64(dest, entry->total_bytes_lost, bytes_lost);
-        AERON_GET_AND_ADD_INT64(dest, entry->observation_count, 1);
+        AERON_GET_AND_ADD_INT64(dest, entry->observation_count, INT64_C(1));
 #if defined(__clang__) && defined(AERON_CPU_ARM)
 #pragma clang diagnostic pop
 #endif

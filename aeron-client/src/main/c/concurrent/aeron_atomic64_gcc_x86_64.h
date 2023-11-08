@@ -51,7 +51,7 @@ do \
     __asm__ volatile( \
         "lock; xaddq %0, %1" \
         : "=r"(original), "+m"(dst) \
-        : "0"(value)); \
+        : "0"((int64_t)value)); \
 } \
 while (false) \
 

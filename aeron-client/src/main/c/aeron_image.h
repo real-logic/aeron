@@ -123,14 +123,14 @@ inline int aeron_image_validate_position(aeron_image_t *image, int64_t position)
 inline int64_t aeron_image_incr_refcnt(aeron_image_t *image)
 {
     int64_t result;
-    AERON_GET_AND_ADD_INT64(result, image->refcnt, 1);
+    AERON_GET_AND_ADD_INT64(result, image->refcnt, INT64_C(1));
     return result;
 }
 
 inline int64_t aeron_image_decr_refcnt(aeron_image_t *image)
 {
     int64_t result;
-    AERON_GET_AND_ADD_INT64(result, image->refcnt, -1);
+    AERON_GET_AND_ADD_INT64(result, image->refcnt, INT64_C(-1));
     return result;
 }
 

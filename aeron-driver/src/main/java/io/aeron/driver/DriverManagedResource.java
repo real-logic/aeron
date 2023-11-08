@@ -21,7 +21,7 @@ package io.aeron.driver;
 public interface DriverManagedResource
 {
     /**
-     * Free external resources such as files. if successful then return true.
+     * Free external resources such as files. If successful then return true.
      *
      * @return true if successful and false if it should be attempted again later.
      */
@@ -31,7 +31,7 @@ public interface DriverManagedResource
     }
 
     /**
-     * Close resources that are not external.  This will not call {@link DriverManagedResource#free()}.  That will
+     * Close resources that are not external. This will not call {@link DriverManagedResource#free()}. That will
      * need to be called separately at the appropriate time.
      */
     void close();

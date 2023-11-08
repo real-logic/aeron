@@ -199,7 +199,9 @@ public enum SystemCounterDescriptor
      * Count of the number of times the time threshold has been exceeded by the NameResolver.
      */
     AERON_VERSION(34, "Aeron software: " +
-        AeronCounters.formatVersionInfo(MediaDriverVersion.VERSION, MediaDriverVersion.GIT_SHA));
+        AeronCounters.formatVersionInfo(MediaDriverVersion.VERSION, MediaDriverVersion.GIT_SHA)),
+
+    BYTES_CURRENTLY_MAPPED(35, "Bytes currently mapped");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.buffer.FileStoreLogFactory;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.logbuffer.ControlledFragmentHandler;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
 import org.junit.jupiter.api.io.TempDir;
@@ -31,6 +32,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.isConnected;
 import static io.aeron.logbuffer.LogBufferDescriptor.mtuLength;
 import static io.aeron.logbuffer.LogBufferDescriptor.pageSize;
 import static io.aeron.logbuffer.LogBufferDescriptor.termLength;
+import static org.mockito.Mockito.mock;
 
 class ImageRangeTest
 {
@@ -42,10 +44,16 @@ class ImageRangeTest
         final int filePageSize = 4096;
         final long subscriberPositionThatWillTriggerException = 3147497471L;
         final Position subscriberPosition = new AtomicLongPosition();
+        final AtomicCounter bytesMappedCounter = mock(AtomicCounter.class);
 
         try (
             FileStoreLogFactory fileStoreLogFactory = new FileStoreLogFactory(
-                baseDir.getAbsolutePath(), filePageSize, false, 0, new RethrowingErrorHandler());
+                baseDir.getAbsolutePath(),
+                filePageSize,
+                false,
+                0,
+                new RethrowingErrorHandler(),
+                bytesMappedCounter);
             RawLog rawLog = fileStoreLogFactory.newImage(0, termBufferLength, useSparseFiles))
         {
             initialTermId(rawLog.metaData(), 0);

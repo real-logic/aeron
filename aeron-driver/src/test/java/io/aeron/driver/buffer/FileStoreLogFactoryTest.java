@@ -24,6 +24,7 @@ import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@ class FileStoreLogFactoryTest
     private static final int PAGE_SIZE = 4 * 1024;
     private static final boolean PRE_ZERO_LOG = true;
     private static final boolean PERFORM_STORAGE_CHECKS = true;
+    private final AtomicCounter mockBytesMappedCounter = mock(AtomicCounter.class);
     private FileStoreLogFactory fileStoreLogFactory;
     private RawLog rawLog;
 
@@ -61,7 +63,12 @@ class FileStoreLogFactoryTest
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
         final String absolutePath = DATA_DIR.getAbsolutePath();
         fileStoreLogFactory = new FileStoreLogFactory(
-            absolutePath, PAGE_SIZE, PERFORM_STORAGE_CHECKS, LOW_STORAGE_THRESHOLD, mock(ErrorHandler.class));
+            absolutePath,
+            PAGE_SIZE,
+            PERFORM_STORAGE_CHECKS,
+            LOW_STORAGE_THRESHOLD,
+            mock(ErrorHandler.class),
+            mockBytesMappedCounter);
     }
 
     @AfterEach
@@ -135,7 +142,11 @@ class FileStoreLogFactoryTest
             files.when(() -> Files.getFileStore(any())).thenReturn(fileStore);
 
             try (FileStoreLogFactory logFactory = new FileStoreLogFactory(
-                DATA_DIR.getAbsolutePath(), PAGE_SIZE, true, LOW_STORAGE_THRESHOLD, errorHandler))
+                DATA_DIR.getAbsolutePath(),
+                PAGE_SIZE, true,
+                LOW_STORAGE_THRESHOLD,
+                errorHandler,
+                mockBytesMappedCounter))
             {
                 final int imageTermBufferLength = 64 * 1024;
                 assertThrowsStorageSpaceException(
@@ -173,7 +184,12 @@ class FileStoreLogFactoryTest
             files.when(() -> Files.getFileStore(any())).thenReturn(fileStore);
 
             try (FileStoreLogFactory logFactory = new FileStoreLogFactory(
-                DATA_DIR.getAbsolutePath(), PAGE_SIZE, true, lowStorageWarningThreshold, errorHandler))
+                DATA_DIR.getAbsolutePath(),
+                PAGE_SIZE,
+                true,
+                lowStorageWarningThreshold,
+                errorHandler,
+                mockBytesMappedCounter))
             {
                 try (RawLog rawLog = logFactory.newPublication(11, termLength, true))
                 {

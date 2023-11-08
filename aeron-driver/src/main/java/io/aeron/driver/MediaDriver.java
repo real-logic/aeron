@@ -43,6 +43,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.StandardSocketOptions;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -674,6 +675,8 @@ public final class MediaDriver implements AutoCloseable
                 concludeCounters();
                 concludeDependantProperties();
                 concludeIdleStrategies();
+
+                systemCounters.get(BYTES_CURRENTLY_MAPPED).setOrdered(cncFileLength + lossReportBufferLength);
 
                 toDriverCommands.nextCorrelationId();
                 toDriverCommands.consumerHeartbeatTime(epochClock.time());
@@ -3449,6 +3452,11 @@ public final class MediaDriver implements AutoCloseable
             return channelSendTimestampClock;
         }
 
+        ByteBuffer cncByteBuffer()
+        {
+            return cncByteBuffer;
+        }
+
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;
@@ -3780,6 +3788,40 @@ public final class MediaDriver implements AutoCloseable
             }
         }
 
+        private void concludeCounters()
+        {
+            if (null == countersManager)
+            {
+                if (countersMetaDataBuffer() == null)
+                {
+                    countersMetaDataBuffer(createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
+                }
+
+                if (countersValuesBuffer() == null)
+                {
+                    countersValuesBuffer(createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+                }
+
+                final long reuseTimeoutMs = counterFreeToReuseTimeoutNs > 0 ?
+                    Math.max(TimeUnit.NANOSECONDS.toMillis(counterFreeToReuseTimeoutNs), 1) : 0;
+
+                countersManager = useConcurrentCountersManager ?
+                    new ConcurrentCountersManager(
+                        countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII, cachedEpochClock, reuseTimeoutMs) :
+                    new CountersManager(
+                        countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII, cachedEpochClock, reuseTimeoutMs);
+            }
+
+            if (null == systemCounters)
+            {
+                systemCounters = new SystemCounters(countersManager);
+            }
+
+            final int aeronVersion = SemanticVersion.compose(
+                MediaDriverVersion.MAJOR_VERSION, MediaDriverVersion.MINOR_VERSION, MediaDriverVersion.PATCH_VERSION);
+            systemCounters.get(AERON_VERSION).set(aeronVersion);
+        }
+
         private void concludeDependantProperties()
         {
             clientProxy = new ClientProxy(new BroadcastTransmitter(
@@ -3805,7 +3847,12 @@ public final class MediaDriver implements AutoCloseable
             if (null == logFactory)
             {
                 logFactory = new FileStoreLogFactory(
-                    aeronDirectoryName(), filePageSize, performStorageChecks, lowStorageWarningThreshold, errorHandler);
+                    aeronDirectoryName(),
+                    filePageSize,
+                    performStorageChecks,
+                    lowStorageWarningThreshold,
+                    errorHandler,
+                    systemCounters.get(BYTES_CURRENTLY_MAPPED));
             }
 
             if (null == lossReport)
@@ -3867,40 +3914,6 @@ public final class MediaDriver implements AutoCloseable
             }
 
             nameResolver.init(countersManager, countersManager::newCounter);
-        }
-
-        private void concludeCounters()
-        {
-            if (null == countersManager)
-            {
-                if (countersMetaDataBuffer() == null)
-                {
-                    countersMetaDataBuffer(createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
-                }
-
-                if (countersValuesBuffer() == null)
-                {
-                    countersValuesBuffer(createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
-                }
-
-                final long reuseTimeoutMs = counterFreeToReuseTimeoutNs > 0 ?
-                    Math.max(TimeUnit.NANOSECONDS.toMillis(counterFreeToReuseTimeoutNs), 1) : 0;
-
-                countersManager = useConcurrentCountersManager ?
-                    new ConcurrentCountersManager(
-                        countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII, cachedEpochClock, reuseTimeoutMs) :
-                    new CountersManager(
-                        countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII, cachedEpochClock, reuseTimeoutMs);
-            }
-
-            if (null == systemCounters)
-            {
-                systemCounters = new SystemCounters(countersManager);
-            }
-
-            final int aeronVersion = SemanticVersion.compose(
-                MediaDriverVersion.MAJOR_VERSION, MediaDriverVersion.MINOR_VERSION, MediaDriverVersion.PATCH_VERSION);
-            systemCounters.get(AERON_VERSION).set(aeronVersion);
         }
 
         private void concludeIdleStrategies()

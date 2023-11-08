@@ -20,6 +20,7 @@ import org.agrona.BufferUtil;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,6 +51,7 @@ class MappedRawLog implements RawLog
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
     private final UnsafeBuffer logMetaDataBuffer;
     private final ErrorHandler errorHandler;
+    private final AtomicCounter mappedBytesCounter;
     private File logFile;
     private MappedByteBuffer[] mappedBuffers;
 
@@ -59,12 +61,14 @@ class MappedRawLog implements RawLog
         final long logLength,
         final int termLength,
         final int filePageSize,
-        final ErrorHandler errorHandler)
+        final ErrorHandler errorHandler,
+        final AtomicCounter mappedBytesCounter)
     {
         this.termLength = termLength;
         this.errorHandler = errorHandler;
         this.logFile = location;
         this.logLength = logLength;
+        this.mappedBytesCounter = mappedBytesCounter;
 
         final EnumSet<StandardOpenOption> options = useSparseFiles ? SPARSE_FILE_OPTIONS : FILE_OPTIONS;
         try
@@ -75,6 +79,8 @@ class MappedRawLog implements RawLog
                 if (logLength <= Integer.MAX_VALUE)
                 {
                     final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
+                    mappedBytesCounter.getAndAddOrdered(logLength);
+
                     mappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
                     mappedBuffers = new MappedByteBuffer[]{ mappedBuffer };
 
@@ -145,6 +151,8 @@ class MappedRawLog implements RawLog
             {
                 BufferUtil.free(mappedBuffers[i]);
             }
+
+            mappedBytesCounter.getAndAddOrdered(-logLength);
 
             logMetaDataBuffer.wrap(0, 0);
             for (int i = 0; i < termBuffers.length; i++)

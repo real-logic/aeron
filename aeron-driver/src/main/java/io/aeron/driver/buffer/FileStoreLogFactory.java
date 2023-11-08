@@ -20,6 +20,7 @@ import io.aeron.exceptions.StorageSpaceException;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +45,7 @@ public class FileStoreLogFactory implements LogFactory
     private final File publicationsDir;
     private final File imagesDir;
     private final FileStore fileStore;
+    private final AtomicCounter mappedBytesCounter;
 
     /**
      * Construct a {@link LogFactory} over a file store.
@@ -53,18 +55,21 @@ public class FileStoreLogFactory implements LogFactory
      * @param checkStorage               for sufficient space before allocating files.
      * @param lowStorageWarningThreshold when warnings about remaining space will begin.
      * @param errorHandler               to call when an error is encountered.
+     * @param mappedBytesCounter         used to keep track of how many bytes are mapped by the driver.
      */
     public FileStoreLogFactory(
         final String dataDirectoryName,
         final int filePageSize,
         final boolean checkStorage,
         final long lowStorageWarningThreshold,
-        final ErrorHandler errorHandler)
+        final ErrorHandler errorHandler,
+        final AtomicCounter mappedBytesCounter)
     {
         this.filePageSize = filePageSize;
         this.lowStorageWarningThreshold = lowStorageWarningThreshold;
         this.checkStorage = checkStorage;
         this.errorHandler = errorHandler;
+        this.mappedBytesCounter = mappedBytesCounter;
 
         final File dataDir = new File(dataDirectoryName);
 
@@ -129,7 +134,7 @@ public class FileStoreLogFactory implements LogFactory
         final File location = streamLocation(rootDir, correlationId);
 
         return new MappedRawLog(
-            location, useSparseFiles, logLength, termLength, filePageSize, errorHandler);
+            location, useSparseFiles, logLength, termLength, filePageSize, errorHandler, mappedBytesCounter);
     }
 
     private void checkStorage(final long logLength)

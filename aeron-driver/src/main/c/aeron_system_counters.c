@@ -58,6 +58,7 @@ static aeron_system_counter_t system_counters[] =
         { "NameResolver max time in ns", AERON_SYSTEM_COUNTER_NAME_RESOLVER_MAX_TIME },
         { "NameResolver exceeded threshold count", AERON_SYSTEM_COUNTER_NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED },
         { "Aeron software: version=" AERON_VERSION_TXT " commit=" AERON_VERSION_GITSHA, AERON_SYSTEM_COUNTER_AERON_VERSION },
+        { "Bytes currently mapped", AERON_SYSTEM_COUNTER_BYTES_CURRENTLY_MAPPED },
     };
 
 static size_t num_system_counters = sizeof(system_counters) / sizeof(aeron_system_counter_t);

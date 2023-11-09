@@ -201,6 +201,9 @@ public enum SystemCounterDescriptor
     AERON_VERSION(34, "Aeron software: " +
         AeronCounters.formatVersionInfo(MediaDriverVersion.VERSION, MediaDriverVersion.GIT_SHA)),
 
+    /**
+     * The total number of bytes currently mapped in log buffers, CnC file, and loss report.
+     */
     BYTES_CURRENTLY_MAPPED(35, "Bytes currently mapped");
 
     /**

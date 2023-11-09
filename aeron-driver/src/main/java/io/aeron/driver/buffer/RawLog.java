@@ -32,13 +32,6 @@ public interface RawLog extends AutoCloseable
     int termLength();
 
     /**
-     * Total length of the raw log which encompasses metadata and term buffers.
-     *
-     * @return length of the raw log which encompasses metadata and term buffers.
-     */
-    long length();
-
-    /**
      * An array of term buffer partitions.
      *
      * @return an array of the term buffer partitions.

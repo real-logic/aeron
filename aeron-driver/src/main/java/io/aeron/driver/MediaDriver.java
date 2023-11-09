@@ -43,7 +43,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.StandardSocketOptions;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -3450,11 +3449,6 @@ public final class MediaDriver implements AutoCloseable
         public EpochNanoClock channelSendTimestampClock()
         {
             return channelSendTimestampClock;
-        }
-
-        ByteBuffer cncByteBuffer()
-        {
-            return cncByteBuffer;
         }
 
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()

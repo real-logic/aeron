@@ -136,11 +136,6 @@ class MappedRawLog implements RawLog
         return termLength;
     }
 
-    public long length()
-    {
-        return logLength;
-    }
-
     public boolean free()
     {
         final MappedByteBuffer[] mappedBuffers = this.mappedBuffers;

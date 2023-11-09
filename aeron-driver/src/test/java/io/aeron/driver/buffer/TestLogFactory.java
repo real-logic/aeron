@@ -56,18 +56,6 @@ public class TestLogFactory implements LogFactory
                 return termBuffers[0].capacity();
             }
 
-            public long length()
-            {
-                long length = logMetaData.capacity();
-
-                for (int i = 0; i < PARTITION_COUNT; i++)
-                {
-                    length += termBuffers[i].capacity();
-                }
-
-                return length;
-            }
-
             public UnsafeBuffer[] termBuffers()
             {
                 return termBuffers;

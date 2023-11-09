@@ -499,7 +499,7 @@ public final class AeronCounters
     }
 
     /**
-     * Format version information to display purposes.
+     * Format version information for display purposes.
      *
      * @param fullVersion of the component.
      * @param commitHash  Git commit SHA.

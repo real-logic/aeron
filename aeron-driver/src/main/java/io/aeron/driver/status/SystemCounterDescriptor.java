@@ -196,7 +196,7 @@ public enum SystemCounterDescriptor
     NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED(33, "NameResolver exceeded threshold count"),
 
     /**
-     * Count of the number of times the time threshold has been exceeded by the NameResolver.
+     * The version of the media driver.
      */
     AERON_VERSION(34, "Aeron software: " +
         AeronCounters.formatVersionInfo(MediaDriverVersion.VERSION, MediaDriverVersion.GIT_SHA)),

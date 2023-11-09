@@ -79,8 +79,6 @@ class MappedRawLog implements RawLog
                 if (logLength <= Integer.MAX_VALUE)
                 {
                     final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
-                    mappedBytesCounter.getAndAddOrdered(logLength);
-
                     mappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
                     mappedBuffers = new MappedByteBuffer[]{ mappedBuffer };
 
@@ -122,6 +120,8 @@ class MappedRawLog implements RawLog
                 {
                     preTouchPages(termBuffers, termLength, filePageSize);
                 }
+
+                mappedBytesCounter.getAndAddOrdered(logLength);
             }
         }
         catch (final IOException ex)

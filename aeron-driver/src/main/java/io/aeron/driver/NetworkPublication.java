@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.SendChannelEndpoint;
@@ -116,6 +117,7 @@ public final class NetworkPublication
     private final long untetheredWindowLimitTimeoutNs;
     private final long untetheredRestingTimeoutNs;
     private final long tag;
+    private final long responseCorrelationId;
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int startingTermId;
@@ -210,6 +212,7 @@ public final class NetworkPublication
         this.startingTermId = params.hasPosition ? params.termId : initialTermId;
         this.startingTermOffset = params.hasPosition ? params.termOffset : 0;
         this.isResponse = params.isResponse;
+        this.responseCorrelationId = params.responseCorrelationId;
 
         metaDataBuffer = rawLog.metaData();
         setupBuffer = threadLocals.setupBuffer();
@@ -761,6 +764,9 @@ public final class NetworkPublication
         {
             timeOfLastSetupNs = nowNs;
 
+            final short flags = (!isResponse && Aeron.NULL_VALUE != responseCorrelationId) ?
+                SetupFlyweight.SEND_RESPONSE_SETUP_FLAG : 0;
+
             setupBuffer.clear();
             setupHeader
                 .activeTermId(activeTermId)
@@ -770,7 +776,8 @@ public final class NetworkPublication
                 .initialTermId(initialTermId)
                 .termLength(termBufferLength)
                 .mtuLength(mtuLength)
-                .ttl(channelEndpoint.multicastTtl());
+                .ttl(channelEndpoint.multicastTtl())
+                .flags(flags);
 
             if (isSetupElicited)
             {
@@ -1038,6 +1045,16 @@ public final class NetworkPublication
     public boolean hasReachedEndOfLife()
     {
         return hasSenderReleased;
+    }
+
+    /**
+     * Get the response correlation id for the publication.
+     *
+     * @return the response correlation id for the publication.
+     */
+    public long responseCorrelationId()
+    {
+        return responseCorrelationId;
     }
 
     void decRef()

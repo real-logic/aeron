@@ -127,6 +127,24 @@ public final class DriverConductorProxy
     }
 
     /**
+     * Handle a response setup message from the remote "server"
+     *
+     * @param responseCorrelationId correlationId of the subscription that will handle responses.
+     * @param responseSessionId     sessionId that will be associated with the incoming messages.
+     */
+    public void responseSetup(final long responseCorrelationId, final int responseSessionId)
+    {
+        if (notConcurrent())
+        {
+            driverConductor.responseSetup(responseCorrelationId, responseSessionId);
+        }
+        else
+        {
+            offer(() -> driverConductor.responseSetup(responseCorrelationId, responseSessionId));
+        }
+    }
+
+    /**
      * Is the driver conductor not concurrent with the sender and receiver threads.
      *
      * @return true if the {@link DriverConductor} is on the same thread as the sender and receiver.
@@ -170,6 +188,7 @@ public final class DriverConductorProxy
         final int termLength,
         final int mtuLength,
         final int transportIndex,
+        final short flags,
         final InetSocketAddress controlAddress,
         final InetSocketAddress srcAddress,
         final ReceiveChannelEndpoint channelEndpoint)
@@ -185,6 +204,7 @@ public final class DriverConductorProxy
                 termLength,
                 mtuLength,
                 transportIndex,
+                flags,
                 controlAddress,
                 srcAddress,
                 channelEndpoint);
@@ -200,6 +220,7 @@ public final class DriverConductorProxy
                 termLength,
                 mtuLength,
                 transportIndex,
+                flags,
                 controlAddress,
                 srcAddress,
                 channelEndpoint));

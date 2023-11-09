@@ -63,8 +63,8 @@ public class ResponseClient implements AutoCloseable
             new ChannelUriStringBuilder(responseChannel) : new ChannelUriStringBuilder();
         responseUriBuilder
             .media("udp")
-            .controlEndpoint((String)null)
-            .isResponseChannel(Boolean.TRUE);
+            .controlMode("response")
+            .controlEndpoint((String)null);
     }
 
     int poll()

@@ -107,6 +107,38 @@ public class ResponseChannelsTest
     }
 
     @Test
+    @InterruptAfter(5)
+    void shouldConnectResponseChannel()
+    {
+        final int reqStreamId = 10001;
+        final int rspStreamId = 10002;
+
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Subscription subReq = server.addSubscription(
+                "aeron:udp?endpoint=localhost:10001", reqStreamId);
+            Subscription subRsp = client.addSubscription(
+                "aeron:udp?control-mode=response|control=localhost:10002", rspStreamId);
+            Publication pubReq = client.addPublication(
+                "aeron:udp?endpoint=localhost:10001|response-correlation-id=" + subRsp.registrationId(), reqStreamId))
+        {
+            Tests.awaitConnected(subReq);
+            Tests.awaitConnected(pubReq);
+            Objects.requireNonNull(subRsp);
+
+            final Image image = subReq.imageAtIndex(0);
+            final String url = "aeron:udp?control-mode=response|control=localhost:10002|response-correlation-id=" +
+                image.correlationId();
+
+            try (Publication pubRsp = client.addPublication(url, rspStreamId))
+            {
+                Tests.awaitConnected(subRsp);
+                Tests.awaitConnected(pubRsp);
+            }
+        }
+    }
+
+    @Test
     @InterruptAfter(10)
     void shouldResolvePublicationImageViaCorrelationId()
     {

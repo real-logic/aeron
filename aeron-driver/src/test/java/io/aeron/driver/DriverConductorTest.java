@@ -693,7 +693,7 @@ class DriverConductorTest
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, initialTermId, activeTermId, termOffset, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
-            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+            (short)0, mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         final ArgumentCaptor<PublicationImage> captor2 = ArgumentCaptor.forClass(PublicationImage.class);
         verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor2.capture());
@@ -723,7 +723,7 @@ class DriverConductorTest
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_2, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
-            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+            (short)0, mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         verify(receiverProxy, never()).newPublicationImage(any(), any());
         verify(mockClientProxy, never()).onAvailableImage(
@@ -747,7 +747,7 @@ class DriverConductorTest
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
-            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+            (short)0, mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         final ArgumentCaptor<PublicationImage> captor2 = ArgumentCaptor.forClass(PublicationImage.class);
         verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor2.capture());
@@ -780,7 +780,7 @@ class DriverConductorTest
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
-            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+            (short)0, mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         final ArgumentCaptor<PublicationImage> captor2 = ArgumentCaptor.forClass(PublicationImage.class);
         verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor2.capture());
@@ -829,7 +829,7 @@ class DriverConductorTest
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
-            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+            (short)0, mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         final ArgumentCaptor<PublicationImage> captor2 = ArgumentCaptor.forClass(PublicationImage.class);
         verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor2.capture());

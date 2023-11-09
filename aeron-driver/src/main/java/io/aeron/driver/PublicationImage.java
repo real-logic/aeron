@@ -49,6 +49,7 @@ import static io.aeron.driver.LossDetector.rebuildOffset;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermGapFiller.tryFillGap;
+import static io.aeron.protocol.SetupFlyweight.SEND_RESPONSE_SETUP_FLAG;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 class PublicationImagePadding1
@@ -66,6 +67,7 @@ class PublicationImageConductorFields extends PublicationImagePadding1
     ReadablePosition[] subscriberPositions;
     LossReport lossReport;
     LossReport.ReportEntry reportEntry;
+    volatile Integer responseSessionId = null;
 }
 
 class PublicationImagePadding2 extends PublicationImageConductorFields
@@ -143,6 +145,7 @@ public final class PublicationImage
     private final int positionBitsToShift;
     private final int termLengthMask;
     private final int initialTermId;
+    private final short flags;
     private final boolean isReliable;
 
     private boolean isRebuilding = true;
@@ -181,6 +184,7 @@ public final class PublicationImage
         final int initialTermId,
         final int activeTermId,
         final int initialTermOffset,
+        final short flags,
         final RawLog rawLog,
         final FeedbackDelayGenerator lossFeedbackDelayGenerator,
         final ArrayList<SubscriberPosition> subscriberPositions,
@@ -198,6 +202,7 @@ public final class PublicationImage
         this.channelEndpoint = channelEndpoint;
         this.sessionId = sessionId;
         this.streamId = streamId;
+        this.flags = flags;
         this.rawLog = rawLog;
         this.hwmPosition = hwmPosition;
         this.rebuildPosition = rebuildPosition;
@@ -690,8 +695,14 @@ public final class PublicationImage
     {
         int workCount = 0;
         final long changeNumber = endSmChange;
+        final boolean hasSmTimedOut = (timeOfLastSmNs + smTimeoutNs) - nowNs < 0;
 
-        if (changeNumber != lastSmChangeNumber || (timeOfLastSmNs + smTimeoutNs) - nowNs < 0)
+        if (null != responseSessionId && hasSmTimedOut)
+        {
+            channelEndpoint.sendResponseSetup(imageConnections, sessionId, streamId, responseSessionId);
+        }
+
+        if (changeNumber != lastSmChangeNumber || hasSmTimedOut)
         {
             final long smPosition = nextSmPosition;
             final int receiverWindowLength = nextSmReceiverWindowLength;
@@ -821,6 +832,16 @@ public final class PublicationImage
         }
 
         return position;
+    }
+
+    boolean hasSendResponseSetup()
+    {
+        return 0 != (SEND_RESPONSE_SETUP_FLAG & flags);
+    }
+
+    void responseSessionId(final int responseSessionId)
+    {
+        this.responseSessionId = responseSessionId;
     }
 
     /**

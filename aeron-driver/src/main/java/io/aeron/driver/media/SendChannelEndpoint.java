@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.Aeron;
 import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
@@ -26,6 +27,7 @@ import io.aeron.driver.status.MdcDestinations;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.NakFlyweight;
+import io.aeron.protocol.ResponseSetupFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
@@ -439,6 +441,36 @@ public class SendChannelEndpoint extends UdpChannelTransport
         if (null != publication)
         {
             publication.onRttMeasurement(msg, srcAddress);
+        }
+    }
+
+
+    /**
+     * Callback to handle a received Response Setup frame.
+     *
+     * @param msg            of the Response Setup frame.
+     * @param unsafeBuffer   containing the Response Setup frame.
+     * @param length         of the Response Setup frame.
+     * @param srcAddress     the message came from.
+     * @param conductorProxy
+     */
+    public void onResponseSetup(
+        final ResponseSetupFlyweight msg,
+        final UnsafeBuffer unsafeBuffer,
+        final int length,
+        final InetSocketAddress srcAddress,
+        final DriverConductorProxy conductorProxy)
+    {
+        final long key = compoundKey(msg.sessionId(), msg.streamId());
+        final NetworkPublication publication = publicationBySessionAndStreamId.get(key);
+
+        if (null != publication)
+        {
+            final long responseCorrelationId = publication.responseCorrelationId();
+            if (Aeron.NULL_VALUE != responseCorrelationId)
+            {
+                conductorProxy.responseSetup(responseCorrelationId, msg.responseSessionId());
+            }
         }
     }
 

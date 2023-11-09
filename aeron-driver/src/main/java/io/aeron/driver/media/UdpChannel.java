@@ -168,7 +168,8 @@ public final class UdpChannel
                     "explicit control expected with dynamic control mode: " + channelUriString);
             }
 
-            if (hasNoDistinguishingCharacteristic && ControlMode.MANUAL != controlMode)
+            if (hasNoDistinguishingCharacteristic && ControlMode.MANUAL != controlMode &&
+                ControlMode.RESPONSE != controlMode)
             {
                 throw new IllegalArgumentException(
                     "URIs for UDP must specify an endpoint, control, tags, or control-mode=manual: " +

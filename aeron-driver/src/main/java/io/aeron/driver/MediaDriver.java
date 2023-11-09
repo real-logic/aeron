@@ -3684,11 +3684,6 @@ public final class MediaDriver implements AutoCloseable
                 dataTransportPoller = new DataTransportPoller(errorHandler);
             }
 
-            if (null == controlTransportPoller)
-            {
-                controlTransportPoller = new ControlTransportPoller(errorHandler);
-            }
-
             if (null == applicationSpecificFeedback)
             {
                 applicationSpecificFeedback = Configuration.applicationSpecificFeedback();
@@ -3837,6 +3832,11 @@ public final class MediaDriver implements AutoCloseable
                 threadingMode, senderCommandQueue, systemCounters.get(SENDER_PROXY_FAILS));
             driverConductorProxy = new DriverConductorProxy(
                 threadingMode, driverCommandQueue, systemCounters.get(CONDUCTOR_PROXY_FAILS));
+
+            if (null == controlTransportPoller)
+            {
+                controlTransportPoller = new ControlTransportPoller(errorHandler, driverConductorProxy);
+            }
 
             if (null == logFactory)
             {

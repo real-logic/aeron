@@ -36,7 +36,7 @@ final class NetworkPublicationThreadLocals
 
     NetworkPublicationThreadLocals()
     {
-        final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(CACHE_LINE_LENGTH * 3, CACHE_LINE_LENGTH);
+        final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(CACHE_LINE_LENGTH * 4, CACHE_LINE_LENGTH);
 
         byteBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
         heartbeatBuffer = byteBuffer.slice();

@@ -80,6 +80,11 @@ public class HeaderFlyweight extends UnsafeBuffer
     public static final int HDR_TYPE_RES = 0x07;
 
     /**
+     * header type RESPONSE_SETUP
+     */
+    public static final int HDR_TYPE_RSP_SETUP = 0x08;
+
+    /**
      * header type EXT
      */
     public static final int HDR_TYPE_EXT = 0xFFFF;

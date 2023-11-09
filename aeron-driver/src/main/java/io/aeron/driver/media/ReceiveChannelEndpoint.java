@@ -112,6 +112,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     private final NakFlyweight nakFlyweight;
     private final ByteBuffer rttMeasurementBuffer;
     private final RttMeasurementFlyweight rttMeasurementFlyweight;
+    private final ByteBuffer responseSetupBuffer;
+    private final ResponseSetupFlyweight responseSetupHeader;
     private final AtomicCounter shortSends;
     private final AtomicCounter possibleTtlAsymmetry;
     private final AtomicCounter statusIndicator;
@@ -157,6 +159,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
         nakFlyweight = threadLocals.nakFlyweight();
         rttMeasurementBuffer = threadLocals.rttMeasurementBuffer();
         rttMeasurementFlyweight = threadLocals.rttMeasurementFlyweight();
+        responseSetupBuffer = threadLocals.responseSetupBuffer();
+        responseSetupHeader = threadLocals.responseSetupHeader();
         cachedNanoClock = context.receiverCachedNanoClock();
         timeOfLastActivityNs = cachedNanoClock.nanoTime();
         receiverId = threadLocals.nextReceiverId();
@@ -783,13 +787,13 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     /**
      * Send a Status Message back to a sources.
      *
-     * @param controlAddresses of the sources.
-     * @param sessionId        of the image.
-     * @param streamId         of the image.
-     * @param termId           of the image to indicate position.
-     * @param termOffset       of the image to indicate position.
-     * @param windowLength     for available buffer from the position.
-     * @param flags            for the header.
+     * @param controlAddresses  of the sources.
+     * @param sessionId         of the image.
+     * @param streamId          of the image.
+     * @param termId            of the image to indicate position.
+     * @param termOffset        of the image to indicate position.
+     * @param windowLength      for available buffer from the position.
+     * @param flags             for the header.
      */
     public void sendStatusMessage(
         final ImageConnection[] controlAddresses,
@@ -872,6 +876,29 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
             .flags(isReply ? RttMeasurementFlyweight.REPLY_FLAG : 0);
 
         send(rttMeasurementBuffer, RttMeasurementFlyweight.HEADER_LENGTH, controlAddresses);
+    }
+
+    /**
+     * Send a response setup message
+     *
+     * @param controlAddresses  of the sources.
+     * @param sessionId         for the image.
+     * @param streamId          for the image.
+     * @param responseSessionId to be used by the remote subscription to listen for responses.
+     */
+    public void sendResponseSetup(
+        final ImageConnection[] controlAddresses,
+        final int sessionId,
+        final int streamId,
+        final int responseSessionId)
+    {
+        responseSetupBuffer.clear();
+        responseSetupHeader
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .responseSessionId(responseSessionId);
+
+        send(responseSetupBuffer, ResponseSetupFlyweight.HEADER_LENGTH, controlAddresses);
     }
 
     /**

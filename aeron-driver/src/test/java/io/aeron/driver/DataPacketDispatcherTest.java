@@ -119,7 +119,7 @@ class DataPacketDispatcherTest
 
         verify(mockConductorProxy).createPublicationImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,
-            MTU_LENGTH, 0, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
+            MTU_LENGTH, 0, (short)0, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
     }
 
     @Test
@@ -132,7 +132,7 @@ class DataPacketDispatcherTest
 
         verify(mockConductorProxy).createPublicationImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,
-            MTU_LENGTH, 0, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
+            MTU_LENGTH, 0, (short)0, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
     }
 
     @Test
@@ -196,7 +196,7 @@ class DataPacketDispatcherTest
             .addPendingSetupMessage(SESSION_ID, STREAM_ID, 0, mockChannelEndpoint, false, SRC_ADDRESS);
         inOrder.verify(mockConductorProxy).createPublicationImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,
-            MTU_LENGTH, 0, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
+            MTU_LENGTH, 0, (short)0, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
     }
 
     @Test

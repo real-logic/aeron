@@ -240,6 +240,7 @@ public final class DriverConductor implements Agent
         final int termBufferLength,
         final int senderMtuLength,
         final int transportIndex,
+        final short flags,
         final InetSocketAddress controlAddress,
         final InetSocketAddress sourceAddress,
         final ReceiveChannelEndpoint channelEndpoint)
@@ -307,6 +308,7 @@ public final class DriverConductor implements Agent
                     initialTermId,
                     activeTermId,
                     initialTermOffset,
+                    flags,
                     rawLog,
                     treatAsMulticast ? ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator(),
                     subscriberPositions,
@@ -523,7 +525,6 @@ public final class DriverConductor implements Agent
             linkSpies(subscriptionLinks, publication);
         }
 
-        // TODO: Use this to locate image when setting up the response channel from the server...
         final String imageCorrelationIdString = channelUri.get(RESPONSE_CORRELATION_ID_PARAM_NAME);
         if (null != imageCorrelationIdString)
         {
@@ -532,8 +533,46 @@ public final class DriverConductor implements Agent
             {
                 if (publicationImage.correlationId() == imageCorrelationId)
                 {
-                    System.out.println("Found publicationImage: " + publicationImage);
+                    if (publicationImage.hasSendResponseSetup())
+                    {
+                        publicationImage.responseSessionId(publication.sessionId());
+                    }
                 }
+            }
+        }
+    }
+
+    void responseSetup(final long responseCorrelationId, final int responseSessionId)
+    {
+        for (int i = 0, subscriptionLinksSize = subscriptionLinks.size(); i < subscriptionLinksSize; i++)
+        {
+            final SubscriptionLink subscriptionLink = subscriptionLinks.get(i);
+            if (subscriptionLink.registrationId() == responseCorrelationId &&
+                subscriptionLink instanceof NetworkSubscriptionLink)
+            {
+                final NetworkSubscriptionLink link = (NetworkSubscriptionLink)subscriptionLink;
+                final SubscriptionParams params = new SubscriptionParams();
+                params.hasSessionId = true;
+                params.sessionId = responseSessionId;
+                params.isSparse = link.isSparse();
+                params.isTether = link.isTether();
+                params.group = link.group();
+                params.isReliable = link.isReliable();
+                params.isRejoin = link.isRejoin();
+
+                // TODO: we could make the sessionId on the SubscriptionLink mutable...
+                final NetworkSubscriptionLink newSubscriptionLink = new NetworkSubscriptionLink(
+                    subscriptionLink.registrationId(),
+                    subscriptionLink.channelEndpoint(),
+                    subscriptionLink.streamId(),
+                    subscriptionLink.channel(),
+                    subscriptionLink.aeronClient(),
+                    params);
+
+                subscriptionLinks.set(i, newSubscriptionLink);
+                addNetworkSubscriptionToReceiver(link);
+
+                break;
             }
         }
     }
@@ -829,6 +868,7 @@ public final class DriverConductor implements Agent
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
+        final ControlMode controlMode = udpChannel.controlMode();
 
         validateControlForSubscription(udpChannel);
         validateTimestampConfiguration(udpChannel);
@@ -844,23 +884,33 @@ public final class DriverConductor implements Agent
 
         subscriptionLinks.add(subscription);
 
-        if (params.hasSessionId)
+        if (ControlMode.RESPONSE != controlMode)
         {
-            if (1 == channelEndpoint.incRefToStreamAndSession(streamId, params.sessionId))
-            {
-                receiverProxy.addSubscription(channelEndpoint, streamId, params.sessionId);
-            }
-        }
-        else
-        {
-            if (1 == channelEndpoint.incRefToStream(streamId))
-            {
-                receiverProxy.addSubscription(channelEndpoint, streamId);
-            }
+            addNetworkSubscriptionToReceiver(subscription);
         }
 
         clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounter().id());
         linkMatchingImages(subscription);
+    }
+
+    private void addNetworkSubscriptionToReceiver(final NetworkSubscriptionLink subscription)
+    {
+        final ReceiveChannelEndpoint channelEndpoint = subscription.channelEndpoint();
+
+        if (subscription.hasSessionId())
+        {
+            if (1 == channelEndpoint.incRefToStreamAndSession(subscription.streamId(), subscription.sessionId()))
+            {
+                receiverProxy.addSubscription(channelEndpoint, subscription.streamId(), subscription.sessionId());
+            }
+        }
+        else
+        {
+            if (1 == channelEndpoint.incRefToStream(subscription.streamId()))
+            {
+                receiverProxy.addSubscription(channelEndpoint, subscription.streamId());
+            }
+        }
     }
 
     void onAddIpcSubscription(final String channel, final int streamId, final long registrationId, final long clientId)

@@ -24,7 +24,6 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
-import io.aeron.version.Versioned;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -44,7 +43,6 @@ import java.util.function.Consumer;
  * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)},
  * and {@link ClusteredService#onNewLeadershipTermEvent(long, long, long, long, int, int, TimeUnit, int)}.
  */
-@Versioned
 public interface Cluster
 {
     /**
@@ -111,7 +109,6 @@ public interface Cluster
          * Get the role by reading the code from a counter.
          *
          * @param counter containing the value of the role.
-         *
          * @return the role for the cluster member.
          */
         public static Role get(final AtomicCounter counter)

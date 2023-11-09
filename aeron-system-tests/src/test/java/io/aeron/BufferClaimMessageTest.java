@@ -127,11 +127,10 @@ class BufferClaimMessageTest
     @InterruptAfter(10)
     void shouldTransferReservedValue(final String channel)
     {
-        final BufferClaim bufferClaim = new BufferClaim();
-
         try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
+            final BufferClaim bufferClaim = new BufferClaim();
             while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) < 0L)
             {
                 Tests.yield();
@@ -142,18 +141,17 @@ class BufferClaimMessageTest
             bufferClaim.commit();
 
             final MutableBoolean done = new MutableBoolean();
+            final FragmentHandler fragmentHandler =
+                (buffer, offset, length, header) ->
+                {
+                    assertEquals(MESSAGE_LENGTH, length);
+                    assertEquals(reservedValue, header.reservedValue());
+                    done.value = true;
+                };
+
             while (!done.get())
             {
-                final int fragments = subscription.poll(
-                    (buffer, offset, length, header) ->
-                    {
-                        assertEquals(MESSAGE_LENGTH, length);
-                        assertEquals(reservedValue, header.reservedValue());
-
-                        done.value = true;
-                    },
-                    FRAGMENT_COUNT_LIMIT);
-
+                final int fragments = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragments)
                 {
                     Tests.yield();

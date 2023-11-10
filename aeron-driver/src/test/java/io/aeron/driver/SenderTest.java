@@ -77,6 +77,7 @@ class SenderTest
 
     private final FlowControl flowControl = spy(new UnicastFlowControl());
     private final RetransmitHandler mockRetransmitHandler = mock(RetransmitHandler.class);
+    private final DriverConductorProxy mockDriverConductorProxy = mock(DriverConductorProxy.class);
 
     private final CachedNanoClock nanoClock = new CachedNanoClock();
 
@@ -212,7 +213,7 @@ class SenderTest
         when(msg.consumptionTermOffset()).thenReturn(0);
         when(msg.receiverWindowLength()).thenReturn(0);
 
-        publication.onStatusMessage(msg, rcvAddress);
+        publication.onStatusMessage(msg, rcvAddress, mockDriverConductorProxy);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -242,7 +243,7 @@ class SenderTest
         assertThat(receivedFrames.size(), is(1)); // setup frame
         receivedFrames.remove();
 
-        publication.onStatusMessage(msg, rcvAddress);
+        publication.onStatusMessage(msg, rcvAddress, mockDriverConductorProxy);
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -278,7 +279,7 @@ class SenderTest
         when(msg.consumptionTermOffset()).thenReturn(0);
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
-        publication.onStatusMessage(msg, rcvAddress);
+        publication.onStatusMessage(msg, rcvAddress, mockDriverConductorProxy);
 
         sender.doWork();
 
@@ -306,7 +307,7 @@ class SenderTest
         when(msg.consumptionTermOffset()).thenReturn(0);
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
-        publication.onStatusMessage(msg, rcvAddress);
+        publication.onStatusMessage(msg, rcvAddress, mockDriverConductorProxy);
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -335,7 +336,7 @@ class SenderTest
         when(msg.consumptionTermOffset()).thenReturn(0);
         when(msg.receiverWindowLength()).thenReturn(2 * ALIGNED_FRAME_LENGTH);
 
-        publication.onStatusMessage(msg, rcvAddress);
+        publication.onStatusMessage(msg, rcvAddress, mockDriverConductorProxy);
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -389,7 +390,7 @@ class SenderTest
         when(msg.consumptionTermOffset()).thenReturn(0);
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
-        publication.onStatusMessage(msg, rcvAddress);
+        publication.onStatusMessage(msg, rcvAddress, mockDriverConductorProxy);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -418,7 +419,7 @@ class SenderTest
         when(msg.consumptionTermOffset()).thenReturn(0);
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
-        publication.onStatusMessage(msg, rcvAddress);
+        publication.onStatusMessage(msg, rcvAddress, mockDriverConductorProxy);
 
         sender.doWork();
 
@@ -449,7 +450,7 @@ class SenderTest
         when(msg.consumptionTermOffset()).thenReturn(0);
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
-        publication.onStatusMessage(msg, rcvAddress);
+        publication.onStatusMessage(msg, rcvAddress, mockDriverConductorProxy);
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -483,7 +484,7 @@ class SenderTest
         when(msg.consumptionTermOffset()).thenReturn(0);
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
-        publication.onStatusMessage(msg, rcvAddress);
+        publication.onStatusMessage(msg, rcvAddress, mockDriverConductorProxy);
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);

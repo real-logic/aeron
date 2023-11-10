@@ -308,7 +308,7 @@ class SelectorAndTransportTest
                 controlMessagesReceived.value++;
                 return null;
             })
-            .when(mockPublication).onStatusMessage(any(), any());
+            .when(mockPublication).onStatusMessage(any(), any(), any());
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);

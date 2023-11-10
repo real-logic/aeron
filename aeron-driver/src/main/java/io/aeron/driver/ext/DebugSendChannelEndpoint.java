@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.ext;
 
+import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.media.SendChannelEndpoint;
@@ -99,11 +100,11 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
         final StatusMessageFlyweight msg,
         final UnsafeBuffer buffer,
         final int length,
-        final InetSocketAddress srcAddress)
+        final InetSocketAddress srcAddress, final DriverConductorProxy conductorProxy)
     {
         if (!controlLossGenerator.shouldDropFrame(srcAddress, msg, msg.frameLength()))
         {
-            super.onStatusMessage(msg, buffer, length, srcAddress);
+            super.onStatusMessage(msg, buffer, length, srcAddress, conductorProxy);
         }
     }
 

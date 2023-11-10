@@ -839,7 +839,7 @@ public final class PublicationImage
         return 0 != (SEND_RESPONSE_SETUP_FLAG & flags);
     }
 
-    void responseSessionId(final int responseSessionId)
+    void responseSessionId(final Integer responseSessionId)
     {
         this.responseSessionId = responseSessionId;
     }

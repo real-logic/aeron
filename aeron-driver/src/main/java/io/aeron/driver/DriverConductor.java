@@ -69,8 +69,7 @@ import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
 public final class DriverConductor implements Agent
 {
     private static final long CLOCK_UPDATE_INTERNAL_NS = TimeUnit.MILLISECONDS.toNanos(1);
-    private static final String[] INVALID_DESTINATION_KEYS =
-    {
+    private static final String[] INVALID_DESTINATION_KEYS = {
         MTU_LENGTH_PARAM_NAME,
         RECEIVER_WINDOW_LENGTH_PARAM_NAME,
         SOCKET_RCVBUF_PARAM_NAME,
@@ -573,6 +572,20 @@ public final class DriverConductor implements Agent
                 addNetworkSubscriptionToReceiver(link);
 
                 break;
+            }
+        }
+    }
+
+    void responseConnected(final long responseCorrelationId)
+    {
+        for (final PublicationImage publicationImage : publicationImages)
+        {
+            if (publicationImage.correlationId() == responseCorrelationId)
+            {
+                if (publicationImage.hasSendResponseSetup())
+                {
+                    publicationImage.responseSessionId(null);
+                }
             }
         }
     }

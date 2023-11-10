@@ -415,14 +415,19 @@ public final class NetworkPublication
     /**
      * Process a status message to track connectivity and apply flow control.
      *
-     * @param msg        flyweight over the network packet.
-     * @param srcAddress that the setup message has come from.
+     * @param msg            flyweight over the network packet.
+     * @param srcAddress     that the setup message has come from.
+     * @param conductorProxy to send messages back to the conductor.
      */
-    public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
+    public void onStatusMessage(
+        final StatusMessageFlyweight msg,
+        final InetSocketAddress srcAddress,
+        final DriverConductorProxy conductorProxy)
     {
         if (!hasReceivers)
         {
             hasReceivers = true;
+            conductorProxy.responseConnected(responseCorrelationId);
         }
 
         if (!hasInitialConnection)

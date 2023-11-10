@@ -107,7 +107,7 @@ public class ResponseChannelsTest
     }
 
     @Test
-    @InterruptAfter(5)
+    @InterruptAfter(15)
     void shouldConnectResponseChannel()
     {
         final int reqStreamId = 10001;
@@ -134,6 +134,8 @@ public class ResponseChannelsTest
             {
                 Tests.awaitConnected(subRsp);
                 Tests.awaitConnected(pubRsp);
+
+                Tests.sleep(10_000);
             }
         }
     }

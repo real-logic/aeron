@@ -363,16 +363,18 @@ public class SendChannelEndpoint extends UdpChannelTransport
     /**
      * Callback back handler for received status messages.
      *
-     * @param msg        flyweight over the status message.
-     * @param buffer     containing the message.
-     * @param length     of the message.
-     * @param srcAddress of the message.
+     * @param msg            flyweight over the status message.
+     * @param buffer         containing the message.
+     * @param length         of the message.
+     * @param srcAddress     of the message.
+     * @param conductorProxy to send messages back to the conductor.
      */
     public void onStatusMessage(
         final StatusMessageFlyweight msg,
         final UnsafeBuffer buffer,
         final int length,
-        final InetSocketAddress srcAddress)
+        final InetSocketAddress srcAddress,
+        final DriverConductorProxy conductorProxy)
     {
         final int sessionId = msg.sessionId();
         final int streamId = msg.streamId();
@@ -393,7 +395,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             }
             else
             {
-                publication.onStatusMessage(msg, srcAddress);
+                publication.onStatusMessage(msg, srcAddress, conductorProxy);
             }
         }
     }
@@ -452,7 +454,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      * @param unsafeBuffer   containing the Response Setup frame.
      * @param length         of the Response Setup frame.
      * @param srcAddress     the message came from.
-     * @param conductorProxy
+     * @param conductorProxy to send messages back to the conductor.
      */
     public void onResponseSetup(
         final ResponseSetupFlyweight msg,

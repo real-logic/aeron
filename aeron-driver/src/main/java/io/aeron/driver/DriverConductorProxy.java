@@ -145,6 +145,23 @@ public final class DriverConductorProxy
     }
 
     /**
+     * Handle notify that a response channel has connected.
+     *
+     * @param responseCorrelationId correlationId of the subscription that will handle responses.
+     */
+    public void responseConnected(final long responseCorrelationId)
+    {
+        if (notConcurrent())
+        {
+            driverConductor.responseConnected(responseCorrelationId);
+        }
+        else
+        {
+            offer(() -> driverConductor.responseConnected(responseCorrelationId));
+        }
+    }
+
+    /**
      * Is the driver conductor not concurrent with the sender and receiver threads.
      *
      * @return true if the {@link DriverConductor} is on the same thread as the sender and receiver.

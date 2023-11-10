@@ -187,7 +187,8 @@ public final class ControlTransportPoller extends UdpTransportPoller
                 }
                 else if (HDR_TYPE_SM == frameType)
                 {
-                    channelEndpoint.onStatusMessage(statusMessage, unsafeBuffer, bytesReceived, srcAddress);
+                    channelEndpoint.onStatusMessage(
+                        statusMessage, unsafeBuffer, bytesReceived, srcAddress, conductorProxy);
                 }
                 else if (HDR_TYPE_RTTM == frameType)
                 {

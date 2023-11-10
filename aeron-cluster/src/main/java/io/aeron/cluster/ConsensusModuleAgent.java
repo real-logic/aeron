@@ -820,7 +820,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             ctx.countedErrorHandler().onError(new ClusterException(
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
                 " log=" + SemanticVersion.toString(appVersion)));
-            throw new AgentTerminationException();
+            unexpectedTermination();
         }
 
         final long nowNs = clusterClock.timeNanos();

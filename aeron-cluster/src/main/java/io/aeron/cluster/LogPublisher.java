@@ -111,15 +111,6 @@ final class LogPublisher
         }
     }
 
-    void removeDestination(final boolean isLogChannelMultiDestination, final String followerLogEndpoint)
-    {
-        if (isLogChannelMultiDestination && null != publication)
-        {
-            publication.asyncRemoveDestination(
-                ChannelUri.createDestinationUri(destinationChannel, followerLogEndpoint));
-        }
-    }
-
     long appendMessage(
         final long leadershipTermId,
         final long clusterSessionId,

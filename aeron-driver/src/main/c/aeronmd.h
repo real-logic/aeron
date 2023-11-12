@@ -154,6 +154,14 @@ int aeron_driver_context_set_perform_storage_checks(aeron_driver_context_t *cont
 bool aeron_driver_context_get_perform_storage_checks(aeron_driver_context_t *context);
 
 /**
+ * Specify the interval which checks for re-resolutions of names occurs.
+ */
+#define AERON_LOW_FILE_STORE_WARNING_THRESHOLD_ENV_VAR "AERON_LOW_FILE_STORE_WARNING_THRESHOLD"
+
+int aeron_driver_context_set_low_file_store_warning_threshold(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_low_file_store_warning_threshold(aeron_driver_context_t *context);
+
+/**
  * Should a spy subscription simulate a connection to a network publication.
  */
 #define AERON_SPIES_SIMULATE_CONNECTION_ENV_VAR "AERON_SPIES_SIMULATE_CONNECTION"

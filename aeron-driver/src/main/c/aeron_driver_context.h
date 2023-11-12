@@ -132,6 +132,7 @@ typedef struct aeron_driver_context_stct
     uint64_t nak_unicast_delay_ns;                          /* aeron.nak.unicast.delay = 60ms */
     uint64_t nak_multicast_max_backoff_ns;                  /* aeron.nak.multicast.max.backoff = 60ms */
     uint64_t re_resolution_check_interval_ns;               /* aeron.driver.reresolution.check.interval = 1s */
+    uint64_t low_file_store_warning_threshold;              /* aeron.low.file.store.warning.threshold = 160MB */
     size_t to_driver_buffer_length;                         /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;                        /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;                   /* aeron.counters.buffer.length = 1MB */
@@ -331,6 +332,8 @@ int aeron_driver_validate_untethered_timeouts(aeron_driver_context_t *context);
 int aeron_driver_context_validate_mtu_length(uint64_t mtu_length);
 
 size_t aeron_cnc_length(aeron_driver_context_t *context);
+
+int aeron_driver_context_run_storage_checks(aeron_driver_context_t *context, uint64_t log_length);
 
 int aeron_driver_context_bindings_clientd_create_entries(aeron_driver_context_t *context);
 int aeron_driver_context_bindings_clientd_delete_entries(aeron_driver_context_t *context);

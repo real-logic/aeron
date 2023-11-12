@@ -102,6 +102,9 @@ protected:
 
         m_receiver_proxy.receiver = &m_receiver;
         m_context->receiver_proxy = &m_receiver_proxy;
+        m_context->error_log = &m_error_log;
+        m_context->error_buffer = m_error_log_buffer.data();
+        m_context->error_buffer_length = m_error_log_buffer.size();
     }
 
     void TearDown() override

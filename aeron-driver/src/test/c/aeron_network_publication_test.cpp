@@ -56,11 +56,17 @@ protected:
 
         aeron_system_counters_init(&m_system_counters, &m_counters_manager);
 
+        aeron_distinct_error_log_t m_error_log = {};
+        aeron_distinct_error_log_init(
+            &m_error_log, m_error_log_buffer.data(), m_error_log_buffer.size(), aeron_epoch_clock);
 
         aeron_driver_sender_init(&m_sender, m_context, &m_system_counters, nullptr);
 
         m_sender_proxy.sender = &m_sender;
         m_context->sender_proxy = &m_sender_proxy;
+        m_context->error_log = &m_error_log;
+        m_context->error_buffer = m_error_log_buffer.data();
+        m_context->error_buffer_length = m_error_log_buffer.size();
 
         aeron_driver_ensure_dir_is_recreated(m_context);
     }
@@ -188,11 +194,6 @@ protected:
         return publication;
     }
 
-    static uint64_t noSpaceAvailable(const char* path)
-    {
-        return 0;
-    }
-
     aeron_driver_context_t *m_context = nullptr;
 private:
     aeron_clock_cache_t m_cached_clock = {};
@@ -201,6 +202,7 @@ private:
     aeron_system_counters_t m_system_counters = {};
     AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16) = {};
     AERON_DECL_ALIGNED(buffer_4x_t m_counter_meta_buffer, 16) = {};
+    AERON_DECL_ALIGNED(buffer_t m_error_log_buffer, 16) = {};
     std::vector<aeron_send_channel_endpoint_t *> m_endpoints;
     std::vector<aeron_network_publication_t *> m_publications;
     aeron_name_resolver_t m_resolver = {};
@@ -256,8 +258,47 @@ TEST_F(NetworkPublicationTest, shouldSendHeartbeatWhileSendingPeriodicSetups)
 
 TEST_F(NetworkPublicationTest, shouldReturnStorageSpaceErrorIfNotEnoughStorageSpaceAvailable)
 {
-    m_context->usable_fs_space_func = noSpaceAvailable;
+    m_context->usable_fs_space_func = [](const char* path)
+    {
+        return 190ULL;
+    };
+    m_context->perform_storage_checks = true;
+
     aeron_network_publication_t *publication = createPublication("aeron:udp?endpoint=localhost:23245");
+
     ASSERT_EQ(nullptr, publication) << aeron_errmsg();
     EXPECT_EQ(-AERON_ERROR_CODE_STORAGE_SPACE, aeron_errcode());
+    auto expected_error_text =
+        std::string("insufficient usable storage for new log of length=4096 usable=190 in ")
+            .append(m_context->aeron_dir);
+    EXPECT_NE(std::string::npos, std::string(aeron_errmsg()).find(expected_error_text));
+}
+
+TEST_F(NetworkPublicationTest, shouldWarnIfRemainingStorageSpaceIsLow)
+{
+    m_context->usable_fs_space_func = [](const char* path)
+    {
+        return 1048576ULL;
+    };
+    m_context->low_file_store_warning_threshold = 4194304ULL;
+    m_context->perform_storage_checks = true;
+
+    aeron_network_publication_t *publication = createPublication("aeron:udp?endpoint=localhost:23245");
+
+    ASSERT_NE(nullptr, publication) << aeron_errmsg();
+    std::cout << "[before]: error_log: " << m_context->error_log << std::endl;
+    std::cout << "[before]: error_log.observation_list: " << m_context->error_log->observation_list << std::endl;
+    EXPECT_EQ(0, aeron_errcode());
+    std::cout << "[after]: error_log: " << m_context->error_log << std::endl;
+    std::cout << "[after]: error_log.observation_list: " << m_context->error_log->observation_list << std::endl;
+    auto errors_list = m_context->error_log->observation_list;
+    EXPECT_NE(0, errors_list->num_observations);
+    auto last_error = errors_list->observations[errors_list->num_observations - 1];
+    EXPECT_EQ(-AERON_ERROR_CODE_STORAGE_SPACE, last_error.error_code);
+    auto error_text = std::string(last_error.description);
+    EXPECT_EQ(error_text.size(), last_error.description_length);
+    auto expected_warning =
+        std::string("WARNING: space is running low: threshold=4194304 usable=1048576 in ")
+            .append(m_context->aeron_dir);
+    EXPECT_NE(std::string::npos, error_text.find(expected_warning));
 }

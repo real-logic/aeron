@@ -276,18 +276,19 @@ static void aeron_driver_untethered_subscription_state_change_null(
 #define AERON_THREADING_MODE_DEFAULT AERON_THREADING_MODE_DEDICATED
 #define AERON_DIR_DELETE_ON_START_DEFAULT false
 #define AERON_DIR_DELETE_ON_SHUTDOWN_DEFAULT false
-#define AERON_CLIENT_LIVENESS_TIMEOUT_NS_DEFAULT (10 * 1000 * 1000 * 1000LL)
+#define AERON_CLIENT_LIVENESS_TIMEOUT_NS_DEFAULT (10 * 1000 * 1000 * INT64_C(1000))
 #define AERON_TERM_BUFFER_LENGTH_DEFAULT (16 * 1024 * 1024)
 #define AERON_IPC_TERM_BUFFER_LENGTH_DEFAULT (64 * 1024 * 1024)
 #define AERON_TERM_BUFFER_SPARSE_FILE_DEFAULT (false)
 #define AERON_PERFORM_STORAGE_CHECKS_DEFAULT (true)
+#define AERON_LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT (AERON_TERM_BUFFER_LENGTH_DEFAULT * INT64_C(10))
 #define AERON_SPIES_SIMULATE_CONNECTION_DEFAULT (false)
 #define AERON_FILE_PAGE_SIZE_DEFAULT (4 * 1024)
 #define AERON_MTU_LENGTH_DEFAULT (1408)
 #define AERON_IPC_MTU_LENGTH_DEFAULT (1408)
 #define AERON_IPC_PUBLICATION_TERM_WINDOW_LENGTH_DEFAULT (0)
 #define AERON_PUBLICATION_TERM_WINDOW_LENGTH_DEFAULT (0)
-#define AERON_PUBLICATION_LINGER_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * 1000LL)
+#define AERON_PUBLICATION_LINGER_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * INT64_C(1000))
 #define AERON_SOCKET_SO_RCVBUF_DEFAULT (128 * 1024)
 #define AERON_SOCKET_SO_SNDBUF_DEFAULT (0)
 #define AERON_SOCKET_MULTICAST_TTL_DEFAULT (0)
@@ -295,31 +296,31 @@ static void aeron_driver_untethered_subscription_state_change_null(
 #define AERON_RECEIVER_GROUP_TAG_VALUE_DEFAULT (-1)
 #define AERON_FLOW_CONTROL_GROUP_TAG_DEFAULT (-1)
 #define AERON_FLOW_CONTROL_GROUP_MIN_SIZE_DEFAULT (0)
-#define AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * 1000LL)
+#define AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * INT64_C(1000))
 #define AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT (6)
-#define AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT (200 * 1000 * 1000LL)
+#define AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT (200 * 1000 * INT64_C(1000))
 #define AERON_MULTICAST_FLOWCONTROL_SUPPLIER_DEFAULT ("aeron_max_multicast_flow_control_strategy_supplier")
 #define AERON_UNICAST_FLOWCONTROL_SUPPLIER_DEFAULT ("aeron_unicast_flow_control_strategy_supplier")
 #define AERON_CONGESTIONCONTROL_SUPPLIER_DEFAULT ("aeron_congestion_control_default_strategy_supplier")
-#define AERON_IMAGE_LIVENESS_TIMEOUT_NS_DEFAULT (10 * 1000 * 1000 * 1000LL)
+#define AERON_IMAGE_LIVENESS_TIMEOUT_NS_DEFAULT (10 * 1000 * 1000 * INT64_C(1000))
 #define AERON_RCV_INITIAL_WINDOW_LENGTH_DEFAULT (128 * 1024)
 #define AERON_LOSS_REPORT_BUFFER_LENGTH_DEFAULT (1024 * 1024)
-#define AERON_PUBLICATION_UNBLOCK_TIMEOUT_NS_DEFAULT (15 * 1000 * 1000 * 1000LL)
-#define AERON_PUBLICATION_CONNECTION_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * 1000LL)
-#define AERON_TIMER_INTERVAL_NS_DEFAULT (1 * 1000 * 1000 * 1000LL)
+#define AERON_PUBLICATION_UNBLOCK_TIMEOUT_NS_DEFAULT (15 * 1000 * 1000 * INT64_C(1000))
+#define AERON_PUBLICATION_CONNECTION_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * INT64_C(1000))
+#define AERON_TIMER_INTERVAL_NS_DEFAULT (1 * 1000 * 1000 * INT64_C(1000))
 #define AERON_IDLE_STRATEGY_BACKOFF_DEFAULT "aeron_idle_strategy_backoff"
-#define AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_NS_DEFAULT (1 * 1000 * 1000 * 1000LL)
+#define AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_NS_DEFAULT (1 * 1000 * 1000 * INT64_C(1000))
 #define AERON_PRINT_CONFIGURATION_DEFAULT (false)
 #define AERON_RELIABLE_STREAM_DEFAULT (true)
 #define AERON_TETHER_SUBSCRIPTIONS_DEFAULT (true)
-#define AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * 1000LL)
-#define AERON_UNTETHERED_RESTING_TIMEOUT_NS_DEFAULT (10 * 1000 * 1000 * 1000LL)
+#define AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * INT64_C(1000))
+#define AERON_UNTETHERED_RESTING_TIMEOUT_NS_DEFAULT (10 * 1000 * 1000 * INT64_C(1000))
 #define AERON_DRIVER_TIMEOUT_MS_DEFAULT (10 * 1000)
 #define AERON_RETRANSMIT_UNICAST_DELAY_NS_DEFAULT (0)
-#define AERON_RETRANSMIT_UNICAST_LINGER_NS_DEFAULT (60 * 1000 * 1000LL)
+#define AERON_RETRANSMIT_UNICAST_LINGER_NS_DEFAULT (60 * 1000 * INT64_C(1000))
 #define AERON_NAK_MULTICAST_GROUP_SIZE_DEFAULT (10)
-#define AERON_NAK_MULTICAST_MAX_BACKOFF_NS_DEFAULT (60 * 1000 * 1000LL)
-#define AERON_NAK_UNICAST_DELAY_NS_DEFAULT (60 * 1000 * 1000LL)
+#define AERON_NAK_MULTICAST_MAX_BACKOFF_NS_DEFAULT (60 * 1000 * INT64_C(1000))
+#define AERON_NAK_UNICAST_DELAY_NS_DEFAULT (60 * 1000 * INT64_C(1000))
 #define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_DEFAULT ("default")
 #define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS_DEFAULT ("")
 #define AERON_RECEIVER_GROUP_CONSIDERATION_DEFAULT (AERON_INFER)
@@ -530,6 +531,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->initial_window_length = AERON_RCV_INITIAL_WINDOW_LENGTH_DEFAULT;
     _context->loss_report_length = AERON_LOSS_REPORT_BUFFER_LENGTH_DEFAULT;
     _context->file_page_size = AERON_FILE_PAGE_SIZE_DEFAULT;
+    _context->low_file_store_warning_threshold = AERON_LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT;
     _context->publication_unblock_timeout_ns = AERON_PUBLICATION_UNBLOCK_TIMEOUT_NS_DEFAULT;
     _context->publication_connection_timeout_ns = AERON_PUBLICATION_CONNECTION_TIMEOUT_NS_DEFAULT;
     _context->counter_free_to_reuse_ns = AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_NS_DEFAULT;
@@ -825,6 +827,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         _context->file_page_size,
         4 * 1024,
         INT32_MAX);
+
+    _context->low_file_store_warning_threshold = aeron_config_parse_size64(
+        AERON_LOW_FILE_STORE_WARNING_THRESHOLD_ENV_VAR,
+        getenv(AERON_LOW_FILE_STORE_WARNING_THRESHOLD_ENV_VAR),
+        _context->low_file_store_warning_threshold,
+        0,
+        INT64_MAX);
 
     _context->publication_unblock_timeout_ns = aeron_config_parse_duration_ns(
         AERON_PUBLICATION_UNBLOCK_TIMEOUT_ENV_VAR,
@@ -1242,6 +1251,33 @@ static void aeron_driver_context_free_bindings(const aeron_udp_channel_intercept
         aeron_driver_context_free_bindings(bindings->meta_info.next_interceptor_bindings);
         aeron_free((void *)bindings);
     }
+}
+
+int aeron_driver_context_run_storage_checks(aeron_driver_context_t *context, uint64_t log_length)
+{
+    if (context->perform_storage_checks)
+    {
+        const uint64_t usable_space = context->usable_fs_space_func(context->aeron_dir);
+        if (usable_space < log_length)
+        {
+            AERON_SET_ERR(
+                -AERON_ERROR_CODE_STORAGE_SPACE,
+                "insufficient usable storage for new log of length=%" PRId64 " usable=%" PRId64 " in %s",
+            log_length, usable_space, context->aeron_dir);
+            return -1;
+        }
+
+        if (usable_space <= context->low_file_store_warning_threshold)
+        {
+            AERON_SET_ERR(
+                -AERON_ERROR_CODE_STORAGE_SPACE,
+                "WARNING: space is running low: threshold=%" PRId64 " usable=%" PRId64 " in %s",
+            context->low_file_store_warning_threshold, usable_space, context->aeron_dir);
+            aeron_distinct_error_log_record(context->error_log, aeron_errcode(), aeron_errmsg());
+            aeron_err_clear();
+        }
+    }
+    return 0;
 }
 
 int aeron_driver_context_bindings_clientd_create_entries(aeron_driver_context_t *context)
@@ -1749,6 +1785,20 @@ int aeron_driver_context_set_perform_storage_checks(aeron_driver_context_t *cont
 bool aeron_driver_context_get_perform_storage_checks(aeron_driver_context_t *context)
 {
     return NULL != context ? context->perform_storage_checks : AERON_PERFORM_STORAGE_CHECKS_DEFAULT;
+}
+
+int aeron_driver_context_set_low_file_store_warning_threshold(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->low_file_store_warning_threshold = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_low_file_store_warning_threshold(aeron_driver_context_t *context)
+{
+    return NULL != context ?
+        context->low_file_store_warning_threshold : AERON_LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT;
 }
 
 int aeron_driver_context_set_spies_simulate_connection(aeron_driver_context_t *context, bool value)

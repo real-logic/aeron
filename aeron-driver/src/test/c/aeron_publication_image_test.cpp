@@ -36,11 +36,6 @@ static bool always_measure_rtt(void *state, int64_t now_ns)
     return true;
 }
 
-static uint64_t no_space_available(const char* path)
-{
-    return 0;
-}
-
 class PublicationImageTest : public ReceiverTestBase
 {
 };
@@ -486,9 +481,60 @@ TEST_F(PublicationImageTest, shouldReturnStorageSpaceErrorIfNotEnoughStorageSpac
         endpoint->channel_status.counter_id));
     ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest));
 
-    m_context->usable_fs_space_func = no_space_available;
+    m_context->usable_fs_space_func = [](const char* path) -> uint64_t
+    {
+        return 42;
+    };
     aeron_publication_image_t *image = createImage(endpoint, dest, stream_id, session_id);
 
     ASSERT_EQ(nullptr, image) << aeron_errmsg();
     EXPECT_EQ(-AERON_ERROR_CODE_STORAGE_SPACE, aeron_errcode());
+    auto expected_error_text =
+        std::string("insufficient usable storage for new log of length=200704 usable=42 in ")
+        .append(m_context->aeron_dir);
+    EXPECT_NE(std::string::npos, std::string(aeron_errmsg()).find(expected_error_text));
+}
+
+TEST_F(PublicationImageTest, shouldLogWarningIfStorageSpaceIsLow)
+{
+    const char *uri = "aeron:udp?endpoint=localhost:9090";
+    aeron_receive_channel_endpoint_t *endpoint = createMdsEndpoint();
+    int32_t stream_id = 1001;
+    int32_t session_id = 1000001;
+    int64_t registration_id = 0;
+
+    aeron_udp_channel_t *channel;
+    aeron_receive_destination_t *dest;
+
+    aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &channel, false);
+
+    ASSERT_LE(0, aeron_receive_destination_create(
+        &dest,
+        channel,
+        channel,
+        m_context,
+        &m_counters_manager,
+        registration_id,
+        endpoint->channel_status.counter_id));
+    ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest));
+
+    m_context->usable_fs_space_func = [](const char* path) -> uint64_t
+    {
+        return 123456789;
+    };
+    m_context->low_file_store_warning_threshold = 987654321ULL;
+    aeron_publication_image_t *image = createImage(endpoint, dest, stream_id, session_id);
+
+    ASSERT_NE(nullptr, image) << aeron_errmsg();
+    EXPECT_EQ(0, aeron_errcode());
+    auto errors_list = m_context->error_log->observation_list;
+    EXPECT_NE(0, errors_list->num_observations);
+    auto last_error = errors_list->observations[errors_list->num_observations - 1];
+    EXPECT_EQ(-AERON_ERROR_CODE_STORAGE_SPACE, last_error.error_code);
+    auto error_text = std::string(last_error.description);
+    EXPECT_EQ(error_text.size(), last_error.description_length);
+    auto expected_warning =
+        std::string("WARNING: space is running low: threshold=987654321 usable=123456789 in ")
+        .append(m_context->aeron_dir);
+    EXPECT_NE(std::string::npos, error_text.find(expected_warning));
 }

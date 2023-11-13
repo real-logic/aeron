@@ -293,7 +293,7 @@ int aeron_udp_channel_transport_init(
     {
         if (aeron_udp_channel_transport_setup_media_rcv_timestamps(transport) < 0)
         {
-            AERON_APPEND_ERR("%s", "WARNING, unable to setup media timestamping");
+            AERON_APPEND_ERR("%s", "WARNING: unable to setup media timestamping");
             aeron_distinct_error_log_record(context->error_log, aeron_errcode(), aeron_errmsg());
             aeron_err_clear();
         }

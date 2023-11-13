@@ -481,9 +481,9 @@ TEST_F(PublicationImageTest, shouldReturnStorageSpaceErrorIfNotEnoughStorageSpac
         endpoint->channel_status.counter_id));
     ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest));
 
-    m_context->usable_fs_space_func = [](const char* path)
+    m_context->usable_fs_space_func = [](const char* path) -> uint64_t
     {
-        return 42ULL;
+        return 42;
     };
     aeron_publication_image_t *image = createImage(endpoint, dest, stream_id, session_id);
 
@@ -518,9 +518,9 @@ TEST_F(PublicationImageTest, shouldLogWarningIfStorageSpaceIsLow)
         endpoint->channel_status.counter_id));
     ASSERT_EQ(1, aeron_receive_channel_endpoint_add_destination(endpoint, dest));
 
-    m_context->usable_fs_space_func = [](const char* path)
+    m_context->usable_fs_space_func = [](const char* path) -> uint64_t
     {
-        return 123456789ULL;
+        return 123456789;
     };
     m_context->low_file_store_warning_threshold = 987654321ULL;
     aeron_publication_image_t *image = createImage(endpoint, dest, stream_id, session_id);

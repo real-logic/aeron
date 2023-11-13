@@ -258,9 +258,9 @@ TEST_F(NetworkPublicationTest, shouldSendHeartbeatWhileSendingPeriodicSetups)
 
 TEST_F(NetworkPublicationTest, shouldReturnStorageSpaceErrorIfNotEnoughStorageSpaceAvailable)
 {
-    m_context->usable_fs_space_func = [](const char* path)
+    m_context->usable_fs_space_func = [](const char* path) -> uint64_t
     {
-        return 190ULL;
+        return 190;
     };
     m_context->perform_storage_checks = true;
 
@@ -276,9 +276,9 @@ TEST_F(NetworkPublicationTest, shouldReturnStorageSpaceErrorIfNotEnoughStorageSp
 
 TEST_F(NetworkPublicationTest, shouldWarnIfRemainingStorageSpaceIsLow)
 {
-    m_context->usable_fs_space_func = [](const char* path)
+    m_context->usable_fs_space_func = [](const char *path) -> uint64_t
     {
-        return 1048576ULL;
+        return 1048576;
     };
     m_context->low_file_store_warning_threshold = 4194304ULL;
     m_context->perform_storage_checks = true;

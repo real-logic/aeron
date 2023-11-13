@@ -56,7 +56,6 @@ protected:
 
         aeron_system_counters_init(&m_system_counters, &m_counters_manager);
 
-        aeron_distinct_error_log_t m_error_log = {};
         aeron_distinct_error_log_init(
             &m_error_log, m_error_log_buffer.data(), m_error_log_buffer.size(), aeron_epoch_clock);
 
@@ -87,6 +86,7 @@ protected:
         aeron_driver_sender_on_close(&m_sender);
         aeron_system_counters_close(&m_system_counters);
         aeron_counters_manager_close(&m_counters_manager);
+        aeron_distinct_error_log_close(&m_error_log);
         aeron_driver_context_close(m_context);
     }
 
@@ -202,6 +202,7 @@ private:
     aeron_system_counters_t m_system_counters = {};
     AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16) = {};
     AERON_DECL_ALIGNED(buffer_4x_t m_counter_meta_buffer, 16) = {};
+    aeron_distinct_error_log_t m_error_log = {};
     AERON_DECL_ALIGNED(buffer_t m_error_log_buffer, 16) = {};
     std::vector<aeron_send_channel_endpoint_t *> m_endpoints;
     std::vector<aeron_network_publication_t *> m_publications;
@@ -286,12 +287,9 @@ TEST_F(NetworkPublicationTest, shouldWarnIfRemainingStorageSpaceIsLow)
     aeron_network_publication_t *publication = createPublication("aeron:udp?endpoint=localhost:23245");
 
     ASSERT_NE(nullptr, publication) << aeron_errmsg();
-    std::cout << "[before]: error_log: " << m_context->error_log << std::endl;
-    std::cout << "[before]: error_log.observation_list: " << m_context->error_log->observation_list << std::endl;
     EXPECT_EQ(0, aeron_errcode());
-    std::cout << "[after]: error_log: " << m_context->error_log << std::endl;
-    std::cout << "[after]: error_log.observation_list: " << m_context->error_log->observation_list << std::endl;
     auto errors_list = m_context->error_log->observation_list;
+    EXPECT_NE(nullptr, errors_list);
     EXPECT_NE(0, errors_list->num_observations);
     auto last_error = errors_list->observations[errors_list->num_observations - 1];
     EXPECT_EQ(-AERON_ERROR_CODE_STORAGE_SPACE, last_error.error_code);

@@ -1253,7 +1253,7 @@ static void aeron_driver_context_free_bindings(const aeron_udp_channel_intercept
     }
 }
 
-inline int aeron_driver_context_run_storage_checks(aeron_driver_context_t *context, uint64_t log_length)
+int aeron_driver_context_run_storage_checks(aeron_driver_context_t *context, uint64_t log_length)
 {
     if (context->perform_storage_checks)
     {

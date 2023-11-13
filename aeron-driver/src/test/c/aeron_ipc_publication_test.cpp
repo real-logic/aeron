@@ -48,6 +48,13 @@ protected:
 
         aeron_system_counters_init(&m_system_counters, &m_counters_manager);
 
+        aeron_distinct_error_log_init(
+            &m_error_log, m_error_log_buffer.data(), m_error_log_buffer.size(), aeron_epoch_clock);
+
+        m_context->error_log = &m_error_log;
+        m_context->error_buffer = m_error_log_buffer.data();
+        m_context->error_buffer_length = m_error_log_buffer.size();
+
         aeron_driver_ensure_dir_is_recreated(m_context);
     }
 
@@ -61,6 +68,7 @@ protected:
 
         aeron_system_counters_close(&m_system_counters);
         aeron_counters_manager_close(&m_counters_manager);
+        aeron_distinct_error_log_close(&m_error_log);
         aeron_driver_context_close(m_context);
     }
 
@@ -118,18 +126,15 @@ protected:
         return publication;
     }
 
-    static uint64_t noSpaceAvailable(const char* path)
-    {
-        return 0;
-    }
-
     aeron_driver_context_t *m_context = nullptr;
 private:
     aeron_clock_cache_t m_cached_clock = {};
     aeron_counters_manager_t m_counters_manager = {};
     aeron_system_counters_t m_system_counters = {};
+    aeron_distinct_error_log_t m_error_log = {};
     AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16) = {};
     AERON_DECL_ALIGNED(buffer_4x_t m_counter_meta_buffer, 16) = {};
+    AERON_DECL_ALIGNED(buffer_t m_error_log_buffer, 16) = {};
     std::vector<aeron_ipc_publication_t *> m_publications;
 };
 
@@ -148,8 +153,44 @@ TEST_F(IpcPublicationTest, shouldCreatePublication)
 
 TEST_F(IpcPublicationTest, shouldReturnStorageSpaceErrorIfNotEnoughStorageSpaceAvailable)
 {
-    m_context->usable_fs_space_func = noSpaceAvailable;
+    m_context->usable_fs_space_func = [](const char* path) -> uint64_t
+    {
+        return 2049;
+    };
+    m_context->perform_storage_checks = true;
+
     aeron_ipc_publication_t *publication = createPublication("aeron:ipc");
+
     ASSERT_EQ(nullptr, publication) << aeron_errmsg();
     EXPECT_EQ(-AERON_ERROR_CODE_STORAGE_SPACE, aeron_errcode());
+    auto expected_error_text =
+        std::string("insufficient usable storage for new log of length=4096 usable=2049 in ")
+            .append(m_context->aeron_dir);
+    EXPECT_NE(std::string::npos, std::string(aeron_errmsg()).find(expected_error_text));
+}
+
+TEST_F(IpcPublicationTest, shouldWarnIfRemainingStorageSpaceIsLow)
+{
+    m_context->usable_fs_space_func = [](const char *path) -> uint64_t
+    {
+        return 1000000;
+    };
+    m_context->low_file_store_warning_threshold = 2020202020ULL;
+    m_context->perform_storage_checks = true;
+
+    aeron_ipc_publication_t *publication = createPublication("aeron:ipc");
+
+    ASSERT_NE(nullptr, publication) << aeron_errmsg();
+    EXPECT_EQ(0, aeron_errcode());
+    auto errors_list = m_context->error_log->observation_list;
+    EXPECT_NE(nullptr, errors_list);
+    EXPECT_NE(0, errors_list->num_observations);
+    auto last_error = errors_list->observations[errors_list->num_observations - 1];
+    EXPECT_EQ(-AERON_ERROR_CODE_STORAGE_SPACE, last_error.error_code);
+    auto error_text = std::string(last_error.description);
+    EXPECT_EQ(error_text.size(), last_error.description_length);
+    auto expected_warning =
+        std::string("WARNING: space is running low: threshold=2020202020 usable=1000000 in ")
+            .append(m_context->aeron_dir);
+    EXPECT_NE(std::string::npos, error_text.find(expected_warning));
 }

@@ -200,9 +200,9 @@ private:
     aeron_udp_channel_transport_bindings_t m_transport_bindings = {};
     aeron_counters_manager_t m_counters_manager = {};
     aeron_system_counters_t m_system_counters = {};
+    aeron_distinct_error_log_t m_error_log = {};
     AERON_DECL_ALIGNED(buffer_t m_counter_value_buffer, 16) = {};
     AERON_DECL_ALIGNED(buffer_4x_t m_counter_meta_buffer, 16) = {};
-    aeron_distinct_error_log_t m_error_log = {};
     AERON_DECL_ALIGNED(buffer_t m_error_log_buffer, 16) = {};
     std::vector<aeron_send_channel_endpoint_t *> m_endpoints;
     std::vector<aeron_network_publication_t *> m_publications;

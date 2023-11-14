@@ -75,6 +75,7 @@ typedef struct aeron_ipc_publication_stct
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
 
     volatile int64_t *unblocked_publications_counter;
+    volatile int64_t *mapped_bytes_counter;
 }
 aeron_ipc_publication_t;
 

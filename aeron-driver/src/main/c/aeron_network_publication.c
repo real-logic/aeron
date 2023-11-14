@@ -106,6 +106,11 @@ int aeron_network_publication_create(
         AERON_APPEND_ERR("error mapping network raw log: %s", path);
         return -1;
     }
+
+    _pub->mapped_bytes_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_BYTES_CURRENTLY_MAPPED);
+    aeron_counter_add_ordered(_pub->mapped_bytes_counter, (int64_t)log_length);
+
     _pub->raw_log_close_func = context->raw_log_close_func;
     _pub->raw_log_free_func = context->raw_log_free_func;
     _pub->untethered_subscription_state_change_func = context->untethered_subscription_on_state_change_func;
@@ -275,6 +280,9 @@ bool aeron_network_publication_free(aeron_network_publication_t *publication)
     {
          return false;
     }
+
+    aeron_counter_add_ordered(
+        publication->mapped_bytes_counter, -((int64_t)publication->mapped_raw_log.mapped_file.length));
 
     aeron_free(publication->log_file_name);
     aeron_free(publication);

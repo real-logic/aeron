@@ -138,6 +138,7 @@ typedef struct aeron_publication_image_stct
     volatile int64_t *status_messages_sent_counter;
     volatile int64_t *nak_messages_sent_counter;
     volatile int64_t *loss_gap_fills_counter;
+    volatile int64_t *mapped_bytes_counter;
 }
 aeron_publication_image_t;
 

@@ -191,8 +191,6 @@ public final class Receiver implements Agent
     {
         channelEndpoint.dispatcher().removeSubscription(streamId, sessionId);
 
-        pendingSetupMessages.forEach(System.out::println);
-
         final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = this.pendingSetupMessages;
         for (int lastIndex = pendingSetupMessages.size() - 1, i = lastIndex; i >= 0; i--)
         {

@@ -100,4 +100,17 @@ final class PendingSetupMessageFromSource
     {
         channelEndpoint.dispatcher().removePendingSetup(sessionId, streamId);
     }
+
+    public String toString()
+    {
+        return "PendingSetupMessageFromSource{" +
+            "sessionId=" + sessionId +
+            ", streamId=" + streamId +
+            ", transportIndex=" + transportIndex +
+            ", periodic=" + periodic +
+            ", channelEndpoint=" + channelEndpoint +
+            ", controlAddress=" + controlAddress +
+            ", timeOfStatusMessageNs=" + timeOfStatusMessageNs +
+            '}';
+    }
 }

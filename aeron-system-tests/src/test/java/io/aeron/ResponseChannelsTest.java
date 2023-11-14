@@ -135,9 +135,15 @@ public class ResponseChannelsTest
                 Tests.awaitConnected(subRsp);
                 Tests.awaitConnected(pubRsp);
 
-                Tests.sleep(10_000);
+                try (Subscription sub2 = client.addSubscription(
+                    "aeron:udp?control=localhost:10002|session-id=" + pubRsp.sessionId(), rspStreamId))
+                {
+                    Tests.awaitConnected(sub2);
+                }
             }
         }
+
+        Tests.sleep(7_000);
     }
 
     @Test
@@ -158,7 +164,6 @@ public class ResponseChannelsTest
                 10001))
             {
                 Objects.requireNonNull(pubA);
-                Tests.sleep(5_000);
             }
         }
     }

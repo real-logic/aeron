@@ -547,7 +547,8 @@ public final class DriverConductor implements Agent
         {
             final SubscriptionLink subscriptionLink = subscriptionLinks.get(i);
             if (subscriptionLink.registrationId() == responseCorrelationId &&
-                subscriptionLink instanceof NetworkSubscriptionLink)
+                subscriptionLink instanceof NetworkSubscriptionLink &&
+                !subscriptionLink.hasSessionId())
             {
                 final NetworkSubscriptionLink link = (NetworkSubscriptionLink)subscriptionLink;
                 final SubscriptionParams params = new SubscriptionParams();
@@ -569,7 +570,7 @@ public final class DriverConductor implements Agent
                     params);
 
                 subscriptionLinks.set(i, newSubscriptionLink);
-                addNetworkSubscriptionToReceiver(link);
+                addNetworkSubscriptionToReceiver(newSubscriptionLink);
 
                 break;
             }

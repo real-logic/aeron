@@ -95,7 +95,7 @@ int aeron_driver_sender_init(
     sender->round_robin_index = 0;
     sender->duty_cycle_counter = 0;
     sender->duty_cycle_ratio = context->send_to_sm_poll_ratio;
-    sender->status_message_read_timeout_ns = context->status_message_timeout_ns / 2;
+    sender->status_message_read_timeout_ns = (int64_t)(context->status_message_timeout_ns / 2);
     sender->control_poll_timeout_ns = 0;
     sender->total_bytes_sent_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_BYTES_SENT);
     sender->errors_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_ERRORS);
@@ -106,6 +106,7 @@ int aeron_driver_sender_init(
         system_counters, AERON_SYSTEM_COUNTER_NAK_MESSAGES_RECEIVED);
     sender->resolution_changes_counter = aeron_system_counter_addr(
         system_counters, AERON_SYSTEM_COUNTER_RESOLUTION_CHANGES);
+    sender->short_sends_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
 
     int64_t now_ns = context->nano_clock();
     sender->re_resolution_deadline_ns = now_ns + (int64_t)context->re_resolution_check_interval_ns;
@@ -141,11 +142,13 @@ int aeron_driver_sender_do_work(void *clientd)
         sender->sender_proxy.command_queue, aeron_driver_sender_on_rb_command_queue, sender, AERON_COMMAND_DRAIN_LIMIT);
 
     int64_t bytes_received = 0;
+    int64_t short_sends_before = aeron_counter_get(sender->short_sends_counter);
     int bytes_sent = aeron_driver_sender_do_send(sender, now_ns);
 
     if (0 == bytes_sent ||
         ++sender->duty_cycle_counter >= sender->duty_cycle_ratio ||
-        now_ns > sender->control_poll_timeout_ns)
+        now_ns > sender->control_poll_timeout_ns ||
+        short_sends_before < aeron_counter_get(sender->short_sends_counter))
     {
         struct mmsghdr mmsghdr[AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX];
 
@@ -178,7 +181,7 @@ int aeron_driver_sender_do_work(void *clientd)
 
         if (sender->context->re_resolution_check_interval_ns > 0 && (sender->re_resolution_deadline_ns - now_ns) < 0)
         {
-            sender->re_resolution_deadline_ns = now_ns + sender->context->re_resolution_check_interval_ns;
+            sender->re_resolution_deadline_ns = (int64_t)(now_ns + sender->context->re_resolution_check_interval_ns);
             aeron_udp_transport_poller_check_send_endpoint_re_resolutions(
                 &sender->poller, now_ns, sender->context->conductor_proxy);
         }

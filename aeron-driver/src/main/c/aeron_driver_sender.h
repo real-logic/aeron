@@ -54,12 +54,13 @@ typedef struct aeron_driver_sender_stct
 
     aeron_udp_channel_data_paths_t data_paths;
 
-    int64_t *total_bytes_sent_counter;
-    int64_t *errors_counter;
-    int64_t *invalid_frames_counter;
-    int64_t *status_messages_received_counter;
-    int64_t *nak_messages_received_counter;
-    int64_t *resolution_changes_counter;
+    volatile int64_t *total_bytes_sent_counter;
+    volatile int64_t *errors_counter;
+    volatile int64_t *invalid_frames_counter;
+    volatile int64_t *status_messages_received_counter;
+    volatile int64_t *nak_messages_received_counter;
+    volatile int64_t *resolution_changes_counter;
+    volatile int64_t *short_sends_counter;
 
     aeron_driver_context_t *context;
     aeron_udp_transport_poller_poll_func_t poller_poll_func;

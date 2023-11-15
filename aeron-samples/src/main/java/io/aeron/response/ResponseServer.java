@@ -107,7 +107,12 @@ public class ResponseServer implements AutoCloseable
         return session;
     }
 
-    int poll()
+    /**
+     * Poll the server process messages and state.
+     *
+     * @return amount of work done.
+     */
+    public int poll()
     {
         int workCount = 0;
 

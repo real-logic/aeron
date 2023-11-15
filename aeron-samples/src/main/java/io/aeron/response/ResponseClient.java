@@ -28,6 +28,7 @@ public class ResponseClient implements AutoCloseable
 {
     private final Aeron aeron;
     private final String requestEndpoint;
+    private final String responseControl;
     private final ChannelUriStringBuilder requestUriBuilder;
     private final ChannelUriStringBuilder responseUriBuilder;
     private Publication publication;
@@ -38,7 +39,8 @@ public class ResponseClient implements AutoCloseable
      * the server will manage sending this to the client
      *
      * @param aeron             client to use to connect to the server.
-     * @param requestEndpoint   server's subscription endpoint.
+     * @param requestEndpoint   request publication's endpoint.
+     * @param responseControl   control address for the response subscription.
      * @param requestChannel    channel fragment to allow for configuration of parameters on the request publication.
      *                          May be null. The 'endpoint' parameter is not required and will be replaced by the
      *                          <code>requestEndpoint</code> if specified.
@@ -48,11 +50,13 @@ public class ResponseClient implements AutoCloseable
     public ResponseClient(
         final Aeron aeron,
         final String requestEndpoint,
+        final String responseControl,
         final String requestChannel,
         final String responseChannel)
     {
         this.aeron = aeron;
         this.requestEndpoint = requestEndpoint;
+        this.responseControl = responseControl;
 
         requestUriBuilder = null != requestChannel ?
             new ChannelUriStringBuilder(requestChannel) : new ChannelUriStringBuilder();
@@ -64,7 +68,7 @@ public class ResponseClient implements AutoCloseable
         responseUriBuilder
             .media("udp")
             .controlMode("response")
-            .controlEndpoint((String)null);
+            .controlEndpoint(responseControl);
     }
 
     int poll()
@@ -115,5 +119,25 @@ public class ResponseClient implements AutoCloseable
     public long offer(final DirectBuffer message)
     {
         return publication.offer(message);
+    }
+
+    /**
+     * Get the response control for the server.
+     *
+     * @return response control for the server.
+     */
+    public String responseControl()
+    {
+        return responseControl;
+    }
+
+    /**
+     * Get the request endpoint for the server.
+     *
+     * @return request endpoint for the server.
+     */
+    public String requestEndpoint()
+    {
+        return requestEndpoint;
     }
 }

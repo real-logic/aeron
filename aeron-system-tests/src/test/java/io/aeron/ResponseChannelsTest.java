@@ -49,7 +49,7 @@ import static org.hamcrest.Matchers.lessThan;
 public class ResponseChannelsTest
 {
     private static final String REQUEST_ENDPOINT = "localhost:10000";
-    private static final String RESPONSE_ENDPOINT = "localhost:10001";
+    private static final String RESPONSE_CONTROL = "localhost:10001";
 
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();
@@ -75,7 +75,6 @@ public class ResponseChannelsTest
 
     @Test
     @InterruptAfter(10)
-    @Disabled
     void shouldReceiveResponsesOnAPerClientBasis()
     {
         final MutableDirectBuffer messageA = new UnsafeBuffer("hello from client A".getBytes(UTF_8));
@@ -85,24 +84,29 @@ public class ResponseChannelsTest
             Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Aeron clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             ResponseServer responseServer = new ResponseServer(
-                server, (image) -> new EchoHandler(), REQUEST_ENDPOINT, RESPONSE_ENDPOINT, null, null);
-            ResponseClient responseClientA = new ResponseClient(clientA, REQUEST_ENDPOINT, null, null);
-            ResponseClient responseClientB = new ResponseClient(clientB, REQUEST_ENDPOINT, null, null))
+                server, (image) -> new EchoHandler(), REQUEST_ENDPOINT, RESPONSE_CONTROL, null, null);
+            ResponseClient responseClientA = new ResponseClient(
+                clientA, REQUEST_ENDPOINT, RESPONSE_CONTROL, null, null);
+            ResponseClient responseClientB = new ResponseClient(
+                clientB, REQUEST_ENDPOINT, RESPONSE_CONTROL, null, null))
         {
             while (2 < responseServer.sessionCount() || !responseClientA.isConnected() || responseClientB.isConnected())
             {
+                int work = responseServer.poll();
                 Tests.yieldingIdle("failed to connect server and clients");
             }
 
-//            while (0 > responseClientA.offer(messageA))
-//            {
-//                Tests.yieldingIdle("unable to offer message to client A");
-//            }
-//
-//            while (0 > responseClientB.offer(messageB))
-//            {
-//                Tests.yieldingIdle("unable to offer message to client B");
-//            }
+            while (0 > responseClientA.offer(messageA))
+            {
+                Tests.yieldingIdle("unable to offer message to client A");
+            }
+
+            while (0 > responseClientB.offer(messageB))
+            {
+                Tests.yieldingIdle("unable to offer message to client B");
+            }
+
+//            responseClientA.poll()
         }
     }
 
@@ -142,8 +146,6 @@ public class ResponseChannelsTest
                 }
             }
         }
-
-        Tests.sleep(7_000);
     }
 
     @Test

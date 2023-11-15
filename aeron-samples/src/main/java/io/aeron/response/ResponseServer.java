@@ -24,6 +24,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.Objects;
@@ -35,7 +36,7 @@ import java.util.function.Function;
  * certain types of response servers, e.g. returning a large volume of data from a database, this pattern will be
  * ineffective. For those types of use cases, something more complex, likely involving thread pooling would be required.
  */
-public class ResponseServer implements AutoCloseable
+public class ResponseServer implements AutoCloseable, Agent
 {
     private final Aeron aeron;
     private final Long2ObjectHashMap<ResponseSession> clientToPublicationMap =
@@ -45,6 +46,8 @@ public class ResponseServer implements AutoCloseable
     private final OneToOneConcurrentArrayQueue<Image> unavailableImages =
         new OneToOneConcurrentArrayQueue<>(1024);
     private final Function<Image, ResponseHandler> handlerFactory;
+    private final int requestStreamId;
+    private final int responseStreamId;
     private final ChannelUriStringBuilder requestUriBuilder;
     private final ChannelUriStringBuilder responseUriBuilder;
 
@@ -53,39 +56,45 @@ public class ResponseServer implements AutoCloseable
     /**
      * Constructs the server.
      *
-     * @param aeron                 connected Aeron client.
-     * @param handlerFactory        factor to produce handler instances for each incoming session.
+     * @param aeron            connected Aeron client.
+     * @param handlerFactory   factor to produce handler instances for each incoming session.
      * @param requestEndpoint  channel to listen for requests and new connections.
-     * @param responseEndpoint      channel to send responses back on.
+     * @param requestStreamId  streamId to listen for requests and new connections.
+     * @param responseControl  channel to send responses back on.
+     * @param responseStreamId streamId to send responses back on.
      * @param requestChannel   fragment to aid in configuration of the subscription (can be null)
-     * @param responseChannel       fragment to aid in configuration of the response publication (can be null)
+     * @param responseChannel  fragment to aid in configuration of the response publication (can be null)
      */
     public ResponseServer(
         final Aeron aeron,
         final Function<Image, ResponseHandler> handlerFactory,
         final String requestEndpoint,
-        final String responseEndpoint,
+        final int requestStreamId,
+        final String responseControl,
+        final int responseStreamId,
         final String requestChannel,
         final String responseChannel)
     {
         this.aeron = aeron;
         this.handlerFactory = handlerFactory;
+        this.requestStreamId = requestStreamId;
+        this.responseStreamId = responseStreamId;
 
         Objects.requireNonNull(requestEndpoint, "subscriptionEndpoint must not be null");
-        Objects.requireNonNull(responseEndpoint, "responseEndpoint must not be null");
+        Objects.requireNonNull(responseControl, "responseEndpoint must not be null");
 
         requestUriBuilder = null == requestChannel ?
             new ChannelUriStringBuilder() : new ChannelUriStringBuilder(requestChannel);
         requestUriBuilder
             .media("udp")
             .endpoint(requestEndpoint)
-            .responseEndpoint(responseEndpoint);
+            .responseEndpoint(responseControl);
         responseUriBuilder = null == responseChannel ?
             new ChannelUriStringBuilder() : new ChannelUriStringBuilder(responseChannel);
         responseUriBuilder
             .media("udp")
             .controlMode("response")
-            .controlEndpoint(responseEndpoint);
+            .controlEndpoint(responseControl);
     }
 
     ResponseSession getOrCreateSession(final Image image)
@@ -94,9 +103,9 @@ public class ResponseServer implements AutoCloseable
 
         if (null == session)
         {
-            final Publication responsePublication = aeron.addPublication(
+            final Publication responsePublication = aeron.addExclusivePublication(
                 responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
-                10002);
+                responseStreamId);
 
             final ResponseHandler handler = handlerFactory.apply(image);
             session = new ResponseSession(responsePublication, handler);
@@ -112,7 +121,7 @@ public class ResponseServer implements AutoCloseable
      *
      * @return amount of work done.
      */
-    public int poll()
+    public int doWork()
     {
         int workCount = 0;
 
@@ -120,7 +129,7 @@ public class ResponseServer implements AutoCloseable
         {
             serverSubscription = aeron.addSubscription(
                 requestUriBuilder.build(),
-                10001,
+                requestStreamId,
                 availableImages::offer,
                 unavailableImages::offer);
             workCount++;
@@ -170,6 +179,14 @@ public class ResponseServer implements AutoCloseable
     {
         CloseHelper.quietClose(serverSubscription);
         clientToPublicationMap.values().forEach(CloseHelper::quietClose);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String roleName()
+    {
+        return "ResponseServer";
     }
 
     /**

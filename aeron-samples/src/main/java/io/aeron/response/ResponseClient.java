@@ -19,16 +19,23 @@ import io.aeron.Aeron;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
 import io.aeron.Subscription;
+import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.Agent;
+
+import java.util.function.Function;
 
 /**
  * Sample client to be used with the response server.
  */
-public class ResponseClient implements AutoCloseable
+public class ResponseClient implements AutoCloseable, Agent
 {
     private final Aeron aeron;
+    private final FragmentHandler handler;
     private final String requestEndpoint;
+    private final int requestStreamId;
     private final String responseControl;
+    private final int responseStreamId;
     private final ChannelUriStringBuilder requestUriBuilder;
     private final ChannelUriStringBuilder responseUriBuilder;
     private Publication publication;
@@ -38,25 +45,34 @@ public class ResponseClient implements AutoCloseable
      * Construct a response client with the associated request endpoint. The response endpoint is not required as
      * the server will manage sending this to the client
      *
-     * @param aeron             client to use to connect to the server.
-     * @param requestEndpoint   request publication's endpoint.
-     * @param responseControl   control address for the response subscription.
-     * @param requestChannel    channel fragment to allow for configuration of parameters on the request publication.
-     *                          May be null. The 'endpoint' parameter is not required and will be replaced by the
-     *                          <code>requestEndpoint</code> if specified.
-     * @param responseChannel   channel fragment to allow for configuration parameters on the response subscription.
-     *                          May be null. The 'control' parameter is not required and will be removed if specified.
+     * @param aeron            client to use to connect to the server.
+     * @param handler          callback to handle response messages.
+     * @param requestEndpoint  request publication's endpoint.
+     * @param requestStreamId  request publication streamId
+     * @param responseControl  control address for the response subscription.
+     * @param responseStreamId response response streamId
+     * @param requestChannel   channel fragment to allow for configuration of parameters on the request publication.
+     *                         May be null. The 'endpoint' parameter is not required and will be replaced by the
+     *                         <code>requestEndpoint</code> if specified.
+     * @param responseChannel  channel fragment to allow for configuration parameters on the response subscription.
+     *                         May be null. The 'control' parameter is not required and will be removed if specified.
      */
     public ResponseClient(
         final Aeron aeron,
+        final FragmentHandler handler,
         final String requestEndpoint,
+        final int requestStreamId,
         final String responseControl,
+        final int responseStreamId,
         final String requestChannel,
         final String responseChannel)
     {
         this.aeron = aeron;
+        this.handler = handler;
         this.requestEndpoint = requestEndpoint;
+        this.requestStreamId = requestStreamId;
         this.responseControl = responseControl;
+        this.responseStreamId = responseStreamId;
 
         requestUriBuilder = null != requestChannel ?
             new ChannelUriStringBuilder(requestChannel) : new ChannelUriStringBuilder();
@@ -71,25 +87,64 @@ public class ResponseClient implements AutoCloseable
             .controlEndpoint(responseControl);
     }
 
-    int poll()
+    /**
+     * Overload for {@link ResponseServer#ResponseServer(Aeron, Function, String, int, String, int, String, String)}
+     * that defaults the channels to null.
+     *
+     * @param aeron            client to use to connect to the server.
+     * @param handler          callback to handle response messages.
+     * @param requestEndpoint  request publication's endpoint.
+     * @param requestStreamId  request publication streamId
+     * @param responseControl  control address for the response subscription.
+     * @param responseStreamId response response streamId
+     */
+    public ResponseClient(
+        final Aeron aeron,
+        final FragmentHandler handler,
+        final String requestEndpoint,
+        final int requestStreamId,
+        final String responseControl,
+        final int responseStreamId)
+    {
+        this(aeron, handler, requestEndpoint, requestStreamId, responseControl, responseStreamId, null, null);
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    public int doWork()
     {
         int workCount = 0;
 
         if (null == subscription)
         {
-            subscription = aeron.addSubscription(responseUriBuilder.build(), 10001);
+            subscription = aeron.addSubscription(responseUriBuilder.build(), responseStreamId);
         }
 
         if (null == publication && null != subscription)
         {
-            publication = aeron.addPublication(
-                requestUriBuilder.responseSubscriptionId(subscription.registrationId()).build(),
-                10001);
+            publication = aeron.addExclusivePublication(
+                requestUriBuilder.responseCorrelationId(subscription.registrationId()).build(),
+                requestStreamId);
 
             workCount++;
         }
 
+        if (null != subscription)
+        {
+            workCount += subscription.poll(handler, 10);
+        }
+
         return workCount;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String roleName()
+    {
+        return "ResponseClient";
     }
 
     /**
@@ -139,5 +194,16 @@ public class ResponseClient implements AutoCloseable
     public String requestEndpoint()
     {
         return requestEndpoint;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "ResponseClient{" +
+            "publication.isConnected=" + publication.isConnected() +
+            ", subscription.isConnected=" + subscription.isConnected() +
+            '}';
     }
 }

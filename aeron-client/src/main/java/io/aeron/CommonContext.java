@@ -369,10 +369,6 @@ public class CommonContext implements Cloneable
      */
     public static final String RESPONSE_CORRELATION_ID_PARAM_NAME = "response-correlation-id";
 
-    public static final String IS_RESPONSE_CHANNEL_PARAM_NAME = "is-response-channel";
-
-    public static final String RESPONSE_SUBSCRIPTION_ID_PARAM_NAME = "response-subscription-id";
-
     /**
      * Property name for a fallback {@link PrintStream} based logger when it is not possible to use the error logging
      * callback. Supported values are stdout, stderr, no_op (stderr is the default).

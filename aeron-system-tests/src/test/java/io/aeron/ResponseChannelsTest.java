@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.response.ResponseClient;
@@ -29,14 +30,19 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -44,12 +50,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class ResponseChannelsTest
 {
     private static final String REQUEST_ENDPOINT = "localhost:10000";
+    private static final int REQUEST_STREAM_ID = 10000;
     private static final String RESPONSE_CONTROL = "localhost:10001";
+    private static final int RESPONSE_STREAM_ID = 10001;
 
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();
@@ -75,38 +84,62 @@ public class ResponseChannelsTest
 
     @Test
     @InterruptAfter(10)
-    void shouldReceiveResponsesOnAPerClientBasis()
+    void shouldReceiveResponsesOnAPerClientBasis() throws Exception
     {
-        final MutableDirectBuffer messageA = new UnsafeBuffer("hello from client A".getBytes(UTF_8));
-        final MutableDirectBuffer messageB = new UnsafeBuffer("hello from client B".getBytes(UTF_8));
+        final String textA = "hello from client A";
+        final String textB = "hello from client B";
+        final MutableDirectBuffer messageA = new UnsafeBuffer(textA.getBytes(UTF_8));
+        final MutableDirectBuffer messageB = new UnsafeBuffer(textB.getBytes(UTF_8));
+        final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
+        final List<String> responsesA = new ArrayList<>();
+        final List<String> responsesB = new ArrayList<>();
+        final FragmentHandler fragmentHandlerA =
+            (buffer, offset, length, header) -> responsesA.add(buffer.getStringWithoutLengthUtf8(offset, length));
+        final FragmentHandler fragmentHandlerB =
+            (buffer, offset, length, header) -> responsesB.add(buffer.getStringWithoutLengthUtf8(offset, length));
 
         try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Aeron clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             ResponseServer responseServer = new ResponseServer(
-                server, (image) -> new EchoHandler(), REQUEST_ENDPOINT, RESPONSE_CONTROL, null, null);
+                server, (image) -> new EchoHandler(), REQUEST_ENDPOINT, REQUEST_STREAM_ID,
+                RESPONSE_CONTROL, RESPONSE_STREAM_ID, null, null);
             ResponseClient responseClientA = new ResponseClient(
-                clientA, REQUEST_ENDPOINT, RESPONSE_CONTROL, null, null);
+                clientA, fragmentHandlerA, REQUEST_ENDPOINT, REQUEST_STREAM_ID, RESPONSE_CONTROL, RESPONSE_STREAM_ID);
             ResponseClient responseClientB = new ResponseClient(
-                clientB, REQUEST_ENDPOINT, RESPONSE_CONTROL, null, null))
+                clientB, fragmentHandlerB, REQUEST_ENDPOINT, REQUEST_STREAM_ID, RESPONSE_CONTROL, RESPONSE_STREAM_ID))
         {
-            while (2 < responseServer.sessionCount() || !responseClientA.isConnected() || responseClientB.isConnected())
+            final Supplier<String> msg = () -> "responseServer.sessionCount=" + responseServer.sessionCount() + " " +
+                "clientA=" + responseClientA + " clientB=" + responseClientB;
+
+            while (responseServer.sessionCount() < 2 ||
+                !responseClientA.isConnected() ||
+                !responseClientB.isConnected())
             {
-                int work = responseServer.poll();
-                Tests.yieldingIdle("failed to connect server and clients");
+                idleStrategy.idle(run(responseServer, responseClientA, responseClientB));
+                Tests.checkInterruptStatus(msg);
             }
 
             while (0 > responseClientA.offer(messageA))
             {
-                Tests.yieldingIdle("unable to offer message to client A");
+                idleStrategy.idle(run(responseServer, responseClientA, responseClientB));
+                Tests.checkInterruptStatus("unable to offer message to client A");
             }
 
             while (0 > responseClientB.offer(messageB))
             {
-                Tests.yieldingIdle("unable to offer message to client B");
+                idleStrategy.idle(run(responseServer, responseClientA, responseClientB));
+                Tests.checkInterruptStatus("unable to offer message to client A");
             }
 
-//            responseClientA.poll()
+            while (!responsesA.contains(textA) || !responsesB.contains(textB))
+            {
+                idleStrategy.idle(run(responseServer, responseClientA, responseClientB));
+                Tests.checkInterruptStatus("failed to receive responses");
+            }
+
+            assertEquals(1, responsesA.size());
+            assertEquals(1, responsesB.size());
         }
     }
 
@@ -319,5 +352,17 @@ public class ResponseChannelsTest
                 Tests.yieldingIdle("failed to send response");
             }
         }
+    }
+
+    private static int run(final Agent... agents) throws Exception
+    {
+        int work = 0;
+
+        for (final Agent agent : agents)
+        {
+            work += agent.doWork();
+        }
+
+        return work;
     }
 }

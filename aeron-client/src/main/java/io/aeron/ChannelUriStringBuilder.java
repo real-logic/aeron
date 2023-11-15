@@ -140,8 +140,6 @@ public final class ChannelUriStringBuilder
         channelSendTimestampOffset(channelUri);
         responseEndpoint(channelUri);
         responseCorrelationId(channelUri);
-        isResponseChannel(channelUri);
-        responseSubscriptionId(channelUri);
     }
 
     /**
@@ -1972,69 +1970,6 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Flag that this channel (used for a subscription) will be by a client used to receive responses from a "server".
-     *
-     * @param isResponseChannel flags that this channel will receive responses.
-     * @return this for a fluent API.
-     */
-    public ChannelUriStringBuilder isResponseChannel(final Boolean isResponseChannel)
-    {
-        this.isResponseChannel = isResponseChannel;
-        return this;
-    }
-
-
-    /**
-     * Flag that this channel (used for a subscription) will be by a client used to receive responses from a "server".
-     * The value is retrieved by extracting it from a ChannelUri.
-     *
-     * @param channelUri the existing URI to extract the isResponseChanel from.
-     * @return this for a fluent API.
-     */
-    public ChannelUriStringBuilder isResponseChannel(final ChannelUri channelUri)
-    {
-        final String isResponseChannelString = channelUri.get(IS_RESPONSE_CHANNEL_PARAM_NAME);
-
-        if (null != isResponseChannelString)
-        {
-            isResponseChannel(Boolean.valueOf(isResponseChannelString));
-        }
-
-        return this;
-    }
-
-    /**
-     * Set the subscription id from "client's" response subscription to be passed to the request publication.
-     *
-     * @param responseSubscriptionId id of the subscription used to receive responses on the "client".
-     * @return this for a fluent API.
-     */
-    public ChannelUriStringBuilder responseSubscriptionId(final Long responseSubscriptionId)
-    {
-        this.responseSubscriptionId = responseSubscriptionId;
-        return this;
-    }
-
-    /**
-     * Set the subscription id from "client's" response subscription to be passed to the request publication by
-     * extracting it from an existing ChannelUri
-     *
-     * @param channelUri the existing URI to extract the responseSubscriptionId from.
-     * @return this for a fluent API.
-     */
-    public ChannelUriStringBuilder responseSubscriptionId(final ChannelUri channelUri)
-    {
-        final String responseSubscriptionIdString = channelUri.get(RESPONSE_SUBSCRIPTION_ID_PARAM_NAME);
-
-        if (null != responseSubscriptionIdString)
-        {
-            responseSubscriptionId(Long.valueOf(responseSubscriptionIdString));
-        }
-
-        return this;
-    }
-
-    /**
      * Offset into a message to store the channel send timestamp. May also be the special value 'reserved' which means
      * to store the timestamp in the reserved value field.
      *
@@ -2128,8 +2063,6 @@ public final class ChannelUriStringBuilder
         appendParameter(sb, CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME, channelSendTimestampOffset);
         appendParameter(sb, RESPONSE_ENDPOINT_PARAM_NAME, responseEndpoint);
         appendParameter(sb, RESPONSE_CORRELATION_ID_PARAM_NAME, responseCorrelationId);
-        appendParameter(sb, IS_RESPONSE_CHANNEL_PARAM_NAME, isResponseChannel);
-        appendParameter(sb, RESPONSE_SUBSCRIPTION_ID_PARAM_NAME, responseSubscriptionId);
 
         final char lastChar = sb.charAt(sb.length() - 1);
         if (lastChar == '|' || lastChar == '?')

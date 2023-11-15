@@ -30,6 +30,7 @@ import java.net.InetSocketAddress;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_SENT;
 import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
+import static io.aeron.driver.status.SystemCounterDescriptor.SHORT_SENDS;
 
 class SenderLhsPadding
 {
@@ -70,6 +71,7 @@ public final class Sender extends SenderRhsPadding implements Agent
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesSent;
     private final AtomicCounter resolutionChanges;
+    private final AtomicCounter shortSends;
     private final NanoClock nanoClock;
     private final CachedNanoClock cachedNanoClock;
     private final DriverConductorProxy conductorProxy;
@@ -77,18 +79,18 @@ public final class Sender extends SenderRhsPadding implements Agent
 
     Sender(final MediaDriver.Context ctx)
     {
-        this.controlTransportPoller = ctx.controlTransportPoller();
-        this.commandQueue = ctx.senderCommandQueue();
-        this.totalBytesSent = ctx.systemCounters().get(BYTES_SENT);
-        this.resolutionChanges = ctx.systemCounters().get(RESOLUTION_CHANGES);
-        this.nanoClock = ctx.nanoClock();
-        this.cachedNanoClock = ctx.senderCachedNanoClock();
-        this.statusMessageReadTimeoutNs = ctx.statusMessageTimeoutNs() >> 1;
-        this.reResolutionCheckIntervalNs = ctx.reResolutionCheckIntervalNs();
-        this.dutyCycleRatio = ctx.sendToStatusMessagePollRatio();
-        this.conductorProxy = ctx.driverConductorProxy();
-
-        this.dutyCycleTracker = ctx.senderDutyCycleTracker();
+        controlTransportPoller = ctx.controlTransportPoller();
+        commandQueue = ctx.senderCommandQueue();
+        totalBytesSent = ctx.systemCounters().get(BYTES_SENT);
+        resolutionChanges = ctx.systemCounters().get(RESOLUTION_CHANGES);
+        shortSends = ctx.systemCounters().get(SHORT_SENDS);
+        nanoClock = ctx.nanoClock();
+        cachedNanoClock = ctx.senderCachedNanoClock();
+        statusMessageReadTimeoutNs = ctx.statusMessageTimeoutNs() >> 1;
+        reResolutionCheckIntervalNs = ctx.reResolutionCheckIntervalNs();
+        dutyCycleRatio = ctx.sendToStatusMessagePollRatio();
+        conductorProxy = ctx.driverConductorProxy();
+        dutyCycleTracker = ctx.senderDutyCycleTracker();
     }
 
     /**
@@ -104,12 +106,11 @@ public final class Sender extends SenderRhsPadding implements Agent
         if (dutyCycleTracker instanceof DutyCycleStallTracker)
         {
             final DutyCycleStallTracker dutyCycleStallTracker = (DutyCycleStallTracker)dutyCycleTracker;
+            final String threadingModeName = conductorProxy.threadingMode().name();
 
-            dutyCycleStallTracker.maxCycleTime().appendToLabel(
-                ": " + conductorProxy.threadingMode().name());
+            dutyCycleStallTracker.maxCycleTime().appendToLabel(": " + threadingModeName);
             dutyCycleStallTracker.cycleTimeThresholdExceededCount().appendToLabel(
-                ": threshold=" + dutyCycleStallTracker.cycleTimeThresholdNs() + "ns " +
-                conductorProxy.threadingMode().name());
+                ": threshold=" + dutyCycleStallTracker.cycleTimeThresholdNs() + "ns " + threadingModeName);
         }
     }
 
@@ -131,10 +132,15 @@ public final class Sender extends SenderRhsPadding implements Agent
         dutyCycleTracker.measureAndUpdate(nowNs);
 
         final int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
-        final int bytesSent = doSend(nowNs);
 
+        final long shortSendsBefore = shortSends.get();
+        final int bytesSent = doSend(nowNs);
         int bytesReceived = 0;
-        if (0 == bytesSent || ++dutyCycleCounter >= dutyCycleRatio || (controlPollDeadlineNs - nowNs < 0))
+
+        if (0 == bytesSent ||
+            ++dutyCycleCounter >= dutyCycleRatio ||
+            (controlPollDeadlineNs - nowNs < 0) ||
+            shortSendsBefore < shortSends.get())
         {
             bytesReceived = controlTransportPoller.pollTransports();
 

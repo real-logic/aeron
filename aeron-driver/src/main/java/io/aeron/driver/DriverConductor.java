@@ -584,7 +584,6 @@ public final class DriverConductor implements Agent
                 params.isReliable = link.isReliable();
                 params.isRejoin = link.isRejoin();
 
-                // TODO: we could make the sessionId on the SubscriptionLink mutable...
                 final NetworkSubscriptionLink newSubscriptionLink = new NetworkSubscriptionLink(
                     subscriptionLink.registrationId(),
                     subscriptionLink.channelEndpoint(),

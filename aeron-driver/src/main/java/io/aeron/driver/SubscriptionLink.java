@@ -134,6 +134,11 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return hasSessionId;
     }
 
+    boolean isResponse()
+    {
+        return false;
+    }
+
     boolean matches(final NetworkPublication publication)
     {
         return false;

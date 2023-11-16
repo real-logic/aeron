@@ -469,6 +469,7 @@ public final class DriverConductor implements Agent
         validateEndpointForPublication(udpChannel);
         validateControlForPublication(udpChannel);
         validateMtuForMaxMessage(params, channel);
+        validateResponseSubscription(params);
 
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(params, udpChannel, correlationId);
 
@@ -478,8 +479,7 @@ public final class DriverConductor implements Agent
             publication = findPublication(networkPublications, streamId, channelEndpoint, params.responseCorrelationId);
         }
 
-        final PublicationImage responsePublicationImage = findResponsePublicationImage(
-            udpChannel.controlMode(), channelUri);
+        final PublicationImage responsePublicationImage = findResponsePublicationImage(params);
 
         boolean isNewPublication = false;
         if (null == publication)
@@ -533,25 +533,22 @@ public final class DriverConductor implements Agent
         }
     }
 
-    private PublicationImage findResponsePublicationImage(final ControlMode controlMode, final ChannelUri channelUri)
+    private PublicationImage findResponsePublicationImage(final PublicationParams params)
     {
-        if (ControlMode.RESPONSE != controlMode)
+        if (!params.isResponse)
         {
             return null;
         }
 
-        final String imageCorrelationIdString = channelUri.get(RESPONSE_CORRELATION_ID_PARAM_NAME);
-
-        if (null == imageCorrelationIdString)
+        if (Aeron.NULL_VALUE == params.responseCorrelationId)
         {
             throw new IllegalArgumentException(
                 "control-mode=response was specified, but no response-correlation-id set");
         }
 
-        final long imageCorrelationId = Long.parseLong(imageCorrelationIdString);
         for (final PublicationImage publicationImage : publicationImages)
         {
-            if (publicationImage.correlationId() == imageCorrelationId)
+            if (publicationImage.correlationId() == params.responseCorrelationId)
             {
                 if (publicationImage.hasSendResponseSetup())
                 {
@@ -560,12 +557,12 @@ public final class DriverConductor implements Agent
                 else
                 {
                     throw new IllegalArgumentException(
-                        "image.correlationId=" + imageCorrelationId + " did not request a response channel");
+                        "image.correlationId=" + params.responseCorrelationId + " did not request a response channel");
                 }
             }
         }
 
-        throw new IllegalArgumentException("image.correlationId=" + imageCorrelationId + " not found");
+        throw new IllegalArgumentException("image.correlationId=" + params.responseCorrelationId + " not found");
     }
 
     void responseSetup(final long responseCorrelationId, final int responseSessionId)
@@ -615,6 +612,23 @@ public final class DriverConductor implements Agent
                     publicationImage.responseSessionId(null);
                 }
             }
+        }
+    }
+
+    private void validateResponseSubscription(final PublicationParams params)
+    {
+        if (!params.isResponse && Aeron.NULL_VALUE != params.responseCorrelationId)
+        {
+            for (final SubscriptionLink subscriptionLink : subscriptionLinks)
+            {
+                if (params.responseCorrelationId == subscriptionLink.registrationId())
+                {
+                    return;
+                }
+            }
+
+            throw new IllegalArgumentException(
+                "unable to find response subscription for response-correlation-id=" + params.responseCorrelationId);
         }
     }
 
@@ -681,7 +695,7 @@ public final class DriverConductor implements Agent
                         channelEndpoint, subscription.streamId(), subscription.sessionId());
                 }
             }
-            else
+            else if (!subscription.isResponse())
             {
                 if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
                 {

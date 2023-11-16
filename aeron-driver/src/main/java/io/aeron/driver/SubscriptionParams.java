@@ -35,6 +35,7 @@ final class SubscriptionParams
     boolean isRejoin = true;
     boolean isSparse = true;
     boolean isTether = true;
+    boolean isResponse = false;
     InferableBoolean group = InferableBoolean.INFER;
     int initialWindowLength;
 
@@ -115,6 +116,8 @@ final class SubscriptionParams
 
         final int initialWindowLength = UdpChannel.parseBufferLength(channelUri, RECEIVER_WINDOW_LENGTH_PARAM_NAME);
         params.initialWindowLength = 0 != initialWindowLength ? initialWindowLength : context.initialWindowLength();
+
+        params.isResponse = CONTROL_MODE_RESPONSE.equals(channelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
 
         return params;
     }

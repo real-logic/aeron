@@ -33,7 +33,6 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
@@ -48,9 +47,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -177,28 +173,6 @@ public class ResponseChannelsTest
 
     @Test
     @InterruptAfter(10)
-    void shouldResolvePublicationImageViaCorrelationId()
-    {
-        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Publication pub = aeron.addPublication("aeron:udp?endpoint=localhost:10000", 10001);
-            Subscription sub = aeron.addSubscription("aeron:udp?endpoint=localhost:10000", 10001))
-        {
-            Tests.awaitConnected(pub);
-            Tests.awaitConnected(sub);
-
-            final long correlationId = sub.imageAtIndex(0).correlationId();
-
-            try (Publication pubA = aeron.addPublication(
-                "aeron:udp?endpoint=localhost:10001|response-correlation-id=" + correlationId,
-                10001))
-            {
-                Objects.requireNonNull(pubA);
-            }
-        }
-    }
-
-    @Test
-    @InterruptAfter(10)
     void shouldUseResponseCorrelationIdAsAPublicationMatchingCriteria()
     {
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
@@ -215,10 +189,11 @@ public class ResponseChannelsTest
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Subscription sub = aeron.addSubscription("aeron:udp?endpoint=localhost:10000", 10001);
+            Subscription rspSub = aeron.addSubscription("aeron:udp?control-mode=response", 10001);
             Publication pubA = aeron.addPublication(
-                "aeron:udp?endpoint=localhost:10000|response-correlation-id=1234", 10001);
+                "aeron:udp?endpoint=localhost:10000|response-correlation-id=" + rspSub.registrationId(), 10001);
             Publication pubB = aeron.addPublication(
-                "aeron:udp?endpoint=localhost:10000|response-correlation-id=1234", 10001))
+                "aeron:udp?endpoint=localhost:10000|response-correlation-id=" + rspSub.registrationId(), 10001))
         {
             Tests.awaitConnected(sub);
             Tests.awaitConnected(pubA);
@@ -229,10 +204,12 @@ public class ResponseChannelsTest
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Subscription sub = aeron.addSubscription("aeron:udp?endpoint=localhost:10000", 10001);
+            Subscription rspSubA = aeron.addSubscription("aeron:udp?control-mode=response", 10001);
+            Subscription rspSubB = aeron.addSubscription("aeron:udp?control-mode=response", 10001);
             Publication pubA = aeron.addPublication(
-                "aeron:udp?endpoint=localhost:10000|response-correlation-id=1234", 10001);
+                "aeron:udp?endpoint=localhost:10000|response-correlation-id=" + rspSubA.registrationId(), 10001);
             Publication pubB = aeron.addPublication(
-                "aeron:udp?endpoint=localhost:10000|response-correlation-id=5678", 10001))
+                "aeron:udp?endpoint=localhost:10000|response-correlation-id=" + rspSubB.registrationId(), 10001))
         {
             Tests.awaitConnected(sub);
             Tests.awaitConnected(pubA);
@@ -414,6 +391,21 @@ public class ResponseChannelsTest
 
             assertEquals(pubACount.get() - 1, subACount.get());
             assertEquals(pubBCount.get() - 1, subBCount.get());
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldErrorIfNoResponseSubscriptionFound()
+    {
+        watcher.ignoreErrorsMatching(s -> s.contains("unable to find response subscription"));
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Subscription rspSub = aeron.addSubscription("aeron:udp?control-mode=response", 10001))
+        {
+            final long wrongCorrelationId = rspSub.registrationId() + 10;
+            assertThrows(Exception.class, () -> aeron.addPublication(
+                "aeron:udp?endpoint=localhost:10000|response-correlation-id=" + wrongCorrelationId, 10001));
         }
     }
 

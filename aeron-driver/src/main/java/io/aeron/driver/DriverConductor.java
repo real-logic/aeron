@@ -475,7 +475,7 @@ public final class DriverConductor implements Agent
         NetworkPublication publication = null;
         if (!isExclusive)
         {
-            publication = findPublication(networkPublications, streamId, channelEndpoint);
+            publication = findPublication(networkPublications, streamId, channelEndpoint, params.responseCorrelationId);
         }
 
         final PublicationImage responsePublicationImage = findResponsePublicationImage(
@@ -1342,7 +1342,8 @@ public final class DriverConductor implements Agent
     private static NetworkPublication findPublication(
         final ArrayList<NetworkPublication> publications,
         final int streamId,
-        final SendChannelEndpoint channelEndpoint)
+        final SendChannelEndpoint channelEndpoint,
+        final long responseCorrelationId)
     {
         for (int i = 0, size = publications.size(); i < size; i++)
         {
@@ -1351,7 +1352,8 @@ public final class DriverConductor implements Agent
             if (streamId == publication.streamId() &&
                 channelEndpoint == publication.channelEndpoint() &&
                 NetworkPublication.State.ACTIVE == publication.state() &&
-                !publication.isExclusive())
+                !publication.isExclusive() &&
+                publication.responseCorrelationId() == responseCorrelationId)
             {
                 return publication;
             }

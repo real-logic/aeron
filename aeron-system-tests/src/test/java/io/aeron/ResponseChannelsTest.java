@@ -52,6 +52,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -146,7 +147,7 @@ public class ResponseChannelsTest
 
     @Test
     @InterruptAfter(15)
-    void shouldConnectResponseChannel()
+    void shouldConnectResponseChannelUsingConcurrent()
     {
         try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
@@ -193,6 +194,51 @@ public class ResponseChannelsTest
             {
                 Objects.requireNonNull(pubA);
             }
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldUseResponseCorrelationIdAsAPublicationMatchingCriteria()
+    {
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Subscription sub = aeron.addSubscription("aeron:udp?endpoint=localhost:10000", 10001);
+            Publication pubA = aeron.addPublication("aeron:udp?endpoint=localhost:10000", 10001);
+            Publication pubB = aeron.addPublication("aeron:udp?endpoint=localhost:10000", 10001))
+        {
+            Tests.awaitConnected(sub);
+            Tests.awaitConnected(pubA);
+            Tests.awaitConnected(pubB);
+
+            assertEquals(pubA.originalRegistrationId(), pubB.originalRegistrationId());
+        }
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Subscription sub = aeron.addSubscription("aeron:udp?endpoint=localhost:10000", 10001);
+            Publication pubA = aeron.addPublication(
+                "aeron:udp?endpoint=localhost:10000|response-correlation-id=1234", 10001);
+            Publication pubB = aeron.addPublication(
+                "aeron:udp?endpoint=localhost:10000|response-correlation-id=1234", 10001))
+        {
+            Tests.awaitConnected(sub);
+            Tests.awaitConnected(pubA);
+            Tests.awaitConnected(pubB);
+
+            assertEquals(pubA.originalRegistrationId(), pubB.originalRegistrationId());
+        }
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Subscription sub = aeron.addSubscription("aeron:udp?endpoint=localhost:10000", 10001);
+            Publication pubA = aeron.addPublication(
+                "aeron:udp?endpoint=localhost:10000|response-correlation-id=1234", 10001);
+            Publication pubB = aeron.addPublication(
+                "aeron:udp?endpoint=localhost:10000|response-correlation-id=5678", 10001))
+        {
+            Tests.awaitConnected(sub);
+            Tests.awaitConnected(pubA);
+            Tests.awaitConnected(pubB);
+
+            assertNotEquals(pubA.originalRegistrationId(), pubB.originalRegistrationId());
         }
     }
 

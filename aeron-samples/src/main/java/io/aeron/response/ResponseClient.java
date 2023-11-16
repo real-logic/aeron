@@ -124,7 +124,7 @@ public class ResponseClient implements AutoCloseable, Agent
 
         if (null == publication && null != subscription)
         {
-            publication = aeron.addExclusivePublication(
+            publication = aeron.addPublication(
                 requestUriBuilder.responseCorrelationId(subscription.registrationId()).build(),
                 requestStreamId);
 

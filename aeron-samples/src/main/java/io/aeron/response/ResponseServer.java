@@ -103,7 +103,7 @@ public class ResponseServer implements AutoCloseable, Agent
 
         if (null == session)
         {
-            final Publication responsePublication = aeron.addExclusivePublication(
+            final Publication responsePublication = aeron.addPublication(
                 responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
                 responseStreamId);
 

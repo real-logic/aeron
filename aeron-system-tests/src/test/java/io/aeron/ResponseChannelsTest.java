@@ -30,6 +30,7 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
@@ -51,6 +52,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class ResponseChannelsTest
@@ -69,7 +71,6 @@ public class ResponseChannelsTest
     void setUp()
     {
         driver = TestMediaDriver.launch(new MediaDriver.Context()
-                .errorHandler(Tests::onError)
                 .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
                 .threadingMode(ThreadingMode.SHARED),
             watcher);
@@ -147,17 +148,15 @@ public class ResponseChannelsTest
     @InterruptAfter(15)
     void shouldConnectResponseChannel()
     {
-        final int reqStreamId = 10001;
-        final int rspStreamId = 10002;
-
         try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Subscription subReq = server.addSubscription(
-                "aeron:udp?endpoint=localhost:10001", reqStreamId);
+                "aeron:udp?endpoint=localhost:10001", REQUEST_STREAM_ID);
             Subscription subRsp = client.addSubscription(
-                "aeron:udp?control-mode=response|control=localhost:10002", rspStreamId);
+                "aeron:udp?control-mode=response|control=localhost:10002", RESPONSE_STREAM_ID);
             Publication pubReq = client.addPublication(
-                "aeron:udp?endpoint=localhost:10001|response-correlation-id=" + subRsp.registrationId(), reqStreamId))
+                "aeron:udp?endpoint=localhost:10001|response-correlation-id=" + subRsp.registrationId(),
+                REQUEST_STREAM_ID))
         {
             Tests.awaitConnected(subReq);
             Tests.awaitConnected(pubReq);
@@ -167,16 +166,10 @@ public class ResponseChannelsTest
             final String url = "aeron:udp?control-mode=response|control=localhost:10002|response-correlation-id=" +
                 image.correlationId();
 
-            try (Publication pubRsp = client.addPublication(url, rspStreamId))
+            try (Publication pubRsp = client.addPublication(url, RESPONSE_STREAM_ID))
             {
                 Tests.awaitConnected(subRsp);
                 Tests.awaitConnected(pubRsp);
-
-                try (Subscription sub2 = client.addSubscription(
-                    "aeron:udp?control=localhost:10002|session-id=" + pubRsp.sessionId(), rspStreamId))
-                {
-                    Tests.awaitConnected(sub2);
-                }
             }
         }
     }
@@ -204,137 +197,177 @@ public class ResponseChannelsTest
     }
 
     @Test
-    @InterruptAfter(5)
-    void shouldHandleMultiplePublicationsWithTheSameControlAddress()
+    @InterruptAfter(10)
+    void shouldErrorCreatingResponsePublicationWithImageThatDidNotRequestAResponseChannel()
     {
-        final UnsafeBuffer message = new UnsafeBuffer("hello".getBytes(UTF_8));
+        watcher.ignoreErrorsMatching(s -> s.contains("did not request a response channel"));
 
-        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Publication pubA = aeron.addExclusivePublication(
-                "aeron:udp?control-mode=response|control=localhost:10000", 10001);
-            Publication pubB = aeron.addExclusivePublication(
-                "aeron:udp?control-mode=response|control=localhost:10000", 10001);
-            )
+        final int reqStreamId = 10001;
+        final int rspStreamId = 10002;
+
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Subscription subReq = server.addSubscription(
+                "aeron:udp?endpoint=localhost:10001", reqStreamId);
+            Publication pubReq = client.addPublication(
+                "aeron:udp?endpoint=localhost:10001", reqStreamId))
         {
-            final String channelA = "aeron:udp?control=localhost:10000|session-id=" + pubA.sessionId();
-            final String channelB = "aeron:udp?control=localhost:10000|session-id=" + pubB.sessionId();
-            try (Subscription subA = aeron.addSubscription(channelA, 10001);
-                Subscription subB = aeron.addSubscription(channelB, 10001))
-            {
-                Tests.awaitConnected(subA);
-                Tests.awaitConnected(pubA);
-                Tests.awaitConnected(subB);
-                Tests.awaitConnected(pubB);
+            Tests.awaitConnected(subReq);
+            Tests.awaitConnected(pubReq);
 
-                while (0 > pubA.offer(message))
-                {
-                    Tests.sleep(1);
-                }
+            final Image image = subReq.imageAtIndex(0);
+            final String url = "aeron:udp?control-mode=response|control=localhost:10002|response-correlation-id=" +
+                image.correlationId();
 
-                while (0 > pubB.offer(message))
-                {
-                    Tests.sleep(1);
-                }
-
-                int subACount = 0;
-                int subBCount = 0;
-
-                while (subACount < 1 || subBCount < 1)
-                {
-                    subACount += subA.poll((buffer, offset, length, header) -> {}, 10);
-                    subBCount += subB.poll((buffer, offset, length, header) -> {}, 10);
-                }
-
-                final long deadlineMs = System.currentTimeMillis() + 3_000;
-                while (System.currentTimeMillis() < deadlineMs)
-                {
-                    subACount += subA.poll((buffer, offset, length, header) -> {}, 10);
-                    subBCount += subB.poll((buffer, offset, length, header) -> {}, 10);
-
-                    assertThat(subACount, lessThan(2));
-                    assertThat(subBCount, lessThan(2));
-                }
-            }
+            assertThrows(Exception.class, () -> client.addPublication(url, rspStreamId));
         }
     }
 
     @Test
-    @InterruptAfter(5)
-    void shouldBeAbleToProcessMultipleTermsWithMultiplePublicationsWithTheSameControlAddress()
+    @InterruptAfter(10)
+    void shouldErrorCreatingResponsePublicationWithUnknownImage()
+    {
+        watcher.ignoreErrorsMatching(s -> s.contains("not found"));
+
+        final int reqStreamId = 10001;
+        final int rspStreamId = 10002;
+
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Subscription subReq = server.addSubscription(
+                "aeron:udp?endpoint=localhost:10001", reqStreamId);
+            Publication pubReq = client.addPublication(
+                "aeron:udp?endpoint=localhost:10001", reqStreamId))
+        {
+            Tests.awaitConnected(subReq);
+            Tests.awaitConnected(pubReq);
+
+            final Image image = subReq.imageAtIndex(0);
+            final long wrongCorrelationId = image.correlationId() + 10;
+            final String url =
+                "aeron:udp?control-mode=response|control=localhost:10002|response-correlation-id=" + wrongCorrelationId;
+
+            assertThrows(Exception.class, () -> client.addPublication(url, rspStreamId));
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldErrorIfResponseCorrelationIdIsMissingFromAControlModeResponsePublication()
+    {
+        watcher.ignoreErrorsMatching(
+            s -> s.contains("control-mode=response was specified, but no response-correlation-id set"));
+
+        final int reqStreamId = 10001;
+        final int rspStreamId = 10002;
+
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Subscription subReq = server.addSubscription(
+                "aeron:udp?endpoint=localhost:10001", reqStreamId);
+            Publication pubReq = client.addPublication(
+                "aeron:udp?endpoint=localhost:10001", reqStreamId))
+        {
+            Tests.awaitConnected(subReq);
+            Tests.awaitConnected(pubReq);
+
+            final String url = "aeron:udp?control-mode=response|control=localhost:10002";
+
+            assertThrows(Exception.class, () -> client.addPublication(url, rspStreamId));
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldBeAbleToProcessMultipleTermsWithMultipleResponseChannels() throws Exception
     {
         final UnsafeBuffer message = new UnsafeBuffer(new byte[4096]);
         message.setMemory(0, 4096, (byte)'x');
-        final long stopPosition = 4 * 64 * 1024;
+        final long stopPosition = 4 * 64 * 1024 + 1;
 
-        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            ExclusivePublication pubA = aeron.addExclusivePublication(
-                "aeron:udp?control-mode=response|control=localhost:10000|term-length=64k", 10001);
-            ExclusivePublication pubB = aeron.addExclusivePublication(
-                "aeron:udp?control-mode=response|control=localhost:10000|term-length=64k", 10001))
+        final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
+        final MutableLong pubACount = new MutableLong(0);
+        final MutableLong pubBCount = new MutableLong(0);
+        final MutableLong subACount = new MutableLong(0);
+        final MutableLong subBCount = new MutableLong(0);
+
+        final FragmentHandler recvA = (buffer, offset, length, header) -> subACount.set(header.reservedValue());
+        final FragmentHandler recvB = (buffer, offset, length, header) -> subBCount.set(header.reservedValue());
+
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Aeron clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            ResponseServer responseServer = new ResponseServer(
+                server, (image) -> new EchoHandler(), REQUEST_ENDPOINT, REQUEST_STREAM_ID,
+                RESPONSE_CONTROL, RESPONSE_STREAM_ID, null, "aeron:udp?term-length=64k");
+            ResponseClient responseClientA = new ResponseClient(
+                clientA, recvA, REQUEST_ENDPOINT, REQUEST_STREAM_ID, RESPONSE_CONTROL, RESPONSE_STREAM_ID,
+                "aeron:udp?term-length=64k", null);
+            ResponseClient responseClientB = new ResponseClient(
+                clientB, recvB, REQUEST_ENDPOINT, REQUEST_STREAM_ID, RESPONSE_CONTROL, RESPONSE_STREAM_ID,
+                "aeron:udp?term-length=64k", null))
         {
-            final String channelA = "aeron:udp?control=localhost:10000|session-id=" + pubA.sessionId();
-            final String channelB = "aeron:udp?control=localhost:10000|session-id=" + pubB.sessionId();
-            try (Subscription subA = aeron.addSubscription(channelA, 10001);
-                Subscription subB = aeron.addSubscription(channelB, 10001))
+            final Supplier<String> msg = () -> "responseServer.sessionCount=" + responseServer.sessionCount() + " " +
+                "clientA=" + responseClientA + " clientB=" + responseClientB;
+
+            while (responseServer.sessionCount() < 2 ||
+                !responseClientA.isConnected() ||
+                !responseClientB.isConnected())
             {
-                Tests.awaitConnected(subA);
-                Tests.awaitConnected(pubA);
-                Tests.awaitConnected(subB);
-                Tests.awaitConnected(pubB);
+                idleStrategy.idle(run(responseServer, responseClientA, responseClientB));
+                Tests.checkInterruptStatus(msg);
+            }
 
-                final int termIdA = pubA.termId();
-                final int termIdB = pubB.termId();
+            long subAStopPosition = 0;
+            long subBStopPosition = 0;
 
-                long subAStopPosition = 0;
-                long subBStopPosition = 0;
+            final Publication pubA = responseClientA.publication();
+            final Publication pubB = responseClientB.publication();
 
-                final Supplier<String> errorMessage = () ->
+            final Supplier<String> errorMessage = () ->
+            {
+                return "pubA.position=" + pubA.position() +
+                    ", subA.position=" + responseClientA.subscription().imageAtIndex(0).position() +
+                    ", pubA.count=" + (pubACount.get() - 1) +
+                    ", pubB.position=" + pubB.position() +
+                    ", subB.position=" + responseClientB.subscription().imageAtIndex(0).position() +
+                    ", pubB.count=" + (pubBCount.get() - 1);
+            };
+
+            while (pubA.position() < stopPosition ||
+                responseClientA.subscription().imageAtIndex(0).position() < subAStopPosition ||
+                pubB.position() < stopPosition ||
+                responseClientB.subscription().imageAtIndex(0).position() < subBStopPosition)
+            {
+                idleStrategy.idle(run(responseServer, responseClientA, responseClientB));
+                Tests.checkInterruptStatus(errorMessage);
+
+                if (pubA.position() < stopPosition)
                 {
-                    return "pubA.position=" + pubA.position() + ", subA.position=" + subA.imageAtIndex(0).position() +
-                        ", pubB.position=" + pubB.position() + ", subB.position=" + subB.imageAtIndex(0).position();
-                };
-
-                while (0 == subAStopPosition || subA.imageAtIndex(0).position() >= subAStopPosition ||
-                    0 == subBStopPosition || subB.imageAtIndex(0).position() >= subBStopPosition)
-                {
-                    if (pubA.position() < stopPosition)
-                    {
-                        if (0 > pubA.offer(message, 0, pubA.maxPayloadLength()))
-                        {
-                            Tests.yieldingIdle(errorMessage);
-                        }
-                    }
-                    else if (0 == subAStopPosition)
-                    {
-                        subAStopPosition = pubA.position();
-                    }
-
-                    if (pubB.position() < stopPosition)
-                    {
-                        if (0 > pubB.offer(message, 0, pubB.maxPayloadLength()))
-                        {
-                            Tests.yieldingIdle(errorMessage);
-                        }
-                    }
-                    else if (0 == subBStopPosition)
-                    {
-                        subBStopPosition = pubB.position();
-                    }
-
-                    if (0 == subA.poll((buffer, offset, length, header) -> {}, 10))
+                    if (0 > pubA.offer(
+                        message, 0, pubA.maxPayloadLength(),
+                        (termBuffer, termOffset, frameLength) -> pubACount.getAndIncrement()))
                     {
                         Tests.yieldingIdle(errorMessage);
                     }
+                }
+                subAStopPosition = pubA.position();
 
-                    if (0 == subB.poll((buffer, offset, length, header) -> {}, 10))
+                if (pubB.position() < stopPosition)
+                {
+                    if (0 > pubB.offer(
+                        message, 0, pubB.maxPayloadLength(),
+                        (termBuffer, termOffset, frameLength) -> pubBCount.getAndIncrement()))
                     {
                         Tests.yieldingIdle(errorMessage);
                     }
                 }
 
-                assertThat(pubA.termId(), greaterThan(termIdA));
-                assertThat(pubB.termId(), greaterThan(termIdB));
+                subBStopPosition = pubB.position();
             }
+
+            assertEquals(pubACount.get() - 1, subACount.get());
+            assertEquals(pubBCount.get() - 1, subBCount.get());
         }
     }
 
@@ -347,7 +380,8 @@ public class ResponseChannelsTest
             final Header header,
             final Publication responsePublication)
         {
-            while (0 > responsePublication.offer(buffer, offset, length))
+            while (0 > responsePublication.offer(
+                buffer, offset, length, (termBuffer, termOffset, frameLength) -> header.reservedValue()))
             {
                 Tests.yieldingIdle("failed to send response");
             }

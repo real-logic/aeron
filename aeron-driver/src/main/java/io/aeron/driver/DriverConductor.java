@@ -478,6 +478,9 @@ public final class DriverConductor implements Agent
             publication = findPublication(networkPublications, streamId, channelEndpoint);
         }
 
+        final PublicationImage responsePublicationImage = findResponsePublicationImage(
+            udpChannel.controlMode(), channelUri);
+
         boolean isNewPublication = false;
         if (null == publication)
         {
@@ -524,21 +527,45 @@ public final class DriverConductor implements Agent
             linkSpies(subscriptionLinks, publication);
         }
 
-        final String imageCorrelationIdString = channelUri.get(RESPONSE_CORRELATION_ID_PARAM_NAME);
-        if (null != imageCorrelationIdString)
+        if (null != responsePublicationImage)
         {
-            final long imageCorrelationId = Long.parseLong(imageCorrelationIdString);
-            for (final PublicationImage publicationImage : publicationImages)
+            responsePublicationImage.responseSessionId(publication.sessionId());
+        }
+    }
+
+    private PublicationImage findResponsePublicationImage(final ControlMode controlMode, final ChannelUri channelUri)
+    {
+        if (ControlMode.RESPONSE != controlMode)
+        {
+            return null;
+        }
+
+        final String imageCorrelationIdString = channelUri.get(RESPONSE_CORRELATION_ID_PARAM_NAME);
+
+        if (null == imageCorrelationIdString)
+        {
+            throw new IllegalArgumentException(
+                "control-mode=response was specified, but no response-correlation-id set");
+        }
+
+        final long imageCorrelationId = Long.parseLong(imageCorrelationIdString);
+        for (final PublicationImage publicationImage : publicationImages)
+        {
+            if (publicationImage.correlationId() == imageCorrelationId)
             {
-                if (publicationImage.correlationId() == imageCorrelationId)
+                if (publicationImage.hasSendResponseSetup())
                 {
-                    if (publicationImage.hasSendResponseSetup())
-                    {
-                        publicationImage.responseSessionId(publication.sessionId());
-                    }
+                    return publicationImage;
+                }
+                else
+                {
+                    throw new IllegalArgumentException(
+                        "image.correlationId=" + imageCorrelationId + " did not request a response channel");
                 }
             }
         }
+
+        throw new IllegalArgumentException("image.correlationId=" + imageCorrelationId + " not found");
     }
 
     void responseSetup(final long responseCorrelationId, final int responseSessionId)

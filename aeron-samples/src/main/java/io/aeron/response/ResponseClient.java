@@ -197,6 +197,26 @@ public class ResponseClient implements AutoCloseable, Agent
     }
 
     /**
+     * Get the response subscription for the client.
+     *
+     * @return response subscription for the client.
+     */
+    public Subscription subscription()
+    {
+        return subscription;
+    }
+
+    /**
+     * Get the request publication for the client.
+     *
+     * @return request publication for the client.
+     */
+    public Publication publication()
+    {
+        return publication;
+    }
+
+    /**
      * {@inheritDoc}
      */
     public String toString()

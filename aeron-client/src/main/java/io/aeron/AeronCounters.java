@@ -383,6 +383,17 @@ public final class AeronCounters
      */
     public static final int NODE_CONTROL_TOGGLE_TYPE_ID = 233;
 
+    /**
+     * The type id of the {@link Counter} used for keeping track of the maximum total snapshot duration.
+     */
+    public static final int CLUSTER_TOTAL_MAX_SNAPSHOT_DURATION_TYPE_ID = 234;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the count total snapshot duration
+     * has exceeded the threshold.
+     */
+    public static final int CLUSTER_TOTAL_SNAPSHOT_DURATION_THRESHOLD_EXCEEDED_TYPE_ID = 235;
+
     private AeronCounters()
     {
     }

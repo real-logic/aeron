@@ -54,14 +54,11 @@ class ChannelValidationTest
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();
 
-    private final MediaDriver.Context context = new MediaDriver.Context();
-    {
-        context
-            .errorHandler((ignore) -> {})
-            .dirDeleteOnStart(true)
-            .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
-            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
-    }
+    private final MediaDriver.Context context = new MediaDriver.Context()
+        .errorHandler((ignore) -> {})
+        .dirDeleteOnStart(true)
+        .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
+        .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
 
     private final ArrayList<AutoCloseable> closeables = new ArrayList<>();
 

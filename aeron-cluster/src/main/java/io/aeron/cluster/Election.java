@@ -613,21 +613,15 @@ class Election
             stopLogReplication();
             stopCatchup();
 
-            long logSubscriptionRegistrationId = NULL_VALUE;
-            if (null != logSubscription)
-            {
-                logSubscriptionRegistrationId = logSubscription.registrationId();
-                CloseHelper.close(logSubscription);
-                logSubscription = null;
-            }
-
             prepareForNewLeadership(nowNs);
             logSessionId = NULL_SESSION_ID;
             stopReplay();
 
-            if (NULL_VALUE != logSubscriptionRegistrationId)
+            if (null != logSubscription)
             {
-                consensusModuleAgent.awaitLocalSocketsClosed(logSubscriptionRegistrationId);
+                CloseHelper.close(logSubscription);
+                consensusModuleAgent.awaitLocalSocketsClosed(logSubscription.registrationId());
+                logSubscription = null;
             }
         }
 

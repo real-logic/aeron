@@ -25,7 +25,6 @@ import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
 import net.bytebuddy.asm.Advice;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -68,7 +67,6 @@ class RecoverAfterFailedCatchupClusterTest
 
     @Test
     @InterruptAfter(30)
-    @Disabled
     void shouldCatchupFromEmptyLog()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).start();

@@ -50,6 +50,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class ResponseChannelsTest
@@ -67,6 +68,8 @@ public class ResponseChannelsTest
     @BeforeEach
     void setUp()
     {
+        assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
+
         driver = TestMediaDriver.launch(new MediaDriver.Context()
                 .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
                 .threadingMode(ThreadingMode.SHARED),

@@ -1963,7 +1963,14 @@ public final class ChannelUriStringBuilder
 
         if (null != responseCorrelationIdString)
         {
-            responseCorrelationId(Long.valueOf(responseCorrelationIdString));
+            try
+            {
+                responseCorrelationId(Long.valueOf(responseCorrelationIdString));
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new IllegalArgumentException("'response-correlation-id' must be a valid long value", ex);
+            }
         }
 
         return this;

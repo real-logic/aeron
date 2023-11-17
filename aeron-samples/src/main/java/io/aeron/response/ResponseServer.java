@@ -130,8 +130,8 @@ public class ResponseServer implements AutoCloseable, Agent
             serverSubscription = aeron.addSubscription(
                 requestUriBuilder.build(),
                 requestStreamId,
-                availableImages::offer,
-                unavailableImages::offer);
+                this::enqueueAvailableImage,
+                this::enqueueUnavailableImage);
             workCount++;
         }
 
@@ -204,6 +204,22 @@ public class ResponseServer implements AutoCloseable, Agent
          * @param responsePublication   to send responses back to the client.
          */
         void onMessage(DirectBuffer buffer, int offset, int length, Header header, Publication responsePublication);
+    }
+
+    private void enqueueAvailableImage(final Image image)
+    {
+        if (!availableImages.offer(image))
+        {
+            throw new RuntimeException("Unable to enqueue new image");
+        }
+    }
+
+    private void enqueueUnavailableImage(final Image image)
+    {
+        if (!unavailableImages.offer(image))
+        {
+            throw new RuntimeException("Unable to enqueue removed image");
+        }
     }
 
     private static final class ResponseSession implements AutoCloseable

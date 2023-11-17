@@ -1039,4 +1039,21 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
             }
         }
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "ReceiveChannelEndpoint{" +
+            "groupTag=" + groupTag +
+            ", isChannelReceiveTimestampEnabled=" + isChannelReceiveTimestampEnabled +
+            ", receiverId=" + receiverId +
+            ", currentControlAddress=" + currentControlAddress +
+            ", imageRefCount=" + imageRefCount +
+            ", udpChannel=" + udpChannel +
+            ", connectAddress=" + connectAddress +
+            ", isClosed=" + isClosed +
+            '}';
+    }
 }

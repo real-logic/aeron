@@ -56,37 +56,30 @@ public class VersionProcessor extends AbstractProcessor
             for (final Element element : elementsAnnotatedWith)
             {
                 final PackageElement pkg = processingEnv.getElementUtils().getPackageOf(element);
-                final String versionTypeName =
-                    pkg.getQualifiedName().toString() + '.' + element.getSimpleName() + "Version";
+                final String packageName = pkg.getQualifiedName().toString();
+                final String className = element.getSimpleName() + "Version";
 
                 try
                 {
-                    final JavaFileObject sourceFile = processingEnv.getFiler().createSourceFile(versionTypeName);
+                    final JavaFileObject sourceFile = processingEnv.getFiler().createSourceFile(
+                        packageName + '.' + className);
                     try (PrintWriter out = new PrintWriter(sourceFile.openWriter()))
                     {
-                        final int lastDot = versionTypeName.lastIndexOf('.');
-                        final String packageName = -1 != lastDot ? versionTypeName.substring(0, lastDot) : null;
-                        final String className =
-                            -1 != lastDot ? versionTypeName.substring(lastDot + 1) : versionTypeName;
-
                         final String versionString = processingEnv.getOptions().get("io.aeron.version");
                         final VersionInformation info = new VersionInformation(versionString);
                         final String gitSha = processingEnv.getOptions().get("io.aeron.gitsha");
 
-                        if (null != packageName)
-                        {
-                            out.printf("package %s;%n", packageName);
-                            out.println();
-                            out.printf("public class %s%n", className);
-                            out.printf("{%n");
-                            out.printf("    public static final String VERSION = \"%s\";%n", versionString);
-                            out.printf("    public static final int MAJOR_VERSION = %s;%n", info.major);
-                            out.printf("    public static final int MINOR_VERSION = %s;%n", info.minor);
-                            out.printf("    public static final int PATCH_VERSION = %s;%n", info.patch);
-                            out.printf("    public static final String SUFFIX = \"%s\";%n", info.suffix);
-                            out.printf("    public static final String GIT_SHA = \"%s\";%n", gitSha);
-                            out.printf("}%n");
-                        }
+                        out.printf("package %s;%n", packageName);
+                        out.println();
+                        out.printf("public class %s%n", className);
+                        out.printf("{%n");
+                        out.printf("    public static final String VERSION = \"%s\";%n", versionString);
+                        out.printf("    public static final int MAJOR_VERSION = %s;%n", info.major);
+                        out.printf("    public static final int MINOR_VERSION = %s;%n", info.minor);
+                        out.printf("    public static final int PATCH_VERSION = %s;%n", info.patch);
+                        out.printf("    public static final String SUFFIX = \"%s\";%n", info.suffix);
+                        out.printf("    public static final String GIT_SHA = \"%s\";%n", gitSha);
+                        out.printf("}%n");
                     }
                 }
                 catch (final IOException e)

@@ -1164,7 +1164,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             liveLogDestination = null;
         }
 
-        final long logSubRegId = logAdapter.disconnect(ctx.countedErrorHandler());
+        final long logSubscriptionRegistrationId = logAdapter.disconnect(ctx.countedErrorHandler());
         logPublisher.disconnect(ctx.countedErrorHandler());
         ClusterControl.ToggleState.deactivate(controlToggle);
 
@@ -1191,9 +1191,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             }
         }
 
-        if (NULL_VALUE != logSubRegId)
+        if (NULL_VALUE != logSubscriptionRegistrationId)
         {
-            awaitLocalSocketsClosed(logSubRegId);
+            awaitLocalSocketsClosed(logSubscriptionRegistrationId);
         }
 
         return lastAppendPosition;

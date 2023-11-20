@@ -27,6 +27,10 @@
 
 #define AERON_MIN_FLOW_CONTROL_RECEIVERS_COUNTER_NAME ("fc-receivers")
 
+#define AERON_MAX_FLOW_CONTROL_RETRANSMIT_RECEIVER_WINDOW_MULTIPLE (4)
+#define AERON_UNICAST_FLOW_CONTROL_RETRANSMIT_RECEIVER_WINDOW_MULTIPLE (16)
+#define AERON_MIN_FLOW_CONTROL_RETRANSMIT_RECEIVER_WINDOW_MULTIPLE (16)
+
 typedef int64_t (*aeron_flow_control_strategy_on_idle_func_t)(
     void *state,
     int64_t now_ns,
@@ -53,6 +57,13 @@ typedef int64_t (*aeron_flow_control_strategy_on_setup_func_t)(
     size_t position_bits_to_shift,
     int64_t snd_pos);
 
+typedef size_t (*aeron_flow_control_strategy_max_retransmission_length_func_t)(
+    void *state,
+    int64_t resend_position,
+    size_t resend_length,
+    int64_t term_buffer_length,
+    size_t mtu_length);
+
 typedef int (*aeron_flow_control_strategy_fini_func_t)(aeron_flow_control_strategy_t *strategy);
 
 typedef bool (*aeron_flow_control_strategy_has_required_receivers_func_t)(aeron_flow_control_strategy_t *strategy);
@@ -64,6 +75,7 @@ typedef struct aeron_flow_control_strategy_stct
     aeron_flow_control_strategy_on_setup_func_t on_setup;
     aeron_flow_control_strategy_fini_func_t fini;
     aeron_flow_control_strategy_has_required_receivers_func_t has_required_receivers;
+    aeron_flow_control_strategy_max_retransmission_length_func_t max_retransmission_length;
     void *state;
 }
 aeron_flow_control_strategy_t;

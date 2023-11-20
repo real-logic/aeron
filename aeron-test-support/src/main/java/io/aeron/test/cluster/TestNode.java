@@ -57,6 +57,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.IntPredicate;
 import java.util.zip.CRC32;
 
@@ -641,6 +642,28 @@ public final class TestNode implements AutoCloseable
                 }
 
                 keepAlive.run();
+            }
+        }
+    }
+
+    public static class SleepOnSnapshotTestService extends TestNode.TestService
+    {
+        long sleepNsWhenTakingSnapshot = Long.MIN_VALUE;
+
+        public TestService sleepNsOnTakeSnapshot(final long sleepNsWhenTakingSnapshot)
+        {
+            this.sleepNsWhenTakingSnapshot = sleepNsWhenTakingSnapshot;
+            return this;
+        }
+
+        @Override
+        public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
+        {
+            super.onTakeSnapshot(snapshotPublication);
+
+            if (sleepNsWhenTakingSnapshot > 0)
+            {
+                LockSupport.parkNanos(sleepNsWhenTakingSnapshot);
             }
         }
     }

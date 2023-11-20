@@ -752,6 +752,18 @@ public final class ConsensusModule implements AutoCloseable
         public static final long CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
         /**
+         * Property name for threshold value, which is used for tracking total snapshot duration breaches.
+         */
+        public static final String TOTAL_SNAPSHOT_DURATION_THRESHOLD_PROP_NAME =
+            "aeron.cluster.total.snapshot.threshold";
+
+        /**
+         * Default threshold value, which is used for tracking total snapshot duration breaches.
+         */
+        public static final long TOTAL_SNAPSHOT_DURATION_THRESHOLD_DEFAULT_NS =
+            TimeUnit.MILLISECONDS.toNanos(1000);
+
+        /**
          * Default timeout a leader will wait on getting termination ACKs from followers.
          */
         public static final long TERMINATION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
@@ -1101,6 +1113,18 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Get threshold value, which is used for monitoring total snapshot duration breaches of its predefined
+         * threshold.
+         *
+         * @return threshold value in nanoseconds.
+         */
+        public static long totalSnapshotDurationThresholdNs()
+        {
+            return getDurationInNanos(TOTAL_SNAPSHOT_DURATION_THRESHOLD_PROP_NAME,
+                TOTAL_SNAPSHOT_DURATION_THRESHOLD_DEFAULT_NS);
+        }
+
+        /**
          * Size in bytes of the error buffer in the mark file.
          *
          * @return length of error buffer in bytes.
@@ -1392,6 +1416,7 @@ public final class ConsensusModule implements AutoCloseable
         private long electionStatusIntervalNs = Configuration.electionStatusIntervalNs();
         private long terminationTimeoutNs = Configuration.terminationTimeoutNs();
         private long cycleThresholdNs = Configuration.cycleThresholdNs();
+        private long totalSnapshotDurationThresholdNs = Configuration.totalSnapshotDurationThresholdNs();
 
         private String agentRoleName = Configuration.agentRoleName();
         private ThreadFactory threadFactory;
@@ -1425,6 +1450,7 @@ public final class ConsensusModule implements AutoCloseable
         private LogPublisher logPublisher;
         private EgressPublisher egressPublisher;
         private DutyCycleTracker dutyCycleTracker;
+        private SnapshotDurationTracker totalSnapshotDurationTracker;
         private AppVersionValidator appVersionValidator;
         private boolean isLogMdc;
         private boolean useAgentInvoker = false;
@@ -1725,6 +1751,26 @@ public final class ConsensusModule implements AutoCloseable
                         AeronCounters.CLUSTER_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID, clusterId),
                     cycleThresholdNs);
             }
+
+            if (null == totalSnapshotDurationTracker)
+            {
+                totalSnapshotDurationTracker = new SnapshotDurationTracker(
+                    ClusterCounters.allocate(
+                        aeron,
+                        buffer,
+                        "Total max snapshot duration in ns",
+                        AeronCounters.CLUSTER_TOTAL_MAX_SNAPSHOT_DURATION_TYPE_ID,
+                        clusterId),
+                    ClusterCounters.allocate(
+                        aeron,
+                        buffer,
+                        "Total max snapshot duration exceeded count: threshold=" +
+                            totalSnapshotDurationThresholdNs,
+                        AeronCounters.CLUSTER_TOTAL_SNAPSHOT_DURATION_THRESHOLD_EXCEEDED_TYPE_ID,
+                        clusterId),
+                    totalSnapshotDurationThresholdNs);
+            }
+
 
             if (null == threadFactory)
             {
@@ -3027,6 +3073,52 @@ public final class ConsensusModule implements AutoCloseable
         public DutyCycleTracker dutyCycleTracker()
         {
             return dutyCycleTracker;
+        }
+
+        /**
+         * Set a threshold for total snapshot duration which when exceeded will result in a counter increment.
+         *
+         * @param thresholdNs value in nanoseconds
+         * @return this for fluent API.
+         * @see ConsensusModule.Configuration#TOTAL_SNAPSHOT_DURATION_THRESHOLD_PROP_NAME
+         * @see ConsensusModule.Configuration#TOTAL_SNAPSHOT_DURATION_THRESHOLD_DEFAULT_NS
+         */
+        public Context totalSnapshotDurationThresholdNs(final long thresholdNs)
+        {
+            this.totalSnapshotDurationThresholdNs = thresholdNs;
+            return this;
+        }
+
+        /**
+         * Threshold for total snapshot duration which when exceeded it will increment the counter.
+         *
+         * @return threshold value in nanoseconds.
+         */
+        public long totalSnapshotDurationThresholdNs()
+        {
+            return totalSnapshotDurationThresholdNs;
+        }
+
+        /**
+         * Set snapshot duration tracker used for monitoring total snapshot duration.
+         *
+         * @param snapshotDurationTracker snapshot duration tracker.
+         * @return this for fluent API.
+         */
+        public Context totalSnapshotDurationTracker(final SnapshotDurationTracker snapshotDurationTracker)
+        {
+            this.totalSnapshotDurationTracker = snapshotDurationTracker;
+            return this;
+        }
+
+        /**
+         * Get snapshot duration tracker used for monitoring total snapshot duration.
+         *
+         * @return snapshot duration tracker
+         */
+        public SnapshotDurationTracker totalSnapshotDurationTracker()
+        {
+            return totalSnapshotDurationTracker;
         }
 
         /**

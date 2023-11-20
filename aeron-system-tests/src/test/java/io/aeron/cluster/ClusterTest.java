@@ -29,6 +29,7 @@ import io.aeron.cluster.codecs.AdminResponseCode;
 import io.aeron.cluster.codecs.AdminResponseEncoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
+import io.aeron.cluster.service.SnapshotDurationTracker;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.security.AuthorisationService;
@@ -45,6 +46,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,23 +63,13 @@ import static io.aeron.cluster.service.Cluster.Role.LEADER;
 import static io.aeron.logbuffer.FrameDescriptor.computeMaxMessageLength;
 import static io.aeron.test.SystemTestWatcher.UNKNOWN_HOST_FILTER;
 import static io.aeron.test.Tests.awaitAvailableWindow;
-import static io.aeron.test.cluster.ClusterTests.NO_OP_MSG;
-import static io.aeron.test.cluster.ClusterTests.REGISTER_TIMER_MSG;
-import static io.aeron.test.cluster.ClusterTests.startPublisherThread;
-import static io.aeron.test.cluster.TestCluster.aCluster;
-import static io.aeron.test.cluster.TestCluster.awaitElectionClosed;
-import static io.aeron.test.cluster.TestCluster.awaitElectionState;
-import static io.aeron.test.cluster.TestCluster.awaitLossOfLeadership;
+import static io.aeron.test.cluster.ClusterTests.*;
+import static io.aeron.test.cluster.TestCluster.*;
 import static io.aeron.test.cluster.TestNode.atMost;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
@@ -1594,7 +1586,7 @@ class ClusterTest
             .withEgressChannel(
                 "aeron:udp?endpoint=localhost:0|term-length=" + originalTermLength + "|mtu=" + originalMtu)
             .withServiceSupplier(
-                (i) -> new TestNode.TestService[]{ new TestNode.TestService(), new TestNode.ChecksumService() })
+                (i) -> new TestNode.TestService[] { new TestNode.TestService(), new TestNode.ChecksumService() })
             .start();
         systemTestWatcher.cluster(cluster);
 
@@ -1920,6 +1912,59 @@ class ClusterTest
 
         cluster.awaitSnapshotCount(1);
         cluster.awaitNeutralControlToggle(leader);
+    }
+
+    @Test
+    @InterruptAfter(20)
+    void shouldTrackSnapshotDuration()
+    {
+        cluster = aCluster()
+            .withServiceSupplier(
+                (i) -> new TestNode.TestService[]
+                {
+                    new TestNode.SleepOnSnapshotTestService()
+                        .sleepNsOnTakeSnapshot(TimeUnit.MILLISECONDS.toNanos(101)).index(i)
+                })
+            .withStaticNodes(3)
+            .withAuthorisationServiceSupplier(() -> AuthorisationService.ALLOW_ALL)
+            .start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+
+        final SnapshotDurationTracker snapshotDurationTracker = leader.consensusModule().context()
+            .totalSnapshotDurationTracker();
+
+        final AtomicCounter snapshotDurationThresholdExceededCount = snapshotDurationTracker
+            .snapshotDurationThresholdExceededCount();
+
+        final AtomicCounter maxSnapshotDuration = snapshotDurationTracker.maxSnapshotDuration();
+
+        final long requestCorrelationId = System.nanoTime();
+        final MutableBoolean hasResponse = injectAdminResponseEgressListener(
+            requestCorrelationId, AdminRequestType.SNAPSHOT, AdminResponseCode.OK, EMPTY_MSG);
+
+        final AeronCluster client = cluster.connectClient();
+
+        assertEquals(0L, snapshotDurationThresholdExceededCount.get());
+        assertEquals(0, maxSnapshotDuration.get());
+
+        while (!client.sendAdminRequestToTakeASnapshot(requestCorrelationId))
+        {
+            Tests.yield();
+        }
+
+        while (!hasResponse.get())
+        {
+            client.pollEgress();
+            Tests.yield();
+        }
+
+        cluster.awaitSnapshotCount(1);
+        cluster.awaitNeutralControlToggle(leader);
+
+        assertEquals(1L, snapshotDurationThresholdExceededCount.get());
+        assertTrue(maxSnapshotDuration.get() > 0);
     }
 
     @Test

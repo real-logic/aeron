@@ -61,8 +61,8 @@ import static io.aeron.archive.client.ArchiveException.UNKNOWN_REPLAY;
 import static io.aeron.archive.client.ReplayMerge.LIVE_ADD_MAX_WINDOW;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
-import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT;
 import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_DEFAULT;
+import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
@@ -147,6 +147,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
     private final DutyCycleTracker dutyCycleTracker;
+    private final SnapshotDurationTracker totalSnapshotDurationTracker;
     private RecordingLog.RecoveryPlan recoveryPlan;
     private AeronArchive archive;
     private RecordingSignalPoller recordingSignalPoller;
@@ -188,6 +189,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         Arrays.fill(serviceClientIds, NULL_VALUE);
         this.serviceAckQueues = ServiceAck.newArrayOfQueues(ctx.serviceCount());
         this.dutyCycleTracker = ctx.dutyCycleTracker();
+        this.totalSnapshotDurationTracker = ctx.totalSnapshotDurationTracker();
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -1261,6 +1263,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 final ServiceAck[] serviceAcks = pollServiceAcks(logPosition, serviceId);
                 ++serviceAckId;
                 takeSnapshot(timestamp, logPosition, serviceAcks);
+                totalSnapshotDurationTracker.onSnapshotEnd(clusterClock.timeNanos());
 
                 if (null != clusterTermination)
                 {
@@ -2247,6 +2250,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT))
                 {
                     state(ConsensusModule.State.SNAPSHOT);
+                    totalSnapshotDurationTracker.onSnapshotBegin(nowNs);
                 }
                 break;
 

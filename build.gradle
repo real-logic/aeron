@@ -1128,6 +1128,7 @@ project(':aeron-all') {
     }
 
     javadoc {
+        source += project(':aeron-annotations').sourceSets.main.allJava
         source += aeronClientProject.sourceSets.main.allJava
         source += aeronDriverProject.sourceSets.main.allJava
         source += aeronArchiveProject.sourceSets.main.allJava

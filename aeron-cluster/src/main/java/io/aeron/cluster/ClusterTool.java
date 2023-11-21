@@ -1408,7 +1408,7 @@ public class ClusterTool
         return linkFile.exists() ? resolveDirectoryFromLinkFile(linkFile) : clusterDir;
     }
 
-    private static File resolveDirectoryFromLinkFile(final File linkFile)
+    static File resolveDirectoryFromLinkFile(final File linkFile)
     {
         final File markFileDir;
 

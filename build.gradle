@@ -342,8 +342,56 @@ subprojects {
     }
 }
 
-project(':aeron-version') {
+project(':aeron-annotations') {
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
+    apply plugin: 'biz.aQute.bnd.builder'
+
+    jar {
+        bundle {
+            bnd """
+                Automatic-Module-Name:  io.aeron.annotations
+                Bundle-Name:            io.aeron.annotations
+                Bundle-SymbolicName:    io.aeron.annotations
+                Implementation-Title:   Aeron
+                Implementation-Vendor:  Real Logic Limited
+                Implementation-Version: ${aeronVersion}
+    
+                -exportcontents: io.aeron.version
+    
+                # Suppress headers that reduce reproducibility.
+                -reproducible: true
+                -noextraheaders: true
+            """
+        }
+    }
+
     java {
+        withSourcesJar()
+        withJavadocJar()
+    }
+
+    publishing {
+        publications {
+            aeronAnnotations(MavenPublication) {
+                from components.java
+                pom(projectPom)
+            }
+        }
+
+        repositories {
+            maven {
+                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                credentials {
+                    username = ossrhUsername
+                    password = ossrhPassword
+                }
+            }
+        }
+    }
+
+    signing {
+        sign publishing.publications.aeronAnnotations
     }
 }
 
@@ -359,7 +407,8 @@ project(':aeron-client') {
                 prefer(agronaVersion)
             }
         }
-        annotationProcessor project(':aeron-version')
+        implementation project(':aeron-annotations')
+        annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
@@ -386,6 +435,10 @@ project(':aeron-client') {
     java {
         withSourcesJar()
         withJavadocJar()
+    }
+
+    javadoc {
+        source += project(':aeron-annotations').sourceSets.main.allJava
     }
 
     publishing {
@@ -422,7 +475,8 @@ project(':aeron-driver') {
 
     dependencies {
         api project(':aeron-client')
-        annotationProcessor project(':aeron-version')
+        implementation project(':aeron-annotations')
+        annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
@@ -454,6 +508,7 @@ project(':aeron-driver') {
     }
 
     javadoc {
+        source += project(':aeron-annotations').sourceSets.main.allJava
         source += project(':aeron-client').sourceSets.main.allJava
     }
 
@@ -496,7 +551,8 @@ project(':aeron-archive') {
         api project(':aeron-driver')
         api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
-        annotationProcessor project(':aeron-version')
+        implementation project(':aeron-annotations')
+        annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
         testImplementation files('build/classes/java/generatedTest')
@@ -601,6 +657,7 @@ project(':aeron-archive') {
 
     javadoc {
         source += sourceSets.generated.allJava
+        source += project(':aeron-annotations').sourceSets.main.allJava
         source += project(':aeron-client').sourceSets.main.allJava
         source += project(':aeron-driver').sourceSets.main.allJava
     }
@@ -649,7 +706,8 @@ project(':aeron-cluster') {
         api project(':aeron-archive')
         api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
-        annotationProcessor project(':aeron-version')
+        implementation project(':aeron-annotations')
+        annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
@@ -714,6 +772,7 @@ project(':aeron-cluster') {
 
     javadoc {
         source += sourceSets.generated.allJava
+        source += project(':aeron-annotations').sourceSets.main.allJava
         source += project(':aeron-client').sourceSets.main.allJava
         source += project(':aeron-driver').sourceSets.main.allJava
         source += project(':aeron-archive').sourceSets.main.allJava
@@ -808,6 +867,7 @@ project(':aeron-agent') {
     }
 
     javadoc {
+        source += project(':aeron-annotations').sourceSets.main.allJava
         source += aeronClientProject.sourceSets.main.allJava
         source += aeronDriverProject.sourceSets.main.allJava
         source += aeronArchiveProject.sourceSets.main.allJava
@@ -884,6 +944,7 @@ project(':aeron-samples') {
     }
 
     javadoc {
+        source += project(':aeron-annotations').sourceSets.main.allJava
         source += project(':aeron-client').sourceSets.main.allJava
         source += project(':aeron-driver').sourceSets.main.allJava
         source += project(':aeron-archive').sourceSets.main.allJava

@@ -77,7 +77,6 @@ public class VersionProcessor extends AbstractProcessor
                         out.printf("    public static final int MAJOR_VERSION = %s;%n", info.major);
                         out.printf("    public static final int MINOR_VERSION = %s;%n", info.minor);
                         out.printf("    public static final int PATCH_VERSION = %s;%n", info.patch);
-                        out.printf("    public static final String SUFFIX = \"%s\";%n", info.suffix);
                         out.printf("    public static final String GIT_SHA = \"%s\";%n", gitSha);
                         out.printf("}%n");
                     }
@@ -94,11 +93,10 @@ public class VersionProcessor extends AbstractProcessor
 
     private static class VersionInformation
     {
-        private static final Pattern VERSION_PATTERN = Pattern.compile("([0-9]+).([0-9]+).([0-9]+)(?:-(.+))?");
+        private static final Pattern VERSION_PATTERN = Pattern.compile("([0-9]+).([0-9]+).([0-9]+)(?:-.+)?");
         private final int major;
         private final int minor;
         private final int patch;
-        private final String suffix;
 
         VersionInformation(final String versionString)
         {
@@ -111,7 +109,6 @@ public class VersionProcessor extends AbstractProcessor
             major = Integer.parseInt(matcher.group(1));
             minor = Integer.parseInt(matcher.group(2));
             patch = Integer.parseInt(matcher.group(3));
-            suffix = matcher.group(4);
         }
     }
 }

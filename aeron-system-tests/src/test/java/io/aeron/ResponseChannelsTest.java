@@ -412,6 +412,43 @@ public class ResponseChannelsTest
         }
     }
 
+    @Test
+    @InterruptAfter(15)
+    void shouldHandleMultipleConnectionsToTheResponseChannel()
+    {
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Subscription subReq = server.addSubscription(
+                "aeron:udp?endpoint=localhost:10001", REQUEST_STREAM_ID);
+            Subscription subRsp = client.addSubscription(
+                "aeron:udp?control-mode=response|control=localhost:10002", RESPONSE_STREAM_ID);
+            Publication pubReq = client.addPublication(
+                "aeron:udp?endpoint=localhost:10001|response-correlation-id=" + subRsp.registrationId(),
+                REQUEST_STREAM_ID))
+        {
+            Tests.awaitConnected(subReq);
+            Tests.awaitConnected(pubReq);
+            Objects.requireNonNull(subRsp);
+
+            final Image image = subReq.imageAtIndex(0);
+            final String url = "aeron:udp?control-mode=response|control=localhost:10002|response-correlation-id=" +
+                image.correlationId();
+
+            try (Publication pubRspA = client.addPublication(url, RESPONSE_STREAM_ID))
+            {
+                Tests.awaitConnected(subRsp);
+                Tests.awaitConnected(pubRspA);
+
+                try (Publication pubRspB = client.addPublication(url, RESPONSE_STREAM_ID))
+                {
+                    Tests.awaitConnected(pubRspB);
+
+                    assertEquals(pubRspA.originalRegistrationId(), pubRspB.originalRegistrationId());
+                }
+            }
+        }
+    }
+
     private static final class EchoHandler implements ResponseServer.ResponseHandler
     {
         public void onMessage(

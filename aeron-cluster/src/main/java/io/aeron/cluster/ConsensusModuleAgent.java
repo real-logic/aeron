@@ -1169,10 +1169,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final long logSubscriptionRegistrationId = logAdapter.disconnect(ctx.countedErrorHandler());
         logPublisher.disconnect(ctx.countedErrorHandler());
         ClusterControl.ToggleState.deactivate(controlToggle);
+        tryStopLogRecording();
 
         if (RecordingPos.NULL_RECORDING_ID != logRecordingId)
         {
-            tryStopLogRecording();
             lastAppendPosition = getLastAppendedPosition();
             timeOfLastAppendPositionUpdateNs = nowNs;
             recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
@@ -3239,8 +3239,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
             logSubscriptionId = NULL_VALUE;
         }
-
-        if (NULL_VALUE != logRecordingId && archive.archiveProxy().publication().isConnected())
+        else if (NULL_VALUE != logRecordingId && archive.archiveProxy().publication().isConnected())
         {
             try
             {

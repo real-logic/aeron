@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_ARCHIVE_ARCHIVE_VERSION_H
-#define AERON_ARCHIVE_ARCHIVE_VERSION_H
+#ifndef AERON_ARCHIVE_VERSION_H
+#define AERON_ARCHIVE_VERSION_H
 
 #include "string"
 
@@ -29,4 +29,4 @@ static constexpr int  AERON_ARCHIVE_PATCH_VERSION = AERON_VERSION_PATCH;
 
 }}}
 
-#endif //AERON_ARCHIVE_ARCHIVE_VERSION_H
+#endif //AERON_ARCHIVE_VERSION_H

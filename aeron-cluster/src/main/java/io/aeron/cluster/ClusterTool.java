@@ -258,9 +258,16 @@ public class ClusterTool
      */
     public static void describe(final PrintStream out, final File clusterDir)
     {
+        describeClusterMarkFile(clusterDir, out);
+    }
+
+    // Used by Standby Tooling.
+    @SuppressWarnings("UnusedReturnValue")
+    static boolean describeClusterMarkFile(final File clusterDir, final PrintStream out)
+    {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, out::println))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
             {
                 printTypeAndActivityTimestamp(out, markFile);
                 out.println(markFile.decoder());
@@ -269,10 +276,13 @@ public class ClusterTool
         else
         {
             out.println(ClusterMarkFile.FILENAME + " does not exist.");
+            return false;
         }
 
         final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterDir, out::println);
         describe(out, serviceMarkFiles);
+
+        return true;
     }
 
     /**
@@ -645,7 +655,7 @@ public class ClusterTool
      */
     public static boolean markFileExists(final File clusterDir)
     {
-        final File markFileDir = resolveConsensusModuleMarkFileDir(clusterDir);
+        final File markFileDir = resolveClusterMarkFileDir(clusterDir);
         final File markFile = new File(markFileDir, ClusterMarkFile.FILENAME);
 
         return markFile.exists();
@@ -1213,7 +1223,7 @@ public class ClusterTool
 
     static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
     {
-        final File markFileDir = resolveConsensusModuleMarkFileDir(clusterDir);
+        final File markFileDir = resolveClusterMarkFileDir(clusterDir);
         return new ClusterMarkFile(
             markFileDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
     }
@@ -1285,7 +1295,7 @@ public class ClusterTool
         }
     }
 
-    private static void printTypeAndActivityTimestamp(final PrintStream out, final ClusterMarkFile markFile)
+    static void printTypeAndActivityTimestamp(final PrintStream out, final ClusterMarkFile markFile)
     {
         printTypeAndActivityTimestamp(
             out,
@@ -1402,10 +1412,10 @@ public class ClusterTool
         }
     }
 
-    private static File resolveConsensusModuleMarkFileDir(final File clusterDir)
+    static File resolveClusterMarkFileDir(final File dir)
     {
-        final File linkFile = new File(clusterDir, ClusterMarkFile.LINK_FILENAME);
-        return linkFile.exists() ? resolveDirectoryFromLinkFile(linkFile) : clusterDir;
+        final File linkFile = new File(dir, ClusterMarkFile.LINK_FILENAME);
+        return linkFile.exists() ? resolveDirectoryFromLinkFile(linkFile) : dir;
     }
 
     static File resolveDirectoryFromLinkFile(final File linkFile)

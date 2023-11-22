@@ -27,6 +27,7 @@
             <validValue name="CONSENSUS_MODULE">1</validValue>
             <validValue name="CONTAINER">2</validValue>
             <validValue name="BACKUP">3</validValue>
+            <validValue name="STANDBY">4</validValue>
         </enum>
     </types>
 

@@ -19,6 +19,7 @@ if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
 endif ()
 
 SET(SOURCE
+    ${CMAKE_CURRENT_SOURCE_DIR}/AeronVersion.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Publication.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ExclusivePublication.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Subscription.cpp
@@ -33,6 +34,7 @@ SET(SOURCE
 
 SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Aeron.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AeronVersion.h
     ${CMAKE_CURRENT_SOURCE_DIR}/BufferBuilder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUri.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUriStringBuilder.h

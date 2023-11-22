@@ -29,6 +29,7 @@
 #include "aeron_image.h"
 #include "aeron_counter.h"
 #include "aeron_counters.h"
+#include "aeron_version.h"
 
 int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_context_t *context)
 {
@@ -414,6 +415,16 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
 
             if (AERON_NULL_COUNTER_ID != id)
             {
+                aeron_counter_metadata_descriptor_t *counter_metadata = (aeron_counter_metadata_descriptor_t *)(
+                    conductor->counters_reader.metadata + AERON_COUNTER_METADATA_OFFSET(id));
+
+                char version_info[AERON_COUNTER_MAX_LABEL_LENGTH];
+                snprintf(version_info, sizeof(version_info) - 1, " version=%s commit=%s", AERON_VERSION, AERON_GIT_SHA);
+                size_t version_info_length = strlen(version_info);
+
+                memcpy(counter_metadata->label + counter_metadata->label_length, version_info, version_info_length);
+                counter_metadata->label_length += (int32_t)version_info_length;
+
                 conductor->heartbeat_timestamp.counter_id = id;
                 conductor->heartbeat_timestamp.addr = aeron_counters_reader_addr(
                     &conductor->counters_reader, conductor->heartbeat_timestamp.counter_id);

@@ -1131,3 +1131,27 @@ TEST_F(ClientConductorTest, shouldThrowExceptionOnReentrantCallback)
 
     EXPECT_TRUE(called);
 }
+
+TEST_F(ClientConductorTest, shouldAddClientVersionToTheHeartbeatCounter)
+{
+    int64_t clientId = m_driverProxy.clientId();
+
+    CountersManager manager(m_counterMetadataBuffer, m_counterValuesBuffer);
+
+    std::int32_t counterId = manager.allocate("X counter",
+        HeartbeatTimestamp::CLIENT_HEARTBEAT_TYPE_ID,
+        [&clientId](AtomicBuffer keyBuffer) -> void
+    {
+        auto key = keyBuffer.overlayStruct<HeartbeatTimestamp::HeartbeatTimestampKeyDefn>(0);
+        key.registrationId = clientId;
+    });
+
+    m_currentTime += KEEPALIVE_TIMEOUT_MS + 1;
+    m_manyToOneRingBuffer.consumerHeartbeatTime(m_currentTime);
+
+    m_conductor.doWork();
+
+    EXPECT_EQ(
+        std::string("X counter version=") + aeron::AeronVersion::VERSION + " commit=" + aeron::AeronVersion::GIT_SHA,
+        manager.getCounterLabel(counterId));
+}

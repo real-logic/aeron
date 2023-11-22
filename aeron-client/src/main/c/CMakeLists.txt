@@ -187,6 +187,7 @@ set(HEADERS
     aeron_publication.h
     aeron_socket.h
     aeron_subscription.h
+    aeron_version.h
     aeron_windows.h
     aeronc.h)
 

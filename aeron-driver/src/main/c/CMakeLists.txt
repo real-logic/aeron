@@ -249,6 +249,7 @@ set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_publication.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_socket.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_subscription.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_version.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_windows.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeronc.h)
 
@@ -334,6 +335,7 @@ SET(HEADERS
     aeron_retransmit_handler.h
     aeron_system_counters.h
     aeron_termination_validator.h
+    aeron_driver_version.h
     aeronmd.h)
 
 add_library(aeron_driver SHARED ${SOURCE} ${HEADERS})

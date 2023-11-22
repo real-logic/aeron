@@ -15,12 +15,9 @@
  */
 
 #include <stdint.h>
+#include "aeron_version.h"
 
-const char aeron_version_full_str[] = "aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__;
-int aeron_major_version = AERON_VERSION_MAJOR;
-int aeron_minor_version = AERON_VERSION_MINOR;
-int aeron_patch_version = AERON_VERSION_PATCH;
-const char aeron_gitsha[] = AERON_VERSION_GITSHA;
+const char aeron_version_full_str[] = "aeron version " AERON_VERSION " built " __DATE__ " " __TIME__;
 
 const char *aeron_version_full(void)
 {
@@ -29,22 +26,22 @@ const char *aeron_version_full(void)
 
 int aeron_version_major(void)
 {
-    return aeron_major_version;
+    return AERON_MAJOR_VERSION;
 }
 
 int aeron_version_minor(void)
 {
-    return aeron_minor_version;
+    return AERON_MINOR_VERSION;
 }
 
 int aeron_version_patch(void)
 {
-    return aeron_patch_version;
+    return AERON_PATCH_VERSION;
 }
 
 const char *aeron_version_gitsha(void)
 {
-    return aeron_gitsha;
+    return AERON_GIT_SHA;
 }
 
 int32_t aeron_semantic_version_compose(uint8_t major, uint8_t minor, uint8_t patch)

@@ -18,10 +18,10 @@
 namespace aeron
 {
 
-constexpr char AeronVersion::VERSION[] = AERON_VERSION_TXT;
-constexpr char AeronVersion::GIT_SHA[] = AERON_VERSION_GITSHA;
-constexpr int AeronVersion::MAJOR_VERSION = AERON_VERSION_MAJOR;
-constexpr int AeronVersion::MINOR_VERSION = AERON_VERSION_MINOR;
-constexpr int AeronVersion::PATCH_VERSION = AERON_VERSION_PATCH;
+constexpr char AERON_VERSION[] = AERON_VERSION_TXT;
+constexpr char AERON_GIT_SHA[] = AERON_VERSION_GITSHA;
+constexpr int AERON_MAJOR_VERSION = AERON_VERSION_MAJOR;
+constexpr int AERON_MINOR_VERSION = AERON_VERSION_MINOR;
+constexpr int AERON_PATCH_VERSION = AERON_VERSION_PATCH;
 
 }

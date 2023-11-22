@@ -20,15 +20,12 @@
 
 namespace aeron { namespace archive { namespace client
 {
-class AeronArchiveVersion
-{
-public:
-    static const std::string VERSION;
-    static const std::string GIT_SHA;
-    static const int MAJOR_VERSION;
-    static const int MINOR_VERSION;
-    static const int PATCH_VERSION;
-};
+
+extern const std::string AERON_ARCHIVE_VERSION;
+extern const std::string AERON_ARCHIVE_GIT_SHA;
+extern const int AERON_ARCHIVE_MAJOR_VERSION;
+extern const int AERON_ARCHIVE_MINOR_VERSION;
+extern const int AERON_ARCHIVE_PATCH_VERSION;
 
 }}}
 

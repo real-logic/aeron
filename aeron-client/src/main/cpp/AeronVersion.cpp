@@ -15,8 +15,13 @@
  */
 #include "AeronVersion.h"
 
-const std::string aeron::AeronVersion::VERSION = AERON_VERSION_TXT;
-const std::string aeron::AeronVersion::GIT_SHA = AERON_VERSION_GITSHA;
-const int aeron::AeronVersion::MAJOR_VERSION = AERON_VERSION_MAJOR;
-const int aeron::AeronVersion::MINOR_VERSION = AERON_VERSION_MINOR;
-const int aeron::AeronVersion::PATCH_VERSION = AERON_VERSION_PATCH;
+namespace aeron
+{
+
+const std::string AERON_VERSION = AERON_VERSION_TXT;
+const std::string AERON_GIT_SHA = AERON_VERSION_GITSHA;
+const int AERON_MAJOR_VERSION = AERON_VERSION_MAJOR;
+const int AERON_MINOR_VERSION = AERON_VERSION_MINOR;
+const int AERON_PATCH_VERSION = AERON_VERSION_PATCH;
+
+}

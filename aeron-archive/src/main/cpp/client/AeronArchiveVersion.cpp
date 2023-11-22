@@ -15,8 +15,13 @@
  */
 #include "AeronArchiveVersion.h"
 
-const std::string aeron::archive::client::AeronArchiveVersion::VERSION = AERON_VERSION_TXT;
-const std::string aeron::archive::client::AeronArchiveVersion::GIT_SHA = AERON_VERSION_GITSHA;
-const int aeron::archive::client::AeronArchiveVersion::MAJOR_VERSION = AERON_VERSION_MAJOR;
-const int aeron::archive::client::AeronArchiveVersion::MINOR_VERSION = AERON_VERSION_MINOR;
-const int aeron::archive::client::AeronArchiveVersion::PATCH_VERSION = AERON_VERSION_PATCH;
+namespace aeron { namespace archive { namespace client
+{
+
+const std::string AERON_ARCHIVE_VERSION = AERON_VERSION_TXT;
+const std::string AERON_ARCHIVE_GIT_SHA = AERON_VERSION_GITSHA;
+const int AERON_ARCHIVE_MAJOR_VERSION = AERON_VERSION_MAJOR;
+const int AERON_ARCHIVE_MINOR_VERSION = AERON_VERSION_MINOR;
+const int AERON_ARCHIVE_PATCH_VERSION = AERON_VERSION_PATCH;
+
+}}}

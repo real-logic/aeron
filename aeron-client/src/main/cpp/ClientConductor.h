@@ -497,8 +497,7 @@ private:
                     index_t labelLengthOffset =
                         CountersReader::metadataOffset(counterId) + CountersReader::LABEL_LENGTH_OFFSET;
                     int32_t labelLength = m_countersReader.metaDataBuffer().getInt32(labelLengthOffset);
-                    std::string versionInfo = std::string(" version=") + AeronVersion::VERSION + " commit=" +
-                        AeronVersion::GIT_SHA;
+                    std::string versionInfo = std::string(" version=") + AERON_VERSION + " commit=" + AERON_GIT_SHA;
                     m_countersReader.metaDataBuffer().putStringWithoutLength(
                         labelLengthOffset + (int32_t)sizeof(int32_t) + labelLength, versionInfo);
                     m_countersReader.metaDataBuffer().putInt32(

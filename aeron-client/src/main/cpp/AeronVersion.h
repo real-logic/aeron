@@ -21,8 +21,8 @@
 namespace aeron
 {
 
-extern const std::string AERON_VERSION;
-extern const std::string AERON_GIT_SHA;
+extern const char AERON_VERSION[];
+extern const char AERON_GIT_SHA[];
 extern const int AERON_MAJOR_VERSION;
 extern const int AERON_MINOR_VERSION;
 extern const int AERON_PATCH_VERSION;

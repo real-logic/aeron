@@ -21,8 +21,8 @@
 namespace aeron { namespace archive { namespace client
 {
 
-extern const std::string AERON_ARCHIVE_VERSION;
-extern const std::string AERON_ARCHIVE_GIT_SHA;
+extern const char AERON_ARCHIVE_VERSION[];
+extern const char AERON_ARCHIVE_GIT_SHA[];
 extern const int AERON_ARCHIVE_MAJOR_VERSION;
 extern const int AERON_ARCHIVE_MINOR_VERSION;
 extern const int AERON_ARCHIVE_PATCH_VERSION;

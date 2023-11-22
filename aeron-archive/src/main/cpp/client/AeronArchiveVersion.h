@@ -13,20 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_ARCHIVE_ARCHIVE_VERSION_H
-#define AERON_ARCHIVE_ARCHIVE_VERSION_H
-
-#include "string"
+#ifndef AERON_ARCHIVE_VERSION_H
+#define AERON_ARCHIVE_VERSION_H
 
 namespace aeron { namespace archive { namespace client
 {
 
-extern const char AERON_ARCHIVE_VERSION[];
-extern const char AERON_ARCHIVE_GIT_SHA[];
-extern const int AERON_ARCHIVE_MAJOR_VERSION;
-extern const int AERON_ARCHIVE_MINOR_VERSION;
-extern const int AERON_ARCHIVE_PATCH_VERSION;
+class AeronArchiveVersion
+{
+public:
+    static const char VERSION[];
+    static const char GIT_SHA[];
+    static const int MAJOR_VERSION;
+    static const int MINOR_VERSION;
+    static const int PATCH_VERSION;
+};
 
 }}}
 
-#endif //AERON_ARCHIVE_ARCHIVE_VERSION_H
+#endif //AERON_ARCHIVE_VERSION_H

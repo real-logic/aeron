@@ -18,10 +18,10 @@
 namespace aeron { namespace archive { namespace client
 {
 
-constexpr char AERON_ARCHIVE_VERSION[] = AERON_VERSION_TXT;
-constexpr char AERON_ARCHIVE_GIT_SHA[] = AERON_VERSION_GITSHA;
-constexpr int AERON_ARCHIVE_MAJOR_VERSION = AERON_VERSION_MAJOR;
-constexpr int AERON_ARCHIVE_MINOR_VERSION = AERON_VERSION_MINOR;
-constexpr int AERON_ARCHIVE_PATCH_VERSION = AERON_VERSION_PATCH;
+constexpr char AeronArchiveVersion::VERSION[] = AERON_VERSION_TXT;
+constexpr char AeronArchiveVersion::GIT_SHA[] = AERON_VERSION_GITSHA;
+constexpr int AeronArchiveVersion::MAJOR_VERSION = AERON_VERSION_MAJOR;
+constexpr int AeronArchiveVersion::MINOR_VERSION = AERON_VERSION_MINOR;
+constexpr int AeronArchiveVersion::PATCH_VERSION = AERON_VERSION_PATCH;
 
 }}}

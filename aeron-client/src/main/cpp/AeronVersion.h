@@ -16,16 +16,20 @@
 #ifndef AERON_AERON_VERSION_H
 #define AERON_AERON_VERSION_H
 
-#include "string"
+#include "util/Export.h"
 
 namespace aeron
 {
 
-extern const char AERON_VERSION[];
-extern const char AERON_GIT_SHA[];
-extern const int AERON_MAJOR_VERSION;
-extern const int AERON_MINOR_VERSION;
-extern const int AERON_PATCH_VERSION;
+class CLIENT_EXPORT AeronVersion
+{
+public:
+    static const char VERSION[];
+    static const char GIT_SHA[];
+    static const int MAJOR_VERSION;
+    static const int MINOR_VERSION;
+    static const int PATCH_VERSION;
+};
 
 }
 

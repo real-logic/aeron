@@ -1142,8 +1142,7 @@ TEST_F(ClientConductorTest, shouldAddClientVersionToTheHeartbeatCounter)
         HeartbeatTimestamp::CLIENT_HEARTBEAT_TYPE_ID,
         [&clientId](AtomicBuffer keyBuffer) -> void
     {
-        auto key = keyBuffer.overlayStruct<HeartbeatTimestamp::HeartbeatTimestampKeyDefn>(0);
-        key.registrationId = clientId;
+        keyBuffer.putInt64(0, clientId);
     });
 
     m_currentTime += KEEPALIVE_TIMEOUT_MS + 1;

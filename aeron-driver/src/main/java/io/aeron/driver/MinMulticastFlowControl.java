@@ -57,6 +57,6 @@ public class MinMulticastFlowControl extends AbstractMinMulticastFlowControl
         final InetSocketAddress receiverAddress,
         final long timeNs)
     {
-        processTriggerSendSetup(flyweight, receiverAddress, timeNs, true);
+        processSendSetupTrigger(flyweight, receiverAddress, timeNs, true);
     }
 }

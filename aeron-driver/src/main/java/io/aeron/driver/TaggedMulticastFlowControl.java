@@ -53,8 +53,8 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
         final int positionBitsToShift,
         final long timeNs)
     {
-        final boolean matchesTag = matchesTag(flyweight);
-        return processStatusMessage(flyweight, senderLimit, initialTermId, positionBitsToShift, timeNs, matchesTag);
+        return processStatusMessage(
+            flyweight, senderLimit, initialTermId, positionBitsToShift, timeNs, matchesTag(flyweight));
     }
 
     /**
@@ -65,8 +65,7 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
         final InetSocketAddress receiverAddress,
         final long timeNs)
     {
-        final boolean matchesTag = matchesTag(flyweight);
-        processTriggerSendSetup(flyweight, receiverAddress, timeNs, matchesTag);
+        processSendSetupTrigger(flyweight, receiverAddress, timeNs, matchesTag(flyweight));
     }
 
     @SuppressWarnings("deprecation")

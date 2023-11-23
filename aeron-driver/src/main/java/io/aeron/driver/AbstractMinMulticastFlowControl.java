@@ -47,7 +47,7 @@ abstract class AbstractMinMulticastFlowControlFields extends AbstractMinMulticas
 {
     long lastSetupSenderLimit;
     long timeOfLastSetupNs;
-    boolean triggeringStatusMessageMatchesTag;
+    boolean hasTaggedStatusMessageTriggeredSetup;
 }
 
 abstract class AbstractMinMulticastFlowControlRhsPadding extends AbstractMinMulticastFlowControlFields
@@ -120,7 +120,7 @@ public abstract class AbstractMinMulticastFlowControl
             context.tempBuffer(), countersManager, registrationId, sessionId, streamId, channel);
         timeOfLastSetupNs = 0;
         lastSetupSenderLimit = -1;
-        triggeringStatusMessageMatchesTag = false;
+        hasTaggedStatusMessageTriggeredSetup = false;
     }
 
     /**
@@ -141,13 +141,13 @@ public abstract class AbstractMinMulticastFlowControl
         final int positionBitsToShift,
         final long timeNs)
     {
-        if (triggeringStatusMessageMatchesTag && receivers.length > 0)
+        if (hasTaggedStatusMessageTriggeredSetup && receivers.length > 0)
         {
             timeOfLastSetupNs = timeNs;
             lastSetupSenderLimit = senderLimit;
         }
 
-        triggeringStatusMessageMatchesTag = false;
+        hasTaggedStatusMessageTriggeredSetup = false;
 
         return senderLimit;
     }
@@ -300,17 +300,17 @@ public abstract class AbstractMinMulticastFlowControl
      * @param flyweight       over the status message receiver.
      * @param receiverAddress of the receiver.
      * @param timeNs          current time (in nanoseconds).
-     * @param matchesTag      if the status messages comes from a receiver with a tag matching the group.
+     * @param hasMatchingTag  if the status messages comes from a receiver with a tag matching the group.
      */
-    public void processTriggerSendSetup(
+    protected void processSendSetupTrigger(
         final StatusMessageFlyweight flyweight,
         final InetSocketAddress receiverAddress,
         final long timeNs,
-        final boolean matchesTag)
+        final boolean hasMatchingTag)
     {
-        if (!triggeringStatusMessageMatchesTag)
+        if (!hasTaggedStatusMessageTriggeredSetup)
         {
-            triggeringStatusMessageMatchesTag = matchesTag;
+            hasTaggedStatusMessageTriggeredSetup = hasMatchingTag;
         }
     }
 

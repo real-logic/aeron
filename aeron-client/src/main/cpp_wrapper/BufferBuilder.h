@@ -23,8 +23,8 @@
 namespace aeron
 {
 
-static const std::uint32_t BUFFER_BUILDER_MAX_CAPACITY = std::numeric_limits<std::int32_t>::max() - 8;
-static const std::uint32_t BUFFER_BUILDER_INIT_MIN_CAPACITY = 4096;
+static constexpr std::uint32_t BUFFER_BUILDER_MAX_CAPACITY = std::numeric_limits<std::int32_t>::max() - 8;
+static constexpr std::uint32_t BUFFER_BUILDER_INIT_MIN_CAPACITY = 4096;
 
 class BufferBuilder
 {

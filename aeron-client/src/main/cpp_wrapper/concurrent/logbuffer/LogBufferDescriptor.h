@@ -33,12 +33,12 @@ const std::int32_t AERON_PAGE_MIN_SIZE = 4 * 1024;
 const std::int32_t AERON_PAGE_MAX_SIZE = 1024 * 1024 * 1024;
 
 #if defined(__GNUC__) || _MSC_VER >= 1900
-constexpr const int PARTITION_COUNT = 3;
+static constexpr const int PARTITION_COUNT = 3;
 #else
 // Visual Studio 2013 doesn't like constexpr without an update
 // https://msdn.microsoft.com/en-us/library/vstudio/hh567368.aspx
 // https://www.microsoft.com/en-us/download/details.aspx?id=41151
-const int PARTITION_COUNT = 3;
+static const int PARTITION_COUNT = 3;
 #endif
 
 /*

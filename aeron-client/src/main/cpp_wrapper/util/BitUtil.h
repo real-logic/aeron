@@ -37,7 +37,7 @@ namespace aeron { namespace util
 namespace BitUtil
 {
 /** Length of the data blocks used by the CPU cache sub-system in bytes. */
-static const std::size_t CACHE_LINE_LENGTH = 64;
+static constexpr std::size_t CACHE_LINE_LENGTH = 64;
 
 template<typename value_t>
 inline bool isPowerOfTwo(value_t value) noexcept

@@ -24,12 +24,12 @@ namespace aeron { namespace concurrent { namespace status {
 
 namespace ChannelEndpointStatus
 {
-static const std::int64_t CHANNEL_ENDPOINT_INITIALIZING = 0;
-static const std::int64_t CHANNEL_ENDPOINT_ERRORED = -1;
-static const std::int64_t CHANNEL_ENDPOINT_ACTIVE = 1;
-static const std::int64_t CHANNEL_ENDPOINT_CLOSING = 2;
+static constexpr std::int64_t CHANNEL_ENDPOINT_INITIALIZING = 0;
+static constexpr std::int64_t CHANNEL_ENDPOINT_ERRORED = -1;
+static constexpr std::int64_t CHANNEL_ENDPOINT_ACTIVE = 1;
+static constexpr std::int64_t CHANNEL_ENDPOINT_CLOSING = 2;
 
-static const std::int32_t NO_ID_ALLOCATED = -1;
+static constexpr std::int32_t NO_ID_ALLOCATED = -1;
 }
 
 class StatusIndicatorReader

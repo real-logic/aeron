@@ -26,28 +26,28 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 
 namespace DataFrameHeader {
 
-static const util::index_t FRAME_LENGTH_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, frame_length);
-static const util::index_t VERSION_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, version);
-static const util::index_t FLAGS_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, flags);
-static const util::index_t TYPE_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, type);
-static const util::index_t TERM_OFFSET_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, term_offset);
-static const util::index_t SESSION_ID_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, session_id);
-static const util::index_t STREAM_ID_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, stream_id);
-static const util::index_t TERM_ID_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, term_id);
-static const util::index_t RESERVED_VALUE_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, reserved_value);
-static const util::index_t DATA_OFFSET = sizeof(aeron_header_values_frame_t);
+static constexpr util::index_t FRAME_LENGTH_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, frame_length);
+static constexpr util::index_t VERSION_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, version);
+static constexpr util::index_t FLAGS_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, flags);
+static constexpr util::index_t TYPE_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, type);
+static constexpr util::index_t TERM_OFFSET_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, term_offset);
+static constexpr util::index_t SESSION_ID_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, session_id);
+static constexpr util::index_t STREAM_ID_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, stream_id);
+static constexpr util::index_t TERM_ID_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, term_id);
+static constexpr util::index_t RESERVED_VALUE_FIELD_OFFSET = offsetof(aeron_header_values_frame_t, reserved_value);
+static constexpr util::index_t DATA_OFFSET = sizeof(aeron_header_values_frame_t);
 
-static const util::index_t LENGTH = DATA_OFFSET;
+static constexpr util::index_t LENGTH = DATA_OFFSET;
 
-static const std::uint16_t HDR_TYPE_PAD = 0x00;
-static const std::uint16_t HDR_TYPE_DATA = 0x01;
-static const std::uint16_t HDR_TYPE_NAK = 0x02;
-static const std::uint16_t HDR_TYPE_SM = 0x03;
-static const std::uint16_t HDR_TYPE_ERR = 0x04;
-static const std::uint16_t HDR_TYPE_SETUP = 0x05;
-static const std::uint16_t HDR_TYPE_EXT = 0xFFFF;
+static constexpr std::uint16_t HDR_TYPE_PAD = 0x00;
+static constexpr std::uint16_t HDR_TYPE_DATA = 0x01;
+static constexpr std::uint16_t HDR_TYPE_NAK = 0x02;
+static constexpr std::uint16_t HDR_TYPE_SM = 0x03;
+static constexpr std::uint16_t HDR_TYPE_ERR = 0x04;
+static constexpr std::uint16_t HDR_TYPE_SETUP = 0x05;
+static constexpr std::uint16_t HDR_TYPE_EXT = 0xFFFF;
 
-static const std::int8_t CURRENT_VERSION = 0x0;
+static constexpr std::int8_t CURRENT_VERSION = 0x0;
 
 }
 

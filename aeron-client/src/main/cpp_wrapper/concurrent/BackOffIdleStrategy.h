@@ -26,10 +26,10 @@
 
 namespace aeron { namespace concurrent {
 
-static const std::uint8_t BACKOFF_STATE_NOT_IDLE = 0;
-static const std::uint8_t BACKOFF_STATE_SPINNING = 1;
-static const std::uint8_t BACKOFF_STATE_YIELDING = 2;
-static const std::uint8_t BACKOFF_STATE_PARKING = 3;
+static constexpr std::uint8_t BACKOFF_STATE_NOT_IDLE = 0;
+static constexpr std::uint8_t BACKOFF_STATE_SPINNING = 1;
+static constexpr std::uint8_t BACKOFF_STATE_YIELDING = 2;
+static constexpr std::uint8_t BACKOFF_STATE_PARKING = 3;
 
 class BackoffIdleStrategy
 {

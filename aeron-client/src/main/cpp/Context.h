@@ -34,7 +34,7 @@ class Image;
 /**
  * Used to represent a null value for when some value is not yet set.
  */
-constexpr const std::int32_t NULL_VALUE = -1;
+static constexpr const std::int32_t NULL_VALUE = -1;
 
 /**
  * Function called by Aeron to deliver notification of an available image.

@@ -39,11 +39,11 @@ using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent;
 using namespace aeron::util;
 
-static const std::int64_t NOT_CONNECTED = -1;
-static const std::int64_t BACK_PRESSURED = -2;
-static const std::int64_t ADMIN_ACTION = -3;
-static const std::int64_t PUBLICATION_CLOSED = -4;
-static const std::int64_t MAX_POSITION_EXCEEDED = -5;
+static constexpr std::int64_t NOT_CONNECTED = -1;
+static constexpr std::int64_t BACK_PRESSURED = -2;
+static constexpr std::int64_t ADMIN_ACTION = -3;
+static constexpr std::int64_t PUBLICATION_CLOSED = -4;
+static constexpr std::int64_t MAX_POSITION_EXCEEDED = -5;
 
 /**
  * Supplies the reserved value field for a data frame header. The returned value will be set in the header as

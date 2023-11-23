@@ -39,7 +39,7 @@ namespace HeartbeatTimestamp
 {
 
 /// Counter type id of a client heartbeat timestamp
-constexpr const std::int32_t CLIENT_HEARTBEAT_TYPE_ID = 11;
+static constexpr const std::int32_t CLIENT_HEARTBEAT_TYPE_ID = 11;
 
 #pragma pack(push)
 #pragma pack(4)

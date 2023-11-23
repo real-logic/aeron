@@ -24,7 +24,7 @@
 namespace aeron
 {
 
-static const std::size_t DEFAULT_IMAGE_FRAGMENT_ASSEMBLY_BUFFER_LENGTH = 4096;
+static constexpr std::size_t DEFAULT_IMAGE_FRAGMENT_ASSEMBLY_BUFFER_LENGTH = 4096;
 
 /**
  * A handler that sits in a chain-of-responsibility pattern that reassembles fragmented messages

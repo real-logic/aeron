@@ -53,7 +53,7 @@ private:
     }
 
 public:
-    static const char UNNAMED = -1;
+    static constexpr char UNNAMED = -1;
 
     CommandOption() = default;
 

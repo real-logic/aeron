@@ -20,6 +20,7 @@
 #include "aeron_system_counters.h"
 #include "aeron_alloc.h"
 #include "aeron_counters.h"
+#include "aeron_driver_version.h"
 
 static aeron_system_counter_t system_counters[] =
     {
@@ -38,7 +39,7 @@ static aeron_system_counter_t system_counters[] =
         { "Flow control under runs", AERON_SYSTEM_COUNTER_FLOW_CONTROL_UNDER_RUNS },
         { "Flow control over runs", AERON_SYSTEM_COUNTER_FLOW_CONTROL_OVER_RUNS },
         { "Invalid packets", AERON_SYSTEM_COUNTER_INVALID_PACKETS },
-        { "Errors: version=" AERON_VERSION_TXT " commit=" AERON_VERSION_GITSHA, AERON_SYSTEM_COUNTER_ERRORS },
+        { "Errors: version=" AERON_DRIVER_VERSION " commit=" AERON_DRIVER_GIT_SHA, AERON_SYSTEM_COUNTER_ERRORS },
         { "Short sends", AERON_SYSTEM_COUNTER_SHORT_SENDS },
         { "Failed attempts to free log buffers", AERON_SYSTEM_COUNTER_FREE_FAILS },
         { "Sender flow control limits, i.e. back-pressure events", AERON_SYSTEM_COUNTER_SENDER_FLOW_CONTROL_LIMITS },
@@ -57,7 +58,7 @@ static aeron_system_counter_t system_counters[] =
         { "Receiver work cycle exceeded threshold count", AERON_SYSTEM_COUNTER_RECEIVER_CYCLE_TIME_THRESHOLD_EXCEEDED },
         { "NameResolver max time in ns", AERON_SYSTEM_COUNTER_NAME_RESOLVER_MAX_TIME },
         { "NameResolver exceeded threshold count", AERON_SYSTEM_COUNTER_NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED },
-        { "Aeron software: version=" AERON_VERSION_TXT " commit=" AERON_VERSION_GITSHA, AERON_SYSTEM_COUNTER_AERON_VERSION },
+        { "Aeron software: version=" AERON_DRIVER_VERSION " commit=" AERON_DRIVER_GIT_SHA, AERON_SYSTEM_COUNTER_AERON_VERSION },
         { "Bytes currently mapped", AERON_SYSTEM_COUNTER_BYTES_CURRENTLY_MAPPED },
     };
 

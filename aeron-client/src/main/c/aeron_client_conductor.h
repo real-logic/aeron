@@ -389,12 +389,12 @@ inline int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(
 
         AERON_GET_VOLATILE(record_state, metadata->state);
 
-        if (AERON_COUNTER_RECORD_ALLOCATED == record_state)
+        if (AERON_COUNTER_RECORD_ALLOCATED == record_state && type_id == metadata->type_id)
         {
             int64_t counter_registration_id;
-
             memcpy(&counter_registration_id, metadata->key, sizeof(int64_t));
-            if (type_id == metadata->type_id && registration_id == counter_registration_id)
+
+            if (registration_id == counter_registration_id)
             {
                 return (int)i;
             }

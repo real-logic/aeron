@@ -33,6 +33,7 @@ SET(SOURCE
 
 SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Aeron.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AeronVersion.h
     ${CMAKE_CURRENT_SOURCE_DIR}/BufferBuilder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUri.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUriStringBuilder.h

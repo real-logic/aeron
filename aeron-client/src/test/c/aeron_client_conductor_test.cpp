@@ -24,7 +24,6 @@
 
 extern "C"
 {
-#include "aeronc.h"
 #include "aeron_publication.h"
 #include "aeron_exclusive_publication.h"
 #include "aeron_subscription.h"
@@ -34,6 +33,9 @@ extern "C"
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_client_conductor.h"
+#include "aeron_counter.h"
+#include "aeron_counters.h"
+#include "aeron_version.h"
 }
 
 #define CAPACITY (16 * 1024)
@@ -188,6 +190,18 @@ public:
             throw std::runtime_error("could not init to_clients: " + std::string(aeron_errmsg()));
         }
 
+        if (aeron_counters_manager_init(
+            &m_counters_manager,
+            aeron_cnc_counters_metadata_buffer(metadata),
+            (size_t)metadata->counter_metadata_buffer_length,
+            aeron_cnc_counters_values_buffer(metadata),
+            (size_t)metadata->counter_values_buffer_length,
+            &m_cached_clock,
+            1000) < 0)
+        {
+            throw std::runtime_error("could not init counters manager: " + std::string(aeron_errmsg()));
+        }
+
         if (aeron_client_conductor_init(&m_conductor, m_context) < 0)
         {
             throw std::runtime_error("could not init conductor: " + std::string(aeron_errmsg()));
@@ -197,6 +211,7 @@ public:
     ~ClientConductorTest() override
     {
         aeron_client_conductor_on_close(&m_conductor);
+        aeron_counters_manager_close(&m_counters_manager);
         m_context->cnc_map.addr = nullptr;
         aeron_context_close(m_context);
 
@@ -359,6 +374,8 @@ public:
 protected:
     aeron_context_t *m_context = nullptr;
     aeron_client_conductor_t m_conductor = {};
+    aeron_counters_manager_t m_counters_manager = {};
+    aeron_clock_cache_t m_cached_clock = {};
     std::unique_ptr<uint8_t[]> m_cnc;
     aeron_mpsc_rb_t m_to_driver = {};
     aeron_broadcast_transmitter_t m_to_clients = {};
@@ -1100,4 +1117,36 @@ TEST_F(ClientConductorTest, shouldCreateDriverTimeoutError)
     doWorkForNs(DRIVER_TIMEOUT_INTERVAL_NS * 2, false, DRIVER_TIMEOUT_INTERVAL_NS * 2);
 
     ASSERT_EQ(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, errorcode);
+}
+
+TEST_F(ClientConductorTest, shouldAddClientVersionInfoToTheHeartbeatCounterLabel)
+{
+    m_conductor.client_id = 0x60001da400;
+    aeron_heartbeat_timestamp_key_layout_t key = {};
+    key.registration_id = m_conductor.client_id;
+    std::string label = std::string("test 42 and beyond");
+
+    int32_t counter_id = aeron_counters_manager_allocate(
+        &m_counters_manager,
+        AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID,
+        (const uint8_t *)&key,
+        sizeof(key),
+        label.c_str(),
+        label.length());
+    ASSERT_GT(counter_id, -1);
+
+    char counterLabel[100];
+    memset(counterLabel, '\0', sizeof(counterLabel));
+    ASSERT_EQ(label.length(), aeron_counters_reader_counter_label(
+        &m_conductor.counters_reader, counter_id, counterLabel, sizeof(counterLabel)));
+
+    ASSERT_STREQ(label.c_str(), counterLabel);
+
+    doWorkForNs((int64_t)m_context->keepalive_interval_ns * 2, true);
+
+    ASSERT_GT(aeron_counters_reader_counter_label(
+        &m_conductor.counters_reader, counter_id, counterLabel, sizeof(counterLabel)), label.length());
+    ASSERT_EQ(
+        label + " version=" + AERON_VERSION + " commit=" + AERON_GIT_SHA,
+        std::string(counterLabel));
 }

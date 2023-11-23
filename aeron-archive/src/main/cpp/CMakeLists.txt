@@ -79,6 +79,7 @@ SET(SOURCE
     client/ReplayMerge.cpp)
 
 SET(HEADERS
+    client/AeronArchiveVersion.h
     client/ArchiveException.h
     client/ArchiveConfiguration.h
     client/ArchiveProxy.h

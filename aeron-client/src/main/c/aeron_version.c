@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef AERON_VERSION_H
-#define AERON_VERSION_H
-
 #include <stdint.h>
 
 const char aeron_version_full_str[] = "aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__;
@@ -70,5 +67,3 @@ uint8_t aeron_semantic_version_patch(int32_t version)
 {
     return (uint8_t)(version & 0xFF);
 }
-
-#endif //AERON_VERSION_H

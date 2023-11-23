@@ -35,7 +35,6 @@ extern "C"
 #include "aeron_client_conductor.h"
 #include "aeron_counter.h"
 #include "aeron_counters.h"
-#include "aeron_version.h"
 }
 
 #define CAPACITY (16 * 1024)

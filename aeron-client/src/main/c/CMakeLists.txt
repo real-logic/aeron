@@ -116,7 +116,8 @@ set(SOURCE
     aeron_socket.c
     aeron_subscription.c
     aeron_windows.c
-    aeronc.c)
+    aeronc.c
+    aeron_version.c)
 
 set(HEADERS
     collections/aeron_array_to_ptr_hash_map.h
@@ -186,7 +187,6 @@ set(HEADERS
     aeron_publication.h
     aeron_socket.h
     aeron_subscription.h
-    aeron_version.h
     aeron_windows.h
     aeronc.h)
 

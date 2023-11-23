@@ -182,7 +182,8 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_socket.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_subscription.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_windows.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeronc.c)
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeronc.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_version.c)
 
 set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_array_to_ptr_hash_map.h
@@ -248,7 +249,6 @@ set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_publication.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_socket.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_subscription.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_version.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_windows.h
     ${AERON_C_CLIENT_SOURCE_PATH}/aeronc.h)
 
@@ -270,6 +270,7 @@ SET(SOURCE
     aeron_congestion_control.c
     aeron_csv_table_name_resolver.c
     aeron_data_packet_dispatcher.c
+    aeron_driver_version.c
     aeron_driver.c
     aeron_driver_conductor.c
     aeron_driver_conductor_proxy.c

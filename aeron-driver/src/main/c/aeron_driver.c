@@ -1161,11 +1161,3 @@ int aeron_driver_close(aeron_driver_t *driver)
 
     return 0;
 }
-
-extern int32_t aeron_semantic_version_compose(uint8_t major, uint8_t minor, uint8_t patch);
-
-extern uint8_t aeron_semantic_version_major(int32_t version);
-
-extern uint8_t aeron_semantic_version_minor(int32_t version);
-
-extern uint8_t aeron_semantic_version_patch(int32_t version);

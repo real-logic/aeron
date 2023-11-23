@@ -29,7 +29,6 @@
 #include "aeron_image.h"
 #include "aeron_counter.h"
 #include "aeron_counters.h"
-#include "aeron_version.h"
 
 int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_context_t *context)
 {

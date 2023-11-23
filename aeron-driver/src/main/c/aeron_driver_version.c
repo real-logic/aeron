@@ -13,23 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "aeron_driver_version.h"
 
-#ifndef AERON_DRIVER_VERSION_H
-#define AERON_DRIVER_VERSION_H
-
-#ifdef __cplusplus
-extern "C"
+const char *aeron_driver_version_string(void)
 {
-#endif
-
-const char *aeron_driver_version_string(void);
-const char *aeron_driver_version_git_sha(void);
-int aeron_driver_version_major(void);
-int aeron_driver_version_minor(void);
-int aeron_driver_version_patch(void);
-
-#ifdef __cplusplus
+    return AERON_VERSION_TXT;
 }
-#endif
 
-#endif //AERON_DRIVER_VERSION_H
+const char *aeron_driver_version_git_sha(void)
+{
+    return AERON_VERSION_GITSHA;
+}
+
+int aeron_driver_version_major(void)
+{
+    return AERON_VERSION_MAJOR;
+}
+
+int aeron_driver_version_minor(void)
+{
+    return AERON_VERSION_MINOR;
+}
+
+int aeron_driver_version_patch(void)
+{
+    return AERON_VERSION_PATCH;
+}

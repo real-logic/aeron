@@ -21,11 +21,30 @@
 namespace aeron
 {
 
-extern std::string aeron_version_string();
-extern std::string aeron_version_git_sha();
-extern int aeron_version_major();
-extern int aeron_version_minor();
-extern int aeron_version_patch();
+static inline std::string aeron_version_string()
+{
+    return AERON_VERSION_TXT;
+}
+
+static inline std::string aeron_version_git_sha()
+{
+    return AERON_VERSION_GITSHA;
+}
+
+static inline int aeron_version_major()
+{
+    return AERON_VERSION_MAJOR;
+}
+
+static inline int aeron_version_minor()
+{
+    return AERON_VERSION_MINOR;
+}
+
+static inline int aeron_version_patch()
+{
+    return AERON_VERSION_PATCH;
+}
 
 }
 

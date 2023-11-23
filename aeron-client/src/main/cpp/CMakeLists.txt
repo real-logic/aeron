@@ -19,7 +19,6 @@ if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
 endif ()
 
 SET(SOURCE
-    ${CMAKE_CURRENT_SOURCE_DIR}/AeronVersion.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Publication.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ExclusivePublication.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Subscription.cpp

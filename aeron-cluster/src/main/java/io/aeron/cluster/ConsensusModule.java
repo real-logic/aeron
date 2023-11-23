@@ -1367,6 +1367,7 @@ public final class ConsensusModule implements AutoCloseable
 
         private boolean deleteDirOnStart = false;
         private String clusterDirectoryName = ClusteredServiceContainer.Configuration.clusterDirName();
+        private String clusterServicesDirectoryName = ClusteredServiceContainer.Configuration.clusterServicesDirName();
         private File clusterDir;
         private File markFileDir;
         private RecordingLog recordingLog;
@@ -1495,6 +1496,11 @@ public final class ConsensusModule implements AutoCloseable
             else
             {
                 clusterDirectoryName = clusterDir.getPath();
+            }
+
+            if (null == clusterServicesDirectoryName)
+            {
+                clusterServicesDirectoryName = clusterDirectoryName;
             }
 
             if (null == clusterMembers)
@@ -1907,6 +1913,35 @@ public final class ConsensusModule implements AutoCloseable
         public String clusterDirectoryName()
         {
             return clusterDirectoryName;
+        }
+
+        /**
+         * Set the directory used by clustered service containers. By default, the cluster services will share a
+         * directory with the consensus module. However, sometimes it will be useful for these values to be different.
+         * Setting this value allows that location to be tracked in the ClusterMarkFile to allow for the ClusterTool to
+         * resolve their location when using action like <code>describe</code> or <code>errors</code>. There is an
+         * expectation that all clustered service containers will use the same directory.
+         *
+         * @param clusterServicesDirectoryName to use.
+         * @return this for a fluent API.
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_SERVICES_DIR_PROP_NAME
+         */
+        public Context clusterServicesDirectoryName(final String clusterServicesDirectoryName)
+        {
+            this.clusterServicesDirectoryName = clusterServicesDirectoryName;
+            return this;
+        }
+
+        /**
+         * The directory used by the clustered service containers.
+         *
+         * @return directory used by the clustered service containers.
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_SERVICES_DIR_PROP_NAME
+         * @see #clusterServicesDirectoryName(String)
+         */
+        public String clusterServicesDirectoryName()
+        {
+            return clusterServicesDirectoryName;
         }
 
         /**
@@ -4078,7 +4113,8 @@ public final class ConsensusModule implements AutoCloseable
                 .controlChannel(controlChannel)
                 .ingressChannel(ingressChannel)
                 .serviceName(null)
-                .authenticator(authenticatorClassName);
+                .authenticator(authenticatorClassName)
+                .servicesClusterDir(clusterServicesDirectoryName);
 
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();

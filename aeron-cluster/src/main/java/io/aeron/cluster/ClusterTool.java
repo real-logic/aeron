@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
+import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterNodeControlProperties;
@@ -61,6 +62,7 @@ import static java.nio.file.StandardCopyOption.*;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.agrona.Strings.isEmpty;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
@@ -135,6 +137,8 @@ public class ClusterTool
 
     static final long TIMEOUT_MS =
         NANOSECONDS.toMillis(getDurationInNanos(AERON_CLUSTER_TOOL_TIMEOUT_PROP_NAME, 0));
+
+    private static final int MARK_FILE_VERSION_WITH_CLUSTER_SERVICES_DIR = 1;
 
     /**
      * Main method for launching the process.
@@ -265,12 +269,17 @@ public class ClusterTool
     @SuppressWarnings("UnusedReturnValue")
     static boolean describeClusterMarkFile(final File clusterDir, final PrintStream out)
     {
+        final File clusterServicesDir;
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir))
             {
+                final MarkFileHeaderDecoder decoder = markFile.decoder();
+
                 printTypeAndActivityTimestamp(out, markFile);
-                out.println(markFile.decoder());
+                out.println(decoder);
+
+                clusterServicesDir = resolveClusterServicesDir(clusterDir, decoder);
             }
         }
         else
@@ -279,10 +288,34 @@ public class ClusterTool
             return false;
         }
 
-        final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterDir, out::println);
+        final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterServicesDir, out::println);
         describe(out, serviceMarkFiles);
 
         return true;
+    }
+
+    static File resolveClusterServicesDir(final File clusterDir, final MarkFileHeaderDecoder decoder)
+    {
+        final File clusterServicesDir;
+
+        if (MARK_FILE_VERSION_WITH_CLUSTER_SERVICES_DIR <= decoder.sbeSchemaVersion())
+        {
+            decoder.sbeRewind();
+            decoder.skipAeronDirectory();
+            decoder.skipControlChannel();
+            decoder.skipIngressChannel();
+            decoder.skipServiceName();
+            decoder.skipAuthenticator();
+
+            final String servicesClusterDir = decoder.servicesClusterDir();
+            clusterServicesDir = isEmpty(servicesClusterDir) ? clusterDir : new File(servicesClusterDir);
+        }
+        else
+        {
+            clusterServicesDir = clusterDir;
+        }
+
+        return clusterServicesDir;
     }
 
     /**
@@ -295,7 +328,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir))
             {
                 out.println(markFile.decoder().pid());
             }
@@ -446,9 +479,10 @@ public class ClusterTool
      */
     public static void errors(final PrintStream out, final File clusterDir)
     {
+        File clusterServicesDir = clusterDir;
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, out::println))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir))
             {
                 printTypeAndActivityTimestamp(out, markFile);
                 printErrors(out, markFile);
@@ -456,6 +490,8 @@ public class ClusterTool
                 final String aeronDirectory = markFile.decoder().aeronDirectory();
                 out.println();
                 printDriverErrors(out, aeronDirectory);
+
+                clusterServicesDir = resolveClusterServicesDir(clusterDir, markFile.decoder());
             }
         }
         else
@@ -463,7 +499,7 @@ public class ClusterTool
             out.println(ClusterMarkFile.FILENAME + " does not exist.");
         }
 
-        final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterDir, out::println);
+        final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterServicesDir, out::println);
         for (final ClusterMarkFile serviceMarkFile : serviceMarkFiles)
         {
             printTypeAndActivityTimestamp(out, serviceMarkFile);
@@ -482,7 +518,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir))
             {
                 final ClusterMembership clusterMembership = new ClusterMembership();
                 final long timeoutMs = Math.max(TimeUnit.SECONDS.toMillis(1), TIMEOUT_MS);
@@ -518,7 +554,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir))
             {
                 if (markFile.decoder().componentType() != ClusterComponentType.BACKUP)
                 {
@@ -549,7 +585,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir))
             {
                 if (markFile.decoder().componentType() != ClusterComponentType.BACKUP)
                 {
@@ -599,7 +635,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir))
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir))
             {
                 final String aeronDirectoryName = markFile.decoder().aeronDirectory();
                 final MutableLong nodeRoleCounter = new MutableLong(-1);
@@ -674,7 +710,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir))
             {
                 return queryClusterMembers(markFile, timeoutMs, clusterMembership);
             }
@@ -788,7 +824,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir))
             {
                 return nextBackupQueryDeadlineMs(markFile);
             }
@@ -834,7 +870,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir))
             {
                 return nextBackupQueryDeadlineMs(markFile, timeMs);
             }
@@ -1076,7 +1112,7 @@ public class ClusterTool
     static ClusterNodeControlProperties loadControlProperties(final File clusterDir)
     {
         final ClusterNodeControlProperties properties;
-        try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+        try (ClusterMarkFile markFile = openMarkFile(clusterDir))
         {
             properties = markFile.loadControlProperties();
         }
@@ -1122,7 +1158,7 @@ public class ClusterTool
 
         final int clusterId;
         final ClusterNodeControlProperties clusterNodeControlProperties;
-        try (ClusterMarkFile markFile = openMarkFile(clusterDir, out::println))
+        try (ClusterMarkFile markFile = openMarkFile(clusterDir))
         {
             clusterId = markFile.clusterId();
             clusterNodeControlProperties = markFile.loadControlProperties();
@@ -1221,11 +1257,11 @@ public class ClusterTool
         }
     }
 
-    static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
+    static ClusterMarkFile openMarkFile(final File clusterDir)
     {
         final File markFileDir = resolveClusterMarkFileDir(clusterDir);
         return new ClusterMarkFile(
-            markFileDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
+            markFileDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, null);
     }
 
     private static ClusterMarkFile[] openServiceMarkFiles(final File clusterDir, final Consumer<String> logger)

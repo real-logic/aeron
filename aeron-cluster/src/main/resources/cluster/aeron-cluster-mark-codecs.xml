@@ -2,8 +2,8 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
                    package="io.aeron.cluster.codecs.mark"
                    id="110"
-                   version="0"
-                   semanticVersion="5.3"
+                   version="1"
+                   semanticVersion="5.4"
                    description="Codecs for Mark file of an Aeron Cluster."
                    byteOrder="littleEndian">
     <types>
@@ -27,7 +27,7 @@
             <validValue name="CONSENSUS_MODULE">1</validValue>
             <validValue name="CONTAINER">2</validValue>
             <validValue name="BACKUP">3</validValue>
-            <validValue name="STANDBY">4</validValue>
+            <validValue name="STANDBY" sinceVersion="1">4</validValue>
         </enum>
     </types>
 
@@ -55,6 +55,7 @@
         <data  name="ingressChannel"          id="18" type="varAsciiEncoding"/>
         <data  name="serviceName"             id="19" type="varAsciiEncoding"/>
         <data  name="authenticator"           id="20" type="varAsciiEncoding"/>
+        <data  name="servicesClusterDir"      id="21" type="varAsciiEncoding" sinceVersion="1"/>
     </sbe:message>
 
 </sbe:messageSchema>

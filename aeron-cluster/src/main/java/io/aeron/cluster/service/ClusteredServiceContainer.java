@@ -269,6 +269,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
 
         /**
+         * Directory to use for the aeron cluster services, will default to {@link #CLUSTER_DIR_PROP_NAME} if not
+         * specified.
+         */
+        public static final String CLUSTER_SERVICES_DIR_PROP_NAME = "aeron.cluster.services.dir";
+
+        /**
          * Directory to use for the Cluster component's mark file.
          */
         public static final String MARK_FILE_DIR_PROP_NAME = "aeron.cluster.mark.file.dir";
@@ -490,6 +496,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static String clusterDirName()
         {
             return System.getProperty(CLUSTER_DIR_PROP_NAME, CLUSTER_DIR_DEFAULT);
+        }
+
+        /**
+         * The value of system property {@link #CLUSTER_DIR_PROP_NAME} if set or null.
+         *
+         * @return {@link #CLUSTER_DIR_PROP_NAME} if set or null.
+         */
+        public static String clusterServicesDirName()
+        {
+            return System.getProperty(CLUSTER_DIR_PROP_NAME);
         }
 
         /**

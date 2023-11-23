@@ -2171,6 +2171,13 @@ bool aeron_counter_is_closed(aeron_counter_t *counter);
 const char *aeron_version_full(void);
 
 /**
+ * Return version string.
+ *
+ * @return version string.
+ */
+const char *aeron_version_string(void);
+
+/**
  * Return major version number.
  *
  * @return major version number.

@@ -13,42 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "AeronArchiveVersion.h"
 
-#ifndef AERON_DRIVER_VERSION_H
-#define AERON_DRIVER_VERSION_H
-
-#ifdef __cplusplus
-extern "C"
+namespace aeron { namespace archive { namespace client
 {
-#endif
 
-const char *aeron_driver_version_string(void)
+std::string aeron_archive_version_string()
 {
     return AERON_VERSION_TXT;
 }
 
-const char *aeron_driver_version_git_sha(void)
+std::string aeron_archive_version_git_sha()
 {
     return AERON_VERSION_GITSHA;
 }
 
-int aeron_driver_version_major(void)
+int aeron_archive_version_major()
 {
     return AERON_VERSION_MAJOR;
 }
 
-int aeron_driver_version_minor(void)
+int aeron_archive_version_minor()
 {
     return AERON_VERSION_MINOR;
 }
 
-int aeron_driver_version_patch(void)
+int aeron_archive_version_patch()
 {
     return AERON_VERSION_PATCH;
 }
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif //AERON_DRIVER_VERSION_H
+}}}

@@ -115,7 +115,6 @@ set(SOURCE
     aeron_publication.c
     aeron_socket.c
     aeron_subscription.c
-    aeron_version.c
     aeron_windows.c
     aeronc.c)
 

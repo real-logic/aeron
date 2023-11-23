@@ -181,7 +181,6 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_publication.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_socket.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_subscription.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/aeron_version.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeron_windows.c
     ${AERON_C_CLIENT_SOURCE_PATH}/aeronc.c)
 

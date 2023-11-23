@@ -21,11 +21,11 @@
 namespace aeron
 {
 
-static constexpr char AERON_VERSION[] = AERON_VERSION_TXT;
-static constexpr char AERON_GIT_SHA[] = AERON_VERSION_GITSHA;
-static constexpr int AERON_MAJOR_VERSION = AERON_VERSION_MAJOR;
-static constexpr int AERON_MINOR_VERSION = AERON_VERSION_MINOR;
-static constexpr int AERON_PATCH_VERSION = AERON_VERSION_PATCH;
+extern std::string aeron_version_string();
+extern std::string aeron_version_git_sha();
+extern int aeron_version_major();
+extern int aeron_version_minor();
+extern int aeron_version_patch();
 
 }
 

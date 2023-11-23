@@ -419,7 +419,11 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
                     conductor->counters_reader.metadata + AERON_COUNTER_METADATA_OFFSET(id));
 
                 char version_info[AERON_COUNTER_MAX_LABEL_LENGTH];
-                snprintf(version_info, sizeof(version_info) - 1, " version=%s commit=%s", AERON_VERSION, AERON_GIT_SHA);
+                snprintf(version_info,
+                    sizeof(version_info) - 1,
+                    " version=%s commit=%s",
+                    aeron_version_string(),
+                    aeron_version_gitsha());
                 size_t version_info_length = strlen(version_info);
 
                 memcpy(counter_metadata->label + counter_metadata->label_length, version_info, version_info_length);

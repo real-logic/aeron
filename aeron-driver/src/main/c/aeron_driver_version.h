@@ -22,7 +22,7 @@ extern "C"
 {
 #endif
 
-const char *aeron_driver_version_string(void);
+const char *aeron_driver_version_text(void);
 const char *aeron_driver_version_git_sha(void);
 int aeron_driver_version_major(void);
 int aeron_driver_version_minor(void);

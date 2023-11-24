@@ -1146,6 +1146,6 @@ TEST_F(ClientConductorTest, shouldAddClientVersionInfoToTheHeartbeatCounterLabel
     ASSERT_GT(aeron_counters_reader_counter_label(
         &m_conductor.counters_reader, counter_id, counterLabel, sizeof(counterLabel)), label.length());
     ASSERT_EQ(
-        label + " version=" + aeron_version_string() + " commit=" + aeron_version_gitsha(),
+        label + " version=" + aeron_version_text() + " commit=" + aeron_version_gitsha(),
         std::string(counterLabel));
 }

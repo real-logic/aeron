@@ -23,7 +23,7 @@ const char *aeron_version_full(void)
     return aeron_version_full_str;
 }
 
-const char *aeron_version_string(void)
+const char *aeron_version_text(void)
 {
     return AERON_VERSION_TXT;
 }

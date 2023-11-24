@@ -421,7 +421,7 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
                 snprintf(version_info,
                     sizeof(version_info) - 1,
                     " version=%s commit=%s",
-                    aeron_version_string(),
+                    aeron_version_text(),
                     aeron_version_gitsha());
                 size_t version_info_length = strlen(version_info);
 

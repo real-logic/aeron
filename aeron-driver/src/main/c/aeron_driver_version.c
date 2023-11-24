@@ -15,7 +15,7 @@
  */
 #include "aeron_driver_version.h"
 
-const char *aeron_driver_version_string(void)
+const char *aeron_driver_version_text(void)
 {
     return AERON_VERSION_TXT;
 }

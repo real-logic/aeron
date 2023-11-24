@@ -73,7 +73,7 @@ if not "%1"=="" (
         echo Using !CMAKE_BUILD_PARALLEL_LEVEL! cpus
         shift
     ) else (
-        echo "Unknown option %%o"
+        echo "Unknown option %1"
         echo "Use --help for help"
         exit /b 1
     )

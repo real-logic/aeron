@@ -67,6 +67,7 @@ add_custom_command(OUTPUT ${GENERATED_CODECS}
 add_custom_target(codecs DEPENDS ${GENERATED_CODECS})
 
 SET(SOURCE
+    client/AeronArchiveVersion.cpp
     client/ArchiveProxy.cpp
     client/ControlResponsePoller.cpp
     client/ControlResponseAdapter.cpp

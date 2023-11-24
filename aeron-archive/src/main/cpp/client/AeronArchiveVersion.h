@@ -21,30 +21,11 @@
 namespace aeron { namespace archive { namespace client
 {
 
-static inline std::string aeron_archive_version_string()
-{
-    return AERON_VERSION_TXT;
-}
-
-static inline std::string aeron_archive_version_git_sha()
-{
-    return AERON_VERSION_GITSHA;
-}
-
-static inline int aeron_archive_version_major()
-{
-    return AERON_VERSION_MAJOR;
-}
-
-static inline int aeron_archive_version_minor()
-{
-    return AERON_VERSION_MINOR;
-}
-
-static inline int aeron_archive_version_patch()
-{
-    return AERON_VERSION_PATCH;
-}
+std::string aeronArchiveVersionString();
+std::string aeronArchiveVersionGitSha();
+int aeronArchiveVersionMajor();
+int aeronArchiveVersionMinor();
+int aeronArchiveVersionPatch();
 
 }}}
 

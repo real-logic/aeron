@@ -13,20 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_AERON_VERSION_H
-#define AERON_AERON_VERSION_H
+#include "AeronArchiveVersion.h"
 
-#include "string"
-
-namespace aeron
+namespace aeron { namespace archive { namespace client
 {
 
-std::string aeronVersionString();
-std::string aeronVersionGitSha();
-int aeronVersionMajor();
-int aeronVersionMinor();
-int aeronVersionPatch();
-
+std::string aeronArchiveVersionString()
+{
+    return AERON_VERSION_TXT;
 }
 
-#endif //AERON_AERON_VERSION_H
+std::string aeronArchiveVersionGitSha()
+{
+    return AERON_VERSION_GITSHA;
+}
+
+int aeronArchiveVersionMajor()
+{
+    return AERON_VERSION_MAJOR;
+}
+
+int aeronArchiveVersionMinor()
+{
+    return AERON_VERSION_MINOR;
+}
+
+int aeronArchiveVersionPatch()
+{
+    return AERON_VERSION_PATCH;
+}
+
+}}}

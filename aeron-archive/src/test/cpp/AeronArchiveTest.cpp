@@ -1530,4 +1530,3 @@ TEST_F(AeronArchiveTest, shouldRecordReplicateTwice)
         idleStrategy.idle();
     }
 }
-

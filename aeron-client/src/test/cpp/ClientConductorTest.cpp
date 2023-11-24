@@ -1151,6 +1151,11 @@ TEST_F(ClientConductorTest, shouldAddClientVersionToTheHeartbeatCounter)
     m_conductor.doWork();
 
     EXPECT_EQ(
-        std::string("X counter version=") + aeron::aeronVersionString() + " commit=" + aeron::aeronVersionGitSha(),
+        std::string("X counter version=") + aeron::AeronVersion::text() + " commit=" +
+        aeron::AeronVersion::gitSha(),
         manager.getCounterLabel(counterId));
+
+    EXPECT_EQ(AERON_VERSION_MAJOR, aeron::AeronVersion::major());
+    EXPECT_EQ(AERON_VERSION_MINOR, aeron::AeronVersion::minor());
+    EXPECT_EQ(AERON_VERSION_PATCH, aeron::AeronVersion::patch());
 }

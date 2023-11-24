@@ -46,7 +46,15 @@ function(aeron_archive_client_test name file)
     set_tests_properties(${wrapper_name} PROPERTIES RUN_SERIAL TRUE)
 endfunction()
 
+function(aeron_archive_standalone_test name file)
+    add_executable(${name} ${file})
+    add_dependencies(${name} gmock)
+    target_link_libraries(${name} aeron_client aeron_archive_client gmock_main ${CMAKE_THREAD_LIBS_INIT})
+    add_test(NAME ${name} COMMAND ${name})
+endfunction()
+
 if (AERON_UNIT_TESTS)
     aeron_archive_client_test(archiveTest AeronArchiveTest.cpp)
-endif ()
 
+    aeron_archive_standalone_test(aeronArchiveVersionTest client/AeronArchiveVersionTest.cpp)
+endif ()

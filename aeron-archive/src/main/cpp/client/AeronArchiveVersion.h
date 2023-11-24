@@ -21,11 +21,15 @@
 namespace aeron { namespace archive { namespace client
 {
 
-std::string aeronArchiveVersionString();
-std::string aeronArchiveVersionGitSha();
-int aeronArchiveVersionMajor();
-int aeronArchiveVersionMinor();
-int aeronArchiveVersionPatch();
+class AeronArchiveVersion
+{
+public:
+    static std::string text();
+    static std::string gitSha();
+    static int major();
+    static int minor();
+    static int patch();
+};
 
 }}}
 

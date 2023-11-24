@@ -17,15 +17,20 @@
 #define AERON_AERON_VERSION_H
 
 #include "string"
+#include "util/Export.h"
 
 namespace aeron
 {
 
-std::string aeronVersionString();
-std::string aeronVersionGitSha();
-int aeronVersionMajor();
-int aeronVersionMinor();
-int aeronVersionPatch();
+class CLIENT_EXPORT AeronVersion
+{
+public:
+    static std::string text();
+    static std::string gitSha();
+    static int major();
+    static int minor();
+    static int patch();
+};
 
 }
 

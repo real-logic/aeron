@@ -903,6 +903,16 @@ public:
     }
 
     /**
+     * Get the underlying C Aeron client. Applications should not need to use this method.
+     *
+     * @return the underlying C Aeron client.
+     */
+    inline aeron_t *aeron()
+    {
+        return m_aeron;
+    }
+
+    /**
      * Return the static version and build string for the binary library.
      *
      * @return static version and build string for the binary library.

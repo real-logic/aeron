@@ -61,6 +61,7 @@ typedef struct aeron_min_flow_control_strategy_state_stct
     int64_t last_setup_snd_lmt;
     int64_t group_tag;
     int32_t group_min_size;
+    bool has_tagged_status_message_triggered_setup;
     const aeron_udp_channel_t *channel;
     aeron_counters_manager_t *counters_manager;
 
@@ -279,11 +280,13 @@ int64_t aeron_min_flow_control_strategy_on_setup(
 {
     aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
 
-    if (0 < strategy_state->receivers.length)
+    if (strategy_state->has_tagged_status_message_triggered_setup && 0 < strategy_state->receivers.length)
     {
         strategy_state->time_of_last_setup_ns = now_ns;
         strategy_state->last_setup_snd_lmt = snd_lmt;
     }
+
+    strategy_state->has_tagged_status_message_triggered_setup = false;
 
     return snd_lmt;
 }
@@ -332,13 +335,58 @@ int64_t aeron_tagged_flow_control_strategy_on_setup(
 {
     aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
 
-    if (0 < strategy_state->receivers.length)
+    if (strategy_state->has_tagged_status_message_triggered_setup && 0 < strategy_state->receivers.length)
     {
         strategy_state->time_of_last_setup_ns = now_ns;
         strategy_state->last_setup_snd_lmt = snd_lmt;
     }
 
+    strategy_state->has_tagged_status_message_triggered_setup = false;
+
     return snd_lmt;
+}
+
+void aeron_min_flow_control_strategy_process_on_trigger_send_setup(
+    aeron_min_flow_control_strategy_state_t *strategy_state,
+    aeron_status_message_header_t *status_message_header,
+    size_t length,
+    int64_t now_ns,
+    bool matches_tag)
+{
+    if (!strategy_state->has_tagged_status_message_triggered_setup)
+    {
+        strategy_state->has_tagged_status_message_triggered_setup = matches_tag;
+    }
+}
+
+void aeron_tagged_flow_control_strategy_on_trigger_send_setup(
+    void *state,
+    const uint8_t *sm,
+    size_t length,
+    struct sockaddr_storage *recv_addr,
+    int64_t now_ns)
+{
+    aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
+    aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)sm;
+
+    int64_t receiver_group_tag;
+    const int bytes_read = aeron_udp_protocol_group_tag(status_message_header, &receiver_group_tag);
+    const bool was_present = bytes_read == sizeof(receiver_group_tag);
+
+    if (0 != bytes_read && !was_present)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "%s",
+            "Received a status message for tagged flow control that did not have 0 or 8 bytes for the group_tag");
+        aeron_distinct_error_log_record(strategy_state->error_log, aeron_errcode(), aeron_errmsg());
+        aeron_err_clear();
+    }
+
+    const bool matches_tag = was_present && receiver_group_tag == strategy_state->group_tag;
+
+    aeron_min_flow_control_strategy_process_on_trigger_send_setup(
+        strategy_state, status_message_header, length, now_ns, matches_tag);
 }
 
 size_t aeron_min_flow_control_strategy_max_retransmission_length(
@@ -354,6 +402,20 @@ size_t aeron_min_flow_control_strategy_max_retransmission_length(
         AERON_MIN_FLOW_CONTROL_RETRANSMIT_RECEIVER_WINDOW_MULTIPLE * estimated_window_length;
 
     return AERON_MIN(max_retransmit_length, resend_length);
+}
+
+void aeron_min_flow_control_strategy_on_trigger_send_setup(
+    void *state,
+    const uint8_t *sm,
+    size_t length,
+    struct sockaddr_storage *recv_addr,
+    int64_t now_ns)
+{
+    aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
+    aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)sm;
+
+    aeron_min_flow_control_strategy_process_on_trigger_send_setup(
+        strategy_state, status_message_header, length, now_ns, true);
 }
 
 int aeron_min_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy)
@@ -450,6 +512,9 @@ int aeron_tagged_flow_control_strategy_supplier_init(
         aeron_tagged_flow_control_strategy_on_setup : aeron_min_flow_control_strategy_on_setup;
     _strategy->fini = aeron_min_flow_control_strategy_fini;
     _strategy->has_required_receivers = aeron_min_flow_control_strategy_has_required_receivers;
+    _strategy->on_trigger_send_setup = is_group_tag_aware ?
+        aeron_tagged_flow_control_strategy_on_trigger_send_setup :
+        aeron_min_flow_control_strategy_on_trigger_send_setup;
     _strategy->max_retransmission_length = aeron_min_flow_control_strategy_max_retransmission_length;
 
     aeron_min_flow_control_strategy_state_t *state = (aeron_min_flow_control_strategy_state_t *)_strategy->state;
@@ -465,6 +530,7 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     state->group_min_size = options.group_min_size.is_present ?
         options.group_min_size.value : context->flow_control.group_min_size;
     state->group_tag = options.group_tag.is_present ? options.group_tag.value : context->flow_control.group_tag;
+    state->has_tagged_status_message_triggered_setup = false;
 
     state->error_log = context->error_log;
     state->time_of_last_setup_ns = 0;

@@ -434,13 +434,6 @@ void aeron_send_channel_endpoint_on_nak(
     }
 }
 
-void aeron_send_channel_endpoint_publication_trigger_send_setup_frame(void *clientd, int64_t key, void *value)
-{
-    aeron_network_publication_t *publication = (aeron_network_publication_t *)value;
-
-    aeron_network_publication_trigger_send_setup_frame(publication);
-}
-
 void aeron_send_channel_endpoint_on_status_message(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
@@ -458,7 +451,7 @@ void aeron_send_channel_endpoint_on_status_message(
     {
         if (sm_header->frame_header.flags & AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG)
         {
-            aeron_network_publication_trigger_send_setup_frame(publication);
+            aeron_network_publication_trigger_send_setup_frame(publication, buffer, length, addr);
         }
         else
         {

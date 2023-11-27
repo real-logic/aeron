@@ -230,14 +230,25 @@ inline int64_t aeron_network_publication_join_position(aeron_network_publication
     return aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
 }
 
-inline void aeron_network_publication_trigger_send_setup_frame(aeron_network_publication_t *publication)
+inline void aeron_network_publication_trigger_send_setup_frame(
+    aeron_network_publication_t *publication,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
 {
+    const int64_t time_ns = aeron_clock_cached_nano_time(publication->cached_clock);
     bool is_end_of_stream;
     AERON_GET_VOLATILE(is_end_of_stream, publication->is_end_of_stream);
 
     if (!is_end_of_stream)
     {
         publication->is_setup_elicited = true;
+        publication->flow_control->on_trigger_send_setup(
+            &publication->flow_control->state,
+            buffer,
+            length,
+            addr,
+            time_ns);
     }
 }
 

@@ -57,6 +57,13 @@ typedef int64_t (*aeron_flow_control_strategy_on_setup_func_t)(
     size_t position_bits_to_shift,
     int64_t snd_pos);
 
+typedef void (*aeron_flow_control_strategy_on_trigger_send_setup_func_t)(
+    void *state,
+    const uint8_t *sm,
+    size_t length,
+    struct sockaddr_storage *recv_addr,
+    int64_t now_ns);
+
 typedef size_t (*aeron_flow_control_strategy_max_retransmission_length_func_t)(
     void *state,
     int64_t resend_position,
@@ -75,6 +82,7 @@ typedef struct aeron_flow_control_strategy_stct
     aeron_flow_control_strategy_on_setup_func_t on_setup;
     aeron_flow_control_strategy_fini_func_t fini;
     aeron_flow_control_strategy_has_required_receivers_func_t has_required_receivers;
+    aeron_flow_control_strategy_on_trigger_send_setup_func_t on_trigger_send_setup;
     aeron_flow_control_strategy_max_retransmission_length_func_t max_retransmission_length;
     void *state;
 }

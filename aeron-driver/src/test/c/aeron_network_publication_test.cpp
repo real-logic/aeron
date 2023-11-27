@@ -251,7 +251,8 @@ TEST_F(NetworkPublicationTest, shouldSendHeartbeatWhileSendingPeriodicSetups)
 
     time_ns += (AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS + 10);
 
-    aeron_network_publication_trigger_send_setup_frame(publication);
+    aeron_network_publication_trigger_send_setup_frame(
+        publication, data_buffer.data(), sizeof(aeron_status_message_header_t), &sockaddr);
     aeron_network_publication_send(publication, time_ns);
     ASSERT_EQ(1, test_bindings_state->setup_count);
     ASSERT_EQ(3, test_bindings_state->heartbeat_count);

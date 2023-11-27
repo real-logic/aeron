@@ -140,6 +140,15 @@ size_t aeron_unicast_flow_control_strategy_max_retransmission_length(
     return AERON_MIN(max_retransmit_length, resend_length);
 }
 
+void aeron_max_flow_control_strategy_on_trigger_send_setup(
+    void *state,
+    const uint8_t *sm,
+    size_t length,
+    struct sockaddr_storage *recv_addr,
+    int64_t now_ns)
+{
+}
+
 int aeron_max_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy)
 {
     aeron_free(strategy->state);
@@ -171,6 +180,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
     _strategy->on_setup = aeron_max_flow_control_strategy_on_setup;
     _strategy->fini = aeron_max_flow_control_strategy_fini;
     _strategy->has_required_receivers = aeron_flow_control_strategy_has_required_receivers_default;
+    _strategy->on_trigger_send_setup = aeron_max_flow_control_strategy_on_trigger_send_setup;
     _strategy->max_retransmission_length = aeron_max_flow_control_strategy_max_retransmission_length;
 
     *strategy = _strategy;
@@ -202,6 +212,7 @@ int aeron_unicast_flow_control_strategy_supplier(
     _strategy->on_setup = aeron_max_flow_control_strategy_on_setup;
     _strategy->fini = aeron_max_flow_control_strategy_fini;
     _strategy->has_required_receivers = aeron_flow_control_strategy_has_required_receivers_default;
+    _strategy->on_trigger_send_setup = aeron_max_flow_control_strategy_on_trigger_send_setup;
     _strategy->max_retransmission_length = aeron_unicast_flow_control_strategy_max_retransmission_length;
 
     *strategy = _strategy;

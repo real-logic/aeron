@@ -1071,7 +1071,8 @@ extern int64_t aeron_network_publication_producer_position(aeron_network_publica
 
 extern int64_t aeron_network_publication_join_position(aeron_network_publication_t *publication);
 
-extern void aeron_network_publication_trigger_send_setup_frame(aeron_network_publication_t *publication);
+extern void aeron_network_publication_trigger_send_setup_frame(
+    aeron_network_publication_t *publication, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
 extern void aeron_network_publication_sender_release(aeron_network_publication_t *publication);
 

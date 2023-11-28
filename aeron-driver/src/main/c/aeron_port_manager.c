@@ -183,6 +183,7 @@ int aeron_parse_port_range(const char *range_str, uint16_t *low_port, uint16_t *
 
     const uint16_t low = (uint16_t)v;
     range_str = end;
+    end = "";
 
     v = strtoll(range_str, &end, 10);
     if ((0 == v && 0 != errno) || v < 0 || v > 65535 || end == range_str)

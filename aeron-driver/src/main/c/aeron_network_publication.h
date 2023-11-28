@@ -244,7 +244,7 @@ inline void aeron_network_publication_trigger_send_setup_frame(
     {
         publication->is_setup_elicited = true;
         publication->flow_control->on_trigger_send_setup(
-            &publication->flow_control->state,
+            publication->flow_control->state,
             buffer,
             length,
             addr,

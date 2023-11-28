@@ -351,11 +351,11 @@ void aeron_min_flow_control_strategy_process_on_trigger_send_setup(
     aeron_status_message_header_t *status_message_header,
     size_t length,
     int64_t now_ns,
-    bool matches_tag)
+    bool has_matching_tag)
 {
     if (!strategy_state->has_tagged_status_message_triggered_setup)
     {
-        strategy_state->has_tagged_status_message_triggered_setup = matches_tag;
+        strategy_state->has_tagged_status_message_triggered_setup = has_matching_tag;
     }
 }
 
@@ -371,9 +371,9 @@ void aeron_tagged_flow_control_strategy_on_trigger_send_setup(
 
     int64_t receiver_group_tag;
     const int bytes_read = aeron_udp_protocol_group_tag(status_message_header, &receiver_group_tag);
-    const bool was_present = bytes_read == sizeof(receiver_group_tag);
+    const bool is_tag_present = bytes_read == sizeof(receiver_group_tag);
 
-    if (0 != bytes_read && !was_present)
+    if (0 != bytes_read && !is_tag_present)
     {
         AERON_SET_ERR(
             EINVAL,
@@ -383,10 +383,10 @@ void aeron_tagged_flow_control_strategy_on_trigger_send_setup(
         aeron_err_clear();
     }
 
-    const bool matches_tag = was_present && receiver_group_tag == strategy_state->group_tag;
+    const bool has_matching_tag = is_tag_present && receiver_group_tag == strategy_state->group_tag;
 
     aeron_min_flow_control_strategy_process_on_trigger_send_setup(
-        strategy_state, status_message_header, length, now_ns, matches_tag);
+        strategy_state, status_message_header, length, now_ns, has_matching_tag);
 }
 
 size_t aeron_min_flow_control_strategy_max_retransmission_length(

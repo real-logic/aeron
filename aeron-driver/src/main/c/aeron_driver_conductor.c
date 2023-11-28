@@ -4997,24 +4997,21 @@ void aeron_driver_conductor_on_release_resource(void *clientd, void *item)
     switch (resource_type)
     {
         case AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_CLIENT:
-            break;
         case AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_IPC_PUBLICATION:
             break;
+
         case AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_NETWORK_PUBLICATION:
-        {
             aeron_network_publication_sender_release(managed_resource);
             break;
-        }
+
         case AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_SEND_CHANNEL_ENDPOINT:
-        {
             aeron_send_channel_endpoint_sender_release(managed_resource);
             break;
-        }
+
         case AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_PUBLICATION_IMAGE:
-        {
             aeron_publication_image_receiver_release(managed_resource);
             break;
-        }
+
         case AERON_DRIVER_CONDUCTOR_RESOURCE_TYPE_LINGER_RESOURCE:
             break;
     }

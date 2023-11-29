@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <errno.h>
 
+#include "util/aeron_error.h"
 #include "util/aeron_platform.h"
 #include "util/aeron_bitutil.h"
 #include "collections/aeron_hashing.h"
@@ -56,6 +57,7 @@ inline int aeron_int64_counter_map_init(
 
     if (aeron_alloc((void **)&map->entries, (map->entries_length * sizeof(int64_t))) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
     for (size_t i = 0, size = map->entries_length; i < size; i++)
@@ -82,6 +84,7 @@ inline int aeron_int64_counter_map_rehash(aeron_int64_counter_map_t *map, size_t
 
     if (aeron_alloc((void **)&tmp_entries, (new_entries_length * sizeof(int64_t))) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
     for (size_t i = 0, size = new_entries_length; i < size; i++)
@@ -285,6 +288,7 @@ inline int aeron_int64_counter_map_get_and_add(
 
                 if (aeron_int64_counter_map_rehash(map, new_entries_length) < 0)
                 {
+                    AERON_APPEND_ERR("%s", "");
                     return -1;
                 }
             }

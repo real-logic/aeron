@@ -96,8 +96,10 @@ int aeron_wildcard_port_manager_allocate_open_port(aeron_wildcard_port_manager_t
 
     if (0 == port)
     {
-        AERON_APPEND_ERR("no available ports in range %" PRIu16 " %" PRIu16,
-             port_manager->low_port, port_manager->high_port);
+        AERON_SET_ERR(
+            EINVAL,
+            "no available ports in range %" PRIu16 " %" PRIu16,
+            port_manager->low_port, port_manager->high_port);
         return -1;
     }
 
@@ -178,6 +180,8 @@ int aeron_parse_port_range(const char *range_str, uint16_t *low_port, uint16_t *
     int64_t v = strtoll(range_str, &end, 10);
     if ((0 == v && 0 != errno) || v < 0 || v > 65535 || end == range_str)
     {
+        const int err = 0 != errno ? errno : EINVAL;
+        AERON_SET_ERR(err, "%s", "failed to parse first part of port range");
         return -1;
     }
 
@@ -188,6 +192,8 @@ int aeron_parse_port_range(const char *range_str, uint16_t *low_port, uint16_t *
     v = strtoll(range_str, &end, 10);
     if ((0 == v && 0 != errno) || v < 0 || v > 65535 || end == range_str)
     {
+        const int err = 0 != errno ? errno : EINVAL;
+        AERON_SET_ERR(err, "%s", "failed to parse second part of port range");
         return -1;
     }
 
@@ -195,6 +201,7 @@ int aeron_parse_port_range(const char *range_str, uint16_t *low_port, uint16_t *
 
     if (low > high)
     {
+        AERON_SET_ERR(EINVAL, "%s", "low port should be less than or equal to high port");
         return -1;
     }
 

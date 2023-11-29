@@ -365,6 +365,7 @@ int aeron_udp_channel_transport_recvmmsg(
     void *clientd)
 {
     struct timespec *media_rcv_timestamp = NULL;
+#if defined(HAS_MEDIA_RCV_TIMESTAMPS)
     AERON_DECL_ALIGNED(
         char buf[AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX][CMSG_SPACE(sizeof(struct timespec))],
         sizeof(struct cmsghdr));
@@ -377,15 +378,11 @@ int aeron_udp_channel_transport_recvmmsg(
             msgvec[i].msg_hdr.msg_controllen = CMSG_LEN(sizeof(buf[i]));
         }
     }
-
-    bool use_recvmmsg = false;
-#if defined(HAVE_RECVMMSG)
-    use_recvmmsg = vlen > 1;
 #endif
 
-    if (use_recvmmsg)
-    {
 #if defined(HAVE_RECVMMSG)
+    if (vlen > 1)
+    {
         struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
 
         int result = recvmmsg(transport->recv_fd, msgvec, vlen, 0, &tv);
@@ -441,53 +438,54 @@ int aeron_udp_channel_transport_recvmmsg(
 
             return result;
         }
-#endif
     }
-    else
+#endif
+
+    // recvmmsg is not available or vector size is 1
+    int work_count = 0;
+
+    for (size_t i = 0, length = vlen; i < length; i++)
     {
-        int work_count = 0;
+        ssize_t result = aeron_recvmsg(transport->recv_fd, &msgvec[i].msg_hdr, 0);
 
-        for (size_t i = 0, length = vlen; i < length; i++)
+        if (result < 0)
         {
-            ssize_t result = aeron_recvmsg(transport->recv_fd, &msgvec[i].msg_hdr, 0);
-
-            if (result < 0)
-            {
-                AERON_APPEND_ERR("%s", "");
-                return -1;
-            }
-
-            if (0 == result)
-            {
-                break;
-            }
-
-            struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgvec[i].msg_hdr);
-            if (NULL != cmsg &&
-                SOL_SOCKET == cmsg->cmsg_level &&
-                SCM_TIMESTAMPNS == cmsg->cmsg_type &&
-                CMSG_LEN(sizeof(struct timespec)) == cmsg->cmsg_len)
-            {
-                media_rcv_timestamp = (struct timespec *)CMSG_DATA(cmsg);
-            }
-
-            msgvec[i].msg_len = (unsigned int)result;
-            recv_func(
-                transport->data_paths,
-                transport,
-                clientd,
-                transport->dispatch_clientd,
-                transport->destination_clientd,
-                msgvec[i].msg_hdr.msg_iov[0].iov_base,
-                msgvec[i].msg_len,
-                msgvec[i].msg_hdr.msg_name,
-                media_rcv_timestamp);
-            *bytes_rcved += msgvec[i].msg_len;
-            work_count++;
+            AERON_APPEND_ERR("%s", "");
+            return -1;
         }
 
-        return work_count;
+        if (0 == result)
+        {
+            break;
+        }
+
+#if defined(HAS_MEDIA_RCV_TIMESTAMPS)
+        struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgvec[i].msg_hdr);
+        if (NULL != cmsg &&
+            SOL_SOCKET == cmsg->cmsg_level &&
+            SCM_TIMESTAMPNS == cmsg->cmsg_type &&
+            CMSG_LEN(sizeof(struct timespec)) == cmsg->cmsg_len)
+        {
+            media_rcv_timestamp = (struct timespec *)CMSG_DATA(cmsg);
+        }
+#endif
+
+        msgvec[i].msg_len = (unsigned int)result;
+        recv_func(
+            transport->data_paths,
+            transport,
+            clientd,
+            transport->dispatch_clientd,
+            transport->destination_clientd,
+            msgvec[i].msg_hdr.msg_iov[0].iov_base,
+            msgvec[i].msg_len,
+            msgvec[i].msg_hdr.msg_name,
+            media_rcv_timestamp);
+        *bytes_rcved += msgvec[i].msg_len;
+        work_count++;
     }
+
+    return work_count;
 }
 
 static int aeron_udp_channel_transport_send_connected(

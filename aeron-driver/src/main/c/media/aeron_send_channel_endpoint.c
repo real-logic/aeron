@@ -372,12 +372,6 @@ void aeron_send_channel_endpoint_dispatch(
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;
     aeron_send_channel_endpoint_t *endpoint = (aeron_send_channel_endpoint_t *)endpoint_clientd;
 
-    if ((length < sizeof(aeron_frame_header_t)) || (frame_header->version != AERON_FRAME_HEADER_VERSION))
-    {
-        aeron_counter_increment(sender->invalid_frames_counter, 1);
-        return;
-    }
-
     switch (frame_header->type)
     {
         case AERON_HDR_TYPE_NAK:
@@ -393,7 +387,7 @@ void aeron_send_channel_endpoint_dispatch(
             break;
 
         case AERON_HDR_TYPE_SM:
-            if (length >= sizeof(aeron_status_message_header_t))
+            if (length >= sizeof(aeron_status_message_header_t) && length >= (size_t)frame_header->frame_length)
             {
                 aeron_send_channel_endpoint_on_status_message(endpoint, buffer, length, addr);
                 aeron_counter_ordered_increment(sender->status_messages_received_counter, 1);

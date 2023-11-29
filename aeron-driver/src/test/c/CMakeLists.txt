@@ -99,7 +99,13 @@ if (AERON_UNIT_TESTS)
 
     aeron_driver_test(ipc_publication_test aeron_ipc_publication_test.cpp)
     aeron_driver_test(network_publication_test aeron_network_publication_test.cpp)
-    aeron_driver_test(timestamps_test aeron_timestamps_test.cpp)
+
+    aeron_driver_test(timestamps_test_recvmmsg aeron_timestamps_test.cpp)
+    set_tests_properties(timestamps_test_recvmmsg PROPERTIES ENVIRONMENT "AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND=2;AERON_RECEIVER_IO_VECTOR_CAPACITY=3;AERON_SENDER_IO_VECTOR_CAPACITY=4")
+
+    aeron_driver_test(timestamps_test_recvmsg aeron_timestamps_test.cpp)
+    set_tests_properties(timestamps_test_recvmsg PROPERTIES ENVIRONMENT "AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND=1;AERON_RECEIVER_IO_VECTOR_CAPACITY=1;AERON_SENDER_IO_VECTOR_CAPACITY=1")
+
     aeron_driver_test(position_test aeron_position_test.cpp)
     aeron_driver_test(driver_context_config_test aeron_driver_context_config_test.cpp)
 endif ()

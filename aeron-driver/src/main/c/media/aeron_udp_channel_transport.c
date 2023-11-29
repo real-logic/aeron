@@ -364,8 +364,6 @@ int aeron_udp_channel_transport_recvmmsg(
     aeron_udp_transport_recv_func_t recv_func,
     void *clientd)
 {
-#if defined(HAVE_RECVMMSG)
-    struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
     struct timespec *media_rcv_timestamp = NULL;
     AERON_DECL_ALIGNED(
         char buf[AERON_DRIVER_RECEIVER_IO_VECTOR_LENGTH_MAX][CMSG_SPACE(sizeof(struct timespec))],
@@ -379,6 +377,9 @@ int aeron_udp_channel_transport_recvmmsg(
             msgvec[i].msg_hdr.msg_controllen = CMSG_LEN(sizeof(buf[i]));
         }
     }
+
+#if defined(HAVE_RECVMMSG)
+    struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
 
     int result = recvmmsg(transport->recv_fd, msgvec, vlen, 0, &tv);
     if (result < 0)
@@ -411,9 +412,9 @@ int aeron_udp_channel_transport_recvmmsg(
         {
             struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgvec[i].msg_hdr);
             if (NULL != cmsg &&
-                cmsg->cmsg_level == SOL_SOCKET &&
-                cmsg->cmsg_type == SCM_TIMESTAMPNS &&
-                cmsg->cmsg_len == CMSG_LEN(sizeof(struct timespec)))
+                SOL_SOCKET == cmsg->cmsg_level &&
+                SCM_TIMESTAMPNS == cmsg->cmsg_type &&
+                CMSG_LEN(sizeof(struct timespec)) == cmsg->cmsg_len)
             {
                 media_rcv_timestamp = (struct timespec *)CMSG_DATA(cmsg);
             }
@@ -451,6 +452,15 @@ int aeron_udp_channel_transport_recvmmsg(
             break;
         }
 
+        struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgvec[i].msg_hdr);
+        if (NULL != cmsg &&
+            SOL_SOCKET == cmsg->cmsg_level &&
+            SCM_TIMESTAMPNS == cmsg->cmsg_type &&
+            CMSG_LEN(sizeof(struct timespec)) == cmsg->cmsg_len)
+        {
+            media_rcv_timestamp = (struct timespec *)CMSG_DATA(cmsg);
+        }
+
         msgvec[i].msg_len = (unsigned int)result;
         recv_func(
             transport->data_paths,
@@ -461,7 +471,7 @@ int aeron_udp_channel_transport_recvmmsg(
             msgvec[i].msg_hdr.msg_iov[0].iov_base,
             msgvec[i].msg_len,
             msgvec[i].msg_hdr.msg_name,
-            NULL);
+            media_rcv_timestamp);
         *bytes_rcved += msgvec[i].msg_len;
         work_count++;
     }

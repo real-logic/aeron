@@ -130,8 +130,6 @@ int aeron_driver_sender_do_work(void *clientd)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
 
-    const size_t vlen = 1; // poll for one SM at a time, i.e. force `recvmsg` call
-
     int64_t now_ns = sender->context->nano_clock();
     aeron_clock_update_cached_nano_time(sender->context->sender_cached_clock, now_ns);
 
@@ -150,24 +148,20 @@ int aeron_driver_sender_do_work(void *clientd)
         now_ns > sender->control_poll_timeout_ns ||
         short_sends_before < aeron_counter_get(sender->short_sends_counter))
     {
-        struct mmsghdr mmsghdr[AERON_DRIVER_SENDER_IO_VECTOR_LENGTH_MAX];
-
-        for (size_t i = 0; i < vlen; i++)
-        {
-            mmsghdr[i].msg_hdr.msg_name = &sender->recv_buffers.addrs[i];
-            mmsghdr[i].msg_hdr.msg_namelen = sizeof(sender->recv_buffers.addrs[i]);
-            mmsghdr[i].msg_hdr.msg_iov = &sender->recv_buffers.iov[i];
-            mmsghdr[i].msg_hdr.msg_iovlen = 1;
-            mmsghdr[i].msg_hdr.msg_flags = 0;
-            mmsghdr[i].msg_hdr.msg_control = NULL;
-            mmsghdr[i].msg_hdr.msg_controllen = 0;
-            mmsghdr[i].msg_len = 0;
-        }
+        struct mmsghdr mmsghdr[1];
+        mmsghdr[0].msg_hdr.msg_name = &sender->recv_buffers.addrs[0];
+        mmsghdr[0].msg_hdr.msg_namelen = sizeof(sender->recv_buffers.addrs[0]);
+        mmsghdr[0].msg_hdr.msg_iov = &sender->recv_buffers.iov[0];
+        mmsghdr[0].msg_hdr.msg_iovlen = 1;
+        mmsghdr[0].msg_hdr.msg_flags = 0;
+        mmsghdr[0].msg_hdr.msg_control = NULL;
+        mmsghdr[0].msg_hdr.msg_controllen = 0;
+        mmsghdr[0].msg_len = 0;
 
         int poll_result = sender->poller_poll_func(
             &sender->poller,
             mmsghdr,
-            vlen,
+            1,
             &bytes_received,
             sender->data_paths.recv_func,
             sender->recvmmsg_func,

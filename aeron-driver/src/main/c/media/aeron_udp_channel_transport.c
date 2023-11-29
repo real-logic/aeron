@@ -378,38 +378,90 @@ int aeron_udp_channel_transport_recvmmsg(
         }
     }
 
+    bool use_recvmmsg = false;
 #if defined(HAVE_RECVMMSG)
-    struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
+    use_recvmmsg = vlen > 1;
+#endif
 
-    int result = recvmmsg(transport->recv_fd, msgvec, vlen, 0, &tv);
-    if (result < 0)
+    if (use_recvmmsg)
     {
-        int err = errno;
+#if defined(HAVE_RECVMMSG)
+        struct timespec tv = { .tv_nsec = 0, .tv_sec = 0 };
 
-        // ECONNREFUSED can sometimes occur with connected UDP sockets if ICMP traffic is able to indicate that the
-        // remote end had closed on a previous send.
-        if (EINTR == err || EAGAIN == err || ECONNREFUSED == err)
+        int result = recvmmsg(transport->recv_fd, msgvec, vlen, 0, &tv);
+        if (result < 0)
+        {
+            int err = errno;
+
+            // ECONNREFUSED can sometimes occur with connected UDP sockets if ICMP traffic is able to indicate that the
+            // remote end had closed on a previous send.
+            if (EINTR == err || EAGAIN == err || ECONNREFUSED == err)
+            {
+                return 0;
+            }
+
+            AERON_SET_ERR(
+                err,
+                "Failed to recvmmsg, fd=%d, recv_fd=%d, connected=%s",
+                transport->fd,
+                transport->recv_fd,
+                NULL != transport->connected_address ? "true" : "false");
+
+            return -1;
+        }
+        else if (0 == result)
         {
             return 0;
         }
+        else
+        {
+            for (size_t i = 0, length = (size_t)result; i < length; i++)
+            {
+                struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgvec[i].msg_hdr);
+                if (NULL != cmsg &&
+                    SOL_SOCKET == cmsg->cmsg_level &&
+                    SCM_TIMESTAMPNS == cmsg->cmsg_type &&
+                    CMSG_LEN(sizeof(struct timespec)) == cmsg->cmsg_len)
+                {
+                    media_rcv_timestamp = (struct timespec *)CMSG_DATA(cmsg);
+                }
 
-        AERON_SET_ERR(
-            err,
-            "Failed to recvmmsg, fd=%d, recv_fd=%d, connected=%s",
-            transport->fd,
-            transport->recv_fd,
-            NULL != transport->connected_address ? "true" : "false");
+                recv_func(
+                    transport->data_paths,
+                    transport,
+                    clientd,
+                    transport->dispatch_clientd,
+                    transport->destination_clientd,
+                    msgvec[i].msg_hdr.msg_iov[0].iov_base,
+                    msgvec[i].msg_len,
+                    msgvec[i].msg_hdr.msg_name,
+                    media_rcv_timestamp);
+                *bytes_rcved += msgvec[i].msg_len;
+            }
 
-        return -1;
-    }
-    else if (0 == result)
-    {
-        return 0;
+            return result;
+        }
+#endif
     }
     else
     {
-        for (size_t i = 0, length = (size_t)result; i < length; i++)
+        int work_count = 0;
+
+        for (size_t i = 0, length = vlen; i < length; i++)
         {
+            ssize_t result = aeron_recvmsg(transport->recv_fd, &msgvec[i].msg_hdr, 0);
+
+            if (result < 0)
+            {
+                AERON_APPEND_ERR("%s", "");
+                return -1;
+            }
+
+            if (0 == result)
+            {
+                break;
+            }
+
             struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgvec[i].msg_hdr);
             if (NULL != cmsg &&
                 SOL_SOCKET == cmsg->cmsg_level &&
@@ -419,6 +471,7 @@ int aeron_udp_channel_transport_recvmmsg(
                 media_rcv_timestamp = (struct timespec *)CMSG_DATA(cmsg);
             }
 
+            msgvec[i].msg_len = (unsigned int)result;
             recv_func(
                 transport->data_paths,
                 transport,
@@ -430,54 +483,11 @@ int aeron_udp_channel_transport_recvmmsg(
                 msgvec[i].msg_hdr.msg_name,
                 media_rcv_timestamp);
             *bytes_rcved += msgvec[i].msg_len;
+            work_count++;
         }
 
-        return result;
+        return work_count;
     }
-#else
-    int work_count = 0;
-
-    for (size_t i = 0, length = vlen; i < length; i++)
-    {
-        ssize_t result = aeron_recvmsg(transport->recv_fd, &msgvec[i].msg_hdr, 0);
-
-        if (result < 0)
-        {
-            AERON_APPEND_ERR("%s", "");
-            return -1;
-        }
-
-        if (0 == result)
-        {
-            break;
-        }
-
-        struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgvec[i].msg_hdr);
-        if (NULL != cmsg &&
-            SOL_SOCKET == cmsg->cmsg_level &&
-            SCM_TIMESTAMPNS == cmsg->cmsg_type &&
-            CMSG_LEN(sizeof(struct timespec)) == cmsg->cmsg_len)
-        {
-            media_rcv_timestamp = (struct timespec *)CMSG_DATA(cmsg);
-        }
-
-        msgvec[i].msg_len = (unsigned int)result;
-        recv_func(
-            transport->data_paths,
-            transport,
-            clientd,
-            transport->dispatch_clientd,
-            transport->destination_clientd,
-            msgvec[i].msg_hdr.msg_iov[0].iov_base,
-            msgvec[i].msg_len,
-            msgvec[i].msg_hdr.msg_name,
-            media_rcv_timestamp);
-        *bytes_rcved += msgvec[i].msg_len;
-        work_count++;
-    }
-
-    return work_count;
-#endif
 }
 
 static int aeron_udp_channel_transport_send_connected(

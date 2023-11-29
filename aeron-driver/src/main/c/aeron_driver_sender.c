@@ -130,7 +130,7 @@ int aeron_driver_sender_do_work(void *clientd)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
 
-    const size_t vlen = sender->recv_buffers.vector_capacity;
+    const size_t vlen = 1; // poll for one SM at a time, i.e. force `recvmsg` call
 
     int64_t now_ns = sender->context->nano_clock();
     aeron_clock_update_cached_nano_time(sender->context->sender_cached_clock, now_ns);

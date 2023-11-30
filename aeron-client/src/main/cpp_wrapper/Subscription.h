@@ -550,6 +550,16 @@ public:
         return aeron_subscription_is_closed(m_subscription);
     }
 
+    /**
+     * Get the underlying C Aeron client subscription. Applications should not need to use this method.
+     *
+     * @return the underlying C Aeron client subscription.
+     */
+    inline aeron_subscription_t *subscription()
+    {
+        return m_subscription;
+    }
+
     /// @cond HIDDEN_SYMBOLS
     bool hasImage(std::int64_t correlationId) const
     {

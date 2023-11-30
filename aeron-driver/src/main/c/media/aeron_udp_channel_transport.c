@@ -60,14 +60,14 @@ static int aeron_udp_channel_transport_setup_media_rcv_timestamps(aeron_udp_chan
     uint32_t enable_timestamp = 1;
     if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_TIMESTAMPNS, &enable_timestamp, sizeof(enable_timestamp)) < 0)
     {
-        AERON_SET_ERR(errno, "%", "setsockopt(SO_TIMESTAMPNS)");
+        AERON_SET_ERR(errno, "%s", "setsockopt(SO_TIMESTAMPNS)");
         return -1;
     }
 
     uint32_t timestamp_flags = SOF_TIMESTAMPING_RX_HARDWARE;
     if (aeron_setsockopt(transport->fd, SOL_SOCKET, SO_TIMESTAMPING, &timestamp_flags, sizeof(timestamp_flags)) < 0)
     {
-        AERON_SET_ERR(errno, "%", "setsockopt(SO_TIMESTAMPING)");
+        AERON_SET_ERR(errno, "%s", "setsockopt(SO_TIMESTAMPING)");
         return -1;
     }
 
@@ -301,13 +301,13 @@ int aeron_udp_channel_transport_init(
 
     if (aeron_set_socket_non_blocking(transport->fd) < 0)
     {
-        AERON_APPEND_ERR("%", "failed to set transport->fd to be non-blocking");
+        AERON_APPEND_ERR("%s", "failed to set transport->fd to be non-blocking");
         goto error;
     }
 
     if (aeron_set_socket_non_blocking(transport->recv_fd) < 0)
     {
-        AERON_APPEND_ERR("%", "failed to set transport->recv_fd to be non-blocking");
+        AERON_APPEND_ERR("%s", "failed to set transport->recv_fd to be non-blocking");
         goto error;
     }
 

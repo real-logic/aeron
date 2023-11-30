@@ -38,7 +38,7 @@ class MinMulticastFlowControlTest
 
     private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[8192]);
     private final MinMulticastFlowControl flowControl = new MinMulticastFlowControl();
-    private final CountersManager countersManager = Tests.newCountersMananger(COUNTERS_BUFFER_LENGTH);
+    private final CountersManager countersManager = Tests.newCountersManager(COUNTERS_BUFFER_LENGTH);
 
     private static Stream<Arguments> validUris()
     {

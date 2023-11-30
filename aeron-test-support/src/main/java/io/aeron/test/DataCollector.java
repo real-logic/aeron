@@ -16,8 +16,6 @@
 package io.aeron.test;
 
 import io.aeron.CncFileDescriptor;
-import io.aeron.archive.ArchiveMarkFile;
-import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 
@@ -161,39 +159,17 @@ public final class DataCollector
     }
 
     /**
-     * Find all the clustered service mark files.
+     * Find all mark files for specific dissector.
      *
-     * @return list of paths to the clustered service mark files.
+     * @param dissector to use as a filter
+     * @return list of paths to the associated mark files
      */
-    public List<Path> clusterServiceMarkFiles()
+    public List<Path> markFiles(final SystemTestWatcher.MarkFileDissector dissector)
     {
         return locations.stream()
-            .flatMap((path) -> DataCollector.find(path, ClusterMarkFile::isServiceMarkFile))
+            .flatMap((path) -> DataCollector.find(path, dissector::isRelevantFile))
             .collect(toList());
-    }
 
-    /**
-     * Find all the consensus module mark files.
-     *
-     * @return list of paths to the consensus module mark files
-     */
-    public List<Path> consensusModuleMarkFiles()
-    {
-        return locations.stream()
-            .flatMap((path) -> DataCollector.find(path, ClusterMarkFile::isConsensusModuleMarkFile))
-            .collect(toList());
-    }
-
-    /**
-     * Find all the archive mark files.
-     *
-     * @return list of paths to the archive mark files
-     */
-    public List<Path> archiveMarkFiles()
-    {
-        return locations.stream()
-            .flatMap((path) -> DataCollector.find(path, ArchiveMarkFile::isArchiveMarkFile))
-            .collect(toList());
     }
 
     /**

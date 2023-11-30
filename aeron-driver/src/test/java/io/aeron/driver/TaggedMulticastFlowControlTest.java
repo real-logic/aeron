@@ -40,7 +40,7 @@ class TaggedMulticastFlowControlTest
     private static final int COUNTERS_BUFFER_LENGTH = 16 * 1024;
 
     private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[8192]);
-    private final CountersManager countersManager = Tests.newCountersMananger(COUNTERS_BUFFER_LENGTH);
+    private final CountersManager countersManager = Tests.newCountersManager(COUNTERS_BUFFER_LENGTH);
     private final TaggedMulticastFlowControl flowControl = new TaggedMulticastFlowControl();
 
     private static Stream<Arguments> validUris()

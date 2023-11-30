@@ -57,7 +57,7 @@ class IpcPublicationTest
         final RingBuffer toDriverCommands = new ManyToOneRingBuffer(new UnsafeBuffer(
             ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH_DEFAULT)));
 
-        final CountersManager countersManager = Tests.newCountersMananger(BUFFER_LENGTH);
+        final CountersManager countersManager = Tests.newCountersManager(BUFFER_LENGTH);
         final SystemCounters systemCounters = new SystemCounters(countersManager);
 
         final SenderProxy senderProxy = mock(SenderProxy.class);

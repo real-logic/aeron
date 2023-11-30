@@ -88,7 +88,7 @@ class ClusteredServiceAgentTest
         final ArgumentCaptor<UnavailableCounterHandler> captor =
             ArgumentCaptor.forClass(UnavailableCounterHandler.class);
         final ClusterMarkFile markFile = mock(ClusterMarkFile.class);
-        final CountersManager countersManager = Tests.newCountersMananger(64 * 1024);
+        final CountersManager countersManager = Tests.newCountersManager(64 * 1024);
 
         when(aeron.addCounter(anyInt(), any(), anyInt(), anyInt(), any(), anyInt(), anyInt()))
             .then(CountersAnswer.mapTo(countersManager));
@@ -133,7 +133,7 @@ class ClusteredServiceAgentTest
         final Aeron aeron = mock(Aeron.class);
         final DistinctErrorLog distinctErrorLog = new DistinctErrorLog(
             new UnsafeBuffer(ByteBuffer.allocateDirect(16384)), new SystemEpochClock());
-        final CountersManager countersManager = Tests.newCountersMananger(16 * 1024);
+        final CountersManager countersManager = Tests.newCountersManager(16 * 1024);
         final AtomicCounter errorCounter = countersManager.newCounter("test");
         final long originalErrorCount = errorCounter.get();
 

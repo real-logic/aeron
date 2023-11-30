@@ -80,7 +80,7 @@ public class ConsensusModuleAgentTest
     private final ExclusivePublication mockExclusivePublication = mock(ExclusivePublication.class);
     private final Counter mockTimedOutClientCounter = mock(Counter.class);
     private final LongConsumer mockTimeConsumer = mock(LongConsumer.class);
-    private final CountersManager countersManager = Tests.newCountersMananger(2 * COUNTER_LENGTH);
+    private final CountersManager countersManager = Tests.newCountersManager(2 * COUNTER_LENGTH);
     private long registrationId = 20;
 
     private final ConsensusModule.Context ctx = TestContexts.localhostConsensusModule()

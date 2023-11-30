@@ -144,7 +144,7 @@ class DriverConductorTest
         counterKeyAndLabel.putInt(COUNTER_KEY_OFFSET, 42);
         counterKeyAndLabel.putStringAscii(COUNTER_LABEL_OFFSET, COUNTER_LABEL);
 
-        spyCountersManager = spy(Tests.newCountersMananger(BUFFER_LENGTH));
+        spyCountersManager = spy(Tests.newCountersManager(BUFFER_LENGTH));
         spySystemCounters = spy(new SystemCounters(spyCountersManager));
 
         when(spySystemCounters.get(SystemCounterDescriptor.ERRORS)).thenReturn(mockErrorCounter);

@@ -73,7 +73,7 @@ class ConsensusModuleContextTest
     File clusterDir;
 
     private ConsensusModule.Context context;
-    private final CountersManager countersManager = Tests.newCountersMananger(16 * 1024);
+    private final CountersManager countersManager = Tests.newCountersManager(16 * 1024);
     private long registrationId = 0;
 
     @BeforeEach

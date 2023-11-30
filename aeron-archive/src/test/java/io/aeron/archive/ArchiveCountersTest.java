@@ -97,7 +97,7 @@ class ArchiveCountersTest
     @CsvSource({ "5,8", "42,-10", "-19, 61312936129398123" })
     void findReturnsNullValueIfCounterNotFound(final int typeId, final long archiveId)
     {
-        final CountersManager countersManager = Tests.newCountersMananger(2 * COUNTER_LENGTH);
+        final CountersManager countersManager = Tests.newCountersManager(2 * COUNTER_LENGTH);
         assertEquals(1, countersManager.maxCounterId());
         countersManager.allocate(
             "test",
@@ -110,7 +110,7 @@ class ArchiveCountersTest
     @Test
     void findReturnsFirstMatchingCounter()
     {
-        final CountersManager countersManager = Tests.newCountersMananger(8 * COUNTER_LENGTH);
+        final CountersManager countersManager = Tests.newCountersManager(8 * COUNTER_LENGTH);
         final int typeId = 7;
         final long archiveId = Long.MIN_VALUE / 13;
         countersManager.allocate(

@@ -39,7 +39,7 @@ import static org.mockito.Mockito.when;
 
 class PendingServiceMessageTrackerTest
 {
-    private final CountersManager countersManager = Tests.newCountersMananger(16 * 1024);
+    private final CountersManager countersManager = Tests.newCountersManager(16 * 1024);
     private final int counterId = countersManager.allocate("test");
     private final Counter counter = new Counter(countersManager, 0, counterId);
     private final LogPublisher logPublisher = mock(LogPublisher.class);
@@ -170,7 +170,7 @@ class PendingServiceMessageTrackerTest
     @Test
     void loadInvalid()
     {
-        final CountersManager countersManager = Tests.newCountersMananger(16 * 1024);
+        final CountersManager countersManager = Tests.newCountersManager(16 * 1024);
         final int counterId = countersManager.allocate("test");
         final Counter counter = new Counter(countersManager, 0, counterId);
         final LogPublisher logPublisher = mock(LogPublisher.class);
@@ -187,7 +187,7 @@ class PendingServiceMessageTrackerTest
     @Test
     void loadValid()
     {
-        final CountersManager countersManager = Tests.newCountersMananger(16 * 1024);
+        final CountersManager countersManager = Tests.newCountersManager(16 * 1024);
         final int counterId = countersManager.allocate("test");
         final Counter counter = new Counter(countersManager, 0, counterId);
         final LogPublisher logPublisher = mock(LogPublisher.class);

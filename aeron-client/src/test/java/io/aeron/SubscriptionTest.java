@@ -58,7 +58,7 @@ class SubscriptionTest
     private final UnavailableImageHandler unavailableImageHandlerMock = mock(UnavailableImageHandler.class);
 
     private final UnsafeBuffer tempBuffer = new UnsafeBuffer(ByteBuffer.allocate(1024));
-    private final CountersManager countersManager = Tests.newCountersMananger(16 * 1024);
+    private final CountersManager countersManager = Tests.newCountersManager(16 * 1024);
 
     private Subscription subscription;
 

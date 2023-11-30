@@ -736,11 +736,26 @@ public class Tests
         Files.walkFileTree(path, new PrintingFileVisitor(out));
     }
 
-    public static CountersManager newCountersMananger(final int dataLength)
+    public static CountersManager newCountersManager(final int dataLength)
     {
         return new CountersManager(
             new UnsafeBuffer(ByteBuffer.allocateDirect(Configuration.countersMetadataBufferLength(dataLength))),
             new UnsafeBuffer(ByteBuffer.allocateDirect(dataLength)));
+    }
+
+    public static Throwable setOrUpdateError(final Throwable existingError, final Throwable newError)
+    {
+        if (null == existingError)
+        {
+            return newError;
+        }
+
+        if (null != newError)
+        {
+            existingError.addSuppressed(newError);
+        }
+
+        return existingError;
     }
 
     private static void pad(final int indent, final PrintStream out)

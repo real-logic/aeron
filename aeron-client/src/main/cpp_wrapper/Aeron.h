@@ -907,7 +907,7 @@ public:
      *
      * @return the underlying C Aeron client.
      */
-    inline aeron_t *aeron()
+    inline aeron_t *aeron() const
     {
         return m_aeron;
     }

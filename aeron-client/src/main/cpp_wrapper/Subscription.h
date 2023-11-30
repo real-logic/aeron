@@ -555,7 +555,7 @@ public:
      *
      * @return the underlying C Aeron client subscription.
      */
-    inline aeron_subscription_t *subscription()
+    inline aeron_subscription_t *subscription() const
     {
         return m_subscription;
     }

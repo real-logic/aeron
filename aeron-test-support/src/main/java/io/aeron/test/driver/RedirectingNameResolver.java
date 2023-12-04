@@ -18,7 +18,6 @@ package io.aeron.test.driver;
 import io.aeron.CounterProvider;
 import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.NameResolver;
-import org.agrona.BitUtil;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.Object2ObjectHashMap;

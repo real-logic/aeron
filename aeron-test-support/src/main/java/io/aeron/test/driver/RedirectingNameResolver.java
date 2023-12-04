@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 
 public class RedirectingNameResolver implements NameResolver
 {
@@ -64,7 +65,7 @@ public class RedirectingNameResolver implements NameResolver
     {
         countersReader.forEach((counterId, typeId, keyBuffer, label) ->
         {
-            if (typeId == NAME_ENTRY_COUNTER_TYPE_ID && keyBuffer.capacity() > BitUtil.SIZE_OF_INT)
+            if (typeId == NAME_ENTRY_COUNTER_TYPE_ID && keyBuffer.capacity() > SIZE_OF_INT)
             {
                 final String entryName = keyBuffer.getStringAscii(0);
                 final NameEntry entry = nameToEntryMap.get(entryName);
@@ -81,7 +82,7 @@ public class RedirectingNameResolver implements NameResolver
             if (null == nameEntry.counter)
             {
                 final int keyLength = tmpBuffer.putStringAscii(0, nameEntry.name);
-                final int labelLength = tmpBuffer.putStringAscii(keyLength, nameEntry.toString());
+                final int labelLength = tmpBuffer.putStringWithoutLengthAscii(keyLength, nameEntry.toString());
 
                 final AtomicCounter atomicCounter = counterProvider.newCounter(
                     NAME_ENTRY_COUNTER_TYPE_ID,

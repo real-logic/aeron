@@ -95,9 +95,9 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     public SystemTestWatcher()
     {
-        addDissector(new ArchiveMarkFileDissector())
-            .addDissector(new ConsensusModuleMarkFileDissector())
-            .addDissector(new ClusteredServiceMarkFileDissector());
+        addDissectorInternal(new ArchiveMarkFileDissector());
+        addDissectorInternal(new ConsensusModuleMarkFileDissector());
+        addDissectorInternal(new ClusteredServiceMarkFileDissector());
     }
 
     public SystemTestWatcher cluster(final TestCluster testCluster)
@@ -112,9 +112,15 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         return this;
     }
 
-    public SystemTestWatcher addDissector(final MarkFileDissector markFileDissector)
+    private void addDissectorInternal(final MarkFileDissector markFileDissector)
     {
         errorDissectors.put(markFileDissector.filename(), markFileDissector);
+    }
+
+    @SuppressWarnings("unused")
+    public SystemTestWatcher addDissector(final MarkFileDissector markFileDissector)
+    {
+        addDissectorInternal(markFileDissector);
         return this;
     }
 

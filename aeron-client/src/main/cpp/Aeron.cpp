@@ -180,7 +180,7 @@ MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
 
 std::string Aeron::version()
 {
-    return { "aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__ };
+    return { "aeron version=" AERON_VERSION_TXT " commit=" AERON_VERSION_GITSHA };
 }
 
 }

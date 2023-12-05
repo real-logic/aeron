@@ -16,7 +16,7 @@
 
 #include <stdint.h>
 
-const char aeron_version_full_str[] = "aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__;
+const char aeron_version_full_str[] = "aeron version=" AERON_VERSION_TXT " commit=" AERON_VERSION_GITSHA;
 
 const char *aeron_version_full(void)
 {

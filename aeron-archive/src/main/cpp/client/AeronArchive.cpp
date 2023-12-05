@@ -229,5 +229,5 @@ std::shared_ptr<AeronArchive::AsyncConnect> AeronArchive::asyncConnect(AeronArch
 
 std::string AeronArchive::version()
 {
-    return { "aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__ };
+    return { "aeron version=" AERON_VERSION_TXT " commit=" AERON_VERSION_GITSHA };
 }

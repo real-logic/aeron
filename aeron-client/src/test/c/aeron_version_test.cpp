@@ -32,14 +32,12 @@ class VersionTest : public testing::Test
 TEST_F(VersionTest, shouldReturnFullVersion)
 {
     auto full_version = std::string(aeron_version_full());
-    auto expected = std::string("aeron version ")
+    auto expected = std::string("aeron version=")
         .append(AERON_VERSION_TXT)
-        .append(" built ")
-        .append(__DATE__)
-        .append( " ");
+        .append(" commit=")
+        .append(AERON_VERSION_GITSHA);
 
-    ASSERT_EQ(expected.length() + 8, full_version.length());
-    EXPECT_EQ(expected, full_version.substr(0, expected.length()));
+    ASSERT_EQ(expected, full_version);
 }
 
 TEST_F(VersionTest, shouldReturnMajorVersion)

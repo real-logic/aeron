@@ -43,6 +43,7 @@ aeron_uri_params_t;
 #define AERON_UDP_CHANNEL_CONTROL_MODE_KEY "control-mode"
 #define AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE "manual"
 #define AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC_VALUE "dynamic"
+#define AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE "response"
 
 #define AERON_URI_INITIAL_TERM_ID_KEY "init-term-id"
 #define AERON_URI_TERM_ID_KEY "term-id"

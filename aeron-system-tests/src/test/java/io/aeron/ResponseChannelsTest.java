@@ -68,7 +68,7 @@ public class ResponseChannelsTest
     @BeforeEach
     void setUp()
     {
-        assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
+//         assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
 
         driver = TestMediaDriver.launch(new MediaDriver.Context()
                 .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)

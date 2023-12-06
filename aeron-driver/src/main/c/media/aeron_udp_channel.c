@@ -256,6 +256,10 @@ int aeron_udp_channel_parse(
         {
             _channel->control_mode = AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC;
         }
+        else if (strcmp(_channel->uri.params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE) == 0)
+        {
+            _channel->control_mode = AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE;
+        }
     }
 
     if (AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC == _channel->control_mode && NULL == _channel->uri.params.udp.control)
@@ -269,12 +273,13 @@ int aeron_udp_channel_parse(
         NULL == _channel->uri.params.udp.control &&
         NULL == _channel->uri.params.udp.channel_tag;
 
-    if (has_no_distinguishing_characteristic && AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL != _channel->control_mode)
+    if (has_no_distinguishing_characteristic && AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL != _channel->control_mode &&
+        AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE != _channel->control_mode)
     {
         AERON_SET_ERR(
             -AERON_ERROR_CODE_INVALID_CHANNEL,
             "%s",
-            "URIs for UDP must specify endpoint, control, tags, or control-mode=manual");
+            "URIs for UDP must specify endpoint, control, tags, or control-mode=manual/response");
         goto error_cleanup;
     }
 

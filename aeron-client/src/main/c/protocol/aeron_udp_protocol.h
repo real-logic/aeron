@@ -134,6 +134,15 @@ typedef struct aeron_option_header_stct
     uint16_t type;
 }
 aeron_option_header_t;
+
+typedef struct aeron_response_setup_stct
+{
+    aeron_frame_header_t frame_header;
+    int32_t session_id;
+    int32_t stream_id;
+    int32_t response_session_id;
+}
+aeron_response_setup_t;
 #pragma pack(pop)
 
 int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag);
@@ -151,6 +160,7 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 #define AERON_HDR_TYPE_ATS_DATA (0x08)
 #define AERON_HDR_TYPE_ATS_SETUP (0x09)
 #define AERON_HDR_TYPE_ATS_SM (0x0A)
+#define AERON_HDR_TYPE_RSP_SETUP (0x0B)
 #define AERON_HDR_TYPE_EXT (0xFFFF)
 
 #define AERON_DATA_HEADER_LENGTH (sizeof(aeron_data_header_t))
@@ -165,6 +175,8 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 
 #define AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG (UINT8_C(0x80))
 #define AERON_STATUS_MESSAGE_HEADER_EOS_FLAG (UINT8_C(0x40))
+
+#define AERON_SETUP_HEADER_SEND_RESPONSE_FLAG (UINT8_C(0x80))
 
 #define AERON_RTTM_HEADER_REPLY_FLAG (UINT8_C(0x80))
 

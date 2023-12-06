@@ -602,6 +602,7 @@ int aeron_subscription_local_sockaddrs(
     {
         AERON_SET_ERR(
             EINVAL, "Parameters must be valid, address_vec_len (%" PRIu64 ") < 1", (uint64_t)address_vec_len);
+        return -1;
     }
 
     return aeron_local_sockaddr_find_addrs(
@@ -628,6 +629,7 @@ int aeron_subscription_resolved_endpoint(
     {
         AERON_SET_ERR(
             EINVAL, "Parameters must be valid, address_len (%" PRIu64 ") < 1", (uint64_t)address_len);
+        return -1;
     }
 
     aeron_iovec_t addr_vec =
@@ -691,6 +693,7 @@ int aeron_subscription_try_resolve_channel_endpoint_port(
     {
         AERON_SET_ERR(
             EINVAL, "Parameters must be valid, uri_len (%" PRIu64 ") < 1", (uint64_t)uri_len);
+        return -1;
     }
 
     int result = -1;

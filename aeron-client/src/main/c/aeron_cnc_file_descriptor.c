@@ -42,12 +42,14 @@ aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
     if (NULL == metadata)
     {
         AERON_SET_ERR(EINVAL, "%s", "CnC metadata pointer must not be NULL");
+        return AERON_CNC_LOAD_FAILED;
     }
 
     char filename[AERON_MAX_PATH];
     if (AERON_MAX_PATH <= aeron_cnc_resolve_filename(dir, filename, AERON_MAX_PATH))
     {
         AERON_SET_ERR(EINVAL, "CNC file path exceeds buffer sizes: %d, %s", AERON_MAX_PATH, filename);
+        return AERON_CNC_LOAD_FAILED;
     }
 
     if (aeron_file_length(filename) <= (int64_t)AERON_CNC_VERSION_AND_META_DATA_LENGTH)

@@ -46,6 +46,7 @@ int aeron_client_connect_to_driver(aeron_mapped_file_t *cnc_mmap, aeron_context_
         switch (result)
         {
             case AERON_CNC_LOAD_FAILED:
+                AERON_APPEND_ERR("%s", "");
                 return -1;
 
             case AERON_CNC_LOAD_AWAIT_FILE:

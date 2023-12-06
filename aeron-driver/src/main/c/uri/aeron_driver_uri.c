@@ -64,6 +64,7 @@ int aeron_uri_get_mtu_length_param(aeron_uri_params_t *uri_params, aeron_driver_
 
         if (aeron_driver_context_validate_mtu_length(value) < 0)
         {
+            AERON_APPEND_ERR("%s", "");
             return -1;
         }
 

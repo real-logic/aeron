@@ -378,8 +378,8 @@ int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t
     value = strtoll(value_str, &end_ptr, 0);
     if (0 != errno || '\0' != *end_ptr)
     {
-        return -1;
         AERON_SET_ERR(EINVAL, "could not parse %s=%s as int64_t in URI: %s", key, value_str, strerror(errno));
+        return -1;
     }
 
     *retval = value;

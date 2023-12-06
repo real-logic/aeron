@@ -128,7 +128,7 @@ typedef struct aeron_resolution_header_ipv6_stct
 }
 aeron_resolution_header_ipv6_t;
 
-typedef struct aeron_option_hdeader_stct
+typedef struct aeron_option_header_stct
 {
     uint16_t option_length;
     uint16_t type;

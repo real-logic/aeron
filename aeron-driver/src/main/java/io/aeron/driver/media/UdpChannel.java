@@ -172,7 +172,7 @@ public final class UdpChannel
                 ControlMode.RESPONSE != controlMode)
             {
                 throw new IllegalArgumentException(
-                    "URIs for UDP must specify an endpoint, control, tags, or control-mode=manual: " +
+                    "URIs for UDP must specify an endpoint, control, tags, or control-mode=manual/response: " +
                     channelUriString);
             }
 

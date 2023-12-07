@@ -45,6 +45,7 @@ public class ClusterTests
     public static final String ERROR_MSG = "This message will cause an error";
     public static final String LARGE_MSG;
     public static final String TERMINATE_MSG = "Please terminate the clustered service";
+    public static final String PAUSE = "Please pause when processing message";
 
     static
     {

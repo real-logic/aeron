@@ -2093,14 +2093,15 @@ class ClusterTest
         cluster.stopNode(followerToRestart);
 
         cluster.connectClient();
-        cluster.sendMessageToSlowDownService(liveFollower.index(), TimeUnit.SECONDS.toNanos(15));
+
+        final long slowDownDelayMs = 15_000;
+        cluster.sendMessageToSlowDownService(liveFollower.index(), TimeUnit.MILLISECONDS.toNanos(slowDownDelayMs));
         cluster.sendMessages(1000);
 
         final TestNode restartedFollower = cluster.startStaticNode(followerToRestart.index(), false);
         awaitElectionClosed(restartedFollower);
 
-        Tests.sleep(15_000);
-
+        Tests.sleep(slowDownDelayMs);
         assertEquals(ElectionState.CLOSED, restartedFollower.electionState());
     }
 

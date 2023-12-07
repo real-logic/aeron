@@ -595,27 +595,34 @@ public final class PublicationImage
 
         if (!isFlowControlOverRun(proposedPosition))
         {
-            if (!isFlowControlUnderRun(packetPosition))
+            if (isHeartbeat)
             {
                 final long nowNs = cachedNanoClock.nanoTime();
                 timeOfLastPacketNs = nowNs;
                 trackConnection(transportIndex, srcAddress, nowNs);
 
-                if (isHeartbeat)
+                if (DataHeaderFlyweight.isEndOfStream(buffer) && !isEndOfStream && allEos(transportIndex))
                 {
-                    if (DataHeaderFlyweight.isEndOfStream(buffer) && !isEndOfStream && allEos(transportIndex))
+                    final long eosPosition = endOfStreamPosition(rawLog.metaData());
+                    if (Long.MAX_VALUE == eosPosition || packetPosition > eosPosition)
                     {
-                        LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), proposedPosition);
-                        isEndOfStream = true;
+                        LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), packetPosition);
                     }
 
-                    heartbeatsReceived.incrementOrdered();
+                    isEndOfStream = true;
                 }
-                else
-                {
-                    final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
-                    TermRebuilder.insert(termBuffer, termOffset, buffer, length);
-                }
+
+                hwmPosition.proposeMaxOrdered(proposedPosition);
+                heartbeatsReceived.incrementOrdered();
+            }
+            else if (!isFlowControlUnderRun(packetPosition))
+            {
+                final long nowNs = cachedNanoClock.nanoTime();
+                timeOfLastPacketNs = nowNs;
+                trackConnection(transportIndex, srcAddress, nowNs);
+
+                final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
+                TermRebuilder.insert(termBuffer, termOffset, buffer, length);
 
                 hwmPosition.proposeMaxOrdered(proposedPosition);
             }

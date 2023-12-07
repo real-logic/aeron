@@ -2045,8 +2045,7 @@ class ClusterTest
     }
 
     @Test
-    @Disabled
-    @InterruptAfter(30)
+    @InterruptAfter(60)
     void shouldRemainStableWhenThereIsASlowFollower()
     {
         cluster = aCluster().withStaticNodes(3).withLogChannel("aeron:udp?term-length=64k").start();

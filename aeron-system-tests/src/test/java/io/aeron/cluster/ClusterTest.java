@@ -2044,6 +2044,33 @@ class ClusterTest
         cluster.sendAndAwaitMessages(10);
     }
 
+    @Test
+    @Disabled
+    @InterruptAfter(30)
+    void shouldRemainStableWhenThereIsASlowFollower()
+    {
+        cluster = aCluster().withStaticNodes(3).withLogChannel("aeron:udp?term-length=64k").start();
+        systemTestWatcher.cluster(cluster);
+
+        cluster.awaitLeader();
+        final TestNode followerToRestart = cluster.followers().get(0);
+        final TestNode liveFollower = cluster.followers().get(1);
+
+        awaitElectionClosed(followerToRestart);
+        cluster.stopNode(followerToRestart);
+
+        cluster.connectClient();
+        cluster.sendMessageToSlowDownService(liveFollower.index(), TimeUnit.SECONDS.toNanos(15));
+        cluster.sendMessages(1000);
+
+        final TestNode restartedFollower = cluster.startStaticNode(followerToRestart.index(), false);
+        awaitElectionClosed(restartedFollower);
+
+        Tests.sleep(15_000);
+
+        assertEquals(ElectionState.CLOSED, restartedFollower.electionState());
+    }
+
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)
     {
         cluster = aCluster().withStaticNodes(3).start();

@@ -57,6 +57,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.IntPredicate;
 import java.util.zip.CRC32;
 
@@ -225,7 +226,7 @@ public final class TestNode implements AutoCloseable
         }
     }
 
-    ElectionState electionState()
+    public ElectionState electionState()
     {
         return ElectionState.get(consensusModule.context().electionStateCounter());
     }
@@ -471,6 +472,18 @@ public final class TestNode implements AutoCloseable
                 while (!cluster.scheduleTimer(1, cluster.time() + 1_000))
                 {
                     idleStrategy.idle();
+                }
+            }
+
+            if (message.startsWith(ClusterTests.PAUSE))
+            {
+                final String[] messageComponents = message.split("\\|");
+                final int nodeIndex = Integer.parseInt(messageComponents[1]);
+                final long durationNs = Long.parseLong(messageComponents[2]);
+
+                if (index == nodeIndex)
+                {
+                    LockSupport.parkNanos(durationNs);
                 }
             }
 

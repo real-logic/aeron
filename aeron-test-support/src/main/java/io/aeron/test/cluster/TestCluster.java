@@ -97,8 +97,7 @@ import java.util.stream.Stream;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
-import static io.aeron.test.cluster.ClusterTests.LARGE_MSG;
-import static io.aeron.test.cluster.ClusterTests.errorHandler;
+import static io.aeron.test.cluster.ClusterTests.*;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -922,6 +921,22 @@ public final class TestCluster implements AutoCloseable
                 final String msg = "failed to send message " + i + " of " + messageCount + " cause=" + ex.getMessage();
                 throw new ClusterException(msg, ex);
             }
+        }
+    }
+
+    public void sendMessageToSlowDownService(final int index, final long durationNs)
+    {
+        final String pause = PAUSE + "|" + index + "|" + durationNs;
+        final int messageLength = msgBuffer.putStringWithoutLengthAscii(0, pause);
+
+        try
+        {
+            pollUntilMessageSent(messageLength);
+        }
+        catch (final Exception ex)
+        {
+            final String msg = "failed to send message cause=" + ex.getMessage();
+            throw new ClusterException(msg, ex);
         }
     }
 

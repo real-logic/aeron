@@ -534,23 +534,29 @@ int aeron_publication_image_insert_packet(
 
         if (is_heartbeat)
         {
-            aeron_publication_image_track_connection(image, destination, addr, now_ns);
-            AERON_PUT_ORDERED(image->time_of_last_packet_ns, now_ns);
+            const int64_t potential_window_bottom = image->last_sm_position - (image->term_length_mask + 1);
+            const int64_t publication_window_bottom = potential_window_bottom < 0 ? 0 : potential_window_bottom;
 
-            const bool is_eos = aeron_publication_image_is_end_of_stream(buffer, length);
-            if (is_eos && !image->is_end_of_stream && aeron_publication_image_all_eos(image, destination, is_eos))
+            if (packet_position >= publication_window_bottom)
             {
-                const int64_t eos_position = image->log_meta_data->end_of_stream_position;
-                if (INT64_MAX == eos_position || packet_position > eos_position)
+                aeron_publication_image_track_connection(image, destination, addr, now_ns);
+                AERON_PUT_ORDERED(image->time_of_last_packet_ns, now_ns);
+
+                const bool is_eos = aeron_publication_image_is_end_of_stream(buffer, length);
+                if (is_eos && !image->is_end_of_stream && aeron_publication_image_all_eos(image, destination, is_eos))
                 {
-                    AERON_PUT_ORDERED(image->log_meta_data->end_of_stream_position, packet_position);
+                    const int64_t eos_position = image->log_meta_data->end_of_stream_position;
+                    if (INT64_MAX == eos_position || packet_position > eos_position)
+                    {
+                        AERON_PUT_ORDERED(image->log_meta_data->end_of_stream_position, packet_position);
+                    }
+
+                    AERON_PUT_ORDERED(image->is_end_of_stream, true);
                 }
 
-                AERON_PUT_ORDERED(image->is_end_of_stream, true);
+                aeron_counter_propose_max_ordered(image->rcv_hwm_position.value_addr, proposed_position);
+                aeron_counter_ordered_increment(image->heartbeats_received_counter, 1);
             }
-
-            aeron_counter_propose_max_ordered(image->rcv_hwm_position.value_addr, proposed_position);
-            aeron_counter_ordered_increment(image->heartbeats_received_counter, 1);
         }
         else if (!aeron_publication_image_is_flow_control_under_run(image, packet_position))
         {

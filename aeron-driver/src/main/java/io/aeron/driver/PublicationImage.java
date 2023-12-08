@@ -597,23 +597,29 @@ public final class PublicationImage
         {
             if (isHeartbeat)
             {
-                final long nowNs = cachedNanoClock.nanoTime();
-                timeOfLastPacketNs = nowNs;
-                trackConnection(transportIndex, srcAddress, nowNs);
+                final long potentialWindowBottom = lastSmPosition - (termLengthMask + 1);
+                final long publicationWindowBottom = potentialWindowBottom < 0 ? 0 : potentialWindowBottom;
 
-                if (DataHeaderFlyweight.isEndOfStream(buffer) && !isEndOfStream && allEos(transportIndex))
+                if (packetPosition >= publicationWindowBottom)
                 {
-                    final long eosPosition = endOfStreamPosition(rawLog.metaData());
-                    if (Long.MAX_VALUE == eosPosition || packetPosition > eosPosition)
+                    final long nowNs = cachedNanoClock.nanoTime();
+                    timeOfLastPacketNs = nowNs;
+                    trackConnection(transportIndex, srcAddress, nowNs);
+
+                    if (DataHeaderFlyweight.isEndOfStream(buffer) && !isEndOfStream && allEos(transportIndex))
                     {
-                        LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), packetPosition);
+                        final long eosPosition = endOfStreamPosition(rawLog.metaData());
+                        if (Long.MAX_VALUE == eosPosition || packetPosition > eosPosition)
+                        {
+                            LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), packetPosition);
+                        }
+
+                        isEndOfStream = true;
                     }
 
-                    isEndOfStream = true;
+                    hwmPosition.proposeMaxOrdered(proposedPosition);
+                    heartbeatsReceived.incrementOrdered();
                 }
-
-                hwmPosition.proposeMaxOrdered(proposedPosition);
-                heartbeatsReceived.incrementOrdered();
             }
             else if (!isFlowControlUnderRun(packetPosition))
             {

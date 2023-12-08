@@ -76,7 +76,7 @@ static const aeron_symbol_table_func_t aeron_udp_channel_interceptor_table[] =
     };
 
 static const size_t aeron_udp_channel_interceptor_table_length =
-    sizeof(aeron_udp_channel_transport_bindings_table) / sizeof(aeron_symbol_table_func_t);
+    sizeof(aeron_udp_channel_interceptor_table) / sizeof(aeron_symbol_table_func_t);
 
 aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_media(const char *bindings_name)
 {

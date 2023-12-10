@@ -482,14 +482,14 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommand)
     ASSERT_TRUE(aeron_driver_agent_logging_events_init("CMD_IN_ADD_SUBSCRIPTION", nullptr));
 
     const size_t length = sizeof(aeron_publication_command_t) + 4;
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_MAX_PATH] = {};
     auto *command = (aeron_publication_command_t *)buffer;
 
     command->correlated.correlation_id = 11;
     command->correlated.client_id = 42;
     command->stream_id = 7;
     command->channel_length = 4;
-    memcpy(buffer + sizeof(aeron_publication_command_t), "test", sizeof("test"));
+    memcpy(buffer + sizeof(aeron_publication_command_t), "test", strlen("test"));
 
     aeron_driver_agent_conductor_to_driver_interceptor(AERON_COMMAND_ADD_SUBSCRIPTION, command, length, nullptr);
 
@@ -529,7 +529,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToDriverCommandBigMessage)
     ASSERT_TRUE(aeron_driver_agent_logging_events_init("CMD_IN_ADD_COUNTER", nullptr));
 
     const size_t length = AERON_MAX_FRAME_LENGTH * 5;
-    char buffer[length];
+    char buffer[length] = {};
     auto *command = (aeron_publication_command_t *)buffer;
 
     command->correlated.correlation_id = 118;
@@ -579,7 +579,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommand)
     ASSERT_TRUE(aeron_driver_agent_logging_events_init("CMD_OUT_ON_OPERATION_SUCCESS", nullptr));
 
     const size_t length = sizeof(aeron_publication_command_t) + 4;
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_MAX_PATH] = {};
     auto *command = (aeron_publication_command_t *)buffer;
 
     command->correlated.correlation_id = 11;
@@ -626,7 +626,7 @@ TEST_F(DriverAgentTest, shouldLogConductorToClientCommandBigMessage)
     ASSERT_TRUE(aeron_driver_agent_logging_events_init("CMD_OUT_EXCLUSIVE_PUBLICATION_READY", nullptr));
 
     const size_t length = AERON_MAX_FRAME_LENGTH * 15;
-    char buffer[length];
+    char buffer[length] = {};
     auto *command = (aeron_subscription_command_t *)buffer;
 
     command->correlated.correlation_id = 8;

@@ -515,7 +515,7 @@ int aeron_udp_channel_transport_recvmmsg(
     {
         return aeron_udp_channel_transport_recvmsg(transport, msgvec, vlen, bytes_rcved, recv_func, clientd);
     }
-#elif
+#else
     return aeron_udp_channel_transport_recvmsg(transport, msgvec, vlen, bytes_rcved, recv_func, clientd);
 #endif
 }

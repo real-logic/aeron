@@ -549,6 +549,10 @@ int aeron_publication_image_insert_packet(
                 aeron_counter_propose_max_ordered(image->rcv_hwm_position.value_addr, proposed_position);
                 aeron_counter_ordered_increment(image->heartbeats_received_counter, 1);
             }
+            else
+            {
+                aeron_counter_ordered_increment(image->flow_control_under_runs_counter, 1);
+            }
         }
         else if (!aeron_publication_image_is_flow_control_under_run(image, packet_position))
         {

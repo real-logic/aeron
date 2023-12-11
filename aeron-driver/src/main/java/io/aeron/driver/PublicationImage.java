@@ -620,6 +620,10 @@ public final class PublicationImage
                     hwmPosition.proposeMaxOrdered(proposedPosition);
                     heartbeatsReceived.incrementOrdered();
                 }
+                else
+                {
+                    flowControlUnderRuns.incrementOrdered();
+                }
             }
             else if (!isFlowControlUnderRun(packetPosition))
             {

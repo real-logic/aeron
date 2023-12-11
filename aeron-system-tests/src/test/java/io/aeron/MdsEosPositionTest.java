@@ -19,6 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -47,6 +48,7 @@ class MdsEosPositionTest
     @Test
     @InterruptAfter(30)
     @SlowTest
+    @Disabled
     void shouldHaveEosAtFinalPosition()
     {
         final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder()

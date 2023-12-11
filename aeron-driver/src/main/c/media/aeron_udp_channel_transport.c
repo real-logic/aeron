@@ -434,7 +434,6 @@ int aeron_udp_channel_transport_recvmmsg(
     aeron_udp_transport_recv_func_t recv_func,
     void *clientd)
 {
-
 #if defined(HAVE_RECVMMSG)
     if (vlen > 1)
     {
@@ -512,12 +511,10 @@ int aeron_udp_channel_transport_recvmmsg(
         }
     }
     else
+#endif
     {
         return aeron_udp_channel_transport_recvmsg(transport, msgvec, vlen, bytes_rcved, recv_func, clientd);
     }
-#else
-    return aeron_udp_channel_transport_recvmsg(transport, msgvec, vlen, bytes_rcved, recv_func, clientd);
-#endif
 }
 
 static int aeron_udp_channel_transport_send_connected(

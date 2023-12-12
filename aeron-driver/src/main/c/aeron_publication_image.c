@@ -475,7 +475,7 @@ static inline void aeron_publication_image_track_connection(
 }
 
 static inline bool aeron_publication_image_all_eos(
-    aeron_publication_image_t *image, aeron_receive_destination_t *destination, bool is_eos)
+    aeron_publication_image_t *image, aeron_receive_destination_t *destination, int64_t packet_position)
 {
     bool all_eos = true;
 
@@ -484,7 +484,8 @@ static inline bool aeron_publication_image_all_eos(
         aeron_publication_image_connection_t *connection = &image->connections.array[i];
         if (connection->destination == destination)
         {
-            connection->is_eos = is_eos;
+            connection->is_eos = true;
+            connection->eos_position = packet_position;
         }
         else
         {
@@ -493,6 +494,22 @@ static inline bool aeron_publication_image_all_eos(
     }
 
     return all_eos;
+}
+
+static inline int64_t aeron_publication_find_eos_position(aeron_publication_image_t *image)
+{
+    int64_t eos_position = 0;
+
+    for (size_t i = 0, len = image->connections.length; i < len; i++)
+    {
+        aeron_publication_image_connection_t *connection = &image->connections.array[i];
+        if (connection->eos_position > eos_position)
+        {
+            eos_position = connection->eos_position;
+        }
+    }
+
+    return eos_position;
 }
 
 static inline bool aeron_publication_image_connection_is_alive(
@@ -543,15 +560,15 @@ int aeron_publication_image_insert_packet(
                 AERON_PUT_ORDERED(image->time_of_last_packet_ns, now_ns);
 
                 const bool is_eos = aeron_publication_image_is_end_of_stream(buffer, length);
-                if (is_eos && !image->is_end_of_stream && aeron_publication_image_all_eos(image, destination, is_eos))
+                if (is_eos)
                 {
-                    const int64_t eos_position = image->log_meta_data->end_of_stream_position;
-                    if (INT64_MAX == eos_position || packet_position > eos_position)
+                    if (!image->is_end_of_stream &&
+                        aeron_publication_image_all_eos(image, destination, packet_position))
                     {
-                        AERON_PUT_ORDERED(image->log_meta_data->end_of_stream_position, packet_position);
+                        AERON_PUT_ORDERED(image->log_meta_data->end_of_stream_position,
+                            aeron_publication_find_eos_position(image));
+                        AERON_PUT_ORDERED(image->is_end_of_stream, true);
                     }
-
-                    AERON_PUT_ORDERED(image->is_end_of_stream, true);
                 }
 
                 aeron_counter_propose_max_ordered(image->rcv_hwm_position.value_addr, proposed_position);
@@ -782,10 +799,14 @@ int aeron_publication_image_add_destination(aeron_publication_image_t *image, ae
     }
 
     aeron_publication_image_connection_t *new_connection = &image->connections.array[image->connections.length];
+
+    new_connection->is_eos = false;
     new_connection->destination = destination;
     new_connection->control_addr = destination->has_control_addr ? &destination->current_control_addr : NULL;
     new_connection->time_of_last_activity_ns = aeron_clock_cached_nano_time(image->cached_clock);
     new_connection->time_of_last_frame_ns = 0;
+    new_connection->eos_position = 0;
+
     image->connections.length++;
 
     return (int)image->connections.length;

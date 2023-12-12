@@ -43,6 +43,7 @@ typedef struct aeron_publication_image_connection_stct
     bool is_eos;
     int64_t time_of_last_activity_ns;
     int64_t time_of_last_frame_ns;
+    int64_t eos_position;
     uint8_t padding_after[AERON_CACHE_LINE_LENGTH];
 }
 aeron_publication_image_connection_t;

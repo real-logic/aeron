@@ -560,13 +560,12 @@ int aeron_publication_image_insert_packet(
                 AERON_PUT_ORDERED(image->time_of_last_packet_ns, now_ns);
 
                 const bool is_eos = aeron_publication_image_is_end_of_stream(buffer, length);
-                if (is_eos)
+                if (is_eos && !image->is_end_of_stream)
                 {
-                    if (!image->is_end_of_stream &&
-                        aeron_publication_image_all_eos(image, destination, packet_position))
+                    if (aeron_publication_image_all_eos(image, destination, packet_position))
                     {
-                        AERON_PUT_ORDERED(image->log_meta_data->end_of_stream_position,
-                            aeron_publication_find_eos_position(image));
+                        const int64_t eos_position = aeron_publication_find_eos_position(image);
+                        AERON_PUT_ORDERED(image->log_meta_data->end_of_stream_position, eos_position);
                         AERON_PUT_ORDERED(image->is_end_of_stream, true);
                     }
                 }

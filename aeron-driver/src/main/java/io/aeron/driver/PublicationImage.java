@@ -606,15 +606,16 @@ public final class PublicationImage
                     timeOfLastPacketNs = nowNs;
                     trackConnection(transportIndex, srcAddress, nowNs);
 
-                    if (DataHeaderFlyweight.isEndOfStream(buffer) && !isEndOfStream && allEos(transportIndex))
+                    if (DataHeaderFlyweight.isEndOfStream(buffer))
                     {
-                        final long eosPosition = endOfStreamPosition(rawLog.metaData());
-                        if (Long.MAX_VALUE == eosPosition || packetPosition > eosPosition)
-                        {
-                            LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), packetPosition);
-                        }
+                        imageConnections[transportIndex].eosPosition = packetPosition;
+                        imageConnections[transportIndex].isEos = true;
 
-                        isEndOfStream = true;
+                        if (!isEndOfStream && isAllConnectedEos())
+                        {
+                            LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), findEosPosition());
+                            isEndOfStream = true;
+                        }
                     }
 
                     hwmPosition.proposeMaxOrdered(proposedPosition);
@@ -945,10 +946,8 @@ public final class PublicationImage
         imageConnection.timeOfLastFrameNs = nowNs;
     }
 
-    private boolean allEos(final int transportIndex)
+    private boolean isAllConnectedEos()
     {
-        imageConnections[transportIndex].isEos = true;
-
         for (int i = 0, length = imageConnections.length; i < length; i++)
         {
             final ImageConnection imageConnection = imageConnections[i];
@@ -964,6 +963,23 @@ public final class PublicationImage
         }
 
         return true;
+    }
+
+    private long findEosPosition()
+    {
+        long eosPosition = 0;
+
+        for (int i = 0, length = imageConnections.length; i < length; i++)
+        {
+            final ImageConnection imageConnection = imageConnections[i];
+
+            if (imageConnection.eosPosition > eosPosition)
+            {
+                eosPosition = imageConnection.eosPosition;
+            }
+        }
+
+        return eosPosition;
     }
 
     private void scheduleStatusMessage(final long smPosition, final int receiverWindowLength)

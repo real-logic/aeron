@@ -37,6 +37,8 @@ abstract class ImageConnectionFields extends ImageConnectionLhsPadding
      */
     public long timeOfLastFrameNs;
 
+    public long eosPosition = Long.MAX_VALUE;
+
     /**
      * Is the end of the stream from source been observed.
      */

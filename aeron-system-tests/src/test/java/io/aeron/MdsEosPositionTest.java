@@ -19,7 +19,6 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -48,8 +47,7 @@ class MdsEosPositionTest
     @Test
     @SlowTest
     @InterruptAfter(30)
-    @Disabled
-    void shouldHaveEosAtFinalPosition()
+    void shouldHaveEosPositionAtFinalPosition()
     {
         final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
@@ -78,7 +76,7 @@ class MdsEosPositionTest
 
             publishStream(publicationTwo);
 
-            final long expectedEosPosition = publicationTwo.position();
+            final long expectedPosition = publicationTwo.position();
             final Image image = subscription.imageAtIndex(0);
 
             consumeStream(image);
@@ -94,8 +92,8 @@ class MdsEosPositionTest
             awaitClosed(image);
 
             assertTrue(image.isEndOfStream());
-            assertEquals(expectedEosPosition, image.position());
-            assertEquals(expectedEosPosition, image.endOfStreamPosition());
+            assertEquals(expectedPosition, image.position());
+            assertEquals(expectedPosition, image.endOfStreamPosition());
         }
     }
 

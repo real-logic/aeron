@@ -46,8 +46,8 @@ class MdsEosPositionTest
     final SystemTestWatcher testWatcher = new SystemTestWatcher();
 
     @Test
-    @InterruptAfter(30)
     @SlowTest
+    @InterruptAfter(30)
     @Disabled
     void shouldHaveEosAtFinalPosition()
     {
@@ -94,6 +94,7 @@ class MdsEosPositionTest
             awaitClosed(image);
 
             assertTrue(image.isEndOfStream());
+            assertEquals(expectedEosPosition, image.position());
             assertEquals(expectedEosPosition, image.endOfStreamPosition());
         }
     }
@@ -127,7 +128,7 @@ class MdsEosPositionTest
     {
         while (image.activeTransportCount() != activeTransportCount)
         {
-            Tests.yield();
+            Tests.sleep(1);
         }
     }
 
@@ -135,7 +136,7 @@ class MdsEosPositionTest
     {
         while (!image.isClosed())
         {
-            Tests.yield();
+            Tests.sleep(1);
         }
     }
 }

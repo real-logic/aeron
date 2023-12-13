@@ -135,14 +135,14 @@ typedef struct aeron_option_header_stct
 }
 aeron_option_header_t;
 
-typedef struct aeron_response_setup_stct
+typedef struct aeron_response_setup_header_stct
 {
     aeron_frame_header_t frame_header;
     int32_t session_id;
     int32_t stream_id;
     int32_t response_session_id;
 }
-aeron_response_setup_t;
+aeron_response_setup_header_t;
 #pragma pack(pop)
 
 int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *group_tag);

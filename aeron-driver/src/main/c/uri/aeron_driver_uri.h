@@ -38,6 +38,7 @@ typedef struct aeron_driver_uri_publication_params_stct
     bool has_session_id;
     int32_t session_id;
     int64_t entity_tag;
+    int64_t response_correlation_id;
 }
 aeron_driver_uri_publication_params_t;
 

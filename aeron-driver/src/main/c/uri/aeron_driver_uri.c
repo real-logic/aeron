@@ -174,6 +174,7 @@ int aeron_diver_uri_publication_params(
     params->has_session_id = false;
     params->session_id = 0;
     params->entity_tag = AERON_URI_INVALID_TAG;
+    params->response_correlation_id = AERON_NULL_VALUE;
 
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
         &uri->params.ipc.additional_params : &uri->params.udp.additional_params;
@@ -316,6 +317,11 @@ int aeron_diver_uri_publication_params(
     }
 
     if (aeron_uri_get_bool(uri_params, AERON_URI_SPIES_SIMULATE_CONNECTION_KEY, &params->spies_simulate_connection) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_uri_get_int64(uri_params, AERON_URI_RESPONSE_CORRELATION_ID_KEY, &params->response_correlation_id) < 0)
     {
         return -1;
     }

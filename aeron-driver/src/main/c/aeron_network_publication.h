@@ -80,6 +80,8 @@ typedef struct aeron_network_publication_stct
     int64_t time_of_last_setup_ns;
     uint8_t sender_fields_pad_rhs[AERON_CACHE_LINE_LENGTH];
 
+    struct sockaddr_storage endpoint_address;
+
     char *log_file_name;
     int64_t term_buffer_length;
     int64_t term_window_length;
@@ -89,6 +91,7 @@ typedef struct aeron_network_publication_stct
     int64_t connection_timeout_ns;
 
     int64_t tag;
+    int64_t response_correlation_id;
     int32_t session_id;
     int32_t stream_id;
     int32_t initial_term_id;
@@ -103,6 +106,7 @@ typedef struct aeron_network_publication_stct
     bool signal_eos;
     bool is_setup_elicited;
     bool is_exclusive;
+    bool is_response;
     volatile bool has_receivers;
     volatile bool has_spies;
     volatile bool is_connected;
@@ -162,7 +166,11 @@ void aeron_network_publication_on_nak(
     aeron_network_publication_t *publication, int32_t term_id, int32_t term_offset, int32_t length);
 
 void aeron_network_publication_on_status_message(
-    aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
+    aeron_network_publication_t *publication,
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    const uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
 
 void aeron_network_publication_on_rttm(
     aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
@@ -249,6 +257,18 @@ inline void aeron_network_publication_trigger_send_setup_frame(
             length,
             addr,
             time_ns);
+
+        if (publication->is_response)
+        {
+            if (AF_INET == addr->ss_family)
+            {
+                memcpy(&publication->endpoint_address, addr, sizeof(struct sockaddr_in));
+            }
+            else if (AF_INET6 == addr->ss_family)
+            {
+                memcpy(&publication->endpoint_address, addr, sizeof(struct sockaddr_in6));
+            }
+        }
     }
 }
 

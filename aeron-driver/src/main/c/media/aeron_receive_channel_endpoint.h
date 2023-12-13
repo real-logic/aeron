@@ -131,6 +131,14 @@ int aeron_receive_channel_endpoint_send_rttm(
     int64_t reception_delta,
     bool is_reply);
 
+int aeron_receive_channel_endpoint_send_response_setup(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
+    struct sockaddr_storage *addr,
+    int32_t stream_id,
+    int32_t session_id,
+    int32_t response_session_id);
+
 void aeron_receive_channel_endpoint_dispatch(
     aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
@@ -223,12 +231,16 @@ int aeron_receive_channel_endpoint_remove_poll_transports(
 
 int aeron_receive_channel_endpoint_add_pending_setup(
     aeron_receive_channel_endpoint_t *endpoint,
-    aeron_driver_receiver_t *receiver);
+    aeron_driver_receiver_t *receiver,
+    int32_t session_id,
+    int32_t stream_id);
 
 int aeron_receive_channel_endpoint_add_pending_setup_destination(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_driver_receiver_t *receiver,
-    aeron_receive_destination_t *destination);
+    aeron_receive_destination_t *destination,
+    int32_t session_id,
+    int32_t stream_id);
 
 inline void aeron_receive_channel_endpoint_on_remove_pending_setup(
     aeron_receive_channel_endpoint_t *endpoint, int32_t session_id, int32_t stream_id)

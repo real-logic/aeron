@@ -62,6 +62,7 @@ typedef struct aeron_publication_image_stct
         int64_t liveness_timeout_ns;
         int64_t clean_position;
         aeron_receive_channel_endpoint_t *endpoint;
+        uint8_t flags;
     }
     conductor_fields;
 
@@ -129,6 +130,8 @@ typedef struct aeron_publication_image_stct
 
     int64_t time_of_last_packet_ns;
 
+    volatile int64_t response_session_id;
+
     volatile bool is_end_of_stream;
     volatile bool is_sending_eos_sm;
     volatile bool has_receiver_released;
@@ -161,6 +164,7 @@ int aeron_publication_image_create(
     struct sockaddr_storage *source_address,
     int32_t term_buffer_length,
     int32_t sender_mtu_length,
+    uint8_t flags,
     aeron_loss_reporter_t *loss_reporter,
     bool is_reliable,
     bool is_sparse,
@@ -308,6 +312,20 @@ inline int64_t aeron_publication_image_registration_id(aeron_publication_image_t
 {
     return image->conductor_fields.managed_resource.registration_id;
 }
+
+inline bool aeron_publication_image_has_send_response_setup(aeron_publication_image_t *image)
+{
+    return AERON_SETUP_HEADER_SEND_RESPONSE_FLAG & image->conductor_fields.flags;
+}
+
+// Called from Conductor
+inline void aeron_publication_image_set_response_session_id(
+    aeron_publication_image_t *image, int64_t response_session_id)
+{
+    AERON_PUT_ORDERED(image->response_session_id, response_session_id);
+}
+
+void aeron_publication_image_remove_response_session_id(aeron_publication_image_t *image);
 
 inline int64_t aeron_publication_image_join_position(aeron_publication_image_t *image)
 {

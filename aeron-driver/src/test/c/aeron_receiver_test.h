@@ -226,7 +226,7 @@ protected:
             &image, endpoint, destination, m_context, correlation_id, session_id, stream_id, 0, 0, 0,
             &hwm_position, &pos_position, congestion_control_strategy,
             &channel->remote_control, &channel->local_data,
-            TERM_BUFFER_SIZE, MTU, nullptr, true, true, false, &m_system_counters) < 0)
+            TERM_BUFFER_SIZE, MTU, UINT8_C(0), nullptr, true, true, false, &m_system_counters) < 0)
         {
             congestion_control_strategy->fini(congestion_control_strategy);
             return nullptr;

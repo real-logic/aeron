@@ -89,6 +89,13 @@ int aeron_send_channel_send(
     size_t iov_length,
     int64_t *bytes_sent);
 
+int aeron_send_channel_send_endpoint_address(
+    aeron_send_channel_endpoint_t *endpoint,
+    struct sockaddr_storage* endpoint_address,
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent);
+
 int aeron_send_channel_endpoint_add_publication(
     aeron_send_channel_endpoint_t *endpoint, aeron_network_publication_t *publication);
 
@@ -110,10 +117,21 @@ void aeron_send_channel_endpoint_on_nak(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
 void aeron_send_channel_endpoint_on_status_message(
-    aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
 
 void aeron_send_channel_endpoint_on_rttm(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
+
+void aeron_send_channel_endpoint_on_response_setup(
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
 
 int aeron_send_channel_endpoint_check_for_re_resolution(
     aeron_send_channel_endpoint_t *endpoint, int64_t now_ns, aeron_driver_conductor_proxy_t *conductor_proxy);

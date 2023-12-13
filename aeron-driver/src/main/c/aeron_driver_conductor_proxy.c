@@ -44,6 +44,7 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     int32_t term_offset,
     int32_t term_length,
     int32_t mtu_length,
+    uint8_t flags,
     struct sockaddr_storage *control_address,
     struct sockaddr_storage *src_address,
     void *endpoint,
@@ -59,6 +60,7 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
             .term_offset = term_offset,
             .term_length = term_length,
             .mtu_length = mtu_length,
+            .flags = flags,
             .endpoint = endpoint,
             .destination = destination
         };
@@ -180,6 +182,52 @@ void aeron_driver_conductor_proxy_on_receive_endpoint_removed(
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
     {
         aeron_driver_conductor_on_receive_endpoint_removed(conductor_proxy->conductor, &cmd);
+    }
+    else
+    {
+        aeron_driver_conductor_proxy_offer(conductor_proxy, &cmd, sizeof(cmd));
+    }
+}
+
+void aeron_driver_conductor_proxy_on_response_setup(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    int64_t response_correlation_id,
+    int32_t response_session_id)
+{
+    aeron_command_response_setup_t cmd = {
+        .base = {
+            .func = aeron_driver_conductor_on_response_setup,
+            .item = NULL
+        },
+        .response_correlation_id = response_correlation_id,
+        .response_session_id = response_session_id
+    };
+
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
+    {
+        aeron_driver_conductor_on_response_setup(conductor_proxy->conductor, &cmd);
+    }
+    else
+    {
+        aeron_driver_conductor_proxy_offer(conductor_proxy, &cmd, sizeof(cmd));
+    }
+}
+
+void aeron_driver_conductor_proxy_on_response_connected(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    int64_t response_correlation_id)
+{
+    aeron_command_response_connected_t cmd = {
+        .base = {
+            .func = aeron_driver_conductor_on_response_connected,
+            .item = NULL
+        },
+        .response_correlation_id = response_correlation_id
+    };
+
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
+    {
+        aeron_driver_conductor_on_response_connected(conductor_proxy->conductor, &cmd);
     }
     else
     {

@@ -93,6 +93,7 @@ typedef struct aeron_subscription_link_stct
     bool is_reliable;
     bool is_rejoin;
     bool has_session_id;
+    bool is_response;
     aeron_inferable_boolean_t group;
     int32_t stream_id;
     int32_t session_id;
@@ -518,6 +519,10 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item);
 void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item);
 
 void aeron_driver_conductor_on_receive_endpoint_removed(void *clientd, void *item);
+
+void aeron_driver_conductor_on_response_setup(void *clientd, void *item);
+
+void aeron_driver_conductor_on_response_connected(void *clientd, void *item);
 
 void aeron_driver_conductor_on_release_resource(void *clientd, void *item);
 

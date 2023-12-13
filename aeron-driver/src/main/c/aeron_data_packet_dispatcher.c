@@ -386,6 +386,7 @@ int aeron_data_packet_dispatcher_create_publication(
         header->term_offset,
         header->term_length,
         header->mtu,
+        header->frame_header.flags,
         control_addr,
         addr,
         endpoint,

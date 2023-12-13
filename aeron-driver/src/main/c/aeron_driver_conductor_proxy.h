@@ -51,6 +51,7 @@ typedef struct aeron_command_create_publication_image_stct
     int32_t term_offset;
     int32_t term_length;
     int32_t mtu_length;
+    uint8_t flags;
     struct sockaddr_storage control_address;
     struct sockaddr_storage src_address;
     void *endpoint;
@@ -77,6 +78,21 @@ typedef struct aeron_command_delete_destination_stct
 }
 aeron_command_delete_destination_t;
 
+struct aeron_command_response_connected_stct
+{
+    aeron_command_base_t base;
+    int64_t response_correlation_id;
+};
+typedef struct aeron_command_response_connected_stct aeron_command_response_connected_t;
+
+struct aeron_command_response_setup_stct
+{
+    aeron_command_base_t base;
+    int64_t response_correlation_id;
+    int32_t response_session_id;
+};
+typedef struct aeron_command_response_setup_stct aeron_command_response_setup_t;
+
 struct aeron_command_release_resource_stct
 {
     aeron_command_base_t base;
@@ -93,6 +109,7 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     int32_t term_offset,
     int32_t term_length,
     int32_t mtu_length,
+    uint8_t flags,
     struct sockaddr_storage *control_address,
     struct sockaddr_storage *src_address,
     void *endpoint,
@@ -125,9 +142,19 @@ void aeron_driver_conductor_proxy_on_receive_endpoint_removed(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     void *endpoint);
 
+void aeron_driver_conductor_proxy_on_response_setup(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    int64_t response_correlation_id,
+    int32_t response_session_id);
+
+void aeron_driver_conductor_proxy_on_response_connected(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    int64_t response_correlation_id);
+
 void aeron_driver_conductor_proxy_on_release_resource(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     void *managed_resource,
     aeron_driver_conductor_resource_type_t resource_type);
+
 
 #endif //AERON_DRIVER_CONDUCTOR_PROXY_H

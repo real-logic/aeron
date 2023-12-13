@@ -70,7 +70,7 @@ class ChannelValidationTest
         driver = TestMediaDriver.launch(context, watcher);
         watcher.dataCollector().add(driver.context().aeronDirectory());
         watcher.ignoreErrorsMatching((s) -> true);
-        aeron = Aeron.connect();
+        aeron = Aeron.connect(new Aeron.Context().driverTimeoutMs(2_000));
     }
 
     @AfterEach

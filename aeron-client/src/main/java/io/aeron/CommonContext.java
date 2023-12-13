@@ -654,6 +654,22 @@ public class CommonContext implements Cloneable
      */
     public static long checkDebugTimeout(final long timeout, final TimeUnit timeUnit)
     {
+        return checkDebugTimeout(timeout, timeUnit, 1.0);
+    }
+
+    /**
+     * Override the supplied timeout with the debug value if it has been set, and we are in debug mode.
+     *
+     * @param timeout  The timeout value currently in use.
+     * @param timeUnit The units of the timeout value. Debug timeout is specified in ns, so will be converted to this
+     *                 unit.
+     * @param factor   to multiply the debug timeout by. Required when some timeouts need to be larger than others in
+     *                 order to pass validation. E.g. clientLiveness and publicationUnblock.
+     * @return The debug timeout if specified, and we are being debugged or the supplied value if not. Will be in
+     * timeUnit units.
+     */
+    public static long checkDebugTimeout(final long timeout, final TimeUnit timeUnit, final double factor)
+    {
         final String debugTimeoutString = getProperty(DEBUG_TIMEOUT_PROP_NAME);
         if (null == debugTimeoutString || !SystemUtil.isDebuggerAttached())
         {
@@ -662,12 +678,23 @@ public class CommonContext implements Cloneable
 
         try
         {
-            final long debugTimeoutNs = SystemUtil.parseDuration(DEBUG_TIMEOUT_PROP_NAME, debugTimeoutString);
+            final long debugTimeoutNs =
+                (long)(factor * SystemUtil.parseDuration(DEBUG_TIMEOUT_PROP_NAME, debugTimeoutString));
             final long debugTimeout = timeUnit.convert(debugTimeoutNs, TimeUnit.NANOSECONDS);
             final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            final String methodName = stackTrace[2].getMethodName();
-            final String className = stackTrace[2].getClassName();
-            final String debugFieldName = className + "." + methodName;
+
+            String debugFieldName = "<unknown>";
+            for (int i = 0; i < stackTrace.length; i++)
+            {
+                final String methodName = stackTrace[i].getMethodName();
+                if (!"checkDebugTimeout".equals(methodName) && !"getStackTrace".equals(methodName))
+                {
+                    final String className = stackTrace[i].getClassName();
+                    debugFieldName = className + "." + methodName;
+                    break;
+                }
+            }
+
             if (null == DEBUG_FIELDS_SEEN.putIfAbsent(debugFieldName, true))
             {
                 final String message = "Using debug timeout [" + debugTimeout + "] for " + debugFieldName +

@@ -645,7 +645,7 @@ public final class MediaDriver implements AutoCloseable
                 LogBufferDescriptor.checkTermLength(publicationTermBufferLength);
                 LogBufferDescriptor.checkTermLength(ipcTermBufferLength);
                 validateInitialWindowLength(initialWindowLength, mtuLength);
-                validateUnblockTimeout(publicationUnblockTimeoutNs, clientLivenessTimeoutNs, timerIntervalNs);
+                validateUnblockTimeout(publicationUnblockTimeoutNs(), clientLivenessTimeoutNs(), timerIntervalNs);
                 validateUntetheredTimeouts(untetheredWindowLimitTimeoutNs, untetheredRestingTimeoutNs, timerIntervalNs);
 
                 final long cncFileLength = BitUtil.align(
@@ -1411,7 +1411,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public long publicationUnblockTimeoutNs()
         {
-            return publicationUnblockTimeoutNs;
+            return CommonContext.checkDebugTimeout(publicationUnblockTimeoutNs, TimeUnit.NANOSECONDS, 1.5);
         }
 
         /**

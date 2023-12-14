@@ -15,11 +15,14 @@
  */
 
 #include <functional>
+#include <random>
+#include <climits>
 
 #include <gtest/gtest.h>
 
 #include "EmbeddedMediaDriver.h"
 #include "Aeron.h"
+#include "FragmentAssembler.h"
 #include "TestUtil.h"
 
 using namespace aeron;
@@ -191,4 +194,79 @@ TEST_F(SystemTest, shouldAddRemoveCloseHandler)
 
     EXPECT_EQ(1, closeCount1);
     EXPECT_EQ(0, closeCount2);
+}
+
+class Exchanger
+{
+    using generator_t = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned short>;
+
+public:
+    explicit Exchanger(
+        const std::shared_ptr<Subscription> &subscription,
+        const std::shared_ptr<ExclusivePublication> &publication) :
+        m_subscription(subscription),
+        m_publication(publication),
+        m_assembler(
+            FragmentAssembler(
+                [&](AtomicBuffer &buffer, index_t offset, index_t length, Header &header)
+                {
+                    m_innerHandler(buffer, offset, length, header);
+                })),
+        m_outerHandler(m_assembler.handler()),
+        m_generator(generator_t(m_rd()))
+    {
+    }
+
+    void exchange(int messageSize)
+    {
+        std::vector<uint8_t> vec(messageSize);
+        std::generate(std::begin(vec), std::end(vec), [&] () { return static_cast<uint8_t>(m_generator()); } );
+
+        AtomicBuffer buffer(vec.data(), messageSize);
+        ASSERT_GT(m_publication->offer(buffer), 0);
+
+        int count = 0;
+        m_innerHandler = [&](AtomicBuffer &buffer, index_t offset, index_t length, Header &header)
+        {
+            count++;
+            ASSERT_EQ(messageSize, length);
+            ASSERT_EQ(0, memcmp(buffer.buffer() + offset, vec.data(), length));
+        };
+
+        std::int64_t t0 = aeron_epoch_clock();
+        while (count == 0)
+        {
+            m_subscription->poll(m_outerHandler, 10);
+            ASSERT_LT(aeron_epoch_clock() - t0, AERON_TEST_TIMEOUT) << "Failed waiting for: count > 0";
+            std::this_thread::yield();
+        }
+
+        ASSERT_EQ(1, count);
+    }
+
+private:
+    std::shared_ptr<Subscription> m_subscription;
+    std::shared_ptr<ExclusivePublication> m_publication;
+    FragmentAssembler m_assembler;
+    fragment_handler_t m_outerHandler;
+    fragment_handler_t m_innerHandler;
+    std::random_device m_rd;
+    generator_t m_generator;
+};
+
+TEST_F(SystemTest, shouldFragmentAndReassembleMessagesIfNeeded)
+{
+    std::shared_ptr<Aeron> aeron = Aeron::connect();
+
+    int32_t streamId = 1000;
+    int64_t subscriptionId = aeron->addSubscription(IPC_CHANNEL, streamId);
+    int64_t publicationId = aeron->addExclusivePublication(IPC_CHANNEL, streamId);
+    WAIT_FOR_NON_NULL(subscription, aeron->findSubscription(subscriptionId));
+    WAIT_FOR_NON_NULL(publication, aeron->findExclusivePublication(publicationId));
+    WAIT_FOR(publication->isConnected());
+
+    Exchanger exchanger(subscription, publication);
+    exchanger.exchange(publication->maxPayloadLength() + 1);
+    exchanger.exchange(publication->maxPayloadLength() * 3);
+    exchanger.exchange(32);
 }

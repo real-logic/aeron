@@ -198,7 +198,7 @@ TEST_F(SystemTest, shouldAddRemoveCloseHandler)
 
 class Exchanger
 {
-    using generator_t = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, uint8_t>;
+    using generator_t = std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned short>;
 
 public:
     explicit Exchanger(
@@ -220,7 +220,7 @@ public:
     void exchange(int messageSize)
     {
         std::vector<uint8_t> vec(messageSize);
-        std::generate(std::begin(vec), std::end(vec), std::ref(m_generator));
+        std::generate(std::begin(vec), std::end(vec), [&] () { return static_cast<uint8_t>(m_generator()); } );
 
         AtomicBuffer buffer(vec.data(), messageSize);
         ASSERT_GT(m_publication->offer(buffer), 0);

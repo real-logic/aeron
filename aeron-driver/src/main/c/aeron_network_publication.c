@@ -335,7 +335,7 @@ int aeron_network_publication_setup_message_check(
         setup_header->frame_header.flags = 0;
         setup_header->frame_header.type = AERON_HDR_TYPE_SETUP;
         setup_header->frame_header.flags =
-            (publication->is_response && AERON_NULL_VALUE != publication->response_correlation_id) ?
+            (!publication->is_response && AERON_NULL_VALUE != publication->response_correlation_id) ?
                 AERON_SETUP_HEADER_SEND_RESPONSE_FLAG : 0;
 
         setup_header->term_offset = term_offset;

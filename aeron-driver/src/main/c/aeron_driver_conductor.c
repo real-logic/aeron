@@ -3546,6 +3546,7 @@ int aeron_driver_conductor_on_add_network_publication(
 
     if (NULL == publication)
     {
+        AERON_APPEND_ERR("uri=%.*s", uri_length, uri);
         return -1;
     }
 

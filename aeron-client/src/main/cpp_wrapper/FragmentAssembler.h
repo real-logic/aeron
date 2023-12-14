@@ -100,7 +100,7 @@ private:
         {
             BufferBuilder &builder = getBuffer(header.sessionId());
             auto nextOffset = BitUtil::align(
-                offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+                header.termOffset() + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
 
             builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
         }
@@ -112,7 +112,7 @@ private:
             {
                 BufferBuilder &builder = result->second;
 
-                if (offset == builder.nextTermOffset())
+                if (header.termOffset() == builder.nextTermOffset())
                 {
                     builder.append(buffer, offset, length, header);
 
@@ -129,7 +129,7 @@ private:
                     else
                     {
                         auto nextOffset = BitUtil::align(
-                            offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+                            header.termOffset() + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
                         builder.nextTermOffset(nextOffset);
                     }
                 }

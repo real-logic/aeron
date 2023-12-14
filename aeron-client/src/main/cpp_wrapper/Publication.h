@@ -190,13 +190,13 @@ public:
     /**
      * Maximum length of a message payload that fits within a message fragment.
      *
-     * This is he MTU length minus the message fragment header length.
+     * This is the MTU length minus the message fragment header length.
      *
      * @return maximum message fragment payload length.
      */
     inline util::index_t maxPayloadLength() const
     {
-        return static_cast<util::index_t>(m_constants.max_message_length);
+        return static_cast<util::index_t>(m_constants.max_payload_length);
     }
 
     /**

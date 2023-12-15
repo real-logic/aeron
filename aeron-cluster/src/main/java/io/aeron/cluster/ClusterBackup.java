@@ -371,15 +371,15 @@ public final class ClusterBackup implements AutoCloseable
         public static final String CLUSTER_BACKUP_SOURCE_TYPE_DEFAULT = SourceType.ANY.name();
 
         /**
-         * The value of system property {@link #CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME} if set, otherwise it will
+         * The value of system property {@link #CLUSTER_BACKUP_CATCHUP_ENDPOINT_PROP_NAME} if set, otherwise it will
          * try to derive the catchup endpoint from {@link ConsensusModule.Configuration#clusterMembers()} and
          * {@link ConsensusModule.Configuration#clusterMemberId()}. Failing that null will be returned.
          *
-         * @return system property {@link #CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME}, the derived value, or null.
+         * @return system property {@link #CLUSTER_BACKUP_CATCHUP_ENDPOINT_PROP_NAME}, the derived value, or null.
          */
         public static String catchupEndpoint()
         {
-            String configuredCatchupEndpoint = System.getProperty(CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME);
+            String configuredCatchupEndpoint = System.getProperty(CLUSTER_BACKUP_CATCHUP_ENDPOINT_PROP_NAME);
 
             if (null == configuredCatchupEndpoint && null != ConsensusModule.Configuration.clusterMembers())
             {

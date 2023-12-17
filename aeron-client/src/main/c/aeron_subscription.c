@@ -413,7 +413,8 @@ bool aeron_subscription_is_closed(aeron_subscription_t *subscription)
 
 int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription)
 {
-    if (NULL != subscription && !aeron_subscription_is_closed(subscription))
+    if (NULL != subscription && NULL != subscription->channel_status_indicator &&
+        !aeron_subscription_is_closed(subscription))
     {
         int64_t value;
         AERON_GET_VOLATILE(value, *subscription->channel_status_indicator);

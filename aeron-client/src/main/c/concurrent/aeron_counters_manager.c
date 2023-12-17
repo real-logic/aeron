@@ -338,6 +338,11 @@ void aeron_counters_reader_foreach_counter(
 
 int64_t *aeron_counters_reader_addr(aeron_counters_reader_t *counters_reader, int32_t counter_id)
 {
+    if (counter_id < 0)
+    {
+        return NULL;
+    }
+
     return (int64_t *)(counters_reader->values + AERON_COUNTER_OFFSET(counter_id));
 }
 

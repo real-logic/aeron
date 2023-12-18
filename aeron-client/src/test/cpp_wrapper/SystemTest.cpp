@@ -15,13 +15,11 @@
  */
 
 #include <functional>
-#include <climits>
 
 #include <gtest/gtest.h>
 
 #include "EmbeddedMediaDriver.h"
 #include "Aeron.h"
-#include "FragmentAssembler.h"
 #include "TestUtil.h"
 
 using namespace aeron;

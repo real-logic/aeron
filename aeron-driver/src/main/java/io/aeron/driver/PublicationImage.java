@@ -973,7 +973,7 @@ public final class PublicationImage
         {
             final ImageConnection imageConnection = imageConnections[i];
 
-            if (imageConnection.eosPosition > eosPosition)
+            if (null != imageConnection && imageConnection.eosPosition > eosPosition)
             {
                 eosPosition = imageConnection.eosPosition;
             }

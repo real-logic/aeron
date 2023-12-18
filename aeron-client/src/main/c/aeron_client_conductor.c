@@ -1976,8 +1976,10 @@ int aeron_client_conductor_on_publication_ready(
                 aeron_exclusive_publication_t *publication = NULL;
                 int64_t *position_limit_addr = aeron_counters_reader_addr(
                     &conductor->counters_reader, response->position_limit_counter_id);
-                int64_t *channel_status_indicator_addr = aeron_counters_reader_addr(
-                    &conductor->counters_reader, response->channel_status_indicator_id);
+                int64_t *channel_status_indicator_addr = 0 <= response->channel_status_indicator_id ?
+                    aeron_counters_reader_addr(&conductor->counters_reader, response->channel_status_indicator_id) :
+                    NULL;
+
 
                 if (aeron_exclusive_publication_create(
                     &publication,
@@ -2093,8 +2095,9 @@ int aeron_client_conductor_on_subscription_ready(
         {
             const char *channel = resource->uri;
             aeron_subscription_t *subscription;
-            int64_t *channel_status_indicator_addr = aeron_counters_reader_addr(
-                &conductor->counters_reader, response->channel_status_indicator_id);
+            int64_t *channel_status_indicator_addr = 0 <= response->channel_status_indicator_id ?
+                aeron_counters_reader_addr(&conductor->counters_reader, response->channel_status_indicator_id) :
+                NULL;
             int32_t stream_id = resource->stream_id;
 
             if (aeron_subscription_create(

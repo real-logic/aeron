@@ -99,6 +99,12 @@ int aeron_local_sockaddr_find_addrs(
     size_t address_vec_len)
 {
     volatile int64_t *status_indicator_addr = aeron_counters_reader_addr(reader, channel_status_indicator_id);
+
+    if (NULL == status_indicator_addr)
+    {
+        return 0;
+    }
+
     int64_t status;
     AERON_GET_VOLATILE(status, *status_indicator_addr);
 

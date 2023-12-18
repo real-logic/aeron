@@ -763,7 +763,8 @@ int aeron_publication_constants(aeron_publication_t *publication, aeron_publicat
 
 int64_t aeron_publication_channel_status(aeron_publication_t *publication)
 {
-    if (NULL != publication && !aeron_publication_is_closed(publication))
+    if (NULL != publication && NULL != publication->channel_status_indicator &&
+        !aeron_publication_is_closed(publication))
     {
         int64_t value;
         AERON_GET_VOLATILE(value, *publication->channel_status_indicator);

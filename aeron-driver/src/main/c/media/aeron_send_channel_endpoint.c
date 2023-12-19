@@ -73,7 +73,7 @@ int aeron_send_channel_endpoint_create(
             return -1;
         }
     }
-    else if (context->connect_enabled)
+    else if (channel->has_explicit_endpoint && context->connect_enabled)
     {
         connect_addr = &channel->remote_data;
     }

@@ -24,6 +24,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.*;
+import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -44,6 +45,7 @@ import java.util.stream.Stream;
 
 import static io.aeron.archive.Archive.Configuration.CATALOG_FILE_NAME;
 import static io.aeron.archive.Archive.Configuration.FILE_IO_MAX_LENGTH_DEFAULT;
+import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CHECKSUM;
 import static io.aeron.archive.ArchiveTool.VerifyOption.VERIFY_ALL_SEGMENT_FILES;
 import static io.aeron.archive.Catalog.*;
@@ -1013,10 +1015,13 @@ public class ArchiveTool
         buffer.order(LITTLE_ENDIAN);
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(buffer);
 
+        final Long2ObjectHashMap<List<String>> segmentFilesByRecordingId = indexSegmentFiles(archiveDir);
+
         return (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
             verifyRecording(
                 out,
                 archiveDir,
+                segmentFilesByRecordingId,
                 options,
                 catalog,
                 checksum,
@@ -1029,6 +1034,27 @@ public class ArchiveTool
                 headerDecoder,
                 descriptorEncoder,
                 descriptorDecoder);
+    }
+
+    private static Long2ObjectHashMap<List<String>> indexSegmentFiles(final File archiveDir)
+    {
+        final Long2ObjectHashMap<List<String>> index = new Long2ObjectHashMap<>();
+        final String[] files = archiveDir.list();
+
+        if (null != files)
+        {
+            for (final String file : files)
+            {
+                if (file.endsWith(RECORDING_SEGMENT_SUFFIX))
+                {
+                    final long recordingId = parseSegmentFileRecordingId(file);
+
+                    index.computeIfAbsent(recordingId, r -> new ArrayList<>()).add(file);
+                }
+            }
+        }
+
+        return index;
     }
 
     private static boolean truncateOnPageStraddle(final File maxSegmentFile)
@@ -1169,6 +1195,7 @@ public class ArchiveTool
     private static void verifyRecording(
         final PrintStream out,
         final File archiveDir,
+        final Long2ObjectHashMap<List<String>> segmentFileByRecordingId,
         final Set<VerifyOption> options,
         final Catalog catalog,
         final Checksum checksum,
@@ -1194,7 +1221,7 @@ public class ArchiveTool
 
         final int segmentLength = decoder.segmentFileLength();
         final int termLength = decoder.termBufferLength();
-        final ArrayList<String> segmentFiles = listSegmentFiles(archiveDir, recordingId);
+        final List<String> segmentFiles = segmentFileByRecordingId.getOrDefault(recordingId, Collections.emptyList());
         final String maxSegmentFile;
         final long computedStopPosition;
 

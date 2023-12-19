@@ -30,6 +30,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 
@@ -1129,7 +1130,7 @@ final class Catalog implements AutoCloseable
         return segmentFiles;
     }
 
-    static String findSegmentFileWithHighestPosition(final ArrayList<String> segmentFiles)
+    static String findSegmentFileWithHighestPosition(final List<String> segmentFiles)
     {
         long maxSegmentPosition = NULL_POSITION;
         String maxFileName = null;
@@ -1168,6 +1169,17 @@ final class Catalog implements AutoCloseable
         }
 
         return parseLongAscii(filename, positionOffset, positionLength);
+    }
+
+    static long parseSegmentFileRecordingId(final String filename)
+    {
+        final int dashOffset = filename.indexOf('-');
+        if (-1 == dashOffset || 0 == dashOffset)
+        {
+            throw new ArchiveException("invalid filename format: " + filename);
+        }
+
+        return parseLongAscii(filename, 0, dashOffset);
     }
 
     static long computeStopPosition(

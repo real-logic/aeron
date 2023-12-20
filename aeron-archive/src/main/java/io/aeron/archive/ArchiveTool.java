@@ -45,7 +45,6 @@ import java.util.stream.Stream;
 
 import static io.aeron.archive.Archive.Configuration.CATALOG_FILE_NAME;
 import static io.aeron.archive.Archive.Configuration.FILE_IO_MAX_LENGTH_DEFAULT;
-import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CHECKSUM;
 import static io.aeron.archive.ArchiveTool.VerifyOption.VERIFY_ALL_SEGMENT_FILES;
 import static io.aeron.archive.Catalog.*;
@@ -68,6 +67,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.StandardOpenOption.*;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toMap;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
@@ -821,10 +821,13 @@ public class ArchiveTool
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
+            final Long2ObjectHashMap<List<String>> segmentFilesByRecordingId = indexSegmentFiles(archiveDir);
+
             catalog.forEach(
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
-                    final ArrayList<String> files = listSegmentFiles(archiveDir, descriptorDecoder.recordingId());
+                    final long recordingId = descriptorDecoder.recordingId();
+                    final List<String> files = segmentFilesByRecordingId.getOrDefault(recordingId, emptyList());
                     deleteOrphanedSegmentFiles(out, archiveDir, descriptorDecoder, files);
                 });
         }
@@ -856,6 +859,8 @@ public class ArchiveTool
                         .nextRecordingId(catalog.nextRecordingId())
                         .alignment(catalog.alignment());
 
+                    final Long2ObjectHashMap<List<String>> segmentFilesByRecordingId = indexSegmentFiles(archiveDir);
+
                     catalog.forEach(
                         (recordingDescriptorOffset,
                         headerEncoder,
@@ -869,8 +874,8 @@ public class ArchiveTool
                                 deletedRecords.increment();
                                 reclaimedBytes.addAndGet(frameLength);
 
-                                final ArrayList<String> segmentFiles = listSegmentFiles(
-                                    archiveDir, descriptorDecoder.recordingId());
+                                final List<String> segmentFiles = segmentFilesByRecordingId.getOrDefault(
+                                    descriptorDecoder.recordingId(), emptyList());
 
                                 for (final String segmentFile : segmentFiles)
                                 {
@@ -1034,27 +1039,6 @@ public class ArchiveTool
                 headerDecoder,
                 descriptorEncoder,
                 descriptorDecoder);
-    }
-
-    private static Long2ObjectHashMap<List<String>> indexSegmentFiles(final File archiveDir)
-    {
-        final Long2ObjectHashMap<List<String>> index = new Long2ObjectHashMap<>();
-        final String[] files = archiveDir.list();
-
-        if (null != files)
-        {
-            for (final String file : files)
-            {
-                if (file.endsWith(RECORDING_SEGMENT_SUFFIX))
-                {
-                    final long recordingId = parseSegmentFileRecordingId(file);
-
-                    index.computeIfAbsent(recordingId, r -> new ArrayList<>()).add(file);
-                }
-            }
-        }
-
-        return index;
     }
 
     private static boolean truncateOnPageStraddle(final File maxSegmentFile)
@@ -1221,7 +1205,7 @@ public class ArchiveTool
 
         final int segmentLength = decoder.segmentFileLength();
         final int termLength = decoder.termBufferLength();
-        final List<String> segmentFiles = segmentFileByRecordingId.getOrDefault(recordingId, Collections.emptyList());
+        final List<String> segmentFiles = segmentFileByRecordingId.getOrDefault(recordingId, emptyList());
         final String maxSegmentFile;
         final long computedStopPosition;
 
@@ -1491,6 +1475,8 @@ public class ArchiveTool
     {
         try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, checksum, null))
         {
+            final Long2ObjectHashMap<List<String>> segmentFilesByRecordingId = indexSegmentFiles(archiveDir);
+
             final CatalogEntryProcessor catalogEntryProcessor =
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
@@ -1498,7 +1484,7 @@ public class ArchiveTool
                         align(descriptorDecoder.mtuLength(), CACHE_LINE_LENGTH));
                     buffer.order(LITTLE_ENDIAN);
                     catalog.updateChecksum(recordingDescriptorOffset);
-                    checksum(buffer, out, archiveDir, allFiles, checksum, descriptorDecoder);
+                    checksum(buffer, out, archiveDir, segmentFilesByRecordingId, allFiles, checksum, descriptorDecoder);
                 };
 
             if (!catalog.forEntry(recordingId, catalogEntryProcessor))
@@ -1512,6 +1498,7 @@ public class ArchiveTool
         final ByteBuffer buffer,
         final PrintStream out,
         final File archiveDir,
+        final Long2ObjectHashMap<List<String>> segmentFilesByRecordingId,
         final boolean allFiles,
         final Checksum checksum,
         final RecordingDescriptorDecoder descriptorDecoder)
@@ -1519,7 +1506,7 @@ public class ArchiveTool
         final long recordingId = descriptorDecoder.recordingId();
         final long startPosition = descriptorDecoder.startPosition();
         final int termLength = descriptorDecoder.termBufferLength();
-        final ArrayList<String> segmentFiles = listSegmentFiles(archiveDir, recordingId);
+        final List<String> segmentFiles = segmentFilesByRecordingId.getOrDefault(recordingId, emptyList());
 
         if (allFiles)
         {
@@ -1619,6 +1606,7 @@ public class ArchiveTool
             final ByteBuffer buffer = ByteBuffer.allocateDirect(
                 align(Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH));
             buffer.order(LITTLE_ENDIAN);
+            final Long2ObjectHashMap<List<String>> segmentFilesByRecordingId = indexSegmentFiles(archiveDir);
 
             catalog.forEach(
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
@@ -1626,7 +1614,8 @@ public class ArchiveTool
                     try
                     {
                         catalog.updateChecksum(recordingDescriptorOffset);
-                        checksum(buffer, out, archiveDir, allFiles, checksum, descriptorDecoder);
+                        checksum(
+                            buffer, out, archiveDir, segmentFilesByRecordingId, allFiles, checksum, descriptorDecoder);
                     }
                     catch (final Exception ex)
                     {
@@ -1642,7 +1631,7 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final RecordingDescriptorDecoder descriptorDecoder,
-        final ArrayList<String> segmentFiles)
+        final List<String> segmentFiles)
     {
         final long minBaseOffset = segmentFileBasePosition(
             descriptorDecoder.startPosition(),

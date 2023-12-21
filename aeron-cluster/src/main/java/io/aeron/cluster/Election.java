@@ -1412,8 +1412,9 @@ class Election
     {
         if (joinPosition != logPosition)
         {
+            final String inequality = joinPosition < logPosition ? " less " : " greater ";
             throw new ClusterEvent(
-                state + " - joinPosition " + (joinPosition < logPosition ? "less" : "greater") + " than logPosition");
+                state + " - joinPosition=" + joinPosition + inequality + "than logPosition=" + logPosition);
         }
     }
 

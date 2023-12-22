@@ -404,7 +404,7 @@ int aeron_network_publication_heartbeat_message_check(
 int aeron_network_publication_send_data(
     aeron_network_publication_t *publication, int64_t now_ns, int64_t snd_pos, int32_t term_offset)
 {
-    const size_t term_length = (size_t)publication->term_length_mask + 1;
+    const int32_t term_length = publication->term_length_mask + 1;
     const size_t max_vlen = publication->current_messages_per_send;
     int result = 0, vlen = 0;
     int64_t bytes_sent = 0;
@@ -414,14 +414,14 @@ int aeron_network_publication_send_data(
 
     for (size_t i = 0; i < max_vlen && available_window > 0; i++)
     {
-        size_t scan_limit = (size_t)available_window < publication->mtu_length ?
-            (size_t)available_window : publication->mtu_length;
+        int32_t scan_limit = available_window < (int32_t)publication->mtu_length ?
+           available_window : (int32_t)publication->mtu_length;
         size_t active_index = aeron_logbuffer_index_by_position(snd_pos, publication->position_bits_to_shift);
-        size_t padding = 0;
+        int32_t padding = 0;
 
         uint8_t *ptr = publication->mapped_raw_log.term_buffers[active_index].addr + term_offset;
-        const size_t term_length_left = term_length - (size_t)term_offset;
-        const size_t available = aeron_term_scanner_scan_for_availability(ptr, term_length_left, scan_limit, &padding);
+        const int32_t term_length_left = term_length - term_offset;
+        const int32_t available = aeron_term_scanner_scan_for_availability(ptr, term_length_left, scan_limit, &padding);
 
         if (available > 0)
         {
@@ -434,8 +434,18 @@ int aeron_network_publication_send_data(
             term_offset += total_available;
             highest_pos += total_available;
         }
+        else if (available < 0)
+        {
+            if (publication->track_sender_limits)
+            {
+                aeron_counter_ordered_increment(publication->snd_bpe_counter.value_addr, 1);
+                aeron_counter_ordered_increment(publication->sender_flow_control_limits_counter, 1);
+                publication->track_sender_limits = false;
+            }
+            break;
+        }
 
-        if (available == 0 || term_length == (size_t)term_offset)
+        if (available == 0 || term_length == term_offset)
         {
             break;
         }
@@ -538,7 +548,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
     int64_t sender_position = aeron_counter_get(publication->snd_pos_position.value_addr);
     int64_t resend_position = aeron_logbuffer_compute_position(
         term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
-    size_t term_length = (size_t)publication->term_length_mask + 1;
+    int32_t term_length = publication->term_length_mask + 1;
     int64_t bottom_resend_window =
         sender_position - (int64_t)(term_length / 2) - (int64_t)aeron_compute_max_message_length(term_length);
     int result = 0;
@@ -561,11 +571,12 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
             offset += bytes_sent;
 
             uint8_t *ptr = publication->mapped_raw_log.term_buffers[index].addr + offset;
-            size_t term_length_left = term_length - (size_t)offset;
-            size_t padding = 0;
-            size_t max_length = remaining_bytes < publication->mtu_length ? remaining_bytes : publication->mtu_length;
+            int32_t term_length_left = term_length - offset;
+            int32_t padding = 0;
+            int32_t max_length = remaining_bytes < publication->mtu_length ?
+                (int32_t)remaining_bytes : (int32_t)publication->mtu_length;
 
-            size_t available = aeron_term_scanner_scan_for_availability(ptr, term_length_left, max_length, &padding);
+            int32_t available = aeron_term_scanner_scan_for_availability(ptr, term_length_left, max_length, &padding);
             if (available <= 0)
             {
                 break;
@@ -591,7 +602,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
                 break;
             }
 
-            bytes_sent = (int32_t)(available + padding);
+            bytes_sent = available + padding;
             remaining_bytes -= bytes_sent;
         }
         while (remaining_bytes > 0);

@@ -40,58 +40,58 @@ public:
 protected:
     buffer_t m_buffer = {};
     uint8_t *m_ptr = nullptr;
-    size_t m_padding = 0;
+    int32_t m_padding = 0;
 };
 
 TEST_F(TermScannerTest, shouldReturnZeroOnEmptyLog)
 {
-    EXPECT_EQ(aeron_term_scanner_scan_for_availability(m_ptr, CAPACITY, MTU_LENGTH, &m_padding), 0u);
-    EXPECT_EQ(m_padding, 0u);
+    EXPECT_EQ(aeron_term_scanner_scan_for_availability(m_ptr, CAPACITY, MTU_LENGTH, &m_padding), 0);
+    EXPECT_EQ(m_padding, 0);
 }
 
 TEST_F(TermScannerTest, shouldScanSingleMessage)
 {
     int32_t frame_length = AERON_DATA_HEADER_LENGTH + 1;
-    auto aligned_frame_length = (size_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    int32_t aligned_frame_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     auto *data_header = (aeron_data_header_t *)m_ptr;
 
-    data_header->frame_header.frame_length = (int32_t)aligned_frame_length;
+    data_header->frame_header.frame_length = aligned_frame_length;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
 
     EXPECT_EQ(aeron_term_scanner_scan_for_availability(m_ptr, CAPACITY, MTU_LENGTH, &m_padding), aligned_frame_length);
-    EXPECT_EQ(m_padding, 0u);
+    EXPECT_EQ(m_padding, 0);
 }
 
 TEST_F(TermScannerTest, shouldFailToScanMessageLargerThanMaxLength)
 {
     int32_t frame_length = AERON_DATA_HEADER_LENGTH + 1;
-    auto aligned_frame_length = (size_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-    size_t max_length = aligned_frame_length - 1;
+    int32_t aligned_frame_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    int32_t max_length = aligned_frame_length - 1;
     auto *data_header = (aeron_data_header_t *)m_ptr;
 
-    data_header->frame_header.frame_length = (int32_t)aligned_frame_length;
+    data_header->frame_header.frame_length = aligned_frame_length;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
 
-    EXPECT_EQ(aeron_term_scanner_scan_for_availability(m_ptr, CAPACITY, max_length, &m_padding), 0u);
-    EXPECT_EQ(m_padding, 0u);
+    EXPECT_EQ(aeron_term_scanner_scan_for_availability(m_ptr, CAPACITY, max_length, &m_padding), -aligned_frame_length);
+    EXPECT_EQ(m_padding, 0);
 }
 
 TEST_F(TermScannerTest, shouldScanTwoMessagesThatFitInSingleMtu)
 {
     int32_t frame_length = AERON_DATA_HEADER_LENGTH + 100;
-    auto aligned_frame_length = (size_t)AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    int32_t aligned_frame_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     auto *data_header = (aeron_data_header_t *)m_ptr;
 
-    data_header->frame_header.frame_length = (int32_t)aligned_frame_length;
+    data_header->frame_header.frame_length = aligned_frame_length;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
 
     data_header = (aeron_data_header_t *)(m_ptr + aligned_frame_length);
-    data_header->frame_header.frame_length = (int32_t)aligned_frame_length;
+    data_header->frame_header.frame_length = aligned_frame_length;
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
 
     EXPECT_EQ(aeron_term_scanner_scan_for_availability(
         m_ptr, CAPACITY, MTU_LENGTH, &m_padding), 2 * aligned_frame_length);
-    EXPECT_EQ(m_padding, 0u);
+    EXPECT_EQ(m_padding, 0);
 }
 
 TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtMtuBoundary)
@@ -108,8 +108,8 @@ TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtMtuBoundary)
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
 
     EXPECT_EQ(aeron_term_scanner_scan_for_availability(
-        m_ptr, CAPACITY, MTU_LENGTH, &m_padding), (size_t)(frame_one_length + frame_two_length));
-    EXPECT_EQ(m_padding, 0u);
+        m_ptr, CAPACITY, MTU_LENGTH, &m_padding), frame_one_length + frame_two_length);
+    EXPECT_EQ(m_padding, 0);
 }
 
 TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtSecondThatSpansMtu)
@@ -126,8 +126,8 @@ TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtSecondThatSpansMtu)
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
 
     EXPECT_EQ(aeron_term_scanner_scan_for_availability(
-        m_ptr, CAPACITY, MTU_LENGTH, &m_padding), (size_t)frame_one_length);
-    EXPECT_EQ(m_padding, 0u);
+        m_ptr, CAPACITY, MTU_LENGTH, &m_padding), frame_one_length);
+    EXPECT_EQ(m_padding, 0);
 }
 
 TEST_F(TermScannerTest, shouldScanLastFrameInBuffer)
@@ -141,8 +141,8 @@ TEST_F(TermScannerTest, shouldScanLastFrameInBuffer)
     data_header->frame_header.type = AERON_HDR_TYPE_DATA;
 
     EXPECT_EQ(aeron_term_scanner_scan_for_availability(
-        m_ptr, aligned_frame_length, MTU_LENGTH, &m_padding), (size_t)aligned_frame_length);
-    EXPECT_EQ(m_padding, 0u);
+        m_ptr, aligned_frame_length, MTU_LENGTH, &m_padding), aligned_frame_length);
+    EXPECT_EQ(m_padding, 0);
 }
 
 TEST_F(TermScannerTest, shouldScanLastMessageInBufferPlusPadding)
@@ -163,15 +163,15 @@ TEST_F(TermScannerTest, shouldScanLastMessageInBufferPlusPadding)
     data_header->frame_header.type = AERON_HDR_TYPE_PAD;
 
     EXPECT_EQ(aeron_term_scanner_scan_for_availability(
-        m_ptr, CAPACITY - offset, MTU_LENGTH, &m_padding), (size_t)(aligned_frame_length + AERON_DATA_HEADER_LENGTH));
-    EXPECT_EQ(m_padding, (size_t)(padding_frame_length - AERON_DATA_HEADER_LENGTH));
+        m_ptr, CAPACITY - offset, MTU_LENGTH, &m_padding), aligned_frame_length + AERON_DATA_HEADER_LENGTH);
+    EXPECT_EQ(m_padding, padding_frame_length - AERON_DATA_HEADER_LENGTH);
 }
 
 TEST_F(TermScannerTest, shouldScanLastMessageInBufferMinusPaddingLimitedByMtu)
 {
     int32_t aligned_frame_length = AERON_ALIGN(AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-    int32_t offset = CAPACITY - (AERON_ALIGN((AERON_DATA_HEADER_LENGTH * 3), AERON_LOGBUFFER_FRAME_ALIGNMENT));
-    size_t mtu = (size_t)aligned_frame_length + 8u;
+    int32_t offset = CAPACITY - AERON_ALIGN((AERON_DATA_HEADER_LENGTH * 3), AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    int32_t mtu = aligned_frame_length + 8;
 
     m_ptr += offset;
 
@@ -185,6 +185,6 @@ TEST_F(TermScannerTest, shouldScanLastMessageInBufferMinusPaddingLimitedByMtu)
     data_header->frame_header.type = AERON_HDR_TYPE_PAD;
 
     EXPECT_EQ(aeron_term_scanner_scan_for_availability(
-        m_ptr, CAPACITY - offset, mtu, &m_padding), (size_t)aligned_frame_length);
-    EXPECT_EQ(m_padding, 0u);
+        m_ptr, CAPACITY - offset, mtu, &m_padding), aligned_frame_length);
+    EXPECT_EQ(m_padding, 0);
 }

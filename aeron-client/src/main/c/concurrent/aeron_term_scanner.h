@@ -22,11 +22,11 @@
 #include "util/aeron_bitutil.h"
 #include "aeron_logbuffer_descriptor.h"
 
-inline size_t aeron_term_scanner_scan_for_availability(
-    const uint8_t *buffer, size_t term_length_left, size_t max_length, size_t *padding)
+inline int32_t aeron_term_scanner_scan_for_availability(
+    const uint8_t *buffer, int32_t term_length_left, int32_t max_length, int32_t *padding)
 {
-    const size_t limit = max_length < term_length_left ? max_length : term_length_left;
-    size_t available = 0;
+    const int32_t limit = max_length < term_length_left ? max_length : term_length_left;
+    int32_t available = 0;
     *padding = 0;
 
     do
@@ -44,7 +44,7 @@ inline size_t aeron_term_scanner_scan_for_availability(
         int32_t aligned_frame_length = AERON_ALIGN(frame_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
         if (AERON_HDR_TYPE_PAD == frame_header->type)
         {
-            *padding = aligned_frame_length - AERON_DATA_HEADER_LENGTH;
+            *padding = aligned_frame_length - (int32_t)AERON_DATA_HEADER_LENGTH;
             aligned_frame_length = AERON_DATA_HEADER_LENGTH;
         }
 
@@ -52,7 +52,7 @@ inline size_t aeron_term_scanner_scan_for_availability(
 
         if (available > limit)
         {
-            available -= aligned_frame_length;
+            available = aligned_frame_length == available ? -available : available - aligned_frame_length;
             *padding = 0;
             break;
         }

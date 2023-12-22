@@ -325,7 +325,7 @@ public final class NetworkPublication
     /**
      * Trigger the sending of a SETUP frame so a connection can be established.
      *
-     * @param msg that triggers the SETUP.
+     * @param msg        that triggers the SETUP.
      * @param srcAddress of the source that triggers the SETUP.
      */
     public void triggerSendSetupFrame(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
@@ -700,12 +700,21 @@ public final class NetworkPublication
                     timeOfLastDataOrHeartbeatNs = nowNs;
                     trackSenderLimits = true;
 
-                    bytesSent = available;
-                    this.senderPosition.setOrdered(senderPosition + bytesSent + padding(scanOutcome));
+                    bytesSent = available + padding(scanOutcome);
+                    this.senderPosition.setOrdered(senderPosition + bytesSent);
                 }
                 else
                 {
                     shortSends.increment();
+                }
+            }
+            else if (available < 0)
+            {
+                if (trackSenderLimits)
+                {
+                    trackSenderLimits = false;
+                    senderBpe.incrementOrdered();
+                    senderFlowControlLimits.incrementOrdered();
                 }
             }
         }

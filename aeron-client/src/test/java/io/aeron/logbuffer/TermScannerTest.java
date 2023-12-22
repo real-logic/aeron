@@ -94,8 +94,8 @@ class TermScannerTest
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
 
         final long scanOutcome = TermScanner.scanForAvailability(termBuffer, frameOffset, maxLength);
-        assertEquals(0, TermScanner.available(scanOutcome));
-        assertEquals(0, TermScanner.padding(scanOutcome));
+        assertEquals(-alignedFrameLength, TermScanner.available(scanOutcome));
+        assertEquals(-1, TermScanner.padding(scanOutcome));
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);

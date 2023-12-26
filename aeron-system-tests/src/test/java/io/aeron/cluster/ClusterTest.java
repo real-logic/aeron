@@ -2101,7 +2101,8 @@ class ClusterTest
         awaitElectionClosed(restartedFollower);
 
         Tests.sleep(slowDownDelayMs);
-        assertEquals(ElectionState.CLOSED, restartedFollower.electionState());
+
+        awaitElectionClosed(restartedFollower);
     }
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)

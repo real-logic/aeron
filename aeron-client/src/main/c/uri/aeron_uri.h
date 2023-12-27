@@ -138,7 +138,7 @@ uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri);
 
 const char *aeron_uri_find_param_value(const aeron_uri_params_t *uri_params, const char *key);
 int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char *key, int32_t *retval);
-int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t *retval);
+int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t default_val, int64_t *retval);
 int aeron_uri_get_bool(aeron_uri_params_t *uri_params, const char *key, bool *retval);
 int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *uri_ats_status);
 int aeron_uri_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len);

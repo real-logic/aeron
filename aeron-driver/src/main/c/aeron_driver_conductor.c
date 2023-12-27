@@ -422,6 +422,33 @@ static inline int aeron_driver_conductor_validate_control_for_subscription(aeron
     return 0;
 }
 
+static int aeron_driver_conductor_validate_response_subscription(
+    aeron_driver_conductor_t *conductor,
+    aeron_udp_channel_t *udp_channel,
+    aeron_driver_uri_publication_params_t *param)
+{
+    if (AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE != udp_channel->control_mode &&
+        AERON_NULL_VALUE != param->response_correlation_id)
+    {
+        for (int last_index = (int)conductor->network_subscriptions.length - 1, i = last_index; i >= 0; i--)
+        {
+            aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
+            if (param->response_correlation_id == link->registration_id)
+            {
+                return 0;
+            }
+        }
+
+        AERON_SET_ERR(
+            EINVAL,
+            "unable to find response subscription for response-correlation-id=%" PRId64,
+            param->response_correlation_id);
+        return -1;
+    }
+
+    return 0;
+}
+
 static int aeron_time_tracking_name_resolver_resolve(
     aeron_name_resolver_t *resolver,
     const char *name,
@@ -1753,6 +1780,49 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     return ensure_capacity_result >= 0 ? publication : NULL;
 }
 
+static int aeron_driver_conductor_find_response_publication_image(
+    aeron_driver_conductor_t *conductor,
+    const aeron_udp_channel_t *udp_channel,
+    aeron_driver_uri_publication_params_t *params,
+    aeron_publication_image_t **image)
+{
+    *image = NULL;
+    if (AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE != udp_channel->control_mode)
+    {
+        return 0;
+    }
+
+    if (AERON_NULL_VALUE == params->response_correlation_id)
+    {
+        AERON_SET_ERR(EINVAL, "%s", "control-mode=response was specified, but no response-correlation-id set");
+        return -1;
+    }
+
+    for (size_t i = 0; i < conductor->publication_images.length; i++)
+    {
+        aeron_publication_image_t *image_entry = conductor->publication_images.array[i].image;
+        if (aeron_publication_image_registration_id(image_entry) == params->response_correlation_id)
+        {
+            if (aeron_publication_image_has_send_response_setup(image_entry))
+            {
+                *image = image_entry;
+                return 0;
+            }
+            else
+            {
+                AERON_SET_ERR(
+                    EINVAL,
+                    "image.correlationId=%" PRId64 " did not request a response channel",
+                    params->response_correlation_id);
+                return -1;
+            }
+        }
+    }
+
+    AERON_SET_ERR(EINVAL, "image.correlationId=%" PRId64 " not found", params->response_correlation_id);
+    return -1;
+}
+
 aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publication(
     aeron_driver_conductor_t *conductor,
     aeron_client_t *client,
@@ -1799,35 +1869,11 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     }
 
     aeron_publication_image_t *response_publication_image = NULL;
-
-    if (AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE == udp_channel->control_mode)
+    if (aeron_driver_conductor_find_response_publication_image(
+        conductor, udp_channel, params, &response_publication_image) < 0)
     {
-        if (AERON_NULL_VALUE == params->response_correlation_id)
-        {
-            AERON_SET_ERR(EINVAL, "%s", "control-mode=response was specified, but no response-correlation-id set");
-            return NULL;
-        }
-
-        for (size_t i = 0; i < conductor->publication_images.length; i++)
-        {
-            aeron_publication_image_t *image_entry = conductor->publication_images.array[i].image;
-            if (aeron_publication_image_registration_id(image_entry) == params->response_correlation_id)
-            {
-                if (aeron_publication_image_has_send_response_setup(image_entry))
-                {
-                    response_publication_image = image_entry;
-                    break;
-                }
-                else
-                {
-                    AERON_SET_ERR(
-                        EINVAL,
-                        "image.correlationId=%" PRId64 " did not request a response channel",
-                        params->response_correlation_id);
-                    return NULL;
-                }
-            }
-        }
+        AERON_APPEND_ERR("%s", "");
+        return NULL;
     }
 
     int32_t speculated_session_id = 0;
@@ -3490,7 +3536,8 @@ int aeron_driver_conductor_on_add_network_publication(
             conductor,
             is_exclusive) < 0 ||
         aeron_driver_conductor_validate_endpoint_for_publication(udp_channel) < 0 ||
-        aeron_driver_conductor_validate_control_for_publication(udp_channel) < 0)
+        aeron_driver_conductor_validate_control_for_publication(udp_channel) < 0 ||
+        aeron_driver_conductor_validate_response_subscription(conductor, udp_channel, &params) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         aeron_udp_channel_delete(udp_channel);

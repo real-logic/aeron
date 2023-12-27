@@ -321,7 +321,8 @@ int aeron_diver_uri_publication_params(
         return -1;
     }
 
-    if (aeron_uri_get_int64(uri_params, AERON_URI_RESPONSE_CORRELATION_ID_KEY, &params->response_correlation_id) < 0)
+    if (aeron_uri_get_int64(
+        uri_params, AERON_URI_RESPONSE_CORRELATION_ID_KEY, AERON_NULL_VALUE, &params->response_correlation_id) < 0)
     {
         return -1;
     }

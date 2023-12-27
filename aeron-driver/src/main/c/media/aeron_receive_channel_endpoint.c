@@ -34,7 +34,7 @@ int aeron_receive_channel_endpoint_set_group_tag(
     aeron_driver_context_t *context)
 {
     int64_t group_tag = 0;
-    int rc = aeron_uri_get_int64(&channel->uri.params.udp.additional_params, AERON_URI_GTAG_KEY, &group_tag);
+    int rc = aeron_uri_get_int64(&channel->uri.params.udp.additional_params, AERON_URI_GTAG_KEY, 0, &group_tag);
     if (rc < 0)
     {
         return -1;

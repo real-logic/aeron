@@ -319,6 +319,15 @@ TEST_F(DriverUriTest, shouldDefaultMediaReceiveTimestampOffsetToAeronNullValue)
     EXPECT_EQ(AERON_NULL_VALUE, offset);
 }
 
+TEST_F(DriverUriTest, shouldParseAndDefaultResponseCorrelationId)
+{
+    aeron_driver_uri_publication_params_t params;
+
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8", &m_uri), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_EQ(INT64_C(-1), params.response_correlation_id);
+}
+
 class UriResolverTest : public testing::Test
 {
 public:

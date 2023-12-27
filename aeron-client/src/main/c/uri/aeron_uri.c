@@ -362,12 +362,12 @@ int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char *key, int32_t
     return 1;
 }
 
-int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t *retval)
+int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t default_val, int64_t *retval)
 {
     const char *value_str;
     if ((value_str = aeron_uri_find_param_value(uri_params, key)) == NULL)
     {
-        *retval = 0;
+        *retval = default_val;
         return 0;
     }
 

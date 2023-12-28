@@ -50,7 +50,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class ResponseChannelsTest
@@ -68,8 +67,6 @@ public class ResponseChannelsTest
     @BeforeEach
     void setUp()
     {
-//         assumeTrue(TestMediaDriver.shouldRunJavaMediaDriver());
-
         driver = TestMediaDriver.launch(new MediaDriver.Context()
                 .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
                 .threadingMode(ThreadingMode.SHARED),
@@ -130,7 +127,7 @@ public class ResponseChannelsTest
             while (0 > responseClientB.offer(messageB))
             {
                 idleStrategy.idle(run(responseServer, responseClientA, responseClientB));
-                Tests.checkInterruptStatus("unable to offer message to client A");
+                Tests.checkInterruptStatus("unable to offer message to client B");
             }
 
             while (!responsesA.contains(textA) || !responsesB.contains(textB))
@@ -139,8 +136,8 @@ public class ResponseChannelsTest
                 Tests.checkInterruptStatus("failed to receive responses");
             }
 
-            assertEquals(1, responsesA.size());
-            assertEquals(1, responsesB.size());
+            assertEquals(1, responsesA.size(), "A=" + responsesA + ", B=" + responsesB);
+            assertEquals(1, responsesB.size(), "A=" + responsesA + ", B=" + responsesB);
         }
     }
 

@@ -48,6 +48,7 @@ import java.util.function.Supplier;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -167,6 +168,44 @@ public class ResponseChannelsTest
             {
                 Tests.awaitConnected(subRsp);
                 Tests.awaitConnected(pubRsp);
+            }
+        }
+    }
+
+    @Test
+    @InterruptAfter(15)
+    void shouldNotConnectSecondResponseSubscriptionUntilMatchingPublicationIsCreated()
+    {
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Subscription subReq = server.addSubscription(
+                "aeron:udp?endpoint=localhost:10001", REQUEST_STREAM_ID);
+            Subscription subRsp = client.addSubscription(
+                "aeron:udp?control-mode=response|control=localhost:10002", RESPONSE_STREAM_ID);
+            Subscription subRspAux = client.addSubscription(
+                "aeron:udp?control-mode=response|control=localhost:10002", RESPONSE_STREAM_ID);
+            Publication pubReq = client.addPublication(
+                "aeron:udp?endpoint=localhost:10001|response-correlation-id=" + subRsp.registrationId(),
+                REQUEST_STREAM_ID))
+        {
+            Tests.awaitConnected(subReq);
+            Tests.awaitConnected(pubReq);
+            Objects.requireNonNull(subRsp);
+
+            final Image image = subReq.imageAtIndex(0);
+            final String url = "aeron:udp?control-mode=response|control=localhost:10002|response-correlation-id=" +
+                image.correlationId();
+
+            try (Publication pubRsp = client.addPublication(url, RESPONSE_STREAM_ID))
+            {
+                Tests.awaitConnected(subRsp);
+                Tests.awaitConnected(pubRsp);
+
+                final long deadlineMs = System.currentTimeMillis() + 1_000;
+                while (System.currentTimeMillis() <= deadlineMs)
+                {
+                    assertFalse(subRspAux.isConnected());
+                }
             }
         }
     }

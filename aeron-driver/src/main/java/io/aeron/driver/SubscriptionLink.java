@@ -181,7 +181,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
 
     boolean isWildcardOrSessionIdMatch(final int sessionId)
     {
-        return !hasSessionId || this.sessionId == sessionId;
+        return (!hasSessionId && !isResponse()) || this.sessionId == sessionId;
     }
 
     boolean supportsMds()

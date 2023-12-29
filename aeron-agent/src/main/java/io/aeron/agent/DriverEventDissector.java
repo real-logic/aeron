@@ -558,9 +558,8 @@ final class DriverEventDissector
             .append(RSP_SETUP.sessionId())
             .append(':')
             .append(RSP_SETUP.streamId())
-            .append(' ')
             .append(" RSP_SESSION_ID ")
-            .append(RSP_SETUP.responseSessionId())
+            .append(RSP_SETUP.responseSessionId());
     }
 
     private static void dissectResEntry(final StringBuilder builder)

@@ -78,7 +78,7 @@ static inline bool aeron_subscription_link_matches_allowing_wildcard(
 {
     return link->endpoint == endpoint &&
         link->stream_id == stream_id &&
-        (!link->has_session_id || (link->session_id == session_id));
+        ((!link->has_session_id && !link->is_response) || (link->session_id == session_id));
 }
 
 static inline bool aeron_driver_conductor_has_network_subscription_interest(
@@ -4983,6 +4983,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         {
             continue;
         }
+
+        printf("create_publication_image session_id=%" PRId32 ", link.has_session_id=%s\n", image->session_id, link->has_session_id ? "true" : "false");
 
         if (aeron_driver_conductor_link_subscribable(
             conductor,

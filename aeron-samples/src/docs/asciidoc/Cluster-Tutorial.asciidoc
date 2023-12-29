@@ -424,17 +424,12 @@ on a separate network to the ingress traffic.
 template that specifies the parameters, but excludes the endpoint, which will be filled using value from the
 `clusterMembersString` as appropriate for this node.
 
-<5> Specify the log channel. Like the ingress channel this is specified as a template. This channel needs to be a
-multi-destination-cast (MDC) or multicast channel. In our example we are using multi-destination-cast using manual
-configuration, hence we need a separate control endpoint (including a port) used for adding and removing destination to
-the publication.
-
-<6> Specify the replication channel. This channel is the one that the local archive for a node will receive replication
+<5> Specify the replication channel. This channel is the one that the local archive for a node will receive replication
 responses from other archives when the log or snapshot replication step is required. This was added in version 1.33.0
 and is a required parameter. It is important in a production environment that this channel's endpoint is not set to
 localhost, but instead a hostname/ip address that is reachable by the other nodes in the cluster.
 
-<7> Clone the Archive Client context that the Consensus Module will use to talk to the Archive.
+<6> Clone the Archive Client context that the Consensus Module will use to talk to the Archive.
 
 ==== Clustered Service Container
 

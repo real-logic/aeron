@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <string.h>
 
 #if !defined(_MSC_VER)
 #include <unistd.h>
@@ -94,8 +95,7 @@ int build_large_message(char *buf, size_t len)
 
 int main(int argc, char **argv)
 {
-    char small_message[256] = { 0 };
-    char large_message[8192] = { 0 };
+    char small_message[8] = { 0 };
     const char *message;
     int message_len = sizeof(small_message);
     int status = EXIT_FAILURE, opt;
@@ -154,14 +154,6 @@ int main(int argc, char **argv)
 
             case 'v':
             {
-                printf(
-                    "%s <%s> major %d minor %d patch %d git %s\n",
-                    argv[0],
-                    aeron_version_full(),
-                    aeron_version_major(),
-                    aeron_version_minor(),
-                    aeron_version_patch(),
-                    aeron_version_gitsha());
                 exit(EXIT_SUCCESS);
             }
 
@@ -226,35 +218,30 @@ int main(int argc, char **argv)
         sched_yield();
     }
 
-    printf("Publication channel status %" PRIu64 "\n", aeron_publication_channel_status(publication));
+    FILE *fp;
+    uint64_t count;
 
-    if (fill_mtu)
-    {
-        aeron_publication_constants_t pub_constants = { 0 };
-        aeron_publication_constants(publication, &pub_constants);
-        message_len = build_large_message(large_message, pub_constants.max_payload_length);
-        printf("Using message of %d bytes\n", message_len);
+    fp = fopen("count.txt", "r");
+
+    if (fp == NULL) {
+        count = 0;
+        printf("No count.txt file found, starting with %llu\n", count);
+    } else {
+        count = getw(fp);
+        printf("Count.txt loaded: %llu\n", count);
+        fclose(fp);
     }
+
+    aeron_nano_sleep(1000ul * 1000ul * 1000ul);
 
     for (size_t i = 0; i < messages && is_running(); i++)
     {
-        if (fill_mtu)
-        {
-            message = large_message;
-        }
-        else
-        {
-#if defined(_MSC_VER)
-                message_len = sprintf_s(small_message, sizeof(small_message) - 1, "Hello World! %" PRIu64, (uint64_t)i);
-#else
-                message_len = snprintf(small_message, sizeof(small_message) - 1, "Hello World! %" PRIu64, (uint64_t)i);
-#endif
-            message = small_message;
-        }
+        count++;
+        memcpy(small_message, &count, sizeof(uint64_t));
         printf("offering %" PRIu64 "/%" PRIu64 " - ", (uint64_t)i, (uint64_t)messages);
         fflush(stdout);
 
-        int64_t result = aeron_publication_offer(publication, (const uint8_t *)message, message_len, NULL, NULL);
+        int64_t result = aeron_publication_offer(publication, (const uint8_t *)small_message, message_len, NULL, NULL);
 
         if (result > 0)
         {
@@ -288,6 +275,10 @@ int main(int argc, char **argv)
 
         aeron_nano_sleep(1000ul * 1000ul * 1000ul);
     }
+
+    fp = fopen("count.txt", "w");
+    putw(count, fp);
+    fclose(fp);
 
     printf("Done sending.\n");
 

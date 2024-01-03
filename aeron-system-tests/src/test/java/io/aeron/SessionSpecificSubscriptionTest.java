@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(InterruptingTestCallback.class)
+@InterruptAfter(10)
 class SessionSpecificSubscriptionTest
 {
     private static final String ENDPOINT = "localhost:24325";
@@ -93,7 +94,6 @@ class SessionSpecificSubscriptionTest
         driver.context().deleteDirectory();
     }
 
-    @InterruptAfter(10)
     @ParameterizedTest
     @MethodSource("data")
     void shouldSubscribeToSpecificSessionIdsAndWildcard(final ChannelUriStringBuilder channelBuilder)
@@ -184,7 +184,6 @@ class SessionSpecificSubscriptionTest
 
     @ParameterizedTest
     @MethodSource("data")
-    @InterruptAfter(5)
     void shouldOnlySeeDataOnSpecificSessionWhenUsingTags(final ChannelUriStringBuilder channelBuilder)
     {
         final DirectBuffer liveBuffer = new UnsafeBuffer("live".getBytes(StandardCharsets.US_ASCII));
@@ -228,24 +227,25 @@ class SessionSpecificSubscriptionTest
             final long deadlineMs = System.currentTimeMillis() + 2_000;
             final IdleStrategy idleStrategy = new YieldingIdleStrategy();
 
-            int fragments = 0;
+            final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
+            {
+                final String s = buffer.getStringWithoutLengthAscii(offset, length);
+                if ("ignored".equals(s))
+                {
+                    isValid.set(false);
+                }
+            };
+
+            int totalFragments = 0;
             while (System.currentTimeMillis() < deadlineMs)
             {
-                fragments += tagOnlySub.poll(
-                    (buffer, offset, length, header) ->
-                    {
-                        final String s = buffer.getStringWithoutLengthAscii(offset, length);
-                        if ("ignored".equals(s))
-                        {
-                            isValid.set(false);
-                        }
-                    }, 10);
-
+                final int fragments = tagOnlySub.poll(fragmentHandler, 10);
+                totalFragments += fragments;
                 idleStrategy.idle(fragments);
             }
 
             assertTrue(isValid.get());
-            assertEquals(1, fragments);
+            assertEquals(1, totalFragments);
         }
     }
 

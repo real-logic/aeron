@@ -1585,6 +1585,9 @@ static const char *dissect_frame_type(int16_t type)
         case AERON_HDR_TYPE_ATS_SM:
             return "ATS_SM";
 
+        case AERON_HDR_TYPE_RSP_SETUP:
+            return "RSP_SETUP";
+
         default:
             return "unknown command";
     }
@@ -1666,6 +1669,20 @@ static const char *dissect_frame(const void *message, size_t length)
                 setup->term_length,
                 setup->mtu,
                 setup->ttl);
+            break;
+        }
+
+        case AERON_HDR_TYPE_RSP_SETUP:
+        {
+            aeron_response_setup_header_t *rsp_setup = (aeron_response_setup_header_t *)message;
+
+            snprintf(buffer, sizeof(buffer) - 1, "%s 0x%x len %d %d:%d RSP_SESSION_ID %d",
+                dissect_frame_type(hdr->type),
+                hdr->flags,
+                hdr->frame_length,
+                rsp_setup->session_id,
+                rsp_setup->stream_id,
+                rsp_setup->response_session_id);
             break;
         }
 

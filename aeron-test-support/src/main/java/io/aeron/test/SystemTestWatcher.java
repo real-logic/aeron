@@ -164,6 +164,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     public void beforeEach(final ExtensionContext context)
     {
+        Thread.interrupted(); // clean the interrupted flag so that it does not affect the next test
         startTimeNs = System.nanoTime();
     }
 

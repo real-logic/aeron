@@ -261,11 +261,7 @@ public class ClusterNodeTest
                 final int length,
                 final Header header)
             {
-                idleStrategy.reset();
-                while (session.offer(buffer, offset, length) < 0)
-                {
-                    idleStrategy.idle();
-                }
+                echoMessage(session, buffer, offset, length);
             }
         };
 
@@ -309,11 +305,7 @@ public class ClusterNodeTest
                 buffer.putStringWithoutLengthAscii(0, responseMsg);
                 final ClientSession clientSession = cluster.getClientSession(clusterSessionId);
 
-                idleStrategy.reset();
-                while (clientSession.offer(buffer, 0, responseMsg.length()) < 0)
-                {
-                    idleStrategy.idle();
-                }
+                echoMessage(clientSession, buffer, 0, responseMsg.length());
             }
         };
 
@@ -346,15 +338,7 @@ public class ClusterNodeTest
                 }
                 else
                 {
-                    cluster.forEachClientSession(
-                        (clientSession) ->
-                        {
-                            idleStrategy.reset();
-                            while (clientSession.offer(buffer, offset, length) < 0)
-                            {
-                                idleStrategy.idle();
-                            }
-                        });
+                    cluster.forEachClientSession((clientSession) -> echoMessage(clientSession, buffer, offset, length));
                 }
             }
         };

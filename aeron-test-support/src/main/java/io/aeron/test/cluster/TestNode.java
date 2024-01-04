@@ -459,6 +459,7 @@ public final class TestNode implements AutoCloseable
             final String message = buffer.getStringWithoutLengthAscii(offset, length);
             if (ClusterTests.REGISTER_TIMER_MSG.equals(message))
             {
+                idleStrategy.reset();
                 while (!cluster.scheduleTimer(1, cluster.time() + 1_000))
                 {
                     idleStrategy.idle();
@@ -543,6 +544,7 @@ public final class TestNode implements AutoCloseable
         {
             if (null != session)
             {
+                idleStrategy.reset();
                 while (cluster.offer(buffer, offset, length) < 0)
                 {
                     idleStrategy.idle();
@@ -552,10 +554,7 @@ public final class TestNode implements AutoCloseable
             {
                 for (final ClientSession clientSession : cluster.clientSessions())
                 {
-                    while (clientSession.offer(buffer, offset, length) < 0)
-                    {
-                        idleStrategy.idle();
-                    }
+                    echoMessage(clientSession, buffer, offset, length);
                 }
             }
         }
@@ -944,11 +943,8 @@ public final class TestNode implements AutoCloseable
                     }
                 }
 
-                // Echo input message back to the client
-                while (session.offer(buffer, offset, length) < 0)
-                {
-                    idleStrategy.idle();
-                }
+                // try to send the input message back to the client
+                echoMessage(session, buffer, offset, length);
             }
             else
             {

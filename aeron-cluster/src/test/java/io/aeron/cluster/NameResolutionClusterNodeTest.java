@@ -131,11 +131,7 @@ class NameResolutionClusterNodeTest
                 final int length,
                 final Header header)
             {
-                idleStrategy.reset();
-                while (session.offer(buffer, offset, length) < 0)
-                {
-                    idleStrategy.idle();
-                }
+                echoMessage(session, buffer, offset, length);
             }
         };
 

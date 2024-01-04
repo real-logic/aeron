@@ -56,6 +56,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  */
 public final class SingleNodeCluster implements AutoCloseable
 {
+    private static final int SEND_ATTEMPTS = 3;
     private static final int MESSAGE_ID = 1;
     private static final int TIMER_ID = 2;
     private static final int PORT_BASE = 9000;
@@ -171,11 +172,7 @@ public final class SingleNodeCluster implements AutoCloseable
             }
             else
             {
-                idleStrategy.reset();
-                while (session.offer(buffer, offset, length) < 0)
-                {
-                    idleStrategy.idle();
-                }
+                echoMessage(session, buffer, offset, length);
             }
         }
 
@@ -189,15 +186,7 @@ public final class SingleNodeCluster implements AutoCloseable
             final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
             buffer.putInt(0, 1);
 
-            cluster.forEachClientSession(
-                (clientSession) ->
-                {
-                    idleStrategy.reset();
-                    while (clientSession.offer(buffer, 0, SIZE_OF_INT) < 0)
-                    {
-                        idleStrategy.idle();
-                    }
-                });
+            cluster.forEachClientSession((clientSession) -> echoMessage(clientSession, buffer, 0, SIZE_OF_INT));
         }
 
         /**
@@ -249,6 +238,23 @@ public final class SingleNodeCluster implements AutoCloseable
         protected long serviceCorrelationId(final int correlationId)
         {
             return ((long)cluster.context().serviceId()) << 56 | correlationId;
+        }
+
+        private void echoMessage(
+            final ClientSession session, final DirectBuffer buffer, final int offset, final int length)
+        {
+            idleStrategy.reset();
+            int attempts = SEND_ATTEMPTS;
+            do
+            {
+                final long result = session.offer(buffer, offset, length);
+                if (result > 0)
+                {
+                    return;
+                }
+                idleStrategy.idle();
+            }
+            while (--attempts > 0);
         }
     }
 

@@ -529,6 +529,7 @@ class ClusterNodeRestartTest
                     final long correlationId = serviceCorrelationId(nextCorrelationId++);
                     final long deadlineMs = timestamp + buffer.getLong(offset + TIMER_MESSAGE_DELAY_OFFSET);
 
+                    idleStrategy.reset();
                     while (!cluster.scheduleTimer(correlationId, deadlineMs))
                     {
                         idleStrategy.idle();
@@ -608,6 +609,7 @@ class ClusterNodeRestartTest
                 final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
                 buffer.putLong(0, triggeredTimersCounter.get());
 
+                idleStrategy.reset();
                 while (snapshotPublication.offer(buffer, 0, SIZE_OF_INT) < 0)
                 {
                     idleStrategy.idle();

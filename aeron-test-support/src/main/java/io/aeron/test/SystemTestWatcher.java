@@ -57,6 +57,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.aeron.CncFileDescriptor.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -426,6 +427,9 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             error,
             dissector.printErrors(dataCollector.markFiles(dissector), this::printObservationCallback)));
 
+        //grab thread dump while components are still running
+        final byte[] threadDump = SystemUtil.threadDump().getBytes(UTF_8);
+
         try
         {
             CloseHelper.closeAll(closeables);
@@ -437,7 +441,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
         try
         {
-            dataCollector.dumpData(directoryName);
+            dataCollector.dumpData(directoryName, threadDump);
         }
         catch (final Throwable t)
         {

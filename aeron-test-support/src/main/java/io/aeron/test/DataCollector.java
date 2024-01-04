@@ -29,7 +29,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Collections.singleton;
@@ -74,7 +73,7 @@ public final class DataCollector
      * Add a file/directory to be preserved.
      *
      * @param location file or directory to preserve.
-     * @see #dumpData(String)
+     * @see #dumpData(String, byte[])
      */
     public void add(final Path location)
     {
@@ -85,7 +84,7 @@ public final class DataCollector
      * Add a file/directory to be preserved.  Converting from a File to a Path if not null.
      *
      * @param location file or directory to preserve.
-     * @see #dumpData(String)
+     * @see #dumpData(String, byte[])
      */
     public void add(final File location)
     {
@@ -134,16 +133,19 @@ public final class DataCollector
      * </p>
      *
      * @param destinationDir destination directory where the data should be copied into.
+     * @param threadDump     bytes representing stacktraces of all running threads in the system, i.e.
+     *                       {@link SystemUtil#threadDump()}.
      * @return {@code null} if no data was copied or an actual destination directory used.
      */
-    Path dumpData(final String destinationDir)
+    Path dumpData(final String destinationDir, final byte[] threadDump)
     {
         if (isEmpty(destinationDir))
         {
             throw new IllegalArgumentException("destination dir is required");
         }
+        Objects.requireNonNull(threadDump);
 
-        return copyData(destinationDir);
+        return copyData(destinationDir, threadDump);
     }
 
     /**
@@ -240,7 +242,7 @@ public final class DataCollector
         fileFilter = fileFilter.and(fileExclusion.negate());
     }
 
-    private Path copyData(final String destinationDir)
+    private Path copyData(final String destinationDir, final byte[] threadDump)
     {
         final boolean isInterrupted = Thread.interrupted();
         final List<Path> locations = this.locations.stream().filter(Files::exists).collect(toList());
@@ -264,8 +266,7 @@ public final class DataCollector
                 }
             }
 
-            final Path threadDump = destination.resolve(THREAD_DUMP_FILE_NAME);
-            Files.write(threadDump, SystemUtil.threadDump().getBytes(UTF_8));
+            Files.write(destination.resolve(THREAD_DUMP_FILE_NAME), threadDump);
             Tests.dumpCollectedLogs(destination.resolve("events.log").toString());
 
             return destination;

@@ -19,12 +19,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.test.DataCollector.THREAD_DUMP_FILE_NAME;
 import static io.aeron.test.DataCollector.UNIQUE_ID;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.*;
+import static org.agrona.collections.ArrayUtil.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.*;
 
 class DataCollectorTest
@@ -56,14 +58,21 @@ class DataCollectorTest
     void dumpDataUsingDirectoryNameThrowsIllegalArgumentExceptionIfNull()
     {
         final DataCollector dataCollector = new DataCollector();
-        assertThrows(IllegalArgumentException.class, () -> dataCollector.dumpData(null));
+        assertThrows(IllegalArgumentException.class, () -> dataCollector.dumpData(null, EMPTY_BYTE_ARRAY));
     }
 
     @Test
     void dumpDataUsingDirectoryNameThrowsIllegalArgumentExceptionIfEmpty()
     {
         final DataCollector testWatcher = new DataCollector();
-        assertThrows(IllegalArgumentException.class, () -> testWatcher.dumpData(""));
+        assertThrows(IllegalArgumentException.class, () -> testWatcher.dumpData("", EMPTY_BYTE_ARRAY));
+    }
+
+    @Test
+    void dumpDataUsingDirectoryPathThrowsNullPointerExceptionIfThreadDumpIsNull(final @TempDir Path tempDir)
+    {
+        final DataCollector dataCollector = new DataCollector(tempDir);
+        assertThrowsExactly(NullPointerException.class, () -> dataCollector.dumpData("test", null));
     }
 
     @Test
@@ -88,7 +97,7 @@ class DataCollectorTest
         final Path rootDirectory = tempDir.resolve("no-copy");
         final DataCollector dataCollector = new DataCollector(rootDirectory);
 
-        assertNull(dataCollector.dumpData("some-dir"));
+        assertNull(dataCollector.dumpData("some-dir", EMPTY_BYTE_ARRAY));
 
         assertFalse(exists(rootDirectory));
     }
@@ -99,15 +108,16 @@ class DataCollectorTest
         final Path rootDirectory = tempDir.resolve("thread-dump");
         final DataCollector dataCollector = new DataCollector(rootDirectory);
         dataCollector.add(createFile(tempDir.resolve("my.txt")));
+        final byte[] threads = new byte[32];
+        ThreadLocalRandom.current().nextBytes(threads);
 
-        final Path destination = dataCollector.dumpData("my-out-dir");
+        final Path destination = dataCollector.dumpData("my-out-dir", threads);
 
         assertNotNull(destination);
         assertTrue(exists(destination));
         assertTrue(exists(destination.resolve("my.txt")));
         final Path threadDump = destination.resolve(THREAD_DUMP_FILE_NAME);
-        assertTrue(exists(threadDump));
-        assertTrue(new String(readAllBytes(threadDump), UTF_8).contains(Thread.currentThread().getName()));
+        assertArrayEquals(threads, Files.readAllBytes(threadDump));
     }
 
     private void testDumpDataUsingDirectoryName(final Path tempDir) throws IOException
@@ -135,7 +145,7 @@ class DataCollectorTest
         dataCollector.add(dir4);
         dataCollector.add(file1);
 
-        final Path destination = dataCollector.dumpData("destination");
+        final Path destination = dataCollector.dumpData("destination", EMPTY_BYTE_ARRAY);
 
         assertNotNull(destination);
         assertTrue(exists(destination));

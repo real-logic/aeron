@@ -2345,13 +2345,15 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the channel parameter for the egress channel that is used as template to define a response
-         * channel for a client:
-         * <ul>
-         *     <li></li>
-         * </ul>
+         * Set the template channel that is used to refine the response channels for a Cluster, i.e. egress channel,
+         * backup query response channel, heartbeat response channel etc. Defaults to {@code null} in which case the
+         * provided response channel will be used. The main use-case is the ability to define the `interface` parameter
+         * to steer the response traffic via a specific network interface.
          *
-         * @param channel parameter for the egress channel.
+         * <p><em><strong>Note:</strong> each URI parameter that is defined on this channel template will
+         * <strong>override</strong> the corresponding URI parameter in the provided response channel!</em>
+         *
+         * @param channel the channel template for response channels.
          * @return this for a fluent API.
          * @see io.aeron.cluster.client.AeronCluster.Configuration#EGRESS_CHANNEL_PROP_NAME
          */
@@ -2362,9 +2364,15 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the channel parameter for the egress channel.
+         * Get the template channel that is used to refine the response channels for a Cluster, i.e. egress channel,
+         * backup query response channel, heartbeat response channel etc. Defaults to {@code null} in which case the
+         * provided response channel will be used. The main use-case is the ability to define the `interface` parameter
+         * to steer the response traffic via a specific network interface.
          *
-         * @return the channel parameter for the egress channel.
+         * <p><em><strong>Note:</strong> each URI parameter that is defined on this channel template will
+         * <strong>override</strong> the corresponding URI parameter in the provided response channel!</em>
+         *
+         * @return the channel template for response channels.
          * @see io.aeron.cluster.client.AeronCluster.Configuration#EGRESS_CHANNEL_PROP_NAME
          */
         public String egressChannel()

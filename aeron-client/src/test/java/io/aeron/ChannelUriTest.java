@@ -22,10 +22,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
+import java.util.function.BiConsumer;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.mockito.Mockito.*;
 
 class ChannelUriTest
 {
@@ -210,6 +212,37 @@ class ChannelUriTest
         assertThrows(IllegalArgumentException.class, () -> uri.replaceEndpointWildcardPort("localhost:0"));
         assertThrows(IllegalArgumentException.class, () -> uri.replaceEndpointWildcardPort("localhost"));
         assertThrows(NullPointerException.class, () -> uri.replaceEndpointWildcardPort(null));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldIterateOverParameters()
+    {
+        final ChannelUri uri = ChannelUri.parse(
+            "aeron:udp?endpoint=myhost:0|ttl=1|mtu=8k|term-length=64M|alias=text|x=42");
+        final BiConsumer<String, String> parameterConsumer = mock(BiConsumer.class);
+
+        uri.forEachParameter(parameterConsumer);
+
+        verify(parameterConsumer).accept("endpoint", "myhost:0");
+        verify(parameterConsumer).accept("ttl", "1");
+        verify(parameterConsumer).accept("mtu", "8k");
+        verify(parameterConsumer).accept("term-length", "64M");
+        verify(parameterConsumer).accept("alias", "text");
+        verify(parameterConsumer).accept("x", "42");
+        verifyNoMoreInteractions(parameterConsumer);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldNotCallConsumerIfNoParameters()
+    {
+        final ChannelUri uri = ChannelUri.parse("aeron:ipc");
+        final BiConsumer<String, String> parameterConsumer = mock(BiConsumer.class);
+
+        uri.forEachParameter(parameterConsumer);
+
+        verifyNoInteractions(parameterConsumer);
     }
 
     private static void assertSubstitution(

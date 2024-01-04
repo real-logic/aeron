@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 
 import static io.aeron.CommonContext.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -544,7 +545,7 @@ public final class ChannelUri
      *
      * @param resolvedEndpoint The endpoint to supply a resolved endpoint port.
      * @throws IllegalArgumentException if the supplied resolvedEndpoint does not have a port or the port is zero.
-     * @throws NullPointerException if the supplied resolvedEndpoint is null
+     * @throws NullPointerException     if the supplied resolvedEndpoint is null
      */
     public void replaceEndpointWildcardPort(final String resolvedEndpoint)
     {
@@ -571,6 +572,15 @@ public final class ChannelUri
         }
     }
 
+    /**
+     * Call consumer for each parameter defined in the URI.
+     *
+     * @param consumer to be invoked for each parameter.
+     */
+    public void forEachParameter(final BiConsumer<String, String> consumer)
+    {
+        params.forEach(consumer);
+    }
 
     private static void validateMedia(final String media)
     {

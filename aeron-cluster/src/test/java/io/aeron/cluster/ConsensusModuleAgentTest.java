@@ -336,19 +336,24 @@ public class ConsensusModuleAgentTest
 
     @ParameterizedTest
     @CsvSource(value = {
-        "null, aeron:udp?endpoint=acme:2040, aeron:udp?endpoint=acme:2040",
-        ", aeron:ipc, aeron:ipc",
-        "aeron:udp?endpoint=host1:5050|interface=eth0|mtu=1440, aeron:udp?endpoint=localhost:8080|mtu=8000, " +
-            "aeron:udp?endpoint=localhost:8080|interface=eth0|mtu=1440",
-        "aeron:udp?endpoint=node0:21300|eos=false, aeron:udp?mtu=8000|interface=if1|eos=true|ttl=100, " +
-            "aeron:udp?endpoint=node0:21300|eos=false"
+        "false, null, aeron:udp?endpoint=acme:2040, aeron:udp?endpoint=acme:2040",
+        "true, aeron:udp?endpoint=host:port, aeron:ipc, aeron:ipc",
+        "false, null, aeron:ipc, aeron:ipc",
+        "false, aeron:udp?endpoint=host:port, aeron:ipc, aeron:udp?endpoint=host:port",
+        "false, aeron:udp?endpoint=host1:5050|interface=eth0|mtu=1440, " +
+            "aeron:udp?endpoint=localhost:8080|mtu=8k|alias=test, " +
+            "aeron:udp?endpoint=host1:5050|interface=eth0|mtu=1440|alias=test",
+        "false, aeron:udp?endpoint=node0:21300|eos=false, aeron:udp?mtu=8000|interface=if1|eos=true|ttl=100, " +
+            "aeron:udp?endpoint=node0:21300|eos=false|mtu=8000|interface=if1|ttl=100"
     }, nullValues = "null")
     void responseChannelIsBuiltBasedOnTheEgressChannel(
-        final String egressChannel, final String responseChannel, final String expectedResponseChannel)
+        final boolean isIpcIngressAllowed,
+        final String egressChannel,
+        final String responseChannel,
+        final String expectedResponseChannel)
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
-        ctx.epochClock(clock).clusterClock(clock);
-        ctx.egressChannel(egressChannel);
+        ctx.epochClock(clock).clusterClock(clock).egressChannel(egressChannel).isIpcIngressAllowed(isIpcIngressAllowed);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
         agent.state(ConsensusModule.State.ACTIVE);

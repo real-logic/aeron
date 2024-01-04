@@ -39,6 +39,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.SemanticVersion;
+import org.agrona.Strings;
 import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
@@ -148,6 +149,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private final RecordingLog recordingLog;
     private final DutyCycleTracker dutyCycleTracker;
     private final SnapshotDurationTracker totalSnapshotDurationTracker;
+    private final ChannelUri responseChannelTemplate;
     private RecordingLog.RecoveryPlan recoveryPlan;
     private AeronArchive archive;
     private RecordingSignalPoller recordingSignalPoller;
@@ -226,6 +228,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             pendingServiceMessageTrackers[i] = new PendingServiceMessageTracker(
                 i, commitPosition, logPublisher, clusterClock);
         }
+
+        responseChannelTemplate = Strings.isEmpty(ctx.egressChannel()) ? null : ChannelUri.parse(ctx.egressChannel());
     }
 
     /**
@@ -3340,26 +3344,19 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
     private String refineResponseChannel(final String responseChannel)
     {
-        final String egressChannel = ctx.egressChannel();
-        if (null == egressChannel)
-        {
-            return responseChannel; // legacy behavior
-        }
-        else if (responseChannel.contains(ENDPOINT_PARAM_NAME))
-        {
-            final String responseEndpoint = ChannelUri.parse(responseChannel).get(ENDPOINT_PARAM_NAME);
-            final ChannelUri channelUri = ChannelUri.parse(egressChannel);
-            channelUri.put(ENDPOINT_PARAM_NAME, responseEndpoint);
-
-            return channelUri.toString();
-        }
-        else if (ctx.isIpcIngressAllowed() && responseChannel.startsWith(IPC_CHANNEL))
+        if (null == responseChannelTemplate)
         {
             return responseChannel;
         }
+        else if (responseChannel.startsWith(IPC_CHANNEL))
+        {
+            return ctx.isIpcIngressAllowed() ? responseChannel : ctx.egressChannel();
+        }
         else
         {
-            return egressChannel;
+            final ChannelUri channelUri = ChannelUri.parse(responseChannel);
+            responseChannelTemplate.forEachParameter(channelUri::put);
+            return channelUri.toString();
         }
     }
 
@@ -3474,7 +3471,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 sessionExport.timeOfLastActivityNs,
                 sessionExport.closeReason,
                 sessionExport.responseStreamId,
-                refineResponseChannel(sessionExport.responseChannel),
+                sessionExport.responseChannel,
                 null, 0, 0);
         }
 

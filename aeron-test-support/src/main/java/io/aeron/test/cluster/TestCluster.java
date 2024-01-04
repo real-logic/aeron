@@ -111,10 +111,9 @@ public final class TestCluster implements AutoCloseable
     static final int SEGMENT_FILE_LENGTH = 16 * 1024 * 1024;
     static final long CATALOG_CAPACITY = 128 * 1024;
 
-    static final String LOG_CHANNEL = "aeron:udp?term-length=512k";
-    static final String REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
+    static final String LOG_CHANNEL = "aeron:udp?term-length=512k|alias=raft";
     static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc";
-    static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0";
+    static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0|alias=egress";
     static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k|alias=ingress";
     static final long LEADER_HEARTBEAT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
     static final long STARTUP_CANVASS_TIMEOUT_NS = LEADER_HEARTBEAT_TIMEOUT_NS * 2;
@@ -1147,7 +1146,8 @@ public final class TestCluster implements AutoCloseable
 
     public void awaitSnapshotCount(final TestNode node, final long value)
     {
-        awaitCounter(node, value, node.consensusModule().context().snapshotCounter());
+        clientKeepAlive.init();
+        awaitCounter(node, value, node.consensusModule().context().snapshotCounter(), clientKeepAlive);
     }
 
     public long getSnapshotCount(final TestNode node)
@@ -1175,8 +1175,12 @@ public final class TestCluster implements AutoCloseable
 
     public void awaitStandbySnapshotCount(final TestNode node, final long value)
     {
-        awaitCounter(node, value, requireNonNull(
-            node.consensusModule().context().standbySnapshotCounter(), "node not configured for standby snapshots"));
+        clientKeepAlive.init();
+        awaitCounter(node,
+            value,
+            requireNonNull(
+            node.consensusModule().context().standbySnapshotCounter(), "node not configured for standby snapshots"),
+            clientKeepAlive);
     }
 
     public long getStandbySnapshotCount(final TestNode node)
@@ -1192,7 +1196,8 @@ public final class TestCluster implements AutoCloseable
         return snapshotCounter.get();
     }
 
-    private static void awaitCounter(final TestNode node, final long value, final Counter snapshotCounter)
+    private static void awaitCounter(
+        final TestNode node, final long value, final Counter snapshotCounter, final Runnable keepAlive)
     {
         final Supplier<String> msg = () -> "node=" + node.index() +
             " role=" + node.role() +
@@ -1212,6 +1217,8 @@ public final class TestCluster implements AutoCloseable
             }
 
             Tests.yieldingIdle(msg);
+
+            keepAlive.run();
         }
     }
 
@@ -2176,6 +2183,7 @@ public final class TestCluster implements AutoCloseable
                 client.sendKeepAlive();
                 keepAliveDeadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
             }
+            pollClient();
         }
     }
 

@@ -76,6 +76,7 @@ class StartFromTruncatedRecordingLogTest
     private void restartClusterWithTruncatedRecordingLog() throws IOException
     {
         final TestNode leader = cluster.awaitLeader();
+        cluster.connectClient();
         final int leaderMemberId = leader.index();
         final int followerMemberIdA = cluster.followers().get(0).index();
         final int followerMemberIdB = cluster.followers().get(1).index();

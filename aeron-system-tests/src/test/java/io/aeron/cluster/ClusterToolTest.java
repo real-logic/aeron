@@ -60,6 +60,7 @@ class ClusterToolTest
         systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
+        cluster.connectClient();
         final long initialSnapshotCount = leader.consensusModule().context().snapshotCounter().get();
         final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
 

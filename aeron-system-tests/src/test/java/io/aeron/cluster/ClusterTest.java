@@ -124,6 +124,7 @@ class ClusterTest
         systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
+        cluster.connectClient();
 
         cluster.takeSnapshot(leader);
         cluster.awaitSnapshotCount(1);
@@ -531,6 +532,7 @@ class ClusterTest
         systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
+        cluster.connectClient();
         final List<TestNode> followers = cluster.followers();
         final TestNode followerA = followers.get(0);
         TestNode followerB = followers.get(1);
@@ -543,7 +545,6 @@ class ClusterTest
         cluster.awaitSnapshotCount(followerA, 1);
 
         final int messageCount = 10;
-        cluster.connectClient();
         cluster.sendMessages(messageCount);
         cluster.awaitResponseMessageCount(messageCount);
 

@@ -46,6 +46,7 @@ extern "C"
 #define ERROR_BUFFER_LENGTH (CAPACITY)
 #define FILE_PAGE_SIZE (4 * 1024)
 
+#define CLIENT_IDLE_SLEEP_INTERVAL (16 * 1000 * 1000LL)
 #define CLIENT_LIVENESS_TIMEOUT (5 * 1000 * 1000 * 1000LL)
 #define DRIVER_TIMEOUT_INTERVAL_MS (1 * 1000)
 #define DRIVER_TIMEOUT_INTERVAL_NS (DRIVER_TIMEOUT_INTERVAL_MS * 1000 * 1000LL)
@@ -159,6 +160,7 @@ public:
         m_context->nano_clock = test_nano_clock;
         m_context->driver_timeout_ms = DRIVER_TIMEOUT_INTERVAL_MS;
         m_context->keepalive_interval_ns = DRIVER_TIMEOUT_INTERVAL_NS;
+        m_context->idle_sleep_duration_ns = CLIENT_IDLE_SLEEP_INTERVAL;
 
         aeron_context_set_use_conductor_agent_invoker(m_context, true);
 

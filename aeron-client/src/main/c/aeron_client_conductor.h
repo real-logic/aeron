@@ -29,8 +29,6 @@
 #define AERON_CLIENT_COMMAND_QUEUE_FAIL_THRESHOLD (10)
 #define AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD (10)
 
-#define AERON_CLIENT_CONDUCTOR_IDLE_SLEEP_NS (16 * 1000 * 1000L)
-
 typedef enum aeron_client_registration_status_en
 {
     AERON_CLIENT_AWAITING_MEDIA_DRIVER,
@@ -215,6 +213,7 @@ typedef struct aeron_client_conductor_stct
     uint64_t inter_service_timeout_ns;
     uint64_t keepalive_interval_ns;
     uint64_t resource_linger_duration_ns;
+    uint64_t idle_sleep_duration_ns;
 
     long long time_of_last_service_ns;
     long long time_of_last_keepalive_ns;

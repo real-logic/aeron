@@ -178,6 +178,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->inter_service_timeout_ns = (uint64_t)metadata->client_liveness_timeout;
     conductor->keepalive_interval_ns = context->keepalive_interval_ns;
     conductor->resource_linger_duration_ns = context->resource_linger_duration_ns;
+    conductor->idle_sleep_duration_ns = context->idle_sleep_duration_ns;
 
     long long now_ns = context->nano_clock();
 
@@ -539,7 +540,7 @@ int aeron_client_conductor_on_check_timeouts(aeron_client_conductor_t *conductor
     int work_count = 0, result = 0;
     const long long now_ns = conductor->nano_clock();
 
-    if (now_ns > (conductor->time_of_last_service_ns + AERON_CLIENT_CONDUCTOR_IDLE_SLEEP_NS))
+    if (now_ns > (conductor->time_of_last_service_ns + (long long)conductor->idle_sleep_duration_ns))
     {
         if (now_ns > (conductor->time_of_last_service_ns + (long long)conductor->inter_service_timeout_ns))
         {

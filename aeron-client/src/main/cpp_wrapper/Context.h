@@ -407,9 +407,40 @@ public:
         {
             throw IllegalArgumentException("timeout less than 0", SOURCEINFO);
         }
-
         std::uint64_t duration_ns = static_cast<std::uint64_t>(value) * 1000000;
         if (aeron_context_set_resource_linger_duration_ns(m_context, duration_ns) < 0)
+        {
+            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
+        }
+        return *this;
+    }
+
+    /**
+     * Get the amount of time, in milliseconds, that the client conductor will sleep when idle.
+     *
+     * @return value in number of milliseconds.
+     * @see errorHandler
+     */
+    long idleSleepDuration() const
+    {
+        return static_cast<long>(aeron_context_get_idle_sleep_duration_ns(m_context) / 1000000);
+    }
+
+    /**
+     * Set the amount of time, in milliseconds, that the client conductor will sleep when idle.
+     *
+     * @param value Number of milliseconds.
+     * @return reference to this Context instance
+     */
+    inline this_t &idleSleepDuration(long value)
+    {
+        if (value < 0)
+        {
+            throw IllegalArgumentException("idle sleep less than 0", SOURCEINFO);
+        }
+
+        std::uint64_t duration_ns = static_cast<std::uint64_t>(value) * 1000000;
+        if (aeron_context_set_idle_sleep_duration_ns(m_context, duration_ns) < 0)
         {
             throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
         }

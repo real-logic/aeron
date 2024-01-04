@@ -66,6 +66,7 @@ typedef struct aeron_context_stct
     uint64_t driver_timeout_ms;
     uint64_t keepalive_interval_ns;
     uint64_t resource_linger_duration_ns;
+    uint64_t idle_sleep_duration_ns;
 
     bool use_conductor_agent_invoker;
     bool pre_touch_mapped_memory;

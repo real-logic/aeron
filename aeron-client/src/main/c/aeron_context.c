@@ -34,6 +34,7 @@
 #define AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT (10 * 1000L)
 #define AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT (500 * 1000 * 1000LL)
 #define AERON_CONTEXT_RESOURCE_LINGER_DURATION_NS_DEFAULT (3 * 1000 * 1000 * 1000LL)
+#define AERON_CONTEXT_IDLE_SLEEP_DURATION_NS_DEFAULT (16 * 1000 * 1000LL)
 #define AERON_CONTEXT_PRE_TOUCH_MAPPED_MEMORY_DEFAULT (false)
 
 void aeron_default_error_handler(void *clientd, int errcode, const char *message)
@@ -94,6 +95,7 @@ int aeron_context_init(aeron_context_t **context)
     _context->driver_timeout_ms = AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT;
     _context->keepalive_interval_ns = AERON_CONTEXT_KEEPALIVE_INTERVAL_NS_DEFAULT;
     _context->resource_linger_duration_ns = AERON_CONTEXT_RESOURCE_LINGER_DURATION_NS_DEFAULT;
+    _context->idle_sleep_duration_ns = AERON_CONTEXT_IDLE_SLEEP_DURATION_NS_DEFAULT;
 
     _context->epoch_clock = aeron_epoch_clock;
     _context->nano_clock = aeron_nano_clock;
@@ -132,11 +134,26 @@ int aeron_context_init(aeron_context_t **context)
         _context->resource_linger_duration_ns = result;
     }
 
+    if ((value = getenv(AERON_CLIENT_IDLE_SLEEP_DURATION_ENV_VAR)))
+    {
+        uint64_t result;
+        if (aeron_parse_duration_ns(value, &result) < 0)
+        {
+            AERON_SET_ERR(EINVAL, "could not parse: %s=%s", AERON_CLIENT_IDLE_SLEEP_DURATION_ENV_VAR, value);
+            return -1;
+        }
+
+        _context->idle_sleep_duration_ns = result;
+    }
+
     _context->pre_touch_mapped_memory = aeron_parse_bool(
         getenv(AERON_CLIENT_PRE_TOUCH_MAPPED_MEMORY_ENV_VAR), AERON_CONTEXT_PRE_TOUCH_MAPPED_MEMORY_DEFAULT);
 
+    char sleep_duration_ascii[32] = { 0 };
+    snprintf(sleep_duration_ascii, sizeof(sleep_duration_ascii), "%" PRIu64, _context->idle_sleep_duration_ns);
+
     if ((_context->idle_strategy_func = aeron_idle_strategy_load(
-        "sleep-ns", &_context->idle_strategy_state, NULL, "1ms")) == NULL)
+        "sleep-ns", &_context->idle_strategy_state, NULL, sleep_duration_ascii)) == NULL)
     {
         return -1;
     }
@@ -224,6 +241,19 @@ int aeron_context_set_resource_linger_duration_ns(aeron_context_t *context, uint
 uint64_t aeron_context_get_resource_linger_duration_ns(aeron_context_t *context)
 {
     return NULL == context ? AERON_CONTEXT_RESOURCE_LINGER_DURATION_NS_DEFAULT : context->resource_linger_duration_ns;
+}
+
+int aeron_context_set_idle_sleep_duration_ns(aeron_context_t *context, uint64_t value)
+{
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->idle_sleep_duration_ns = value;
+    return 0;
+}
+
+uint64_t aeron_context_get_idle_sleep_duration_ns(aeron_context_t *context)
+{
+    return NULL == context ? AERON_CONTEXT_IDLE_SLEEP_DURATION_NS_DEFAULT : context->idle_sleep_duration_ns;
 }
 
 int aeron_context_set_pre_touch_mapped_memory(aeron_context_t *context, bool value)

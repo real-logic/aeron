@@ -21,7 +21,6 @@
 namespace aeron
 {
 
-static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS(4);
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_16(16);
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_100(100);
@@ -56,7 +55,7 @@ Aeron::Aeron(Context &context) :
         m_context.m_resourceLingerTimeout,
         CncFileDescriptor::clientLivenessTimeout(m_cncBuffer),
         m_context.m_preTouchMappedMemory),
-    m_idleStrategy(IDLE_SLEEP_MS),
+    m_idleStrategy(std::chrono::duration<long, std::milli>(m_context.idleSleepDuration())),
     m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler, AGENT_NAME),
     m_conductorInvoker(m_conductor, m_context.m_exceptionHandler)
 {
@@ -135,7 +134,7 @@ MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
         {
             throw AeronException(
                 "Driver version insufficient: client=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
-                    " file=" + semanticVersionToString(cncVersion),
+                " file=" + semanticVersionToString(cncVersion),
                 SOURCEINFO);
         }
 

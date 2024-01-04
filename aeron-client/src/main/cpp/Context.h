@@ -102,7 +102,6 @@ typedef std::function<void(
  * @param registrationId for the counter.
  * @param counterId      that is available.
  */
-
 typedef std::function<void(
     CountersReader &countersReader,
     std::int64_t registrationId,
@@ -132,6 +131,7 @@ typedef std::function<void()> on_close_client_t;
 const static long NULL_TIMEOUT = -1;
 const static long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10000;
 const static long DEFAULT_RESOURCE_LINGER_MS = 5000;
+const static long DEFAULT_IDLE_SLEEP_DURATION_MS = 16;
 
 /**
  * The Default handler for Aeron runtime exceptions.
@@ -349,10 +349,32 @@ public:
     }
 
     /**
+     * Set the amount of time, in milliseconds, that the client conductor will sleep when idle.
+     *
+     * @param value number of milliseconds.
+     * @return reference to this Context instance
+     */
+    inline this_t &idleSleepDuration(long value)
+    {
+        m_idleSleepDuration = value;
+        return *this;
+    }
+
+    /**
+     * Get the amount of time, in milliseconds, that the client conductor will sleep when idle.
+     *
+     * @return value in number of milliseconds.
+     */
+    long idleSleepDuration() const
+    {
+        return m_idleSleepDuration;
+    }
+
+    /**
      * Set the amount of time, in milliseconds, that this client will wait until it determines the
      * Media Driver is unavailable. When this happens a DriverTimeoutException will be generated for the error handler.
      *
-     * @param value Number of milliseconds.
+     * @param value number of milliseconds.
      * @return reference to this Context instance
      * @see errorHandler
      */
@@ -378,7 +400,7 @@ public:
      * Set the amount of time, in milliseconds, that this client will to linger inactive connections and internal
      * arrays before they are freed.
      *
-     * @param value Number of milliseconds.
+     * @param value number of milliseconds.
      * @return reference to this Context instance
      */
     inline this_t &resourceLingerTimeout(long value)
@@ -427,6 +449,7 @@ private:
     on_available_counter_t m_onAvailableCounterHandler = defaultOnAvailableCounterHandler;
     on_unavailable_counter_t m_onUnavailableCounterHandler = defaultOnUnavailableCounterHandler;
     on_close_client_t m_onCloseClientHandler = defaultOnCloseClientHandler;
+    long m_idleSleepDuration = DEFAULT_IDLE_SLEEP_DURATION_MS;
     long m_mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
     long m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
     bool m_useConductorAgentInvoker = false;

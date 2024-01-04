@@ -356,6 +356,7 @@ public class ClusterNodeTest
             new AeronCluster.Context()
                 .egressListener(egressListener)
                 .ingressChannel("aeron:udp")
-                .ingressEndpoints(INGRESS_ENDPOINTS));
+                .ingressEndpoints(INGRESS_ENDPOINTS)
+                .egressChannel("aeron:udp?endpoint=localhost:0"));
     }
 }

@@ -293,8 +293,10 @@ abstract class ClusterTimerTest
 
     private void connectClient()
     {
-        aeronCluster = AeronCluster.connect(
-            new AeronCluster.Context().ingressChannel("aeron:udp").ingressEndpoints(INGRESS_ENDPOINTS));
+        aeronCluster = AeronCluster.connect(new AeronCluster.Context()
+                .ingressChannel("aeron:udp")
+                .ingressEndpoints(INGRESS_ENDPOINTS)
+                .egressChannel("aeron:udp?endpoint=localhost:0"));
     }
 
     private void launchClusteredMediaDriver(final boolean initialLaunch)

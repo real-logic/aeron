@@ -1036,7 +1036,7 @@ public final class AeronCluster implements AutoCloseable
         /**
          * Channel for receiving response messages from a cluster.
          */
-        public static final String EGRESS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:0";
+        public static final String EGRESS_CHANNEL_DEFAULT = null;
 
         /**
          * Stream id within a channel for receiving messages from a cluster.

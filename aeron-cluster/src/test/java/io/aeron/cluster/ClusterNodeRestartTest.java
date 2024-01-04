@@ -641,8 +641,10 @@ class ClusterNodeRestartTest
     private void connectClient()
     {
         CloseHelper.close(aeronCluster);
-        aeronCluster = AeronCluster.connect(
-            new AeronCluster.Context().ingressChannel("aeron:udp").ingressEndpoints(INGRESS_ENDPOINTS));
+        aeronCluster = AeronCluster.connect(new AeronCluster.Context()
+                .ingressChannel("aeron:udp")
+                .ingressEndpoints(INGRESS_ENDPOINTS)
+                .egressChannel("aeron:udp?endpoint=localhost:0"));
     }
 
     private void launchClusteredMediaDriver(final boolean initialLaunch)

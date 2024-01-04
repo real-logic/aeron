@@ -153,6 +153,7 @@ class NameResolutionClusterNodeTest
                         t.printStackTrace();
                     })
                 .ingressChannel("aeron:udp")
-                .ingressEndpoints(INGRESS_ENDPOINTS + ",1=badname:9011"));
+                .ingressEndpoints(INGRESS_ENDPOINTS + ",1=badname:9011")
+                .egressChannel("aeron:udp?endpoint=localhost:0"));
     }
 }

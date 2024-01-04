@@ -466,6 +466,7 @@ public class AuthenticationTest
             new AeronCluster.Context()
                 .ingressChannel("aeron:udp")
                 .ingressEndpoints(INGRESS_ENDPOINTS)
+                .egressChannel("aeron:udp?endpoint=localhost:0")
                 .credentialsSupplier(credentialsSupplier));
     }
 

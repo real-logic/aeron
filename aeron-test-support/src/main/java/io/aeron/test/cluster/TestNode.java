@@ -33,6 +33,7 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
@@ -456,7 +457,7 @@ public final class TestNode implements AutoCloseable
             final Header header)
         {
             final String message = buffer.getStringWithoutLengthAscii(offset, length);
-            if (message.equals(ClusterTests.REGISTER_TIMER_MSG))
+            if (ClusterTests.REGISTER_TIMER_MSG.equals(message))
             {
                 while (!cluster.scheduleTimer(1, cluster.time() + 1_000))
                 {
@@ -466,38 +467,45 @@ public final class TestNode implements AutoCloseable
 
             if (message.startsWith(ClusterTests.PAUSE))
             {
-                final String[] messageComponents = message.split("\\|");
-                final int nodeIndex = Integer.parseInt(messageComponents[1]);
-                final long durationNs = Long.parseLong(messageComponents[2]);
-
-                if (index == nodeIndex)
+                try
                 {
-                    LockSupport.parkNanos(durationNs);
+                    final String[] messageComponents = message.split("\\|");
+                    final int nodeIndex = Integer.parseInt(messageComponents[1]);
+
+                    if (nodeIndex == index)
+                    {
+                        final long durationNs = Long.parseLong(messageComponents[2]);
+                        LockSupport.parkNanos(durationNs);
+                    }
+                }
+                catch (final NumberFormatException ex)
+                {
+                    throw new AeronException("Invalid message components with message: " + message, ex);
                 }
             }
 
-            if (message.equals(ClusterTests.UNEXPECTED_MSG))
+            if (ClusterTests.UNEXPECTED_MSG.equals(message))
             {
                 hasReceivedUnexpectedMessage = true;
                 throw new IllegalStateException("unexpected message received");
             }
 
-            if (message.equals(ClusterTests.TERMINATE_MSG))
+            if (ClusterTests.TERMINATE_MSG.equals(message))
             {
                 throw new ClusterTerminationException(false);
             }
 
-            if (message.equals(ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG))
+            if (ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG.equals(message))
             {
                 sendServiceIpcMessage(session, buffer, offset, length);
             }
-            else if (message.equals(ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG_SKIP_FOLLOWER))
+            else if (ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG_SKIP_FOLLOWER.equals(message))
             {
                 simulateBuggyApplicationCodeThatSkipsServiceMessageOnFollower(session, buffer, offset, length);
             }
             else
             {
-                if (message.equals(ClusterTests.ERROR_MSG))
+                if (ClusterTests.ERROR_MSG.equals(message))
                 {
                     cluster.context().errorHandler().onError(new Exception(message));
                 }
@@ -668,7 +676,6 @@ public final class TestNode implements AutoCloseable
             return this;
         }
 
-        @Override
         public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
             super.onTakeSnapshot(snapshotPublication);

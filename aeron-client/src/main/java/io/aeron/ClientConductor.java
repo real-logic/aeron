@@ -32,8 +32,6 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
-import static io.aeron.Aeron.Configuration.IDLE_SLEEP_MS;
-import static io.aeron.Aeron.Configuration.IDLE_SLEEP_NS;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.ErrorCode.CHANNEL_ENDPOINT_ERROR;
 import static io.aeron.status.HeartbeatTimestamp.HEARTBEAT_TYPE_ID;
@@ -50,6 +48,7 @@ final class ClientConductor implements Agent
     private static final long NO_CORRELATION_ID = NULL_VALUE;
     private static final long EXPLICIT_CLOSE_LINGER_NS = TimeUnit.SECONDS.toNanos(1);
 
+    private final long idleSleepDurationNs;
     private final long keepAliveIntervalNs;
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
@@ -98,6 +97,7 @@ final class ClientConductor implements Agent
         awaitingIdleStrategy = ctx.awaitingIdleStrategy();
         driverProxy = ctx.driverProxy();
         logBuffersFactory = ctx.logBuffersFactory();
+        idleSleepDurationNs = ctx.idleSleepDurationNs();
         keepAliveIntervalNs = ctx.keepAliveIntervalNs();
         driverTimeoutMs = ctx.driverTimeoutMs();
         driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
@@ -147,7 +147,7 @@ final class ClientConductor implements Agent
             {
                 if (isTerminating)
                 {
-                    Thread.sleep(IDLE_SLEEP_MS);
+                    Thread.sleep(Aeron.Configuration.IDLE_SLEEP_DEFAULT_MS);
                 }
 
                 Thread.sleep(NANOSECONDS.toMillis(ctx.closeLingerDurationNs()));
@@ -1395,7 +1395,7 @@ final class ClientConductor implements Agent
     {
         int workCount = 0;
 
-        if ((timeOfLastServiceNs + IDLE_SLEEP_NS) - nowNs < 0)
+        if ((timeOfLastServiceNs + idleSleepDurationNs) - nowNs < 0)
         {
             checkServiceInterval(nowNs);
             timeOfLastServiceNs = nowNs;

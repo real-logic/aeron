@@ -652,7 +652,7 @@ public class Aeron implements AutoCloseable
         /**
          * Duration in milliseconds for which the client conductor will sleep between duty cycles.
          */
-        static final long IDLE_SLEEP_MS = 16;
+        static final long IDLE_SLEEP_DEFAULT_MS = 16;
 
         /**
          * Duration in milliseconds for which the client will sleep when awaiting a response from the driver.
@@ -660,9 +660,14 @@ public class Aeron implements AutoCloseable
         static final long AWAITING_IDLE_SLEEP_MS = 1;
 
         /**
-         * Duration in nanoseconds for which the client conductor will sleep between duty cycles.
+         * Duration to sleep when idle
          */
-        static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(IDLE_SLEEP_MS);
+        public static final String IDLE_SLEEP_DURATION_PROP_NAME = "aeron.client.idle.sleep.duration";
+
+        /**
+         * Duration in nanoseconds for which the client conductor will sleep between work cycles when idle.
+         */
+        static final long IDLE_SLEEP_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(IDLE_SLEEP_DEFAULT_MS);
 
         /**
          * Default interval between sending keepalive control messages to the driver.
@@ -733,6 +738,17 @@ public class Aeron implements AutoCloseable
                     t.start();
                 }
             };
+
+        /**
+         * Duration in nanoseconds for which the client conductor will sleep between work cycles when idle.
+         *
+         * @return duration in nanoseconds to wait when idle in client conductor.
+         * @see #IDLE_SLEEP_DURATION_PROP_NAME
+         */
+        public static long idleSleepDurationNs()
+        {
+            return getDurationInNanos(IDLE_SLEEP_DURATION_PROP_NAME, IDLE_SLEEP_DEFAULT_NS);
+        }
 
         /**
          * Duration to wait while lingering an entity such as an {@link Image} before deleting underlying resources
@@ -815,6 +831,7 @@ public class Aeron implements AutoCloseable
         private Runnable closeHandler;
         private long keepAliveIntervalNs = Configuration.KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeoutNs = 0;
+        private long idleSleepDurationNs = Configuration.idleSleepDurationNs();
         private long resourceLingerDurationNs = Configuration.resourceLingerDurationNs();
         private long closeLingerDurationNs = Configuration.closeLingerDurationNs();
 
@@ -862,9 +879,14 @@ public class Aeron implements AutoCloseable
                 nanoClock = SystemNanoClock.INSTANCE;
             }
 
+            if (idleSleepDurationNs < 0 || idleSleepDurationNs > TimeUnit.SECONDS.toNanos(1))
+            {
+                throw new ConfigurationException("Invalid idle sleep duration: " + idleSleepDurationNs + "ns");
+            }
+
             if (null == idleStrategy)
             {
-                idleStrategy = new SleepingMillisIdleStrategy(Configuration.IDLE_SLEEP_MS);
+                idleStrategy = new SleepingMillisIdleStrategy(TimeUnit.NANOSECONDS.toMillis(idleSleepDurationNs));
             }
 
             if (null == awaitingIdleStrategy)
@@ -1449,6 +1471,30 @@ public class Aeron implements AutoCloseable
         }
 
         /**
+         * Duration to sleep when conductor is idle.
+         *
+         * @param idleSleepDurationNs to sleep when conductor is idle.
+         * @return this for a fluent API.
+         * @see Configuration#IDLE_SLEEP_DURATION_PROP_NAME
+         */
+        public Context idleSleepDurationNs(final long idleSleepDurationNs)
+        {
+            this.idleSleepDurationNs = idleSleepDurationNs;
+            return this;
+        }
+
+        /**
+         * Duration to sleep when conductor is idle.
+         *
+         * @return duration in nanoseconds to sleep when conductor is idle.
+         * @see Configuration#IDLE_SLEEP_DURATION_PROP_NAME
+         */
+        public long idleSleepDurationNs()
+        {
+            return idleSleepDurationNs;
+        }
+
+        /**
          * Duration to wait while lingering an entity such as an {@link Image} before deleting underlying resources
          * such as memory mapped files.
          *
@@ -1677,7 +1723,7 @@ public class Aeron implements AutoCloseable
                         throw new DriverTimeoutException("CnC file not created: " + file.getAbsolutePath());
                     }
 
-                    sleep(Configuration.IDLE_SLEEP_MS);
+                    sleep(Configuration.IDLE_SLEEP_DEFAULT_MS);
                 }
 
                 try (FileChannel fileChannel = FileChannel.open(file.toPath(), READ, WRITE))
@@ -1687,12 +1733,12 @@ public class Aeron implements AutoCloseable
                     {
                         if (clock.time() > deadlineMs)
                         {
-                            throw new DriverTimeoutException("CnC file is created but not populated: " +
-                                file.getAbsolutePath());
+                            throw new DriverTimeoutException(
+                                "CnC file is created but not populated: " + file.getAbsolutePath());
                         }
 
                         fileChannel.close();
-                        sleep(Configuration.IDLE_SLEEP_MS);
+                        sleep(Configuration.IDLE_SLEEP_DEFAULT_MS);
                         continue;
                     }
 

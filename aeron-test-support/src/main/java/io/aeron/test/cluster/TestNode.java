@@ -943,8 +943,11 @@ public final class TestNode implements AutoCloseable
                     }
                 }
 
-                // try to send the input message back to the client
-                echoMessage(session, buffer, offset, length);
+                // Echo input message back to the client
+                while (session.offer(buffer, offset, length) < 0)
+                {
+                    idleStrategy.idle();
+                }
             }
             else
             {

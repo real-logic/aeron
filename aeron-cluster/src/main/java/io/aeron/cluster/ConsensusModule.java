@@ -1495,7 +1495,7 @@ public final class ConsensusModule implements AutoCloseable
             }
             else
             {
-                clusterDirectoryName = clusterDir.getPath();
+                clusterDirectoryName = clusterDir.getAbsolutePath();
             }
 
             if (null == clusterServicesDirectoryName)
@@ -1513,10 +1513,7 @@ public final class ConsensusModule implements AutoCloseable
                 IoUtil.delete(clusterDir, false);
             }
 
-            if (!clusterDir.exists() && !clusterDir.mkdirs())
-            {
-                throw new ClusterException("failed to create cluster dir: " + clusterDir.getAbsolutePath());
-            }
+            IoUtil.ensureDirectoryExists(clusterDir, "cluster");
 
             if (null == markFileDir)
             {
@@ -1524,10 +1521,7 @@ public final class ConsensusModule implements AutoCloseable
                 markFileDir = Strings.isEmpty(dir) ? clusterDir : new File(dir);
             }
 
-            if (!markFileDir.exists() && !markFileDir.mkdirs())
-            {
-                throw new ClusterException("failed to create mark file dir: " + markFileDir.getAbsolutePath());
-            }
+            IoUtil.ensureDirectoryExists(markFileDir, "mark file");
 
             if (startupCanvassTimeoutNs / leaderHeartbeatTimeoutNs < 2)
             {

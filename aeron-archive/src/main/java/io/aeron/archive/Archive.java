@@ -1085,15 +1085,8 @@ public final class Archive implements AutoCloseable
                 IoUtil.delete(archiveDir, false);
             }
 
-            if (!archiveDir.exists() && !archiveDir.mkdirs())
-            {
-                throw new ArchiveException("failed to create archive dir: " + archiveDir.getAbsolutePath());
-            }
-
-            if (!markFileDir.exists() && !markFileDir.mkdirs())
-            {
-                throw new ArchiveException("failed to create mark file dir: " + markFileDir.getAbsolutePath());
-            }
+            IoUtil.ensureDirectoryExists(archiveDir, "archive");
+            IoUtil.ensureDirectoryExists(markFileDir, "mark file");
 
             archiveDirChannel = channelForDirectorySync(archiveDir, catalogFileSyncLevel);
 

@@ -743,12 +743,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
             {
                 clusterDir = new File(clusterDirectoryName);
             }
-
-            if (!clusterDir.exists() && !clusterDir.mkdirs())
+            else
             {
-                throw new ClusterException(
-                    "failed to create cluster dir: " + clusterDir.getAbsolutePath());
+                clusterDirectoryName = clusterDir.getAbsolutePath();
             }
+
+            IoUtil.ensureDirectoryExists(clusterDir, "cluster");
 
             if (null == markFileDir)
             {
@@ -756,10 +756,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 markFileDir = Strings.isEmpty(dir) ? clusterDir : new File(dir);
             }
 
-            if (!markFileDir.exists() && !markFileDir.mkdirs())
-            {
-                throw new ClusterException("failed to create mark file dir: " + markFileDir.getAbsolutePath());
-            }
+            IoUtil.ensureDirectoryExists(markFileDir, "mark file");
 
             if (null == markFile)
             {
@@ -1556,8 +1553,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * cluster-mark-service-0.dat}). It defaults to {@link #clusterDir()} if it is not set explicitly via the {@link
          * ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME}.
          *
-         * @return the directory in which the ClusteredServiceContainer will store mark file (i.e. {@code
-         *         cluster-mark-service-0.dat}).
+         * @return the directory in which the ClusteredServiceContainer will store mark file (i.e.
+         * {@code cluster-mark-service-0.dat}).
          * @see ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME
          * @see #clusterDir()
          */

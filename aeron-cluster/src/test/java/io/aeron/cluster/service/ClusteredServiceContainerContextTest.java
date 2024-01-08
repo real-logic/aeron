@@ -33,6 +33,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static io.aeron.cluster.service.ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_DIR_PROP_NAME;
@@ -196,6 +198,44 @@ class ClusteredServiceContainerContextTest
             final File linkFile = new File(context.clusterDir(), ClusterMarkFile.linkFilenameForService(serviceId));
             assertTrue(linkFile.exists());
             assertEquals(otherDir.getCanonicalPath(), new String(Files.readAllBytes(linkFile.toPath()), US_ASCII));
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
+        }
+    }
+
+    @Test
+    void shouldInitializeClusterDirectoryNameFromTheAssignedClusterDir(@TempDir final Path dir)
+    {
+        final Path clusterDir = dir.resolve("explicit/cluster/dir");
+        context.clusterDir(clusterDir.toFile()).clusterDirectoryName("replace-me");
+
+        try
+        {
+            context.conclude();
+
+            assertEquals(clusterDir.toFile(), context.clusterDir());
+            assertEquals(clusterDir.toAbsolutePath().toString(), context.clusterDirectoryName());
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
+        }
+    }
+
+    @Test
+    void shouldInitializeClusterDirectoryFromTheGivenDirectoryName(@TempDir final Path temp) throws IOException
+    {
+        final Path dir = Paths.get(temp.toString(), "/some/path");
+        context.clusterDir(null).clusterDirectoryName(dir.toString());
+
+        try
+        {
+            context.conclude();
+
+            assertEquals(dir.toFile(), context.clusterDir());
+            assertEquals(dir.toString(), context.clusterDirectoryName());
         }
         finally
         {

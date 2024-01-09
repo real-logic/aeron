@@ -696,8 +696,9 @@ public final class PublicationImage
         int workCount = 0;
         final long changeNumber = endSmChange;
         final boolean hasSmTimedOut = (timeOfLastSmNs + smTimeoutNs) - nowNs < 0;
+        final Integer responseSessionId;
 
-        if (null != responseSessionId && hasSmTimedOut)
+        if (hasSmTimedOut && null != (responseSessionId = this.responseSessionId))
         {
             channelEndpoint.sendResponseSetup(imageConnections, sessionId, streamId, responseSessionId);
         }

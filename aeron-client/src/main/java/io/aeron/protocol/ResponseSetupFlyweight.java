@@ -120,9 +120,9 @@ public class ResponseSetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Get stream id field.
+     * Get response session id field.
      *
-     * @return stream id field.
+     * @return response session id field.
      */
     public int responseSessionId()
     {

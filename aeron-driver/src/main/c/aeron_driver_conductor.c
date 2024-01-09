@@ -4984,8 +4984,6 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
             continue;
         }
 
-        printf("create_publication_image session_id=%" PRId32 ", link.has_session_id=%s\n", image->session_id, link->has_session_id ? "true" : "false");
-
         if (aeron_driver_conductor_link_subscribable(
             conductor,
             link,

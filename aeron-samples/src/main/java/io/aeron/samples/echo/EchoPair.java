@@ -132,7 +132,7 @@ public class EchoPair implements ControlledFragmentHandler, AutoCloseable
         CloseHelper.quietCloseAll(publication, subscription);
     }
 
-    private class EchoMonitor implements EchoMonitorMBean
+    private final class EchoMonitor implements EchoMonitorMBean
     {
         /**
          * Get the correaltionId

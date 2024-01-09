@@ -843,7 +843,7 @@ class MigrateSegmentsTest
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    private static class StreamParams
+    private static final class StreamParams
     {
         private String endpoint;
         private int initialTermId = 1337;
@@ -933,7 +933,7 @@ class MigrateSegmentsTest
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    private static class RecordingParams
+    private static final class RecordingParams
     {
         private final StreamParams stream = new StreamParams();
         private long startPosition;
@@ -1031,7 +1031,7 @@ class MigrateSegmentsTest
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    private static class TestCaseParams
+    private static final class TestCaseParams
     {
         private final RecordingParams source = new RecordingParams();
         private final RecordingParams destination = new RecordingParams();
@@ -1154,7 +1154,7 @@ class MigrateSegmentsTest
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    private static class FailureCaseParams
+    private static final class FailureCaseParams
     {
         private final RecordingParams source = new RecordingParams();
         private final RecordingParams destination = new RecordingParams();

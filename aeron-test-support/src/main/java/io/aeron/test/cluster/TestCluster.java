@@ -2162,7 +2162,7 @@ public final class TestCluster implements AutoCloseable
         }
     };
 
-    private class KeepAlive implements Runnable
+    private final class KeepAlive implements Runnable
     {
         private long keepAliveDeadlineMs;
         private EpochClock epochClock;
@@ -2243,7 +2243,7 @@ public final class TestCluster implements AutoCloseable
         }
     }
 
-    private static class BackupListener implements ClusterBackupEventsListener
+    private static final class BackupListener implements ClusterBackupEventsListener
     {
         public void onBackupQuery()
         {

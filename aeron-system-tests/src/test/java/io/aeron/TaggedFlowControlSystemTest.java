@@ -131,7 +131,7 @@ class TaggedFlowControlSystemTest
             Arguments.of(null, null, null, "|fc=tagged,g:123", "|gtag=123"));
     }
 
-    private static class State
+    private static final class State
     {
         private int numMessagesToSend;
         private int numMessagesLeftToSend;

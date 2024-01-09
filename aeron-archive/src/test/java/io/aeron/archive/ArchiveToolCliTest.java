@@ -184,7 +184,7 @@ public class ArchiveToolCliTest
             .count() == 1;
     }
 
-    private static class OutputConsole
+    private static final class OutputConsole
     {
         private final OutputStream outputBytes = new ByteArrayOutputStream();
         private final PrintStream sysOut = new PrintStream(outputBytes);

@@ -563,7 +563,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             throws IOException;
     }
 
-    private static class ArchiveMarkFileDissector implements MarkFileDissector
+    private static final class ArchiveMarkFileDissector implements MarkFileDissector
     {
         public String filename()
         {

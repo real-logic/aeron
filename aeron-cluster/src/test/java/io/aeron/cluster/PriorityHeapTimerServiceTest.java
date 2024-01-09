@@ -513,7 +513,7 @@ class PriorityHeapTimerServiceTest
         }
     }
 
-    private static class TestHarness
+    private static final class TestHarness
     {
         final PriorityHeapTimerService timerService = new PriorityHeapTimerService(this::onTimerEvent);
         final Long2LongHashMap timerDeadlines = new Long2LongHashMap(-1);

@@ -278,8 +278,8 @@ class CatalogWithJumboRecordingsAndGapsTest
             arguments(2, 10, ORIGINAL_CHANNELS[2], 2, 10),
             arguments(-1, 10, ORIGINAL_CHANNELS[2], 0, 0),
             arguments(-1, 10, ORIGINAL_CHANNELS[1], 2, 0),
-            arguments(5, MAX_SCANS_PER_WORK_CYCLE, ORIGINAL_CHANNELS[2], 2, 245),
-            arguments(10, MAX_SCANS_PER_WORK_CYCLE * 2, ORIGINAL_CHANNELS[2], 2, 243),
+            arguments(5, MAX_SCANS_PER_WORK_CYCLE, ORIGINAL_CHANNELS[2], 2, MAX_SCANS_PER_WORK_CYCLE - 11),
+            arguments(10, MAX_SCANS_PER_WORK_CYCLE * 2, ORIGINAL_CHANNELS[2], 2, MAX_SCANS_PER_WORK_CYCLE - 13),
             arguments(NUM_RECORDINGS - 10, MAX_SCANS_PER_WORK_CYCLE, ORIGINAL_CHANNELS[2], 2, 2));
     }
 }

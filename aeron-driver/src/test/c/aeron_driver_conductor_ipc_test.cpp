@@ -60,11 +60,6 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSing
     readAllBroadcastsFromConductor(mock_broadcast_handler);
 }
 
-TEST_F(DriverConductorIpcTest, foo)
-{
-    std::cout << sizeof(aeron_tetherable_position_t) << std::endl;
-}
-
 // TODO: Parameterise
 TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingleIpcSubscription)
 {

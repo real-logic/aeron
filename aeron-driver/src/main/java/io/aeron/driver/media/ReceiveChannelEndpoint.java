@@ -119,6 +119,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     private final AtomicCounter statusIndicator;
     private final Int2IntCounterMap refCountByStreamIdMap = new Int2IntCounterMap(0);
     private final Long2LongCounterMap refCountByStreamIdAndSessionIdMap = new Long2LongCounterMap(0);
+    private final Int2IntCounterMap responseRefCountByStreamIdMap = new Int2IntCounterMap(0);
     private final MultiRcvDestination multiRcvDestination;
     private final CachedNanoClock cachedNanoClock;
     private final Long groupTag;
@@ -405,6 +406,41 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     }
 
     /**
+     * Called from the {@link io.aeron.driver.DriverConductor} to
+     * increment the reference count for a given stream id for a response subscription while it is waiting to be
+     * connected.
+     *
+     * @param streamId to increment the reference for.
+     * @return current reference count after the increment.
+     */
+    public int incResponseRefToStream(final int streamId)
+    {
+        return responseRefCountByStreamIdMap.incrementAndGet(streamId);
+    }
+
+
+    /**
+     * Called from the {@link io.aeron.driver.DriverConductor} to
+     * decrement the reference count for a given stream id for a response subscription while it is waiting to be
+     * connected.
+     *
+     * @param streamId to decrement the reference for.
+     * @return current reference count after the decrement.
+     */
+    public int decResponseRefToStream(final int streamId)
+    {
+        final int count = responseRefCountByStreamIdMap.decrementAndGet(streamId);
+
+        if (-1 == count)
+        {
+            responseRefCountByStreamIdMap.remove(streamId);
+            throw new IllegalStateException("unknown stream Id: " + streamId);
+        }
+
+        return count;
+    }
+
+    /**
      * Total count of distinct subscriptions to streams.
      *
      * @return total count of distinct subscriptions to streams.
@@ -424,6 +460,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     {
         return refCountByStreamIdMap.isEmpty() &&
             refCountByStreamIdAndSessionIdMap.isEmpty() &&
+            responseRefCountByStreamIdMap.isEmpty() &&
             !statusIndicator.isClosed() &&
             imageRefCount <= 0;
     }

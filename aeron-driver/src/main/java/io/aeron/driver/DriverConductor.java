@@ -593,6 +593,7 @@ public final class DriverConductor implements Agent
                     params);
 
                 subscriptionLinks.set(i, newSubscriptionLink);
+                newSubscriptionLink.channelEndpoint().decResponseRefToStream(newSubscriptionLink.streamId);
                 addNetworkSubscriptionToReceiver(newSubscriptionLink);
 
                 break;
@@ -694,7 +695,11 @@ public final class DriverConductor implements Agent
                         channelEndpoint, subscription.streamId(), subscription.sessionId());
                 }
             }
-            else if (!subscription.isResponse())
+            else if (subscription.isResponse())
+            {
+                channelEndpoint.decResponseRefToStream(subscription.streamId());
+            }
+            else
             {
                 if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
                 {
@@ -938,7 +943,11 @@ public final class DriverConductor implements Agent
 
         subscriptionLinks.add(subscription);
 
-        if (ControlMode.RESPONSE != controlMode)
+        if (ControlMode.RESPONSE == controlMode)
+        {
+            channelEndpoint.incResponseRefToStream(subscription.streamId);
+        }
+        else
         {
             addNetworkSubscriptionToReceiver(subscription);
         }

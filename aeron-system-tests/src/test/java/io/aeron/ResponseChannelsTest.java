@@ -173,6 +173,78 @@ public class ResponseChannelsTest
     }
 
     @Test
+    @InterruptAfter(20)
+    void shouldCorrectlyHandleSubscriptionClosesOnPartiallyCreatedResponseSubscriptions()
+    {
+        final int responseStreamIdB = RESPONSE_STREAM_ID + 1;
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Subscription subReq = server.addSubscription("aeron:udp?endpoint=localhost:10001", REQUEST_STREAM_ID);
+            Subscription subRspB = client.addSubscription(
+                "aeron:udp?control-mode=response|control=localhost:10002|endpoint=localhost:10003",
+                responseStreamIdB))
+        {
+            Objects.requireNonNull(subRspB);
+
+            try (
+                Subscription subRspA = client.addSubscription(
+                    "aeron:udp?control-mode=response|control=localhost:10002|endpoint=localhost:10003",
+                    RESPONSE_STREAM_ID);
+                Publication pubReqA = client.addPublication(
+                    "aeron:udp?endpoint=localhost:10001|response-correlation-id=" + subRspA.registrationId(),
+                    REQUEST_STREAM_ID))
+            {
+                Tests.awaitConnected(subReq);
+                Tests.awaitConnected(pubReqA);
+
+                final Image image = subReq.imageAtIndex(0);
+                final String url = "aeron:udp?control-mode=response|control=localhost:10002|response-correlation-id=" +
+                    image.correlationId();
+
+                try (Publication pubRsp = client.addPublication(url, RESPONSE_STREAM_ID))
+                {
+                    Tests.awaitConnected(subRspA);
+                    Tests.awaitConnected(pubRsp);
+                }
+
+                while (subRspA.isConnected())
+                {
+                    Tests.yield();
+                }
+            }
+
+            while (subReq.isConnected())
+            {
+                Tests.yield();
+            }
+
+            try (
+                Publication pubReqB = client.addPublication(
+                    "aeron:udp?endpoint=localhost:10001|response-correlation-id=" + subRspB.registrationId(),
+                    REQUEST_STREAM_ID))
+            {
+                Tests.awaitConnected(subReq);
+                Tests.awaitConnected(pubReqB);
+
+                final Image image = subReq.imageAtIndex(0);
+                final String url = "aeron:udp?control-mode=response|control=localhost:10002|response-correlation-id=" +
+                    image.correlationId();
+
+                try (Publication pubRsp = client.addPublication(url, responseStreamIdB))
+                {
+                    Tests.awaitConnected(subRspB);
+                    Tests.awaitConnected(pubRsp);
+                }
+
+                while (subRspB.isConnected())
+                {
+                    Tests.yield();
+                }
+            }
+        }
+    }
+
+    @Test
     @InterruptAfter(15)
     void shouldNotConnectSecondResponseSubscriptionUntilMatchingPublicationIsCreated()
     {

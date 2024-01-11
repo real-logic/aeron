@@ -225,7 +225,7 @@ class ClusteredServiceContainerContextTest
     }
 
     @Test
-    void shouldInitializeClusterDirectoryFromTheGivenDirectoryName(@TempDir final Path temp) throws IOException
+    void shouldInitializeClusterDirectoryFromTheGivenDirectoryName(@TempDir final Path temp)
     {
         final Path dir = Paths.get(temp.toString(), "/some/path");
         context.clusterDir(null).clusterDirectoryName(dir.toString());

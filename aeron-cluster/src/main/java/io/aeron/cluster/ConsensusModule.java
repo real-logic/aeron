@@ -60,7 +60,6 @@ import static io.aeron.AeronCounters.CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID;
 import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.AeronCounters.validateCounterTypeId;
 import static io.aeron.CommonContext.*;
-import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.COMMIT_POSITION_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;

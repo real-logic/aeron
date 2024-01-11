@@ -27,6 +27,7 @@ import org.agrona.*;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -706,8 +707,8 @@ public class ArchiveTool
         final File archiveDir,
         final long recordingId)
     {
-        final EpochClock epochClock = INSTANCE;
-        try (Catalog catalog = openCatalogWithInvalidEntries(archiveDir, epochClock, MIN_CAPACITY, null, null))
+        try (Catalog catalog = openCatalogWithInvalidEntries(
+            archiveDir, SystemEpochClock.INSTANCE, MIN_CAPACITY, null, null))
         {
             final CatalogEntryProcessor catalogEntryProcessor =
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
@@ -736,8 +737,7 @@ public class ArchiveTool
         final File archiveDir,
         final long recordingId)
     {
-        final EpochClock epochClock = INSTANCE;
-        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, INSTANCE, MIN_CAPACITY, null, null))
         {
             final CatalogEntryProcessor catalogEntryProcessor =
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->

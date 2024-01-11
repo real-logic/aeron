@@ -100,8 +100,8 @@ class ChecksumsTest
     {
         final Checksum instance1 = Checksums.newInstance(TestChecksum.class.getName());
         final Checksum instance2 = Checksums.newInstance(TestChecksum.class.getName());
-        assertTrue(instance1 instanceof TestChecksum);
-        assertTrue(instance2 instanceof TestChecksum);
+        assertInstanceOf(TestChecksum.class, instance1);
+        assertInstanceOf(TestChecksum.class, instance2);
         assertNotSame(instance1, instance2);
     }
 

@@ -151,7 +151,7 @@ class SystemTests
         public String toString()
         {
             final StringDescription description = new StringDescription();
-            final String lineSeparator = System.getProperty("line.separator");
+            final String lineSeparator = System.lineSeparator();
 
             description.appendText("Unable to match: ");
             matcher.describeTo(description);

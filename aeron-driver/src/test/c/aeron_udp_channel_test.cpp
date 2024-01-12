@@ -85,6 +85,13 @@ public:
         return aeron_udp_channel_parse(strlen(uri), uri, &m_resolver, &m_channel, false);
     }
 
+    static void assert_error_message_contains(const char* text)
+    {
+        auto error = std::string(aeron_errmsg());
+        EXPECT_NE(0, error.length());
+        EXPECT_NE(std::string::npos, error.find(text));
+    }
+
 protected:
     char m_buffer[AERON_MAX_PATH] = {};
     aeron_udp_channel_t *m_channel = nullptr;
@@ -468,9 +475,14 @@ TEST_F(UdpChannelTest, shouldDefaultTimestampOffsetsToMinusOne)
 
 TEST_F(UdpChannelTest, shouldValidateOffsetsDoNotOverlap)
 {
-    EXPECT_EQ(-1, parse_udp_channel("aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=0|channel-rcv-ts-offset=7"));
-    EXPECT_EQ(-1, parse_udp_channel("aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=0|channel-snd-ts-offset=7"));
-    EXPECT_EQ(-1, parse_udp_channel("aeron:udp?endpoint=localhost:0|channel-snd-ts-offset=0|channel-rcv-ts-offset=7"));
+    EXPECT_EQ(-1, parse_udp_channel("aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=2|channel-rcv-ts-offset=9")) << aeron_errmsg();
+    assert_error_message_contains("media-rcv-ts-offset and channel-rcv-ts-offset overlap");
+
+    EXPECT_EQ(-1, parse_udp_channel("aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=14|channel-snd-ts-offset=19")) << aeron_errmsg();
+    assert_error_message_contains("media-rcv-ts-offset and channel-snd-ts-offset overlap");
+
+    EXPECT_EQ(-1, parse_udp_channel("aeron:udp?endpoint=localhost:0|media-rcv-ts-offset=reserved|channel-snd-ts-offset=3|channel-rcv-ts-offset=10"));
+    assert_error_message_contains("channel-rcv-ts-offset and channel-snd-ts-offset overlap");
 }
 
 TEST_P(UdpChannelNamesParameterisedTest, DISABLED_shouldBeValid)

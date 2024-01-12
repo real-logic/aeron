@@ -184,7 +184,7 @@ static int aeron_udp_channel_verify_timestamp_offsets_do_not_overlap(aeron_udp_c
 
     if (AERON_NULL_VALUE != channel->channel_rcv_timestamp_offset &&
         AERON_NULL_VALUE != channel->channel_snd_timestamp_offset &&
-        abs(channel->media_rcv_timestamp_offset - channel->channel_snd_timestamp_offset) < (int32_t)sizeof(int64_t))
+        abs(channel->channel_rcv_timestamp_offset - channel->channel_snd_timestamp_offset) < (int32_t)sizeof(int64_t))
     {
         AERON_SET_ERR(
             EINVAL, "%s and %s overlap", AERON_URI_CHANNEL_RCV_TIMESTAMP_OFFSET_KEY, AERON_URI_CHANNEL_SND_TIMESTAMP_OFFSET_KEY);

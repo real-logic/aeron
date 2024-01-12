@@ -3494,6 +3494,7 @@ public final class Archive implements AutoCloseable
                 "\n    archiveDirectoryName='" + archiveDirectoryName + '\'' +
                 "\n    archiveDirChannel=" + archiveDirChannel +
                 "\n    archiveFileStore=" + archiveFileStore +
+                "\n    archiveId=" + archiveId +
                 "\n    catalog=" + catalog +
                 "\n    markFile=" + markFile +
                 "\n    archiveClientContext=" + archiveClientContext +

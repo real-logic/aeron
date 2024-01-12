@@ -59,6 +59,8 @@ import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -553,6 +555,14 @@ class ArchiveContextTest
         {
             System.clearProperty(ARCHIVE_ID_PROP_NAME);
         }
+    }
+
+    @Test
+    void shouldIncludeArchiveIdInTheToStringOutput()
+    {
+        context.archiveId(-849);
+
+        assertThat(context.toString(), containsString("archiveId=-849"));
     }
 
     @ParameterizedTest

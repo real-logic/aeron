@@ -593,8 +593,8 @@ public final class DriverConductor implements Agent
                     params);
 
                 subscriptionLinks.set(i, newSubscriptionLink);
-                newSubscriptionLink.channelEndpoint().decResponseRefToStream(newSubscriptionLink.streamId);
                 addNetworkSubscriptionToReceiver(newSubscriptionLink);
+                newSubscriptionLink.channelEndpoint().decResponseRefToStream(newSubscriptionLink.streamId);
 
                 break;
             }

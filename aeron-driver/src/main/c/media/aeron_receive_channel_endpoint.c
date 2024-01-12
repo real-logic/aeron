@@ -91,6 +91,13 @@ int aeron_receive_channel_endpoint_create(
         return -1;
     }
 
+    if (aeron_int64_counter_map_init(
+        &_endpoint->response_stream_id_to_refcnt_map, 0, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    {
+        AERON_APPEND_ERR("%s", "could not init response_stream_id_to_refcnt_map");
+        return -1;
+    }
+
     _endpoint->conductor_fields.managed_resource.clientd = _endpoint;
     _endpoint->conductor_fields.managed_resource.registration_id = -1;
     _endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE;
@@ -142,6 +149,7 @@ int aeron_receive_channel_endpoint_delete(
 
     aeron_int64_counter_map_delete(&endpoint->stream_id_to_refcnt_map);
     aeron_int64_counter_map_delete(&endpoint->stream_and_session_id_to_refcnt_map);
+    aeron_int64_counter_map_delete(&endpoint->response_stream_id_to_refcnt_map);
     aeron_data_packet_dispatcher_close(&endpoint->dispatcher);
     bool delete_this_channel = false;
 
@@ -537,6 +545,7 @@ void aeron_receive_channel_endpoint_try_remove_endpoint(aeron_receive_channel_en
 {
     if (0 == endpoint->stream_id_to_refcnt_map.size &&
         0 == endpoint->stream_and_session_id_to_refcnt_map.size &&
+        0 == endpoint->response_stream_id_to_refcnt_map.size &&
         0 >= endpoint->conductor_fields.image_ref_count)
     {
         /* mark as CLOSING to be aware not to use again (to be receiver_released and deleted) */
@@ -581,6 +590,44 @@ int aeron_receive_channel_endpoint_decref_to_stream(aeron_receive_channel_endpoi
     {
         aeron_driver_receiver_proxy_on_remove_subscription(endpoint->receiver_proxy, endpoint, stream_id);
 
+        aeron_receive_channel_endpoint_try_remove_endpoint(endpoint);
+    }
+
+    return result;
+}
+
+int aeron_receive_channel_endpoint_incref_to_response_stream(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
+{
+    int64_t count;
+    if (aeron_int64_counter_map_inc_and_get(&endpoint->response_stream_id_to_refcnt_map, stream_id, &count) < 0)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_receive_channel_endpoint_decref_to_response_stream(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
+{
+    const int64_t count = aeron_int64_counter_map_get(&endpoint->response_stream_id_to_refcnt_map, stream_id);
+
+    if (0 == count)
+    {
+        return 0;
+    }
+
+    int64_t count_after_dec = 0;
+    int result = aeron_int64_counter_map_dec_and_get(
+        &endpoint->response_stream_id_to_refcnt_map, stream_id, &count_after_dec);
+    if (result < 0)
+    {
+        return -1;
+    }
+
+    if (0 == count_after_dec)
+    {
         aeron_receive_channel_endpoint_try_remove_endpoint(endpoint);
     }
 

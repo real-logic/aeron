@@ -62,6 +62,7 @@ typedef struct aeron_receive_channel_endpoint_stct
     aeron_data_packet_dispatcher_t dispatcher;
     aeron_int64_counter_map_t stream_id_to_refcnt_map;
     aeron_int64_counter_map_t stream_and_session_id_to_refcnt_map;
+    aeron_int64_counter_map_t response_stream_id_to_refcnt_map;
     aeron_atomic_counter_t channel_status;
     aeron_driver_receiver_proxy_t *receiver_proxy;
     aeron_udp_channel_transport_bindings_t *transport_bindings;
@@ -183,6 +184,12 @@ int aeron_receive_channel_endpoint_incref_to_stream_and_session(
 
 int aeron_receive_channel_endpoint_decref_to_stream_and_session(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id, int32_t session_id);
+
+int aeron_receive_channel_endpoint_incref_to_response_stream(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+
+int aeron_receive_channel_endpoint_decref_to_response_stream(
+    aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 
 int aeron_receive_channel_endpoint_on_add_subscription(
     aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);

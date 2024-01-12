@@ -1060,6 +1060,10 @@ void aeron_driver_conductor_unlink_from_endpoint(aeron_driver_conductor_t *condu
     {
         aeron_receive_channel_endpoint_decref_to_stream_and_session(endpoint, link->stream_id, link->session_id);
     }
+    else if (link->is_response)
+    {
+        aeron_receive_channel_endpoint_decref_to_response_stream(endpoint, link->stream_id);
+    }
     else
     {
         aeron_receive_channel_endpoint_decref_to_stream(endpoint, link->stream_id);
@@ -3955,7 +3959,15 @@ int aeron_driver_conductor_on_add_network_subscription(
         return -1;
     }
 
-    if (AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE != control_mode)
+    if (AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE == control_mode)
+    {
+        if (aeron_receive_channel_endpoint_incref_to_response_stream(endpoint, command->stream_id) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+    }
+    else
     {
         if (aeron_driver_conductor_add_network_subscription_to_receiver(
             endpoint, command->stream_id, params.has_session_id, params.session_id) < 0)
@@ -5132,6 +5144,8 @@ void aeron_driver_conductor_on_response_setup(void *clientd, void *item)
                 subscription_link->stream_id,
                 subscription_link->has_session_id,
                 subscription_link->session_id);
+            aeron_receive_channel_endpoint_decref_to_response_stream(
+                subscription_link->endpoint, subscription_link->stream_id);
         }
     }
 }

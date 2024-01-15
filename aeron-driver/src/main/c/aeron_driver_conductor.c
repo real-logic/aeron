@@ -3554,6 +3554,7 @@ int aeron_driver_conductor_on_add_network_publication(
         conductor, udp_channel, &params, &response_publication_image) < 0)
     {
         AERON_APPEND_ERR("%s", "");
+        aeron_udp_channel_delete(udp_channel);
         return -1;
     }
 

@@ -1834,6 +1834,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     size_t uri_length,
     const char *uri,
     aeron_driver_uri_publication_params_t *params,
+    aeron_publication_image_t *response_publication_image,
     int64_t registration_id,
     int32_t stream_id,
     bool is_exclusive)
@@ -1870,14 +1871,6 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
 
             aeron_driver_conductor_track_session_id_offsets(conductor, &session_id_offsets, pub_entry->session_id);
         }
-    }
-
-    aeron_publication_image_t *response_publication_image = NULL;
-    if (aeron_driver_conductor_find_response_publication_image(
-        conductor, udp_channel, params, &response_publication_image) < 0)
-    {
-        AERON_APPEND_ERR("%s", "");
-        return NULL;
     }
 
     int32_t speculated_session_id = 0;
@@ -3556,6 +3549,14 @@ int aeron_driver_conductor_on_add_network_publication(
         return -1;
     }
 
+    aeron_publication_image_t *response_publication_image = NULL;
+    if (aeron_driver_conductor_find_response_publication_image(
+        conductor, udp_channel, &params, &response_publication_image) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
     aeron_send_channel_endpoint_t *endpoint = aeron_driver_conductor_get_or_add_send_channel_endpoint(
         conductor, udp_channel, &params, correlation_id);
     if (NULL == endpoint)
@@ -3591,6 +3592,7 @@ int aeron_driver_conductor_on_add_network_publication(
         uri_length,
         uri,
         &params,
+        response_publication_image,
         correlation_id,
         command->stream_id,
         is_exclusive);

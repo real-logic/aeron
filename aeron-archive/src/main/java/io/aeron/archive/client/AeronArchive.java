@@ -236,6 +236,9 @@ public final class AeronArchive implements AutoCloseable
 
             final Aeron aeron = ctx.aeron();
             subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
+
+            checkAndSetupResponseChannel(ctx, subscription);
+
             publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
             final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(subscription);
 
@@ -3527,8 +3530,11 @@ public final class AeronArchive implements AutoCloseable
             this.ctx = ctx;
 
             final Aeron aeron = ctx.aeron();
+
             controlResponsePoller = new ControlResponsePoller(
                 aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId()));
+
+            checkAndSetupResponseChannel(ctx, controlResponsePoller.subscription());
 
             publicationRegistrationId = aeron.asyncAddExclusivePublication(
                 ctx.controlRequestChannel(), ctx.controlRequestStreamId());
@@ -3813,5 +3819,16 @@ public final class AeronArchive implements AutoCloseable
         }
 
         return resultException;
+    }
+
+    private static void checkAndSetupResponseChannel(final Context ctx, final Subscription subscription)
+    {
+        if (ChannelUri.isControlModeResponse(ctx.controlResponseChannel()))
+        {
+            final String requestChannel = new ChannelUriStringBuilder(ctx.controlRequestChannel())
+                .responseCorrelationId(subscription.registrationId())
+                .toString();
+            ctx.controlRequestChannel(requestChannel);
+        }
     }
 }

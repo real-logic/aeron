@@ -354,6 +354,7 @@ abstract class ArchiveConductor
     }
 
     ControlSession newControlSession(
+        final long imageCorrelationId,
         final long correlationId,
         final int streamId,
         final int version,
@@ -372,13 +373,21 @@ abstract class ArchiveConductor
         final String isSparseStr = channelUri.get(SPARSE_PARAM_NAME);
         final boolean isSparse = null == isSparseStr ?
             ctx.controlTermBufferSparse() : Boolean.parseBoolean(isSparseStr);
+        final boolean usingResponseChannel = CONTROL_MODE_RESPONSE.equals(channelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
 
-        final String responseChannel = strippedChannelBuilder(channelUri)
+
+        final ChannelUriStringBuilder urlBuilder = strippedChannelBuilder(channelUri)
             .ttl(channelUri)
             .termLength(termLength)
             .sparse(isSparse)
-            .mtu(mtuLength)
-            .build();
+            .mtu(mtuLength);
+
+        if (usingResponseChannel)
+        {
+            urlBuilder.responseCorrelationId(imageCorrelationId);
+        }
+
+        final String responseChannel = urlBuilder.build();
 
         String invalidVersionMessage = null;
         if (SemanticVersion.major(version) != AeronArchive.Configuration.PROTOCOL_MAJOR_VERSION)

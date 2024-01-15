@@ -140,6 +140,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     headerDecoder.version());
 
                 final ControlSession session = conductor.newControlSession(
+                    image.correlationId(),
                     decoder.correlationId(),
                     decoder.responseStreamId(),
                     decoder.version(),
@@ -740,6 +741,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 }
 
                 final ControlSession session = conductor.newControlSession(
+                    image.correlationId(),
                     decoder.correlationId(),
                     decoder.responseStreamId(),
                     decoder.version(),

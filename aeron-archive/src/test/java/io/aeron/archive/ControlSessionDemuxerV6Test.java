@@ -183,7 +183,8 @@ class ControlSessionDemuxerV6Test
             .responseChannel("foo");
         final int connectRequestLength = connectRequestEncoder.encodedLength();
 
-        doReturn(mockSession).when(mockConductor).newControlSession(anyLong(), anyInt(), anyInt(), any(), any(), any());
+        doReturn(mockSession).when(mockConductor).newControlSession(
+            anyLong(), anyLong(), anyInt(), anyInt(), any(), any(), any());
         doReturn(CONTROL_SESSION_ID).when(mockSession).sessionId();
         doReturn(true).when(mockAuthorisationService).isAuthorised(anyInt(), anyInt(), any(), any());
 

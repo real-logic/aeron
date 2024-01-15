@@ -116,6 +116,12 @@ public class ResponseServer implements AutoCloseable, Agent
         return session;
     }
 
+    void removeSession(final Image image)
+    {
+        final ResponseSession session = clientToPublicationMap.remove(image.correlationId());
+        CloseHelper.quietClose(session);
+    }
+
     /**
      * Poll the server process messages and state.
      *
@@ -145,7 +151,7 @@ public class ResponseServer implements AutoCloseable, Agent
         while (null != (image = unavailableImages.poll()))
         {
             workCount++;
-            clientToPublicationMap.remove(image.correlationId());
+            removeSession(image);
         }
 
         workCount += serverSubscription.poll(

@@ -179,6 +179,8 @@ public final class Receiver implements Agent
         {
             addPendingSetupMessage(
                 sessionId, streamId, 0, channelEndpoint, true, channelEndpoint.explicitControlAddress());
+            channelEndpoint.sendSetupElicitingStatusMessage(
+                0, channelEndpoint.explicitControlAddress(), sessionId, streamId);
         }
     }
 

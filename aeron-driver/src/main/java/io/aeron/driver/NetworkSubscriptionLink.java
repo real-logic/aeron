@@ -22,6 +22,7 @@ class NetworkSubscriptionLink extends SubscriptionLink
     private final boolean isReliable;
     private final boolean isRejoin;
     private final ReceiveChannelEndpoint channelEndpoint;
+    private final boolean isResponse;
 
     NetworkSubscriptionLink(
         final long registrationId,
@@ -35,6 +36,7 @@ class NetworkSubscriptionLink extends SubscriptionLink
 
         this.isReliable = params.isReliable;
         this.isRejoin = params.isRejoin;
+        this.isResponse = params.isResponse;
         this.channelEndpoint = channelEndpoint;
     }
 
@@ -46,6 +48,12 @@ class NetworkSubscriptionLink extends SubscriptionLink
     boolean isRejoin()
     {
         return isRejoin;
+    }
+
+    @Override
+    boolean isResponse()
+    {
+        return isResponse;
     }
 
     ReceiveChannelEndpoint channelEndpoint()

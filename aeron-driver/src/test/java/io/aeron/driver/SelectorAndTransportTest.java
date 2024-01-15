@@ -75,10 +75,12 @@ class SelectorAndTransportTest
 
     private final DataPacketDispatcher mockDispatcher = mock(DataPacketDispatcher.class);
     private final NetworkPublication mockPublication = mock(NetworkPublication.class);
+    private final DriverConductorProxy mockDriverConductorProxy = mock(DriverConductorProxy.class);
     private final ErrorHandler errorHandler = mock(ErrorHandler.class);
 
     private final DataTransportPoller dataTransportPoller = new DataTransportPoller(errorHandler);
-    private final ControlTransportPoller controlTransportPoller = new ControlTransportPoller(errorHandler);
+    private final ControlTransportPoller controlTransportPoller = new ControlTransportPoller(
+        errorHandler, mockDriverConductorProxy);
     private SendChannelEndpoint sendChannelEndpoint;
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 
@@ -306,7 +308,7 @@ class SelectorAndTransportTest
                 controlMessagesReceived.value++;
                 return null;
             })
-            .when(mockPublication).onStatusMessage(any(), any());
+            .when(mockPublication).onStatusMessage(any(), any(), any());
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);

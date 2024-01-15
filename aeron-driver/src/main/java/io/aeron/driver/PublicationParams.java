@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.Aeron;
 import io.aeron.ChannelUri;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -40,6 +41,8 @@ final class PublicationParams
     boolean signalEos = true;
     boolean isSparse;
     boolean spiesSimulateConnection;
+    boolean isResponse = false;
+    long responseCorrelationId = Aeron.NULL_VALUE;
 
     PublicationParams()
     {
@@ -116,6 +119,9 @@ final class PublicationParams
 
             params.hasPosition = true;
         }
+
+        params.isResponse = CONTROL_MODE_RESPONSE.equals(channelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
+        params.responseCorrelationId = Long.parseLong(channelUri.get(RESPONSE_CORRELATION_ID_PARAM_NAME, "-1"));
 
         return params;
     }

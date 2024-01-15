@@ -43,6 +43,7 @@ aeron_uri_params_t;
 #define AERON_UDP_CHANNEL_CONTROL_MODE_KEY "control-mode"
 #define AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE "manual"
 #define AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC_VALUE "dynamic"
+#define AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE "response"
 
 #define AERON_URI_INITIAL_TERM_ID_KEY "init-term-id"
 #define AERON_URI_TERM_ID_KEY "term-id"
@@ -70,6 +71,7 @@ aeron_uri_params_t;
 #define AERON_URI_CHANNEL_RCV_TIMESTAMP_OFFSET_KEY "channel-rcv-ts-offset"
 #define AERON_URI_CHANNEL_SND_TIMESTAMP_OFFSET_KEY "channel-snd-ts-offset"
 #define AERON_URI_TIMESTAMP_OFFSET_RESERVED "reserved"
+#define AERON_URI_RESPONSE_CORRELATION_ID_KEY "response-correlation-id"
 #define AERON_URI_INVALID_TAG (-1)
 
 typedef struct aeron_udp_channel_params_stct
@@ -136,7 +138,7 @@ uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri);
 
 const char *aeron_uri_find_param_value(const aeron_uri_params_t *uri_params, const char *key);
 int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char *key, int32_t *retval);
-int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t *retval);
+int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t default_val, int64_t *retval);
 int aeron_uri_get_bool(aeron_uri_params_t *uri_params, const char *key, bool *retval);
 int aeron_uri_get_ats(aeron_uri_params_t *uri_params, aeron_uri_ats_status_t *uri_ats_status);
 int aeron_uri_sprint(aeron_uri_t *uri, char *buffer, size_t buffer_len);

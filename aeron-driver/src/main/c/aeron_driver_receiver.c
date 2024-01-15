@@ -285,7 +285,7 @@ void aeron_driver_receiver_on_add_endpoint(void *clientd, void *command)
         return;
     }
 
-    aeron_receive_channel_endpoint_add_pending_setup(endpoint, receiver);
+    aeron_receive_channel_endpoint_add_pending_setup(endpoint, receiver, 0, 0);
 }
 
 void aeron_driver_receiver_on_remove_endpoint(void *clientd, void *command)
@@ -364,6 +364,14 @@ void aeron_driver_receiver_on_add_subscription_by_session(void *clientd, void *i
     {
         AERON_APPEND_ERR("%s", "receiver on_add_subscription");
         aeron_driver_receiver_log_error(receiver);
+        return;
+    }
+
+    if (aeron_receive_channel_endpoint_add_pending_setup(endpoint, receiver, cmd->session_id, cmd->stream_id) < 0)
+    {
+        AERON_APPEND_ERR("%s", "receiver on_add_subscription");
+        aeron_driver_receiver_log_error(receiver);
+        return;
     }
 }
 
@@ -415,7 +423,7 @@ void aeron_driver_receiver_on_add_destination(void *clientd, void *item)
 
     if (destination->conductor_fields.udp_channel->has_explicit_control)
     {
-        if (aeron_receive_channel_endpoint_add_pending_setup_destination(endpoint, receiver, destination) < 0)
+        if (aeron_receive_channel_endpoint_add_pending_setup_destination(endpoint, receiver, destination, 0, 0) < 0)
         {
             AERON_APPEND_ERR("%s", "on_add_destination, pending_setup");
             aeron_driver_receiver_log_error(receiver);

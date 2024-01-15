@@ -228,6 +228,11 @@ TEST_F(NetworkPublicationTest, shouldSendHeartbeatWhileSendingPeriodicSetups)
 {
     int64_t time_ns = 0;
 
+    aeron_driver_conductor_t conductor = {};
+    aeron_driver_conductor_proxy_t proxy = {};
+    proxy.conductor = &conductor;
+    proxy.threading_mode = AERON_THREADING_MODE_INVOKER;
+
     aeron_network_publication_t *publication = createPublication("aeron:udp?endpoint=localhost:23245");
     ASSERT_NE(nullptr, publication) << aeron_errmsg();
 
@@ -238,7 +243,7 @@ TEST_F(NetworkPublicationTest, shouldSendHeartbeatWhileSendingPeriodicSetups)
     sockaddr_storage sockaddr = {};
 
     aeron_network_publication_on_status_message(
-        publication, data_buffer.data(), sizeof(aeron_status_message_header_t), &sockaddr);
+        publication, &proxy, data_buffer.data(), sizeof(aeron_status_message_header_t), &sockaddr);
     aeron_network_publication_send(publication, time_ns);
 
     ASSERT_TRUE(publication->has_receivers);

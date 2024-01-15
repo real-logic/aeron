@@ -17,7 +17,6 @@ package io.aeron.driver.media;
 
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
-import io.aeron.CommonContext;
 import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.NameResolver;
 import io.aeron.driver.exceptions.InvalidChannelException;
@@ -150,10 +149,10 @@ public final class UdpChannel
             final String tagIdStr = channelUri.channelTag();
             final ControlMode controlMode = parseControlMode(channelUri);
 
-            final int socketRcvbufLength = parseBufferLength(channelUri, CommonContext.SOCKET_RCVBUF_PARAM_NAME);
-            final int socketSndbufLength = parseBufferLength(channelUri, CommonContext.SOCKET_SNDBUF_PARAM_NAME);
+            final int socketRcvbufLength = parseBufferLength(channelUri, SOCKET_RCVBUF_PARAM_NAME);
+            final int socketSndbufLength = parseBufferLength(channelUri, SOCKET_SNDBUF_PARAM_NAME);
             final int receiverWindowLength = parseBufferLength(
-                channelUri, CommonContext.RECEIVER_WINDOW_LENGTH_PARAM_NAME);
+                channelUri, RECEIVER_WINDOW_LENGTH_PARAM_NAME);
 
             final boolean requiresAdditionalSuffix = !isDestination &&
                 (null == endpointAddress && null == controlAddress ||
@@ -169,10 +168,11 @@ public final class UdpChannel
                     "explicit control expected with dynamic control mode: " + channelUriString);
             }
 
-            if (hasNoDistinguishingCharacteristic && ControlMode.MANUAL != controlMode)
+            if (hasNoDistinguishingCharacteristic && ControlMode.MANUAL != controlMode &&
+                ControlMode.RESPONSE != controlMode)
             {
                 throw new IllegalArgumentException(
-                    "URIs for UDP must specify an endpoint, control, tags, or control-mode=manual: " +
+                    "URIs for UDP must specify an endpoint, control, tags, or control-mode=manual/response: " +
                     channelUriString);
             }
 
@@ -229,7 +229,7 @@ public final class UdpChannel
                     .protocolFamily(getProtocolFamily(endpointAddress.getAddress()))
                     .canonicalForm(canonicalise(null, resolvedAddress, null, endpointAddress));
 
-                final String ttlValue = channelUri.get(CommonContext.TTL_PARAM_NAME);
+                final String ttlValue = channelUri.get(TTL_PARAM_NAME);
                 if (null != ttlValue)
                 {
                     context.hasMulticastTtl(true).multicastTtl(Integer.parseInt(ttlValue));
@@ -237,8 +237,8 @@ public final class UdpChannel
             }
             else if (null != controlAddress)
             {
-                final String controlVal = channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
-                final String endpointVal = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
+                final String controlVal = channelUri.get(MDC_CONTROL_PARAM_NAME);
+                final String endpointVal = channelUri.get(ENDPOINT_PARAM_NAME);
 
                 String suffix = "";
                 if (requiresAdditionalSuffix)
@@ -265,7 +265,7 @@ public final class UdpChannel
                     searchAddress.getAddress() :
                     resolveToAddressOfInterface(findInterface(searchAddress), searchAddress);
 
-                final String endpointVal = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
+                final String endpointVal = channelUri.get(ENDPOINT_PARAM_NAME);
                 String suffix = "";
                 if (requiresAdditionalSuffix)
                 {
@@ -388,6 +388,8 @@ public final class UdpChannel
                 return ControlMode.DYNAMIC;
             case MDC_CONTROL_MODE_MANUAL:
                 return ControlMode.MANUAL;
+            case CONTROL_MODE_RESPONSE:
+                return ControlMode.RESPONSE;
             default:
                 return ControlMode.NONE;
         }
@@ -616,6 +618,16 @@ public final class UdpChannel
     }
 
     /**
+     * Does the channel have response control mode specified.
+     *
+     * @return does the channel have response control mode specified.
+     */
+    public boolean isResponseControlMode()
+    {
+        return ControlMode.RESPONSE == controlMode;
+    }
+
+    /**
      * Does the channel have an explicit endpoint address?
      *
      * @return does channel have an explicit endpoint address or not?
@@ -824,9 +836,9 @@ public final class UdpChannel
         {
             validateConfiguration(uri);
 
-            final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
+            final String endpointValue = uri.get(ENDPOINT_PARAM_NAME);
             return SocketAddressParser.parse(
-                endpointValue, CommonContext.ENDPOINT_PARAM_NAME, false, nameResolver);
+                endpointValue, ENDPOINT_PARAM_NAME, false, nameResolver);
         }
         catch (final Exception ex)
         {
@@ -912,7 +924,7 @@ public final class UdpChannel
 
     private static InterfaceSearchAddress getInterfaceSearchAddress(final ChannelUri uri) throws UnknownHostException
     {
-        final String interfaceValue = uri.get(CommonContext.INTERFACE_PARAM_NAME);
+        final String interfaceValue = uri.get(INTERFACE_PARAM_NAME);
         if (null != interfaceValue)
         {
             return InterfaceSearchAddress.parse(interfaceValue);
@@ -925,16 +937,16 @@ public final class UdpChannel
         throws UnknownHostException
     {
         InetSocketAddress address = null;
-        final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
+        final String endpointValue = uri.get(ENDPOINT_PARAM_NAME);
         if (null != endpointValue)
         {
             address = SocketAddressParser.parse(
-                endpointValue, CommonContext.ENDPOINT_PARAM_NAME, false, nameResolver);
+                endpointValue, ENDPOINT_PARAM_NAME, false, nameResolver);
 
             if (address.isUnresolved())
             {
                 throw new UnknownHostException(
-                    "unresolved - " + CommonContext.ENDPOINT_PARAM_NAME + "=" + endpointValue +
+                    "unresolved - " + ENDPOINT_PARAM_NAME + "=" + endpointValue +
                     ", name-resolver=" + nameResolver.getClass().getName());
             }
         }
@@ -946,16 +958,16 @@ public final class UdpChannel
         throws UnknownHostException
     {
         InetSocketAddress address = null;
-        final String controlValue = uri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
+        final String controlValue = uri.get(MDC_CONTROL_PARAM_NAME);
         if (null != controlValue)
         {
             address = SocketAddressParser.parse(
-                controlValue, CommonContext.MDC_CONTROL_PARAM_NAME, false, nameResolver);
+                controlValue, MDC_CONTROL_PARAM_NAME, false, nameResolver);
 
             if (address.isUnresolved())
             {
                 throw new UnknownHostException(
-                    "unresolved - " + CommonContext.MDC_CONTROL_PARAM_NAME + "=" + controlValue +
+                    "unresolved - " + MDC_CONTROL_PARAM_NAME + "=" + controlValue +
                     ", name-resolver=" + nameResolver.getClass().getName());
             }
         }

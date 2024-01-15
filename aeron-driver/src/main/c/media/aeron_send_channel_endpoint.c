@@ -334,6 +334,19 @@ int aeron_send_channel_send(
     return result;
 }
 
+int aeron_send_channel_send_endpoint_address(
+    aeron_send_channel_endpoint_t *endpoint,
+    struct sockaddr_storage* endpoint_address,
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent)
+{
+    aeron_send_channel_apply_timestamps(endpoint, iov, iov_length);
+
+    return endpoint->data_paths->send_func(
+            endpoint->data_paths, &endpoint->transport, endpoint_address, iov, iov_length, bytes_sent);
+}
+
 int aeron_send_channel_endpoint_add_publication(
     aeron_send_channel_endpoint_t *endpoint, aeron_network_publication_t *publication)
 {
@@ -371,6 +384,7 @@ void aeron_send_channel_endpoint_dispatch(
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)sender_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;
     aeron_send_channel_endpoint_t *endpoint = (aeron_send_channel_endpoint_t *)endpoint_clientd;
+    aeron_driver_conductor_proxy_t *conductor_proxy = sender->context->conductor_proxy;
 
     switch (frame_header->type)
     {
@@ -389,8 +403,19 @@ void aeron_send_channel_endpoint_dispatch(
         case AERON_HDR_TYPE_SM:
             if (length >= sizeof(aeron_status_message_header_t) && length >= (size_t)frame_header->frame_length)
             {
-                aeron_send_channel_endpoint_on_status_message(endpoint, buffer, length, addr);
+                aeron_send_channel_endpoint_on_status_message(endpoint, conductor_proxy, buffer, length, addr);
                 aeron_counter_ordered_increment(sender->status_messages_received_counter, 1);
+            }
+            else
+            {
+                aeron_counter_increment(sender->invalid_frames_counter, 1);
+            }
+            break;
+
+        case AERON_HDR_TYPE_RSP_SETUP:
+            if (length >= sizeof(aeron_response_setup_header_t))
+            {
+                aeron_send_channel_endpoint_on_response_setup(endpoint, conductor_proxy, buffer, length, addr);
             }
             else
             {
@@ -429,7 +454,11 @@ void aeron_send_channel_endpoint_on_nak(
 }
 
 void aeron_send_channel_endpoint_on_status_message(
-    aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
 {
     aeron_status_message_header_t *sm_header = (aeron_status_message_header_t *)buffer;
     int64_t key_value = aeron_map_compound_key(sm_header->stream_id, sm_header->session_id);
@@ -449,7 +478,7 @@ void aeron_send_channel_endpoint_on_status_message(
         }
         else
         {
-            aeron_network_publication_on_status_message(publication, buffer, length, addr);
+            aeron_network_publication_on_status_message(publication, conductor_proxy, buffer, length, addr);
         }
 
         endpoint->time_of_last_sm_ns = aeron_clock_cached_nano_time(endpoint->cached_clock);
@@ -469,6 +498,30 @@ void aeron_send_channel_endpoint_on_rttm(
         aeron_network_publication_on_rttm(publication, buffer, length, addr);
     }
 }
+
+void aeron_send_channel_endpoint_on_response_setup(
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
+{
+    aeron_response_setup_header_t *rsp_setup_header = (aeron_response_setup_header_t *)buffer;
+    int64_t key_value = aeron_map_compound_key(rsp_setup_header->stream_id, rsp_setup_header->session_id);
+    aeron_network_publication_t *publication = aeron_int64_to_ptr_hash_map_get(
+        &endpoint->publication_dispatch_map, key_value);
+
+    if (NULL != publication)
+    {
+        const int64_t response_correlation_id = publication->response_correlation_id;
+        if (AERON_NULL_VALUE != response_correlation_id)
+        {
+            aeron_driver_conductor_proxy_on_response_setup(
+                conductor_proxy, response_correlation_id, rsp_setup_header->response_session_id);
+        }
+    }
+}
+
 
 int aeron_send_channel_endpoint_check_for_re_resolution(
     aeron_send_channel_endpoint_t *endpoint, int64_t now_ns, aeron_driver_conductor_proxy_t *conductor_proxy)

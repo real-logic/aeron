@@ -220,6 +220,11 @@ public class CommonContext implements Cloneable
     public static final String MDC_CONTROL_MODE_DYNAMIC = "dynamic";
 
     /**
+     * Valid value for {@link #MDC_CONTROL_MODE_PARAM_NAME} when response control is desired.
+     */
+    public static final String CONTROL_MODE_RESPONSE = "response";
+
+    /**
      * Key for the session id for a publication or restricted subscription.
      */
     public static final String SESSION_ID_PARAM_NAME = "session-id";
@@ -351,6 +356,18 @@ public class CommonContext implements Cloneable
      * Placeholder value to use in URIs to specify that a timestamp should be stored in the reserved value field.
      */
     public static final String RESERVED_OFFSET = "reserved";
+
+    /**
+     * Parameter name for the field that will be used to specify the response endpoint on a subscription and publication
+     * used in a response "server".
+     */
+    public static final String RESPONSE_ENDPOINT_PARAM_NAME = "response-endpoint";
+
+    /**
+     * Parameter name for the field that will be used to specify the correlation id used on a publication to connect it
+     * to a subscription's image in order to set up a response stream.
+     */
+    public static final String RESPONSE_CORRELATION_ID_PARAM_NAME = "response-correlation-id";
 
     /**
      * Property name for a fallback {@link PrintStream} based logger when it is not possible to use the error logging

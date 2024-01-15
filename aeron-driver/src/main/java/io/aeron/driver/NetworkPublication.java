@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.SendChannelEndpoint;
@@ -86,6 +87,7 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
     boolean trackSenderLimits = false;
     boolean isSetupElicited = false;
     boolean hasInitialConnection = false;
+    InetSocketAddress endpointAddress = null;
 }
 
 class NetworkPublicationPadding3 extends NetworkPublicationSenderFields
@@ -115,6 +117,7 @@ public final class NetworkPublication
     private final long untetheredWindowLimitTimeoutNs;
     private final long untetheredRestingTimeoutNs;
     private final long tag;
+    private final long responseCorrelationId;
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int startingTermId;
@@ -128,6 +131,7 @@ public final class NetworkPublication
     private final boolean isExclusive;
     private final boolean spiesSimulateConnection;
     private final boolean signalEos;
+    private final boolean isResponse;
     private volatile boolean hasReceivers;
     private volatile boolean hasSpies;
     private volatile boolean isConnected;
@@ -207,6 +211,8 @@ public final class NetworkPublication
         this.isExclusive = isExclusive;
         this.startingTermId = params.hasPosition ? params.termId : initialTermId;
         this.startingTermOffset = params.hasPosition ? params.termOffset : 0;
+        this.isResponse = params.isResponse;
+        this.responseCorrelationId = params.responseCorrelationId;
 
         metaDataBuffer = rawLog.metaData();
         setupBuffer = threadLocals.setupBuffer();
@@ -335,6 +341,11 @@ public final class NetworkPublication
             timeOfLastStatusMessageNs = cachedNanoClock.nanoTime();
             isSetupElicited = true;
             flowControl.onTriggerSendSetup(msg, srcAddress, timeOfLastStatusMessageNs);
+
+            if (isResponse)
+            {
+                this.endpointAddress = srcAddress;
+            }
         }
     }
 
@@ -404,14 +415,19 @@ public final class NetworkPublication
     /**
      * Process a status message to track connectivity and apply flow control.
      *
-     * @param msg        flyweight over the network packet.
-     * @param srcAddress that the setup message has come from.
+     * @param msg            flyweight over the network packet.
+     * @param srcAddress     that the setup message has come from.
+     * @param conductorProxy to send messages back to the conductor.
      */
-    public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
+    public void onStatusMessage(
+        final StatusMessageFlyweight msg,
+        final InetSocketAddress srcAddress,
+        final DriverConductorProxy conductorProxy)
     {
         if (!hasReceivers)
         {
             hasReceivers = true;
+            conductorProxy.responseConnected(responseCorrelationId);
         }
 
         if (!hasInitialConnection)
@@ -463,7 +479,7 @@ public final class NetworkPublication
                 .streamId(streamId)
                 .flags((short)0x0);
 
-            final int bytesSent = channelEndpoint.send(rttMeasurementBuffer);
+            final int bytesSent = doSend(rttMeasurementBuffer);
             if (RttMeasurementFlyweight.HEADER_LENGTH != bytesSent)
             {
                 shortSends.increment();
@@ -471,6 +487,25 @@ public final class NetworkPublication
         }
 
         // handling of RTT measurements would be done in an else clause here.
+    }
+
+    private int doSend(final ByteBuffer message)
+    {
+        if (isResponse)
+        {
+            if (null != endpointAddress)
+            {
+                return channelEndpoint.send(message, endpointAddress);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            return channelEndpoint.send(message);
+        }
     }
 
     /**
@@ -506,7 +541,7 @@ public final class NetworkPublication
 
                 sendBuffer.limit(offset + available).position(offset);
 
-                if (available != channelEndpoint.send(sendBuffer))
+                if (available != doSend(sendBuffer))
                 {
                     shortSends.increment();
                     break;
@@ -695,7 +730,7 @@ public final class NetworkPublication
                 final ByteBuffer sendBuffer = sendBuffers[activeIndex];
                 sendBuffer.limit(termOffset + available).position(termOffset);
 
-                if (available == channelEndpoint.send(sendBuffer))
+                if (available == doSend(sendBuffer))
                 {
                     timeOfLastDataOrHeartbeatNs = nowNs;
                     trackSenderLimits = true;
@@ -734,6 +769,9 @@ public final class NetworkPublication
         {
             timeOfLastSetupNs = nowNs;
 
+            final short flags = (!isResponse && Aeron.NULL_VALUE != responseCorrelationId) ?
+                SetupFlyweight.SEND_RESPONSE_SETUP_FLAG : 0;
+
             setupBuffer.clear();
             setupHeader
                 .activeTermId(activeTermId)
@@ -743,14 +781,15 @@ public final class NetworkPublication
                 .initialTermId(initialTermId)
                 .termLength(termBufferLength)
                 .mtuLength(mtuLength)
-                .ttl(channelEndpoint.multicastTtl());
+                .ttl(channelEndpoint.multicastTtl())
+                .flags(flags);
 
             if (isSetupElicited)
             {
                 flowControl.onSetup(setupHeader, senderLimit.get(), senderPosition.get(), positionBitsToShift, nowNs);
             }
 
-            if (SetupFlyweight.HEADER_LENGTH != channelEndpoint.send(setupBuffer))
+            if (SetupFlyweight.HEADER_LENGTH != doSend(setupBuffer))
             {
                 shortSends.increment();
             }
@@ -777,7 +816,7 @@ public final class NetworkPublication
                 .termOffset(termOffset)
                 .flags((byte)(signalEos ? BEGIN_END_AND_EOS_FLAGS : BEGIN_AND_END_FLAGS));
 
-            bytesSent = channelEndpoint.send(heartbeatBuffer);
+            bytesSent = doSend(heartbeatBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 shortSends.increment();
@@ -1011,6 +1050,16 @@ public final class NetworkPublication
     public boolean hasReachedEndOfLife()
     {
         return hasSenderReleased;
+    }
+
+    /**
+     * Get the response correlation id for the publication.
+     *
+     * @return the response correlation id for the publication.
+     */
+    public long responseCorrelationId()
+    {
+        return responseCorrelationId;
     }
 
     void decRef()

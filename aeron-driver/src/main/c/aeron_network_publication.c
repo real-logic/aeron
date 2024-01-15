@@ -238,6 +238,10 @@ int aeron_network_publication_create(
     _pub->conductor_fields.last_snd_pos = aeron_counter_get(_pub->snd_pos_position.value_addr);
     _pub->conductor_fields.clean_position = _pub->conductor_fields.last_snd_pos;
 
+    _pub->endpoint_address.ss_family = AF_UNSPEC;
+    _pub->is_response = AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE == endpoint->conductor_fields.udp_channel->control_mode;
+    _pub->response_correlation_id = params->response_correlation_id;
+
     *publication = _pub;
 
     return 0;
@@ -290,6 +294,30 @@ bool aeron_network_publication_free(aeron_network_publication_t *publication)
     return true;
 }
 
+static int aeron_network_publication_do_send(
+    aeron_network_publication_t *publication,
+    struct iovec *iov,
+    size_t iov_length,
+    int64_t *bytes_sent)
+{
+    if (publication->is_response)
+    {
+        if (AF_UNSPEC != publication->endpoint_address.ss_family)
+        {
+            return aeron_send_channel_send_endpoint_address(
+                publication->endpoint, &publication->endpoint_address, iov, iov_length, bytes_sent);
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    else
+    {
+        return aeron_send_channel_send(publication->endpoint, iov, iov_length, bytes_sent);
+    }
+}
+
 int aeron_network_publication_setup_message_check(
     aeron_network_publication_t *publication, int64_t now_ns, int32_t active_term_id, int32_t term_offset)
 {
@@ -306,6 +334,10 @@ int aeron_network_publication_setup_message_check(
         setup_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
         setup_header->frame_header.flags = 0;
         setup_header->frame_header.type = AERON_HDR_TYPE_SETUP;
+        setup_header->frame_header.flags =
+            (!publication->is_response && AERON_NULL_VALUE != publication->response_correlation_id) ?
+                AERON_SETUP_HEADER_SEND_RESPONSE_FLAG : 0;
+
         setup_header->term_offset = term_offset;
         setup_header->session_id = publication->session_id;
         setup_header->stream_id = publication->stream_id;
@@ -330,7 +362,7 @@ int aeron_network_publication_setup_message_check(
                 *publication->snd_pos_position.value_addr);
         }
 
-        if (0 <= (result = aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent)))
+        if (0 <= (result = aeron_network_publication_do_send(publication, &iov, 1, &bytes_sent)))
         {
             if (bytes_sent < (int64_t)iov.iov_len)
             {
@@ -385,7 +417,7 @@ int aeron_network_publication_heartbeat_message_check(
         iov.iov_base = heartbeat_buffer;
         iov.iov_len = sizeof(aeron_data_header_t);
 
-        if (0 <= (result = aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent)))
+        if (0 <= (result = aeron_network_publication_do_send(publication, &iov, 1, &bytes_sent)))
         {
             result = (int)bytes_sent;
             if (bytes_sent < (int64_t)iov.iov_len)
@@ -453,7 +485,7 @@ int aeron_network_publication_send_data(
 
     if (vlen > 0)
     {
-        result = aeron_send_channel_send(publication->endpoint, iov, vlen, &bytes_sent);
+        result = aeron_network_publication_do_send(publication, iov, vlen, &bytes_sent);
         if (result == vlen) /* assume that a partial send from a broken stack will also move the snd-pos */
         {
             publication->time_of_last_data_or_heartbeat_ns = now_ns;
@@ -587,7 +619,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
             iov.iov_len = (uint32_t)available;
             int64_t msg_bytes_sent = 0;
 
-            int sendmsg_result = aeron_send_channel_send(publication->endpoint, &iov, 1, &msg_bytes_sent);
+            int sendmsg_result = aeron_network_publication_do_send(publication, &iov, 1, &msg_bytes_sent);
             if (0 <= sendmsg_result)
             {
                 if (msg_bytes_sent < (int64_t)iov.iov_len)
@@ -650,7 +682,11 @@ inline static void aeron_network_publication_update_connected_status(
 }
 
 void aeron_network_publication_on_status_message(
-    aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
+    aeron_network_publication_t *publication,
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    const uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
 {
     const int64_t time_ns = aeron_clock_cached_nano_time(publication->cached_clock);
     const aeron_status_message_header_t *sm = (aeron_status_message_header_t *)buffer;
@@ -659,6 +695,7 @@ void aeron_network_publication_on_status_message(
     if (!publication->has_receivers)
     {
         AERON_PUT_ORDERED(publication->has_receivers, true);
+        aeron_driver_conductor_proxy_on_response_connected(conductor_proxy, publication->response_correlation_id);
     }
 
     if (!publication->has_initial_connection)
@@ -715,7 +752,7 @@ void aeron_network_publication_on_rttm(
         iov.iov_base = rttm_reply_buffer;
         iov.iov_len = sizeof(aeron_rttm_header_t);
 
-        if (0 <= aeron_send_channel_send(publication->endpoint, &iov, 1, &bytes_sent))
+        if (0 <= aeron_network_publication_do_send(publication, &iov, 1, &bytes_sent))
         {
             if (bytes_sent < (int64_t)iov.iov_len)
             {

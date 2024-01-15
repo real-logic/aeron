@@ -18,6 +18,7 @@ package io.aeron.driver.media;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.protocol.NakFlyweight;
+import io.aeron.protocol.ResponseSetupFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.BufferUtil;
@@ -49,16 +50,20 @@ public final class ControlTransportPoller extends UdpTransportPoller
     private final NakFlyweight nakMessage = new NakFlyweight(unsafeBuffer);
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight(unsafeBuffer);
     private final RttMeasurementFlyweight rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
+    private final ResponseSetupFlyweight responseSetup = new ResponseSetupFlyweight(unsafeBuffer);
+    private final DriverConductorProxy conductorProxy;
     private SendChannelEndpoint[] transports = new SendChannelEndpoint[0];
 
     /**
      * Construct a new {@link TransportPoller} with an {@link ErrorHandler} for logging.
      *
-     * @param errorHandler which can be used to log errors and continue.
+     * @param errorHandler      which can be used to log errors and continue.
+     * @param conductorProxy    to send message back to the conductor.
      */
-    public ControlTransportPoller(final ErrorHandler errorHandler)
+    public ControlTransportPoller(final ErrorHandler errorHandler, final DriverConductorProxy conductorProxy)
     {
         super(errorHandler);
+        this.conductorProxy = conductorProxy;
     }
 
     /**
@@ -182,11 +187,18 @@ public final class ControlTransportPoller extends UdpTransportPoller
                 }
                 else if (HDR_TYPE_SM == frameType)
                 {
-                    channelEndpoint.onStatusMessage(statusMessage, unsafeBuffer, bytesReceived, srcAddress);
+                    channelEndpoint.onStatusMessage(
+                        statusMessage, unsafeBuffer, bytesReceived, srcAddress, conductorProxy);
                 }
                 else if (HDR_TYPE_RTTM == frameType)
                 {
                     channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, bytesReceived, srcAddress);
+                }
+                else if (HDR_TYPE_RSP_SETUP == frameType)
+                {
+                    channelEndpoint.onResponseSetup(
+                        responseSetup, unsafeBuffer, bytesReceived, srcAddress, conductorProxy);
+
                 }
             }
         }

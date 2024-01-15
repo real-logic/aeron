@@ -69,8 +69,7 @@ import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
 public final class DriverConductor implements Agent
 {
     private static final long CLOCK_UPDATE_INTERNAL_NS = TimeUnit.MILLISECONDS.toNanos(1);
-    private static final String[] INVALID_DESTINATION_KEYS =
-    {
+    private static final String[] INVALID_DESTINATION_KEYS = {
         MTU_LENGTH_PARAM_NAME,
         RECEIVER_WINDOW_LENGTH_PARAM_NAME,
         SOCKET_RCVBUF_PARAM_NAME,
@@ -240,6 +239,7 @@ public final class DriverConductor implements Agent
         final int termBufferLength,
         final int senderMtuLength,
         final int transportIndex,
+        final short flags,
         final InetSocketAddress controlAddress,
         final InetSocketAddress sourceAddress,
         final ReceiveChannelEndpoint channelEndpoint)
@@ -307,6 +307,7 @@ public final class DriverConductor implements Agent
                     initialTermId,
                     activeTermId,
                     initialTermOffset,
+                    flags,
                     rawLog,
                     treatAsMulticast ? ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator(),
                     subscriberPositions,
@@ -468,14 +469,17 @@ public final class DriverConductor implements Agent
         validateEndpointForPublication(udpChannel);
         validateControlForPublication(udpChannel);
         validateMtuForMaxMessage(params, channel);
+        validateResponseSubscription(params);
 
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(params, udpChannel, correlationId);
 
         NetworkPublication publication = null;
         if (!isExclusive)
         {
-            publication = findPublication(networkPublications, streamId, channelEndpoint);
+            publication = findPublication(networkPublications, streamId, channelEndpoint, params.responseCorrelationId);
         }
+
+        final PublicationImage responsePublicationImage = findResponsePublicationImage(params);
 
         boolean isNewPublication = false;
         if (null == publication)
@@ -521,6 +525,110 @@ public final class DriverConductor implements Agent
         if (isNewPublication)
         {
             linkSpies(subscriptionLinks, publication);
+        }
+
+        if (null != responsePublicationImage)
+        {
+            responsePublicationImage.responseSessionId(publication.sessionId());
+        }
+    }
+
+    private PublicationImage findResponsePublicationImage(final PublicationParams params)
+    {
+        if (!params.isResponse)
+        {
+            return null;
+        }
+
+        if (Aeron.NULL_VALUE == params.responseCorrelationId)
+        {
+            throw new IllegalArgumentException(
+                "control-mode=response was specified, but no response-correlation-id set");
+        }
+
+        for (final PublicationImage publicationImage : publicationImages)
+        {
+            if (publicationImage.correlationId() == params.responseCorrelationId)
+            {
+                if (publicationImage.hasSendResponseSetup())
+                {
+                    return publicationImage;
+                }
+                else
+                {
+                    throw new IllegalArgumentException(
+                        "image.correlationId=" + params.responseCorrelationId + " did not request a response channel");
+                }
+            }
+        }
+
+        throw new IllegalArgumentException("image.correlationId=" + params.responseCorrelationId + " not found");
+    }
+
+    void responseSetup(final long responseCorrelationId, final int responseSessionId)
+    {
+        for (int i = 0, subscriptionLinksSize = subscriptionLinks.size(); i < subscriptionLinksSize; i++)
+        {
+            final SubscriptionLink subscriptionLink = subscriptionLinks.get(i);
+            if (subscriptionLink.registrationId() == responseCorrelationId &&
+                subscriptionLink instanceof NetworkSubscriptionLink &&
+                !subscriptionLink.hasSessionId())
+            {
+                final NetworkSubscriptionLink link = (NetworkSubscriptionLink)subscriptionLink;
+                final SubscriptionParams params = new SubscriptionParams();
+                params.hasSessionId = true;
+                params.sessionId = responseSessionId;
+                params.isSparse = link.isSparse();
+                params.isTether = link.isTether();
+                params.group = link.group();
+                params.isReliable = link.isReliable();
+                params.isRejoin = link.isRejoin();
+
+                final NetworkSubscriptionLink newSubscriptionLink = new NetworkSubscriptionLink(
+                    subscriptionLink.registrationId(),
+                    subscriptionLink.channelEndpoint(),
+                    subscriptionLink.streamId(),
+                    subscriptionLink.channel(),
+                    subscriptionLink.aeronClient(),
+                    params);
+
+                subscriptionLinks.set(i, newSubscriptionLink);
+                addNetworkSubscriptionToReceiver(newSubscriptionLink);
+                newSubscriptionLink.channelEndpoint().decResponseRefToStream(newSubscriptionLink.streamId);
+
+                break;
+            }
+        }
+    }
+
+    void responseConnected(final long responseCorrelationId)
+    {
+        for (final PublicationImage publicationImage : publicationImages)
+        {
+            if (publicationImage.correlationId() == responseCorrelationId)
+            {
+                if (publicationImage.hasSendResponseSetup())
+                {
+                    publicationImage.responseSessionId(null);
+                }
+            }
+        }
+    }
+
+    private void validateResponseSubscription(final PublicationParams params)
+    {
+        if (!params.isResponse && Aeron.NULL_VALUE != params.responseCorrelationId)
+        {
+            for (final SubscriptionLink subscriptionLink : subscriptionLinks)
+            {
+                if (params.responseCorrelationId == subscriptionLink.registrationId())
+                {
+                    return;
+                }
+            }
+
+            throw new IllegalArgumentException(
+                "unable to find response subscription for response-correlation-id=" + params.responseCorrelationId);
         }
     }
 
@@ -586,6 +694,10 @@ public final class DriverConductor implements Agent
                     receiverProxy.removeSubscription(
                         channelEndpoint, subscription.streamId(), subscription.sessionId());
                 }
+            }
+            else if (subscription.isResponse())
+            {
+                channelEndpoint.decResponseRefToStream(subscription.streamId());
             }
             else
             {
@@ -815,6 +927,7 @@ public final class DriverConductor implements Agent
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
+        final ControlMode controlMode = udpChannel.controlMode();
 
         validateControlForSubscription(udpChannel);
         validateTimestampConfiguration(udpChannel);
@@ -830,23 +943,37 @@ public final class DriverConductor implements Agent
 
         subscriptionLinks.add(subscription);
 
-        if (params.hasSessionId)
+        if (ControlMode.RESPONSE == controlMode)
         {
-            if (1 == channelEndpoint.incRefToStreamAndSession(streamId, params.sessionId))
-            {
-                receiverProxy.addSubscription(channelEndpoint, streamId, params.sessionId);
-            }
+            channelEndpoint.incResponseRefToStream(subscription.streamId);
         }
         else
         {
-            if (1 == channelEndpoint.incRefToStream(streamId))
-            {
-                receiverProxy.addSubscription(channelEndpoint, streamId);
-            }
+            addNetworkSubscriptionToReceiver(subscription);
         }
 
         clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounter().id());
         linkMatchingImages(subscription);
+    }
+
+    private void addNetworkSubscriptionToReceiver(final NetworkSubscriptionLink subscription)
+    {
+        final ReceiveChannelEndpoint channelEndpoint = subscription.channelEndpoint();
+
+        if (subscription.hasSessionId())
+        {
+            if (1 == channelEndpoint.incRefToStreamAndSession(subscription.streamId(), subscription.sessionId()))
+            {
+                receiverProxy.addSubscription(channelEndpoint, subscription.streamId(), subscription.sessionId());
+            }
+        }
+        else
+        {
+            if (1 == channelEndpoint.incRefToStream(subscription.streamId()))
+            {
+                receiverProxy.addSubscription(channelEndpoint, subscription.streamId());
+            }
+        }
     }
 
     void onAddIpcSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
@@ -1237,7 +1364,8 @@ public final class DriverConductor implements Agent
     private static NetworkPublication findPublication(
         final ArrayList<NetworkPublication> publications,
         final int streamId,
-        final SendChannelEndpoint channelEndpoint)
+        final SendChannelEndpoint channelEndpoint,
+        final long responseCorrelationId)
     {
         for (int i = 0, size = publications.size(); i < size; i++)
         {
@@ -1246,7 +1374,8 @@ public final class DriverConductor implements Agent
             if (streamId == publication.streamId() &&
                 channelEndpoint == publication.channelEndpoint() &&
                 NetworkPublication.State.ACTIVE == publication.state() &&
-                !publication.isExclusive())
+                !publication.isExclusive() &&
+                publication.responseCorrelationId() == responseCorrelationId)
             {
                 return publication;
             }

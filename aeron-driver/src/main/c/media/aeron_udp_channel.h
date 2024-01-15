@@ -29,7 +29,8 @@ enum aeron_udp_channel_control_mode_en
 {
     AERON_UDP_CHANNEL_CONTROL_MODE_NONE,
     AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC,
-    AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL
+    AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL,
+    AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE
 };
 
 typedef enum aeron_udp_channel_control_mode_en aeron_udp_channel_control_mode;

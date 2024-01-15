@@ -35,6 +35,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import static io.aeron.driver.media.ControlMode.DYNAMIC;
+import static io.aeron.driver.media.ControlMode.MANUAL;
+import static io.aeron.driver.media.ControlMode.RESPONSE;
 import static java.net.InetAddress.getByName;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -461,6 +464,14 @@ class UdpChannelTest
     }
 
     @Test
+    void shouldParseResponseControlMode()
+    {
+        final UdpChannel channel = UdpChannel.parse("aeron:udp?control-mode=response|control=127.0.0.1:10001");
+        assertEquals("UDP-127.0.0.1:10001-0.0.0.0:0", channel.canonicalForm());
+        assertTrue(channel.isResponseControlMode());
+    }
+
+    @Test
     void shouldUseTagsInCanonicalFormForWildcardPorts()
     {
         assertEquals(
@@ -589,6 +600,15 @@ class UdpChannelTest
     void shouldSpecifyControlIfDynamicControlModeSpecified()
     {
         assertThrows(InvalidChannelException.class, () -> UdpChannel.parse("aeron:udp?control-mode=dynamic"));
+    }
+
+    @Test
+    void shouldParseControlMode()
+    {
+        assertEquals(DYNAMIC, UdpChannel.parse("aeron:udp?control=localhost:8080|control-mode=dynamic").controlMode());
+        assertEquals(MANUAL, UdpChannel.parse("aeron:udp?control=localhost:8080|control-mode=manual").controlMode());
+        assertEquals(
+            RESPONSE, UdpChannel.parse("aeron:udp?control=localhost:8080|control-mode=response").controlMode());
     }
 
     private static Matcher<NetworkInterface> supportsMulticastOrIsLoopback()

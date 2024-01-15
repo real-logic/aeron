@@ -116,7 +116,7 @@ class DriverConductorTest
 
     private final SenderProxy senderProxy = mock(SenderProxy.class);
     private final ReceiverProxy receiverProxy = mock(ReceiverProxy.class);
-    private final DriverConductorProxy driverConductorProxy = mock(DriverConductorProxy.class);
+    private final DriverConductorProxy mockDriverConductorProxy = mock(DriverConductorProxy.class);
     private ReceiveChannelEndpoint receiveChannelEndpoint = null;
 
     private final CachedNanoClock nanoClock = new CachedNanoClock();
@@ -185,7 +185,7 @@ class DriverConductorTest
             .systemCounters(spySystemCounters)
             .receiverProxy(receiverProxy)
             .senderProxy(senderProxy)
-            .driverConductorProxy(driverConductorProxy)
+            .driverConductorProxy(mockDriverConductorProxy)
             .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals())
             .conductorCycleThresholdNs(600_000_000)
             .nameResolver(DefaultNameResolver.INSTANCE)
@@ -594,7 +594,7 @@ class DriverConductorTest
         when(msg.consumptionTermOffset()).thenReturn(0);
         when(msg.receiverWindowLength()).thenReturn(10);
 
-        publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059));
+        publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059), mockDriverConductorProxy);
         appendUnfragmentedMessage(
             rawLog, index, 0, termId, headerWriter, srcBuffer, 0, 256);
 
@@ -604,7 +604,7 @@ class DriverConductorTest
             () -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 1.25,
             (timeNs) ->
             {
-                publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059));
+                publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059), mockDriverConductorProxy);
                 publication.updateHasReceivers(timeNs);
             });
 
@@ -689,11 +689,11 @@ class DriverConductorTest
         verify(receiverProxy).registerReceiveChannelEndpoint(captor1.capture());
         receiveChannelEndpoint = captor1.getValue();
 
-        receiveChannelEndpoint.openChannel(driverConductorProxy);
+        receiveChannelEndpoint.openChannel(mockDriverConductorProxy);
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, initialTermId, activeTermId, termOffset, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
-            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+            (short)0, mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         final ArgumentCaptor<PublicationImage> captor2 = ArgumentCaptor.forClass(PublicationImage.class);
         verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor2.capture());
@@ -719,11 +719,11 @@ class DriverConductorTest
         verify(receiverProxy).registerReceiveChannelEndpoint(captor.capture());
         receiveChannelEndpoint = captor.getValue();
 
-        receiveChannelEndpoint.openChannel(driverConductorProxy);
+        receiveChannelEndpoint.openChannel(mockDriverConductorProxy);
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_2, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
-            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+            (short)0, mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         verify(receiverProxy, never()).newPublicationImage(any(), any());
         verify(mockClientProxy, never()).onAvailableImage(
@@ -743,11 +743,11 @@ class DriverConductorTest
         verify(receiverProxy).registerReceiveChannelEndpoint(captor1.capture());
         receiveChannelEndpoint = captor1.getValue();
 
-        receiveChannelEndpoint.openChannel(driverConductorProxy);
+        receiveChannelEndpoint.openChannel(mockDriverConductorProxy);
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
-            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+            (short)0, mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         final ArgumentCaptor<PublicationImage> captor2 = ArgumentCaptor.forClass(PublicationImage.class);
         verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor2.capture());
@@ -776,11 +776,11 @@ class DriverConductorTest
         verify(receiverProxy).registerReceiveChannelEndpoint(captor1.capture());
         receiveChannelEndpoint = captor1.getValue();
 
-        receiveChannelEndpoint.openChannel(driverConductorProxy);
+        receiveChannelEndpoint.openChannel(mockDriverConductorProxy);
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
-            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+            (short)0, mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         final ArgumentCaptor<PublicationImage> captor2 = ArgumentCaptor.forClass(PublicationImage.class);
         verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor2.capture());
@@ -825,11 +825,11 @@ class DriverConductorTest
         verify(receiverProxy).registerReceiveChannelEndpoint(captor1.capture());
         receiveChannelEndpoint = captor1.getValue();
 
-        receiveChannelEndpoint.openChannel(driverConductorProxy);
+        receiveChannelEndpoint.openChannel(mockDriverConductorProxy);
 
         driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH, 0,
-            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+            (short)0, mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         final ArgumentCaptor<PublicationImage> captor2 = ArgumentCaptor.forClass(PublicationImage.class);
         verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor2.capture());

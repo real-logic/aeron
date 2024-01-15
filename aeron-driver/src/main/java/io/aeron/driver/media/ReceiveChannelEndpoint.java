@@ -112,11 +112,14 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     private final NakFlyweight nakFlyweight;
     private final ByteBuffer rttMeasurementBuffer;
     private final RttMeasurementFlyweight rttMeasurementFlyweight;
+    private final ByteBuffer responseSetupBuffer;
+    private final ResponseSetupFlyweight responseSetupHeader;
     private final AtomicCounter shortSends;
     private final AtomicCounter possibleTtlAsymmetry;
     private final AtomicCounter statusIndicator;
     private final Int2IntCounterMap refCountByStreamIdMap = new Int2IntCounterMap(0);
     private final Long2LongCounterMap refCountByStreamIdAndSessionIdMap = new Long2LongCounterMap(0);
+    private final Int2IntCounterMap responseRefCountByStreamIdMap = new Int2IntCounterMap(0);
     private final MultiRcvDestination multiRcvDestination;
     private final CachedNanoClock cachedNanoClock;
     private final Long groupTag;
@@ -157,6 +160,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
         nakFlyweight = threadLocals.nakFlyweight();
         rttMeasurementBuffer = threadLocals.rttMeasurementBuffer();
         rttMeasurementFlyweight = threadLocals.rttMeasurementFlyweight();
+        responseSetupBuffer = threadLocals.responseSetupBuffer();
+        responseSetupHeader = threadLocals.responseSetupHeader();
         cachedNanoClock = context.receiverCachedNanoClock();
         timeOfLastActivityNs = cachedNanoClock.nanoTime();
         receiverId = threadLocals.nextReceiverId();
@@ -401,6 +406,41 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     }
 
     /**
+     * Called from the {@link io.aeron.driver.DriverConductor} to
+     * increment the reference count for a given stream id for a response subscription while it is waiting to be
+     * connected.
+     *
+     * @param streamId to increment the reference for.
+     * @return current reference count after the increment.
+     */
+    public int incResponseRefToStream(final int streamId)
+    {
+        return responseRefCountByStreamIdMap.incrementAndGet(streamId);
+    }
+
+
+    /**
+     * Called from the {@link io.aeron.driver.DriverConductor} to
+     * decrement the reference count for a given stream id for a response subscription while it is waiting to be
+     * connected.
+     *
+     * @param streamId to decrement the reference for.
+     * @return current reference count after the decrement.
+     */
+    public int decResponseRefToStream(final int streamId)
+    {
+        final int count = responseRefCountByStreamIdMap.decrementAndGet(streamId);
+
+        if (-1 == count)
+        {
+            responseRefCountByStreamIdMap.remove(streamId);
+            throw new IllegalStateException("unknown stream Id: " + streamId);
+        }
+
+        return count;
+    }
+
+    /**
      * Total count of distinct subscriptions to streams.
      *
      * @return total count of distinct subscriptions to streams.
@@ -420,6 +460,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     {
         return refCountByStreamIdMap.isEmpty() &&
             refCountByStreamIdAndSessionIdMap.isEmpty() &&
+            responseRefCountByStreamIdMap.isEmpty() &&
             !statusIndicator.isClosed() &&
             imageRefCount <= 0;
     }
@@ -783,13 +824,13 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     /**
      * Send a Status Message back to a sources.
      *
-     * @param controlAddresses of the sources.
-     * @param sessionId        of the image.
-     * @param streamId         of the image.
-     * @param termId           of the image to indicate position.
-     * @param termOffset       of the image to indicate position.
-     * @param windowLength     for available buffer from the position.
-     * @param flags            for the header.
+     * @param controlAddresses  of the sources.
+     * @param sessionId         of the image.
+     * @param streamId          of the image.
+     * @param termId            of the image to indicate position.
+     * @param termOffset        of the image to indicate position.
+     * @param windowLength      for available buffer from the position.
+     * @param flags             for the header.
      */
     public void sendStatusMessage(
         final ImageConnection[] controlAddresses,
@@ -872,6 +913,29 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
             .flags(isReply ? RttMeasurementFlyweight.REPLY_FLAG : 0);
 
         send(rttMeasurementBuffer, RttMeasurementFlyweight.HEADER_LENGTH, controlAddresses);
+    }
+
+    /**
+     * Send a response setup message
+     *
+     * @param controlAddresses  of the sources.
+     * @param sessionId         for the image.
+     * @param streamId          for the image.
+     * @param responseSessionId to be used by the remote subscription to listen for responses.
+     */
+    public void sendResponseSetup(
+        final ImageConnection[] controlAddresses,
+        final int sessionId,
+        final int streamId,
+        final int responseSessionId)
+    {
+        responseSetupBuffer.clear();
+        responseSetupHeader
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .responseSessionId(responseSessionId);
+
+        send(responseSetupBuffer, ResponseSetupFlyweight.HEADER_LENGTH, controlAddresses);
     }
 
     /**
@@ -1011,5 +1075,22 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
                     DataHeaderFlyweight.DATA_OFFSET + offset, channelReceiveTimestampClock.nanoTime(), LITTLE_ENDIAN);
             }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "ReceiveChannelEndpoint{" +
+            "groupTag=" + groupTag +
+            ", isChannelReceiveTimestampEnabled=" + isChannelReceiveTimestampEnabled +
+            ", receiverId=" + receiverId +
+            ", currentControlAddress=" + currentControlAddress +
+            ", imageRefCount=" + imageRefCount +
+            ", udpChannel=" + udpChannel +
+            ", connectAddress=" + connectAddress +
+            ", isClosed=" + isClosed +
+            '}';
     }
 }

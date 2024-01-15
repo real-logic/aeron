@@ -388,7 +388,8 @@ public final class DataPacketDispatcher
                         msg.termOffset(),
                         msg.termLength(),
                         msg.mtuLength(),
-                        msg.ttl());
+                        msg.ttl(),
+                        msg.flags());
                 }
                 else if (null != sessionInterest.image)
                 {
@@ -409,7 +410,8 @@ public final class DataPacketDispatcher
                     msg.termOffset(),
                     msg.termLength(),
                     msg.mtuLength(),
-                    msg.ttl());
+                    msg.ttl(),
+                    msg.flags());
             }
             else
             {
@@ -493,7 +495,8 @@ public final class DataPacketDispatcher
         final int termOffset,
         final int termLength,
         final int mtuLength,
-        final int setupTtl)
+        final int setupTtl,
+        final short flags)
     {
         final InetSocketAddress controlAddress = channelEndpoint.isMulticast(transportIndex) ?
             channelEndpoint.udpChannel(transportIndex).remoteControl() : srcAddress;
@@ -512,6 +515,7 @@ public final class DataPacketDispatcher
             termLength,
             mtuLength,
             transportIndex,
+            flags,
             controlAddress,
             srcAddress,
             channelEndpoint);

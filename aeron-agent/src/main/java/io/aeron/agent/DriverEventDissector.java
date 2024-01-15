@@ -39,6 +39,7 @@ final class DriverEventDissector
     private static final RttMeasurementFlyweight RTT_MEASUREMENT = new RttMeasurementFlyweight();
     private static final HeaderFlyweight HEADER = new HeaderFlyweight();
     private static final ResolutionEntryFlyweight RESOLUTION = new ResolutionEntryFlyweight();
+    private static final ResponseSetupFlyweight RSP_SETUP = new ResponseSetupFlyweight();
     private static final PublicationMessageFlyweight PUB_MSG = new PublicationMessageFlyweight();
     private static final SubscriptionMessageFlyweight SUB_MSG = new SubscriptionMessageFlyweight();
     private static final PublicationBuffersReadyFlyweight PUB_READY = new PublicationBuffersReadyFlyweight();
@@ -107,6 +108,11 @@ final class DriverEventDissector
 
             case HeaderFlyweight.HDR_TYPE_RES:
                 dissectResFrame(buffer, frameOffset, builder);
+                break;
+
+            case HeaderFlyweight.HDR_TYPE_RSP_SETUP:
+                RSP_SETUP.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
+                dissectRspSetupFrame(builder);
                 break;
 
             default:
@@ -538,6 +544,22 @@ final class DriverEventDissector
 
             currentOffset += RESOLUTION.entryLength();
         }
+    }
+
+    private static void dissectRspSetupFrame(final StringBuilder builder)
+    {
+        builder.append("RSP_SETUP ");
+        HeaderFlyweight.appendFlagsAsChars(RSP_SETUP.flags(), builder);
+
+        builder
+            .append(" len ")
+            .append(RSP_SETUP.frameLength())
+            .append(' ')
+            .append(RSP_SETUP.sessionId())
+            .append(':')
+            .append(RSP_SETUP.streamId())
+            .append(" RSP_SESSION_ID ")
+            .append(RSP_SETUP.responseSessionId());
     }
 
     private static void dissectResEntry(final StringBuilder builder)

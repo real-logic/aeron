@@ -31,7 +31,11 @@ public enum ControlMode
     /**
      * The stream should use manual MDC.
      */
-    MANUAL;
+    MANUAL,
+    /**
+     * The stream is being used as part of a response channel.
+     */
+    RESPONSE;
 
     /**
      * Indicates if this is a multi-destination control mode.

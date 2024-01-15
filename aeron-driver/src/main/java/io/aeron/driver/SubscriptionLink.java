@@ -134,6 +134,11 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return hasSessionId;
     }
 
+    boolean isResponse()
+    {
+        return false;
+    }
+
     boolean matches(final NetworkPublication publication)
     {
         return false;
@@ -176,7 +181,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
 
     boolean isWildcardOrSessionIdMatch(final int sessionId)
     {
-        return !hasSessionId || this.sessionId == sessionId;
+        return (!hasSessionId && !isResponse()) || this.sessionId == sessionId;
     }
 
     boolean supportsMds()

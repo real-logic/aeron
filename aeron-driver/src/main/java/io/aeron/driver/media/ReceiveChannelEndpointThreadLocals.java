@@ -17,6 +17,7 @@ package io.aeron.driver.media;
 
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.NakFlyweight;
+import io.aeron.protocol.ResponseSetupFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.BitUtil;
@@ -41,6 +42,8 @@ public final class ReceiveChannelEndpointThreadLocals
     private final NakFlyweight nakFlyweight;
     private final ByteBuffer rttMeasurementBuffer;
     private final RttMeasurementFlyweight rttMeasurementFlyweight;
+    private final ByteBuffer responseSetupBuffer;
+    private final ResponseSetupFlyweight responseSetupHeader;
     private long nextReceiverId;
 
     /**
@@ -52,7 +55,8 @@ public final class ReceiveChannelEndpointThreadLocals
         final int bufferLength =
             BitUtil.align(smLength, CACHE_LINE_LENGTH) +
             BitUtil.align(NakFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH) +
-            BitUtil.align(RttMeasurementFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
+            BitUtil.align(RttMeasurementFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH) +
+            BitUtil.align(ResponseSetupFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
 
         final UUID uuid = UUID.randomUUID();
         nextReceiverId = uuid.getMostSignificantBits() ^ uuid.getLeastSignificantBits();
@@ -73,6 +77,12 @@ public final class ReceiveChannelEndpointThreadLocals
         rttMeasurementBuffer = byteBuffer.slice();
         rttMeasurementFlyweight = new RttMeasurementFlyweight(rttMeasurementBuffer);
 
+        final int responseSetupOffset = rttMeasurementOffset + BitUtil.align(
+            ResponseSetupFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
+        byteBuffer.limit(responseSetupOffset + ResponseSetupFlyweight.HEADER_LENGTH).position(responseSetupOffset);
+        responseSetupBuffer = byteBuffer.slice();
+        responseSetupHeader = new ResponseSetupFlyweight(responseSetupBuffer);
+
         statusMessageFlyweight
             .version(HeaderFlyweight.CURRENT_VERSION)
             .headerType(HeaderFlyweight.HDR_TYPE_SM)
@@ -87,6 +97,11 @@ public final class ReceiveChannelEndpointThreadLocals
             .version(HeaderFlyweight.CURRENT_VERSION)
             .headerType(HeaderFlyweight.HDR_TYPE_RTTM)
             .frameLength(RttMeasurementFlyweight.HEADER_LENGTH);
+
+        responseSetupHeader
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .headerType(HeaderFlyweight.HDR_TYPE_RSP_SETUP)
+            .frameLength(ResponseSetupFlyweight.HEADER_LENGTH);
     }
 
     /**
@@ -147,6 +162,26 @@ public final class ReceiveChannelEndpointThreadLocals
     public RttMeasurementFlyweight rttMeasurementFlyweight()
     {
         return rttMeasurementFlyweight;
+    }
+
+    /**
+     * Buffer for writing Response Setup messages to send.
+     *
+     * @return buffer for writing Response Setup messages to send.
+     */
+    public ByteBuffer responseSetupBuffer()
+    {
+        return responseSetupBuffer;
+    }
+
+    /**
+     * Flyweight over the {@link #responseSetupBuffer()}
+     *
+     * @return flyweight over the {@link #responseSetupBuffer()}
+     */
+    public ResponseSetupFlyweight responseSetupHeader()
+    {
+        return responseSetupHeader;
     }
 
     /**

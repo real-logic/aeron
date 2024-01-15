@@ -582,6 +582,27 @@ public final class ChannelUri
         params.forEach(consumer);
     }
 
+    /**
+     * Determines if this channel has specified <code>control-mode=response</code>.
+     *
+     * @return true if this channel has specified <code>control-mode=response</code>.
+     */
+    public boolean hasControlModeResponse()
+    {
+        return CONTROL_MODE_RESPONSE.equals(get(MDC_CONTROL_MODE_PARAM_NAME));
+    }
+
+    /**
+     * Determines if the supplied channel has specified <code>control-mode=response</code>.
+     *
+     * @param channelUri to check if the control mode is response
+     * @return true if the supplied channel has specified <code>control-mode=response</code>.
+     */
+    public static boolean isControlModeResponse(final String channelUri)
+    {
+        return parse(channelUri).hasControlModeResponse();
+    }
+
     private static void validateMedia(final String media)
     {
         if (IPC_MEDIA.equals(media) || UDP_MEDIA.equals(media))

@@ -205,6 +205,21 @@ final class ReceiverProxy
         }
     }
 
+    void requestSetup(
+        final ReceiveChannelEndpoint channelEndpoint,
+        final int streamId,
+        final int sessionId)
+    {
+        if (notConcurrent())
+        {
+            receiver.onRequestSetup(channelEndpoint, streamId, sessionId);
+        }
+        else
+        {
+            offer(() -> receiver.onRequestSetup(channelEndpoint, streamId, sessionId));
+        }
+    }
+
     private boolean notConcurrent()
     {
         return threadingMode == SHARED || threadingMode == INVOKER;

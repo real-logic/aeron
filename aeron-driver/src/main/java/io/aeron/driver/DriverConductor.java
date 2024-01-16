@@ -571,30 +571,37 @@ public final class DriverConductor implements Agent
         {
             final SubscriptionLink subscriptionLink = subscriptionLinks.get(i);
             if (subscriptionLink.registrationId() == responseCorrelationId &&
-                subscriptionLink instanceof NetworkSubscriptionLink &&
-                !subscriptionLink.hasSessionId())
+                subscriptionLink instanceof NetworkSubscriptionLink)
             {
-                final NetworkSubscriptionLink link = (NetworkSubscriptionLink)subscriptionLink;
-                final SubscriptionParams params = new SubscriptionParams();
-                params.hasSessionId = true;
-                params.sessionId = responseSessionId;
-                params.isSparse = link.isSparse();
-                params.isTether = link.isTether();
-                params.group = link.group();
-                params.isReliable = link.isReliable();
-                params.isRejoin = link.isRejoin();
+                if (subscriptionLink.hasSessionId())
+                {
+                    receiverProxy.requestSetup(
+                        subscriptionLink.channelEndpoint(), subscriptionLink.streamId(), subscriptionLink.sessionId());
+                }
+                else
+                {
+                    final NetworkSubscriptionLink link = (NetworkSubscriptionLink)subscriptionLink;
+                    final SubscriptionParams params = new SubscriptionParams();
+                    params.hasSessionId = true;
+                    params.sessionId = responseSessionId;
+                    params.isSparse = link.isSparse();
+                    params.isTether = link.isTether();
+                    params.group = link.group();
+                    params.isReliable = link.isReliable();
+                    params.isRejoin = link.isRejoin();
 
-                final NetworkSubscriptionLink newSubscriptionLink = new NetworkSubscriptionLink(
-                    subscriptionLink.registrationId(),
-                    subscriptionLink.channelEndpoint(),
-                    subscriptionLink.streamId(),
-                    subscriptionLink.channel(),
-                    subscriptionLink.aeronClient(),
-                    params);
+                    final NetworkSubscriptionLink newSubscriptionLink = new NetworkSubscriptionLink(
+                        subscriptionLink.registrationId(),
+                        subscriptionLink.channelEndpoint(),
+                        subscriptionLink.streamId(),
+                        subscriptionLink.channel(),
+                        subscriptionLink.aeronClient(),
+                        params);
 
-                subscriptionLinks.set(i, newSubscriptionLink);
-                addNetworkSubscriptionToReceiver(newSubscriptionLink);
-                newSubscriptionLink.channelEndpoint().decResponseRefToStream(newSubscriptionLink.streamId);
+                    subscriptionLinks.set(i, newSubscriptionLink);
+                    addNetworkSubscriptionToReceiver(newSubscriptionLink);
+                    newSubscriptionLink.channelEndpoint().decResponseRefToStream(newSubscriptionLink.streamId);
+                }
 
                 break;
             }

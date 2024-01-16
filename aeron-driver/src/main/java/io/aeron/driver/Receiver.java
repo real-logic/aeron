@@ -177,8 +177,15 @@ public final class Receiver implements Agent
         channelEndpoint.dispatcher().addSubscription(streamId, sessionId);
         if (channelEndpoint.hasExplicitControl())
         {
-            addPendingSetupMessage(
-                sessionId, streamId, 0, channelEndpoint, true, channelEndpoint.explicitControlAddress());
+            channelEndpoint.sendSetupElicitingStatusMessage(
+                0, channelEndpoint.explicitControlAddress(), sessionId, streamId);
+        }
+    }
+
+    void onRequestSetup(final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
+    {
+        if (channelEndpoint.hasExplicitControl())
+        {
             channelEndpoint.sendSetupElicitingStatusMessage(
                 0, channelEndpoint.explicitControlAddress(), sessionId, streamId);
         }

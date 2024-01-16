@@ -65,6 +65,12 @@ void aeron_driver_receiver_proxy_on_add_subscription_by_session(
     int32_t stream_id,
     int32_t session_id);
 
+void aeron_driver_receiver_proxy_on_request_setup(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id);
+
 void aeron_driver_receiver_proxy_on_remove_subscription_by_session(
     aeron_driver_receiver_proxy_t *receiver_proxy,
     aeron_receive_channel_endpoint_t *endpoint,

@@ -362,16 +362,36 @@ void aeron_driver_receiver_on_add_subscription_by_session(void *clientd, void *i
 
     if (aeron_receive_channel_endpoint_on_add_subscription_by_session(endpoint, cmd->stream_id, cmd->session_id) < 0)
     {
-        AERON_APPEND_ERR("%s", "receiver on_add_subscription");
+        AERON_APPEND_ERR("%s", "");
         aeron_driver_receiver_log_error(receiver);
         return;
     }
 
-    if (aeron_receive_channel_endpoint_add_pending_setup(endpoint, receiver, cmd->session_id, cmd->stream_id) < 0)
+    if (endpoint->conductor_fields.udp_channel->has_explicit_control)
     {
-        AERON_APPEND_ERR("%s", "receiver on_add_subscription");
-        aeron_driver_receiver_log_error(receiver);
-        return;
+        if (aeron_receive_channel_endpoint_elicit_setup(endpoint, cmd->stream_id, cmd->session_id) < 0)
+        {
+            AERON_APPEND_ERR("streamId=%" PRId32 " sessionId=%" PRId32, cmd->stream_id, cmd->session_id);
+            aeron_driver_receiver_log_error(receiver);
+            return;
+        }
+    }
+}
+
+void aeron_driver_receiver_on_request_setup(void *clientd, void *item)
+{
+    aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
+    aeron_command_subscription_t *cmd = (aeron_command_subscription_t *)item;
+    aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
+
+    if (endpoint->conductor_fields.udp_channel->has_explicit_control)
+    {
+        if (aeron_receive_channel_endpoint_elicit_setup(endpoint, cmd->stream_id, cmd->session_id) < 0)
+        {
+            AERON_APPEND_ERR("streamId=%" PRId32 " sessionId=%" PRId32, cmd->stream_id, cmd->session_id);
+            aeron_driver_receiver_log_error(receiver);
+            return;
+        }
     }
 }
 

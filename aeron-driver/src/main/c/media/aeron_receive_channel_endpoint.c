@@ -215,6 +215,38 @@ int aeron_receive_channel_endpoint_send(
     return (int)min_bytes_sent;
 }
 
+int aeron_receive_channel_endpoint_elicit_setup(
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id)
+{
+    int work_count = 0;
+    for (size_t i = 0, len = endpoint->destinations.length; i < len; i++)
+    {
+        aeron_receive_destination_t *destination = endpoint->destinations.array[i].destination;
+        int result = aeron_receive_channel_endpoint_send_sm(
+            endpoint,
+            destination,
+            &destination->current_control_addr,
+            stream_id,
+            session_id,
+            0,
+            0,
+            0,
+            AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG);
+
+        if (result < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+
+        result += work_count;
+    }
+
+    return work_count;
+}
+
 int aeron_receive_channel_endpoint_send_sm(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_receive_destination_t *destination,

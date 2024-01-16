@@ -101,6 +101,11 @@ int aeron_receive_channel_endpoint_send(
     struct sockaddr_storage *address,
     struct iovec *iov);
 
+int aeron_receive_channel_endpoint_elicit_setup(
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id);
+
 int aeron_receive_channel_endpoint_send_sm(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_receive_destination_t *destination,

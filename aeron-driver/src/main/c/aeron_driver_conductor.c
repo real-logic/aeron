@@ -5135,20 +5135,30 @@ void aeron_driver_conductor_on_response_setup(void *clientd, void *item)
     for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
     {
         aeron_subscription_link_t *subscription_link = &conductor->network_subscriptions.array[i];
-        if (subscription_link->registration_id == response_correlation_id &&
-            !subscription_link->has_session_id)
+        if (subscription_link->registration_id == response_correlation_id)
         {
-            subscription_link->has_session_id = true;
-            subscription_link->session_id = response_session_id;
-            subscription_link->is_response = false;
+            if (subscription_link->has_session_id)
+            {
+                aeron_driver_receiver_proxy_on_request_setup(
+                    subscription_link->endpoint->receiver_proxy,
+                    subscription_link->endpoint,
+                    subscription_link->stream_id,
+                    subscription_link->session_id);
+            }
+            else
+            {
+                subscription_link->has_session_id = true;
+                subscription_link->session_id = response_session_id;
+                subscription_link->is_response = false;
 
-            aeron_driver_conductor_add_network_subscription_to_receiver(
-                subscription_link->endpoint,
-                subscription_link->stream_id,
-                subscription_link->has_session_id,
-                subscription_link->session_id);
-            aeron_receive_channel_endpoint_decref_to_response_stream(
-                subscription_link->endpoint, subscription_link->stream_id);
+                aeron_driver_conductor_add_network_subscription_to_receiver(
+                    subscription_link->endpoint,
+                    subscription_link->stream_id,
+                    subscription_link->has_session_id,
+                    subscription_link->session_id);
+                aeron_receive_channel_endpoint_decref_to_response_stream(
+                    subscription_link->endpoint, subscription_link->stream_id);
+            }
         }
     }
 }

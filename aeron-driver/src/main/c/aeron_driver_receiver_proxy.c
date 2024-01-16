@@ -143,6 +143,30 @@ void aeron_driver_receiver_proxy_on_add_subscription_by_session(
     }
 }
 
+void aeron_driver_receiver_proxy_on_request_setup(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id)
+{
+    aeron_command_subscription_t cmd =
+        {
+            .base = { .func = aeron_driver_receiver_on_remove_subscription_by_session, .item = NULL },
+            .endpoint = endpoint,
+            .stream_id = stream_id,
+            .session_id = session_id
+        };
+
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
+    {
+        aeron_driver_receiver_on_request_setup(receiver_proxy->receiver, &cmd);
+    }
+    else
+    {
+        aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
+    }
+}
+
 void aeron_driver_receiver_proxy_on_remove_subscription_by_session(
     aeron_driver_receiver_proxy_t *receiver_proxy,
     aeron_receive_channel_endpoint_t *endpoint,

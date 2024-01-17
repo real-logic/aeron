@@ -15,13 +15,19 @@
  */
 package io.aeron;
 
+import io.aeron.logbuffer.Header;
+import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
+
+import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * Reusable Builder for appending a sequence of buffer fragments which grows internal capacity as needed.
@@ -39,7 +45,8 @@ public final class BufferBuilder
     private final boolean isDirect;
     private int limit;
     private int nextTermOffset;
-    private final UnsafeBuffer buffer;
+    private final UnsafeBuffer buffer = new UnsafeBuffer();
+    private final UnsafeBuffer headerBuffer = new UnsafeBuffer();
 
     /**
      * Construct a buffer builder with an initial capacity of zero and isDirect false.
@@ -69,21 +76,27 @@ public final class BufferBuilder
     {
         if (initialCapacity < 0 || initialCapacity > MAX_CAPACITY)
         {
-            throw new IllegalArgumentException(
-                "initialCapacity outside range 0 - " + MAX_CAPACITY +
+            throw new IllegalArgumentException("initialCapacity outside range 0 - " + MAX_CAPACITY +
                 ": initialCapacity=" + initialCapacity);
         }
 
         this.isDirect = isDirect;
         if (isDirect)
         {
-            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(initialCapacity);
-            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-            this.buffer = new UnsafeBuffer(byteBuffer);
+            if (initialCapacity > 0)
+            {
+                buffer.wrap(newDirectBuffer(initialCapacity));
+            }
+            headerBuffer.wrap(newDirectBuffer(HEADER_LENGTH));
         }
         else
         {
-            buffer = new UnsafeBuffer(new byte[initialCapacity]);
+            if (initialCapacity > 0)
+            {
+
+                buffer.wrap(new byte[initialCapacity]);
+            }
+            headerBuffer.wrap(new byte[HEADER_LENGTH]);
         }
     }
 
@@ -172,7 +185,11 @@ public final class BufferBuilder
      */
     public BufferBuilder compact()
     {
-        resize(Math.max(INIT_MIN_CAPACITY, limit));
+        final int newCapacity = Math.max(INIT_MIN_CAPACITY, limit);
+        if (newCapacity < buffer.capacity())
+        {
+            resize(newCapacity);
+        }
 
         return this;
     }
@@ -193,6 +210,51 @@ public final class BufferBuilder
         limit += length;
 
         return this;
+    }
+
+    /**
+     * Capture information available in the header of the very first frame. In particular, it saves the
+     * {@link Header#reservedValue()} as it is only set on the first header.
+     *
+     * @param header of the first frame.
+     * @return the builder for fluent API usage.
+     */
+    public BufferBuilder captureFirstHeader(final Header header)
+    {
+        verifyFlags(header, BEGIN_FRAG_FLAG);
+
+        headerBuffer.putLong(RESERVED_VALUE_OFFSET, header.reservedValue(), LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
+     * Capture information available in the header of the last frame, i.e. saves all the fields before the
+     * {@link Header#reservedValue()} and sets the {@link io.aeron.logbuffer.FrameDescriptor#BEGIN_FRAG_FLAG} bit
+     * on the {@code flags}.
+     *
+     * @param header of the first frame.
+     * @return updated header.
+     */
+    public Header prepareCompleteHeader(final Header header)
+    {
+        final byte flags = verifyFlags(header, END_FRAG_FLAG);
+
+        // copy all the fields except the `reserved value`
+        headerBuffer.putBytes(0, header.buffer(), header.offset(), RESERVED_VALUE_OFFSET);
+        // set the BEGIN_FRAG_FLAG to mark the message as unfragmented
+        headerBuffer.putByte(FLAGS_OFFSET, (byte)(flags | BEGIN_FRAG_FLAG));
+
+        // point the Header object at the patched data
+        header.buffer(headerBuffer);
+        header.offset(0);
+
+        return header;
+    }
+
+    UnsafeBuffer headerBuffer()
+    {
+        return headerBuffer;
     }
 
     private void ensureCapacity(final int additionalLength)
@@ -218,8 +280,7 @@ public final class BufferBuilder
     {
         if (isDirect)
         {
-            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(newCapacity);
-            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+            final ByteBuffer byteBuffer = newDirectBuffer(newCapacity);
             buffer.getBytes(0, byteBuffer, 0, limit);
             buffer.wrap(byteBuffer);
         }
@@ -227,6 +288,28 @@ public final class BufferBuilder
         {
             buffer.wrap(Arrays.copyOf(buffer.byteArray(), newCapacity));
         }
+    }
+
+    private static ByteBuffer newDirectBuffer(final int newCapacity)
+    {
+        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(newCapacity);
+        byteBuffer.order(LITTLE_ENDIAN);
+        return byteBuffer;
+    }
+
+    private static byte verifyFlags(final Header header, final byte bits)
+    {
+        final byte flags = header.flags();
+        if (bits != (flags & bits))
+        {
+            final StringBuilder builder = new StringBuilder(64);
+            builder.append("invalid frame, i.e. the (");
+            HeaderFlyweight.appendFlagsAsChars(bits, builder);
+            builder.append(") bit must be set in flags, got: ");
+            HeaderFlyweight.appendFlagsAsChars(flags, builder);
+            throw new IllegalArgumentException(builder.toString());
+        }
+        return flags;
     }
 
     static int findSuitableCapacity(final int capacity, final long requiredCapacity)
@@ -239,6 +322,7 @@ public final class BufferBuilder
             if (newCapacity > MAX_CAPACITY)
             {
                 newCapacity = MAX_CAPACITY;
+                break;
             }
         }
 

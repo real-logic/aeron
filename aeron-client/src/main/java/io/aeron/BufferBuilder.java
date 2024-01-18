@@ -27,9 +27,7 @@ import java.util.Arrays;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static io.aeron.protocol.HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
-import static io.aeron.protocol.HeaderFlyweight.VERSION_FIELD_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.*;
 
 /**
  * Reusable Builder for appending a sequence of buffer fragments which grows internal capacity as needed.
@@ -215,8 +213,7 @@ public final class BufferBuilder
     }
 
     /**
-     * Capture information available in the header of the very first frame. In particular, it saves the
-     * {@link Header#reservedValue()} as it is only set on the first header.
+     * Capture information available in the header of the very first frame.
      *
      * @param header of the first frame.
      * @return the builder for fluent API usage.
@@ -225,33 +222,27 @@ public final class BufferBuilder
     {
         verifyFlags(header, BEGIN_FRAG_FLAG);
 
-        headerBuffer.putLong(RESERVED_VALUE_OFFSET, header.reservedValue(), LITTLE_ENDIAN);
+        headerBuffer.putBytes(0, header.buffer(), header.offset(), HEADER_LENGTH);
 
         return this;
     }
 
     /**
-     * Capture information available in the header of the last frame, i.e. saves all the fields before the
-     * {@link Header#reservedValue()} and sets the {@link io.aeron.logbuffer.FrameDescriptor#BEGIN_FRAG_FLAG} bit
-     * on the {@code flags}.
+     * Use the information from the header of the last frame to create a header for the assembled message, i.e. fixups
+     * the flags and the frame length.
      *
-     * @param header of the first frame.
-     * @return updated header.
+     * @param header of the last frame.
+     * @return complete message header.
      */
     public Header prepareCompleteHeader(final Header header)
     {
         final byte flags = verifyFlags(header, END_FRAG_FLAG);
 
-        // copy all the fields skipping `frame length` and `reserved value`
-        headerBuffer.putBytes(
-            VERSION_FIELD_OFFSET,
-            header.buffer(),
-            header.offset() + VERSION_FIELD_OFFSET,
-            HEADER_LENGTH - SIZE_OF_LONG - SIZE_OF_INT);
+        // set the `frame length` of the complete message
+        headerBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, limit + HEADER_LENGTH, LITTLE_ENDIAN);
+
         // set the BEGIN_FRAG_FLAG to mark the message as unfragmented
         headerBuffer.putByte(FLAGS_OFFSET, (byte)(flags | BEGIN_FRAG_FLAG));
-        // set the frameLength the length of the complete message
-        headerBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, limit + HEADER_LENGTH, LITTLE_ENDIAN);
 
         // point the Header object at the patched data
         header.buffer(headerBuffer);

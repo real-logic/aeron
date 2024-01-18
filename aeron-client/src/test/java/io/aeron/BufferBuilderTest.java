@@ -309,7 +309,7 @@ class BufferBuilderTest
     }
 
     @Test
-    void captureFirstHeader()
+    void captureFirstHeaderShouldCopyTheEntireHeader()
     {
         final long reservedValue = Long.MAX_VALUE - 117;
         final int offset = 40;
@@ -319,7 +319,7 @@ class BufferBuilderTest
         headerFlyweight.version((short)0xA);
         headerFlyweight.flags((short)0b1111_1111);
         headerFlyweight.headerType(HDR_TYPE_RTTM);
-        headerFlyweight.termOffset(124);
+        headerFlyweight.termOffset(384);
         headerFlyweight.sessionId(-890);
         headerFlyweight.streamId(555);
         headerFlyweight.termId(42);
@@ -339,14 +339,14 @@ class BufferBuilderTest
         assertNotSame(bufferBuilder.headerBuffer(), header.buffer());
 
         headerFlyweight.wrap(bufferBuilder.headerBuffer(), 0, HEADER_LENGTH);
-        assertEquals(0, headerFlyweight.frameLength());
-        assertEquals(0, headerFlyweight.version());
-        assertEquals(0, headerFlyweight.flags());
-        assertEquals(0, headerFlyweight.headerType());
-        assertEquals(0, headerFlyweight.termOffset());
-        assertEquals(0, headerFlyweight.sessionId());
-        assertEquals(0, headerFlyweight.streamId());
-        assertEquals(0, headerFlyweight.termId());
+        assertEquals(512, headerFlyweight.frameLength());
+        assertEquals((short)0xA, headerFlyweight.version());
+        assertEquals((short)0b1111_1111, headerFlyweight.flags());
+        assertEquals(HDR_TYPE_RTTM, headerFlyweight.headerType());
+        assertEquals(384, headerFlyweight.termOffset());
+        assertEquals(-890, headerFlyweight.sessionId());
+        assertEquals(555, headerFlyweight.streamId());
+        assertEquals(42, headerFlyweight.termId());
         assertEquals(reservedValue, headerFlyweight.reservedValue());
     }
 
@@ -358,17 +358,23 @@ class BufferBuilderTest
         assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
         assertEquals(data.capacity(), bufferBuilder.limit());
 
+        final int termOffset = 1024;
         final long reservedValue = 0xCAFE_BABE_DEAD_BEEFL;
+        final short version = (short)15;
+        final int type = HDR_TYPE_NAK;
+        final int sessionId = 87;
+        final int streamId = -9;
+        final int termId = 10;
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
         headerFlyweight.wrap(new byte[44], 1, 39);
-        headerFlyweight.frameLength(1);
-        headerFlyweight.version((short)1);
-        headerFlyweight.flags(UNFRAGMENTED);
-        headerFlyweight.headerType(1);
-        headerFlyweight.termOffset(1);
-        headerFlyweight.sessionId(1);
-        headerFlyweight.streamId(1);
-        headerFlyweight.termId(1);
+        headerFlyweight.frameLength(100);
+        headerFlyweight.version(version);
+        headerFlyweight.flags((short)0b1001_1101);
+        headerFlyweight.headerType(type);
+        headerFlyweight.termOffset(termOffset);
+        headerFlyweight.sessionId(sessionId);
+        headerFlyweight.streamId(streamId);
+        headerFlyweight.termId(termId);
         headerFlyweight.reservedValue(reservedValue);
 
         final Header header = new Header(2, 3);
@@ -377,7 +383,7 @@ class BufferBuilderTest
 
         assertSame(bufferBuilder, bufferBuilder.captureFirstHeader(header));
 
-        final int flags = 0b0101_0101;
+        final int flags = 0b0110_0110;
         headerFlyweight.wrap(new byte[88], 19, 42);
         headerFlyweight.frameLength(256);
         headerFlyweight.version((short)0xC);
@@ -403,15 +409,15 @@ class BufferBuilderTest
         assertEquals(2, header.initialTermId());
         assertEquals(3, header.positionBitsToShift());
         assertEquals(bufferBuilder.limit() + HEADER_LENGTH, header.frameLength());
+        assertEquals((byte)version, header.buffer().getByte(VERSION_FIELD_OFFSET));
         assertEquals((byte)(flags | BEGIN_FRAG_FLAG), header.flags());
         assertNotEquals(0, header.flags() & BEGIN_FRAG_FLAG);
-        assertEquals(48, header.termOffset());
-        assertEquals(999, header.sessionId());
-        assertEquals(4, header.streamId());
-        assertEquals(39, header.termId());
+        assertEquals(type, header.type());
+        assertEquals(termOffset, header.termOffset());
+        assertEquals(sessionId, header.sessionId());
+        assertEquals(streamId, header.streamId());
+        assertEquals(termId, header.termId());
         assertEquals(reservedValue, header.reservedValue());
-        assertEquals((byte)0xC, bufferBuilder.headerBuffer().getByte(VERSION_FIELD_OFFSET));
-        assertEquals((short)HDR_TYPE_ATS_SETUP, bufferBuilder.headerBuffer().getShort(TYPE_FIELD_OFFSET));
     }
 
     @Test

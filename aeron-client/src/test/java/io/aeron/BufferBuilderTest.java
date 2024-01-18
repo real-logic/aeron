@@ -353,6 +353,11 @@ class BufferBuilderTest
     @Test
     void shouldPrepareCompleteHeader()
     {
+        final UnsafeBuffer data = new UnsafeBuffer(new byte[999]);
+        bufferBuilder.append(data, 0, data.capacity());
+        assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
+        assertEquals(data.capacity(), bufferBuilder.limit());
+
         final long reservedValue = 0xCAFE_BABE_DEAD_BEEFL;
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
         headerFlyweight.wrap(new byte[44], 1, 39);
@@ -389,15 +394,15 @@ class BufferBuilderTest
 
         assertSame(header, bufferBuilder.prepareCompleteHeader(header));
 
-        assertEquals(0, bufferBuilder.capacity());
-        assertEquals(0, bufferBuilder.limit());
+        assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
+        assertEquals(data.capacity(), bufferBuilder.limit());
         assertNotSame(originalHeaderBuffer, header.buffer());
         assertSame(bufferBuilder.headerBuffer(), header.buffer());
         assertNotSame(bufferBuilder.headerBuffer(), bufferBuilder.buffer());
         assertEquals(0, header.offset());
         assertEquals(2, header.initialTermId());
         assertEquals(3, header.positionBitsToShift());
-        assertEquals(256, header.frameLength());
+        assertEquals(bufferBuilder.limit() + HEADER_LENGTH, header.frameLength());
         assertEquals((byte)(flags | BEGIN_FRAG_FLAG), header.flags());
         assertNotEquals(0, header.flags() & BEGIN_FRAG_FLAG);
         assertEquals(48, header.termOffset());

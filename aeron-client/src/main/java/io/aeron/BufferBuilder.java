@@ -25,9 +25,11 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
+import static io.aeron.protocol.DataHeaderFlyweight.*;
+import static io.aeron.protocol.HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
+import static io.aeron.protocol.HeaderFlyweight.VERSION_FIELD_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.*;
 
 /**
  * Reusable Builder for appending a sequence of buffer fragments which grows internal capacity as needed.
@@ -240,10 +242,16 @@ public final class BufferBuilder
     {
         final byte flags = verifyFlags(header, END_FRAG_FLAG);
 
-        // copy all the fields except the `reserved value`
-        headerBuffer.putBytes(0, header.buffer(), header.offset(), RESERVED_VALUE_OFFSET);
+        // copy all the fields skipping `frame length` and `reserved value`
+        headerBuffer.putBytes(
+            VERSION_FIELD_OFFSET,
+            header.buffer(),
+            header.offset() + VERSION_FIELD_OFFSET,
+            HEADER_LENGTH - SIZE_OF_LONG - SIZE_OF_INT);
         // set the BEGIN_FRAG_FLAG to mark the message as unfragmented
         headerBuffer.putByte(FLAGS_OFFSET, (byte)(flags | BEGIN_FRAG_FLAG));
+        // set the frameLength the length of the complete message
+        headerBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, limit + HEADER_LENGTH, LITTLE_ENDIAN);
 
         // point the Header object at the patched data
         header.buffer(headerBuffer);
@@ -268,8 +276,8 @@ public final class BufferBuilder
             {
                 throw new IllegalStateException(
                     "insufficient capacity: maxCapacity=" + MAX_CAPACITY +
-                    " limit=" + limit +
-                    " additionalLength=" + additionalLength);
+                        " limit=" + limit +
+                        " additionalLength=" + additionalLength);
             }
 
             resize(findSuitableCapacity(capacity, requiredCapacity));

@@ -19,8 +19,10 @@ import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.align;
 
 /**
  * Layout description for log buffers which contains partitions of terms with associated term metadata,
@@ -879,5 +881,22 @@ public class LogBufferDescriptor
         }
 
         throw new IllegalArgumentException("invalid term buffer length: " + termBufferLength);
+    }
+
+    /**
+     * Compute frame length for a message that is fragmented into chunks of {@code maxPayloadSize}.
+     *
+     * @param length of the message.
+     * @param maxPayloadSize fragment size without the header.
+     * @return message length after fragmentation.
+     */
+    public static int computeFragmentedFrameLength(final int length, final int maxPayloadSize)
+    {
+        final int numMaxPayloads = length / maxPayloadSize;
+        final int remainingPayload = length % maxPayloadSize;
+        final int lastFrameLength =
+            remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
+
+        return (numMaxPayloads * (maxPayloadSize + HEADER_LENGTH)) + lastFrameLength;
     }
 }

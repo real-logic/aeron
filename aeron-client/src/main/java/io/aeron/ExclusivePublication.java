@@ -23,6 +23,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTERS_OFFSET;
 import static io.aeron.logbuffer.LogBufferDescriptor.packTail;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
@@ -140,14 +141,14 @@ public final class ExclusivePublication extends ExclusivePublicationValues
             registrationId);
 
         final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();
-        final int termCount = LogBufferDescriptor.activeTermCount(logMetaDataBuffer);
-        final int index = LogBufferDescriptor.indexByTermCount(termCount);
+        final int termCount = activeTermCount(logMetaDataBuffer);
+        final int index = indexByTermCount(termCount);
         activePartitionIndex = index;
 
-        final long rawTail = LogBufferDescriptor.rawTail(logMetaDataBuffer, index);
+        final long rawTail = rawTail(logMetaDataBuffer, index);
         termId = LogBufferDescriptor.termId(rawTail);
         termOffset = LogBufferDescriptor.termOffset(rawTail);
-        termBeginPosition = LogBufferDescriptor.computeTermBeginPosition(termId, positionBitsToShift, initialTermId);
+        termBeginPosition = computeTermBeginPosition(termId, positionBitsToShift, initialTermId);
     }
 
     /**
@@ -566,7 +567,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
 
     private void rotateTerm()
     {
-        final int nextIndex = LogBufferDescriptor.nextPartitionIndex(activePartitionIndex);
+        final int nextIndex = nextPartitionIndex(activePartitionIndex);
         final int nextTermId = termId + 1;
 
         activePartitionIndex = nextIndex;
@@ -576,8 +577,8 @@ public final class ExclusivePublication extends ExclusivePublicationValues
 
         final int termCount = nextTermId - initialTermId;
 
-        LogBufferDescriptor.initialiseTailWithTermId(logMetaDataBuffer, nextIndex, nextTermId);
-        LogBufferDescriptor.activeTermCountOrdered(logMetaDataBuffer, termCount);
+        initialiseTailWithTermId(logMetaDataBuffer, nextIndex, nextTermId);
+        activeTermCountOrdered(logMetaDataBuffer, termCount);
     }
 
     private int handleEndOfLog(final UnsafeBuffer termBuffer, final int termLength)
@@ -638,7 +639,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int framedLength = computeFramedLength(length, maxPayloadLength);
+        final int framedLength = computeFragmentedFrameLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + framedLength;
@@ -744,7 +745,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final ReservedValueSupplier reservedValueSupplier)
     {
         final int length = lengthOne + lengthTwo;
-        final int framedLength = computeFramedLength(length, maxPayloadLength);
+        final int framedLength = computeFragmentedFrameLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + framedLength;
@@ -869,7 +870,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int framedLength = computeFramedLength(length, maxPayloadLength);
+        final int framedLength = computeFragmentedFrameLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + framedLength;

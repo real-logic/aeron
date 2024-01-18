@@ -34,7 +34,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import static io.aeron.BufferBuilder.INIT_MIN_CAPACITY;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeFragmentedFrameLength;
-import static io.aeron.protocol.DataHeaderFlyweight.EOS_FLAG;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.*;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -422,36 +421,6 @@ class BufferBuilderTest
         assertEquals(streamId, header.streamId());
         assertEquals(termId, header.termId());
         assertEquals(reservedValue, header.reservedValue());
-    }
-
-    @Test
-    void shouldThrowAnExceptionIfPrepareCompleteHeaderIsCalledWithNonLastFragment()
-    {
-        final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
-        headerFlyweight.wrap(new byte[64], 32, 32);
-        headerFlyweight.flags((byte)0b1011_1111);
-        final Header header = new Header(0, 16);
-        header.buffer(headerFlyweight);
-
-        final IllegalArgumentException exception =
-            assertThrowsExactly(IllegalArgumentException.class, () -> bufferBuilder.prepareCompleteHeader(header));
-        assertEquals("invalid frame, i.e. the (01000000) bit must be set in flags, got: 10111111",
-            exception.getMessage());
-    }
-
-    @Test
-    void shouldThrowAnExceptionIfCaptureFirstHeaderIsCalledWithInvalidFlags()
-    {
-        final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
-        headerFlyweight.wrap(new byte[64], 32, 32);
-        headerFlyweight.flags((short)(END_FRAG_FLAG | EOS_FLAG | 3));
-        final Header header = new Header(0, 16);
-        header.buffer(headerFlyweight);
-
-        final IllegalArgumentException exception =
-            assertThrowsExactly(IllegalArgumentException.class, () -> bufferBuilder.captureFirstHeader(header));
-        assertEquals("invalid frame, i.e. the (10000000) bit must be set in flags, got: 01100011",
-            exception.getMessage());
     }
 
     @Test

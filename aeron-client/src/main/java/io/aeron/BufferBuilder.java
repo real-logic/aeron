@@ -17,7 +17,6 @@ package io.aeron;
 
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -221,10 +220,7 @@ public final class BufferBuilder
      */
     public BufferBuilder captureFirstHeader(final Header header)
     {
-        verifyFlags(header, BEGIN_FRAG_FLAG);
-
         headerBuffer.putBytes(0, header.buffer(), header.offset(), HEADER_LENGTH);
-
         return this;
     }
 
@@ -237,8 +233,6 @@ public final class BufferBuilder
      */
     public Header prepareCompleteHeader(final Header header)
     {
-        final byte flags = verifyFlags(header, END_FRAG_FLAG);
-
         // compute the `frame length` of the complete message
         final int firstFrameLength = headerBuffer.getInt(FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
         final int fragmentedMessageLength = LogBufferDescriptor.computeFragmentedFrameLength(
@@ -246,7 +240,7 @@ public final class BufferBuilder
         headerBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, fragmentedMessageLength, LITTLE_ENDIAN);
 
         // set the BEGIN_FRAG_FLAG to mark the message as unfragmented
-        headerBuffer.putByte(FLAGS_OFFSET, (byte)(flags | BEGIN_FRAG_FLAG));
+        headerBuffer.putByte(FLAGS_OFFSET, (byte)(header.flags() | BEGIN_FRAG_FLAG));
 
         // point the Header object at the patched data
         header.buffer(headerBuffer);
@@ -298,21 +292,6 @@ public final class BufferBuilder
         final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(newCapacity);
         byteBuffer.order(LITTLE_ENDIAN);
         return byteBuffer;
-    }
-
-    private static byte verifyFlags(final Header header, final byte bits)
-    {
-        final byte flags = header.flags();
-        if (bits != (flags & bits))
-        {
-            final StringBuilder builder = new StringBuilder(64);
-            builder.append("invalid frame, i.e. the (");
-            HeaderFlyweight.appendFlagsAsChars(bits, builder);
-            builder.append(") bit must be set in flags, got: ");
-            HeaderFlyweight.appendFlagsAsChars(flags, builder);
-            throw new IllegalArgumentException(builder.toString());
-        }
-        return flags;
     }
 
     static int findSuitableCapacity(final int capacity, final long requiredCapacity)

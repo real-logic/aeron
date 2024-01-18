@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -238,8 +239,11 @@ public final class BufferBuilder
     {
         final byte flags = verifyFlags(header, END_FRAG_FLAG);
 
-        // set the `frame length` of the complete message
-        headerBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, limit + HEADER_LENGTH, LITTLE_ENDIAN);
+        // compute the `frame length` of the complete message
+        final int firstFrameLength = headerBuffer.getInt(FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
+        final int fragmentedMessageLength = LogBufferDescriptor.computeFragmentedFrameLength(
+            limit, firstFrameLength - HEADER_LENGTH);
+        headerBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, fragmentedMessageLength, LITTLE_ENDIAN);
 
         // set the BEGIN_FRAG_FLAG to mark the message as unfragmented
         headerBuffer.putByte(FLAGS_OFFSET, (byte)(flags | BEGIN_FRAG_FLAG));

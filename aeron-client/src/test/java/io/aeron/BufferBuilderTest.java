@@ -33,6 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.BufferBuilder.INIT_MIN_CAPACITY;
 import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeFragmentedFrameLength;
 import static io.aeron.protocol.DataHeaderFlyweight.EOS_FLAG;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.*;
@@ -358,16 +359,17 @@ class BufferBuilderTest
         assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
         assertEquals(data.capacity(), bufferBuilder.limit());
 
+        final int frameLength = 128;
         final int termOffset = 1024;
-        final long reservedValue = 0xCAFE_BABE_DEAD_BEEFL;
         final short version = (short)15;
         final int type = HDR_TYPE_NAK;
         final int sessionId = 87;
         final int streamId = -9;
         final int termId = 10;
+        final long reservedValue = 0xCAFE_BABE_DEAD_BEEFL;
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
         headerFlyweight.wrap(new byte[44], 1, 39);
-        headerFlyweight.frameLength(100);
+        headerFlyweight.frameLength(frameLength);
         headerFlyweight.version(version);
         headerFlyweight.flags((short)0b1001_1101);
         headerFlyweight.headerType(type);
@@ -377,7 +379,7 @@ class BufferBuilderTest
         headerFlyweight.termId(termId);
         headerFlyweight.reservedValue(reservedValue);
 
-        final Header header = new Header(2, 3);
+        final Header header = new Header(2, 20);
         header.buffer(new UnsafeBuffer(headerFlyweight.byteArray()));
         header.offset(headerFlyweight.wrapAdjustment());
 
@@ -385,7 +387,7 @@ class BufferBuilderTest
 
         final int flags = 0b0110_0110;
         headerFlyweight.wrap(new byte[88], 19, 42);
-        headerFlyweight.frameLength(256);
+        headerFlyweight.frameLength(200);
         headerFlyweight.version((short)0xC);
         headerFlyweight.flags((short)flags);
         headerFlyweight.headerType(HDR_TYPE_ATS_SETUP);
@@ -407,8 +409,10 @@ class BufferBuilderTest
         assertNotSame(bufferBuilder.headerBuffer(), bufferBuilder.buffer());
         assertEquals(0, header.offset());
         assertEquals(2, header.initialTermId());
-        assertEquals(3, header.positionBitsToShift());
-        assertEquals(bufferBuilder.limit() + HEADER_LENGTH, header.frameLength());
+        assertEquals(20, header.positionBitsToShift());
+        assertEquals(
+            computeFragmentedFrameLength(data.capacity(), frameLength - HEADER_LENGTH),
+            header.frameLength());
         assertEquals((byte)version, header.buffer().getByte(VERSION_FIELD_OFFSET));
         assertEquals((byte)(flags | BEGIN_FRAG_FLAG), header.flags());
         assertNotEquals(0, header.flags() & BEGIN_FRAG_FLAG);

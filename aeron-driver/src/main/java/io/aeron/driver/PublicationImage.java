@@ -247,7 +247,7 @@ public final class PublicationImage
         final long position = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         nextSmPosition = position;
         lastSmPosition = position;
-        lastOverrunThreshold = position + nextSmReceiverWindowLength;
+        lastOverrunThreshold = position + (termLength >> 1);
         cleanPosition = position;
 
         hwmPosition.setOrdered(position);
@@ -714,6 +714,7 @@ public final class PublicationImage
             {
                 final int termId = computeTermIdFromPosition(smPosition, positionBitsToShift, initialTermId);
                 final int termOffset = (int)smPosition & termLengthMask;
+                final int termLength = termLengthMask + 1;
                 final short flags = isSendingEosSm ? StatusMessageFlyweight.END_OF_STREAM_FLAG : 0;
 
                 channelEndpoint.sendStatusMessage(
@@ -722,7 +723,7 @@ public final class PublicationImage
                 statusMessagesSent.incrementOrdered();
 
                 lastSmPosition = smPosition;
-                lastOverrunThreshold = smPosition + maxReceiverWindowLength;
+                lastOverrunThreshold = smPosition + (termLength >> 1);
                 lastSmChangeNumber = changeNumber;
                 timeOfLastSmNs = nowNs;
 
@@ -1070,7 +1071,7 @@ public final class PublicationImage
 
     private long untetheredWindowLimit()
     {
-        final int windowLength = nextSmReceiverWindowLength;
+        final long windowLength = maxReceiverWindowLength;
         long maxConsumerPosition = 0;
 
         for (final ReadablePosition subscriberPosition : subscriberPositions)

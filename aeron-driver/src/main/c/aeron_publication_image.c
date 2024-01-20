@@ -249,7 +249,7 @@ int aeron_publication_image_create(
     _image->max_receiver_window_length = _image->congestion_control->max_window_length(
         _image->congestion_control->state);
     _image->last_sm_position = initial_position;
-    _image->last_overrun_threshold = initial_position + _image->next_sm_receiver_window_length;
+    _image->last_overrun_threshold = initial_position + (term_buffer_length / 2);
     _image->time_of_last_packet_ns = now_ns;
     _image->time_of_last_sm_ns = 0;
     _image->conductor_fields.clean_position = initial_position;
@@ -711,7 +711,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
             }
 
             image->last_sm_position = sm_position;
-            image->last_overrun_threshold = sm_position + image->max_receiver_window_length;
+            image->last_overrun_threshold = sm_position + (image->term_length / 2);
             image->last_sm_change_number = change_number;
             image->time_of_last_sm_ns = now_ns;
 
@@ -897,7 +897,7 @@ void aeron_publication_image_check_untethered_subscriptions(
         }
     }
 
-    int64_t window_length = image->next_sm_receiver_window_length;
+    int64_t window_length = image->max_receiver_window_length;
     int64_t untethered_window_limit = (max_sub_pos - window_length) + (window_length / 4);
 
     for (size_t i = 0, length = subscribable->length; i < length; i++)

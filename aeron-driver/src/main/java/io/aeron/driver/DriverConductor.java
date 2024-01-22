@@ -292,7 +292,7 @@ public final class DriverConductor implements Agent
                 hwmPos = ReceiverHwm.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
                 rcvPos = ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
 
-                final boolean treatAsMulticast = subscription.group() == INFER ?
+                final boolean isMulticastSemantics = subscription.group() == INFER ?
                     channelEndpoint.udpChannel(transportIndex).isMulticast() : subscription.group() == FORCE_TRUE;
                 final String sourceIdentity = Configuration.sourceIdentity(sourceAddress);
 
@@ -309,7 +309,7 @@ public final class DriverConductor implements Agent
                     initialTermOffset,
                     flags,
                     rawLog,
-                    treatAsMulticast ? ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator(),
+                    isMulticastSemantics ? ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator(),
                     subscriberPositions,
                     hwmPos,
                     rcvPos,

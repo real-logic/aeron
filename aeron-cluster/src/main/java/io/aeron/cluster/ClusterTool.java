@@ -77,8 +77,6 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  * seed-recording-log-from-snapshot: creates a new recording log based on the latest valid snapshot.
  *                           errors: prints Aeron and cluster component error logs.
  *                     list-members: prints leader memberId, active members and passive members lists.
- *                    remove-member: [memberId] requests removal of a member by memberId.
- *                   remove-passive: [memberId] requests removal of a passive member by memberId.
  *                     backup-query: [delay] get, or set, time of next backup query.
  *       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.
  *                         snapshot: triggers a snapshot on the leader.
@@ -1492,8 +1490,6 @@ public class ClusterTool
             " seed-recording-log-from-snapshot: creates a new recording log based on the latest valid snapshot.%n" +
             "                           errors: prints Aeron and cluster component error logs.%n" +
             "                     list-members: prints leader memberId, active members and passive members lists.%n" +
-            "                    remove-member: [memberId] requests removal of a member by memberId.%n" +
-            "                   remove-passive: [memberId] requests removal of a passive member by memberId.%n" +
             "                     backup-query: [delay] get, or set, time of next backup query.%n" +
             "       invalidate-latest-snapshot: marks the latest snapshot as a invalid so the previous is loaded.%n" +
             "                         snapshot: triggers a snapshot on the leader.%n" +

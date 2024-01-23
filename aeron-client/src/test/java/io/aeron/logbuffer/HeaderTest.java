@@ -119,4 +119,28 @@ class HeaderTest
         assertEquals(termId, header.termId());
         assertEquals(reservedValue, header.reservedValue());
     }
+
+    @Test
+    void shouldOverrideInitialTermId()
+    {
+        final int initialTermId = -178;
+        final int newInitialTermId = 871;
+        final Header header = new Header(initialTermId, 3);
+        assertEquals(initialTermId, header.initialTermId());
+
+        header.initialTermId(newInitialTermId);
+        assertEquals(newInitialTermId, header.initialTermId());
+    }
+
+    @Test
+    void shouldOverridePositionBitsToShift()
+    {
+        final int positionBitsToShift = -6;
+        final int newPositionBitsToShift = 20;
+        final Header header = new Header(42, positionBitsToShift);
+        assertEquals(positionBitsToShift, header.positionBitsToShift());
+
+        header.positionBitsToShift(newPositionBitsToShift);
+        assertEquals(newPositionBitsToShift, header.positionBitsToShift());
+    }
 }

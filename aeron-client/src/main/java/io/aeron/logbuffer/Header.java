@@ -31,8 +31,8 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
  */
 public final class Header
 {
-    private final int positionBitsToShift;
-    private final int initialTermId;
+    private int positionBitsToShift;
+    private int initialTermId;
     private int offset = 0;
     private DirectBuffer buffer;
     private final Object context;
@@ -97,6 +97,16 @@ public final class Header
     }
 
     /**
+     * Set the number of times to left shift the term count to multiply by term length.
+     *
+     * @param positionBitsToShift number of times to left shift the term count to multiply by term length.
+     */
+    public void positionBitsToShift(final int positionBitsToShift)
+    {
+        this.positionBitsToShift = positionBitsToShift;
+    }
+
+    /**
      * Get the initial term id this stream started at.
      *
      * @return the initial term id this stream started at.
@@ -104,6 +114,16 @@ public final class Header
     public int initialTermId()
     {
         return initialTermId;
+    }
+
+    /**
+     * Get the initial term id this stream started at.
+     *
+     * @param initialTermId the initial term id this stream started at.
+     */
+    public void initialTermId(final int initialTermId)
+    {
+        this.initialTermId = initialTermId;
     }
 
     /**

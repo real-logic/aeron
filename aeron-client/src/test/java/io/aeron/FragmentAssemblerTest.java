@@ -85,7 +85,7 @@ class FragmentAssemblerTest
 
         final Header capturedHeader = headerArg.getValue();
         assertEquals(SESSION_ID, capturedHeader.sessionId());
-        assertEquals(FrameDescriptor.END_FRAG_FLAG, capturedHeader.flags());
+        assertEquals(FrameDescriptor.UNFRAGMENTED, capturedHeader.flags());
     }
 
     @Test
@@ -116,7 +116,7 @@ class FragmentAssemblerTest
 
         final Header capturedHeader = headerArg.getValue();
         assertEquals(SESSION_ID, capturedHeader.sessionId());
-        assertEquals(FrameDescriptor.END_FRAG_FLAG, capturedHeader.flags());
+        assertEquals(FrameDescriptor.UNFRAGMENTED, capturedHeader.flags());
     }
 
     @Test

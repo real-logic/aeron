@@ -15,20 +15,20 @@
  */
 package io.aeron;
 
-import org.agrona.BitUtil;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-
-import java.nio.ByteOrder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static io.aeron.protocol.DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -38,7 +38,7 @@ class FragmentAssemblerTest
     private static final int INITIAL_TERM_ID = 3;
 
     private final FragmentHandler delegateFragmentHandler = mock(FragmentHandler.class);
-    private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer termBuffer = new UnsafeBuffer(new byte[1024]);
     private final Header header = spy(new Header(INITIAL_TERM_ID, LogBufferDescriptor.TERM_MIN_LENGTH));
     private final FragmentAssembler assembler = new FragmentAssembler(delegateFragmentHandler);
 
@@ -46,7 +46,8 @@ class FragmentAssemblerTest
     void setUp()
     {
         header.buffer(termBuffer);
-        when(termBuffer.getInt(anyInt(), any(ByteOrder.class))).thenReturn(SESSION_ID);
+        header.offset(16);
+        termBuffer.putInt(header.offset() + SESSION_ID_FIELD_OFFSET, SESSION_ID, LITTLE_ENDIAN);
     }
 
     @Test

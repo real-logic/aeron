@@ -132,6 +132,7 @@ public class FragmentAssembler implements FragmentHandler
         {
             final BufferBuilder builder = getBufferBuilder(header.sessionId());
             builder.reset()
+                .captureFirstHeader(header)
                 .append(buffer, offset, length)
                 .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
         }
@@ -146,7 +147,8 @@ public class FragmentAssembler implements FragmentHandler
 
                     if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                     {
-                        delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
+                        delegate.onFragment(
+                            builder.buffer(), 0, builder.limit(), builder.prepareCompleteHeader(header));
                         builder.reset();
                     }
                     else

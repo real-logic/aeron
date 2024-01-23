@@ -1071,7 +1071,6 @@ public final class PublicationImage
 
     private long untetheredWindowLimit()
     {
-        final long windowLength = maxReceiverWindowLength;
         long maxConsumerPosition = 0;
 
         for (final ReadablePosition subscriberPosition : subscriberPositions)
@@ -1082,6 +1081,8 @@ public final class PublicationImage
                 maxConsumerPosition = position;
             }
         }
+
+        final int windowLength = nextSmReceiverWindowLength;
 
         return (maxConsumerPosition - windowLength) + (windowLength >> 2);
     }

@@ -89,14 +89,14 @@ class BufferBuilderTest
     {
         final BufferBuilder builder = new BufferBuilder(0, isDirect);
         assertNotNull(builder.buffer());
-        assertNotNull(builder.headerBuffer());
-        assertNotSame(builder.headerBuffer(), builder.buffer());
+        assertNotNull(builder.headerBuffer);
+        assertNotSame(builder.headerBuffer, builder.buffer());
 
         assertEquals(0, builder.capacity());
         assertEquals(0, builder.limit());
         assertEquals(0, builder.buffer().capacity());
 
-        assertEquals(HEADER_LENGTH, builder.headerBuffer().capacity());
+        assertEquals(HEADER_LENGTH, builder.headerBuffer.capacity());
     }
 
     @ParameterizedTest
@@ -168,12 +168,15 @@ class BufferBuilderTest
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INIT_MIN_CAPACITY]);
 
         bufferBuilder.append(srcBuffer, 0, srcBuffer.capacity());
+        bufferBuilder.nextTermOffset(1024);
 
         assertEquals(srcBuffer.capacity(), bufferBuilder.limit());
+        assertEquals(1024, bufferBuilder.nextTermOffset());
 
         bufferBuilder.reset();
 
         assertEquals(0, bufferBuilder.limit());
+        assertEquals(0, bufferBuilder.nextTermOffset());
     }
 
     @Test
@@ -335,19 +338,18 @@ class BufferBuilderTest
         assertEquals(0, bufferBuilder.capacity());
         assertEquals(0, bufferBuilder.limit());
         assertSame(originalHeaderBuffer, header.buffer());
-        assertNotSame(bufferBuilder.buffer(), header.buffer());
-        assertNotSame(bufferBuilder.headerBuffer(), header.buffer());
+        assertEquals(headerFlyweight.wrapAdjustment(), header.offset());
 
-        headerFlyweight.wrap(bufferBuilder.headerBuffer(), 0, HEADER_LENGTH);
-        assertEquals(512, headerFlyweight.frameLength());
+        headerFlyweight.wrap(bufferBuilder.headerBuffer, 0, HEADER_LENGTH);
+        assertEquals(512, bufferBuilder.completeHeader.frameLength());
         assertEquals((short)0xA, headerFlyweight.version());
-        assertEquals((short)0b1111_1111, headerFlyweight.flags());
+        assertEquals((byte)0b1111_1111, bufferBuilder.completeHeader.flags());
         assertEquals(HDR_TYPE_RTTM, headerFlyweight.headerType());
-        assertEquals(384, headerFlyweight.termOffset());
-        assertEquals(-890, headerFlyweight.sessionId());
-        assertEquals(555, headerFlyweight.streamId());
-        assertEquals(42, headerFlyweight.termId());
-        assertEquals(reservedValue, headerFlyweight.reservedValue());
+        assertEquals(384, bufferBuilder.completeHeader.termOffset());
+        assertEquals(-890, bufferBuilder.completeHeader.sessionId());
+        assertEquals(555, bufferBuilder.completeHeader.streamId());
+        assertEquals(42, bufferBuilder.completeHeader.termId());
+        assertEquals(reservedValue, bufferBuilder.completeHeader.reservedValue());
     }
 
     @Test
@@ -378,7 +380,7 @@ class BufferBuilderTest
         headerFlyweight.termId(termId);
         headerFlyweight.reservedValue(reservedValue);
 
-        final Header header = new Header(2, 20);
+        final Header header = new Header(4, 48);
         header.buffer(new UnsafeBuffer(headerFlyweight.byteArray()));
         header.offset(headerFlyweight.wrapAdjustment());
 
@@ -399,28 +401,30 @@ class BufferBuilderTest
         header.offset(headerFlyweight.wrapAdjustment());
         final DirectBuffer originalHeaderBuffer = header.buffer();
 
-        assertSame(header, bufferBuilder.prepareCompleteHeader(header));
+        final Header completeHeader = bufferBuilder.prepareCompleteHeader(header);
+        assertNotSame(header, completeHeader);
 
         assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
         assertEquals(data.capacity(), bufferBuilder.limit());
-        assertNotSame(originalHeaderBuffer, header.buffer());
-        assertSame(bufferBuilder.headerBuffer(), header.buffer());
-        assertNotSame(bufferBuilder.headerBuffer(), bufferBuilder.buffer());
-        assertEquals(0, header.offset());
-        assertEquals(2, header.initialTermId());
-        assertEquals(20, header.positionBitsToShift());
+        assertSame(originalHeaderBuffer, header.buffer());
+        assertEquals(headerFlyweight.wrapAdjustment(), header.offset());
+        assertNotSame(bufferBuilder.headerBuffer, bufferBuilder.buffer());
+        assertSame(bufferBuilder.headerBuffer, completeHeader.buffer());
+        assertEquals(0, completeHeader.offset());
+        assertEquals(4, completeHeader.initialTermId());
+        assertEquals(48, completeHeader.positionBitsToShift());
         assertEquals(
             computeFragmentedFrameLength(data.capacity(), frameLength - HEADER_LENGTH),
-            header.frameLength());
-        assertEquals((byte)version, header.buffer().getByte(VERSION_FIELD_OFFSET));
-        assertEquals((byte)(flags | BEGIN_FRAG_FLAG), header.flags());
-        assertNotEquals(0, header.flags() & BEGIN_FRAG_FLAG);
-        assertEquals(type, header.type());
-        assertEquals(termOffset, header.termOffset());
-        assertEquals(sessionId, header.sessionId());
-        assertEquals(streamId, header.streamId());
-        assertEquals(termId, header.termId());
-        assertEquals(reservedValue, header.reservedValue());
+            completeHeader.frameLength());
+        assertEquals((byte)version, completeHeader.buffer().getByte(VERSION_FIELD_OFFSET));
+        assertEquals((byte)(flags | BEGIN_FRAG_FLAG), completeHeader.flags());
+        assertNotEquals(0, completeHeader.flags() & BEGIN_FRAG_FLAG);
+        assertEquals(type, completeHeader.type());
+        assertEquals(termOffset, completeHeader.termOffset());
+        assertEquals(sessionId, completeHeader.sessionId());
+        assertEquals(streamId, completeHeader.streamId());
+        assertEquals(termId, completeHeader.termId());
+        assertEquals(reservedValue, completeHeader.reservedValue());
     }
 
     @Test
@@ -455,7 +459,7 @@ class BufferBuilderTest
     void shouldNotChangeHeaderBufferUponResize(final boolean isDirect)
     {
         final BufferBuilder builder = new BufferBuilder(0, isDirect);
-        final UnsafeBuffer headerBuffer = builder.headerBuffer();
+        final UnsafeBuffer headerBuffer = builder.headerBuffer;
         final ByteBuffer headerByteBuffer = headerBuffer.byteBuffer();
         final byte[] headerByteArray = headerBuffer.byteArray();
         headerBuffer.setMemory(0, headerBuffer.capacity(), (byte)0xFA);
@@ -464,9 +468,9 @@ class BufferBuilderTest
         ThreadLocalRandom.current().nextBytes(src.byteArray());
         builder.append(src, 0, src.capacity());
 
-        assertSame(headerBuffer, builder.headerBuffer());
-        assertSame(headerByteBuffer, builder.headerBuffer().byteBuffer());
-        assertSame(headerByteArray, builder.headerBuffer().byteArray());
+        assertSame(headerBuffer, builder.headerBuffer);
+        assertSame(headerByteBuffer, builder.headerBuffer.byteBuffer());
+        assertSame(headerByteArray, builder.headerBuffer.byteArray());
         for (int i = 0; i < headerBuffer.capacity(); i++)
         {
             assertEquals((byte)0xFA, headerBuffer.getByte(i));

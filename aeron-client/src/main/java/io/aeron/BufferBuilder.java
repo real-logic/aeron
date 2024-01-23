@@ -46,7 +46,8 @@ public final class BufferBuilder
     private int limit;
     private int nextTermOffset;
     private final UnsafeBuffer buffer = new UnsafeBuffer();
-    private final UnsafeBuffer headerBuffer = new UnsafeBuffer();
+    final UnsafeBuffer headerBuffer = new UnsafeBuffer();
+    final Header completeHeader = new Header(0, 0);
 
     /**
      * Construct a buffer builder with an initial capacity of zero and isDirect false.
@@ -93,7 +94,6 @@ public final class BufferBuilder
         {
             if (initialCapacity > 0)
             {
-
                 buffer.wrap(new byte[initialCapacity]);
             }
             headerBuffer.wrap(new byte[HEADER_LENGTH]);
@@ -220,6 +220,10 @@ public final class BufferBuilder
      */
     public BufferBuilder captureFirstHeader(final Header header)
     {
+        completeHeader.initialTermId(header.initialTermId());
+        completeHeader.positionBitsToShift(header.positionBitsToShift());
+        completeHeader.offset(0);
+        completeHeader.buffer(headerBuffer);
         headerBuffer.putBytes(0, header.buffer(), header.offset(), HEADER_LENGTH);
         return this;
     }
@@ -242,16 +246,7 @@ public final class BufferBuilder
         // set the BEGIN_FRAG_FLAG to mark the message as unfragmented
         headerBuffer.putByte(FLAGS_OFFSET, (byte)(header.flags() | BEGIN_FRAG_FLAG));
 
-        // point the Header object at the patched data
-        header.buffer(headerBuffer);
-        header.offset(0);
-
-        return header;
-    }
-
-    UnsafeBuffer headerBuffer()
-    {
-        return headerBuffer;
+        return completeHeader;
     }
 
     private void ensureCapacity(final int additionalLength)

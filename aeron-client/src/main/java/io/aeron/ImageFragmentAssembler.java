@@ -122,7 +122,7 @@ public class ImageFragmentAssembler implements FragmentHandler
         if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
         {
             builder.reset()
-                .captureFirstHeader(header)
+                .firstHeader(header)
                 .append(buffer, offset, length)
                 .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
         }
@@ -132,7 +132,7 @@ public class ImageFragmentAssembler implements FragmentHandler
 
             if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
             {
-                delegate.onFragment(builder.buffer(), 0, builder.limit(), builder.prepareCompleteHeader(header));
+                delegate.onFragment(builder.buffer(), 0, builder.limit(), builder.completeHeader(header));
                 builder.reset();
             }
             else

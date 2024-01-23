@@ -126,7 +126,7 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
         {
             final BufferBuilder builder = getBufferBuilder(header.sessionId());
             builder.reset()
-                .captureFirstHeader(header)
+                .firstHeader(header)
                 .append(buffer, offset, length)
                 .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
         }
@@ -144,7 +144,7 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
                     if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                     {
                         action = delegate.onFragment(
-                            builder.buffer(), 0, builder.limit(), builder.prepareCompleteHeader(header));
+                            builder.buffer(), 0, builder.limit(), builder.completeHeader(header));
 
                         if (Action.ABORT == action)
                         {

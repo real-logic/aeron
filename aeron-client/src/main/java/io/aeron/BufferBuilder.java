@@ -218,12 +218,13 @@ public final class BufferBuilder
      * @param header of the first frame.
      * @return the builder for fluent API usage.
      */
-    public BufferBuilder captureFirstHeader(final Header header)
+    public BufferBuilder firstHeader(final Header header)
     {
         completeHeader.initialTermId(header.initialTermId());
         completeHeader.positionBitsToShift(header.positionBitsToShift());
         completeHeader.offset(0);
         completeHeader.buffer(headerBuffer);
+
         headerBuffer.putBytes(0, header.buffer(), header.offset(), HEADER_LENGTH);
         return this;
     }
@@ -235,7 +236,7 @@ public final class BufferBuilder
      * @param header of the last frame.
      * @return complete message header.
      */
-    public Header prepareCompleteHeader(final Header header)
+    public Header completeHeader(final Header header)
     {
         // compute the `frame length` of the complete message
         final int firstFrameLength = headerBuffer.getInt(FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);

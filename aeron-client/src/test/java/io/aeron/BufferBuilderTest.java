@@ -333,7 +333,7 @@ class BufferBuilderTest
         header.offset(headerFlyweight.wrapAdjustment());
         final DirectBuffer originalHeaderBuffer = header.buffer();
 
-        assertSame(bufferBuilder, bufferBuilder.captureFirstHeader(header));
+        assertSame(bufferBuilder, bufferBuilder.firstHeader(header));
 
         assertEquals(0, bufferBuilder.capacity());
         assertEquals(0, bufferBuilder.limit());
@@ -384,7 +384,7 @@ class BufferBuilderTest
         header.buffer(new UnsafeBuffer(headerFlyweight.byteArray()));
         header.offset(headerFlyweight.wrapAdjustment());
 
-        assertSame(bufferBuilder, bufferBuilder.captureFirstHeader(header));
+        assertSame(bufferBuilder, bufferBuilder.firstHeader(header));
 
         final int flags = 0b0110_0110;
         headerFlyweight.wrap(new byte[88], 19, 42);
@@ -401,7 +401,7 @@ class BufferBuilderTest
         header.offset(headerFlyweight.wrapAdjustment());
         final DirectBuffer originalHeaderBuffer = header.buffer();
 
-        final Header completeHeader = bufferBuilder.prepareCompleteHeader(header);
+        final Header completeHeader = bufferBuilder.completeHeader(header);
         assertNotSame(header, completeHeader);
 
         assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());

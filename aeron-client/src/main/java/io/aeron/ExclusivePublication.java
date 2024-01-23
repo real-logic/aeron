@@ -24,8 +24,6 @@ import org.agrona.concurrent.status.ReadablePosition;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTERS_OFFSET;
-import static io.aeron.logbuffer.LogBufferDescriptor.packTail;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;

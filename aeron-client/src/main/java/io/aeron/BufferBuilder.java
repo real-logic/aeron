@@ -261,8 +261,8 @@ public final class BufferBuilder
             {
                 throw new IllegalStateException(
                     "insufficient capacity: maxCapacity=" + MAX_CAPACITY +
-                        " limit=" + limit +
-                        " additionalLength=" + additionalLength);
+                    " limit=" + limit +
+                    " additionalLength=" + additionalLength);
             }
 
             resize(findSuitableCapacity(capacity, requiredCapacity));

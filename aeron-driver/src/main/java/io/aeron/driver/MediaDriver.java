@@ -470,6 +470,7 @@ public final class MediaDriver implements AutoCloseable
         private int socketSndbufLength = Configuration.socketSndbufLength();
         private int socketRcvbufLength = Configuration.socketRcvbufLength();
         private int socketMulticastTtl = Configuration.socketMulticastTtl();
+        private int socketToS = Configuration.socketToS();
         private int mtuLength = Configuration.mtuLength();
         private int ipcMtuLength = Configuration.ipcMtuLength();
         private int filePageSize = Configuration.filePageSize();
@@ -1785,6 +1786,30 @@ public final class MediaDriver implements AutoCloseable
         public Context socketRcvbufLength(final int socketRcvbufLength)
         {
             this.socketRcvbufLength = socketRcvbufLength;
+            return this;
+        }
+
+        /**
+         * The socket ToS which is the OS IP_TOS.
+         *
+         * @return the socket ToS.
+         * @see Configuration#SOCKET_TOS_PROP_NAME
+         */
+        public int socketToS()
+        {
+            return socketToS;
+        }
+
+        /**
+         * The socket ToS which is the OS IP_TOS.
+         *
+         * @param socketToS which is the OS IP_TOS.
+         * @return this for a fluent API.
+         * @see Configuration#SOCKET_TOS_PROP_NAME
+         */
+        public Context socketToS(final int socketToS)
+        {
+            this.socketToS = socketToS;
             return this;
         }
 
@@ -4040,6 +4065,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    socketSndbufLength=" + socketSndbufLength +
                 "\n    socketRcvbufLength=" + socketRcvbufLength +
                 "\n    socketMulticastTtl=" + socketMulticastTtl +
+                    "\n    socketToS=" + socketToS +
                 "\n    mtuLength=" + mtuLength +
                 "\n    ipcMtuLength=" + ipcMtuLength +
                 "\n    filePageSize=" + filePageSize +

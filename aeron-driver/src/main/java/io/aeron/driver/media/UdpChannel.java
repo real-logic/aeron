@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.CommonContext.*;
+import static io.aeron.driver.Configuration.SOCKET_TOS_DEFAULT;
 import static io.aeron.driver.media.NetworkUtil.*;
 import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
@@ -58,6 +59,7 @@ public final class UdpChannel
     private final int multicastTtl;
     private final int socketRcvbufLength;
     private final int socketSndbufLength;
+    private final int socketToS;
     private final int receiverWindowLength;
     private final long tag;
     private final InetSocketAddress remoteData;
@@ -94,6 +96,7 @@ public final class UdpChannel
         channelUri = context.channelUri;
         socketRcvbufLength = context.socketRcvbufLength;
         socketSndbufLength = context.socketSndbufLength;
+        socketToS = context.socketToS;
         receiverWindowLength = context.receiverWindowLength;
         channelReceiveTimestampOffset = context.channelReceiveTimestampOffset;
         channelSendTimestampOffset = context.channelSendTimestampOffset;
@@ -162,6 +165,8 @@ public final class UdpChannel
             final boolean hasNoDistinguishingCharacteristic =
                 null == endpointAddress && null == controlAddress && null == tagIdStr;
 
+            final int socketToS = parseSocketToS(channelUri);
+
             if (ControlMode.DYNAMIC == controlMode && null == controlAddress)
             {
                 throw new IllegalArgumentException(
@@ -186,6 +191,7 @@ public final class UdpChannel
                 throw new UnknownHostException("could not resolve control address: " + controlAddress);
             }
 
+
             boolean hasExplicitEndpoint = true;
             if (null == endpointAddress)
             {
@@ -206,7 +212,8 @@ public final class UdpChannel
                 .hasNoDistinguishingCharacteristic(hasNoDistinguishingCharacteristic)
                 .socketRcvbufLength(socketRcvbufLength)
                 .socketSndbufLength(socketSndbufLength)
-                .receiverWindowLength(receiverWindowLength);
+                .receiverWindowLength(receiverWindowLength)
+                .socketToS(socketToS);
 
             if (null != tagIdStr)
             {
@@ -365,6 +372,31 @@ public final class UdpChannel
         }
 
         return socketBufferLength;
+    }
+
+    /**
+     * Parses the IP_TOS for a given URI paramName. The range of the IP_TOS is 0 &lt;= x &lt;= 255.
+     * <p/>
+     * If the parameter isn't set,  <code>SOCKET_TOS_DEFAULT</code> is returned.
+     *
+     * @param channelUri to get the value from.
+     * @return the parsed IP_TOS.
+     */
+    public static int parseSocketToS(final ChannelUri channelUri)
+    {
+        int tos = SOCKET_TOS_DEFAULT;
+
+        final String paramValue = channelUri.get(SOCKET_TOS_PARAM_NAME);
+        if (null != paramValue)
+        {
+            tos = Integer.parseInt(paramValue);
+            if (tos < 0 || tos > 255)
+            {
+                throw new IllegalArgumentException("Invalid " + SOCKET_TOS_PARAM_NAME + " value: " + paramValue);
+            }
+        }
+
+        return tos;
     }
 
     /**
@@ -707,6 +739,27 @@ public final class UdpChannel
     public int socketSndbufLengthOrDefault(final int defaultValue)
     {
         return 0 != socketSndbufLength ? socketSndbufLength : defaultValue;
+    }
+
+    /**
+     * Gets the socket type of service (IP_TOS).
+     *
+     * @return socket type of service or -1 if not specified.
+     */
+    public int socketToS()
+    {
+        return socketToS;
+    }
+
+    /**
+     * Get the socket type of service (IP_TOS).
+     *
+     * @param defaultValue to be used if the UdpChannel's value is 0 (unspecified).
+     * @return socket type of service or defaultValue if not specified.
+     */
+    public int socketToSOrDefault(final int defaultValue)
+    {
+        return SOCKET_TOS_DEFAULT != socketToS ? socketToS : defaultValue;
     }
 
     /**
@@ -1070,6 +1123,7 @@ public final class UdpChannel
         boolean hasNoDistinguishingCharacteristic = false;
         int socketRcvbufLength = 0;
         int socketSndbufLength = 0;
+        int socketToS;
         int receiverWindowLength = 0;
         int multicastTtl;
         long tagId;
@@ -1206,6 +1260,12 @@ public final class UdpChannel
         Context socketSndbufLength(final int socketSndbufLength)
         {
             this.socketSndbufLength = socketSndbufLength;
+            return this;
+        }
+
+        Context socketToS(final int socketToS)
+        {
+            this.socketToS = socketToS;
             return this;
         }
 

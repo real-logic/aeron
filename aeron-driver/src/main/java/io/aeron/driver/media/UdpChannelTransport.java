@@ -34,6 +34,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
+import static io.aeron.driver.Configuration.SOCKET_TOS_DEFAULT;
 import static io.aeron.logbuffer.FrameDescriptor.frameVersion;
 import static java.net.StandardSocketOptions.SO_RCVBUF;
 import static java.net.StandardSocketOptions.SO_SNDBUF;
@@ -73,6 +74,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     protected InetSocketAddress connectAddress;
 
+
+
     /**
      * To be used when polling the transport.
      */
@@ -91,6 +94,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     private int multicastTtl = 0;
     private final int socketSndbufLength;
     private final int socketRcvbufLength;
+    private final int socketToS;
 
     /**
      * Construct transport for a given channel.
@@ -103,6 +107,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      * @param portManager        for port binding.
      * @param socketRcvbufLength set SO_RCVBUF for socket, 0 for OS default.
      * @param socketSndbufLength set SO_SNDBUF for socket, 0 for OS default.
+     * @param socketToS          set IP_TOS for socket, -1 for OS default.
      */
     protected UdpChannelTransport(
         final UdpChannel udpChannel,
@@ -112,7 +117,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
         final PortManager portManager,
         final MediaDriver.Context context,
         final int socketRcvbufLength,
-        final int socketSndbufLength)
+        final int socketSndbufLength,
+        final int socketToS)
     {
         this.context = context;
         this.udpChannel = udpChannel;
@@ -124,6 +130,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         this.invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
         this.socketRcvbufLength = socketRcvbufLength;
         this.socketSndbufLength = socketSndbufLength;
+        this.socketToS = socketToS;
     }
 
     /**
@@ -152,7 +159,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
             portManager,
             context,
             udpChannel.socketRcvbufLengthOrDefault(context.socketRcvbufLength()),
-            udpChannel.socketSndbufLengthOrDefault(context.socketSndbufLength()));
+            udpChannel.socketSndbufLengthOrDefault(context.socketSndbufLength()),
+            udpChannel.socketToSOrDefault(context.socketToS()));
     }
 
     /**
@@ -223,6 +231,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
             if (0 != socketRcvbufLength())
             {
                 receiveDatagramChannel.setOption(SO_RCVBUF, socketRcvbufLength());
+            }
+
+            if (SOCKET_TOS_DEFAULT != socketToS)
+            {
+                receiveDatagramChannel.socket().setTrafficClass(socketToS);
             }
 
             sendDatagramChannel.configureBlocking(false);
@@ -499,5 +512,16 @@ public abstract class UdpChannelTransport implements AutoCloseable
     public int socketRcvbufLength()
     {
         return socketRcvbufLength;
+    }
+
+
+    /**
+     * Gets the configured OS type of service (IP_TOS) for the endpoint's socket.
+     *
+     * @return OS socket type of service or -1 if using OS default.
+     */
+    public int socketToS()
+    {
+        return socketToS;
     }
 }

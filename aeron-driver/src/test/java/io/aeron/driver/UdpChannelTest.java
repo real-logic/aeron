@@ -503,6 +503,16 @@ class UdpChannelTest
     }
 
     @Test
+    void shouldParseToS()
+    {
+        final UdpChannel udpChannelWithToS = UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:9999|so-tos=10");
+        assertEquals(10, udpChannelWithToS.socketToS());
+
+        final UdpChannel udpChannelWithoutToS = UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:9999");
+        assertEquals(-1, udpChannelWithoutToS.socketToS());
+    }
+
+    @Test
     void shouldParseChannelSendAndReceiveTimestampOffsets()
     {
         final UdpChannel channel = UdpChannel.parse(

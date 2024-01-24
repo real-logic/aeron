@@ -29,33 +29,8 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.agent.AgentTests.verifyLogHeader;
-import static io.aeron.agent.ClusterEventCode.ADD_PASSIVE_MEMBER;
-import static io.aeron.agent.ClusterEventCode.APPEND_POSITION;
-import static io.aeron.agent.ClusterEventCode.APPEND_SESSION_CLOSE;
-import static io.aeron.agent.ClusterEventCode.CANVASS_POSITION;
-import static io.aeron.agent.ClusterEventCode.CATCHUP_POSITION;
-import static io.aeron.agent.ClusterEventCode.COMMIT_POSITION;
-import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;
-import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
-import static io.aeron.agent.ClusterEventCode.REPLAY_NEW_LEADERSHIP_TERM;
-import static io.aeron.agent.ClusterEventCode.REPLICATION_ENDED;
-import static io.aeron.agent.ClusterEventCode.REQUEST_VOTE;
-import static io.aeron.agent.ClusterEventCode.SERVICE_ACK;
-import static io.aeron.agent.ClusterEventCode.STANDBY_SNAPSHOT_NOTIFICATION;
-import static io.aeron.agent.ClusterEventCode.STATE_CHANGE;
-import static io.aeron.agent.ClusterEventCode.STOP_CATCHUP;
-import static io.aeron.agent.ClusterEventCode.TERMINATION_ACK;
-import static io.aeron.agent.ClusterEventCode.TERMINATION_POSITION;
-import static io.aeron.agent.ClusterEventCode.TRUNCATE_LOG_ENTRY;
-import static io.aeron.agent.ClusterEventEncoder.replicationEndedLength;
-import static io.aeron.agent.ClusterEventEncoder.serviceAckLength;
-import static io.aeron.agent.ClusterEventEncoder.standbySnapshotNotificationLength;
-import static io.aeron.agent.ClusterEventEncoder.terminationAckLength;
-import static io.aeron.agent.ClusterEventEncoder.terminationPositionLength;
-import static io.aeron.agent.ClusterEventEncoder.canvassPositionLength;
-import static io.aeron.agent.ClusterEventEncoder.electionStateChangeLength;
-import static io.aeron.agent.ClusterEventEncoder.newLeaderShipTermLength;
-import static io.aeron.agent.ClusterEventEncoder.replayNewLeadershipTermEventLength;
+import static io.aeron.agent.ClusterEventCode.*;
+import static io.aeron.agent.ClusterEventEncoder.*;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.STATE_SEPARATOR;
 import static io.aeron.agent.CommonEventEncoder.enumName;
@@ -894,6 +869,45 @@ class ClusterEventLoggerTest
             "\\[[0-9]+\\.[0-9]+] CLUSTER: STANDBY_SNAPSHOT_NOTIFICATION \\[90/90]: memberId=222 " +
             "recordingId=9823674 leadershipTermId=23478 termBaseLeadershipPosition=823423 logPosition=9827342 " +
             "timestamp=98273423434 timeUnit=MILLISECONDS serviceId=1 archiveEndpoint=localhost:9090";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
+
+    @Test
+    void logNewElection()
+    {
+        final int memberId = 42;
+        final long leadershipTermId = 8L;
+        final long logPosition = 9827342L;
+        final long appendPosition = 342384382L;
+        final String reason = "why an election was started";
+        final int offset = 16;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+
+        final int encodedLength = newElectionLength(reason);
+
+        logger.logNewElection(memberId, leadershipTermId, logPosition, appendPosition, reason);
+
+        verifyLogHeader(
+            logBuffer,
+            offset,
+            NEW_ELECTION.toEventCodeId(),
+            encodedLength,
+            encodedLength);
+
+        final int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
+        assertEquals(leadershipTermId, logBuffer.getLong(index, LITTLE_ENDIAN));
+        assertEquals(logPosition, logBuffer.getLong(index + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(appendPosition, logBuffer.getLong(index + 2 * SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(memberId, logBuffer.getInt(index + (3 * SIZE_OF_LONG), LITTLE_ENDIAN));
+        assertEquals(reason, logBuffer.getStringAscii(index + (3 * SIZE_OF_LONG) + SIZE_OF_INT, LITTLE_ENDIAN));
+
+        final StringBuilder sb = new StringBuilder();
+        ClusterEventDissector.dissectNewElection(NEW_ELECTION, logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern =
+            "\\[[0-9]+\\.[0-9]+] CLUSTER: NEW_ELECTION \\[59/59]: memberId=42 " +
+            "leadershipTermId=8 logPosition=9827342 appendPosition=342384382 reason=why an election was started";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }

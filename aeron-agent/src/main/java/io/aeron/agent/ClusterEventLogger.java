@@ -671,9 +671,9 @@ public final class ClusterEventLogger
     /**
      * Log the receiving of a termination position event.
      *
-     * @param memberId              that received the termination position.
-     * @param logLeadershipTermId   leadership term for the supplied position.
-     * @param logPosition           position to terminate at.
+     * @param memberId            that received the termination position.
+     * @param logLeadershipTermId leadership term for the supplied position.
+     * @param logPosition         position to terminate at.
      */
     public void logTerminationPosition(
         final int memberId,
@@ -709,10 +709,10 @@ public final class ClusterEventLogger
     /**
      * Log the receiving of an acknowledgement to a termination position event.
      *
-     * @param memberId              that received the termination ack.
-     * @param logLeadershipTermId   leadership term for the supplied position.
-     * @param logPosition           position to terminate at.
-     * @param senderMemberId        member sending the ack.
+     * @param memberId            that received the termination ack.
+     * @param logLeadershipTermId leadership term for the supplied position.
+     * @param logPosition         position to terminate at.
+     * @param senderMemberId      member sending the ack.
      */
     public void logTerminationAck(
         final int memberId,
@@ -750,13 +750,13 @@ public final class ClusterEventLogger
     /**
      * Log an ack received from a cluster service.
      *
-     * @param memberId      memberId receiving the ack.
-     * @param logPosition   position in the log when the ack was sent.
-     * @param timestamp     timestamp when the ack was sent.
-     * @param timeUnit      time unit used for the timestamp.
-     * @param ackId         id of the ack.
-     * @param relevantId    associated id used in the ack, e.g. recordingId for snapshot acks.
-     * @param serviceId     the id of the service that sent the ack.
+     * @param memberId    memberId receiving the ack.
+     * @param logPosition position in the log when the ack was sent.
+     * @param timestamp   timestamp when the ack was sent.
+     * @param timeUnit    time unit used for the timestamp.
+     * @param ackId       id of the ack.
+     * @param relevantId  associated id used in the ack, e.g. recordingId for snapshot acks.
+     * @param serviceId   the id of the service that sent the ack.
      */
     public void logServiceAck(
         final int memberId,
@@ -800,13 +800,13 @@ public final class ClusterEventLogger
     /**
      * Log a replication end event.
      *
-     * @param memberId          memberId running the replication.
-     * @param purpose           the reason for the replication.
-     * @param channel           the channel used to connect to the source archive.
-     * @param srcRecordingId    source recording id.
-     * @param dstRecordingId    destination recording id.
-     * @param position          the position where the recording ended.
-     * @param hasSynced         was the sync event been received for the replication.
+     * @param memberId       memberId running the replication.
+     * @param purpose        the reason for the replication.
+     * @param channel        the channel used to connect to the source archive.
+     * @param srcRecordingId source recording id.
+     * @param dstRecordingId destination recording id.
+     * @param position       the position where the recording ended.
+     * @param hasSynced      was the sync event been received for the replication.
      */
     public void logReplicationEnded(
         final int memberId,
@@ -859,7 +859,6 @@ public final class ClusterEventLogger
      * @param timeUnit            the cluster time unit.
      * @param serviceId           the serviceId for the snapshot.
      * @param archiveEndpoint     the endpoint holding the standby snapshot.
-     *
      */
     public void logStandbySnapshotNotification(
         final int memberId,
@@ -896,6 +895,50 @@ public final class ClusterEventLogger
                     timeUnit,
                     serviceId,
                     archiveEndpoint);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log the start of the new election.
+     *
+     * @param memberId         memberId which start the election.
+     * @param leadershipTermId of the member.
+     * @param logPosition      the log position.
+     * @param appendPosition   the append position.
+     * @param reason           for election to be started.
+     */
+    public void logNewElection(
+        final int memberId,
+        final long leadershipTermId,
+        final long logPosition,
+        final long appendPosition,
+        final String reason)
+    {
+        final int length = ClusterEventEncoder.newElectionLength(reason);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(NEW_ELECTION.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                ClusterEventEncoder.encodeNewElection(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    memberId,
+                    leadershipTermId,
+                    logPosition,
+                    appendPosition,
+                    reason);
             }
             finally
             {

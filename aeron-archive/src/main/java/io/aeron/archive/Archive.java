@@ -1160,6 +1160,11 @@ public final class Archive implements AutoCloseable
                     errorCounter = ArchiveCounters.allocateErrorCounter(aeron, tempBuffer, archiveId);
                 }
             }
+            else if (!aeron.context().useConductorAgentInvoker())
+            {
+                throw new ArchiveException(
+                    "Aeron client instance must set Aeron.Context.useConductorInvoker(true)");
+            }
 
             concludeArchiveId();
 

@@ -519,7 +519,14 @@ public class CommonContext implements Cloneable
     {
         if (null == aeronDirectory)
         {
-            aeronDirectory = new File(aeronDirectoryName);
+            try
+            {
+                aeronDirectory = new File(aeronDirectoryName).getCanonicalFile();
+            }
+            catch (final IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
         }
 
         return this;

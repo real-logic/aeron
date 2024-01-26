@@ -33,6 +33,8 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -743,12 +745,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
             {
                 clusterDir = new File(clusterDirectoryName);
             }
-            else
-            {
-                clusterDirectoryName = clusterDir.getAbsolutePath();
-            }
-
-            IoUtil.ensureDirectoryExists(clusterDir, "cluster");
 
             if (null == markFileDir)
             {
@@ -756,6 +752,18 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 markFileDir = Strings.isEmpty(dir) ? clusterDir : new File(dir);
             }
 
+            try
+            {
+                clusterDir = clusterDir.getCanonicalFile();
+                clusterDirectoryName = clusterDir.getAbsolutePath();
+                markFileDir = markFileDir.getCanonicalFile();
+            }
+            catch (final IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
+
+            IoUtil.ensureDirectoryExists(clusterDir, "cluster");
             IoUtil.ensureDirectoryExists(markFileDir, "mark file");
 
             if (null == markFile)

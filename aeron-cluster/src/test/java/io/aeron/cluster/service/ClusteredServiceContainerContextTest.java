@@ -24,7 +24,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -95,23 +94,22 @@ class ClusteredServiceContainerContextTest
     }
 
     @Test
-    @Disabled
-    void concludeShouldCreateMarkFileDirSetViaSystemProperty(final @TempDir File tempDir)
+    void concludeShouldCreateMarkFileDirSetViaSystemProperty(final @TempDir File tempDir) throws IOException
     {
         final File rootDir = new File(tempDir, "root");
-        final File markFileDir = new File(rootDir, "mark-file-dir");
-        assertFalse(markFileDir.exists());
+        final File markFileDir = new File(rootDir, "mark-file/../dir");
+        assertFalse(markFileDir.getCanonicalFile().exists());
         context.serviceId(serviceId);
 
         System.setProperty(MARK_FILE_DIR_PROP_NAME, markFileDir.getAbsolutePath());
         try
         {
-            assertSame(null, context.markFileDir());
+            assertNull(context.markFileDir());
 
             context.conclude();
 
-            assertEquals(markFileDir, context.markFileDir());
-            assertTrue(markFileDir.exists());
+            assertEquals(markFileDir.getCanonicalFile(), context.markFileDir());
+            assertTrue(markFileDir.getCanonicalFile().exists());
             assertTrue(
                 new File(context.clusterDir(), ClusterMarkFile.linkFilenameForService(context.serviceId())).exists());
         }
@@ -123,10 +121,10 @@ class ClusteredServiceContainerContextTest
     }
 
     @Test
-    void concludeShouldCreateMarkFileDirSetDirectly(final @TempDir File tempDir)
+    void concludeShouldCreateMarkFileDirSetDirectly(final @TempDir File tempDir) throws IOException
     {
         final File rootDir = new File(tempDir, "root");
-        final File markFileDir = new File(rootDir, "mark-file-dir");
+        final File markFileDir = new File(rootDir, "mark/.././file-dir");
         assertFalse(markFileDir.exists());
         context.serviceId(serviceId).markFileDir(markFileDir);
 
@@ -134,8 +132,8 @@ class ClusteredServiceContainerContextTest
         {
             context.conclude();
 
-            assertEquals(markFileDir, context.markFileDir());
-            assertTrue(markFileDir.exists());
+            assertEquals(markFileDir.getCanonicalFile(), context.markFileDir());
+            assertTrue(markFileDir.getCanonicalFile().exists());
             assertTrue(
                 new File(context.clusterDir(), ClusterMarkFile.linkFilenameForService(context.serviceId())).exists());
         }
@@ -190,11 +188,11 @@ class ClusteredServiceContainerContextTest
         {
             context.conclude();
 
-            assertEquals(clusterDir, context.clusterDir());
-            assertEquals(markFileDir, context.markFileDir());
+            assertEquals(clusterDir.getCanonicalFile(), context.clusterDir());
+            assertEquals(markFileDir.getCanonicalFile(), context.markFileDir());
             assertEquals(otherDir, context.clusterMarkFile().parentDirectory());
-            assertTrue(clusterDir.exists());
-            assertTrue(markFileDir.exists());
+            assertTrue(clusterDir.getCanonicalFile().exists());
+            assertTrue(markFileDir.getCanonicalFile().exists());
             final File linkFile = new File(context.clusterDir(), ClusterMarkFile.linkFilenameForService(serviceId));
             assertTrue(linkFile.exists());
             assertEquals(otherDir.getCanonicalPath(), new String(Files.readAllBytes(linkFile.toPath()), US_ASCII));
@@ -206,17 +204,17 @@ class ClusteredServiceContainerContextTest
     }
 
     @Test
-    void shouldInitializeClusterDirectoryNameFromTheAssignedClusterDir(@TempDir final Path dir)
+    void shouldInitializeClusterDirectoryNameFromTheAssignedClusterDir(@TempDir final Path dir) throws IOException
     {
-        final Path clusterDir = dir.resolve("explicit/cluster/dir");
+        final Path clusterDir = dir.resolve("explicit/cluster/./dir");
         context.clusterDir(clusterDir.toFile()).clusterDirectoryName("replace-me");
 
         try
         {
             context.conclude();
 
-            assertEquals(clusterDir.toFile(), context.clusterDir());
-            assertEquals(clusterDir.toAbsolutePath().toString(), context.clusterDirectoryName());
+            assertEquals(clusterDir.toFile().getCanonicalFile(), context.clusterDir());
+            assertEquals(context.clusterDir().getAbsolutePath(), context.clusterDirectoryName());
         }
         finally
         {
@@ -225,17 +223,17 @@ class ClusteredServiceContainerContextTest
     }
 
     @Test
-    void shouldInitializeClusterDirectoryFromTheGivenDirectoryName(@TempDir final Path temp)
+    void shouldInitializeClusterDirectoryFromTheGivenDirectoryName(@TempDir final Path temp) throws IOException
     {
-        final Path dir = Paths.get(temp.toString(), "/some/path");
+        final Path dir = Paths.get(temp.toString(), "/some/../path");
         context.clusterDir(null).clusterDirectoryName(dir.toString());
 
         try
         {
             context.conclude();
 
-            assertEquals(dir.toFile(), context.clusterDir());
-            assertEquals(dir.toString(), context.clusterDirectoryName());
+            assertEquals(dir.toFile().getCanonicalFile(), context.clusterDir());
+            assertEquals(context.clusterDir().getAbsolutePath(), context.clusterDirectoryName());
         }
         finally
         {

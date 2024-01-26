@@ -44,7 +44,6 @@ import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -55,6 +54,7 @@ import org.mockito.ArgumentCaptor;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
@@ -523,22 +523,50 @@ class ConsensusModuleContextTest
     }
 
     @Test
-    @Disabled
-    void concludeShouldCreateMarkFileDirSetViaSystemProperty(final @TempDir File tempDir)
+    void clusterServiceDirectoryNameShouldBeSetFromClusterDirectoryName(@TempDir final Path dir) throws IOException
+    {
+        final File clusterDir = dir.resolve("b/./42/../c").toFile();
+        context.clusterServicesDirectoryName("");
+        context.clusterDirectoryName("rubbish");
+        context.clusterDir(clusterDir);
+
+        context.conclude();
+
+        final String resolvedPath = clusterDir.getCanonicalFile().getAbsolutePath();
+        assertEquals(resolvedPath, context.clusterDirectoryName());
+        assertEquals(resolvedPath, context.clusterServicesDirectoryName());
+    }
+
+    @Test
+    void clusterServiceDirectoryNameShouldBeResolved(@TempDir final Path dir) throws IOException
+    {
+        final Path serviceDirectory = dir.resolve("m/n/././././o");
+        context.clusterServicesDirectoryName(serviceDirectory.toString());
+        context.clusterDirectoryName("something else");
+        context.clusterDir(dir.resolve("b/./42/../c").toFile());
+
+        context.conclude();
+
+        assertEquals(context.clusterDir().getAbsolutePath(), context.clusterDirectoryName());
+        assertEquals(serviceDirectory.toFile().getCanonicalPath(), context.clusterServicesDirectoryName());
+    }
+
+    @Test
+    void concludeShouldCreateMarkFileDirSetViaSystemProperty(final @TempDir File tempDir) throws IOException
     {
         final File rootDir = new File(tempDir, "root");
-        final File markFileDir = new File(rootDir, "mark-file-dir");
+        final File markFileDir = new File(rootDir, "mark/file/./.././dir");
         assertFalse(markFileDir.exists());
 
-        System.setProperty(MARK_FILE_DIR_PROP_NAME, markFileDir.getAbsolutePath());
+        System.setProperty(MARK_FILE_DIR_PROP_NAME, markFileDir.getPath());
         try
         {
             assertSame(null, context.markFileDir());
 
             context.conclude();
 
-            assertEquals(markFileDir, context.markFileDir());
-            assertTrue(markFileDir.exists());
+            assertEquals(markFileDir.getCanonicalFile(), context.markFileDir());
+            assertTrue(markFileDir.getCanonicalFile().exists());
             assertTrue(new File(context.clusterDir(), ClusterMarkFile.LINK_FILENAME).exists());
         }
         finally
@@ -548,7 +576,7 @@ class ConsensusModuleContextTest
     }
 
     @Test
-    void concludeShouldCreateMarkFileDirSetDirectly(final @TempDir File tempDir)
+    void concludeShouldCreateMarkFileDirSetDirectly(final @TempDir File tempDir) throws IOException
     {
         final File rootDir = new File(tempDir, "root");
         final File markFileDir = new File(rootDir, "mark-file-dir");
@@ -557,8 +585,8 @@ class ConsensusModuleContextTest
 
         context.conclude();
 
-        assertEquals(markFileDir, context.markFileDir());
-        assertTrue(markFileDir.exists());
+        assertEquals(markFileDir.getCanonicalFile(), context.markFileDir());
+        assertTrue(markFileDir.getCanonicalFile().exists());
         assertTrue(new File(context.clusterDir(), ClusterMarkFile.LINK_FILENAME).exists());
     }
 
@@ -593,8 +621,8 @@ class ConsensusModuleContextTest
 
         context.conclude();
 
-        assertEquals(clusterDir, context.clusterDir());
-        assertEquals(markFileDir, context.markFileDir());
+        assertEquals(clusterDir.getCanonicalFile(), context.clusterDir());
+        assertEquals(markFileDir.getCanonicalFile(), context.markFileDir());
         assertEquals(otherDir, context.clusterMarkFile().parentDirectory());
         final File linkFile = new File(context.clusterDir(), ClusterMarkFile.LINK_FILENAME);
         assertTrue(linkFile.exists());

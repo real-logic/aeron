@@ -225,4 +225,36 @@ class CommonContextTest
             System.clearProperty(FALLBACK_LOGGER_PROP_NAME);
         }
     }
+
+    @Test
+    void shouldConcludeAeronDirectory(@TempDir final Path tempDir) throws IOException
+    {
+        final Path aeronDirectory = tempDir.resolve("aeron.dir");
+        final CommonContext commonContext = new CommonContext();
+        commonContext.aeronDirectoryName(aeronDirectory.toString());
+        assertNull(commonContext.aeronDirectory());
+
+        assertSame(commonContext, commonContext.concludeAeronDirectory());
+
+        final File concludedDir = commonContext.aeronDirectory();
+        assertEquals(aeronDirectory.toFile().getCanonicalFile(), concludedDir);
+
+        commonContext.concludeAeronDirectory();
+        assertSame(concludedDir, commonContext.aeronDirectory());
+    }
+
+    @Test
+    void shouldCanonicalizeAeronDirectoryPath(@TempDir final Path tempDir) throws IOException
+    {
+        final Path path = tempDir.resolve("one/two/../three/four/./x/y/z");
+        final CommonContext commonContext = new CommonContext();
+        commonContext.aeronDirectoryName(path.toString());
+        assertNull(commonContext.aeronDirectory());
+
+        assertSame(commonContext, commonContext.concludeAeronDirectory());
+
+        assertEquals(
+            tempDir.resolve("one/three/four/x/y/z").toFile().getCanonicalFile(),
+            commonContext.aeronDirectory());
+    }
 }

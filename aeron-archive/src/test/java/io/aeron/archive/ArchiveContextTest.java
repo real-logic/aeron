@@ -34,7 +34,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -269,22 +268,21 @@ class ArchiveContextTest
     }
 
     @Test
-    @Disabled
-    void concludeShouldCreateMarkFileDirSetViaSystemProperty(final @TempDir File tempDir)
+    void concludeShouldCreateMarkFileDirSetViaSystemProperty(final @TempDir File tempDir) throws IOException
     {
         final File rootDir = new File(tempDir, "root");
-        final File markFileDir = new File(rootDir, "mark-file-dir");
+        final File markFileDir = new File(rootDir, "mark/./file/../dir");
         assertFalse(markFileDir.exists());
 
-        System.setProperty(MARK_FILE_DIR_PROP_NAME, markFileDir.getAbsolutePath());
+        System.setProperty(MARK_FILE_DIR_PROP_NAME, markFileDir.getPath());
         try
         {
-            assertSame(context.archiveDir(), context.markFileDir());
+            assertNull(context.markFileDir());
 
             context.conclude();
 
-            assertEquals(markFileDir, context.markFileDir());
-            assertTrue(markFileDir.exists());
+            assertEquals(markFileDir.getCanonicalFile(), context.markFileDir());
+            assertTrue(markFileDir.getCanonicalFile().exists());
         }
         finally
         {
@@ -293,17 +291,17 @@ class ArchiveContextTest
     }
 
     @Test
-    void concludeShouldCreateMarkFileDirSetDirectly(final @TempDir File tempDir)
+    void concludeShouldCreateMarkFileDirSetDirectly(final @TempDir File tempDir) throws IOException
     {
         final File rootDir = new File(tempDir, "root");
-        final File markFileDir = new File(rootDir, "mark-file-dir");
+        final File markFileDir = new File(rootDir, "mark/../file/./dir");
         assertFalse(markFileDir.exists());
         context.markFileDir(markFileDir);
 
         context.conclude();
 
-        assertEquals(markFileDir, context.markFileDir());
-        assertTrue(markFileDir.exists());
+        assertEquals(markFileDir.getCanonicalFile(), context.markFileDir());
+        assertTrue(markFileDir.getCanonicalFile().exists());
     }
 
     @Test
@@ -900,10 +898,10 @@ class ArchiveContextTest
 
         context.conclude();
 
-        assertEquals(archiveDir.toFile(), context.markFileDir());
+        assertEquals(archiveDir.toFile().getCanonicalFile(), context.markFileDir());
         final ArchiveMarkFile archiveMarkFile = context.archiveMarkFile();
         assertNotNull(archiveMarkFile);
-        assertEquals(archiveDir.toFile(), archiveMarkFile.parentDirectory());
+        assertEquals(archiveDir.toFile().getCanonicalFile(), archiveMarkFile.parentDirectory());
         final Path markFile = archiveDir.resolve(ArchiveMarkFile.FILENAME);
         assertTrue(Files.exists(markFile));
         assertTrue(Files.notExists(linkFile));
@@ -911,22 +909,23 @@ class ArchiveContextTest
 
     @Test
     void shouldCreateALinkToTheArchiveMarkFileInAnotherDirectory(
-        @TempDir final Path archiveDir, @TempDir final Path markFileDir) throws IOException
+        @TempDir final Path archiveDir, @TempDir final Path temp2) throws IOException
     {
-        context.archiveDir(archiveDir.toFile()).markFileDir(markFileDir.toFile());
+        final File markFileDirectory = temp2.resolve("x/y/../z/../w").toFile();
+        context.archiveDir(archiveDir.toFile()).markFileDir(markFileDirectory);
 
         context.conclude();
 
-        assertEquals(archiveDir.toFile(), context.archiveDir());
-        assertEquals(markFileDir.toFile(), context.markFileDir());
+        assertEquals(archiveDir.toFile().getCanonicalFile(), context.archiveDir());
+        assertEquals(markFileDirectory.getCanonicalFile(), context.markFileDir());
         final ArchiveMarkFile archiveMarkFile = context.archiveMarkFile();
         assertNotNull(archiveMarkFile);
-        assertEquals(markFileDir.toFile(), archiveMarkFile.parentDirectory());
-        final Path markFile = markFileDir.resolve(ArchiveMarkFile.FILENAME);
+        assertEquals(markFileDirectory.getCanonicalFile(), archiveMarkFile.parentDirectory());
+        final Path markFile = markFileDirectory.getCanonicalFile().toPath().resolve(ArchiveMarkFile.FILENAME);
         assertTrue(Files.exists(markFile));
         final Path linkFile = archiveDir.resolve(ArchiveMarkFile.LINK_FILENAME);
         assertTrue(Files.exists(linkFile));
-        assertEquals(markFileDir.toFile().getCanonicalPath(), new String(Files.readAllBytes(linkFile), US_ASCII));
+        assertEquals(markFileDirectory.getCanonicalPath(), new String(Files.readAllBytes(linkFile), US_ASCII));
     }
 
     @Test
@@ -944,8 +943,8 @@ class ArchiveContextTest
 
         context.conclude();
 
-        assertEquals(archiveDir.toFile(), context.archiveDir());
-        assertEquals(markFileDir.toFile(), context.markFileDir());
+        assertEquals(archiveDir.toFile().getCanonicalFile(), context.archiveDir());
+        assertEquals(markFileDir.toFile().getCanonicalFile(), context.markFileDir());
         assertSame(archiveMarkFile, context.archiveMarkFile());
         assertEquals(archiveMarkFileDir.toFile(), archiveMarkFile.parentDirectory());
         final Path linkFile = archiveDir.resolve(ArchiveMarkFile.LINK_FILENAME);
@@ -989,6 +988,17 @@ class ArchiveContextTest
         context.conclude();
 
         assertEquals(clientDirectory, context.aeronDirectoryName());
+    }
+
+    @Test
+    void shouldInitializeArchiveDirectoryNameFromArchiveDir(@TempDir final Path root) throws IOException
+    {
+        final File archiveDir = root.resolve("n/m/../x/./1111").toFile();
+        context.archiveDir(archiveDir);
+
+        context.conclude();
+
+        assertEquals(archiveDir.getCanonicalPath(), context.archiveDirectoryName());
     }
 
     private Counter mockArchiveCounter(

@@ -100,10 +100,12 @@ public final class Header
      * Set the number of times to left shift the term count to multiply by term length.
      *
      * @param positionBitsToShift number of times to left shift the term count to multiply by term length.
+     * @return this for a fluent API.
      */
-    public void positionBitsToShift(final int positionBitsToShift)
+    public Header positionBitsToShift(final int positionBitsToShift)
     {
         this.positionBitsToShift = positionBitsToShift;
+        return this;
     }
 
     /**
@@ -120,10 +122,12 @@ public final class Header
      * Get the initial term id this stream started at.
      *
      * @param initialTermId the initial term id this stream started at.
+     * @return this for a fluent API.
      */
-    public void initialTermId(final int initialTermId)
+    public Header initialTermId(final int initialTermId)
     {
         this.initialTermId = initialTermId;
+        return this;
     }
 
     /**

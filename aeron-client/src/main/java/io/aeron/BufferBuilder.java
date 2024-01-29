@@ -24,8 +24,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import static io.aeron.logbuffer.FrameDescriptor.*;
-import static io.aeron.protocol.DataHeaderFlyweight.*;
+import static io.aeron.logbuffer.FrameDescriptor.BEGIN_FRAG_FLAG;
+import static io.aeron.logbuffer.FrameDescriptor.FLAGS_OFFSET;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
@@ -220,9 +221,10 @@ public final class BufferBuilder
      */
     public BufferBuilder firstHeader(final Header header)
     {
-        completeHeader.initialTermId(header.initialTermId());
-        completeHeader.positionBitsToShift(header.positionBitsToShift());
-        completeHeader.offset(0);
+        completeHeader
+            .initialTermId(header.initialTermId())
+            .positionBitsToShift(header.positionBitsToShift())
+            .offset(0);
         completeHeader.buffer(headerBuffer);
 
         headerBuffer.putBytes(0, header.buffer(), header.offset(), HEADER_LENGTH);

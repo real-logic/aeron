@@ -134,10 +134,12 @@ public final class Header
      * Set the offset at which the header begins in the buffer.
      *
      * @param offset at which the header begins in the buffer.
+     * @return this for a fluent API.
      */
-    public void offset(final int offset)
+    public Header offset(final int offset)
     {
         this.offset = offset;
+        return this;
     }
 
     /**
@@ -164,13 +166,15 @@ public final class Header
      * The {@link org.agrona.DirectBuffer} containing the header.
      *
      * @param buffer {@link org.agrona.DirectBuffer} containing the header.
+     * @return this for a fluent API.
      */
-    public void buffer(final DirectBuffer buffer)
+    public Header buffer(final DirectBuffer buffer)
     {
         if (buffer != this.buffer)
         {
             this.buffer = buffer;
         }
+        return this;
     }
 
     /**

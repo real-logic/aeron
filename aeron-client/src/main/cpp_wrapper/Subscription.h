@@ -45,19 +45,26 @@ private:
         const on_available_image_t &onAvailableImage,
         const on_unavailable_image_t &onUnavailableImage) :
         m_onAvailableImage(onAvailableImage),
-        m_onUnavailableImage(onUnavailableImage)
+        m_onUnavailableImage(onUnavailableImage),
+        m_isRemoved(false)
     {
     }
 
     aeron_async_add_subscription_t *m_async = nullptr;
     const on_available_image_t m_onAvailableImage;
     const on_unavailable_image_t m_onUnavailableImage;
+    std::atomic<bool> m_isRemoved;
 
 public:
     void static remove(void *clientd)
     {
         auto *addSubscription = static_cast<AsyncAddSubscription *>(clientd);
-        delete addSubscription;
+        addSubscription->m_isRemoved.store(true, std::memory_order_seq_cst);
+    }
+
+    bool isRemoved()
+    {
+        return m_isRemoved.load(std::memory_order_seq_cst);
     }
 };
 
@@ -96,6 +103,8 @@ public:
     ~Subscription()
     {
         aeron_subscription_close(m_subscription, AsyncAddSubscription::remove, m_addSubscription);
+        awaitCloseCallback();
+        delete m_addSubscription;
     }
 
     /**
@@ -580,6 +589,7 @@ public:
     /// @endcond
 
 private:
+    static const int CLOSE_CALLBACK_TIMEOUT = 2000;
     aeron_t *m_aeron = nullptr;
     aeron_subscription_t *m_subscription = nullptr;
     AsyncAddSubscription *m_addSubscription = nullptr;
@@ -593,6 +603,29 @@ private:
         auto subscriptionAndImages =
             static_cast<std::pair<aeron_subscription_t *, std::vector<std::shared_ptr<Image>> *> *>(clientd);
         subscriptionAndImages->second->push_back(std::make_shared<Image>(subscriptionAndImages->first, image));
+    }
+
+    void awaitCloseCallback()
+    {
+        aeron_context_t *aeron_ctx = aeron_context(m_aeron);
+        if (aeron_context_get_use_conductor_agent_invoker(aeron_ctx))
+        {
+            return;
+        }
+
+        const auto timeout = std::chrono::milliseconds(CLOSE_CALLBACK_TIMEOUT);
+        const auto t0 = std::chrono::steady_clock::now();
+        while (!m_addSubscription->isRemoved())
+        {
+            const auto t1 = std::chrono::steady_clock::now();
+            const auto elapsed = t1 - t0;
+            if (timeout < std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0))
+            {
+                throw "Failed to get close notification from client conductor";
+            }
+
+            sched_yield();
+        }
     }
 };
 

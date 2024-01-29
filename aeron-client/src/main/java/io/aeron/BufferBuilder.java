@@ -224,8 +224,8 @@ public final class BufferBuilder
         completeHeader
             .initialTermId(header.initialTermId())
             .positionBitsToShift(header.positionBitsToShift())
-            .offset(0);
-        completeHeader.buffer(headerBuffer);
+            .offset(0)
+            .buffer(headerBuffer);
 
         headerBuffer.putBytes(0, header.buffer(), header.offset(), HEADER_LENGTH);
         return this;

@@ -30,6 +30,7 @@
 extern "C"
 {
 #include "aeron_common.h"
+#include "concurrent/aeron_thread.h"
 }
 
 namespace aeron

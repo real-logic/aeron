@@ -619,7 +619,7 @@ private:
         {
             const auto t1 = std::chrono::steady_clock::now();
             const auto elapsed = t1 - t0;
-            if (timeout < std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0))
+            if (timeout < elapsed)
             {
                 throw "Failed to get close notification from client conductor";
             }

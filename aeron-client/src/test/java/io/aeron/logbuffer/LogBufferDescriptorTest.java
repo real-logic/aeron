@@ -17,6 +17,8 @@ package io.aeron.logbuffer;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.nio.ByteBuffer;
 
@@ -79,5 +81,13 @@ class LogBufferDescriptorTest
         assertEquals(packTail(termId + 18, 2048), rawTail(metadataBuffer, 1));
         assertEquals(packTail(termId - 19, 4096), rawTail(metadataBuffer, 2));
         assertEquals(termCount, activeTermCount(metadataBuffer));
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "0,1376,0", "10,1024,64", "2048,2048,2080", "4096,1024,4224", "7997,992,8288" })
+    void shouldComputeFragmentedFrameLength(
+        final int length, final int maxPayloadLength, final int frameLength)
+    {
+        assertEquals(LogBufferDescriptor.computeFragmentedFrameLength(length, maxPayloadLength), frameLength);
     }
 }

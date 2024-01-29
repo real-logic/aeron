@@ -118,7 +118,7 @@ public abstract class Publication implements AutoCloseable
         this.termBufferLength = logBuffers.termLength();
         this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termBufferLength);
         this.maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
-        this.maxFramedLength = computeFramedLength(maxMessageLength, maxPayloadLength);
+        this.maxFramedLength = computeFragmentedFrameLength(maxMessageLength, maxPayloadLength);
         this.maxPossiblePosition = termBufferLength * (1L << 31);
         this.conductor = clientConductor;
         this.channel = channel;
@@ -677,15 +677,6 @@ public abstract class Publication implements AutoCloseable
             throw new IllegalArgumentException(
                 "message exceeds maxMessageLength of " + maxMessageLength + ", length=" + length);
         }
-    }
-
-    static int computeFramedLength(final int length, final int maxPayloadLength)
-    {
-        final int numMaxPayloads = length / maxPayloadLength;
-        final int remainingPayload = length % maxPayloadLength;
-        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
-
-        return (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
     }
 
     static int validateAndComputeLength(final int lengthOne, final int lengthTwo)

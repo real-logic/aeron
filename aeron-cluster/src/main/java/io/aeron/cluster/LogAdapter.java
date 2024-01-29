@@ -154,6 +154,7 @@ final class LogAdapter implements ControlledFragmentHandler
         else if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
         {
             builder.reset()
+                .firstHeader(header)
                 .append(buffer, offset, length)
                 .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
         }
@@ -165,7 +166,7 @@ final class LogAdapter implements ControlledFragmentHandler
 
             if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
             {
-                action = onMessage(builder.buffer(), 0, header);
+                action = onMessage(builder.buffer(), 0, builder.completeHeader(header));
 
                 if (Action.ABORT == action)
                 {

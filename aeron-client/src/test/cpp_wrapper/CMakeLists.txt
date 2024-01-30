@@ -61,6 +61,9 @@ if (AERON_UNIT_TESTS)
     aeron_client_wrapper_test(livenessTimeoutTest LivenessTimeoutTest.cpp)
     aeron_client_native_test(livenessTimeoutTest LivenessTimeoutTest.cpp)
 
+    aeron_client_wrapper_test(responseChannelsTest ResponseChannelsTest.cpp)
+    aeron_client_native_test(responseChannelsTest ResponseChannelsTest.cpp)
+
     aeron_client_wrapper_test(exceptionsTest ExceptionsTest.cpp)
     aeron_client_wrapper_test(channelUriStringBuilderTest ChannelUriStringBuilderTest.cpp)
 endif ()

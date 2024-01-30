@@ -69,6 +69,7 @@ public:
         m_mediaReceiveTimestampOffset.reset(nullptr);
         m_channelReceiveTimestampOffset.reset(nullptr);
         m_channelSendTimestampOffset.reset(nullptr);
+        m_responseCorrelationId.reset(nullptr);
 
         return *this;
     }
@@ -121,7 +122,9 @@ public:
 
     inline this_t &controlMode(const std::string &controlMode)
     {
-        if (controlMode != MDC_CONTROL_MODE_MANUAL && controlMode != MDC_CONTROL_MODE_DYNAMIC)
+        if (controlMode != MDC_CONTROL_MODE_MANUAL &&
+            controlMode != MDC_CONTROL_MODE_DYNAMIC &&
+            controlMode != CONTROL_MODE_RESPONSE)
         {
             throw IllegalArgumentException("invalid control mode: " + controlMode, SOURCEINFO);
         }
@@ -375,6 +378,12 @@ public:
         return *this;
     }
 
+    inline this_t &responseCorrelationId(std::int64_t responseCorrelationId)
+    {
+        m_responseCorrelationId.reset(new Value(responseCorrelationId));
+        return *this;
+    }
+
     std::string build()
     {
         std::ostringstream sb;
@@ -536,6 +545,11 @@ public:
             sb << CHANNEL_SND_TIMESTAMP_OFFSET_PARAM_NAME << '=' << *m_channelSendTimestampOffset << '|';
         }
 
+        if (m_responseCorrelationId)
+        {
+            sb << RESPONSE_CORRELATION_ID_PARAM_NAME << '=' << m_responseCorrelationId->value << '|';
+        }
+
         std::string result = sb.str();
         const char lastChar = result.back();
 
@@ -587,6 +601,7 @@ private:
     std::unique_ptr<Value> m_socketSndbufLength;
     std::unique_ptr<Value> m_socketRcvbufLength;
     std::unique_ptr<Value> m_receiverWindowLength;
+    std::unique_ptr<Value> m_responseCorrelationId;
     std::unique_ptr<std::string> m_mediaReceiveTimestampOffset;
     std::unique_ptr<std::string> m_channelReceiveTimestampOffset;
     std::unique_ptr<std::string> m_channelSendTimestampOffset;

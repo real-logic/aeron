@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cstdint>
 #include "gtest/gtest.h"
 
 #include "ChannelUriStringBuilder.h"
@@ -172,3 +173,20 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateMediaReceiveTimestampOffset)
         "aeron:udp?endpoint=localhost:9999|media-rcv-ts-offset=reserved");
 }
 
+TEST(ChannelUriStringBuilderTest, shouldGenerateResponseCorrelationId)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .controlMode(CONTROL_MODE_RESPONSE)
+        .responseCorrelationId(INT64_C(3333333333));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|control-mode=response|response-correlation-id=3333333333");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}

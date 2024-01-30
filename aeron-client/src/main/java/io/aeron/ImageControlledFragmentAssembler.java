@@ -117,7 +117,7 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
         else if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
         {
             builder.reset()
-                .firstHeader(header)
+                .captureHeader(header)
                 .append(buffer, offset, length)
                 .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
         }

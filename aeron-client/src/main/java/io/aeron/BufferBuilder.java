@@ -219,7 +219,7 @@ public final class BufferBuilder
      * @param header of the first frame.
      * @return the builder for fluent API usage.
      */
-    public BufferBuilder firstHeader(final Header header)
+    public BufferBuilder captureHeader(final Header header)
     {
         completeHeader
             .initialTermId(header.initialTermId())

@@ -126,7 +126,7 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
         {
             final BufferBuilder builder = getBufferBuilder(header.sessionId());
             builder.reset()
-                .firstHeader(header)
+                .captureHeader(header)
                 .append(buffer, offset, length)
                 .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
         }

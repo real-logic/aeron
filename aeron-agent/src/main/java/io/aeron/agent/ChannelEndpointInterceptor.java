@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import io.aeron.driver.media.ImageConnection;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
 import net.bytebuddy.asm.Advice;
@@ -87,6 +88,38 @@ class ChannelEndpointInterceptor
             static void receiveHook(final UnsafeBuffer buffer, final int length, final InetSocketAddress address)
             {
                 LOGGER.logFrameIn(buffer, 0, length, address);
+            }
+        }
+
+        static class ResendHook
+        {
+            @Advice.OnMethodEnter
+            static void resendHook(
+                final int sessionId, final int streamId, final int termId, final int termOffset, final int length)
+            {
+                LOGGER.logResend(sessionId, streamId, termId, termOffset, length);
+            }
+        }
+    }
+
+    static class ReceiveChannelEndpointInterceptor
+    {
+        static class SendNakMessage
+        {
+            @Advice.OnMethodEnter
+            static void sendNakMessage(
+                final ImageConnection[] connections,
+                final int sessionId,
+                final int streamId,
+                final int termId,
+                final int termOffset,
+                final int length)
+            {
+                for (final ImageConnection connection : connections)
+                {
+                    LOGGER.logSendNakMessage(
+                        connection.controlAddress, sessionId, streamId, termId, termOffset, length);
+                }
             }
         }
     }

@@ -17,6 +17,7 @@ package io.aeron.agent;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,6 +46,7 @@ import static org.agrona.BitUtil.*;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.*;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TAIL_POSITION_OFFSET;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DriverEventLoggerTest
@@ -384,5 +386,61 @@ class DriverEventLoggerTest
         index += SIZE_OF_LONG;
 
         assertEquals(expectedHostName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
+    }
+
+    @Test
+    void logSendNakMessage()
+    {
+        final InetSocketAddress inetSocketAddress = new InetSocketAddress("192.168.1.1", 10001);
+
+        final int sessionId = 9821374;
+        final int streamId = 988234;
+        final int termId = 89324;
+        final int termOffset = 9862314;
+        final int length = 1239;
+        final int recordOffset = 64;
+        final int captureLength = socketAddressLength(inetSocketAddress) + (6 * SIZE_OF_INT);
+
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+        logger.logSendNakMessage(inetSocketAddress, sessionId, streamId, termId, termOffset, length);
+        verifyLogHeader(
+            logBuffer, recordOffset, toEventCodeId(SEND_NAK_MESSAGE), captureLength, captureLength);
+
+        final StringBuilder sb = new StringBuilder();
+        DriverEventDissector.dissectSendNak(logBuffer, encodedMsgOffset(recordOffset), sb);
+
+        final String expectedMessagePattern =
+            "\\[[0-9]+\\.[0-9]+] DRIVER: SEND_NAK_MESSAGE \\[36/36]: address=192.168.1.1:10001 " +
+            "sessionId=9821374 streamId=988234 termId=89324 termOffset=9862314 length=1239";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
+
+    @Test
+    void logResend()
+    {
+        final InetSocketAddress inetSocketAddress = new InetSocketAddress("192.168.1.1", 10001);
+
+        final int sessionId = 9821374;
+        final int streamId = 988234;
+        final int termId = 89324;
+        final int termOffset = 9862314;
+        final int length = 1239;
+        final int recordOffset = 64;
+        final int captureLength = 6 * SIZE_OF_INT;
+
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+        logger.logResend(sessionId, streamId, termId, termOffset, length);
+        verifyLogHeader(
+            logBuffer, recordOffset, toEventCodeId(RESEND), captureLength, captureLength);
+
+        final StringBuilder sb = new StringBuilder();
+        DriverEventDissector.dissectResend(logBuffer, encodedMsgOffset(recordOffset), sb);
+
+        final String expectedMessagePattern =
+            "\\[[0-9]+\\.[0-9]+] DRIVER: RESEND \\[24/24]: sessionId=9821374 streamId=988234 termId=89324 " +
+            "termOffset=9862314 length=1239";
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
 }

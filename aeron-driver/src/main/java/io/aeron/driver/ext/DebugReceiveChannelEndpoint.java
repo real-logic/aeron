@@ -112,7 +112,8 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
     {
         int result = 0;
 
-        if (!dataLossGenerator.shouldDropFrame(srcAddress, buffer, length))
+        if (!dataLossGenerator.shouldDropFrame(
+            srcAddress, buffer, header.streamId(), header.sessionId(), header.termId(), header.termOffset(), length))
         {
             result = super.onDataPacket(header, buffer, length, srcAddress, transportIndex);
         }

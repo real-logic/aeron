@@ -310,4 +310,54 @@ final class DriverEventEncoder
         encodedLength += encodeTrailingString(
             encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, hostName);
     }
+
+    static void encodeSendNakMessage(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int length,
+        final int captureLength,
+        final InetSocketAddress controlAddress,
+        final int sessionId,
+        final int streamId,
+        final int termId,
+        final int termOffset,
+        final int nakLength)
+    {
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int socketEncodedLength = encodeSocketAddress(encodingBuffer, offset + encodedLength, controlAddress);
+        encodedLength += socketEncodedLength;
+
+        encodingBuffer.putInt(offset + encodedLength, sessionId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, streamId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, termId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, termOffset, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, nakLength, LITTLE_ENDIAN);
+    }
+
+    static void encodeResend(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int length,
+        final int captureLength,
+        final int sessionId,
+        final int streamId,
+        final int termId,
+        final int termOffset,
+        final int nakLength)
+    {
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        encodingBuffer.putInt(offset + encodedLength, sessionId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, streamId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, termId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, termOffset, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + encodedLength, nakLength, LITTLE_ENDIAN);
+    }
 }

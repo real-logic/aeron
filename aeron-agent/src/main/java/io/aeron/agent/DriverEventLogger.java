@@ -505,6 +505,97 @@ public final class DriverEventLogger
         }
     }
 
+    /**
+     * Logs a nak messages sent by the receiver for a single control address.
+     *
+     * @param controlAddress    Nak UDP destination
+     * @param sessionId         of the Nak.
+     * @param streamId          of the Nak.
+     * @param termId            of the Nak.
+     * @param termOffset        of the Nak.
+     * @param nakLength            of the Nak.
+     */
+    public void logSendNakMessage(
+        final InetSocketAddress controlAddress,
+        final int sessionId,
+        final int streamId,
+        final int termId,
+        final int termOffset,
+        final int nakLength)
+    {
+        final int length = socketAddressLength(controlAddress) + (SIZE_OF_INT * 6);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(toEventCodeId(SEND_NAK_MESSAGE), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encodeSendNakMessage(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    controlAddress,
+                    sessionId,
+                    streamId,
+                    termId,
+                    termOffset,
+                    nakLength);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Logs a nak messages sent by the receiver for a single control address.
+     *
+     * @param sessionId         of the Resend.
+     * @param streamId          of the Resend.
+     * @param termId            of the Resend.
+     * @param termOffset        of the Resend.
+     * @param resendLength      of the Resend.
+     */
+    public void logResend(
+        final int sessionId,
+        final int streamId,
+        final int termId,
+        final int termOffset,
+        final int resendLength)
+    {
+        final int length = (SIZE_OF_INT * 6);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(toEventCodeId(RESEND), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encodeResend(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    sessionId,
+                    streamId,
+                    termId,
+                    termOffset,
+                    resendLength);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
     static int toEventCodeId(final DriverEventCode code)
     {
         return EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);

@@ -340,7 +340,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         throw new UnsupportedOperationException("Not supported in C media driver");
     }
 
-    public static void enableLossGenerationOnReceive(
+    public static void enableRandomLossOnReceive(
         final MediaDriver.Context context,
         final double rate,
         final long seed,

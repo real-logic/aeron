@@ -417,6 +417,20 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
+     * Useful hook for logging resend calls.
+     * @param sessionId     to resend
+     * @param streamId      to resend
+     * @param termId        to resend
+     * @param termOffset    to resend
+     * @param length        to resend
+     */
+    @SuppressWarnings("unused")
+    public void resendHook(
+        final int sessionId, final int streamId, final int termId, final int termOffset, final int length)
+    {
+    }
+
+    /**
      * Receive a datagram from the media layer.
      *
      * @param buffer into which the datagram will be received.

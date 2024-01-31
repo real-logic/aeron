@@ -91,7 +91,14 @@ public enum DriverEventCode implements EventCode
         (code, buffer, offset, builder) -> DriverEventDissector.dissectLookup(buffer, offset, builder)),
 
     NAME_RESOLUTION_HOST_NAME(53,
-        (code, buffer, offset, builder) -> DriverEventDissector.dissectHostName(buffer, offset, builder));
+        (code, buffer, offset, builder) -> DriverEventDissector.dissectHostName(buffer, offset, builder)),
+
+    SEND_NAK_MESSAGE(54,
+        (code, buffer, offset, builder) -> DriverEventDissector.dissectSendNak(buffer, offset, builder)),
+
+    RESEND(55,
+        (code, buffer, offset, builder) -> DriverEventDissector.dissectResend(buffer, offset, builder));
+
 
     static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
 

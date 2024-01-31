@@ -513,6 +513,8 @@ public final class NetworkPublication
      */
     public void resend(final int termId, final int termOffset, final int length)
     {
+        channelEndpoint.resendHook(sessionId, streamId, termId, termOffset, length);
+
         final long senderPosition = this.senderPosition.get();
         final long resendPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long bottomResendWindow =

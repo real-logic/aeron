@@ -48,6 +48,11 @@ public final class DriverEventLogger
      */
     public static final int MAX_HOST_NAME_LENGTH = 256;
 
+    /**
+     * Maximum length of a Channel URI
+     */
+    public static final int MAX_CHANNEL_URI_LENGTH = 4096;
+
     private final ManyToOneRingBuffer ringBuffer;
 
     DriverEventLogger(final ManyToOneRingBuffer ringBuffer)
@@ -508,12 +513,13 @@ public final class DriverEventLogger
     /**
      * Logs a nak messages sent by the receiver for a single control address.
      *
-     * @param controlAddress    Nak UDP destination
-     * @param sessionId         of the Nak.
-     * @param streamId          of the Nak.
-     * @param termId            of the Nak.
-     * @param termOffset        of the Nak.
-     * @param nakLength            of the Nak.
+     * @param controlAddress Nak UDP destination
+     * @param sessionId      of the Nak.
+     * @param streamId       of the Nak.
+     * @param termId         of the Nak.
+     * @param termOffset     of the Nak.
+     * @param nakLength      of the Nak.
+     * @param channel
      */
     public void logSendNakMessage(
         final InetSocketAddress controlAddress,
@@ -521,9 +527,10 @@ public final class DriverEventLogger
         final int streamId,
         final int termId,
         final int termOffset,
-        final int nakLength)
+        final int nakLength,
+        final String channel)
     {
-        final int length = socketAddressLength(controlAddress) + (SIZE_OF_INT * 6);
+        final int length = socketAddressLength(controlAddress) + (SIZE_OF_INT * 6) + channel.length();
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
@@ -543,7 +550,8 @@ public final class DriverEventLogger
                     streamId,
                     termId,
                     termOffset,
-                    nakLength);
+                    nakLength,
+                    channel);
             }
             finally
             {
@@ -555,20 +563,22 @@ public final class DriverEventLogger
     /**
      * Logs a nak messages sent by the receiver for a single control address.
      *
-     * @param sessionId         of the Resend.
-     * @param streamId          of the Resend.
-     * @param termId            of the Resend.
-     * @param termOffset        of the Resend.
-     * @param resendLength      of the Resend.
+     * @param sessionId    of the Resend.
+     * @param streamId     of the Resend.
+     * @param termId       of the Resend.
+     * @param termOffset   of the Resend.
+     * @param resendLength of the Resend.
+     * @param channel
      */
     public void logResend(
         final int sessionId,
         final int streamId,
         final int termId,
         final int termOffset,
-        final int resendLength)
+        final int resendLength,
+        final String channel)
     {
-        final int length = (SIZE_OF_INT * 6);
+        final int length = (SIZE_OF_INT * 6) + channel.length();
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
 
@@ -587,7 +597,8 @@ public final class DriverEventLogger
                     streamId,
                     termId,
                     termOffset,
-                    resendLength);
+                    resendLength,
+                    channel);
             }
             finally
             {

@@ -52,11 +52,11 @@ class RetransmitHandlerTest
     private static final int TERM_ID = 0x7F003355;
 
     private static final FeedbackDelayGenerator DELAY_GENERATOR =
-        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), false);
+        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20));
     private static final FeedbackDelayGenerator ZERO_DELAY_GENERATOR =
-        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(0), false);
+        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(0));
     private static final FeedbackDelayGenerator LINGER_GENERATOR =
-        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(40), false);
+        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(40));
 
     private final UnsafeBuffer termBuffer = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
     private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(new byte[LogBufferDescriptor.LOG_META_DATA_LENGTH]);

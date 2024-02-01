@@ -154,14 +154,7 @@ public class LossDetector implements TermGapScanner.GapHandler
         activeTermOffset = scannedTermOffset;
         activeLength = scannedLength;
 
-        if (delayGenerator.shouldFeedbackImmediately())
-        {
-            deadlineNs = nowNs;
-        }
-        else
-        {
-            deadlineNs = nowNs + delayGenerator.generateDelay();
-        }
+        deadlineNs = nowNs + delayGenerator.generateDelayNs();
     }
 
     private void checkTimerExpiry(final long nowNs)
@@ -169,7 +162,7 @@ public class LossDetector implements TermGapScanner.GapHandler
         if (deadlineNs - nowNs <= 0)
         {
             lossHandler.onGapDetected(activeTermId, activeTermOffset, activeLength);
-            deadlineNs = nowNs + delayGenerator.generateDelay();
+            deadlineNs = nowNs + delayGenerator.retryDelayNs();
         }
     }
 }

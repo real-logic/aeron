@@ -398,11 +398,13 @@ class DriverEventLoggerTest
         final int termId = 89324;
         final int termOffset = 9862314;
         final int length = 1239;
+        final String channel =
+            "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0";
         final int recordOffset = 64;
-        final int captureLength = socketAddressLength(inetSocketAddress) + (6 * SIZE_OF_INT);
+        final int captureLength = socketAddressLength(inetSocketAddress) + (6 * SIZE_OF_INT) + channel.length();
 
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
-        logger.logSendNakMessage(inetSocketAddress, sessionId, streamId, termId, termOffset, length);
+        logger.logSendNakMessage(inetSocketAddress, sessionId, streamId, termId, termOffset, length, channel);
         verifyLogHeader(
             logBuffer, recordOffset, toEventCodeId(SEND_NAK_MESSAGE), captureLength, captureLength);
 
@@ -410,8 +412,9 @@ class DriverEventLoggerTest
         DriverEventDissector.dissectSendNak(logBuffer, encodedMsgOffset(recordOffset), sb);
 
         final String expectedMessagePattern =
-            "\\[[0-9]+\\.[0-9]+] DRIVER: SEND_NAK_MESSAGE \\[36/36]: address=192.168.1.1:10001 " +
-            "sessionId=9821374 streamId=988234 termId=89324 termOffset=9862314 length=1239";
+            "\\[[0-9]+\\.[0-9]+] DRIVER: SEND_NAK_MESSAGE \\[124/124]: address=192.168.1.1:10001 " +
+            "sessionId=9821374 streamId=988234 termId=89324 termOffset=9862314 length=1239 channel=" +
+            "aeron:udp\\?endpoint=localhost:10000\\|term-length=1m\\|init-term-id=0\\|term-id=0\\|term-offset=0";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }
@@ -419,18 +422,18 @@ class DriverEventLoggerTest
     @Test
     void logResend()
     {
-        final InetSocketAddress inetSocketAddress = new InetSocketAddress("192.168.1.1", 10001);
-
         final int sessionId = 9821374;
         final int streamId = 988234;
         final int termId = 89324;
         final int termOffset = 9862314;
         final int length = 1239;
         final int recordOffset = 64;
-        final int captureLength = 6 * SIZE_OF_INT;
+        final String channel =
+            "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0";
+        final int captureLength = 6 * SIZE_OF_INT + channel.length();
 
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
-        logger.logResend(sessionId, streamId, termId, termOffset, length);
+        logger.logResend(sessionId, streamId, termId, termOffset, length, channel);
         verifyLogHeader(
             logBuffer, recordOffset, toEventCodeId(RESEND), captureLength, captureLength);
 
@@ -438,8 +441,10 @@ class DriverEventLoggerTest
         DriverEventDissector.dissectResend(logBuffer, encodedMsgOffset(recordOffset), sb);
 
         final String expectedMessagePattern =
-            "\\[[0-9]+\\.[0-9]+] DRIVER: RESEND \\[24/24]: sessionId=9821374 streamId=988234 termId=89324 " +
-            "termOffset=9862314 length=1239";
+            "\\[[0-9]+\\.[0-9]+] DRIVER: RESEND \\[112/112]: sessionId=9821374 streamId=988234 termId=89324 " +
+            "termOffset=9862314 length=1239 " +
+            "channel=" +
+            "aeron:udp\\?endpoint=localhost:10000\\|term-length=1m\\|init-term-id=0\\|term-id=0\\|term-offset=0";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }

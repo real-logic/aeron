@@ -95,9 +95,17 @@ class ChannelEndpointInterceptor
         {
             @Advice.OnMethodEnter
             static void resendHook(
-                final int sessionId, final int streamId, final int termId, final int termOffset, final int length)
+                final int sessionId,
+                final int streamId,
+                final int termId,
+                final int termOffset,
+                final int length,
+                @Advice.This final Object thisObject)
             {
-                LOGGER.logResend(sessionId, streamId, termId, termOffset, length);
+                final io.aeron.driver.media.UdpChannelTransport transport =
+                    (io.aeron.driver.media.UdpChannelTransport)thisObject;
+                LOGGER.logResend(
+                    sessionId, streamId, termId, termOffset, length, transport.udpChannel().originalUriString());
             }
         }
     }
@@ -113,12 +121,15 @@ class ChannelEndpointInterceptor
                 final int streamId,
                 final int termId,
                 final int termOffset,
-                final int length)
+                final int length,
+                @Advice.This final Object thisObject)
             {
+                final ReceiveChannelEndpoint endpoint = (ReceiveChannelEndpoint)thisObject;
+                final String channel = endpoint.originalUriString();
                 for (final ImageConnection connection : connections)
                 {
                     LOGGER.logSendNakMessage(
-                        connection.controlAddress, sessionId, streamId, termId, termOffset, length);
+                        connection.controlAddress, sessionId, streamId, termId, termOffset, length, channel);
                 }
             }
         }

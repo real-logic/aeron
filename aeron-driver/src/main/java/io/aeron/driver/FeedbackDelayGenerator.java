@@ -21,16 +21,20 @@ package io.aeron.driver;
 public interface FeedbackDelayGenerator
 {
     /**
-     * Generate a new delay value
+     * Generate a new delay value on initial request.
      *
      * @return delay value in nanoseconds
      */
-    long generateDelay();
+    long generateDelayNs();
 
     /**
-     * Should feedback be immediately sent?
+     * Generate a new delay value on a retried request. Implementing this call is optional and will default to
+     * {@link #generateDelayNs()}.
      *
-     * @return whether feedback should be immediate or not
+     * @return delay value in nanoseconds
      */
-    boolean shouldFeedbackImmediately();
+    default long retryDelayNs()
+    {
+        return generateDelayNs();
+    }
 }

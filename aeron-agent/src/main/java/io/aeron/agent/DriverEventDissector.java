@@ -415,6 +415,9 @@ final class DriverEventDissector
         builder.append(" termOffset=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_INT;
         builder.append(" length=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+        builder.append(" channel=");
+        buffer.getStringAscii(absoluteOffset, builder);
     }
 
     public static void dissectResend(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
@@ -430,6 +433,9 @@ final class DriverEventDissector
         builder.append(" termOffset=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
         absoluteOffset += SIZE_OF_INT;
         builder.append(" length=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+        builder.append(" channel=");
+        buffer.getStringAscii(absoluteOffset, builder);
     }
 
     static int frameType(final MutableDirectBuffer buffer, final int termOffset)

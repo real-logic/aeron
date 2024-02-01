@@ -449,6 +449,7 @@ public final class MediaDriver implements AutoCloseable
         private long retransmitUnicastDelayNs = Configuration.retransmitUnicastDelayNs();
         private long retransmitUnicastLingerNs = Configuration.retransmitUnicastLingerNs();
         private long nakUnicastDelayNs = Configuration.nakUnicastDelayNs();
+        private long nakUnicastRetryDelayRatio = Configuration.nakUnicastRetryDelayRatio();
         private long nakMulticastMaxBackoffNs = Configuration.nakMulticastMaxBackoffNs();
         private long flowControlReceiverTimeoutNs = Configuration.flowControlReceiverTimeoutNs();
         private long reResolutionCheckIntervalNs = Configuration.reResolutionCheckIntervalNs();
@@ -1271,10 +1272,38 @@ public final class MediaDriver implements AutoCloseable
          * @param nakUnicastDelayNs delay before retransmission after an NAK on unicast.
          * @return this for a fluent API.
          * @see Configuration#NAK_UNICAST_DELAY_PROP_NAME
+         * @see Configuration#NAK_UNICAST_DELAY_DEFAULT_NS
          */
         public Context nakUnicastDelayNs(final long nakUnicastDelayNs)
         {
             this.nakUnicastDelayNs = nakUnicastDelayNs;
+            return this;
+        }
+
+        /**
+         * The ratio to apply to the retry delay for unicast.
+         *
+         * @return ratio to apply to the retry delay for unicast
+         * @see #nakUnicastRetryDelayRatio(long)
+         */
+        public long nakUnicastRetryDelayRatio()
+        {
+            return nakUnicastRetryDelayRatio;
+        }
+
+        /**
+         * The ratio to apply to the retry delay for unicast. This will be a multiplier applied to the
+         * {@link #nakUnicastDelayNs} when constructing the {@link StaticDelayGenerator} used for handling delays on
+         * unicast NAKs.
+         *
+         * @param nakUnicastRetryDelayRatio to multiply the {@link #nakUnicastDelayNs} by to calculate the retry delay.
+         * @return this for a fluent API.
+         * @see Configuration#NAK_UNICAST_RETRY_DELAY_RATIO_PROP_NAME
+         * @see Configuration#NAK_UNICAST_RETRY_DELAY_RATIO_DEFAULT
+         */
+        public Context nakUnicastRetryDelayRatio(final long nakUnicastRetryDelayRatio)
+        {
+            this.nakUnicastRetryDelayRatio = nakUnicastRetryDelayRatio;
             return this;
         }
 
@@ -3732,17 +3761,18 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == retransmitUnicastDelayGenerator)
             {
-                retransmitUnicastDelayGenerator = new StaticDelayGenerator(retransmitUnicastDelayNs, false);
+                retransmitUnicastDelayGenerator = new StaticDelayGenerator(retransmitUnicastDelayNs);
             }
 
             if (null == retransmitUnicastLingerGenerator)
             {
-                retransmitUnicastLingerGenerator = new StaticDelayGenerator(retransmitUnicastLingerNs, false);
+                retransmitUnicastLingerGenerator = new StaticDelayGenerator(retransmitUnicastLingerNs);
             }
 
             if (null == unicastFeedbackDelayGenerator)
             {
-                unicastFeedbackDelayGenerator = new StaticDelayGenerator(nakUnicastDelayNs, true);
+                unicastFeedbackDelayGenerator = new StaticDelayGenerator(
+                    nakUnicastDelayNs, nakUnicastDelayNs * nakUnicastRetryDelayRatio);
             }
 
             if (null == multicastFeedbackDelayGenerator)

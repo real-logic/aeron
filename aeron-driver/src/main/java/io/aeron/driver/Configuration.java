@@ -598,7 +598,17 @@ public final class Configuration
     /**
      * Default Unicast NAK delay in nanoseconds.
      */
-    public static final long NAK_UNICAST_DELAY_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
+    public static final long NAK_UNICAST_DELAY_DEFAULT_NS = TimeUnit.MICROSECONDS.toNanos(100);
+
+    /**
+     * Unicast NAK retry delay ratio property name.
+     */
+    public static final String NAK_UNICAST_RETRY_DELAY_RATIO_PROP_NAME = "aeron.nak.unicast.retry.delay.ratio";
+
+    /**
+     * Default Unicast NAK retry delay ratio.
+     */
+    public static final long NAK_UNICAST_RETRY_DELAY_RATIO_DEFAULT = 100;
 
     /**
      * Property for setting how long to delay before sending a retransmit after receiving a NAK.
@@ -970,6 +980,19 @@ public final class Configuration
     public static long nakUnicastDelayNs()
     {
         return getDurationInNanos(NAK_UNICAST_DELAY_PROP_NAME, NAK_UNICAST_DELAY_DEFAULT_NS);
+    }
+
+    /**
+     * Unicast NAK retry delay ratio.
+     *
+     * @return unicast NAK delay in nanoseconds.
+     * @see #NAK_UNICAST_DELAY_PROP_NAME
+     */
+    public static long nakUnicastRetryDelayRatio()
+    {
+        final long ratio = getLong(NAK_UNICAST_RETRY_DELAY_RATIO_PROP_NAME, NAK_UNICAST_RETRY_DELAY_RATIO_DEFAULT);
+        validateValueRange(ratio, 1, Long.MAX_VALUE, NAK_UNICAST_RETRY_DELAY_RATIO_PROP_NAME);
+        return ratio;
     }
 
     /**

@@ -375,6 +375,8 @@ public class CommonContext implements Cloneable
      */
     public static final String FALLBACK_LOGGER_PROP_NAME = "aeron.fallback.logger";
 
+    public static final String NAK_DELAY_PARAM_NAME = "nak-delay";
+
     /**
      * Get the current fallback logger based on the supplied property.
      *

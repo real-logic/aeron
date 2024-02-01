@@ -33,6 +33,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.IOException;
 import java.util.Random;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -66,8 +68,41 @@ public class DataLossAndRecoverySystemTest
     {
         TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
 
-        final String channel =
-            "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0";
+        sendAndReceive10mOfDataWithLoss(
+            "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0");
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            final long retransmitCount = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
+            final long nakCount = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
+            assertEquals(1, retransmitCount);
+            assertEquals(1, nakCount);
+        }
+    }
+
+    @Test
+    void shouldConfigureNakDelayPerStream() throws IOException
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
+
+        sendAndReceive10mOfDataWithLoss(
+            "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0|nak-delay=0");
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            final long retransmitCount = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
+            final long nakCount = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
+            assertThat(retransmitCount, greaterThan(1L));
+            assertThat(nakCount, greaterThan(1L));
+        }
+    }
+
+    private void sendAndReceive10mOfDataWithLoss(final String channel)
+    {
         final int streamId = 10000;
         final byte[] input = new byte[10 * 1024 * 1024];
         final byte[] output = new byte[10 * 1024 * 1024];
@@ -112,15 +147,5 @@ public class DataLossAndRecoverySystemTest
         }
 
         assertArrayEquals(input, output);
-
-        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
-        {
-            final long retransmitCount = aeron.countersReader()
-                .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
-            final long nakCount = aeron.countersReader()
-                .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
-            assertEquals(1, retransmitCount);
-            assertEquals(1, nakCount);
-        }
     }
 }

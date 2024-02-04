@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.StaticDelayGenerator;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -43,16 +44,19 @@ public class DataLossAndRecoverySystemTest
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();
 
+    private final MediaDriver.Context context = new MediaDriver.Context()
+        .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
+        .threadingMode(ThreadingMode.SHARED);
     private TestMediaDriver driver;
 
     @BeforeEach
     void setUp()
     {
-        final MediaDriver.Context context = new MediaDriver.Context()
-            .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-            .threadingMode(ThreadingMode.SHARED);
         TestMediaDriver.enableFixedLoss(context, 5, 102, 100_000);
+    }
 
+    private void launch(final MediaDriver.Context context)
+    {
         driver = TestMediaDriver.launch(context, watcher);
         watcher.dataCollector().add(driver.context().aeronDirectory());
     }
@@ -67,6 +71,7 @@ public class DataLossAndRecoverySystemTest
     void shouldSendStreamOfDataAndHandleLargeGap() throws IOException
     {
         TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
+        launch(context);
 
         sendAndReceive10mOfDataWithLoss(
             "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0");
@@ -86,9 +91,11 @@ public class DataLossAndRecoverySystemTest
     void shouldConfigureNakDelayPerStream() throws IOException
     {
         TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
+        context.unicastFeedbackDelayGenerator(new StaticDelayGenerator(0, 0));
+        launch(context);
 
         sendAndReceive10mOfDataWithLoss(
-            "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0|nak-delay=0");
+            "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0|nak-delay=100us");
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
         {
@@ -96,8 +103,8 @@ public class DataLossAndRecoverySystemTest
                 .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
             final long nakCount = aeron.countersReader()
                 .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
-            assertThat(retransmitCount, greaterThan(1L));
-            assertThat(nakCount, greaterThan(1L));
+            assertEquals(1, retransmitCount);
+            assertEquals(1, nakCount);
         }
     }
 

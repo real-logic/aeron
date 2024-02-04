@@ -2352,7 +2352,14 @@ public final class DriverConductor implements Agent
         }
 
         final Long nakDelayNs = channel.nakDelayNs();
-        return null != nakDelayNs ? new StaticDelayGenerator(nakDelayNs, ctx.nakUnicastRetryDelayRatio()) :
-            ctx.unicastFeedbackDelayGenerator();
+        if (null != nakDelayNs)
+        {
+            final long retryDelayNs = nakDelayNs * ctx.nakUnicastRetryDelayRatio();
+            return new StaticDelayGenerator(nakDelayNs, retryDelayNs);
+        }
+        else
+        {
+            return ctx.unicastFeedbackDelayGenerator();
+        }
     }
 }

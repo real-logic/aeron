@@ -16,7 +16,6 @@
 package io.aeron.driver;
 
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.collections.BiInt2ObjectMap;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 

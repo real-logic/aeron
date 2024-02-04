@@ -28,6 +28,7 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -68,7 +69,7 @@ public class DataLossAndRecoverySystemTest
     }
 
     @Test
-    void shouldSendStreamOfDataAndHandleLargeGap() throws IOException
+    void shouldSendStreamOfDataAndHandleLargeGapWithingSingleNakAndRetransmit() throws IOException
     {
         TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
         launch(context);
@@ -91,7 +92,7 @@ public class DataLossAndRecoverySystemTest
     void shouldConfigureNakDelayPerStream() throws IOException
     {
         TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
-        context.unicastFeedbackDelayGenerator(new StaticDelayGenerator(0, 0));
+        dontCoalesceNaksOnReceiverByDefault();
         launch(context);
 
         sendAndReceive10mOfDataWithLoss(
@@ -106,6 +107,33 @@ public class DataLossAndRecoverySystemTest
             assertEquals(1, retransmitCount);
             assertEquals(1, nakCount);
         }
+    }
+
+    @Test
+    @Disabled
+    void shouldSendStreamOfDataAndHandleLargeGapWithSingleRetransmitEvenIfNakkingFrequently() throws IOException
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
+        dontCoalesceNaksOnReceiverByDefault();
+        launch(context);
+
+        sendAndReceive10mOfDataWithLoss(
+            "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0");
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            final long retransmitCount = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
+            final long nakCount = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
+            assertThat(nakCount, greaterThan(1L));
+            assertEquals(1, retransmitCount);
+        }
+    }
+
+    private void dontCoalesceNaksOnReceiverByDefault()
+    {
+        context.unicastFeedbackDelayGenerator(new StaticDelayGenerator(0, 0));
     }
 
     private void sendAndReceive10mOfDataWithLoss(final String channel)

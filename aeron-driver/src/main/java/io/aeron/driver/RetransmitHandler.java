@@ -32,7 +32,6 @@ import static io.aeron.driver.RetransmitHandler.State.LINGERING;
  */
 public final class RetransmitHandler
 {
-    private final BiInt2ObjectMap<RetransmitAction> activeRetransmitByTermIdAndTermOffsetMap = new BiInt2ObjectMap<>();
     private final RetransmitAction[] retransmitActionPool = new RetransmitAction[MAX_RETRANSMITS_DEFAULT];
     private final NanoClock nanoClock;
     private final FeedbackDelayGenerator delayGenerator;
@@ -82,10 +81,9 @@ public final class RetransmitHandler
     {
         if (!isInvalid(termOffset, termLength))
         {
-            if (null == activeRetransmitByTermIdAndTermOffsetMap.get(termId, termOffset) &&
-                activeRetransmitByTermIdAndTermOffsetMap.size() < MAX_RETRANSMITS_DEFAULT)
+            final RetransmitAction action = scanForAvailableRetransmit(termId, termOffset);
+            if (null != action)
             {
-                final RetransmitAction action = assignRetransmitAction();
                 action.termId = termId;
                 action.termOffset = termOffset;
                 action.length = Math.min(length, termLength - termOffset);
@@ -100,8 +98,6 @@ public final class RetransmitHandler
                 {
                     action.delay(delay, nanoClock.nanoTime());
                 }
-
-                activeRetransmitByTermIdAndTermOffsetMap.put(termId, termOffset, action);
             }
         }
     }
@@ -116,11 +112,10 @@ public final class RetransmitHandler
      */
     public void onRetransmitReceived(final int termId, final int termOffset)
     {
-        final RetransmitAction action = activeRetransmitByTermIdAndTermOffsetMap.get(termId, termOffset);
+        final RetransmitAction action = scanForExistingRetransmit(termId, termOffset);
 
         if (null != action && DELAYED == action.state)
         {
-            activeRetransmitByTermIdAndTermOffsetMap.remove(termId, termOffset);
             action.cancel(); // do not go into linger
         }
     }
@@ -133,20 +128,16 @@ public final class RetransmitHandler
      */
     public void processTimeouts(final long nowNs, final RetransmitSender retransmitSender)
     {
-        if (!activeRetransmitByTermIdAndTermOffsetMap.isEmpty())
+        for (final RetransmitAction action : retransmitActionPool)
         {
-            for (final RetransmitAction action : retransmitActionPool)
+            if (DELAYED == action.state && (action.expireNs - nowNs < 0))
             {
-                if (DELAYED == action.state && (action.expireNs - nowNs < 0))
-                {
-                    retransmitSender.resend(action.termId, action.termOffset, action.length);
-                    action.linger(lingerTimeoutGenerator.generateDelayNs(), nanoClock.nanoTime());
-                }
-                else if (LINGERING == action.state && (action.expireNs - nowNs < 0))
-                {
-                    action.cancel();
-                    activeRetransmitByTermIdAndTermOffsetMap.remove(action.termId, action.termOffset);
-                }
+                retransmitSender.resend(action.termId, action.termOffset, action.length);
+                action.linger(lingerTimeoutGenerator.generateDelayNs(), nanoClock.nanoTime());
+            }
+            else if (LINGERING == action.state && (action.expireNs - nowNs < 0))
+            {
+                action.cancel();
             }
         }
     }
@@ -163,17 +154,55 @@ public final class RetransmitHandler
         return isInvalid;
     }
 
-    private RetransmitAction assignRetransmitAction()
+    private RetransmitAction scanForAvailableRetransmit(final int termId, final int termOffset)
     {
+        RetransmitAction availableAction = null;
         for (final RetransmitAction action : retransmitActionPool)
         {
-            if (State.INACTIVE == action.state)
+            switch (action.state)
             {
-                return action;
+                case INACTIVE:
+                    if (null == availableAction)
+                    {
+                        availableAction = action;
+                    }
+                    break;
+
+                case DELAYED:
+                case LINGERING:
+                    if (action.termId == termId && action.termOffset == termOffset)
+                    {
+                        return null;
+                    }
+                    break;
             }
         }
 
+        if (null != availableAction)
+        {
+            return availableAction;
+        }
+
         throw new IllegalStateException("maximum number of active RetransmitActions reached");
+    }
+
+    private RetransmitAction scanForExistingRetransmit(final int termId, final int termOffset)
+    {
+        for (final RetransmitAction action : retransmitActionPool)
+        {
+            switch (action.state)
+            {
+                case DELAYED:
+                case LINGERING:
+                    if (action.termId == termId && action.termOffset == termOffset)
+                    {
+                        return action;
+                    }
+                    break;
+            }
+        }
+
+        return null;
     }
 
     enum State

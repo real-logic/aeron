@@ -80,7 +80,7 @@ public final class RetransmitHandler
     {
         if (!isInvalid(termOffset, termLength))
         {
-            final RetransmitAction action = scanForAvailableRetransmit(termId, termOffset);
+            final RetransmitAction action = scanForAvailableRetransmit(termId, termOffset, length);
             if (null != action)
             {
                 action.termId = termId;
@@ -153,7 +153,7 @@ public final class RetransmitHandler
         return isInvalid;
     }
 
-    private RetransmitAction scanForAvailableRetransmit(final int termId, final int termOffset)
+    private RetransmitAction scanForAvailableRetransmit(final int termId, final int termOffset, final int length)
     {
         RetransmitAction availableAction = null;
         for (final RetransmitAction action : retransmitActionPool)
@@ -169,7 +169,9 @@ public final class RetransmitHandler
 
                 case DELAYED:
                 case LINGERING:
-                    if (action.termId == termId && action.termOffset == termOffset)
+                    if (action.termId == termId &&
+                        action.termOffset <= termOffset &&
+                        termOffset + length <= action.termOffset + action.length)
                     {
                         return null;
                     }

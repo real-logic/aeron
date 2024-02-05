@@ -64,8 +64,6 @@ public class DataLossAndRecoverySystemTest
     @Test
     void shouldSendStreamOfDataAndHandleLargeGap() throws IOException
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
-
         final String channel =
             "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0";
         final int streamId = 10000;

@@ -46,7 +46,7 @@ static AERON_INIT_ONCE env_is_initialized = AERON_INIT_ONCE_VALUE;
 
 static const aeron_udp_channel_interceptor_fixed_loss_params_t *aeron_udp_channel_interceptor_fixed_loss_params = NULL;
 
-#define STREAM_AND_SESSION_ID_NULL_OFFSET -1
+#define STREAM_AND_SESSION_ID_NULL_OFFSET (-1)
 static aeron_int64_counter_map_t stream_and_session_id_to_offset_map;
 
 int aeron_udp_channel_interceptor_fixed_loss_init_incoming(
@@ -85,8 +85,7 @@ int aeron_udp_channel_interceptor_fixed_loss_configure(const aeron_udp_channel_i
 {
     aeron_udp_channel_interceptor_fixed_loss_params = fixed_loss_params;
 
-    if (aeron_int64_counter_map_init(
-            &stream_and_session_id_to_offset_map, STREAM_AND_SESSION_ID_NULL_OFFSET, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    if (aeron_int64_counter_map_init(&stream_and_session_id_to_offset_map, STREAM_AND_SESSION_ID_NULL_OFFSET, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
         AERON_SET_ERR(errno, "%s", "Unable to init stream_and_session_id_to_offset_map");
         return -1;
@@ -113,8 +112,10 @@ void aeron_udp_channel_transport_fixed_loss_load_env(void)
 
     if (aeron_udp_channel_interceptor_fixed_loss_parse_params(args_dup, fixed_loss_params) >= 0)
     {
-        // TODO handle return of -1
-        aeron_udp_channel_interceptor_fixed_loss_configure(fixed_loss_params);
+        if (aeron_udp_channel_interceptor_fixed_loss_configure(fixed_loss_params) != 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+        }
     }
     else
     {
@@ -131,6 +132,7 @@ int aeron_udp_channel_interceptor_fixed_loss_init_incoming(
 
     if (NULL == aeron_udp_channel_interceptor_fixed_loss_params)
     {
+        AERON_SET_ERR(errno, "%s", "fixed loss params not set");
         return -1;
     }
 
@@ -160,7 +162,6 @@ static bool aeron_udp_channel_interceptor_fixed_loss_should_drop_frame(
                 tracking_offset = term_offset;
                 if (aeron_int64_counter_map_put(&stream_and_session_id_to_offset_map, key, tracking_offset, NULL) != 0)
                 {
-                    // TODO
                     return false;
                 }
             }
@@ -171,7 +172,6 @@ static bool aeron_udp_channel_interceptor_fixed_loss_should_drop_frame(
             {
                 if (aeron_int64_counter_map_put(&stream_and_session_id_to_offset_map, key, data_header->term_offset + (int64_t)buffer_length, NULL) != 0)
                 {
-                    // TODO
                     return false;
                 }
 

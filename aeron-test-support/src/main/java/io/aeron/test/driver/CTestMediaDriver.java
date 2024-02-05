@@ -368,17 +368,17 @@ public final class CTestMediaDriver implements TestMediaDriver
     }
 
     public static void enableFixedLossOnReceive(
-            final MediaDriver.Context context,
-            final int termId,
-            final int termOffset,
-            final int length)
+        final MediaDriver.Context context,
+        final int termId,
+        final int termOffset,
+        final int length)
     {
         final Object2ObjectHashMap<String, String> fixedLossTransportEnv = new Object2ObjectHashMap<>();
 
         final String interceptor = "fixed-loss";
         final String fixedLossArgs = "term-id=" + termId +
-                "|term-offset=" + termOffset +
-                "|length=" + length;
+            "|term-offset=" + termOffset +
+            "|length=" + length;
 
         fixedLossTransportEnv.put(UDP_CHANNEL_INCOMING_INTERCEPTORS_ENV_VAR, interceptor);
         fixedLossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_FIXED_LOSS_ARGS", fixedLossArgs);

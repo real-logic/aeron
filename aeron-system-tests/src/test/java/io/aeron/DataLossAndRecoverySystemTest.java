@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.StaticDelayGenerator;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -33,6 +34,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.IOException;
 import java.util.Random;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -41,16 +44,19 @@ public class DataLossAndRecoverySystemTest
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();
 
+    private final MediaDriver.Context context = new MediaDriver.Context()
+        .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
+        .threadingMode(ThreadingMode.SHARED);
     private TestMediaDriver driver;
 
     @BeforeEach
     void setUp()
     {
-        final MediaDriver.Context context = new MediaDriver.Context()
-            .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-            .threadingMode(ThreadingMode.SHARED);
         TestMediaDriver.enableFixedLoss(context, 5, 102, 100_000);
+    }
 
+    private void launch(final MediaDriver.Context context)
+    {
         driver = TestMediaDriver.launch(context, watcher);
         watcher.dataCollector().add(driver.context().aeronDirectory());
     }
@@ -62,10 +68,73 @@ public class DataLossAndRecoverySystemTest
     }
 
     @Test
-    void shouldSendStreamOfDataAndHandleLargeGap() throws IOException
+    void shouldSendStreamOfDataAndHandleLargeGapWithingSingleNakAndRetransmit() throws IOException
     {
-        final String channel =
-            "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0";
+        launch(context);
+
+        sendAndReceive10mOfDataWithLoss(
+            "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0");
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            final long retransmitCount = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
+            final long nakCount = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
+            assertEquals(1, retransmitCount);
+            assertEquals(1, nakCount);
+        }
+    }
+
+    @Test
+    void shouldConfigureNakDelayPerStream() throws IOException
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
+        dontCoalesceNaksOnReceiverByDefault();
+        launch(context);
+
+        sendAndReceive10mOfDataWithLoss(
+            "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0|nak-delay=100us");
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            final long retransmitCount = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
+            final long nakCount = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
+            assertEquals(1, retransmitCount);
+            assertEquals(1, nakCount);
+        }
+    }
+
+    @Test
+    void shouldSendStreamOfDataAndHandleLargeGapWithSingleRetransmitEvenIfNakkingFrequently() throws IOException
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
+        dontCoalesceNaksOnReceiverByDefault();
+        launch(context);
+
+        sendAndReceive10mOfDataWithLoss(
+            "aeron:udp?endpoint=localhost:10000|term-length=1m|init-term-id=0|term-id=0|term-offset=0");
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
+        {
+            final long retransmitCount = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
+            final long nakCount = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
+            assertThat(nakCount, greaterThan(1L));
+            assertEquals(1, retransmitCount);
+        }
+    }
+
+    private void dontCoalesceNaksOnReceiverByDefault()
+    {
+        context.unicastFeedbackDelayGenerator(new StaticDelayGenerator(0, 0));
+    }
+
+    private void sendAndReceive10mOfDataWithLoss(final String channel)
+    {
         final int streamId = 10000;
         final byte[] input = new byte[10 * 1024 * 1024];
         final byte[] output = new byte[10 * 1024 * 1024];
@@ -110,15 +179,5 @@ public class DataLossAndRecoverySystemTest
         }
 
         assertArrayEquals(input, output);
-
-        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName())))
-        {
-            final long retransmitCount = aeron.countersReader()
-                .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
-            final long nakCount = aeron.countersReader()
-                .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
-            assertEquals(1, retransmitCount);
-            assertEquals(1, nakCount);
-        }
     }
 }

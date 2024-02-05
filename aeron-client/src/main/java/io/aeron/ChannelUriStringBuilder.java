@@ -76,8 +76,7 @@ public final class ChannelUriStringBuilder
     private String channelSendTimestampOffset;
     private String responseEndpoint;
     private Long responseCorrelationId;
-    private Boolean isResponseChannel;
-    private Long responseSubscriptionId;
+    private Long nakDelay;
 
     /**
      * Default constructor
@@ -140,6 +139,7 @@ public final class ChannelUriStringBuilder
         channelSendTimestampOffset(channelUri);
         responseEndpoint(channelUri);
         responseCorrelationId(channelUri);
+        nakDelay(channelUri);
     }
 
     /**
@@ -183,8 +183,6 @@ public final class ChannelUriStringBuilder
         channelSendTimestampOffset = null;
         responseEndpoint = null;
         responseCorrelationId = null;
-        isResponseChannel = null;
-        responseSubscriptionId = null;
 
         return this;
     }
@@ -2017,6 +2015,43 @@ public final class ChannelUriStringBuilder
     }
 
     /**
+     * The delay to apply before sending a NAK in response to a gap being detected by the receiver.
+     *
+     * @param nakDelay express as a numeric value with a suffix, e.g. 10ms, 100us.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder nakDelay(final String nakDelay)
+    {
+        if (null != nakDelay)
+        {
+            this.nakDelay = parseDuration(NAK_DELAY_PARAM_NAME, nakDelay);
+        }
+
+        return this;
+    }
+
+    /**
+     * The delay to apply before sending a NAK in response to a gap being detected by the receiver.
+     *
+     * @param channelUri the existing URI to extract the nakDelay from.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder nakDelay(final ChannelUri channelUri)
+    {
+        return nakDelay(channelUri.get(NAK_DELAY_PARAM_NAME));
+    }
+
+    /**
+     * The delay to apply before sending a NAK in response to a gap being detected by the receiver.
+     *
+     * @return the delay in nanoseconds, null if not set.
+     */
+    public Long nakDelay()
+    {
+        return nakDelay;
+    }
+
+    /**
      * Build a channel URI String for the given parameters.
      *
      * @return a channel URI String for the given parameters.
@@ -2070,6 +2105,7 @@ public final class ChannelUriStringBuilder
         appendParameter(sb, CHANNEL_SEND_TIMESTAMP_OFFSET_PARAM_NAME, channelSendTimestampOffset);
         appendParameter(sb, RESPONSE_ENDPOINT_PARAM_NAME, responseEndpoint);
         appendParameter(sb, RESPONSE_CORRELATION_ID_PARAM_NAME, responseCorrelationId);
+        appendParameter(sb, NAK_DELAY_PARAM_NAME, nakDelay);
 
         final char lastChar = sb.charAt(sb.length() - 1);
         if (lastChar == '|' || lastChar == '?')

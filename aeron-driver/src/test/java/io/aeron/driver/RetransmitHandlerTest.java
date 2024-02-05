@@ -47,6 +47,7 @@ class RetransmitHandlerTest
     private static final byte[] DATA = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
+    private static final int TWO_MESSAGE_FRAME_LENGTH = 2 * align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
     private static final int SESSION_ID = 0x5E55101D;
     private static final int STREAM_ID = 0x5400E;
     private static final int TERM_ID = 0x7F003355;
@@ -117,6 +118,22 @@ class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
+    void shouldNotRetransmitOnNakWhileInLingerWithDifferentOffsetByContainedWithinExistingRetransmit(
+        final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    {
+        createTermBuffer(creator, 5);
+        handler.onNak(TERM_ID, offsetOfFrame(0), TWO_MESSAGE_FRAME_LENGTH, TERM_BUFFER_LENGTH, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
+        handler.processTimeouts(currentTime, retransmitSender);
+        handler.onNak(TERM_ID, offsetOfFrame(1), ALIGNED_FRAME_LENGTH, TERM_BUFFER_LENGTH, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
+        handler.processTimeouts(currentTime, retransmitSender);
+
+        verify(retransmitSender, times(1)).resend(eq(TERM_ID), anyInt(), anyInt());
+    }
+
+    @ParameterizedTest
+    @MethodSource("consumers")
     void shouldRetransmitOnNakAfterLinger(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
@@ -170,6 +187,23 @@ class RetransmitHandlerTest
         handler.processTimeouts(currentTime, retransmitSender);
 
         verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), MTU_LENGTH * 2);
+    }
+
+    @ParameterizedTest
+    @MethodSource("consumers")
+    void shouldRetransmitOnNakWhileInLingerWithDifferentOffsetButNotContainedWithinExistingRetransmit(
+        final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    {
+        createTermBuffer(creator, 5);
+        handler.onNak(TERM_ID, offsetOfFrame(0), TWO_MESSAGE_FRAME_LENGTH, TERM_BUFFER_LENGTH, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
+        handler.processTimeouts(currentTime, retransmitSender);
+        handler.onNak(TERM_ID, offsetOfFrame(1), TWO_MESSAGE_FRAME_LENGTH, TERM_BUFFER_LENGTH, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
+        handler.processTimeouts(currentTime, retransmitSender);
+
+        verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), TWO_MESSAGE_FRAME_LENGTH);
+        verify(retransmitSender).resend(TERM_ID, offsetOfFrame(1), TWO_MESSAGE_FRAME_LENGTH);
     }
 
     @ParameterizedTest

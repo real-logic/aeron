@@ -296,6 +296,9 @@ public final class DriverConductor implements Agent
                     channelEndpoint.udpChannel(transportIndex).isMulticast() : subscription.group() == FORCE_TRUE;
                 final String sourceIdentity = Configuration.sourceIdentity(sourceAddress);
 
+                final FeedbackDelayGenerator feedbackDelayGenerator = resolveDelayGenerator(
+                    ctx, channelEndpoint.udpChannel(), isMulticastSemantics);
+
                 final PublicationImage image = new PublicationImage(
                     registrationId,
                     ctx,
@@ -309,7 +312,7 @@ public final class DriverConductor implements Agent
                     initialTermOffset,
                     flags,
                     rawLog,
-                    isMulticastSemantics ? ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator(),
+                    feedbackDelayGenerator,
                     subscriberPositions,
                     hwmPos,
                     rcvPos,
@@ -2335,6 +2338,28 @@ public final class DriverConductor implements Agent
         {
             throw new InvalidChannelException(ENDPOINT_PARAM_NAME + " has port=0 for send destination: channel=" +
                 destinationUri);
+        }
+    }
+
+    private static FeedbackDelayGenerator resolveDelayGenerator(
+        final Context ctx,
+        final UdpChannel channel,
+        final boolean isMulticastSemantics)
+    {
+        if (isMulticastSemantics)
+        {
+            return ctx.multicastFeedbackDelayGenerator();
+        }
+
+        final Long nakDelayNs = channel.nakDelayNs();
+        if (null != nakDelayNs)
+        {
+            final long retryDelayNs = nakDelayNs * ctx.nakUnicastRetryDelayRatio();
+            return new StaticDelayGenerator(nakDelayNs, retryDelayNs);
+        }
+        else
+        {
+            return ctx.unicastFeedbackDelayGenerator();
         }
     }
 }

@@ -192,3 +192,44 @@ TEST_F(SystemTest, shouldAddRemoveCloseHandler)
     EXPECT_EQ(1, closeCount1);
     EXPECT_EQ(0, closeCount2);
 }
+
+//
+// These tests will fail with the sanitizer if not implemented correctly.
+//
+
+TEST_F(SystemTest, shouldFreeSubscritionDataCorrectly)
+{
+    {
+        Context ctx;
+        ctx.useConductorAgentInvoker(false);
+
+        std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+        int64_t i = aeron->addSubscription("aeron:ipc", 1000);
+        std::shared_ptr<Subscription> subscription;
+        do
+        {
+            subscription = aeron->findSubscription(i);
+        }
+        while (nullptr == subscription);
+    }
+}
+
+TEST_F(SystemTest, shouldFreeSubscritionDataCorrectlyWithInvoker)
+{
+    {
+        Context ctx;
+        ctx.useConductorAgentInvoker(true);
+        std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+        AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
+        invoker.start();
+
+        int64_t i = aeron->addSubscription("aeron:ipc", 1000);
+        std::shared_ptr<Subscription> subscription;
+        do
+        {
+            invoker.invoke();
+            subscription = aeron->findSubscription(i);
+        }
+        while (nullptr == subscription);
+    }
+}

@@ -107,6 +107,7 @@ void aeron_udp_channel_transport_fixed_loss_load_env(void)
 
     if (aeron_alloc((void **)&fixed_loss_params, sizeof(aeron_udp_channel_interceptor_fixed_loss_params_t)) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         return;
     }
 

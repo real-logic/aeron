@@ -16,7 +16,6 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.StaticDelayGenerator;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;

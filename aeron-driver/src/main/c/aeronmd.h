@@ -630,7 +630,7 @@ int aeron_driver_context_set_nak_unicast_delay_ns(aeron_driver_context_t *contex
 uint64_t aeron_driver_context_get_nak_unicast_delay_ns(aeron_driver_context_t *context);
 
 /**
- * How long to delay before resending a NAK.
+ * A ratio to apply to the nak unicast delay to calculate the resend delay. Used as a multipler.
  */
 #define AERON_NAK_UNICAST_RETRY_DELAY_RATIO_ENV_VAR "AERON_NAK_UNICAST_RETRY_DELAY_RATIO"
 

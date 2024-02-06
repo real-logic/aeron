@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <string.h>
 #include "concurrent/aeron_counters_manager.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_error.h"

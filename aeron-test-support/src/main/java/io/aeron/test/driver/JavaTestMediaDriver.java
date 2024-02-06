@@ -17,6 +17,7 @@ package io.aeron.test.driver;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ReceiveChannelEndpointSupplier;
+import io.aeron.driver.StaticDelayGenerator;
 import io.aeron.driver.ext.DebugChannelEndpointConfiguration;
 import io.aeron.driver.ext.DebugReceiveChannelEndpoint;
 import io.aeron.driver.ext.FixedLossGenerator;
@@ -111,5 +112,10 @@ public final class JavaTestMediaDriver implements TestMediaDriver
             };
 
         context.receiveChannelEndpointSupplier(endpointSupplier);
+    }
+
+    public static void dontCoalesceNaksOnReceiverByDefault(final MediaDriver.Context context)
+    {
+        context.unicastFeedbackDelayGenerator(new StaticDelayGenerator(0, 0));
     }
 }

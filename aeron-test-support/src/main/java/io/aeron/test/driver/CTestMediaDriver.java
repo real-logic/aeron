@@ -294,7 +294,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         setFlowControlStrategy(environment, context);
         setLogging(environment);
         setTransportSecurity(environment);
-        setAdditionalEnvVars(environment, C_DRIVER_ADDITIONAL_ENV_VARS.get().getOrDefault(context, emptyMap()));
+        setAdditionalEnvVars(environment, getAdditionalEnvVarsMap(context));
 
         try
         {
@@ -363,8 +363,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         lossTransportEnv.put(UDP_CHANNEL_INCOMING_INTERCEPTORS_ENV_VAR, interceptor);
         lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", lossArgs);
 
-        // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
-        C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, lossTransportEnv);
+        getAdditionalEnvVarsMap(context).putAll(lossTransportEnv);
     }
 
     public static void enableFixedLossOnReceive(
@@ -383,7 +382,17 @@ public final class CTestMediaDriver implements TestMediaDriver
         fixedLossTransportEnv.put(UDP_CHANNEL_INCOMING_INTERCEPTORS_ENV_VAR, interceptor);
         fixedLossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_FIXED_LOSS_ARGS", fixedLossArgs);
 
-        C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, fixedLossTransportEnv);
+        getAdditionalEnvVarsMap(context).putAll(fixedLossTransportEnv);
+    }
+
+    public static void dontCoalesceNaksOnReceiverByDefault(final MediaDriver.Context context)
+    {
+        getAdditionalEnvVarsMap(context).put("AERON_NAK_UNICAST_DELAY", "0");
+    }
+
+    public static Map<String, String> getAdditionalEnvVarsMap(final MediaDriver.Context context)
+    {
+        return C_DRIVER_ADDITIONAL_ENV_VARS.get().computeIfAbsent(context, c -> new IdentityHashMap<>());
     }
 
     private static void setLogging(final Map<String, String> environment)

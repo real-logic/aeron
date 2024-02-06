@@ -110,7 +110,6 @@ public class DataLossAndRecoverySystemTest
     @Test
     void shouldSendStreamOfDataAndHandleLargeGapWithSingleRetransmitEvenIfNakkingFrequently() throws IOException
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
         dontCoalesceNaksOnReceiverByDefault();
         launch(context);
 
@@ -130,7 +129,7 @@ public class DataLossAndRecoverySystemTest
 
     private void dontCoalesceNaksOnReceiverByDefault()
     {
-        context.unicastFeedbackDelayGenerator(new StaticDelayGenerator(0, 0));
+        TestMediaDriver.dontCoalesceNaksOnReceiverByDefault(context);
     }
 
     private void sendAndReceive10mOfDataWithLoss(final String channel)

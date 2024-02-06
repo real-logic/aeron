@@ -200,6 +200,9 @@ public final class RetransmitHandler
                         return action;
                     }
                     break;
+
+                default:
+                    break;
             }
         }
 

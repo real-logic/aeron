@@ -47,7 +47,6 @@ typedef int (*aeron_retransmit_handler_resend_func_t)(
 typedef struct aeron_retransmit_handler_stct
 {
     aeron_retransmit_action_t retransmit_action_pool[AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS];
-    aeron_int64_to_ptr_hash_map_t active_retransmits_map;
     uint64_t delay_timeout_ns;
     uint64_t linger_timeout_ns;
 

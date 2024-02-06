@@ -60,9 +60,16 @@ int32_t aeron_loss_detector_scan(
 
 #define AERON_LOSS_DETECTOR_NAK_UNICAST_DELAY_NS (60 * 1000 * 1000LL)
 
-inline int64_t aeron_loss_detector_nak_unicast_delay_generator(aeron_feedback_delay_generator_state_t *state)
+inline int64_t aeron_loss_detector_nak_unicast_delay_generator(aeron_feedback_delay_generator_state_t *state, bool retry)
 {
-    return state->static_delay.delay_ns;
+    if (retry)
+    {
+        return state->static_delay.retry_ns;
+    }
+    else
+    {
+        return state->static_delay.delay_ns;
+    }
 }
 
 #define AERON_LOSS_DETECTOR_NAK_MULTICAST_GROUP_SIZE (10.0)
@@ -72,10 +79,10 @@ int aeron_feedback_delay_state_init(
     aeron_feedback_delay_generator_state_t *state,
     aeron_feedback_delay_generator_func_t delay_generator,
     int64_t delay_ns,
-    size_t multicast_group_size,
-    bool should_immediate_feedback);
+    int64_t retry_ns,
+    size_t multicast_group_size);
 
-int64_t aeron_loss_detector_nak_multicast_delay_generator(aeron_feedback_delay_generator_state_t *state);
+int64_t aeron_loss_detector_nak_multicast_delay_generator(aeron_feedback_delay_generator_state_t *state, bool retry);
 
 inline void aeron_loss_detector_on_gap(void *clientd, int32_t term_id, int32_t term_offset, size_t length)
 {
@@ -98,14 +105,7 @@ inline void aeron_loss_detector_activate_gap(aeron_loss_detector_t *detector, in
     detector->active_gap.term_offset = detector->scanned_gap.term_offset;
     detector->active_gap.length = detector->scanned_gap.length;
 
-    if (detector->feedback_delay_state->should_immediate_feedback)
-    {
-        detector->expiry_ns = now_ns;
-    }
-    else
-    {
-        detector->expiry_ns = now_ns + detector->feedback_delay_state->delay_generator(detector->feedback_delay_state);
-    }
+    detector->expiry_ns = now_ns + detector->feedback_delay_state->delay_generator(detector->feedback_delay_state, false);
 }
 
 inline void aeron_loss_detector_check_timer_expiry(aeron_loss_detector_t *detector, int64_t now_ns)
@@ -117,7 +117,7 @@ inline void aeron_loss_detector_check_timer_expiry(aeron_loss_detector_t *detect
             detector->active_gap.term_id,
             detector->active_gap.term_offset,
             detector->active_gap.length);
-        detector->expiry_ns = now_ns + detector->feedback_delay_state->delay_generator(detector->feedback_delay_state);
+        detector->expiry_ns = now_ns + detector->feedback_delay_state->delay_generator(detector->feedback_delay_state, true);
     }
 }
 

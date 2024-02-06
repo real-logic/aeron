@@ -70,7 +70,6 @@ public class DataLossAndRecoverySystemTest
     @Test
     void shouldSendStreamOfDataAndHandleLargeGapWithingSingleNakAndRetransmit() throws IOException
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
         launch(context);
 
         sendAndReceive10mOfDataWithLoss(

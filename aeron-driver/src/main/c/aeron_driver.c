@@ -563,6 +563,7 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    retransmit_unicast_delay_ns=%" PRIu64, context->retransmit_unicast_delay_ns);
     fprintf(fpout, "\n    retransmit_unicast_linger_ns=%" PRIu64, context->retransmit_unicast_linger_ns);
     fprintf(fpout, "\n    nak_unicast_delay_ns=%" PRIu64, context->nak_unicast_delay_ns);
+    fprintf(fpout, "\n    nak_unicast_retry_delay_ratio=%" PRIu64, context->nak_unicast_retry_delay_ratio);
     fprintf(fpout, "\n    nak_multicast_max_backoff_ns=%" PRIu64, context->nak_multicast_max_backoff_ns);
     fprintf(fpout, "\n    nak_multicast_group_size=%" PRIu64, (uint64_t)context->nak_multicast_group_size);
     fprintf(fpout, "\n    status_message_timeout_ns=%" PRIu64, context->status_message_timeout_ns);
@@ -936,20 +937,20 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     if (aeron_feedback_delay_state_init(
         &_driver->context->unicast_delay_feedback_generator,
-        aeron_loss_detector_nak_multicast_delay_generator,
+        aeron_loss_detector_nak_unicast_delay_generator,
         (int64_t)_driver->context->nak_unicast_delay_ns,
-        1,
-        true) < 0)
+        (int64_t)_driver->context->nak_unicast_delay_ns * (int64_t)_driver->context->nak_unicast_retry_delay_ratio,
+        1) < 0)
     {
         goto error;
     }
 
     if (aeron_feedback_delay_state_init(
         &_driver->context->multicast_delay_feedback_generator,
-        aeron_loss_detector_nak_unicast_delay_generator,
+        aeron_loss_detector_nak_multicast_delay_generator,
         (int64_t)_driver->context->nak_multicast_max_backoff_ns,
-        _driver->context->nak_multicast_group_size,
-        false) < 0)
+        (int64_t)_driver->context->nak_multicast_max_backoff_ns,
+        _driver->context->nak_multicast_group_size) < 0)
     {
         goto error;
     }

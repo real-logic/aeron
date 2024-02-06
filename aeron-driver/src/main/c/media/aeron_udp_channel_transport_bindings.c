@@ -29,6 +29,7 @@
 #include "util/aeron_strutil.h"
 #include "util/aeron_symbol_table.h"
 #include "aeron_udp_channel_transport_loss.h"
+#include "aeron_udp_channel_transport_fixed_loss.h"
 #include "aeron_udp_channel_transport_bindings.h"
 #include "aeron_udp_channel_transport.h"
 #include "aeron_udp_transport_poller.h"
@@ -72,6 +73,11 @@ static const aeron_symbol_table_func_t aeron_udp_channel_interceptor_table[] =
             "loss",
             "aeron_udp_channel_interceptor_loss_load",
             (aeron_fptr_t)aeron_udp_channel_interceptor_loss_load
+        },
+        {
+            "fixed-loss",
+            "aeron_udp_channel_interceptor_fixed_loss_load",
+            (aeron_fptr_t)aeron_udp_channel_interceptor_fixed_loss_load
         }
     };
 

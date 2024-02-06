@@ -77,7 +77,7 @@ public interface TestMediaDriver extends AutoCloseable
     {
         if (shouldRunCMediaDriver())
         {
-            // No-op
+            CTestMediaDriver.enableFixedLossOnReceive(context, termId, termOffset, length);
         }
         else
         {

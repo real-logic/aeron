@@ -320,7 +320,8 @@ static void aeron_driver_untethered_subscription_state_change_null(
 #define AERON_RETRANSMIT_UNICAST_LINGER_NS_DEFAULT (60 * 1000 * INT64_C(1000))
 #define AERON_NAK_MULTICAST_GROUP_SIZE_DEFAULT (10)
 #define AERON_NAK_MULTICAST_MAX_BACKOFF_NS_DEFAULT (60 * 1000 * INT64_C(1000))
-#define AERON_NAK_UNICAST_DELAY_NS_DEFAULT (60 * 1000 * INT64_C(1000))
+#define AERON_NAK_UNICAST_DELAY_NS_DEFAULT (100 * INT64_C(1000))
+#define AERON_NAK_UNICAST_RETRY_DELAY_RATIO_DEFAULT (100)
 #define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_DEFAULT ("default")
 #define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS_DEFAULT ("")
 #define AERON_RECEIVER_GROUP_CONSIDERATION_DEFAULT (AERON_INFER)
@@ -542,6 +543,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->nak_multicast_group_size = AERON_NAK_MULTICAST_GROUP_SIZE_DEFAULT;
     _context->nak_multicast_max_backoff_ns = AERON_NAK_MULTICAST_MAX_BACKOFF_NS_DEFAULT;
     _context->nak_unicast_delay_ns = AERON_NAK_UNICAST_DELAY_NS_DEFAULT;
+    _context->nak_unicast_retry_delay_ratio = AERON_NAK_UNICAST_RETRY_DELAY_RATIO_DEFAULT;
     _context->publication_reserved_session_id_low = AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT;
     _context->publication_reserved_session_id_high = AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT;
     _context->resolver_name = NULL;
@@ -910,6 +912,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         getenv(AERON_NAK_UNICAST_DELAY_ENV_VAR),
         _context->nak_unicast_delay_ns,
         1000,
+        INT64_MAX);
+
+    _context->receiver_group_tag.value = aeron_config_parse_int64(
+        AERON_NAK_UNICAST_RETRY_DELAY_RATIO_ENV_VAR,
+        getenv(AERON_NAK_UNICAST_RETRY_DELAY_RATIO_ENV_VAR),
+        _context->nak_unicast_retry_delay_ratio,
+        1,
         INT64_MAX);
 
     _context->publication_reserved_session_id_low = aeron_config_parse_int32(
@@ -2575,6 +2584,19 @@ int aeron_driver_context_set_nak_unicast_delay_ns(aeron_driver_context_t *contex
 uint64_t aeron_driver_context_get_nak_unicast_delay_ns(aeron_driver_context_t *context)
 {
     return NULL != context ? context->nak_unicast_delay_ns : AERON_NAK_UNICAST_DELAY_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_nak_unicast_retry_delay_ratio(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->nak_unicast_retry_delay_ratio = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_nak_unicast_retry_delay_ratio(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->nak_unicast_retry_delay_ratio : AERON_NAK_UNICAST_RETRY_DELAY_RATIO_DEFAULT;
 }
 
 int aeron_driver_context_set_udp_channel_transport_bindings(

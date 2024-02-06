@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_RECEIVE_DESTINATION_H
-#define AERON_RECEIVE_DESTINATION_H
+#ifndef AERON_AERON_RECEIVE_DESTINATION_H
+#define AERON_AERON_RECEIVE_DESTINATION_H
 
 #include "media/aeron_udp_channel_transport.h"
 #include "media/aeron_udp_channel.h"
@@ -67,4 +67,4 @@ inline bool aeron_receive_destination_re_resolution_required(aeron_receive_desti
         now_ns > destination->time_of_last_activity_ns + AERON_RECEIVE_DESTINATION_TIMEOUT_NS;
 }
 
-#endif //AERON_RECEIVE_DESTINATION_H
+#endif //AERON_AERON_RECEIVE_DESTINATION_H

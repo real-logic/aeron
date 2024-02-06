@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_MAP_H
-#define AERON_MAP_H
+#ifndef AERON_AERON_MAP_H
+#define AERON_AERON_MAP_H
 
 #define AERON_MAP_DEFAULT_LOAD_FACTOR (0.65f)
 
@@ -26,4 +26,4 @@ inline int64_t aeron_map_compound_key(int32_t high, int32_t low)
     return (int64_t)(((uint64_t)high << 32) | (low));
 }
 
-#endif //AERON_MAP_H
+#endif //AERON_AERON_MAP_H

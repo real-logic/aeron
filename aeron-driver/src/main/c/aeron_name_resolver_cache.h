@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_NAME_RESOLVER_CACHE_H
-#define AERON_NAME_RESOLVER_CACHE_H
+#ifndef AERON_AERON_NAME_RESOLVER_CACHE_H
+#define AERON_AERON_NAME_RESOLVER_CACHE_H
 
 #include "protocol/aeron_udp_protocol.h"
 
@@ -72,4 +72,4 @@ int aeron_name_resolver_cache_close(aeron_name_resolver_cache_t *cache);
 int aeron_name_resolver_cache_timeout_old_entries(
     aeron_name_resolver_cache_t *cache, int64_t now_ms, volatile int64_t *cache_entries_counter);
 
-#endif //AERON_NAME_RESOLVER_CACHE_H
+#endif //AERON_AERON_NAME_RESOLVER_CACHE_H

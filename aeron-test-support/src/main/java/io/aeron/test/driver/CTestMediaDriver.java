@@ -37,8 +37,6 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.Collections.emptyMap;
-
 public final class CTestMediaDriver implements TestMediaDriver
 {
     private static final String UDP_CHANNEL_OUTGOING_INTERCEPTORS_ENV_VAR = "AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS";

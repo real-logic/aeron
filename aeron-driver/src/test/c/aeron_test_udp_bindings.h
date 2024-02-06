@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_TEST_UDP_BINDINGS_H
-#define AERON_AERON_TEST_UDP_BINDINGS_H
+#ifndef AERON_TEST_UDP_BINDINGS_H
+#define AERON_TEST_UDP_BINDINGS_H
 
 #include "aeronmd.h"
 #include "media/aeron_udp_channel_transport_bindings.h"
@@ -185,4 +185,4 @@ void aeron_test_udp_bindings_load(aeron_udp_channel_transport_bindings_t *bindin
     bindings->get_so_rcvbuf_func = aeron_test_udp_channel_transport_get_so_rcvbuf;
 }
 
-#endif //AERON_AERON_TEST_UDP_BINDINGS_H
+#endif //AERON_TEST_UDP_BINDINGS_H

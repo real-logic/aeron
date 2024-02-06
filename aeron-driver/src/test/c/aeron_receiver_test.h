@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_RECEIVER_TEST_H
-#define AERON_AERON_RECEIVER_TEST_H
+#ifndef AERON_RECEIVER_TEST_H
+#define AERON_RECEIVER_TEST_H
 
 #include <gtest/gtest.h>
 #include <array>
@@ -286,4 +286,4 @@ protected:
     std::vector<aeron_publication_image_t *> m_images;
 };
 
-#endif //AERON_AERON_RECEIVER_TEST_H
+#endif //AERON_RECEIVER_TEST_H

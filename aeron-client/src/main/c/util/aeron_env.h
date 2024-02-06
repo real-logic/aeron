@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_ENV_H
-#define AERON_AERON_ENV_H
+#ifndef AERON_ENV_H
+#define AERON_ENV_H
 
 int aeron_env_set(const char *key, const char *val);
 
 int aeron_env_unset(const char *key);
 
-#endif //AERON_AERON_ENV_H
+#endif //AERON_ENV_H

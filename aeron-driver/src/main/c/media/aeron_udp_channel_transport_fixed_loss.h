@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_UDP_CHANNEL_TRANSPORT_FIXED_LOSS_H
-#define AERON_AERON_UDP_CHANNEL_TRANSPORT_FIXED_LOSS_H
+#ifndef AERON_UDP_CHANNEL_TRANSPORT_FIXED_LOSS_H
+#define AERON_UDP_CHANNEL_TRANSPORT_FIXED_LOSS_H
 
 #include "aeron_udp_channel_transport_bindings.h"
 
@@ -48,4 +48,4 @@ int aeron_udp_channel_interceptor_fixed_loss_parse_params(char *uri, aeron_udp_c
 
 int aeron_udp_channel_interceptor_fixed_loss_parse_callback(void *clientd, const char *key, const char *value);
 
-#endif //AERON_AERON_UDP_CHANNEL_TRANSPORT_FIXED_LOSS_H
+#endif //AERON_UDP_CHANNEL_TRANSPORT_FIXED_LOSS_H

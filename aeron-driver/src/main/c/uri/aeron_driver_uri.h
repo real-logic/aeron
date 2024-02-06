@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_DRIVER_URI_H
-#define AERON_AERON_DRIVER_URI_H
+#ifndef AERON_DRIVER_URI_H
+#define AERON_DRIVER_URI_H
 
 #include "uri/aeron_uri.h"
 #include "aeron_driver_common.h"
@@ -85,4 +85,4 @@ int aeron_driver_uri_get_timestamp_offset(aeron_uri_t *uri, const char *key, int
 const char *aeron_driver_uri_get_offset_info(int32_t offset);
 
 
-#endif //AERON_AERON_DRIVER_URI_H
+#endif //AERON_DRIVER_URI_H

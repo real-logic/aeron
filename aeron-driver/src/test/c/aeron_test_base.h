@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_TEST_BASE_H
-#define AERON_AERON_TEST_BASE_H
+#ifndef AERON_TEST_BASE_H
+#define AERON_TEST_BASE_H
 
 #include "aeronc.h"
 #include "EmbeddedMediaDriver.h"
@@ -209,4 +209,4 @@ protected:
     image_handler_t m_onUnavailableImage = nullptr;
 };
 
-#endif //AERON_AERON_TEST_BASE_H
+#endif //AERON_TEST_BASE_H

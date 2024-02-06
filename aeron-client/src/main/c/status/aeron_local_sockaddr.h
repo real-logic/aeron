@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_LOCAL_SOCKADDR_H
-#define AERON_AERON_LOCAL_SOCKADDR_H
+#ifndef AERON_LOCAL_SOCKADDR_H
+#define AERON_LOCAL_SOCKADDR_H
 
 #include <stdint.h>
 #include <aeronc.h>
@@ -26,4 +26,4 @@ int aeron_local_sockaddr_find_addrs(
     aeron_iovec_t *address_vec,
     size_t address_vec_len);
 
-#endif //AERON_AERON_LOCAL_SOCKADDR_H
+#endif //AERON_LOCAL_SOCKADDR_H

@@ -37,7 +37,7 @@ public final class RetransmitHandler
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
     private final AtomicCounter invalidPackets;
 
-    private int activeRetransmits = 0;
+    private int activeRetransmitCount = 0;
 
     /**
      * Create a handler for the dealing with the reception of frame request a frame to be retransmitted.
@@ -162,7 +162,7 @@ public final class RetransmitHandler
 
     private RetransmitAction scanForAvailableRetransmit(final int termId, final int termOffset, final int length)
     {
-        if (0 == activeRetransmits)
+        if (0 == activeRetransmitCount)
         {
             return addRetransmit(retransmitActionPool[0]);
         }
@@ -201,7 +201,7 @@ public final class RetransmitHandler
 
     private RetransmitAction scanForExistingRetransmit(final int termId, final int termOffset)
     {
-        if (0 == activeRetransmits)
+        if (0 == activeRetransmitCount)
         {
             return null;
         }
@@ -228,13 +228,13 @@ public final class RetransmitHandler
 
     private RetransmitAction addRetransmit(final RetransmitAction retransmitAction)
     {
-        ++activeRetransmits;
+        ++activeRetransmitCount;
         return retransmitAction;
     }
 
     private void removeRetransmit(final RetransmitAction action)
     {
-        --activeRetransmits;
+        --activeRetransmitCount;
         action.cancel();
     }
 

@@ -133,14 +133,11 @@ public class MaxMulticastFlowControl implements FlowControl
      * {@inheritDoc}
      */
     public int maxRetransmissionLength(
-        final long resendPosition,
-        final int resendLength,
+        final int termOffset, final int resendLength,
         final int termBufferLength,
         final int mtuLength)
     {
-        final int estimatedWindowLength = Configuration.receiverWindowLength(
-            termBufferLength, Configuration.INITIAL_WINDOW_LENGTH_DEFAULT);
-
-        return Math.min(RETRANSMIT_RECEIVER_WINDOW_MULTIPLE * estimatedWindowLength, resendLength);
+        return FlowControl.calculateRetransmissionLength(
+            resendLength, termBufferLength, termOffset, RETRANSMIT_RECEIVER_WINDOW_MULTIPLE);
     }
 }

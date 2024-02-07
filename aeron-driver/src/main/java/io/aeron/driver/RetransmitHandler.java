@@ -69,6 +69,8 @@ public final class RetransmitHandler
      * @param termOffset       from the NAK and the offset of the data to retransmit.
      * @param length           of the missing data.
      * @param termLength       of the term buffer.
+     * @param mtuLength        for the publication.
+     * @param flowControl      for the publication (to clamp the retransmission length).
      * @param retransmitSender to call if an immediate retransmit is required.
      */
     public void onNak(
@@ -76,16 +78,19 @@ public final class RetransmitHandler
         final int termOffset,
         final int length,
         final int termLength,
+        final int mtuLength,
+        final FlowControl flowControl,
         final RetransmitSender retransmitSender)
     {
         if (!isInvalid(termOffset, termLength))
         {
-            final RetransmitAction action = scanForAvailableRetransmit(termId, termOffset, length);
+            final int retransmitLength = flowControl.maxRetransmissionLength(termOffset, length, termLength, mtuLength);
+            final RetransmitAction action = scanForAvailableRetransmit(termId, termOffset, retransmitLength);
             if (null != action)
             {
                 action.termId = termId;
                 action.termOffset = termOffset;
-                action.length = Math.min(length, termLength - termOffset);
+                action.length = retransmitLength;
 
                 final long delay = delayGenerator.generateDelayNs();
                 if (0 == delay)

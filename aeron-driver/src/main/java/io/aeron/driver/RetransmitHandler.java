@@ -20,8 +20,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 
 import static io.aeron.driver.Configuration.MAX_RETRANSMITS_DEFAULT;
-import static io.aeron.driver.RetransmitHandler.State.DELAYED;
-import static io.aeron.driver.RetransmitHandler.State.LINGERING;
 
 /**
  * Tracking and handling of retransmit request, NAKs, for senders, and receivers.
@@ -120,7 +118,7 @@ public final class RetransmitHandler
     {
         final RetransmitAction action = scanForExistingRetransmit(termId, termOffset);
 
-        if (null != action && DELAYED == action.state)
+        if (null != action && RetransmitAction.State.DELAYED == action.state)
         {
             removeRetransmit(action);
         }
@@ -138,12 +136,12 @@ public final class RetransmitHandler
         {
             for (final RetransmitAction action : retransmitActionPool)
             {
-                if (DELAYED == action.state && (action.expireNs - nowNs < 0))
+                if (RetransmitAction.State.DELAYED == action.state && (action.expireNs - nowNs < 0))
                 {
                     retransmitSender.resend(action.termId, action.termOffset, action.length);
                     action.linger(lingerTimeoutGenerator.generateDelayNs(), nanoClock.nanoTime());
                 }
-                else if (LINGERING == action.state && (action.expireNs - nowNs < 0))
+                else if (RetransmitAction.State.LINGERING == action.state && (action.expireNs - nowNs < 0))
                 {
                     removeRetransmit(action);
                 }
@@ -241,15 +239,15 @@ public final class RetransmitHandler
         action.cancel();
     }
 
-    enum State
-    {
-        DELAYED,
-        LINGERING,
-        INACTIVE
-    }
-
     static final class RetransmitAction
     {
+        enum State
+        {
+            DELAYED,
+            LINGERING,
+            INACTIVE
+        }
+
         long expireNs;
         int termId;
         int termOffset;
@@ -258,13 +256,13 @@ public final class RetransmitHandler
 
         void delay(final long delayNs, final long nowNs)
         {
-            state = DELAYED;
+            state = State.DELAYED;
             expireNs = nowNs + delayNs;
         }
 
         void linger(final long timeoutNs, final long nowNs)
         {
-            state = LINGERING;
+            state = State.LINGERING;
             expireNs = nowNs + timeoutNs;
         }
 

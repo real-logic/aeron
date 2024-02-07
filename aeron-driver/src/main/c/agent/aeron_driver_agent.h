@@ -81,7 +81,8 @@ typedef enum aeron_driver_agent_event_enum
     AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR = 54,
     AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT = 55,
 
-    AERON_DRIVER_EVENT_SEND_NAK_MESSAGE = 56
+    AERON_DRIVER_EVENT_SEND_NAK_MESSAGE = 56,
+    AERON_DRIVER_EVENT_RESEND = 57
 }
 aeron_driver_agent_event_t;
 
@@ -169,15 +170,27 @@ aeron_driver_agent_flow_control_receiver_change_log_header_t;
 typedef struct aeron_driver_agent_send_nak_message_header_stct
 {
     int64_t time_ns;
+    struct sockaddr_storage address;
     int32_t session_id;
     int32_t stream_id;
     int32_t term_id;
     int32_t term_offset;
     int32_t nak_length;
-    int32_t address_length;
     int32_t channel_length;
 }
 aeron_driver_agent_send_nak_message_header_t;
+
+typedef struct aeron_driver_agent_resend_header_stct
+{
+    int64_t time_ns;
+    int32_t session_id;
+    int32_t stream_id;
+    int32_t term_id;
+    int32_t term_offset;
+    int32_t resend_length;
+    int32_t channel_length;
+}
+aeron_driver_agent_resend_header_t;
 
 typedef struct aeron_driver_agent_name_resolver_resolve_log_header_stct
 {
@@ -312,6 +325,15 @@ void aeron_driver_agent_send_nak_message(
     int32_t term_id,
     int32_t term_offset,
     int32_t nak_length,
+    size_t channel_length,
+    const char *channel);
+
+void aeron_driver_agent_resend(
+    int32_t session_id,
+    int32_t stream_id,
+    int32_t term_id,
+    int32_t term_offset,
+    int32_t resend_length,
     size_t channel_length,
     const char *channel);
 

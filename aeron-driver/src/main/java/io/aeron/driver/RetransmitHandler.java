@@ -37,6 +37,8 @@ public final class RetransmitHandler
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
     private final AtomicCounter invalidPackets;
 
+    private int activeRetransmits = 0;
+
     /**
      * Create a handler for the dealing with the reception of frame request a frame to be retransmitted.
      *
@@ -120,7 +122,7 @@ public final class RetransmitHandler
 
         if (null != action && DELAYED == action.state)
         {
-            action.cancel(); // do not go into linger
+            removeRetransmit(action);
         }
     }
 
@@ -141,7 +143,7 @@ public final class RetransmitHandler
             }
             else if (LINGERING == action.state && (action.expireNs - nowNs < 0))
             {
-                action.cancel();
+                removeRetransmit(action);
             }
         }
     }
@@ -160,6 +162,11 @@ public final class RetransmitHandler
 
     private RetransmitAction scanForAvailableRetransmit(final int termId, final int termOffset, final int length)
     {
+        if (0 == activeRetransmits)
+        {
+            return addRetransmit(retransmitActionPool[0]);
+        }
+
         RetransmitAction availableAction = null;
         for (final RetransmitAction action : retransmitActionPool)
         {
@@ -186,7 +193,7 @@ public final class RetransmitHandler
 
         if (null != availableAction)
         {
-            return availableAction;
+            return addRetransmit(availableAction);
         }
 
         throw new IllegalStateException("maximum number of active RetransmitActions reached");
@@ -194,6 +201,11 @@ public final class RetransmitHandler
 
     private RetransmitAction scanForExistingRetransmit(final int termId, final int termOffset)
     {
+        if (0 == activeRetransmits)
+        {
+            return null;
+        }
+
         for (final RetransmitAction action : retransmitActionPool)
         {
             switch (action.state)
@@ -212,6 +224,18 @@ public final class RetransmitHandler
         }
 
         return null;
+    }
+
+    private RetransmitAction addRetransmit(final RetransmitAction retransmitAction)
+    {
+        ++activeRetransmits;
+        return retransmitAction;
+    }
+
+    private void removeRetransmit(final RetransmitAction action)
+    {
+        --activeRetransmits;
+        action.cancel();
     }
 
     enum State

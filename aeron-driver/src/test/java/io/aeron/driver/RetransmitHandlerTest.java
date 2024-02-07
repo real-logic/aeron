@@ -24,7 +24,6 @@ import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InOrder;

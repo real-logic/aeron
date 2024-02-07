@@ -136,12 +136,12 @@ public final class RetransmitHandler
         {
             for (final RetransmitAction action : retransmitActionPool)
             {
-                if (RetransmitAction.State.DELAYED == action.state && (action.expireNs - nowNs < 0))
+                if (RetransmitAction.State.DELAYED == action.state && (action.expiryNs - nowNs < 0))
                 {
                     retransmitSender.resend(action.termId, action.termOffset, action.length);
                     action.linger(lingerTimeoutGenerator.generateDelayNs(), nanoClock.nanoTime());
                 }
-                else if (RetransmitAction.State.LINGERING == action.state && (action.expireNs - nowNs < 0))
+                else if (RetransmitAction.State.LINGERING == action.state && (action.expiryNs - nowNs < 0))
                 {
                     removeRetransmit(action);
                 }
@@ -248,7 +248,7 @@ public final class RetransmitHandler
             INACTIVE
         }
 
-        long expireNs;
+        long expiryNs;
         int termId;
         int termOffset;
         int length;
@@ -257,13 +257,13 @@ public final class RetransmitHandler
         void delay(final long delayNs, final long nowNs)
         {
             state = State.DELAYED;
-            expireNs = nowNs + delayNs;
+            expiryNs = nowNs + delayNs;
         }
 
         void linger(final long timeoutNs, final long nowNs)
         {
             state = State.LINGERING;
-            expireNs = nowNs + timeoutNs;
+            expiryNs = nowNs + timeoutNs;
         }
 
         void cancel()

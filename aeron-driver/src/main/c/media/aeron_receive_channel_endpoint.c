@@ -125,6 +125,8 @@ int aeron_receive_channel_endpoint_create(
 
     _endpoint->cached_clock = context->receiver_cached_clock;
 
+    _endpoint->send_nak_message = context->send_nak_message_func;
+
     if (NULL != straight_through_destination)
     {
         if (aeron_receive_channel_endpoint_add_destination(_endpoint, straight_through_destination) < 0)
@@ -330,6 +332,20 @@ int aeron_receive_channel_endpoint_send_nak(
         {
             aeron_counter_increment(endpoint->short_sends_counter, 1);
         }
+    }
+
+    aeron_driver_send_nak_message_func_t send_nak_message = endpoint->send_nak_message;
+    if (NULL != send_nak_message)
+    {
+        send_nak_message(
+            addr,
+            session_id,
+            stream_id,
+            term_id,
+            term_offset,
+            length,
+            endpoint->conductor_fields.udp_channel->uri_length,
+            endpoint->conductor_fields.udp_channel->original_uri);
     }
 
     return bytes_sent;

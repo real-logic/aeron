@@ -81,6 +81,16 @@ typedef void (*aeron_driver_flow_control_strategy_on_receiver_change_func_t)(
     const char *channel,
     size_t receiver_count);
 
+typedef void (*aeron_driver_send_nak_message_func_t)(
+    const struct sockaddr_storage *address,
+    int32_t session_id,
+    int32_t stream_id,
+    int32_t term_id,
+    int32_t term_offset,
+    int32_t nak_length,
+    size_t channel_length,
+    const char *channel);
+
 typedef void (*aeron_driver_name_resolver_on_resolve_t)(
     aeron_name_resolver_t *name_resolver,
     int64_t duration_ns,
@@ -261,6 +271,8 @@ typedef struct aeron_driver_context_stct
 
     aeron_driver_flow_control_strategy_on_receiver_change_func_t flow_control_on_receiver_added_func;
     aeron_driver_flow_control_strategy_on_receiver_change_func_t flow_control_on_receiver_removed_func;
+
+    aeron_driver_send_nak_message_func_t send_nak_message_func;
 
     aeron_driver_termination_validator_func_t termination_validator_func;
     void *termination_validator_state;

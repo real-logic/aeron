@@ -133,7 +133,8 @@ public class MaxMulticastFlowControl implements FlowControl
      * {@inheritDoc}
      */
     public int maxRetransmissionLength(
-        final int termOffset, final int resendLength,
+        final int termOffset,
+        final int resendLength,
         final int termBufferLength,
         final int mtuLength)
     {

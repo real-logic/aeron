@@ -134,16 +134,19 @@ public final class RetransmitHandler
      */
     public void processTimeouts(final long nowNs, final RetransmitSender retransmitSender)
     {
-        for (final RetransmitAction action : retransmitActionPool)
+        if (activeRetransmitCount > 0)
         {
-            if (DELAYED == action.state && (action.expireNs - nowNs < 0))
+            for (final RetransmitAction action : retransmitActionPool)
             {
-                retransmitSender.resend(action.termId, action.termOffset, action.length);
-                action.linger(lingerTimeoutGenerator.generateDelayNs(), nanoClock.nanoTime());
-            }
-            else if (LINGERING == action.state && (action.expireNs - nowNs < 0))
-            {
-                removeRetransmit(action);
+                if (DELAYED == action.state && (action.expireNs - nowNs < 0))
+                {
+                    retransmitSender.resend(action.termId, action.termOffset, action.length);
+                    action.linger(lingerTimeoutGenerator.generateDelayNs(), nanoClock.nanoTime());
+                }
+                else if (LINGERING == action.state && (action.expireNs - nowNs < 0))
+                {
+                    removeRetransmit(action);
+                }
             }
         }
     }

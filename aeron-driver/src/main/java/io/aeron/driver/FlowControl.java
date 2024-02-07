@@ -32,11 +32,10 @@ public interface FlowControl extends AutoCloseable
      * <code>termBufferLength - termOffset</code> and <code>retransmitReceiverWindowMultiple *
      * ${configured initial window length}</code>.
      *
-     * @param resendLength      requested length of a retransmit
-     * @param termBufferLength  length of the current term.
-     * @param termOffset        offset within the term.
-     * @param retransmitReceiverWindowMultiple  multiplier to the receiver window length.
-     *
+     * @param resendLength                     requested length of a retransmit
+     * @param termBufferLength                 length of the current term.
+     * @param termOffset                       offset within the term.
+     * @param retransmitReceiverWindowMultiple multiplier to the receiver window length.
      * @return the clamped retransmit length
      */
     static int calculateRetransmissionLength(
@@ -87,11 +86,11 @@ public interface FlowControl extends AutoCloseable
     /**
      * Update the sender flow control strategy based on an elicited setup message being sent out.
      *
-     * @param flyweight             over the setup to be sent.
-     * @param senderLimit           for the current sender position.
-     * @param senderPosition        which has been sent.
-     * @param positionBitsToShift   in use for the length of each term buffer.
-     * @param timeNs                current time in nanoseconds.
+     * @param flyweight           over the setup to be sent.
+     * @param senderLimit         for the current sender position.
+     * @param senderPosition      which has been sent.
+     * @param positionBitsToShift in use for the length of each term buffer.
+     * @param timeNs              current time in nanoseconds.
      * @return the new position limit to be employed by the sender.
      */
     long onSetup(

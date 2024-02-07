@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_VERSION_H
-#define AERON_VERSION_H
+#ifndef AERON_AERON_VERSION_H
+#define AERON_AERON_VERSION_H
 
 #include "string"
 #include "util/Export.h"
@@ -34,4 +34,4 @@ public:
 
 }
 
-#endif //AERON_VERSION_H
+#endif //AERON_AERON_VERSION_H

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_BIT_SET_H
-#define AERON_BIT_SET_H
+#ifndef AERON_AERON_BIT_SET_H
+#define AERON_AERON_BIT_SET_H
 
 #include <stdbool.h>
 #include <string.h>
@@ -185,4 +185,4 @@ inline int aeron_bit_set_find_first(aeron_bit_set_t *bit_set, bool value, size_t
     return -1;
 }
 
-#endif //AERON_BIT_SET_H
+#endif //AERON_AERON_BIT_SET_H

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_CLOCK_H
-#define AERON_CLOCK_H
+#ifndef AERON_AERON_CLOCK_H
+#define AERON_AERON_CLOCK_H
 
 #include <time.h>
 #include "util/aeron_bitutil.h"
@@ -86,4 +86,4 @@ int aeron_clock_cache_alloc(aeron_clock_cache_t **cached_clock);
  */
 int aeron_clock_gettime_realtime(struct timespec *time);
 
-#endif //AERON_CLOCK_H
+#endif //AERON_AERON_CLOCK_H

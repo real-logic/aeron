@@ -221,7 +221,7 @@ class RetransmitHandlerTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    void shouldRetransmitOnNakWhileInLingerWithDifferentOffsetButNotContainedWithinExistingRetransmit(
+    void shouldNotRetransmitOnNakWhileInLingerWithDifferentOffsetButOffsetInRangeOfExistingNak(
         final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
@@ -233,7 +233,24 @@ class RetransmitHandlerTest
         handler.processTimeouts(currentTime, sender);
 
         verify(sender).resend(TERM_ID, offsetOfFrame(0), TWO_MESSAGE_FRAME_LENGTH);
-        verify(sender).resend(TERM_ID, offsetOfFrame(1), TWO_MESSAGE_FRAME_LENGTH);
+        verify(sender, never()).resend(TERM_ID, offsetOfFrame(1), TWO_MESSAGE_FRAME_LENGTH);
+    }
+
+    @ParameterizedTest
+    @MethodSource("consumers")
+    void shouldRetransmitOnNakWhileInLingerWithDifferentOffsetButJustOutsideRangeOfExistingNak(
+        final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    {
+        createTermBuffer(creator, 5);
+        handler.onNak(TERM_ID, offsetOfFrame(0), TWO_MESSAGE_FRAME_LENGTH, TERM_BUFFER_LENGTH, MTU_LENGTH, fc, sender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
+        handler.processTimeouts(currentTime, sender);
+        handler.onNak(TERM_ID, offsetOfFrame(2), TWO_MESSAGE_FRAME_LENGTH, TERM_BUFFER_LENGTH, MTU_LENGTH, fc, sender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
+        handler.processTimeouts(currentTime, sender);
+
+        verify(sender).resend(TERM_ID, offsetOfFrame(0), TWO_MESSAGE_FRAME_LENGTH);
+        verify(sender).resend(TERM_ID, offsetOfFrame(2), TWO_MESSAGE_FRAME_LENGTH);
     }
 
     @ParameterizedTest

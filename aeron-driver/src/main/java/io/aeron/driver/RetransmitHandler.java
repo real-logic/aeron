@@ -183,8 +183,7 @@ public final class RetransmitHandler
                 case DELAYED:
                 case LINGERING:
                     if (action.termId == termId &&
-                        action.termOffset <= termOffset &&
-                        termOffset + length <= action.termOffset + action.length)
+                        action.termOffset <= termOffset && termOffset < action.termOffset + action.length)
                     {
                         return null;
                     }

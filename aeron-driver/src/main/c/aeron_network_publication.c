@@ -30,6 +30,7 @@
 #include "media/aeron_send_channel_endpoint.h"
 #include "aeron_driver_conductor.h"
 #include "concurrent/aeron_logbuffer_unblocker.h"
+#include "agent/aeron_driver_agent.h"
 
 #if !defined(HAVE_STRUCT_MMSGHDR)
 struct mmsghdr
@@ -114,6 +115,7 @@ int aeron_network_publication_create(
     _pub->raw_log_close_func = context->raw_log_close_func;
     _pub->raw_log_free_func = context->raw_log_free_func;
     _pub->untethered_subscription_state_change_func = context->untethered_subscription_on_state_change_func;
+    _pub->resend_func = context->resend_func;
 
     strncpy(_pub->log_file_name, path, (size_t)path_length);
     _pub->log_file_name[path_length] = '\0';
@@ -640,6 +642,20 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
         while (remaining_bytes > 0);
 
         aeron_counter_ordered_increment(publication->retransmits_sent_counter, 1);
+    }
+
+    aeron_driver_resend_func_t resend = publication->resend_func;
+    if (NULL != resend)
+    {
+        aeron_driver_agent_resend(
+            publication->session_id,
+            publication->stream_id,
+            term_id,
+            term_offset,
+            (int32_t)length,
+            publication->endpoint->conductor_fields.udp_channel->uri_length,
+            publication->endpoint->conductor_fields.udp_channel->original_uri
+            );
     }
 
     return result;

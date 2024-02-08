@@ -1166,6 +1166,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->flow_control_on_receiver_removed_func = NULL;
     _context->on_name_resolve_func = NULL;
 
+    _context->send_nak_message_func = NULL;
+    _context->resend_func = NULL;
+
     if ((_context->termination_validator_func = aeron_driver_termination_validator_load(
         AERON_CONFIG_GETENV_OR_DEFAULT(AERON_DRIVER_TERMINATION_VALIDATOR_ENV_VAR, "deny"))) == NULL)
     {

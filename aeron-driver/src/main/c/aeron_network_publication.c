@@ -590,13 +590,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
     if (bottom_resend_window <= resend_position && resend_position < sender_position)
     {
         size_t index = aeron_logbuffer_index_by_position(resend_position, publication->position_bits_to_shift);
-
-        size_t remaining_bytes = publication->flow_control->max_retransmission_length(
-            publication->flow_control->state,
-            resend_position,
-            length,
-            publication->term_buffer_length,
-            publication->mtu_length);
+        size_t remaining_bytes = length;
         int32_t bytes_sent = 0;
         int32_t offset = term_offset;
 
@@ -670,6 +664,8 @@ void aeron_network_publication_on_nak(
         term_offset,
         (size_t)length,
         (size_t)publication->term_length_mask + 1,
+        publication->mtu_length,
+        publication->flow_control,
         aeron_clock_cached_nano_time(publication->cached_clock),
         aeron_network_publication_resend,
         publication);

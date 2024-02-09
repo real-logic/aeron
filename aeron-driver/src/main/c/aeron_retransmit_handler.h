@@ -51,6 +51,8 @@ typedef struct aeron_retransmit_handler_stct
     uint64_t linger_timeout_ns;
 
     int64_t *invalid_packets_counter;
+
+    int active_retransmits;
 }
 aeron_retransmit_handler_t;
 
@@ -68,6 +70,8 @@ int aeron_retransmit_handler_on_nak(
     int32_t term_offset,
     size_t length,
     size_t term_length,
+    size_t mtu_length,
+    aeron_flow_control_strategy_t *flow_control,
     int64_t now_ns,
     aeron_retransmit_handler_resend_func_t resend,
     void *resend_clientd);

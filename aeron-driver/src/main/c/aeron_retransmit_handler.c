@@ -18,6 +18,7 @@
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_error.h"
 #include "aeron_retransmit_handler.h"
+#include "aeron_flow_control.h"
 
 aeron_retransmit_action_t *aeron_retransmit_handler_scan_for_available_retransmit(
     aeron_retransmit_handler_t *handler,
@@ -40,12 +41,26 @@ int aeron_retransmit_handler_init(
         handler->retransmit_action_pool[i].state = AERON_RETRANSMIT_ACTION_STATE_INACTIVE;
     }
 
+    handler->active_retransmits = 0;
+
     return 0;
 }
 
 int aeron_retransmit_handler_close(aeron_retransmit_handler_t *handler)
 {
     return 0;
+}
+
+aeron_retransmit_action_t *aeron_retransmit_handler_add_retransmit(aeron_retransmit_handler_t *handler, aeron_retransmit_action_t *action)
+{
+    ++handler->active_retransmits;
+    return action;
+}
+
+void aeron_retransmit_handler_remove_retransmit(aeron_retransmit_handler_t *handler, aeron_retransmit_action_t *action)
+{
+    --handler->active_retransmits;
+    action->state = AERON_RETRANSMIT_ACTION_STATE_INACTIVE;
 }
 
 bool aeron_retransmit_handler_is_invalid(aeron_retransmit_handler_t *handler, int32_t term_offset, size_t term_length)
@@ -79,6 +94,8 @@ int aeron_retransmit_handler_on_nak(
     int32_t term_offset,
     size_t length,
     size_t term_length,
+    size_t mtu_length,
+    aeron_flow_control_strategy_t *flow_control,
     int64_t now_ns,
     aeron_retransmit_handler_resend_func_t resend,
     void *resend_clientd)
@@ -87,15 +104,14 @@ int aeron_retransmit_handler_on_nak(
 
     if (!aeron_retransmit_handler_is_invalid(handler, term_offset, term_length))
     {
-        aeron_retransmit_action_t *action = aeron_retransmit_handler_scan_for_available_retransmit(handler, term_id, term_offset, length);
+        const size_t retransmit_length = flow_control->max_retransmission_length(flow_control->state, term_offset, length, term_length, mtu_length);
+        aeron_retransmit_action_t *action = aeron_retransmit_handler_scan_for_available_retransmit(handler, term_id, term_offset, retransmit_length);
 
         if (action != NULL)
         {
-            const size_t term_length_left = term_length - term_offset;
-
             action->term_id = term_id;
             action->term_offset = term_offset;
-            action->length = length < term_length_left ? length : term_length_left;
+            action->length = retransmit_length;
 
             if (0 == handler->delay_timeout_ns)
             {
@@ -122,6 +138,11 @@ int aeron_retransmit_handler_process_timeouts(
 {
     int result = 0;
 
+    if (0 == handler->active_retransmits)
+    {
+        return result;
+    }
+
     for (size_t i = 0; i < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS; i++)
     {
         aeron_retransmit_action_t *action = &handler->retransmit_action_pool[i];
@@ -140,7 +161,7 @@ int aeron_retransmit_handler_process_timeouts(
         {
             if (now_ns > action->expiry_ns)
             {
-                action->state = AERON_RETRANSMIT_ACTION_STATE_INACTIVE;
+                aeron_retransmit_handler_remove_retransmit(handler, action);
                 result++;
             }
         }
@@ -155,6 +176,11 @@ aeron_retransmit_action_t *aeron_retransmit_handler_scan_for_available_retransmi
     int32_t term_offset,
     size_t length)
 {
+   if (0 == handler->active_retransmits)
+   {
+       return aeron_retransmit_handler_add_retransmit(handler, &handler->retransmit_action_pool[0]);
+   }
+
     aeron_retransmit_action_t *available_action = NULL;
     for (size_t i = 0; i < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS; i++)
     {
@@ -183,7 +209,7 @@ aeron_retransmit_action_t *aeron_retransmit_handler_scan_for_available_retransmi
 
     if (NULL != available_action)
     {
-        return available_action;
+        return aeron_retransmit_handler_add_retransmit(handler, available_action);
     }
 
     // TODO aeron err??

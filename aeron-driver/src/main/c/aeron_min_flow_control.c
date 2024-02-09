@@ -391,17 +391,16 @@ void aeron_tagged_flow_control_strategy_on_trigger_send_setup(
 
 size_t aeron_min_flow_control_strategy_max_retransmission_length(
     void *state,
-    int64_t resend_position,
+    size_t term_offset,
     size_t resend_length,
-    int64_t term_buffer_length,
+    size_t term_buffer_length,
     size_t mtu_length)
 {
-    size_t initial_window_length = aeron_driver_context_get_rcv_initial_window_length(NULL);
-    size_t estimated_window_length = aeron_receiver_window_length(initial_window_length, term_buffer_length);
-    size_t max_retransmit_length =
-        AERON_MIN_FLOW_CONTROL_RETRANSMIT_RECEIVER_WINDOW_MULTIPLE * estimated_window_length;
-
-    return AERON_MIN(max_retransmit_length, resend_length);
+    return aeron_flow_control_calculate_retransmission_length(
+        resend_length,
+        term_buffer_length,
+        term_offset,
+        AERON_MIN_FLOW_CONTROL_RETRANSMIT_RECEIVER_WINDOW_MULTIPLE);
 }
 
 void aeron_min_flow_control_strategy_on_trigger_send_setup(

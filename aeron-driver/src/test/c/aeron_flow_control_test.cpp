@@ -660,3 +660,42 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple("tagged,g:1/", EINVAL),
         std::make_tuple("tagged,g:", EINVAL),
         std::make_tuple("tagged,g:/", EINVAL)));
+
+TEST(CalculateRetransmissionTest, shouldUseResendLengthIfSmallestValue)
+{
+    int resend_length = 1024;
+
+    ASSERT_EQ(resend_length,
+        aeron_flow_control_calculate_retransmission_length(
+            resend_length,
+            64 * 1024,
+            0,
+            16));
+}
+
+TEST(CalculateRetransmissionTest, shouldClampToTheEndOfTheBuffer)
+{
+    int expected_length = 512;
+    int term_length = 64 * 1024;
+    int term_offset = term_length - expected_length;
+
+    ASSERT_EQ(expected_length,
+        aeron_flow_control_calculate_retransmission_length(
+            1024,
+            term_length,
+            term_offset,
+            16));
+}
+
+TEST(CalculateRetransmissionTest, shouldClampToReceiverWindow)
+{
+    int multiplier = 16;
+    size_t expected_length = aeron_driver_context_get_rcv_initial_window_length(nullptr) * multiplier;
+
+    ASSERT_EQ(expected_length,
+        aeron_flow_control_calculate_retransmission_length(
+            4 * 1024 * 1024,
+            8 * 1024 * 1024,
+            0,
+            16));
+}

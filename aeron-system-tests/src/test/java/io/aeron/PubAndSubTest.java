@@ -21,19 +21,14 @@ import io.aeron.driver.ext.DebugChannelEndpointConfiguration;
 import io.aeron.driver.ext.DebugSendChannelEndpoint;
 import io.aeron.driver.ext.LossGenerator;
 import io.aeron.exceptions.RegistrationException;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
-import io.aeron.logbuffer.RawBlockHandler;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SlowTest;
-import io.aeron.test.SystemTestWatcher;
-import io.aeron.test.Tests;
+import io.aeron.logbuffer.*;
+import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -46,26 +41,24 @@ import org.mockito.InOrder;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static io.aeron.SystemTests.verifyLossOccurredForStream;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.*;
+import static io.aeron.protocol.HeaderFlyweight.CURRENT_VERSION;
+import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_RSP_SETUP;
 import static java.util.Arrays.asList;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
 class PubAndSubTest
@@ -101,6 +94,8 @@ class PubAndSubTest
     private void launch(final String channel)
     {
         context
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
             .threadingMode(THREADING_MODE)
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
@@ -290,7 +285,7 @@ class PubAndSubTest
         context.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
             udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
 
-        TestMediaDriver.enableLossGenerationOnReceive(context, 0.1, 0xcafebabeL, true, false);
+        TestMediaDriver.enableRandomLoss(context, 0.1, 0xcafebabeL, true, false);
 
         launch(channel);
 
@@ -335,7 +330,7 @@ class PubAndSubTest
         context.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
             udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
 
-        TestMediaDriver.enableLossGenerationOnReceive(context, 0.1, 0xcafebabeL, true, false);
+        TestMediaDriver.enableRandomLoss(context, 0.1, 0xcafebabeL, true, false);
 
         launch(channel);
 
@@ -867,6 +862,308 @@ class PubAndSubTest
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("fragmentAssemblers")
+    @SuppressWarnings("MethodLength")
+    void shouldReturnCompleteHeaderForAssembledMessages(final Class<?> assemblerClass)
+        throws ReflectiveOperationException
+    {
+        final ArrayList<ExpectedFragment> messages = new ArrayList<>();
+        final MutableInteger messageIndex = new MutableInteger();
+        final FragmentHandler rawFragmentHandler =
+            (buffer, offset, length, header) -> verifyFragment(buffer, offset, length, header, messageIndex, messages);
+        final FragmentHandler fragmentAssembler;
+        final ControlledFragmentHandler controlledFragmentAssembler;
+        if (FragmentHandler.class.isAssignableFrom(assemblerClass))
+        {
+            fragmentAssembler = (FragmentHandler)assemblerClass.getConstructor(FragmentHandler.class)
+                .newInstance(rawFragmentHandler);
+            controlledFragmentAssembler = null;
+        }
+        else
+        {
+            final ControlledFragmentHandler delegate = (buffer, offset, length, header) ->
+            {
+                rawFragmentHandler.onFragment(buffer, offset, length, header);
+                return ControlledFragmentHandler.Action.COMMIT;
+            };
+            controlledFragmentAssembler =
+                (ControlledFragmentHandler)assemblerClass.getConstructor(ControlledFragmentHandler.class)
+                    .newInstance(delegate);
+            fragmentAssembler = null;
+        }
+
+        final int mtu = 2048;
+        final int maxPayloadLength = mtu - HEADER_LENGTH;
+        final int termLength = 64 * 1024;
+        final int paddingLength = 1376;
+        final int termOffset = termLength - paddingLength;
+        final int initialTermId = 5;
+        final int termId = 13;
+        final long initialPosition = termLength * (termId - initialTermId) + termOffset;
+        final UnsafeBuffer data = new UnsafeBuffer(new byte[maxPayloadLength * 3 + 317]);
+        ThreadLocalRandom.current().nextBytes(data.byteArray());
+        launch("aeron:ipc?mtu=" + mtu + "|term-length=64K|init-term-id=" + initialTermId +
+            "|term-id=" + termId + "|term-offset=" + termOffset);
+
+        try (Subscription unfragmentedSubscription =
+            subscribingClient.addSubscription(subscription.channel(), STREAM_ID))
+        {
+            Tests.awaitConnected(publication);
+            Tests.awaitConnected(subscription);
+            Tests.awaitConnected(unfragmentedSubscription);
+
+            final BufferClaim bufferClaim = new BufferClaim();
+            long position;
+            final int firstMessageLength = 100;
+            while ((position = publication.tryClaim(firstMessageLength, bufferClaim)) < 0)
+            {
+                Tests.yield();
+            }
+            final int headerType = HDR_TYPE_RSP_SETUP;
+            final byte expectedFlags = (byte)(BEGIN_END_AND_EOS_FLAGS | 0xA);
+            final long reservedValue = 13131313139871L;
+            bufferClaim.headerType(headerType);
+            bufferClaim.flags(expectedFlags);
+            bufferClaim.reservedValue(reservedValue);
+            bufferClaim.buffer().putBytes(bufferClaim.offset(), data, 0, firstMessageLength);
+            bufferClaim.commit();
+
+            final long secondReservedValue = -4239462982749823794L;
+            final MutableLong fragmentedReservedValue = new MutableLong(secondReservedValue);
+            final ReservedValueSupplier reservedValueSupplier =
+                (tb, to, fl) -> fragmentedReservedValue.getAndAdd(reservedValue);
+            while ((position = publication.offer(data, 0, data.capacity(), reservedValueSupplier)) < 0)
+            {
+                Tests.yield();
+            }
+            final int fragmentedMessageLength =
+                LogBufferDescriptor.computeFragmentedFrameLength(data.capacity(), maxPayloadLength);
+
+            while ((position = publication.tryClaim(maxPayloadLength, bufferClaim)) < 0)
+            {
+                Tests.yield();
+            }
+            bufferClaim.headerType(HDR_TYPE_SM);
+            bufferClaim.flags((byte)0xFF);
+            bufferClaim.reservedValue(42);
+            bufferClaim.buffer().putBytes(bufferClaim.offset(), data, 0, maxPayloadLength);
+            bufferClaim.commit();
+
+            messageIndex.set(0);
+            messages.clear();
+            messages.add(new ExpectedFragment(
+                firstMessageLength + HEADER_LENGTH,
+                CURRENT_VERSION,
+                expectedFlags,
+                (short)headerType,
+                termOffset,
+                publication.sessionId(),
+                STREAM_ID,
+                termId,
+                reservedValue,
+                initialTermId,
+                publication.positionBitsToShift(),
+                BitUtil.align(initialPosition + firstMessageLength + HEADER_LENGTH, FRAME_ALIGNMENT),
+                data,
+                0,
+                firstMessageLength));
+            messages.add(new ExpectedFragment(
+                fragmentedMessageLength,
+                CURRENT_VERSION,
+                (byte)BEGIN_AND_END_FLAGS,
+                (short)HDR_TYPE_DATA,
+                0,
+                publication.sessionId(),
+                STREAM_ID,
+                termId + 1,
+                secondReservedValue,
+                initialTermId,
+                publication.positionBitsToShift(),
+                ((termId + 1 - initialTermId) * termLength) + fragmentedMessageLength,
+                data,
+                0,
+                data.capacity()));
+            messages.add(new ExpectedFragment(
+                mtu,
+                CURRENT_VERSION,
+                (byte)0xFF,
+                (short)HDR_TYPE_SM,
+                fragmentedMessageLength,
+                publication.sessionId(),
+                STREAM_ID,
+                termId + 1,
+                42,
+                initialTermId,
+                publication.positionBitsToShift(),
+                position,
+                data,
+                0,
+                maxPayloadLength));
+
+            if (null != fragmentAssembler)
+            {
+                while (messages.size() != messageIndex.get())
+                {
+                    if (0 == subscription.poll(fragmentAssembler, 10))
+                    {
+                        Tests.yield();
+                    }
+                }
+            }
+            else
+            {
+                while (messages.size() != messageIndex.get())
+                {
+                    if (0 == subscription.controlledPoll(controlledFragmentAssembler, 10))
+                    {
+                        Tests.yield();
+                    }
+                }
+            }
+
+            messageIndex.set(0);
+            messages.clear();
+            messages.add(new ExpectedFragment(
+                firstMessageLength + HEADER_LENGTH,
+                CURRENT_VERSION,
+                expectedFlags,
+                (short)headerType,
+                termOffset,
+                publication.sessionId(),
+                STREAM_ID,
+                termId,
+                reservedValue,
+                initialTermId,
+                publication.positionBitsToShift(),
+                BitUtil.align(initialPosition + firstMessageLength + HEADER_LENGTH, FRAME_ALIGNMENT),
+                data,
+                0,
+                firstMessageLength));
+            messages.add(new ExpectedFragment(
+                mtu,
+                CURRENT_VERSION,
+                BEGIN_FRAG_FLAG,
+                (short)HDR_TYPE_DATA,
+                0,
+                publication.sessionId(),
+                STREAM_ID,
+                termId + 1,
+                secondReservedValue,
+                initialTermId,
+                publication.positionBitsToShift(),
+                (termId + 1 - initialTermId) * termLength + mtu,
+                data,
+                0,
+                maxPayloadLength));
+            messages.add(new ExpectedFragment(
+                mtu,
+                CURRENT_VERSION,
+                (byte)0,
+                (short)HDR_TYPE_DATA,
+                mtu,
+                publication.sessionId(),
+                STREAM_ID,
+                termId + 1,
+                secondReservedValue + reservedValue,
+                initialTermId,
+                publication.positionBitsToShift(),
+                ((termId + 1 - initialTermId) * termLength) + 2 * mtu,
+                data,
+                maxPayloadLength,
+                maxPayloadLength));
+            messages.add(new ExpectedFragment(
+                mtu,
+                CURRENT_VERSION,
+                (byte)0,
+                (short)HDR_TYPE_DATA,
+                2 * mtu,
+                publication.sessionId(),
+                STREAM_ID,
+                termId + 1,
+                secondReservedValue + 2 * reservedValue,
+                initialTermId,
+                publication.positionBitsToShift(),
+                ((termId + 1 - initialTermId) * termLength) + 3 * mtu,
+                data,
+                2 * maxPayloadLength,
+                maxPayloadLength));
+            messages.add(new ExpectedFragment(
+                317 + HEADER_LENGTH,
+                CURRENT_VERSION,
+                END_FRAG_FLAG,
+                (short)HDR_TYPE_DATA,
+                3 * mtu,
+                publication.sessionId(),
+                STREAM_ID,
+                termId + 1,
+                secondReservedValue + 3 * reservedValue,
+                initialTermId,
+                publication.positionBitsToShift(),
+                ((termId + 1 - initialTermId) * termLength) + fragmentedMessageLength,
+                data,
+                3 * maxPayloadLength,
+                317));
+            messages.add(new ExpectedFragment(
+                mtu,
+                CURRENT_VERSION,
+                (byte)0xFF,
+                (short)HDR_TYPE_SM,
+                fragmentedMessageLength,
+                publication.sessionId(),
+                STREAM_ID,
+                termId + 1,
+                42,
+                initialTermId,
+                publication.positionBitsToShift(),
+                position,
+                data,
+                0,
+                maxPayloadLength));
+
+            while (messages.size() != messageIndex.get())
+            {
+                if (0 == unfragmentedSubscription.poll(rawFragmentHandler, 1))
+                {
+                    Tests.yield();
+                }
+            }
+        }
+    }
+
+    private static void verifyFragment(
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header,
+        final MutableInteger messageIndex,
+        final ArrayList<ExpectedFragment> messages)
+    {
+        final int index = messageIndex.getAndIncrement();
+        final Supplier<String> errorMsg = () -> "index=" + index;
+        final ExpectedFragment expectedFragment = messages.get(index);
+        assertEquals(expectedFragment.frameLength, header.frameLength(), errorMsg);
+        assertEquals(
+            expectedFragment.version,
+            header.buffer().getByte(header.offset() + VERSION_FIELD_OFFSET),
+            errorMsg);
+        assertEquals(expectedFragment.flags, header.flags(), errorMsg);
+        assertEquals(expectedFragment.type, (short)header.type(), errorMsg);
+        assertEquals(expectedFragment.termOffset, header.termOffset(), errorMsg);
+        assertEquals(expectedFragment.sessionId, header.sessionId(), errorMsg);
+        assertEquals(expectedFragment.streamId, header.streamId(), errorMsg);
+        assertEquals(expectedFragment.termId, header.termId(), errorMsg);
+        assertEquals(expectedFragment.reservedValue, header.reservedValue(), errorMsg);
+        assertEquals(expectedFragment.initialTermId, header.initialTermId(), errorMsg);
+        assertEquals(expectedFragment.positionBitsToShift, header.positionBitsToShift(), errorMsg);
+        assertEquals(expectedFragment.position, header.position(), errorMsg);
+        assertEquals(expectedFragment.payload.length, length, errorMsg);
+        for (int i = 0; i < length; i++)
+        {
+            assertEquals(expectedFragment.payload[i], buffer.getByte(offset + i), errorMsg);
+        }
+    }
+
     private void publishMessage()
     {
         buffer.putInt(0, 1);
@@ -909,6 +1206,65 @@ class PubAndSubTest
             {
                 Tests.yield();
             }
+        }
+    }
+
+    private static List<Class<?>> fragmentAssemblers()
+    {
+        return Arrays.asList(
+            FragmentAssembler.class,
+            ImageFragmentAssembler.class,
+            ControlledFragmentAssembler.class,
+            ImageControlledFragmentAssembler.class);
+    }
+
+    private static final class ExpectedFragment
+    {
+        final int frameLength;
+        final byte version;
+        final byte flags;
+        final short type;
+        final int termOffset;
+        final int sessionId;
+        final int streamId;
+        final int termId;
+        final long reservedValue;
+        final int initialTermId;
+        final int positionBitsToShift;
+        final long position;
+        final byte[] payload;
+
+        private ExpectedFragment(
+            final int frameLength,
+            final byte version,
+            final byte flags,
+            final short type,
+            final int termOffset,
+            final int sessionId,
+            final int streamId,
+            final int termId,
+            final long reservedValue,
+            final int initialTermId,
+            final int positionBitsToShift,
+            final long position,
+            final UnsafeBuffer payload,
+            final int payloadOffset,
+            final int payloadLength)
+        {
+            this.frameLength = frameLength;
+            this.version = version;
+            this.flags = flags;
+            this.type = type;
+            this.termOffset = termOffset;
+            this.sessionId = sessionId;
+            this.streamId = streamId;
+            this.termId = termId;
+            this.reservedValue = reservedValue;
+            this.initialTermId = initialTermId;
+            this.positionBitsToShift = positionBitsToShift;
+            this.position = position;
+            this.payload = new byte[payloadLength];
+            payload.getBytes(payloadOffset, this.payload);
         }
     }
 }

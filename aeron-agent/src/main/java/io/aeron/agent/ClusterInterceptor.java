@@ -364,4 +364,18 @@ class ClusterInterceptor
                 archiveEndpoint);
         }
     }
+
+    static class NewElection
+    {
+        @Advice.OnMethodEnter
+        static void logNewElection(
+            final int memberId,
+            final long leadershipTermId,
+            final long logPosition,
+            final long appendPosition,
+            final String reason)
+        {
+            LOGGER.logNewElection(memberId, leadershipTermId, logPosition, appendPosition, reason);
+        }
+    }
 }

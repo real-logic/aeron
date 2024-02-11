@@ -176,11 +176,6 @@ TEST_F(TermGapScannerTest, shouldReportNoGapWhenHwmIsInPadding)
 #define MESSAGE_LENGTH (DATA_LENGTH + HEADER_LENGTH)
 #define ALIGNED_FRAME_LENGTH (AERON_ALIGN(MESSAGE_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT))
 
-int64_t static_feedback_generator_20ms(aeron_feedback_delay_generator_state_t *state)
-{
-    return 20 * 1000 * 1000LL;
-}
-
 class LossDetectorTest : public testing::Test
 {
 public:
@@ -214,10 +209,10 @@ public:
     {
         return aeron_feedback_delay_state_init(
             &m_delay_generator_state,
-            static_feedback_generator_20ms,
+            aeron_loss_detector_nak_unicast_delay_generator,
+            should_immediate_feedback ? 0 : 20 * 1000 * 1000LL,
             20 * 1000 * 1000LL,
-            1,
-            should_immediate_feedback);
+            1);
     }
 
 protected:

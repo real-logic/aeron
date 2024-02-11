@@ -240,6 +240,13 @@ public class ClusterComponentLogger implements ComponentLogger
             ClusterInterceptor.StandbySnapshotNotification.class,
             "logStandbySnapshotNotification");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            NEW_ELECTION,
+            "ConsensusModuleAgent",
+            ClusterInterceptor.NewElection.class,
+            "logNewElection");
+
         return tempBuilder;
     }
 

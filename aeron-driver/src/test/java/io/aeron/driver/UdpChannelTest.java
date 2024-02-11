@@ -39,6 +39,8 @@ import static io.aeron.driver.media.ControlMode.DYNAMIC;
 import static io.aeron.driver.media.ControlMode.MANUAL;
 import static io.aeron.driver.media.ControlMode.RESPONSE;
 import static java.net.InetAddress.getByName;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -619,6 +621,17 @@ class UdpChannelTest
         assertEquals(MANUAL, UdpChannel.parse("aeron:udp?control=localhost:8080|control-mode=manual").controlMode());
         assertEquals(
             RESPONSE, UdpChannel.parse("aeron:udp?control=localhost:8080|control-mode=response").controlMode());
+    }
+
+    @Test
+    void shouldParseNakDelay()
+    {
+        assertEquals(
+            MILLISECONDS.toNanos(34),
+            UdpChannel.parse("aeron:udp?endpoint=localhost:8080|nak-delay=34ms").nakDelayNs());
+        assertEquals(
+            MICROSECONDS.toNanos(27),
+            UdpChannel.parse("aeron:udp?endpoint=localhost:8080|nak-delay=27us").nakDelayNs());
     }
 
     private static Matcher<NetworkInterface> supportsMulticastOrIsLoopback()

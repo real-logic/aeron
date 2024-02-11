@@ -282,31 +282,42 @@ class ArchiveTest
             .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
         final Archive.Context archiveCtx = TestContexts.localhostArchive().threadingMode(SHARED);
+        assertNull(archiveCtx.aeron());
+        assertFalse(archiveCtx.ownsAeronClient());
 
-        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
-            AeronArchive archive = AeronArchive.connect(TestContexts.localhostAeronArchive()))
+        try (ArchivingMediaDriver archivingMediaDriver = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
+            AeronArchive aeronArchive = AeronArchive.connect(TestContexts.localhostAeronArchive()))
         {
-            final long subIdOne = archive.startRecording(channelOne, expectedStreamId, LOCAL);
-            final long subIdTwo = archive.startRecording(channelTwo, expectedStreamId + 1, LOCAL);
-            final long subOdThree = archive.startRecording(channelThree, expectedStreamId + 2, LOCAL);
+            final Context archiveContext = archivingMediaDriver.archive().context();
+            assertNotNull(archiveContext.aeron());
+            assertTrue(archiveContext.ownsAeronClient());
+            assertTrue(archiveContext.aeron().context().useConductorAgentInvoker());
 
-            final int countOne = archive.listRecordingSubscriptions(
+            final AeronArchive.Context clientContext = aeronArchive.context();
+            assertNotNull(clientContext.aeron());
+            assertTrue(clientContext.ownsAeronClient());
+
+            final long subIdOne = aeronArchive.startRecording(channelOne, expectedStreamId, LOCAL);
+            final long subIdTwo = aeronArchive.startRecording(channelTwo, expectedStreamId + 1, LOCAL);
+            final long subOdThree = aeronArchive.startRecording(channelThree, expectedStreamId + 2, LOCAL);
+
+            final int countOne = aeronArchive.listRecordingSubscriptions(
                 0, 5, "ipc", expectedStreamId, true, consumer);
 
             assertEquals(1, descriptors.size());
             assertEquals(1, countOne);
 
             descriptors.clear();
-            final int countTwo = archive.listRecordingSubscriptions(
+            final int countTwo = aeronArchive.listRecordingSubscriptions(
                 0, 5, "", expectedStreamId, false, consumer);
 
             assertEquals(3, descriptors.size());
             assertEquals(3, countTwo);
 
-            archive.stopRecording(subIdTwo);
+            aeronArchive.stopRecording(subIdTwo);
 
             descriptors.clear();
-            final int countThree = archive.listRecordingSubscriptions(
+            final int countThree = aeronArchive.listRecordingSubscriptions(
                 0, 5, "", expectedStreamId, false, consumer);
 
             assertEquals(2, descriptors.size());

@@ -116,6 +116,7 @@ typedef struct aeron_network_publication_stct
     aeron_raw_log_close_func_t raw_log_close_func;
     aeron_raw_log_free_func_t raw_log_free_func;
     aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
+    aeron_driver_resend_func_t resend_func;
 
     volatile int64_t *short_sends_counter;
     volatile int64_t *heartbeats_sent_counter;

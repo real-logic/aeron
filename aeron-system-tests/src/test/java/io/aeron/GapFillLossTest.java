@@ -77,7 +77,7 @@ class GapFillLossTest
         ctx.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
             udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
 
-        TestMediaDriver.enableLossGenerationOnReceive(ctx, 0.20, 0xcafebabeL, true, false);
+        TestMediaDriver.enableRandomLoss(ctx, 0.20, 0xcafebabeL, true, false);
 
         try (TestMediaDriver mediaDriver = TestMediaDriver.launch(ctx, watcher))
         {

@@ -16,29 +16,58 @@
 package io.aeron.driver;
 
 /**
- * Delay generator that simply returns a constant value (such as 0)
+ * Delay generator that simply returns a constant value for the delay and the retry delay.
  */
 public final class StaticDelayGenerator implements FeedbackDelayGenerator
 {
     private final long delayInNs;
-    private final boolean immediateFeedback;
+    private final long retryDelayNs;
 
     /**
-     * Create a delayInNs generator that uses the specified delayInNs.
+     * Create a delayInNs generator that uses the specified delayNs.
      *
-     * @param delayInNs         to return
-     * @param immediateFeedback or not
+     * @param delayNs      initial delay (nanoseconds)
+     * @param retryDelayNs delay for retry (nanoseconds)
      */
-    public StaticDelayGenerator(final long delayInNs, final boolean immediateFeedback)
+    public StaticDelayGenerator(final long delayNs, final long retryDelayNs)
     {
-        this.delayInNs = delayInNs;
-        this.immediateFeedback = immediateFeedback;
+        this.delayInNs = delayNs;
+        this.retryDelayNs = retryDelayNs;
+    }
+
+    /**
+     * Create a delayInNs generator that uses the specified delayNs for both initial and retry delays.
+     *
+     * @param delayNs      delay (nanoseconds)
+     */
+    public StaticDelayGenerator(final long delayNs)
+    {
+        this(delayNs, delayNs);
+    }
+
+    /**
+     * Deprecated constructor.
+     *
+     * @param delayNs           delay (nanoseconds)
+     * @param immediateFeedback immediately feedback (unused)
+     * @deprecated The <code>shouldImmediatelyFeedback</code> method has been removed from the interface so the
+     * <code>immediatelyFeedback</code> parameter is ignored. You can emulate the old behaviour with:
+     * <pre>
+     *     new StaticDelayGenerator(0, MILLISECONDS.toNanos(10));
+     * </pre>
+     * If used for unicast delays, then this is not recommended and a short delay like the default
+     * {@link Configuration#NAK_UNICAST_DELAY_DEFAULT_NS} should be used.
+     */
+    @Deprecated
+    public StaticDelayGenerator(final long delayNs, @SuppressWarnings("unused") final boolean immediateFeedback)
+    {
+        this(delayNs, delayNs);
     }
 
     /**
      * {@inheritDoc}
      */
-    public long generateDelay()
+    public long generateDelayNs()
     {
         return delayInNs;
     }
@@ -46,9 +75,9 @@ public final class StaticDelayGenerator implements FeedbackDelayGenerator
     /**
      * {@inheritDoc}
      */
-    public boolean shouldFeedbackImmediately()
+    public long retryDelayNs()
     {
-        return immediateFeedback;
+        return retryDelayNs;
     }
 
     /**
@@ -58,7 +87,7 @@ public final class StaticDelayGenerator implements FeedbackDelayGenerator
     {
         return "StaticDelayGenerator{" +
             "delayInNs=" + delayInNs +
-            ", shouldFeedbackImmediately=" + shouldFeedbackImmediately() +
+            ", retryDelayNs=" + retryDelayNs +
             '}';
     }
 }

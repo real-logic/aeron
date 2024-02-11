@@ -301,13 +301,18 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             aeron,
             ctx.countedErrorHandler());
 
+        final long lastLeadershipTermId = recoveryPlan.lastLeadershipTermId;
+        final long commitPosition = this.commitPosition.getWeak();
+        final long appendedPosition = recoveryPlan.appendedLogPosition;
+        logNewElection(memberId, lastLeadershipTermId, commitPosition, appendedPosition, "node started");
+
         election = new Election(
             true,
             NULL_VALUE,
-            recoveryPlan.lastLeadershipTermId,
+            lastLeadershipTermId,
             recoveryPlan.lastTermBaseLogPosition,
-            commitPosition.getWeak(),
-            recoveryPlan.appendedLogPosition,
+            commitPosition,
+            appendedPosition,
             activeMembers,
             clusterMemberByIdMap,
             thisMember,
@@ -770,8 +775,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
         else if (candidateTermId > leadershipTermId)
         {
-            ctx.countedErrorHandler().onError(new ClusterEvent("unexpected vote request"));
-            enterElection(false);
+            enterElection(false, "unexpected vote request");
         }
     }
 
@@ -860,8 +864,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
-            ctx.countedErrorHandler().onError(new ClusterEvent("unexpected new leadership term event"));
-            enterElection(false);
+            enterElection(false, "unexpected new leadership term event");
         }
     }
 
@@ -912,8 +915,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
-            ctx.countedErrorHandler().onError(new ClusterEvent("unexpected commit position from new leader"));
-            enterElection(false);
+            enterElection(false, "unexpected commit position from new leader");
         }
     }
 
@@ -1851,7 +1853,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
                         if (null == election && ConsensusModule.State.ACTIVE == state)
                         {
-                            enterElection(logAdapter.isLogEndOfStreamAt(position));
+                            enterElection(logAdapter.isLogEndOfStreamAt(position), "log recording stopped");
                             return workCount;
                         }
                     }
@@ -2007,6 +2009,15 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     {
     }
 
+    private static void logNewElection(
+        final int memberId,
+        final long logLeadershipTermId,
+        final long logPosition,
+        final long appendedPosition,
+        final String reason)
+    {
+    }
+
     static void logReplicationEnded(
         final int memberId,
         final String purpose,
@@ -2134,8 +2145,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
                     if (!ClusterMember.hasActiveQuorum(activeMembers, nowNs, leaderHeartbeatTimeoutNs))
                     {
-                        ctx.countedErrorHandler().onError(new ClusterEvent("inactive follower quorum"));
-                        enterElection(false);
+                        enterElection(false, "inactive follower quorum");
                         workCount += 1;
                     }
                 }
@@ -2160,8 +2170,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                     if (nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatTimeoutNs) &&
                         NULL_POSITION == terminationPosition)
                     {
-                        ctx.countedErrorHandler().onError(new ClusterEvent("leader heartbeat timeout"));
-                        enterElection(false);
+                        enterElection(false, "leader heartbeat timeout");
                         workCount += 1;
                     }
                 }
@@ -2210,9 +2219,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                     if (0 == count && logAdapter.isImageClosed())
                     {
                         final boolean isEos = logAdapter.isLogEndOfStream();
-                        final String message = "log disconnected from leader: eos=" + isEos;
-                        ctx.countedErrorHandler().onError(new ClusterEvent(message));
-                        enterElection(isEos);
+                        enterElection(isEos, "log disconnected from leader: eos=" + isEos);
                         return 1;
                     }
 
@@ -3002,7 +3009,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    private void enterElection(final boolean isLogEndOfStream)
+    private void enterElection(final boolean isLogEndOfStream, final String reason)
     {
         if (null != election)
         {
@@ -3011,18 +3018,23 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
         role(Cluster.Role.FOLLOWER);
 
+        final long leadershipTermId = this.leadershipTermId;
         final RecordingLog.Entry termEntry = recordingLog.findTermEntry(leadershipTermId);
         final long termBaseLogPosition = null != termEntry ?
             termEntry.termBaseLogPosition : recoveryPlan.lastTermBaseLogPosition;
         final long appendedPosition = null != appendPosition ?
             appendPosition.get() : Math.max(recoveryPlan.appendedLogPosition, logRecordingStopPosition);
+        final long commitPosition = this.commitPosition.getWeak();
+
+        logNewElection(memberId, leadershipTermId, commitPosition, appendedPosition, reason);
+        ctx.countedErrorHandler().onError(new ClusterEvent(reason));
 
         election = new Election(
             false,
             isLogEndOfStream ? leaderMember.id() : NULL_VALUE,
             leadershipTermId,
             termBaseLogPosition,
-            commitPosition.getWeak(),
+            commitPosition,
             appendedPosition,
             activeMembers,
             clusterMemberByIdMap,

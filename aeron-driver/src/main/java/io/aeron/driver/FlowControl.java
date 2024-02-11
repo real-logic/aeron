@@ -28,6 +28,31 @@ import java.net.InetSocketAddress;
 public interface FlowControl extends AutoCloseable
 {
     /**
+     * Calculates a retransmission length by clamping to a min of <code>resendLength</code>,
+     * <code>termBufferLength - termOffset</code> and <code>retransmitReceiverWindowMultiple *
+     * ${configured initial window length}</code>.
+     *
+     * @param resendLength                     requested length of a retransmit
+     * @param termBufferLength                 length of the current term.
+     * @param termOffset                       offset within the term.
+     * @param retransmitReceiverWindowMultiple multiplier to the receiver window length.
+     * @return the clamped retransmit length
+     */
+    static int calculateRetransmissionLength(
+        final int resendLength,
+        final int termBufferLength,
+        final int termOffset,
+        final int retransmitReceiverWindowMultiple)
+    {
+        final int lengthToEndOfTerm = termBufferLength - termOffset;
+        final int estimatedRetransmitLength = Configuration.receiverWindowLength(
+            termBufferLength, Configuration.INITIAL_WINDOW_LENGTH_DEFAULT) * retransmitReceiverWindowMultiple;
+
+        return (lengthToEndOfTerm < estimatedRetransmitLength) ?
+            Math.min(lengthToEndOfTerm, resendLength) : Math.min(estimatedRetransmitLength, resendLength);
+    }
+
+    /**
      * Update the sender flow control strategy based on a status message from the receiver.
      *
      * @param flyweight           over the status message received.
@@ -61,11 +86,11 @@ public interface FlowControl extends AutoCloseable
     /**
      * Update the sender flow control strategy based on an elicited setup message being sent out.
      *
-     * @param flyweight             over the setup to be sent.
-     * @param senderLimit           for the current sender position.
-     * @param senderPosition        which has been sent.
-     * @param positionBitsToShift   in use for the length of each term buffer.
-     * @param timeNs                current time in nanoseconds.
+     * @param flyweight           over the setup to be sent.
+     * @param senderLimit         for the current sender position.
+     * @param senderPosition      which has been sent.
+     * @param positionBitsToShift in use for the length of each term buffer.
+     * @param timeNs              current time in nanoseconds.
      * @return the new position limit to be employed by the sender.
      */
     long onSetup(
@@ -117,19 +142,16 @@ public interface FlowControl extends AutoCloseable
     boolean hasRequiredReceivers();
 
     /**
-     * The maximum window length allowed to retransmit per NAK.
+     * The maximum window length allowed to retransmit per NAK. Will limit it by an estimate of the window limit and to
+     * the end of the current term.
      *
-     * @param resendPosition   of the NAK.
+     * @param termOffset       of the NAK.
      * @param resendLength     of the NAK.
      * @param termBufferLength of the publication.
      * @param mtuLength        of the publication.
      * @return the maximum window length allowed to retransmit per NAK.
      */
-    int maxRetransmissionLength(
-        long resendPosition,
-        int resendLength,
-        int termBufferLength,
-        int mtuLength);
+    int maxRetransmissionLength(int termOffset, int resendLength, int termBufferLength, int mtuLength);
 
     /**
      * {@inheritDoc}

@@ -29,9 +29,14 @@ import io.aeron.cluster.codecs.AdminResponseCode;
 import io.aeron.cluster.codecs.AdminResponseEncoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
+import io.aeron.cluster.codecs.SessionMessageHeaderDecoder;
+import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.SnapshotDurationTracker;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.security.AuthorisationService;
 import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
@@ -39,13 +44,17 @@ import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
+import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -58,9 +67,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.zip.CRC32;
 
+import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
-import static io.aeron.logbuffer.FrameDescriptor.computeMaxMessageLength;
+import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static io.aeron.test.SystemTestWatcher.UNKNOWN_HOST_FILTER;
 import static io.aeron.test.Tests.awaitAvailableWindow;
 import static io.aeron.test.cluster.ClusterTests.*;
@@ -1587,7 +1598,7 @@ class ClusterTest
             .withEgressChannel(
                 "aeron:udp?endpoint=localhost:0|term-length=" + originalTermLength + "|mtu=" + originalMtu)
             .withServiceSupplier(
-                (i) -> new TestNode.TestService[] { new TestNode.TestService(), new TestNode.ChecksumService() })
+                (i) -> new TestNode.TestService[]{ new TestNode.TestService(), new TestNode.ChecksumService() })
             .start();
         systemTestWatcher.cluster(cluster);
 
@@ -1599,7 +1610,7 @@ class ClusterTest
 
         cluster.connectClient();
         final int firstBatch = 9;
-        int messageLength = computeMaxMessageLength(originalTermLength) - AeronCluster.SESSION_HEADER_LENGTH;
+        int messageLength = computeMaxMessageLength(originalTermLength) - SESSION_HEADER_LENGTH;
         int payloadLength = messageLength - SIZE_OF_INT;
         cluster.msgBuffer().setMemory(0, payloadLength, (byte)'x');
         crc32.reset();
@@ -1655,7 +1666,7 @@ class ClusterTest
         cluster.awaitSnapshotsLoaded();
 
         cluster.reconnectClient();
-        messageLength = computeMaxMessageLength(newTermLength) - AeronCluster.SESSION_HEADER_LENGTH;
+        messageLength = computeMaxMessageLength(newTermLength) - SESSION_HEADER_LENGTH;
         payloadLength = messageLength - SIZE_OF_INT;
         cluster.msgBuffer().setMemory(0, payloadLength, (byte)'z');
         crc32.reset();
@@ -2104,6 +2115,114 @@ class ClusterTest
         Tests.sleep(slowDownDelayMs);
 
         awaitElectionClosed(restartedFollower);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    @SuppressWarnings("MethodLength")
+    void shouldAssembleFragmentedSessionMessages()
+    {
+        final UnsafeBuffer messages = new UnsafeBuffer(new byte[8192]);
+        cluster = aCluster().withServiceSupplier(
+            (i) -> new TestNode.TestService[]{ new TestNode.TestService()
+            {
+                private int messageOffset;
+                public void onSessionMessage(
+                    final ClientSession session,
+                    final long timestamp,
+                    final DirectBuffer buffer,
+                    final int offset,
+                    final int length,
+                    final Header header)
+                {
+                    messages.putBytes(messageOffset, header.buffer(), header.offset(), HEADER_LENGTH);
+                    messages.putBytes(
+                        messageOffset + HEADER_LENGTH,
+                        buffer,
+                        offset - SESSION_HEADER_LENGTH,
+                        length + SESSION_HEADER_LENGTH);
+                    messageOffset += BitUtil.align(length + SESSION_HEADER_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
+                    echoMessage(session, buffer, offset, length);
+                }
+            } }
+        ).withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+        final int logStreamId = leader.consensusModule().context().logStreamId();
+        final AeronCluster client = cluster.connectClient();
+
+        final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
+        final int unfragmentedMessageLength = 63;
+        final long unfragmentedReservedValue = 2348723482321L;
+        final BufferClaim bufferClaim = new BufferClaim();
+        while (client.tryClaim(unfragmentedMessageLength, bufferClaim) < 0)
+        {
+            Tests.sleep(1);
+            ClusterTests.failOnClusterError();
+        }
+        bufferClaim.buffer().setMemory(
+            bufferClaim.offset() + SESSION_HEADER_LENGTH, unfragmentedMessageLength, (byte)0xEA);
+        bufferClaim.flags((byte)BEGIN_END_AND_EOS_FLAGS);
+        bufferClaim.reservedValue(unfragmentedReservedValue);
+        bufferClaim.commit();
+
+        final int fragmentedMessageLength = 5979;
+        msgBuffer.setMemory(0, fragmentedMessageLength, (byte)0xBC);
+        while (client.offer(msgBuffer, 0, fragmentedMessageLength) < 0)
+        {
+            Tests.sleep(1);
+            ClusterTests.failOnClusterError();
+        }
+
+        cluster.awaitResponseMessageCount(2);
+
+        final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
+        final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+        final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
+        final Publication ingressPublication = client.ingressPublication();
+
+        headerFlyweight.wrap(messages, 0, HEADER_LENGTH);
+        assertEquals(unfragmentedMessageLength + SESSION_HEADER_LENGTH + HEADER_LENGTH, headerFlyweight.frameLength());
+        assertEquals(CURRENT_VERSION, headerFlyweight.version());
+        assertEquals(UNFRAGMENTED, (byte)headerFlyweight.flags());
+        assertEquals(HDR_TYPE_DATA, headerFlyweight.headerType());
+        assertEquals(256, headerFlyweight.termOffset());
+        assertNotEquals(ingressPublication.sessionId(), headerFlyweight.sessionId());
+        assertEquals(logStreamId, headerFlyweight.streamId());
+        assertEquals(0, headerFlyweight.termId());
+        assertEquals(DEFAULT_RESERVE_VALUE, headerFlyweight.reservedValue()); // assign value is not propagated
+        sessionMessageHeaderDecoder.wrapAndApplyHeader(messages, HEADER_LENGTH, messageHeaderDecoder);
+        assertEquals(client.leadershipTermId(), sessionMessageHeaderDecoder.leadershipTermId());
+        assertEquals(client.clusterSessionId(), sessionMessageHeaderDecoder.clusterSessionId());
+        assertNotEquals(0, sessionMessageHeaderDecoder.timestamp());
+        for (int i = 0; i < unfragmentedMessageLength; i++)
+        {
+            assertEquals((byte)0xEA, messages.getByte(SESSION_HEADER_LENGTH + HEADER_LENGTH + i));
+        }
+
+        final int offset =
+            BitUtil.align(unfragmentedMessageLength + SESSION_HEADER_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
+        headerFlyweight.wrap(messages, offset, HEADER_LENGTH);
+        assertEquals(LogBufferDescriptor.computeFragmentedFrameLength(
+            fragmentedMessageLength + SESSION_HEADER_LENGTH, ingressPublication.maxPayloadLength()),
+            headerFlyweight.frameLength());
+        assertEquals(CURRENT_VERSION, headerFlyweight.version());
+        assertEquals(UNFRAGMENTED, (byte)headerFlyweight.flags());
+        assertEquals(HDR_TYPE_DATA, headerFlyweight.headerType());
+        assertEquals(256 + offset, headerFlyweight.termOffset());
+        assertNotEquals(ingressPublication.sessionId(), headerFlyweight.sessionId());
+        assertEquals(logStreamId, headerFlyweight.streamId());
+        assertEquals(0, headerFlyweight.termId());
+        assertEquals(DEFAULT_RESERVE_VALUE, headerFlyweight.reservedValue());
+        sessionMessageHeaderDecoder.wrapAndApplyHeader(messages, HEADER_LENGTH, messageHeaderDecoder);
+        assertEquals(client.leadershipTermId(), sessionMessageHeaderDecoder.leadershipTermId());
+        assertEquals(client.clusterSessionId(), sessionMessageHeaderDecoder.clusterSessionId());
+        assertNotEquals(0, sessionMessageHeaderDecoder.timestamp());
+        for (int i = 0; i < fragmentedMessageLength; i++)
+        {
+            assertEquals((byte)0xBC, messages.getByte(HEADER_LENGTH + SESSION_HEADER_LENGTH + offset + i));
+        }
     }
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)

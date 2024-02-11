@@ -19,6 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ReceiveChannelEndpointSupplier;
 import io.aeron.driver.ext.DebugChannelEndpointConfiguration;
 import io.aeron.driver.ext.DebugReceiveChannelEndpoint;
+import io.aeron.driver.ext.FixedLossGenerator;
 import io.aeron.driver.ext.LossGenerator;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.status.CountersManager;
@@ -67,7 +68,7 @@ public final class JavaTestMediaDriver implements TestMediaDriver
         return mediaDriver.context().countersManager();
     }
 
-    public static void enableLossGenerationOnReceive(
+    public static void enableRandomLossOnReceive(
         final MediaDriver.Context context,
         final double rate,
         final long seed,
@@ -87,6 +88,26 @@ public final class JavaTestMediaDriver implements TestMediaDriver
             {
                 return new DebugReceiveChannelEndpoint(
                     udpChannel, dispatcher, statusIndicator, ctx, dataLossGenerator, controlLossGenerator);
+            };
+
+        context.receiveChannelEndpointSupplier(endpointSupplier);
+    }
+
+    public static void enableFixedLossOnReceive(
+        final MediaDriver.Context context,
+        final int termId,
+        final int termOffset,
+        final int length)
+    {
+        final FixedLossGenerator fixedLossGenerator = new FixedLossGenerator(termId, termOffset, length);
+
+        final ReceiveChannelEndpointSupplier endpointSupplier =
+            (udpChannel, dispatcher, statusIndicator, ctx) ->
+            {
+                return new DebugReceiveChannelEndpoint(
+                    udpChannel, dispatcher, statusIndicator, ctx,
+                    fixedLossGenerator,
+                    DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0));
             };
 
         context.receiveChannelEndpointSupplier(endpointSupplier);

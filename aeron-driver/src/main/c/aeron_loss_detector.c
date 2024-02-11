@@ -92,14 +92,15 @@ int aeron_feedback_delay_state_init(
     aeron_feedback_delay_generator_state_t *state,
     aeron_feedback_delay_generator_func_t delay_generator,
     int64_t delay_ns,
-    size_t multicast_group_size,
-    bool should_immediate_feedback)
+    int64_t retry_ns,
+    size_t multicast_group_size)
 {
     static bool is_seeded = false;
     double lambda = log((double)multicast_group_size) + 1;
     double max_backoff_T = (double)delay_ns;
 
     state->static_delay.delay_ns = delay_ns;
+    state->static_delay.retry_ns = retry_ns;
 
     state->optimal_delay.rand_max = lambda / max_backoff_T;
     state->optimal_delay.base_x = lambda / (max_backoff_T * (exp(lambda) - 1));
@@ -112,19 +113,18 @@ int aeron_feedback_delay_state_init(
         is_seeded = true;
     }
 
-    state->should_immediate_feedback = should_immediate_feedback;
     state->delay_generator = delay_generator;
     return 0;
 }
 
-int64_t aeron_loss_detector_nak_multicast_delay_generator(aeron_feedback_delay_generator_state_t *state)
+int64_t aeron_loss_detector_nak_multicast_delay_generator(aeron_feedback_delay_generator_state_t *state, bool retry)
 {
     const double x = (aeron_drand48() * state->optimal_delay.rand_max) + state->optimal_delay.base_x;
 
     return (int64_t)(state->optimal_delay.constant_t * log(x * state->optimal_delay.factor_t));
 }
 
-extern int64_t aeron_loss_detector_nak_unicast_delay_generator(aeron_feedback_delay_generator_state_t *state);
+extern int64_t aeron_loss_detector_nak_unicast_delay_generator(aeron_feedback_delay_generator_state_t *state, bool retry);
 extern void aeron_loss_detector_on_gap(void *clientd, int32_t term_id, int32_t term_offset, size_t length);
 extern bool aeron_loss_detector_gaps_match(aeron_loss_detector_t *detector);
 extern void aeron_loss_detector_activate_gap(aeron_loss_detector_t *detector, int64_t now_ns);

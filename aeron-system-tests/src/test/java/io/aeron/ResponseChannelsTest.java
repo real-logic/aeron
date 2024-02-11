@@ -164,7 +164,7 @@ public class ResponseChannelsTest
             final String url = "aeron:udp?control-mode=response|control=localhost:10002|response-correlation-id=" +
                 image.correlationId();
 
-            try (Publication pubRsp = client.addPublication(url, RESPONSE_STREAM_ID))
+            try (Publication pubRsp = server.addPublication(url, RESPONSE_STREAM_ID))
             {
                 Tests.awaitConnected(subRsp);
                 Tests.awaitConnected(pubRsp);

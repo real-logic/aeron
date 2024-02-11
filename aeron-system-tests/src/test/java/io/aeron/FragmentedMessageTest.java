@@ -38,7 +38,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 
-import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
+import static io.aeron.logbuffer.FrameDescriptor.UNFRAGMENTED;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -135,7 +135,7 @@ class FragmentedMessageTest
                 assertEquals(srcBuffer.getByte(i), capturedBuffer.getByte(i), "same at i=" + i);
             }
 
-            assertEquals(END_FRAG_FLAG, headerArg.getValue().flags());
+            assertEquals(UNFRAGMENTED, headerArg.getValue().flags());
         }
     }
 }

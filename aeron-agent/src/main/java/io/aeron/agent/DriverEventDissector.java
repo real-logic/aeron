@@ -399,6 +399,45 @@ final class DriverEventDissector
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
+    public static void dissectSendNak(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, SEND_NAK_MESSAGE, buffer, absoluteOffset, builder);
+        builder.append(": address=");
+        final int encodedSocketLength = dissectSocketAddress(buffer, absoluteOffset, builder);
+        absoluteOffset += encodedSocketLength;
+        builder.append(" sessionId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+        builder.append(" streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+        builder.append(" termId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+        builder.append(" termOffset=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+        builder.append(" length=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+        builder.append(" channel=");
+        buffer.getStringAscii(absoluteOffset, builder);
+    }
+
+    public static void dissectResend(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, RESEND, buffer, absoluteOffset, builder);
+        builder.append(": sessionId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+        builder.append(" streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+        builder.append(" termId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+        builder.append(" termOffset=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+        builder.append(" length=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
+        builder.append(" channel=");
+        buffer.getStringAscii(absoluteOffset, builder);
+    }
+
     static int frameType(final MutableDirectBuffer buffer, final int termOffset)
     {
         return buffer.getShort(FrameDescriptor.typeOffset(termOffset), LITTLE_ENDIAN) & 0xFFFF;

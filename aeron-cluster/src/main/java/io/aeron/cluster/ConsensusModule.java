@@ -48,6 +48,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -410,8 +411,8 @@ public final class ConsensusModule implements AutoCloseable
          * Property name for the comma separated list of cluster member endpoints.
          * <p>
          * <code>
-         *     0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
-         *     1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
+         * 0,ingress:port,consensus:port,log:port,catchup:port,archive:port| \
+         * 1,ingress:port,consensus:port,log:port,catchup:port,archive:port| ...
          * </code>
          * <p>
          * The ingress endpoints will be used as the endpoint substituted into the
@@ -456,7 +457,7 @@ public final class ConsensusModule implements AutoCloseable
          * Property name for the comma separated list of member endpoints.
          * <p>
          * <code>
-         *     ingress:port,consensus:port,log:port,catchup:port,archive:port
+         * ingress:port,consensus:port,log:port,catchup:port,archive:port
          * </code>
          *
          * @see #CLUSTER_MEMBERS_PROP_NAME
@@ -1492,14 +1493,31 @@ public final class ConsensusModule implements AutoCloseable
             {
                 clusterDir = new File(clusterDirectoryName);
             }
-            else
+
+            if (null == markFileDir)
             {
-                clusterDirectoryName = clusterDir.getAbsolutePath();
+                final String dir = ClusteredServiceContainer.Configuration.markFileDir();
+                markFileDir = Strings.isEmpty(dir) ? clusterDir : new File(dir);
             }
 
-            if (null == clusterServicesDirectoryName)
+            try
             {
-                clusterServicesDirectoryName = clusterDirectoryName;
+                clusterDir = clusterDir.getCanonicalFile();
+                clusterDirectoryName = clusterDir.getAbsolutePath();
+                markFileDir = markFileDir.getCanonicalFile();
+
+                if (Strings.isEmpty(clusterServicesDirectoryName))
+                {
+                    clusterServicesDirectoryName = clusterDirectoryName;
+                }
+                else
+                {
+                    clusterServicesDirectoryName = new File(clusterServicesDirectoryName).getCanonicalPath();
+                }
+            }
+            catch (final IOException e)
+            {
+                throw new UncheckedIOException(e);
             }
 
             if (null == clusterMembers)
@@ -1513,13 +1531,6 @@ public final class ConsensusModule implements AutoCloseable
             }
 
             IoUtil.ensureDirectoryExists(clusterDir, "cluster");
-
-            if (null == markFileDir)
-            {
-                final String dir = ClusteredServiceContainer.Configuration.markFileDir();
-                markFileDir = Strings.isEmpty(dir) ? clusterDir : new File(dir);
-            }
-
             IoUtil.ensureDirectoryExists(markFileDir, "mark file");
 
             if (startupCanvassTimeoutNs / leaderHeartbeatTimeoutNs < 2)

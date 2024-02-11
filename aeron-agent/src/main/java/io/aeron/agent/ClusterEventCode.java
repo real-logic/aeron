@@ -131,7 +131,12 @@ public enum ClusterEventCode implements EventCode
     /**
      * Event when a standby snapshot notification has been received by a consensus module
      */
-    STANDBY_SNAPSHOT_NOTIFICATION(21, ClusterEventDissector::dissectStandbySnapshotNotification);
+    STANDBY_SNAPSHOT_NOTIFICATION(21, ClusterEventDissector::dissectStandbySnapshotNotification),
+
+    /**
+     * Event when a new Election is started.
+     */
+    NEW_ELECTION(22, ClusterEventDissector::dissectNewElection);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

@@ -310,4 +310,64 @@ final class DriverEventEncoder
         encodedLength += encodeTrailingString(
             encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, hostName);
     }
+
+    static void encodeSendNakMessage(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int length,
+        final int captureLength,
+        final InetSocketAddress controlAddress,
+        final int sessionId,
+        final int streamId,
+        final int termId,
+        final int termOffset,
+        final int nakLength, final String channel)
+    {
+        final int headerLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int bodyOffset = offset + headerLength;
+        int bodyLength = 0;
+        final int socketEncodedLength = encodeSocketAddress(encodingBuffer, bodyOffset + bodyLength, controlAddress);
+        bodyLength += socketEncodedLength;
+
+        encodingBuffer.putInt(bodyOffset + bodyLength, sessionId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+        encodingBuffer.putInt(bodyOffset + bodyLength, streamId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+        encodingBuffer.putInt(bodyOffset + bodyLength, termId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+        encodingBuffer.putInt(bodyOffset + bodyLength, termOffset, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+        encodingBuffer.putInt(bodyOffset + bodyLength, nakLength, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+        encodeTrailingString(encodingBuffer, bodyOffset + bodyLength, captureLength - bodyLength, channel);
+    }
+
+    static void encodeResend(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int length,
+        final int captureLength,
+        final int sessionId,
+        final int streamId,
+        final int termId,
+        final int termOffset,
+        final int nakLength,
+        final String channel)
+    {
+        final int headerLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        final int bodyOffset = offset + headerLength;
+
+        int bodyLength = 0;
+        encodingBuffer.putInt(bodyOffset + bodyLength, sessionId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+        encodingBuffer.putInt(bodyOffset + bodyLength, streamId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+        encodingBuffer.putInt(bodyOffset + bodyLength, termId, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+        encodingBuffer.putInt(bodyOffset + bodyLength, termOffset, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+        encodingBuffer.putInt(bodyOffset + bodyLength, nakLength, LITTLE_ENDIAN);
+        bodyLength += SIZE_OF_INT;
+        encodeTrailingString(encodingBuffer, bodyOffset + bodyLength, captureLength - bodyLength, channel);
+    }
 }

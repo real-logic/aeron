@@ -263,6 +263,7 @@ SET(SOURCE
     media/aeron_udp_channel.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel_transport_bindings.c
+    media/aeron_udp_channel_transport_fixed_loss.c
     media/aeron_udp_channel_transport_loss.c
     media/aeron_udp_destination_tracker.c
     media/aeron_udp_transport_poller.c
@@ -305,6 +306,7 @@ SET(HEADERS
     media/aeron_udp_channel.h
     media/aeron_udp_channel_transport.h
     media/aeron_udp_channel_transport_bindings.h
+    media/aeron_udp_channel_transport_fixed_loss.h
     media/aeron_udp_channel_transport_loss.h
     media/aeron_udp_destination_tracker.h
     media/aeron_udp_transport_poller.h

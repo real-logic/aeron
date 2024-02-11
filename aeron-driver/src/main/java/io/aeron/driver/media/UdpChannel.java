@@ -74,6 +74,7 @@ public final class UdpChannel
     private final int channelReceiveTimestampOffset;
     private final int channelSendTimestampOffset;
     private final Long groupTag;
+    private final Long nakDelayNs;
 
     private UdpChannel(final Context context)
     {
@@ -101,6 +102,7 @@ public final class UdpChannel
         channelReceiveTimestampOffset = context.channelReceiveTimestampOffset;
         channelSendTimestampOffset = context.channelSendTimestampOffset;
         groupTag = context.groupTag;
+        nakDelayNs = context.nakDelayNs;
     }
 
     /**
@@ -191,7 +193,6 @@ public final class UdpChannel
                 throw new UnknownHostException("could not resolve control address: " + controlAddress);
             }
 
-
             boolean hasExplicitEndpoint = true;
             if (null == endpointAddress)
             {
@@ -212,8 +213,9 @@ public final class UdpChannel
                 .hasNoDistinguishingCharacteristic(hasNoDistinguishingCharacteristic)
                 .socketRcvbufLength(socketRcvbufLength)
                 .socketSndbufLength(socketSndbufLength)
+                .socketToS(socketToS)
                 .receiverWindowLength(receiverWindowLength)
-                .socketToS(socketToS);
+                .nakDelayNs(parseOptionalDurationNs(channelUri, NAK_DELAY_PARAM_NAME));
 
             if (null != tagIdStr)
             {
@@ -376,7 +378,7 @@ public final class UdpChannel
 
     /**
      * Parses the IP_TOS for a given URI paramName. The range of the IP_TOS is 0 &lt;= x &lt;= 255.
-     * <p/>
+     * <p>
      * If the parameter isn't set,  <code>SOCKET_TOS_DEFAULT</code> is returned.
      *
      * @param channelUri to get the value from.
@@ -425,6 +427,24 @@ public final class UdpChannel
             default:
                 return ControlMode.NONE;
         }
+    }
+
+    /**
+     * Parses out a duration from a channel URI and caters for unit suffix information.
+     *
+     * @param channelUri    to read the value from
+     * @param paramName     specific field to access in the URI
+     * @return              duration in nanoseconds, null if not present
+     */
+    public static Long parseOptionalDurationNs(final ChannelUri channelUri, final String paramName)
+    {
+        final String valueStr = channelUri.get(paramName);
+        if (null == valueStr)
+        {
+            return null;
+        }
+
+        return SystemUtil.parseDuration(paramName, valueStr);
     }
 
     /**
@@ -784,6 +804,16 @@ public final class UdpChannel
     }
 
     /**
+     * The length of the initial nak delay to be used by the LossDectector on this channel.
+     *
+     * @return delay in nanoseconds or null if the value is not set.
+     */
+    public Long nakDelayNs()
+    {
+        return nakDelayNs;
+    }
+
+    /**
      * Does this channel have a tag match to another channel having INADDR_ANY endpoints.
      *
      * @param udpChannel to match against.
@@ -1138,7 +1168,8 @@ public final class UdpChannel
         ChannelUri channelUri;
         int channelReceiveTimestampOffset;
         int channelSendTimestampOffset;
-        private Long groupTag = null;
+        Long groupTag = null;
+        Long nakDelayNs = null;
 
         Context uriStr(final String uri)
         {
@@ -1286,6 +1317,12 @@ public final class UdpChannel
         Context channelSendTimestampOffset(final int timestampOffset)
         {
             this.channelSendTimestampOffset = timestampOffset;
+            return this;
+        }
+
+        Context nakDelayNs(final Long nakDelayNs)
+        {
+            this.nakDelayNs = nakDelayNs;
             return this;
         }
 

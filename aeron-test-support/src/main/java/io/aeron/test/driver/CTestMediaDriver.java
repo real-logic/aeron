@@ -340,7 +340,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         throw new UnsupportedOperationException("Not supported in C media driver");
     }
 
-    public static void enableLossGenerationOnReceive(
+    public static void enableRandomLossOnReceive(
         final MediaDriver.Context context,
         final double rate,
         final long seed,
@@ -365,6 +365,25 @@ public final class CTestMediaDriver implements TestMediaDriver
 
         // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
         C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, lossTransportEnv);
+    }
+
+    public static void enableFixedLossOnReceive(
+        final MediaDriver.Context context,
+        final int termId,
+        final int termOffset,
+        final int length)
+    {
+        final Object2ObjectHashMap<String, String> fixedLossTransportEnv = new Object2ObjectHashMap<>();
+
+        final String interceptor = "fixed-loss";
+        final String fixedLossArgs = "term-id=" + termId +
+            "|term-offset=" + termOffset +
+            "|length=" + length;
+
+        fixedLossTransportEnv.put(UDP_CHANNEL_INCOMING_INTERCEPTORS_ENV_VAR, interceptor);
+        fixedLossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_FIXED_LOSS_ARGS", fixedLossArgs);
+
+        C_DRIVER_ADDITIONAL_ENV_VARS.get().put(context, fixedLossTransportEnv);
     }
 
     private static void setLogging(final Map<String, String> environment)

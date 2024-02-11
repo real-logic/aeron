@@ -409,7 +409,7 @@ public final class NetworkPublication
      */
     public void onNak(final int termId, final int termOffset, final int length)
     {
-        retransmitHandler.onNak(termId, termOffset, length, termBufferLength, this);
+        retransmitHandler.onNak(termId, termOffset, length, termBufferLength, mtuLength, flowControl, this);
     }
 
     /**
@@ -513,6 +513,8 @@ public final class NetworkPublication
      */
     public void resend(final int termId, final int termOffset, final int length)
     {
+        channelEndpoint.resendHook(sessionId, streamId, termId, termOffset, length);
+
         final long senderPosition = this.senderPosition.get();
         final long resendPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long bottomResendWindow =
@@ -524,8 +526,7 @@ public final class NetworkPublication
             final UnsafeBuffer termBuffer = termBuffers[activeIndex];
             final ByteBuffer sendBuffer = sendBuffers[activeIndex];
 
-            int remainingBytes = flowControl.maxRetransmissionLength(
-                resendPosition, length, termBufferLength, mtuLength);
+            int remainingBytes = length;
             int bytesSent = 0;
             int offset = termOffset;
             do

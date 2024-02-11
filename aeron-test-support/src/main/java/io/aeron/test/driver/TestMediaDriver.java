@@ -51,7 +51,7 @@ public interface TestMediaDriver extends AutoCloseable
             CTestMediaDriver.launch(context, true, driverOutputConsumer) : JavaTestMediaDriver.launch(context);
     }
 
-    static void enableLossGenerationOnReceive(
+    static void enableRandomLoss(
         final MediaDriver.Context context,
         final double rate,
         final long seed,
@@ -60,12 +60,28 @@ public interface TestMediaDriver extends AutoCloseable
     {
         if (shouldRunCMediaDriver())
         {
-            CTestMediaDriver.enableLossGenerationOnReceive(context, rate, seed, loseDataMessages, loseControlMessages);
+            CTestMediaDriver.enableRandomLossOnReceive(context, rate, seed, loseDataMessages, loseControlMessages);
         }
         else
         {
-            JavaTestMediaDriver.enableLossGenerationOnReceive(
+            JavaTestMediaDriver.enableRandomLossOnReceive(
                 context, rate, seed, loseDataMessages, loseControlMessages);
+        }
+    }
+
+    static void enableFixedLoss(
+        final MediaDriver.Context context,
+        final int termId,
+        final int termOffset,
+        final int length)
+    {
+        if (shouldRunCMediaDriver())
+        {
+            CTestMediaDriver.enableFixedLossOnReceive(context, termId, termOffset, length);
+        }
+        else
+        {
+            JavaTestMediaDriver.enableFixedLossOnReceive(context, termId, termOffset, length);
         }
     }
 

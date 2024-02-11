@@ -15,47 +15,62 @@
  */
 package io.aeron;
 
-import org.junit.jupiter.api.Test;
+import io.aeron.logbuffer.Header;
+import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.BufferBuilder.INIT_MIN_CAPACITY;
+import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeFragmentedFrameLength;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static io.aeron.protocol.HeaderFlyweight.*;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 class BufferBuilderTest
 {
     private final BufferBuilder bufferBuilder = new BufferBuilder();
 
-    @Test
-    void shouldFindMaxCapacityWhenRequested()
+    @ParameterizedTest
+    @CsvSource({
+        "0,0,4096", "4095,1,4096", "4096,7,4096", "100,200,4096", "101,5000,6144", "5000,8080,11250",
+        "6666,11111,14998", "0,2147483639,2147483639", "2048,2147483647,2147483639", "5,1000000000000,2147483639" })
+    void shouldFindSuitableCapacity(final int capacity, final long requiredCapacity, final int expected)
     {
-        assertEquals(
-            BufferBuilder.MAX_CAPACITY,
-            BufferBuilder.findSuitableCapacity(0, BufferBuilder.MAX_CAPACITY));
+        assertEquals(expected, BufferBuilder.findSuitableCapacity(capacity, requiredCapacity));
     }
 
     @Test
     void shouldInitialiseToDefaultValues()
     {
         assertEquals(0, bufferBuilder.capacity());
-        assertEquals(0, bufferBuilder.buffer().capacity());
         assertEquals(0, bufferBuilder.limit());
+        assertEquals(0, bufferBuilder.buffer().capacity());
+        assertNull(bufferBuilder.buffer().byteBuffer());
+        assertArrayEquals(ArrayUtil.EMPTY_BYTE_ARRAY, bufferBuilder.buffer().byteArray());
     }
 
     @Test
     void shouldGrowDirectBuffer()
     {
         final BufferBuilder builder = new BufferBuilder(0, true);
+        assertEquals(0, builder.limit());
         assertEquals(0, builder.capacity());
         assertEquals(0, builder.buffer().capacity());
-        assertEquals(0, builder.limit());
 
         final int appendedLength = 10;
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[appendedLength]);
@@ -64,6 +79,64 @@ class BufferBuilderTest
         assertEquals(INIT_MIN_CAPACITY, builder.capacity());
         assertEquals(INIT_MIN_CAPACITY, builder.buffer().capacity());
         assertEquals(appendedLength, builder.limit());
+        assertNotNull(builder.buffer().byteBuffer());
+        assertTrue(builder.buffer().byteBuffer().isDirect());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void shouldCreateHaderBuffer(final boolean isDirect)
+    {
+        final BufferBuilder builder = new BufferBuilder(0, isDirect);
+        assertNotNull(builder.buffer());
+        assertNotNull(builder.headerBuffer);
+        assertNotSame(builder.headerBuffer, builder.buffer());
+
+        assertEquals(0, builder.capacity());
+        assertEquals(0, builder.limit());
+        assertEquals(0, builder.buffer().capacity());
+
+        assertEquals(HEADER_LENGTH, builder.headerBuffer.capacity());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -1, Integer.MAX_VALUE, Integer.MAX_VALUE - 7 })
+    void shouldThrowIllegalArgumentExceptionIfInitialCapacityIsOutOfRange(final int initialCapacity)
+    {
+        final IllegalArgumentException exception =
+            assertThrowsExactly(IllegalArgumentException.class, () -> new BufferBuilder(initialCapacity));
+        assertEquals(
+            "initialCapacity outside range 0 - 2147483639: initialCapacity=" + initialCapacity, exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -1, 65, 1000000 })
+    void shouldThrowIllegalArgumentExceptionIfLimitIsOutOfRange(final int limit)
+    {
+        final BufferBuilder builder = new BufferBuilder(0);
+        final IllegalArgumentException exception =
+            assertThrowsExactly(IllegalArgumentException.class, () -> builder.limit(limit));
+        assertEquals("limit outside range: capacity=" + builder.capacity() + " limit=" + limit,
+            exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { Integer.MAX_VALUE, Integer.MAX_VALUE - 23 })
+    void shouldThrowIllegalStateExceptionIfDataExceedsMaxCapacity(final int length)
+    {
+        final UnsafeBuffer src = new UnsafeBuffer(new byte[16]);
+        src.putLong(0, Long.MAX_VALUE);
+        src.putLong(SIZE_OF_LONG, Long.MIN_VALUE);
+
+        final BufferBuilder builder = new BufferBuilder(64);
+        builder.append(src, 0, src.capacity());
+        assertEquals(src.capacity(), builder.limit());
+
+        final IllegalStateException exception =
+            assertThrowsExactly(IllegalStateException.class, () -> builder.append(src, 0, length));
+        assertEquals(
+            "insufficient capacity: maxCapacity=2147483639 limit=" + builder.limit() +
+            " additionalLength=" + length, exception.getMessage());
     }
 
     @Test
@@ -74,6 +147,7 @@ class BufferBuilderTest
         bufferBuilder.append(srcBuffer, 0, 0);
 
         assertEquals(0, bufferBuilder.limit());
+        assertEquals(0, bufferBuilder.capacity());
     }
 
     @Test
@@ -94,12 +168,15 @@ class BufferBuilderTest
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INIT_MIN_CAPACITY]);
 
         bufferBuilder.append(srcBuffer, 0, srcBuffer.capacity());
+        bufferBuilder.nextTermOffset(1024);
 
         assertEquals(srcBuffer.capacity(), bufferBuilder.limit());
+        assertEquals(1024, bufferBuilder.nextTermOffset());
 
         bufferBuilder.reset();
 
         assertEquals(0, bufferBuilder.limit());
+        assertEquals(0, bufferBuilder.nextTermOffset());
     }
 
     @Test
@@ -146,6 +223,7 @@ class BufferBuilderTest
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(buffer);
 
         final BufferBuilder bufferBuilder = new BufferBuilder(bufferLength);
+        final int initialCapacity = bufferBuilder.capacity();
 
         bufferBuilder.append(srcBuffer, 0, bufferLength);
 
@@ -153,7 +231,7 @@ class BufferBuilderTest
         bufferBuilder.buffer().getBytes(0, temp, 0, bufferLength);
 
         assertEquals(bufferLength, bufferBuilder.limit());
-        assertEquals(bufferLength, bufferBuilder.capacity());
+        assertEquals(initialCapacity, bufferBuilder.capacity());
         assertArrayEquals(temp, buffer);
     }
 
@@ -230,5 +308,172 @@ class BufferBuilderTest
 
         assertEquals(buffer.length * 3, bufferBuilder.limit());
         assertThat(bufferBuilder.capacity(), lessThan(expandedCapacity));
+        assertEquals(bufferBuilder.limit(), bufferBuilder.capacity());
+    }
+
+    @Test
+    void captureFirstHeaderShouldCopyTheEntireHeader()
+    {
+        final long reservedValue = Long.MAX_VALUE - 117;
+        final int offset = 40;
+        final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
+        headerFlyweight.wrap(new byte[100], offset, 50);
+        headerFlyweight.frameLength(512);
+        headerFlyweight.version((short)0xA);
+        headerFlyweight.flags((short)0b1111_1111);
+        headerFlyweight.headerType(HDR_TYPE_RTTM);
+        headerFlyweight.termOffset(384);
+        headerFlyweight.sessionId(-890);
+        headerFlyweight.streamId(555);
+        headerFlyweight.termId(42);
+        headerFlyweight.reservedValue(reservedValue);
+
+        final Header header = new Header(5, 3);
+        header.buffer(new UnsafeBuffer(headerFlyweight.byteArray()));
+        header.offset(headerFlyweight.wrapAdjustment());
+        final DirectBuffer originalHeaderBuffer = header.buffer();
+
+        assertSame(bufferBuilder, bufferBuilder.captureHeader(header));
+
+        assertEquals(0, bufferBuilder.capacity());
+        assertEquals(0, bufferBuilder.limit());
+        assertSame(originalHeaderBuffer, header.buffer());
+        assertEquals(headerFlyweight.wrapAdjustment(), header.offset());
+
+        headerFlyweight.wrap(bufferBuilder.headerBuffer, 0, HEADER_LENGTH);
+        assertEquals(512, bufferBuilder.completeHeader.frameLength());
+        assertEquals((short)0xA, headerFlyweight.version());
+        assertEquals((byte)0b1111_1111, bufferBuilder.completeHeader.flags());
+        assertEquals(HDR_TYPE_RTTM, headerFlyweight.headerType());
+        assertEquals(384, bufferBuilder.completeHeader.termOffset());
+        assertEquals(-890, bufferBuilder.completeHeader.sessionId());
+        assertEquals(555, bufferBuilder.completeHeader.streamId());
+        assertEquals(42, bufferBuilder.completeHeader.termId());
+        assertEquals(reservedValue, bufferBuilder.completeHeader.reservedValue());
+    }
+
+    @Test
+    void shouldPrepareCompleteHeader()
+    {
+        final UnsafeBuffer data = new UnsafeBuffer(new byte[999]);
+        bufferBuilder.append(data, 0, data.capacity());
+        assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
+        assertEquals(data.capacity(), bufferBuilder.limit());
+
+        final int frameLength = 128;
+        final int termOffset = 1024;
+        final short version = (short)15;
+        final int type = HDR_TYPE_NAK;
+        final int sessionId = 87;
+        final int streamId = -9;
+        final int termId = 10;
+        final long reservedValue = 0xCAFE_BABE_DEAD_BEEFL;
+        final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
+        headerFlyweight.wrap(new byte[44], 1, 39);
+        headerFlyweight.frameLength(frameLength);
+        headerFlyweight.version(version);
+        headerFlyweight.flags((short)0b1001_1101);
+        headerFlyweight.headerType(type);
+        headerFlyweight.termOffset(termOffset);
+        headerFlyweight.sessionId(sessionId);
+        headerFlyweight.streamId(streamId);
+        headerFlyweight.termId(termId);
+        headerFlyweight.reservedValue(reservedValue);
+
+        final Header header = new Header(4, 48);
+        header.buffer(new UnsafeBuffer(headerFlyweight.byteArray()));
+        header.offset(headerFlyweight.wrapAdjustment());
+
+        assertSame(bufferBuilder, bufferBuilder.captureHeader(header));
+
+        final int flags = 0b0110_0110;
+        headerFlyweight.wrap(new byte[88], 19, 42);
+        headerFlyweight.frameLength(200);
+        headerFlyweight.version((short)0xC);
+        headerFlyweight.flags((short)flags);
+        headerFlyweight.headerType(HDR_TYPE_ATS_SETUP);
+        headerFlyweight.termOffset(48);
+        headerFlyweight.sessionId(999);
+        headerFlyweight.streamId(4);
+        headerFlyweight.termId(39);
+        headerFlyweight.reservedValue(Long.MIN_VALUE);
+        header.buffer(new UnsafeBuffer(headerFlyweight.byteArray()));
+        header.offset(headerFlyweight.wrapAdjustment());
+        final DirectBuffer originalHeaderBuffer = header.buffer();
+
+        final Header completeHeader = bufferBuilder.completeHeader(header);
+        assertNotSame(header, completeHeader);
+
+        assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
+        assertEquals(data.capacity(), bufferBuilder.limit());
+        assertSame(originalHeaderBuffer, header.buffer());
+        assertEquals(headerFlyweight.wrapAdjustment(), header.offset());
+        assertNotSame(bufferBuilder.headerBuffer, bufferBuilder.buffer());
+        assertSame(bufferBuilder.headerBuffer, completeHeader.buffer());
+        assertEquals(0, completeHeader.offset());
+        assertEquals(4, completeHeader.initialTermId());
+        assertEquals(48, completeHeader.positionBitsToShift());
+        assertEquals(
+            computeFragmentedFrameLength(data.capacity(), frameLength - HEADER_LENGTH),
+            completeHeader.frameLength());
+        assertEquals((byte)version, completeHeader.buffer().getByte(VERSION_FIELD_OFFSET));
+        assertEquals((byte)(flags | BEGIN_FRAG_FLAG), completeHeader.flags());
+        assertNotEquals(0, completeHeader.flags() & BEGIN_FRAG_FLAG);
+        assertEquals(type, completeHeader.type());
+        assertEquals(termOffset, completeHeader.termOffset());
+        assertEquals(sessionId, completeHeader.sessionId());
+        assertEquals(streamId, completeHeader.streamId());
+        assertEquals(termId, completeHeader.termId());
+        assertEquals(reservedValue, completeHeader.reservedValue());
+    }
+
+    @Test
+    void compactEmptyBufferIsAnOp()
+    {
+        assertSame(bufferBuilder, bufferBuilder.compact());
+
+        assertEquals(0, bufferBuilder.capacity());
+        assertEquals(0, bufferBuilder.limit());
+        assertEquals(0, bufferBuilder.buffer().capacity());
+    }
+
+    @Test
+    void compactIsANoOpIfTheCapacityIsNotDecreasing()
+    {
+        assertSame(bufferBuilder, bufferBuilder.append(new UnsafeBuffer(new byte[5]), 0, 3));
+        assertEquals(3, bufferBuilder.limit());
+        assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
+        final MutableDirectBuffer originalBuffer = bufferBuilder.buffer();
+        assertEquals(INIT_MIN_CAPACITY, originalBuffer.capacity());
+
+        assertSame(bufferBuilder, bufferBuilder.compact());
+
+        assertEquals(3, bufferBuilder.limit());
+        assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
+        assertSame(originalBuffer, bufferBuilder.buffer());
+        assertEquals(INIT_MIN_CAPACITY, originalBuffer.capacity());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void shouldNotChangeHeaderBufferUponResize(final boolean isDirect)
+    {
+        final BufferBuilder builder = new BufferBuilder(0, isDirect);
+        final UnsafeBuffer headerBuffer = builder.headerBuffer;
+        final ByteBuffer headerByteBuffer = headerBuffer.byteBuffer();
+        final byte[] headerByteArray = headerBuffer.byteArray();
+        headerBuffer.setMemory(0, headerBuffer.capacity(), (byte)0xFA);
+
+        final UnsafeBuffer src = new UnsafeBuffer(new byte[100]);
+        ThreadLocalRandom.current().nextBytes(src.byteArray());
+        builder.append(src, 0, src.capacity());
+
+        assertSame(headerBuffer, builder.headerBuffer);
+        assertSame(headerByteBuffer, builder.headerBuffer.byteBuffer());
+        assertSame(headerByteArray, builder.headerBuffer.byteArray());
+        for (int i = 0; i < headerBuffer.capacity(); i++)
+        {
+            assertEquals((byte)0xFA, headerBuffer.getByte(i));
+        }
     }
 }

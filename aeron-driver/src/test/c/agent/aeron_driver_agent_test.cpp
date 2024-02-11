@@ -1563,3 +1563,37 @@ TEST_F(DriverAgentTest, shouldInitializeNameResolverFunctions)
     EXPECT_NE(nullptr, m_context->on_host_name_func);
     EXPECT_NE((void *)m_context->on_name_resolve_func, (void *)m_context->on_name_lookup_func);
 }
+
+TEST_F(DriverAgentTest, shouldNotSendNakMessageFunctionWhenNotConfigured)
+{
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_EQ(nullptr, m_context->send_nak_message_func);
+}
+
+TEST_F(DriverAgentTest, shouldInitializeSendNakMessageFunction)
+{
+    EXPECT_EQ(nullptr, m_context->send_nak_message_func);
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("SEND_NAK_MESSAGE", nullptr));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(nullptr, m_context->send_nak_message_func);
+}
+
+TEST_F(DriverAgentTest, shouldNotRsendFunctionWhenNotConfigured)
+{
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_EQ(nullptr, m_context->resend_func);
+}
+
+TEST_F(DriverAgentTest, shouldInitializeResendFunction)
+{
+    EXPECT_EQ(nullptr, m_context->resend_func);
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("RESEND", nullptr));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(nullptr, m_context->resend_func);
+}

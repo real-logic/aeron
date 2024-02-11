@@ -391,7 +391,7 @@ public final class ConcurrentPublication extends Publication
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int framedLength = computeFramedLength(length, maxPayloadLength);
+        final int framedLength = computeFragmentedFrameLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, framedLength);
@@ -503,7 +503,7 @@ public final class ConcurrentPublication extends Publication
         final ReservedValueSupplier reservedValueSupplier)
     {
         final int length = lengthOne + lengthTwo;
-        final int framedLength = computeFramedLength(length, maxPayloadLength);
+        final int framedLength = computeFragmentedFrameLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, framedLength);
@@ -634,7 +634,7 @@ public final class ConcurrentPublication extends Publication
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
-        final int framedLength = computeFramedLength(length, maxPayloadLength);
+        final int framedLength = computeFragmentedFrameLength(length, maxPayloadLength);
         final int termLength = termBuffer.capacity();
 
         final long rawTail = logMetaDataBuffer.getAndAddLong(tailCounterOffset, framedLength);

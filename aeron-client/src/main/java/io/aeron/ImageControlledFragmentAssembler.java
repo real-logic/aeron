@@ -117,6 +117,7 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
         else if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
         {
             builder.reset()
+                .captureHeader(header)
                 .append(buffer, offset, length)
                 .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
         }
@@ -128,7 +129,8 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
 
             if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
             {
-                action = delegate.onFragment(builder.buffer(), 0, builder.limit(), header);
+                action = delegate.onFragment(
+                    builder.buffer(), 0, builder.limit(), builder.completeHeader(header));
 
                 if (Action.ABORT == action)
                 {

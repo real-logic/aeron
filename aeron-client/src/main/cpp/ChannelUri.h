@@ -45,6 +45,7 @@ static constexpr const char MDC_CONTROL_PARAM_NAME[] = "control";
 static constexpr const char MDC_CONTROL_MODE_PARAM_NAME[] = "control-mode";
 static constexpr const char MDC_CONTROL_MODE_MANUAL[] = "manual";
 static constexpr const char MDC_CONTROL_MODE_DYNAMIC[] = "dynamic";
+static constexpr const char CONTROL_MODE_RESPONSE[] = "response";
 static constexpr const char SESSION_ID_PARAM_NAME[] = "session-id";
 static constexpr const char LINGER_PARAM_NAME[] = "linger";
 static constexpr const char RELIABLE_STREAM_PARAM_NAME[] = "reliable";
@@ -66,6 +67,7 @@ static constexpr const char RECEIVER_WINDOW_LENGTH_PARAM_NAME[] = "rcv-wnd";
 static constexpr const char MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME[] = "media-rcv-ts-offset";
 static constexpr const char CHANNEL_RCV_TIMESTAMP_OFFSET_PARAM_NAME[] = "channel-rcv-ts-offset";
 static constexpr const char CHANNEL_SND_TIMESTAMP_OFFSET_PARAM_NAME[] = "channel-snd-ts-offset";
+static constexpr const char RESPONSE_CORRELATION_ID_PARAM_NAME[] = "response-correlation-id";
 
 using namespace aeron::util;
 

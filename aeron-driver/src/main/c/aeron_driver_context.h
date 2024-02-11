@@ -81,6 +81,25 @@ typedef void (*aeron_driver_flow_control_strategy_on_receiver_change_func_t)(
     const char *channel,
     size_t receiver_count);
 
+typedef void (*aeron_driver_send_nak_message_func_t)(
+    const struct sockaddr_storage *address,
+    int32_t session_id,
+    int32_t stream_id,
+    int32_t term_id,
+    int32_t term_offset,
+    int32_t nak_length,
+    size_t channel_length,
+    const char *channel);
+
+typedef void (*aeron_driver_resend_func_t)(
+    int32_t session_id,
+    int32_t stream_id,
+    int32_t term_id,
+    int32_t term_offset,
+    int32_t resend_length,
+    size_t channel_length,
+    const char *channel);
+
 typedef void (*aeron_driver_name_resolver_on_resolve_t)(
     aeron_name_resolver_t *name_resolver,
     int64_t duration_ns,
@@ -130,6 +149,7 @@ typedef struct aeron_driver_context_stct
     uint64_t retransmit_unicast_delay_ns;                   /* aeron.retransmit.unicast.delay = 0 */
     uint64_t retransmit_unicast_linger_ns;                  /* aeron.retransmit.unicast.linger = 60ms */
     uint64_t nak_unicast_delay_ns;                          /* aeron.nak.unicast.delay = 60ms */
+    uint64_t nak_unicast_retry_delay_ratio;                 /* aeron.nak.unicast.retry.delay.ratio = 100 */
     uint64_t nak_multicast_max_backoff_ns;                  /* aeron.nak.multicast.max.backoff = 60ms */
     uint64_t re_resolution_check_interval_ns;               /* aeron.driver.reresolution.check.interval = 1s */
     uint64_t low_file_store_warning_threshold;              /* aeron.low.file.store.warning.threshold = 160MB */
@@ -260,6 +280,9 @@ typedef struct aeron_driver_context_stct
 
     aeron_driver_flow_control_strategy_on_receiver_change_func_t flow_control_on_receiver_added_func;
     aeron_driver_flow_control_strategy_on_receiver_change_func_t flow_control_on_receiver_removed_func;
+
+    aeron_driver_send_nak_message_func_t send_nak_message_func;
+    aeron_driver_resend_func_t resend_func;
 
     aeron_driver_termination_validator_func_t termination_validator_func;
     void *termination_validator_state;

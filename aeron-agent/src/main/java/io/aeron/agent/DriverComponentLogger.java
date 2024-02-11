@@ -77,6 +77,7 @@ public class DriverComponentLogger implements ComponentLogger
         tempBuilder = addDriverSenderProxyInstrumentation(tempBuilder);
         tempBuilder = addDriverReceiverProxyInstrumentation(tempBuilder);
         tempBuilder = addDriverUdpChannelTransportInstrumentation(tempBuilder);
+        tempBuilder = addChannelEndpointInstrumentation(tempBuilder);
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
@@ -221,8 +222,30 @@ public class DriverComponentLogger implements ComponentLogger
             ChannelEndpointInterceptor.UdpChannelTransport.ReceiveHook.class,
             "receiveHook");
 
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            RESEND,
+            "UdpChannelTransport",
+            ChannelEndpointInterceptor.UdpChannelTransport.ResendHook.class,
+            "resendHook");
+
         return tempBuilder;
     }
+
+    private AgentBuilder addChannelEndpointInstrumentation(final AgentBuilder agentBuilder)
+    {
+        AgentBuilder tempBuilder = agentBuilder;
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            SEND_NAK_MESSAGE,
+            "ReceiveChannelEndpoint",
+            ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.SendNakMessage.class,
+            "sendNakMessage");
+
+        return tempBuilder;
+    }
+
 
     private static AgentBuilder addDriverNameResolutionInstrumentation(final AgentBuilder agentBuilder)
     {

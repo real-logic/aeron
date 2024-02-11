@@ -113,13 +113,14 @@ aeron_command_base_t;
 
 typedef struct aeron_feedback_delay_generator_state_stct aeron_feedback_delay_generator_state_t;
 
-typedef int64_t (*aeron_feedback_delay_generator_func_t)(aeron_feedback_delay_generator_state_t *state);
+typedef int64_t (*aeron_feedback_delay_generator_func_t)(aeron_feedback_delay_generator_state_t *state, bool retry);
 
 struct aeron_feedback_delay_generator_state_stct
 {
     struct static_delay_stct
     {
         int64_t delay_ns;
+        int64_t retry_ns;
     }
     static_delay;
 
@@ -132,7 +133,6 @@ struct aeron_feedback_delay_generator_state_stct
     }
     optimal_delay;
 
-    bool should_immediate_feedback;
     aeron_feedback_delay_generator_func_t delay_generator;
 };
 

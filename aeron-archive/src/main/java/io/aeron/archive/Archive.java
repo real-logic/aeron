@@ -1069,15 +1069,22 @@ public final class Archive implements AutoCloseable
             {
                 archiveDir = new File(archiveDirectoryName);
             }
-            else
-            {
-                archiveDirectoryName = archiveDir.getAbsolutePath();
-            }
 
             if (null == markFileDir)
             {
-                final String dir = Configuration.markFileDir();
-                markFileDir = !Strings.isEmpty(dir) ? new File(dir) : archiveDir;
+                final String markFileDirPath = Configuration.markFileDir();
+                markFileDir = !Strings.isEmpty(markFileDirPath) ? new File(markFileDirPath) : archiveDir;
+            }
+
+            try
+            {
+                archiveDir = archiveDir.getCanonicalFile();
+                archiveDirectoryName = archiveDir.getAbsolutePath();
+                markFileDir = markFileDir.getCanonicalFile();
+            }
+            catch (final IOException e)
+            {
+                throw new UncheckedIOException(e);
             }
 
             if (deleteArchiveOnStart)
@@ -1159,6 +1166,11 @@ public final class Archive implements AutoCloseable
                     concludeArchiveId();
                     errorCounter = ArchiveCounters.allocateErrorCounter(aeron, tempBuffer, archiveId);
                 }
+            }
+            else if (!aeron.context().useConductorAgentInvoker())
+            {
+                throw new ArchiveException(
+                    "Aeron client instance must set Aeron.Context.useConductorInvoker(true)");
             }
 
             concludeArchiveId();

@@ -31,8 +31,8 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
  */
 public final class Header
 {
-    private final int positionBitsToShift;
-    private final int initialTermId;
+    private int positionBitsToShift;
+    private int initialTermId;
     private int offset = 0;
     private DirectBuffer buffer;
     private final Object context;
@@ -80,7 +80,8 @@ public final class Header
     public long position()
     {
         final int frameLength = buffer.getInt(offset, LITTLE_ENDIAN);
-        final int resultingOffset = BitUtil.align(offset + frameLength, FRAME_ALIGNMENT);
+        final int termOffset = buffer.getInt(offset + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
+        final int resultingOffset = BitUtil.align(termOffset + frameLength, FRAME_ALIGNMENT);
         final int termId = buffer.getInt(offset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
         return computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
     }
@@ -96,6 +97,18 @@ public final class Header
     }
 
     /**
+     * Set the number of times to left shift the term count to multiply by term length.
+     *
+     * @param positionBitsToShift number of times to left shift the term count to multiply by term length.
+     * @return this for a fluent API.
+     */
+    public Header positionBitsToShift(final int positionBitsToShift)
+    {
+        this.positionBitsToShift = positionBitsToShift;
+        return this;
+    }
+
+    /**
      * Get the initial term id this stream started at.
      *
      * @return the initial term id this stream started at.
@@ -106,19 +119,33 @@ public final class Header
     }
 
     /**
-     * Set the offset at which the header begins in the log.
+     * Get the initial term id this stream started at.
      *
-     * @param offset at which the header begins in the log.
+     * @param initialTermId the initial term id this stream started at.
+     * @return this for a fluent API.
      */
-    public void offset(final int offset)
+    public Header initialTermId(final int initialTermId)
     {
-        this.offset = offset;
+        this.initialTermId = initialTermId;
+        return this;
     }
 
     /**
-     * The offset at which the frame begins.
+     * Set the offset at which the header begins in the buffer.
      *
-     * @return offset at which the frame begins.
+     * @param offset at which the header begins in the buffer.
+     * @return this for a fluent API.
+     */
+    public Header offset(final int offset)
+    {
+        this.offset = offset;
+        return this;
+    }
+
+    /**
+     * The offset at which the frame begins in the buffer.
+     *
+     * @return offset at which the frame begins in the buffer.
      */
     public int offset()
     {
@@ -139,13 +166,15 @@ public final class Header
      * The {@link org.agrona.DirectBuffer} containing the header.
      *
      * @param buffer {@link org.agrona.DirectBuffer} containing the header.
+     * @return this for a fluent API.
      */
-    public void buffer(final DirectBuffer buffer)
+    public Header buffer(final DirectBuffer buffer)
     {
         if (buffer != this.buffer)
         {
             this.buffer = buffer;
         }
+        return this;
     }
 
     /**
@@ -189,13 +218,13 @@ public final class Header
     }
 
     /**
-     * The offset in the term at which the frame begins. This will be the same as {@link #offset()}
+     * The offset in the term at which the frame begins.
      *
      * @return the offset in the term at which the frame begins.
      */
     public int termOffset()
     {
-        return offset;
+        return buffer.getInt(offset + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**

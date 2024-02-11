@@ -93,18 +93,10 @@ public enum DriverEventCode implements EventCode
     NAME_RESOLUTION_HOST_NAME(53,
         (code, buffer, offset, builder) -> DriverEventDissector.dissectHostName(buffer, offset, builder)),
 
-    /* A placeholder for the C message with the same ID */
-    ADD_DYNAMIC_DISSECTOR(54,
-        (code, buffer, offset, builder) -> {}),
-
-    /* A placeholder for the C message with the same ID */
-    DYNAMIC_DISSECTOR_EVENT(55,
-        (code, buffer, offset, builder) -> {}),
-
-    SEND_NAK_MESSAGE(56,
+    SEND_NAK_MESSAGE(54,
         (code, buffer, offset, builder) -> DriverEventDissector.dissectSendNak(buffer, offset, builder)),
 
-    RESEND(57,
+    RESEND(55,
         (code, buffer, offset, builder) -> DriverEventDissector.dissectResend(buffer, offset, builder));
 
 

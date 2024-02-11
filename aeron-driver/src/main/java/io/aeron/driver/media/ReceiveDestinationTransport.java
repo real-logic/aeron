@@ -39,7 +39,8 @@ abstract class ReceiveDestinationTransportLhsPadding extends UdpChannelTransport
         final InetSocketAddress connectAddress,
         final MediaDriver.Context context,
         final int socketRcvbufLength,
-        final int socketSndbufLength, final int socketToS)
+        final int socketSndbufLength,
+        final int socketToS)
     {
         super(
             udpChannel, endPointAddress, bindAddress, connectAddress, context.receiverPortManager(),

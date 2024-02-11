@@ -125,7 +125,7 @@ int aeron_receive_channel_endpoint_create(
 
     _endpoint->cached_clock = context->receiver_cached_clock;
 
-    _endpoint->send_nak_message = context->send_nak_message_func;
+    _endpoint->send_nak_message = context->log.send_nak_message_func;
 
     if (NULL != straight_through_destination)
     {

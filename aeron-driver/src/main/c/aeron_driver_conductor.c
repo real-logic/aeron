@@ -472,10 +472,10 @@ static int aeron_time_tracking_name_resolver_resolve(
     int64_t end_ns = context->nano_clock();
     tracker->measure_and_update(tracker->state, end_ns);
 
-    if (NULL != context->on_name_resolve_func)
+    if (NULL != context->log.on_name_resolve_func)
     {
         struct sockaddr_storage *resolved_address = 0 <= result ? address : NULL;
-        context->on_name_resolve_func(
+        context->log.on_name_resolve_func(
             &time_tracking_resolver->delegate_resolver, end_ns - begin_ns, name, is_re_resolution, resolved_address);
     }
 
@@ -505,10 +505,10 @@ static int aeron_time_tracking_name_resolver_lookup(
     int64_t end_ns = context->nano_clock();
     tracker->measure_and_update(tracker->state, end_ns);
 
-    if (NULL != context->on_name_lookup_func)
+    if (NULL != context->log.on_name_lookup_func)
     {
         const char *result_name = 0 <= result ? *resolved_name : NULL;
-        context->on_name_lookup_func(
+        context->log.on_name_lookup_func(
             &time_tracking_resolver->delegate_resolver, end_ns - begin_ns, name, is_re_lookup, result_name);
     }
 
@@ -716,9 +716,9 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
 
     int64_t end_ns = context->nano_clock();
     context->name_resolver_time_tracker->measure_and_update(context->name_resolver_time_tracker->state, end_ns);
-    if (NULL != context->on_host_name_func)
+    if (NULL != context->log.on_host_name_func)
     {
-        context->on_host_name_func(end_ns - now_ns, host_name);
+        context->log.on_host_name_func(end_ns - now_ns, host_name);
     }
     context->name_resolver_host_name = host_name;
 
@@ -1050,7 +1050,7 @@ int aeron_confirm_publication_match(
 
 void aeron_driver_conductor_unlink_from_endpoint(aeron_driver_conductor_t *conductor, aeron_subscription_link_t *link)
 {
-    conductor->context->remove_subscription_cleanup_func(
+    conductor->context->log.remove_subscription_cleanup_func(
         link->registration_id, link->stream_id, link->channel_length, link->channel);
 
     aeron_receive_channel_endpoint_t *endpoint = link->endpoint;
@@ -1279,7 +1279,7 @@ bool aeron_ipc_publication_entry_has_reached_end_of_life(
 void aeron_ipc_publication_entry_delete(aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry)
 {
     aeron_ipc_publication_t *publication = entry->publication;
-    conductor->context->remove_publication_cleanup_func(
+    conductor->context->log.remove_publication_cleanup_func(
         publication->session_id, publication->stream_id, publication->channel_length, publication->channel);
 
     for (size_t i = 0, size = conductor->ipc_subscriptions.length; i < size; i++)
@@ -1374,7 +1374,7 @@ void aeron_driver_conductor_cleanup_network_publication(
     aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication)
 {
     const aeron_udp_channel_t *udp_channel = publication->endpoint->conductor_fields.udp_channel;
-    conductor->context->remove_publication_cleanup_func(
+    conductor->context->log.remove_publication_cleanup_func(
         publication->session_id, publication->stream_id, udp_channel->uri_length, udp_channel->original_uri);
 
     aeron_driver_sender_proxy_on_remove_publication(conductor->context->sender_proxy, publication);
@@ -1421,7 +1421,7 @@ void aeron_receive_channel_endpoint_entry_delete(
         if (entry->endpoint == image->conductor_fields.endpoint)
         {
             const aeron_udp_channel_t *udp_channel = entry->endpoint->conductor_fields.udp_channel;
-            conductor->context->remove_image_cleanup_func(
+            conductor->context->log.remove_image_cleanup_func(
                 image->conductor_fields.managed_resource.registration_id,
                 image->session_id,
                 image->stream_id,
@@ -2477,7 +2477,7 @@ error_cleanup:
 void aeron_driver_conductor_client_transmit(
     aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *msg, size_t length)
 {
-    conductor->context->to_client_interceptor_func(conductor, msg_type_id, msg, length);
+    conductor->context->log.to_client_interceptor_func(conductor, msg_type_id, msg, length);
     if (aeron_broadcast_transmitter_transmit(&conductor->to_clients, msg_type_id, msg, length) < 0)
     {
         AERON_APPEND_ERR("%s", "failed to transmit message");
@@ -2771,7 +2771,7 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
         return AERON_RB_ABORT;
     }
 
-    conductor->context->to_driver_interceptor_func(msg_type_id, message, length, clientd);
+    conductor->context->log.to_driver_interceptor_func(msg_type_id, message, length, clientd);
 
     switch (msg_type_id)
     {

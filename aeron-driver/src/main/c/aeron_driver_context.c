@@ -1145,29 +1145,29 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->raw_log_close_func = aeron_raw_log_close;
     _context->raw_log_free_func = aeron_raw_log_free;
 
-    _context->to_driver_interceptor_func = aeron_driver_conductor_to_driver_interceptor_null;
-    _context->to_client_interceptor_func = aeron_driver_conductor_to_client_interceptor_null;
+    _context->log.to_driver_interceptor_func = aeron_driver_conductor_to_driver_interceptor_null;
+    _context->log.to_client_interceptor_func = aeron_driver_conductor_to_client_interceptor_null;
 
-    _context->remove_publication_cleanup_func = aeron_driver_conductor_remove_publication_cleanup_null;
-    _context->remove_subscription_cleanup_func = aeron_driver_conductor_remove_subscription_cleanup_null;
-    _context->remove_image_cleanup_func = aeron_driver_conductor_remove_image_cleanup_null;
+    _context->log.remove_publication_cleanup_func = aeron_driver_conductor_remove_publication_cleanup_null;
+    _context->log.remove_subscription_cleanup_func = aeron_driver_conductor_remove_subscription_cleanup_null;
+    _context->log.remove_image_cleanup_func = aeron_driver_conductor_remove_image_cleanup_null;
 
-    _context->sender_proxy_on_add_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
-    _context->sender_proxy_on_remove_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
-    _context->receiver_proxy_on_add_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
-    _context->receiver_proxy_on_remove_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
+    _context->log.sender_proxy_on_add_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
+    _context->log.sender_proxy_on_remove_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
+    _context->log.receiver_proxy_on_add_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
+    _context->log.receiver_proxy_on_remove_endpoint_func = aeron_driver_conductor_on_endpoint_change_null;
 
-    _context->untethered_subscription_on_state_change_func = aeron_driver_untethered_subscription_state_change_null;
+    _context->log.untethered_subscription_on_state_change_func = aeron_driver_untethered_subscription_state_change_null;
 
-    _context->name_resolution_on_neighbor_added_func = aeron_driver_conductor_name_resolver_on_neighbor_change_null;
-    _context->name_resolution_on_neighbor_removed_func = aeron_driver_conductor_name_resolver_on_neighbor_change_null;
+    _context->log.name_resolution_on_neighbor_added_func = aeron_driver_conductor_name_resolver_on_neighbor_change_null;
+    _context->log.name_resolution_on_neighbor_removed_func = aeron_driver_conductor_name_resolver_on_neighbor_change_null;
 
-    _context->flow_control_on_receiver_added_func = NULL;
-    _context->flow_control_on_receiver_removed_func = NULL;
-    _context->on_name_resolve_func = NULL;
+    _context->log.flow_control_on_receiver_added_func = NULL;
+    _context->log.flow_control_on_receiver_removed_func = NULL;
+    _context->log.on_name_resolve_func = NULL;
 
-    _context->send_nak_message_func = NULL;
-    _context->resend_func = NULL;
+    _context->log.send_nak_message_func = NULL;
+    _context->log.resend_func = NULL;
 
     if ((_context->termination_validator_func = aeron_driver_termination_validator_load(
         AERON_CONFIG_GETENV_OR_DEFAULT(AERON_DRIVER_TERMINATION_VALIDATOR_ENV_VAR, "deny"))) == NULL)

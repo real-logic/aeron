@@ -210,8 +210,8 @@ int aeron_driver_name_resolver_init(
         goto error_cleanup;
     }
 
-    _driver_resolver->neighbor_added_func = context->name_resolution_on_neighbor_added_func;
-    _driver_resolver->neighbor_removed_func = context->name_resolution_on_neighbor_removed_func;
+    _driver_resolver->neighbor_added_func = context->log.name_resolution_on_neighbor_added_func;
+    _driver_resolver->neighbor_removed_func = context->log.name_resolution_on_neighbor_removed_func;
 
     _driver_resolver->bootstrap_neighbor = bootstrap_neighbor;
     _driver_resolver->bootstrap_neighbors_length = 0;

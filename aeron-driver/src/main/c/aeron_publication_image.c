@@ -138,7 +138,7 @@ int aeron_publication_image_create(
 
     _image->raw_log_close_func = context->raw_log_close_func;
     _image->raw_log_free_func = context->raw_log_free_func;
-    _image->untethered_subscription_state_change_func = context->untethered_subscription_on_state_change_func;
+    _image->untethered_subscription_state_change_func = context->log.untethered_subscription_on_state_change_func;
 
     _image->nano_clock = context->nano_clock;
     _image->epoch_clock = context->epoch_clock;

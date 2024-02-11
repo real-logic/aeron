@@ -114,8 +114,8 @@ int aeron_network_publication_create(
 
     _pub->raw_log_close_func = context->raw_log_close_func;
     _pub->raw_log_free_func = context->raw_log_free_func;
-    _pub->untethered_subscription_state_change_func = context->untethered_subscription_on_state_change_func;
-    _pub->resend_func = context->resend_func;
+    _pub->untethered_subscription_state_change_func = context->log.untethered_subscription_on_state_change_func;
+    _pub->resend_func = context->log.resend_func;
 
     strncpy(_pub->log_file_name, path, (size_t)path_length);
     _pub->log_file_name[path_length] = '\0';
@@ -983,7 +983,7 @@ void aeron_network_publication_check_untethered_subscriptions(
                         aeron_driver_subscribable_state(
                             subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_LINGER, now_ns);
 
-                        conductor->context->untethered_subscription_on_state_change_func(
+                        conductor->context->log.untethered_subscription_on_state_change_func(
                             tetherable_position,
                             now_ns,
                             AERON_SUBSCRIPTION_TETHER_LINGER,
@@ -998,7 +998,7 @@ void aeron_network_publication_check_untethered_subscriptions(
                         aeron_driver_subscribable_state(
                             subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_RESTING, now_ns);
 
-                        conductor->context->untethered_subscription_on_state_change_func(
+                        conductor->context->log.untethered_subscription_on_state_change_func(
                             tetherable_position,
                             now_ns,
                             AERON_SUBSCRIPTION_TETHER_RESTING,
@@ -1027,7 +1027,7 @@ void aeron_network_publication_check_untethered_subscriptions(
                         aeron_driver_subscribable_state(
                             subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_ACTIVE, now_ns);
 
-                        conductor->context->untethered_subscription_on_state_change_func(
+                        conductor->context->log.untethered_subscription_on_state_change_func(
                             tetherable_position,
                             now_ns,
                             AERON_SUBSCRIPTION_TETHER_ACTIVE,

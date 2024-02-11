@@ -4095,7 +4095,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    socketSndbufLength=" + socketSndbufLength +
                 "\n    socketRcvbufLength=" + socketRcvbufLength +
                 "\n    socketMulticastTtl=" + socketMulticastTtl +
-                    "\n    socketToS=" + socketToS +
+                "\n    socketToS=" + socketToS +
                 "\n    mtuLength=" + mtuLength +
                 "\n    ipcMtuLength=" + ipcMtuLength +
                 "\n    filePageSize=" + filePageSize +

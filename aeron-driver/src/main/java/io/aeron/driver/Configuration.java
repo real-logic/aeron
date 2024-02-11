@@ -285,8 +285,10 @@ public final class Configuration
      */
     public static final int SOCKET_MULTICAST_TTL_DEFAULT = 0;
 
-    // IP_TOS value, -1 means use OS defaults.
-    public static final int SOCKET_TOS_DEFAULT = -1;
+    /**
+     * IP_TOS value, -1 means use OS defaults.
+     */
+    public static final int SOCKET_TOS_DEFAULT = Aeron.NULL_VALUE;
 
     /**
      * Property name for linger timeout after draining on {@link Publication}s so they can respond to NAKs.

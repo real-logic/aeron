@@ -528,11 +528,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return socketRcvbufLength;
     }
 
-
     /**
      * Gets the configured OS type of service (IP_TOS) for the endpoint's socket.
      *
-     * @return OS socket type of service or -1 if using OS default.
+     * @return OS socket type of service or {@link io.aeron.driver.Configuration#SOCKET_TOS_DEFAULT}
+     * if using OS default.
      */
     public int socketToS()
     {

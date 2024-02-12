@@ -136,9 +136,9 @@ int aeron_publication_image_create(
         system_counters, AERON_SYSTEM_COUNTER_BYTES_CURRENTLY_MAPPED);
     aeron_counter_add_ordered(_image->mapped_bytes_counter, (int64_t)log_length);
 
-    _image->raw_log_close_func = context->raw_log_close_func;
-    _image->raw_log_free_func = context->raw_log_free_func;
-    _image->untethered_subscription_state_change_func = context->log.untethered_subscription_on_state_change_func;
+    _image->log.raw_log_close_func = context->raw_log_close_func;
+    _image->log.raw_log_free_func = context->raw_log_free_func;
+    _image->log.untethered_subscription_state_change_func = context->log.untethered_subscription_on_state_change_func;
 
     _image->nano_clock = context->nano_clock;
     _image->epoch_clock = context->epoch_clock;
@@ -300,7 +300,7 @@ bool aeron_publication_image_free(aeron_publication_image_t *image)
         return true;
     }
 
-    if (!image->raw_log_free_func(&image->mapped_raw_log, image->log_file_name))
+    if (!image->log.raw_log_free_func(&image->mapped_raw_log, image->log_file_name))
     {
         return false;
     }

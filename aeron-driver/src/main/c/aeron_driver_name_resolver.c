@@ -108,8 +108,11 @@ typedef struct aeron_driver_name_resolver_stct
     aeron_position_t cache_size_counter;
     aeron_distinct_error_log_t *error_log;
 
-    aeron_driver_name_resolver_on_neighbor_change_func_t neighbor_added_func;
-    aeron_driver_name_resolver_on_neighbor_change_func_t neighbor_removed_func;
+    struct
+    {
+        aeron_driver_name_resolver_on_neighbor_change_func_t neighbor_added_func;
+        aeron_driver_name_resolver_on_neighbor_change_func_t neighbor_removed_func;
+    } log;
 
     struct sockaddr_storage received_address;
     uint8_t *aligned_buffer;
@@ -210,8 +213,8 @@ int aeron_driver_name_resolver_init(
         goto error_cleanup;
     }
 
-    _driver_resolver->neighbor_added_func = context->log.name_resolution_on_neighbor_added_func;
-    _driver_resolver->neighbor_removed_func = context->log.name_resolution_on_neighbor_removed_func;
+    _driver_resolver->log.neighbor_added_func = context->log.name_resolution_on_neighbor_added_func;
+    _driver_resolver->log.neighbor_removed_func = context->log.name_resolution_on_neighbor_removed_func;
 
     _driver_resolver->bootstrap_neighbor = bootstrap_neighbor;
     _driver_resolver->bootstrap_neighbors_length = 0;
@@ -505,7 +508,7 @@ static int aeron_driver_name_resolver_add_neighbor(
             return -1;
         }
 
-        resolver->neighbor_added_func(&new_neighbor->socket_addr);
+        resolver->log.neighbor_added_func(&new_neighbor->socket_addr);
 
         memcpy(&new_neighbor->cache_addr, cache_addr, sizeof(new_neighbor->cache_addr));
         new_neighbor->time_of_last_activity_ms = time_of_last_activity_ms;
@@ -965,7 +968,7 @@ static int aeron_driver_name_resolver_timeout_neighbors(aeron_driver_name_resolv
 
         if ((entry->time_of_last_activity_ms + resolver->neighbor_timeout_ms) <= now_ms)
         {
-            resolver->neighbor_removed_func(&entry->socket_addr);
+            resolver->log.neighbor_removed_func(&entry->socket_addr);
 
             aeron_array_fast_unordered_remove(
                 (uint8_t *)resolver->neighbors.array, sizeof(aeron_driver_name_resolver_neighbor_t), i, last_index);

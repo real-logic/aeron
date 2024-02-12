@@ -66,8 +66,11 @@ typedef struct aeron_min_flow_control_strategy_state_stct
     aeron_counters_manager_t *counters_manager;
 
     aeron_distinct_error_log_t *error_log;
-    aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_added;
-    aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_removed;
+    struct
+    {
+        aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_added;
+        aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_removed;
+    } log;
     aeron_position_t receivers_counter;
 }
 aeron_min_flow_control_strategy_state_t;
@@ -117,7 +120,7 @@ int64_t aeron_min_flow_control_strategy_on_idle(
             AERON_PUT_ORDERED(strategy_state->has_required_receivers, has_required_receivers);
 
             aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_removed =
-                strategy_state->receiver_removed;
+                strategy_state->log.receiver_removed;
             if (NULL != receiver_removed)
             {
                 receiver_removed(
@@ -211,7 +214,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
             strategy_state->last_setup_snd_lmt = -1;
 
             aeron_driver_flow_control_strategy_on_receiver_change_func_t receiver_added =
-                strategy_state->receiver_added;
+                strategy_state->log.receiver_added;
             if (NULL != receiver_added)
             {
                 receiver_added(
@@ -536,8 +539,8 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     state->time_of_last_setup_ns = 0;
     state->last_setup_snd_lmt = -1;
 
-    state->receiver_added = context->log.flow_control_on_receiver_added_func;
-    state->receiver_removed = context->log.flow_control_on_receiver_removed_func;
+    state->log.receiver_added = context->log.flow_control_on_receiver_added_func;
+    state->log.receiver_removed = context->log.flow_control_on_receiver_removed_func;
     state->counters_manager = counters_manager;
     state->receivers_counter.value_addr = NULL;
     state->receivers_counter.counter_id = -1;

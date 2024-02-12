@@ -87,9 +87,9 @@ int aeron_ipc_publication_create(
         system_counters, AERON_SYSTEM_COUNTER_BYTES_CURRENTLY_MAPPED);
     aeron_counter_add_ordered(_pub->mapped_bytes_counter, (int64_t)log_length);
 
-    _pub->raw_log_close_func = context->raw_log_close_func;
-    _pub->raw_log_free_func = context->raw_log_free_func;
-    _pub->untethered_subscription_state_change_func = context->log.untethered_subscription_on_state_change_func;
+    _pub->log.raw_log_close_func = context->raw_log_close_func;
+    _pub->log.raw_log_free_func = context->raw_log_free_func;
+    _pub->log.untethered_subscription_state_change_func = context->log.untethered_subscription_on_state_change_func;
 
     strncpy(_pub->log_file_name, path, (size_t)path_length);
     _pub->log_file_name[path_length] = '\0';
@@ -213,7 +213,7 @@ bool aeron_ipc_publication_free(aeron_ipc_publication_t *publication)
         return true;
     }
 
-    if (!publication->raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
+    if (!publication->log.raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
     {
         return false;
     }

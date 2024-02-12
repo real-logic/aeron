@@ -92,8 +92,8 @@ int aeron_driver_receiver_init(
         system_counters, AERON_SYSTEM_COUNTER_RECEIVER_PROXY_FAILS);
     receiver->receiver_proxy.threading_mode = context->threading_mode;
     receiver->receiver_proxy.receiver = receiver;
-    receiver->receiver_proxy.on_add_endpoint_func = context->log.receiver_proxy_on_add_endpoint_func;
-    receiver->receiver_proxy.on_remove_endpoint_func = context->log.receiver_proxy_on_remove_endpoint_func;
+    receiver->receiver_proxy.log.on_add_endpoint_func = context->log.receiver_proxy_on_add_endpoint_func;
+    receiver->receiver_proxy.log.on_remove_endpoint_func = context->log.receiver_proxy_on_remove_endpoint_func;
 
     receiver->errors_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_ERRORS);
     receiver->invalid_frames_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);

@@ -38,7 +38,7 @@ void aeron_driver_receiver_proxy_offer(aeron_driver_receiver_proxy_t *receiver_p
 void aeron_driver_receiver_proxy_on_add_endpoint(
     aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint)
 {
-    receiver_proxy->on_add_endpoint_func(endpoint->conductor_fields.udp_channel);
+    receiver_proxy->log.on_add_endpoint_func(endpoint->conductor_fields.udp_channel);
 
     aeron_command_base_t cmd =
         {
@@ -59,7 +59,7 @@ void aeron_driver_receiver_proxy_on_add_endpoint(
 void aeron_driver_receiver_proxy_on_remove_endpoint(
     aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint)
 {
-    receiver_proxy->on_remove_endpoint_func(endpoint->conductor_fields.udp_channel);
+    receiver_proxy->log.on_remove_endpoint_func(endpoint->conductor_fields.udp_channel);
 
     aeron_command_base_t cmd =
         {

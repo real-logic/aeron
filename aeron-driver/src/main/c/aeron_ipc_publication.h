@@ -72,7 +72,10 @@ typedef struct aeron_ipc_publication_stct
 
     aeron_raw_log_close_func_t raw_log_close_func;
     aeron_raw_log_free_func_t raw_log_free_func;
-    aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change_func;
+    struct
+    {
+        aeron_untethered_subscription_state_change_func_t untethered_subscription_state_change;
+    } log;
 
     volatile int64_t *unblocked_publications_counter;
     volatile int64_t *mapped_bytes_counter;

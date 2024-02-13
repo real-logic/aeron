@@ -1229,98 +1229,98 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
 
     if (any_event_enabled(AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN))
     {
-        context->to_driver_interceptor_func = aeron_driver_agent_conductor_to_driver_interceptor;
+        context->log.to_driver_interceptor = aeron_driver_agent_conductor_to_driver_interceptor;
     }
 
     if (any_event_enabled(AERON_DRIVER_AGENT_EVENT_TYPE_CMD_OUT))
     {
-        context->to_client_interceptor_func = aeron_driver_agent_conductor_to_client_interceptor;
+        context->log.to_client_interceptor = aeron_driver_agent_conductor_to_client_interceptor;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_REMOVE_PUBLICATION_CLEANUP))
     {
-        context->remove_publication_cleanup_func = aeron_driver_agent_remove_publication_cleanup;
+        context->log.remove_publication_cleanup = aeron_driver_agent_remove_publication_cleanup;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_REMOVE_SUBSCRIPTION_CLEANUP))
     {
-        context->remove_subscription_cleanup_func = aeron_driver_agent_remove_subscription_cleanup;
+        context->log.remove_subscription_cleanup = aeron_driver_agent_remove_subscription_cleanup;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_REMOVE_IMAGE_CLEANUP))
     {
-        context->remove_image_cleanup_func = aeron_driver_agent_remove_image_cleanup;
+        context->log.remove_image_cleanup = aeron_driver_agent_remove_image_cleanup;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_SEND_CHANNEL_CREATION))
     {
-        context->sender_proxy_on_add_endpoint_func = aeron_driver_agent_sender_proxy_on_add_endpoint;
+        context->log.sender_proxy_on_add_endpoint = aeron_driver_agent_sender_proxy_on_add_endpoint;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_SEND_CHANNEL_CLOSE))
     {
-        context->sender_proxy_on_remove_endpoint_func = aeron_driver_agent_sender_proxy_on_remove_endpoint;
+        context->log.sender_proxy_on_remove_endpoint = aeron_driver_agent_sender_proxy_on_remove_endpoint;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CREATION))
     {
-        context->receiver_proxy_on_add_endpoint_func = aeron_driver_agent_receiver_proxy_on_add_endpoint;
+        context->log.receiver_proxy_on_add_endpoint = aeron_driver_agent_receiver_proxy_on_add_endpoint;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_RECEIVE_CHANNEL_CLOSE))
     {
-        context->receiver_proxy_on_remove_endpoint_func = aeron_driver_agent_receiver_proxy_on_remove_endpoint;
+        context->log.receiver_proxy_on_remove_endpoint = aeron_driver_agent_receiver_proxy_on_remove_endpoint;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_UNTETHERED_SUBSCRIPTION_STATE_CHANGE))
     {
-        context->untethered_subscription_on_state_change_func =
+        context->log.untethered_subscription_on_state_change =
             aeron_driver_agent_untethered_subscription_state_change;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_ADDED))
     {
-        context->name_resolution_on_neighbor_added_func = aeron_driver_agent_name_resolution_on_neighbor_added;
+        context->log.name_resolution_on_neighbor_added = aeron_driver_agent_name_resolution_on_neighbor_added;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_NEIGHBOR_REMOVED))
     {
-        context->name_resolution_on_neighbor_removed_func = aeron_driver_agent_name_resolution_on_neighbor_removed;
+        context->log.name_resolution_on_neighbor_removed = aeron_driver_agent_name_resolution_on_neighbor_removed;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_ADDED))
     {
-        context->flow_control_on_receiver_added_func = aeron_driver_agent_flow_control_on_receiver_added;
+        context->log.flow_control_on_receiver_added = aeron_driver_agent_flow_control_on_receiver_added;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FLOW_CONTROL_RECEIVER_REMOVED))
     {
-        context->flow_control_on_receiver_removed_func = aeron_driver_agent_flow_control_on_receiver_removed;
+        context->log.flow_control_on_receiver_removed = aeron_driver_agent_flow_control_on_receiver_removed;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_RESOLVE))
     {
-        context->on_name_resolve_func = aeron_driver_agent_name_resolver_on_resolve;
+        context->log.on_name_resolve = aeron_driver_agent_name_resolver_on_resolve;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_LOOKUP))
     {
-        context->on_name_lookup_func = aeron_driver_agent_name_resolver_on_lookup;
+        context->log.on_name_lookup = aeron_driver_agent_name_resolver_on_lookup;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAME_RESOLUTION_HOST_NAME))
     {
-        context->on_host_name_func = aeron_driver_agent_name_resolver_on_host_name;
+        context->log.on_host_name = aeron_driver_agent_name_resolver_on_host_name;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_SEND_NAK_MESSAGE))
     {
-        context->send_nak_message_func = aeron_driver_agent_send_nak_message;
+        context->log.send_nak_message = aeron_driver_agent_send_nak_message;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_RESEND))
     {
-        context->resend_func = aeron_driver_agent_resend;
+        context->log.resend = aeron_driver_agent_resend;
     }
 
     return 0;

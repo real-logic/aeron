@@ -261,28 +261,28 @@ typedef struct aeron_driver_context_stct
     aeron_system_counters_t *system_counters;
     aeron_distinct_error_log_t *error_log;
 
-    aeron_driver_conductor_to_driver_interceptor_func_t to_driver_interceptor_func;
-    aeron_driver_conductor_to_client_interceptor_func_t to_client_interceptor_func;
-
-    aeron_on_remove_publication_cleanup_func_t remove_publication_cleanup_func;
-    aeron_on_remove_subscription_cleanup_func_t remove_subscription_cleanup_func;
-    aeron_on_remove_image_cleanup_func_t remove_image_cleanup_func;
-
-    aeron_on_endpoint_change_func_t sender_proxy_on_add_endpoint_func;
-    aeron_on_endpoint_change_func_t sender_proxy_on_remove_endpoint_func;
-    aeron_on_endpoint_change_func_t receiver_proxy_on_add_endpoint_func;
-    aeron_on_endpoint_change_func_t receiver_proxy_on_remove_endpoint_func;
-
-    aeron_untethered_subscription_state_change_func_t untethered_subscription_on_state_change_func;
-
-    aeron_driver_name_resolver_on_neighbor_change_func_t name_resolution_on_neighbor_added_func;
-    aeron_driver_name_resolver_on_neighbor_change_func_t name_resolution_on_neighbor_removed_func;
-
-    aeron_driver_flow_control_strategy_on_receiver_change_func_t flow_control_on_receiver_added_func;
-    aeron_driver_flow_control_strategy_on_receiver_change_func_t flow_control_on_receiver_removed_func;
-
-    aeron_driver_send_nak_message_func_t send_nak_message_func;
-    aeron_driver_resend_func_t resend_func;
+    struct
+    {
+        aeron_driver_conductor_to_driver_interceptor_func_t to_driver_interceptor;
+        aeron_driver_conductor_to_client_interceptor_func_t to_client_interceptor;
+        aeron_on_remove_publication_cleanup_func_t remove_publication_cleanup;
+        aeron_on_remove_subscription_cleanup_func_t remove_subscription_cleanup;
+        aeron_on_remove_image_cleanup_func_t remove_image_cleanup;
+        aeron_on_endpoint_change_func_t sender_proxy_on_add_endpoint;
+        aeron_on_endpoint_change_func_t sender_proxy_on_remove_endpoint;
+        aeron_on_endpoint_change_func_t receiver_proxy_on_add_endpoint;
+        aeron_on_endpoint_change_func_t receiver_proxy_on_remove_endpoint;
+        aeron_untethered_subscription_state_change_func_t untethered_subscription_on_state_change;
+        aeron_driver_name_resolver_on_neighbor_change_func_t name_resolution_on_neighbor_added;
+        aeron_driver_name_resolver_on_neighbor_change_func_t name_resolution_on_neighbor_removed;
+        aeron_driver_flow_control_strategy_on_receiver_change_func_t flow_control_on_receiver_added;
+        aeron_driver_flow_control_strategy_on_receiver_change_func_t flow_control_on_receiver_removed;
+        aeron_driver_name_resolver_on_resolve_t on_name_resolve;
+        aeron_driver_name_resolver_on_lookup_t on_name_lookup;
+        aeron_driver_name_resolver_on_host_name_t on_host_name;
+        aeron_driver_send_nak_message_func_t send_nak_message;
+        aeron_driver_resend_func_t resend;
+    } log;
 
     aeron_driver_termination_validator_func_t termination_validator_func;
     void *termination_validator_state;
@@ -307,9 +307,6 @@ typedef struct aeron_driver_context_stct
     const char *name_resolver_host_name;
     aeron_name_resolver_supplier_func_t name_resolver_supplier_func;
     aeron_name_resolver_supplier_func_t driver_name_resolver_bootstrap_resolver_supplier_func;
-    aeron_driver_name_resolver_on_resolve_t on_name_resolve_func;
-    aeron_driver_name_resolver_on_lookup_t on_name_lookup_func;
-    aeron_driver_name_resolver_on_host_name_t on_host_name_func;
 
     aeron_duty_cycle_tracker_t *conductor_duty_cycle_tracker;
     aeron_duty_cycle_tracker_t *sender_duty_cycle_tracker;

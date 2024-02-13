@@ -42,6 +42,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -88,6 +90,7 @@ abstract class ArchiveConductor
     private final Int2ObjectHashMap<Counter> counterByIdMap = new Int2ObjectHashMap<>();
     private final Object2ObjectHashMap<String, Subscription> recordingSubscriptionByKeyMap =
         new Object2ObjectHashMap<>();
+    private final Long2ObjectHashMap<SessionForReplay> controlSessionByReplayToken = new Long2ObjectHashMap<>();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final UnsafeBuffer counterMetadataBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
@@ -110,6 +113,7 @@ abstract class ArchiveConductor
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final ControlSessionProxy controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
     private final DutyCycleTracker dutyCycleTracker;
+    private final SecureRandom secureRandom;
     final Archive.Context ctx;
     Recorder recorder;
     Replayer replayer;
@@ -131,6 +135,15 @@ abstract class ArchiveConductor
         markFile = ctx.archiveMarkFile();
         dutyCycleTracker = ctx.conductorDutyCycleTracker();
         cachedEpochClock.update(epochClock.time());
+
+        try
+        {
+            secureRandom = SecureRandom.getInstanceStrong();
+        }
+        catch (final NoSuchAlgorithmException ex)
+        {
+            throw new RuntimeException(ex);
+        }
 
         authenticator = ctx.authenticatorSupplier().get();
         if (null == authenticator)
@@ -296,7 +309,7 @@ abstract class ArchiveConductor
                 markFile.updateActivityTimestamp(nowMs);
             }
         }
-
+        workCount += checkReplayTokens(nowNs);
         workCount += invokeDriverConductor();
         workCount += runTasks(taskQueue);
 
@@ -1692,7 +1705,8 @@ abstract class ArchiveConductor
             .channelReceiveTimestampOffset(channelUri)
             .mediaReceiveTimestampOffset(channelUri)
             .sessionId(channelUri)
-            .alias(channelUri);
+            .alias(channelUri)
+            .responseCorrelationId(channelUri);
     }
 
     private static String makeKey(final int streamId, final ChannelUri channelUri)
@@ -2385,6 +2399,66 @@ abstract class ArchiveConductor
         }
     }
 
+    public long generateReplayToken(final ControlSession session, final long recordingId)
+    {
+        long replayToken = NULL_VALUE;
+        while (NULL_VALUE == replayToken)
+        {
+            replayToken = secureRandom.nextLong();
+        }
+
+        final SessionForReplay sessionForReplay = new SessionForReplay(
+            recordingId, session, nanoClock.nanoTime() + TimeUnit.MILLISECONDS.toNanos(connectTimeoutMs));
+        controlSessionByReplayToken.put(replayToken, sessionForReplay);
+
+        return replayToken;
+    }
+
+    public ControlSession getReplaySession(final long replayToken, final long recordingId)
+    {
+        final SessionForReplay sessionForReplay = controlSessionByReplayToken.get(replayToken);
+
+        final long nowNs = nanoClock.nanoTime();
+        if (null != sessionForReplay &&
+            recordingId == sessionForReplay.recordingId &&
+            nowNs < sessionForReplay.deadlineNs)
+        {
+            return sessionForReplay.controlSession;
+        }
+
+        return null;
+    }
+
+    void removeReplayTokensForSession(final long sessionId)
+    {
+        //noinspection Java8CollectionRemoveIf
+        for (Long2ObjectHashMap<SessionForReplay>.ValueIterator it = controlSessionByReplayToken.values().iterator();
+            it.hasNext();)
+        {
+            final SessionForReplay sessionForReplay = it.next();
+            if (sessionForReplay.controlSession.sessionId() == sessionId)
+            {
+                it.remove();
+            }
+        }
+    }
+
+    private int checkReplayTokens(final long nowNs)
+    {
+        //noinspection Java8CollectionRemoveIf
+        for (Long2ObjectHashMap<SessionForReplay>.ValueIterator it = controlSessionByReplayToken.values().iterator();
+            it.hasNext();)
+        {
+            final SessionForReplay sessionForReplay = it.next();
+            if (sessionForReplay.deadlineNs <= nowNs)
+            {
+                it.remove();
+            }
+        }
+
+        return 0;
+    }
+
     abstract static class Recorder extends SessionWorker<RecordingSession>
     {
         private long totalWriteBytes;
@@ -2474,6 +2548,20 @@ abstract class ArchiveConductor
             }
 
             return workCount;
+        }
+    }
+
+    private static final class SessionForReplay
+    {
+        private final long recordingId;
+        private final ControlSession controlSession;
+        private final long deadlineNs;
+
+        private SessionForReplay(final long recordingId, final ControlSession controlSession, final long deadlineNs)
+        {
+            this.recordingId = recordingId;
+            this.controlSession = controlSession;
+            this.deadlineNs = deadlineNs;
         }
     }
 }

@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
+import io.aeron.ChannelUri;
 import io.aeron.Image;
 import io.aeron.ImageFragmentAssembler;
 import io.aeron.archive.client.AeronArchive;
@@ -28,6 +29,8 @@ import io.aeron.security.NullCredentialsSupplier;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2ObjectHashMap;
+
+import static io.aeron.CommonContext.RESPONSE_CORRELATION_ID_PARAM_NAME;
 
 class ControlSessionDemuxer implements Session, FragmentHandler
 {
@@ -225,20 +228,43 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long controlSessionId = decoder.controlSessionId();
                 final long correlationId = decoder.correlationId();
-                final ControlSession controlSession = getControlSession(correlationId, controlSessionId, templateId);
                 final int fileIoMaxLength = FILE_IO_MAX_LENGTH_VERSION <= headerDecoder.version() ?
                     decoder.fileIoMaxLength() : Aeron.NULL_VALUE;
+                final long recordingId = decoder.recordingId();
+                final long position = decoder.position();
+                final long replayLength = decoder.length();
+                final int replayStreamId = decoder.replayStreamId();
+                final long replayToken = decoder.replayToken();
+
+                final String replayChannel = decoder.replayChannel();
+
+                final ChannelUri channelUri = ChannelUri.parse(replayChannel);
+                final ControlSession controlSession;
+                if (channelUri.hasControlModeResponse() && Aeron.NULL_VALUE != replayToken)
+                {
+                    controlSession = conductor.getReplaySession(replayToken, recordingId);
+                    if (null == controlSession)
+                    {
+                        throw new ArchiveException("Unknown session or token timeout for replayToken=" + replayToken);
+                    }
+
+                    channelUri.put(RESPONSE_CORRELATION_ID_PARAM_NAME, Long.toString(image.correlationId()));
+                }
+                else
+                {
+                    controlSession = getControlSession(correlationId, controlSessionId, templateId);
+                }
 
                 if (null != controlSession)
                 {
                     controlSession.onStartReplay(
                         correlationId,
-                        decoder.recordingId(),
-                        decoder.position(),
-                        decoder.length(),
+                        recordingId,
+                        position,
+                        replayLength,
                         fileIoMaxLength,
-                        decoder.replayStreamId(),
-                        decoder.replayChannel());
+                        replayStreamId,
+                        channelUri.toString());
                 }
                 break;
             }
@@ -1020,12 +1046,34 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 }
                 break;
             }
+
+            case ReplayTokenRequestDecoder.TEMPLATE_ID:
+            {
+                final ReplayTokenRequestDecoder decoder = decoders.replayTokenRequestDecoder;
+                decoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long controlSessionId = decoder.controlSessionId();
+                final long correlationId = decoder.correlationId();
+                final long recordingId = decoder.recordingId();
+                final ControlSession controlSession = getControlSession(correlationId, controlSessionId, templateId);
+                if (null != controlSession)
+                {
+                    final long replayToken = conductor.generateReplayToken(controlSession, recordingId);
+                    controlSession.sendResponse(
+                        correlationId, replayToken, ControlResponseCode.OK, "", conductor.controlResponseProxy());
+                }
+            }
         }
     }
 
     void removeControlSession(final long sessionId)
     {
         controlSessionByIdMap.remove(sessionId);
+        conductor.removeReplayTokensForSession(sessionId);
     }
 
     private ControlSession getControlSession(

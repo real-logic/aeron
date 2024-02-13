@@ -1324,6 +1324,11 @@ public final class AeronArchive implements AutoCloseable
             ensureNotReentrant();
 
             final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
+            if (replayChannelUri.hasControlModeResponse())
+            {
+                return replayViaResponseChannel(recordingId, replayChannel, replayStreamId, replayParams);
+            }
+
             lastCorrelationId = aeron.nextCorrelationId();
 
             if (!archiveProxy.replay(
@@ -1345,6 +1350,56 @@ public final class AeronArchive implements AutoCloseable
         finally
         {
             lock.unlock();
+        }
+    }
+
+    private Subscription replayViaResponseChannel(
+        final long recordingId,
+        final String replayChannel,
+        final int replayStreamId,
+        final ReplayParams replayParams)
+    {
+        lastCorrelationId = aeron.nextCorrelationId();
+
+        if (!archiveProxy.requestReplayToken(lastCorrelationId, controlSessionId, recordingId))
+        {
+            throw new ArchiveException("failed to send replay token request");
+        }
+
+        final long replayToken = pollForResponse(lastCorrelationId);
+
+        replayParams.replayToken(replayToken);
+        final Subscription replaySubscription = aeron.addSubscription(replayChannel, replayStreamId);
+        final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder(context.controlRequestChannel())
+            .responseCorrelationId(replaySubscription.registrationId());
+
+        try (Publication publication = aeron.addPublication(uriBuilder.build(), context().controlRequestStreamId()))
+        {
+            final ArchiveProxy archiveProxy = new ArchiveProxy(publication);
+
+            while (!publication.isConnected())
+            {
+                idleStrategy.idle();
+            }
+
+            if (!archiveProxy.replay(
+                recordingId, replayChannel, replayStreamId, replayParams, lastCorrelationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send replay request");
+            }
+
+            pollForResponse(lastCorrelationId);
+            while (!replaySubscription.isConnected())
+            {
+                idleStrategy.idle();
+            }
+
+            return replaySubscription;
+        }
+        catch (final Exception ex)
+        {
+            CloseHelper.close(replaySubscription);
+            throw ex;
         }
     }
 

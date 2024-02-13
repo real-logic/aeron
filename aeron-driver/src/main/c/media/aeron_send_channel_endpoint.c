@@ -386,12 +386,14 @@ void aeron_send_channel_endpoint_dispatch(
     aeron_send_channel_endpoint_t *endpoint = (aeron_send_channel_endpoint_t *)endpoint_clientd;
     aeron_driver_conductor_proxy_t *conductor_proxy = sender->context->conductor_proxy;
 
+    int result = 0;
+
     switch (frame_header->type)
     {
         case AERON_HDR_TYPE_NAK:
             if (length >= sizeof(aeron_nak_header_t))
             {
-                aeron_send_channel_endpoint_on_nak(endpoint, buffer, length, addr);
+                result = aeron_send_channel_endpoint_on_nak(endpoint, buffer, length, addr);
                 aeron_counter_ordered_increment(sender->nak_messages_received_counter, 1);
             }
             else
@@ -437,9 +439,14 @@ void aeron_send_channel_endpoint_dispatch(
         default:
             break;
     }
+
+    if (0 != result)
+    {
+        aeron_driver_sender_log_error(sender);
+    }
 }
 
-void aeron_send_channel_endpoint_on_nak(
+int aeron_send_channel_endpoint_on_nak(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
     aeron_nak_header_t *nak_header = (aeron_nak_header_t *)buffer;
@@ -449,8 +456,11 @@ void aeron_send_channel_endpoint_on_nak(
 
     if (NULL != publication)
     {
-        aeron_network_publication_on_nak(publication, nak_header->term_id, nak_header->term_offset, nak_header->length);
+        return aeron_network_publication_on_nak(publication, nak_header->term_id, nak_header->term_offset, nak_header->length);
     }
+
+    // we got a NAK for a publication that doesn't exist...
+    return 0;
 }
 
 void aeron_send_channel_endpoint_on_status_message(

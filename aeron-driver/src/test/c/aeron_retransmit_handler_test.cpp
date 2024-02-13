@@ -35,6 +35,7 @@ extern "C"
 #define MESSAGE_LENGTH (DATA_LENGTH + HEADER_LENGTH)
 #define ALIGNED_FRAME_LENGTH (AERON_ALIGN(MESSAGE_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT))
 
+#define DELAY_TIMEOUT_20MS (20 * 1000 * 1000L)
 #define LINGER_TIMEOUT_20MS (20 * 1000 * 1000L)
 
 #define MTU_LENGTH (1234) // this value is ignored
@@ -198,4 +199,33 @@ TEST_F(RetransmitHandlerTest, shouldRetransmitOnMultipleNaks)
     EXPECT_EQ(aeron_retransmit_handler_on_nak(
         &m_handler, TERM_ID, nak_offset_2, nak_length_2, TERM_LENGTH, MTU_LENGTH, &m_flow_control, m_time, RetransmitHandlerTest::on_resend, this), 0);
     EXPECT_EQ(called, 2u);
+}
+
+TEST_F(RetransmitHandlerTest, errorOnRetransmitOverflow)
+{
+    ASSERT_EQ(aeron_retransmit_handler_init(&m_handler, &m_invalid_packet_counter, DELAY_TIMEOUT_20MS, LINGER_TIMEOUT_20MS), 0);
+
+    EXPECT_EQ(m_handler.active_retransmits, 0);
+
+    size_t i = 0;
+    for (i = 0; i < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS; i++)
+    {
+        EXPECT_EQ(aeron_retransmit_handler_on_nak(
+            &m_handler, TERM_ID, i, 1, TERM_LENGTH, MTU_LENGTH, &m_flow_control, m_time, RetransmitHandlerTest::on_resend, this), 0);
+    }
+
+    EXPECT_EQ(m_handler.active_retransmits, AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS);
+
+    // there should be no more available retransmit actions
+    EXPECT_EQ(aeron_retransmit_handler_on_nak(
+        &m_handler, TERM_ID, i, 1, TERM_LENGTH, MTU_LENGTH, &m_flow_control, m_time, RetransmitHandlerTest::on_resend, this), -1);
+
+    // these will all be duplicates of previous NAKs
+    for (i = 0; i < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS; i++)
+    {
+        EXPECT_EQ(aeron_retransmit_handler_on_nak(
+            &m_handler, TERM_ID, i, 1, TERM_LENGTH, MTU_LENGTH, &m_flow_control, m_time, RetransmitHandlerTest::on_resend, this), 0);
+    }
+
+    EXPECT_EQ(m_handler.active_retransmits, AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS);
 }

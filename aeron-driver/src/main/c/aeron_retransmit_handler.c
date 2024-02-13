@@ -20,7 +20,8 @@
 #include "aeron_retransmit_handler.h"
 #include "aeron_flow_control.h"
 
-aeron_retransmit_action_t *aeron_retransmit_handler_scan_for_available_retransmit(
+int aeron_retransmit_handler_scan_for_available_retransmit(
+    aeron_retransmit_action_t **actionp,
     aeron_retransmit_handler_t *handler,
     int32_t term_id,
     int32_t term_offset,
@@ -105,7 +106,12 @@ int aeron_retransmit_handler_on_nak(
     if (!aeron_retransmit_handler_is_invalid(handler, term_offset, term_length))
     {
         const size_t retransmit_length = flow_control->max_retransmission_length(flow_control->state, term_offset, length, term_length, mtu_length);
-        aeron_retransmit_action_t *action = aeron_retransmit_handler_scan_for_available_retransmit(handler, term_id, term_offset, retransmit_length);
+        aeron_retransmit_action_t *action = NULL;
+        if (aeron_retransmit_handler_scan_for_available_retransmit(&action, handler, term_id, term_offset, retransmit_length) != 0)
+        {
+            AERON_APPEND_ERR("dropping nak termId=%d termOffset=%d retransmit_length=%d", term_id, term_offset, retransmit_length);
+            return -1;
+        }
 
         if (action != NULL)
         {
@@ -170,7 +176,8 @@ int aeron_retransmit_handler_process_timeouts(
     return result;
 }
 
-aeron_retransmit_action_t *aeron_retransmit_handler_scan_for_available_retransmit(
+int aeron_retransmit_handler_scan_for_available_retransmit(
+    aeron_retransmit_action_t **actionp,
     aeron_retransmit_handler_t *handler,
     int32_t term_id,
     int32_t term_offset,
@@ -178,7 +185,8 @@ aeron_retransmit_action_t *aeron_retransmit_handler_scan_for_available_retransmi
 {
    if (0 == handler->active_retransmits)
    {
-       return aeron_retransmit_handler_add_retransmit(handler, &handler->retransmit_action_pool[0]);
+       *actionp = aeron_retransmit_handler_add_retransmit(handler, &handler->retransmit_action_pool[0]);
+       return 0;
    }
 
     aeron_retransmit_action_t *available_action = NULL;
@@ -201,7 +209,8 @@ aeron_retransmit_action_t *aeron_retransmit_handler_scan_for_available_retransmi
                     action->term_offset <= term_offset &&
                     term_offset + length <= action->term_offset + action->length)
                 {
-                    return NULL;
+                    *actionp = NULL;
+                    return 0;
                 }
                 break;
         }
@@ -209,9 +218,12 @@ aeron_retransmit_action_t *aeron_retransmit_handler_scan_for_available_retransmi
 
     if (NULL != available_action)
     {
-        return aeron_retransmit_handler_add_retransmit(handler, available_action);
+        *actionp = aeron_retransmit_handler_add_retransmit(handler, available_action);
+        return 0;
     }
 
-    // TODO aeron err??
-    return NULL;
+    // it shouldn't be possible to get here...
+    AERON_SET_ERR(EINVAL, "%s", "no available retransmit actions - active retransmit counter appears to be out of sync");
+    *actionp = NULL;
+    return -1;
 }

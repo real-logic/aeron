@@ -113,7 +113,7 @@ void aeron_send_channel_endpoint_dispatch(
     struct sockaddr_storage *addr,
     struct timespec *media_timestamp);
 
-void aeron_send_channel_endpoint_on_nak(
+int aeron_send_channel_endpoint_on_nak(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
 void aeron_send_channel_endpoint_on_status_message(

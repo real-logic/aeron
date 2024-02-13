@@ -655,10 +655,10 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
     return result;
 }
 
-void aeron_network_publication_on_nak(
+int aeron_network_publication_on_nak(
     aeron_network_publication_t *publication, int32_t term_id, int32_t term_offset, int32_t length)
 {
-    aeron_retransmit_handler_on_nak(
+    return aeron_retransmit_handler_on_nak(
         &publication->retransmit_handler,
         term_id,
         term_offset,

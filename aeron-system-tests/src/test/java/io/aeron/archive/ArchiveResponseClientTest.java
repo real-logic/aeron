@@ -16,7 +16,9 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
+import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ReplayParams;
 import io.aeron.driver.MediaDriver;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.TestContexts;
@@ -24,15 +26,17 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
+import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
-import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -81,44 +85,43 @@ public class ArchiveResponseClientTest
     }
 
     @Test
-    @Disabled
-    void shouldConnectUsingResponseChannel()
+    void shouldReplayUsingResponseChannel()
     {
+        final UnsafeBuffer message = new UnsafeBuffer(new byte[1024]);
+        message.setMemory(0, message.capacity(), (byte)'x');
+
         final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context()
             .controlRequestChannel(archive.context().controlChannel())
             .controlResponseChannel("aeron:udp?control-mode=response|control=localhost:10002");
         try (AeronArchive aeronArchive = AeronArchive.connect(aeronArchiveCtx))
         {
-            Objects.requireNonNull(aeronArchive);
-        }
-    }
+            final ArchiveSystemTests.RecordingResult recordingResult = ArchiveSystemTests.recordData(aeronArchive);
 
-    @Test
-    void shouldAsyncConnectUsingResponseChannel()
-    {
-        final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context()
-            .controlRequestChannel(archive.context().controlChannel())
-            .controlResponseChannel("aeron:udp?control-mode=response|control=localhost:10002");
-        try (AeronArchive.AsyncConnect asyncConnect = AeronArchive.asyncConnect(aeronArchiveCtx))
-        {
-            AeronArchive aeronArchive;
-            while (null == (aeronArchive = asyncConnect.poll()))
+            final Subscription replay = aeronArchive.replay(
+                recordingResult.recordingId, "aeron:udp?control-mode=response|control=localhost:10002", 10001,
+                new ReplayParams());
+
+            final MutableLong replayPosition = new MutableLong();
+            while (replayPosition.get() < recordingResult.position)
             {
-                Tests.yield();
+                if (0 == replay.poll((buffer, offset, length, header) -> replayPosition.set(header.position()), 10))
+                {
+                    Tests.yield();
+                }
             }
-            assertNotEquals(Aeron.NULL_VALUE, aeronArchive.controlSessionId());
-
-            CloseHelper.close(aeronArchive);
         }
     }
 
-    @Test
-    void shouldAsyncConnectUsingChannel()
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "aeron:udp?control-mode=response|control=localhost:10002",
+        "aeron:udp?endpoint=localhost:10002"
+    })
+    void shouldAsyncConnectUsingResponseChannel(final String channel)
     {
         final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context()
             .controlRequestChannel(archive.context().controlChannel())
-//            .controlResponseChannel("aeron:udp?control-mode=response|control=localhost:10002");
-            .controlResponseChannel("aeron:udp?endpoint=localhost:10002");
+            .controlResponseChannel(channel);
         try (AeronArchive.AsyncConnect asyncConnect = AeronArchive.asyncConnect(aeronArchiveCtx))
         {
             AeronArchive aeronArchive;

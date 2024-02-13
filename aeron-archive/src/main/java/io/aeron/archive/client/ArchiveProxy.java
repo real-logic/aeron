@@ -74,6 +74,7 @@ public final class ArchiveProxy
     private PurgeSegmentsRequestEncoder purgeSegmentsRequest;
     private AttachSegmentsRequestEncoder attachSegmentsRequest;
     private MigrateSegmentsRequestEncoder migrateSegmentsRequest;
+    private ReplayTokenRequestEncoder replayTokenRequestEncoder;
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -459,7 +460,8 @@ public final class ArchiveProxy
                 replayStreamId,
                 correlationId,
                 controlSessionId,
-                replayParams.fileIoMaxLength());
+                replayParams.fileIoMaxLength(),
+                replayParams.replayToken());
         }
     }
 
@@ -492,6 +494,7 @@ public final class ArchiveProxy
             replayStreamId,
             correlationId,
             controlSessionId,
+            Aeron.NULL_VALUE,
             Aeron.NULL_VALUE);
     }
 
@@ -1390,6 +1393,32 @@ public final class ArchiveProxy
         return offer(migrateSegmentsRequest.encodedLength());
     }
 
+    /**
+     * Request a token for this session that will allow a replay to be initiated from another image without
+     * re-authentication.
+     *
+     * @param lastCorrelationId for the request
+     * @param controlSessionId  for the request
+     * @param recordingId       that will be replayed.
+     * @return true if successfully offered
+     */
+    public boolean requestReplayToken(final long lastCorrelationId, final long controlSessionId, final long recordingId)
+    {
+        if (null == replayTokenRequestEncoder)
+        {
+            replayTokenRequestEncoder = new ReplayTokenRequestEncoder();
+        }
+
+        replayTokenRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(lastCorrelationId)
+            .recordingId(recordingId);
+
+        return offer(replayTokenRequestEncoder.encodedLength());
+    }
+
+
     private boolean offer(final int length)
     {
         retryIdleStrategy.reset();
@@ -1472,7 +1501,8 @@ public final class ArchiveProxy
         final int replayStreamId,
         final long correlationId,
         final long controlSessionId,
-        final int fileIoMaxLength)
+        final int fileIoMaxLength,
+        final long replayToken)
     {
         if (null == replayRequest)
         {
@@ -1488,6 +1518,7 @@ public final class ArchiveProxy
             .length(length)
             .replayStreamId(replayStreamId)
             .fileIoMaxLength(fileIoMaxLength)
+            .replayToken(replayToken)
             .replayChannel(replayChannel);
 
         return offer(replayRequest.encodedLength());

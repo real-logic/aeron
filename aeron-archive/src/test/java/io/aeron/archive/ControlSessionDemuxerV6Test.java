@@ -111,7 +111,7 @@ class ControlSessionDemuxerV6Test
             .recordingId(9827345897L)
             .position(982374L)
             .replayStreamId(9832475)
-            .replayChannel("replay");
+            .replayChannel("aeron:ipc");
 
         final int replicateRequestLength = replayRequestEncoder.encodedLength();
 

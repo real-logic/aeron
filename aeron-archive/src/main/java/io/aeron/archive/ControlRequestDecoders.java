@@ -60,4 +60,5 @@ class ControlRequestDecoders
     final ChallengeResponseDecoder challengeResponse = new ChallengeResponseDecoder();
     final KeepAliveRequestDecoder keepAliveRequest = new KeepAliveRequestDecoder();
     final TaggedReplicateRequestDecoder taggedReplicateRequest = new TaggedReplicateRequestDecoder();
+    final ReplayTokenRequestDecoder replayTokenRequestDecoder = new ReplayTokenRequestDecoder();
 }

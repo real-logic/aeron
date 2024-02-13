@@ -112,10 +112,10 @@ int aeron_network_publication_create(
         system_counters, AERON_SYSTEM_COUNTER_BYTES_CURRENTLY_MAPPED);
     aeron_counter_add_ordered(_pub->mapped_bytes_counter, (int64_t)log_length);
 
-    _pub->log.raw_log_close_func = context->raw_log_close_func;
-    _pub->log.raw_log_free_func = context->raw_log_free_func;
-    _pub->log.untethered_subscription_state_change_func = context->log.untethered_subscription_on_state_change_func;
-    _pub->log.resend_func = context->log.resend_func;
+    _pub->raw_log_close_func = context->raw_log_close_func;
+    _pub->raw_log_free_func = context->raw_log_free_func;
+    _pub->log.untethered_subscription_state_change = context->log.untethered_subscription_on_state_change;
+    _pub->log.resend = context->log.resend;
 
     strncpy(_pub->log_file_name, path, (size_t)path_length);
     _pub->log_file_name[path_length] = '\0';
@@ -282,7 +282,7 @@ bool aeron_network_publication_free(aeron_network_publication_t *publication)
         return true;
     }
 
-    if (!publication->log.raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
+    if (!publication->raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
     {
          return false;
     }
@@ -644,9 +644,9 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
         aeron_counter_ordered_increment(publication->retransmits_sent_counter, 1);
     }
 
-    if (NULL != publication->log.resend_func)
+    if (NULL != publication->log.resend)
     {
-        publication->log.resend_func(
+        publication->log.resend(
             publication->session_id,
             publication->stream_id,
             term_id,
@@ -981,7 +981,7 @@ void aeron_network_publication_check_untethered_subscriptions(
                         aeron_driver_subscribable_state(
                             subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_LINGER, now_ns);
 
-                        conductor->context->log.untethered_subscription_on_state_change_func(
+                        conductor->context->log.untethered_subscription_on_state_change(
                             tetherable_position,
                             now_ns,
                             AERON_SUBSCRIPTION_TETHER_LINGER,
@@ -996,7 +996,7 @@ void aeron_network_publication_check_untethered_subscriptions(
                         aeron_driver_subscribable_state(
                             subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_RESTING, now_ns);
 
-                        conductor->context->log.untethered_subscription_on_state_change_func(
+                        conductor->context->log.untethered_subscription_on_state_change(
                             tetherable_position,
                             now_ns,
                             AERON_SUBSCRIPTION_TETHER_RESTING,
@@ -1025,7 +1025,7 @@ void aeron_network_publication_check_untethered_subscriptions(
                         aeron_driver_subscribable_state(
                             subscribable, tetherable_position, AERON_SUBSCRIPTION_TETHER_ACTIVE, now_ns);
 
-                        conductor->context->log.untethered_subscription_on_state_change_func(
+                        conductor->context->log.untethered_subscription_on_state_change(
                             tetherable_position,
                             now_ns,
                             AERON_SUBSCRIPTION_TETHER_ACTIVE,

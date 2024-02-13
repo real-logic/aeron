@@ -539,8 +539,8 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     state->time_of_last_setup_ns = 0;
     state->last_setup_snd_lmt = -1;
 
-    state->log.receiver_added = context->log.flow_control_on_receiver_added_func;
-    state->log.receiver_removed = context->log.flow_control_on_receiver_removed_func;
+    state->log.receiver_added = context->log.flow_control_on_receiver_added;
+    state->log.receiver_removed = context->log.flow_control_on_receiver_removed;
     state->counters_manager = counters_manager;
     state->receivers_counter.value_addr = NULL;
     state->receivers_counter.counter_id = -1;

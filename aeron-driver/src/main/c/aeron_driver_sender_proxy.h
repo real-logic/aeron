@@ -29,8 +29,8 @@ typedef struct aeron_driver_sender_proxy_stct
     aeron_threading_mode_t threading_mode;
     struct
     {
-        aeron_on_endpoint_change_func_t on_add_endpoint_func;
-        aeron_on_endpoint_change_func_t on_remove_endpoint_func;
+        aeron_on_endpoint_change_func_t on_add_endpoint;
+        aeron_on_endpoint_change_func_t on_remove_endpoint;
     } log;
     aeron_mpsc_rb_t *command_queue;
     int64_t *fail_counter;

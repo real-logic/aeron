@@ -658,7 +658,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
 int aeron_network_publication_on_nak(
     aeron_network_publication_t *publication, int32_t term_id, int32_t term_offset, int32_t length)
 {
-    return aeron_retransmit_handler_on_nak(
+    int result = aeron_retransmit_handler_on_nak(
         &publication->retransmit_handler,
         term_id,
         term_offset,
@@ -669,6 +669,13 @@ int aeron_network_publication_on_nak(
         aeron_clock_cached_nano_time(publication->cached_clock),
         aeron_network_publication_resend,
         publication);
+
+    if (0 != result)
+    {
+        AERON_APPEND_ERR("%s", "");
+    }
+
+    return result;
 }
 
 inline static bool aeron_network_publication_has_required_receivers(aeron_network_publication_t *publication)

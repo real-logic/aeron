@@ -456,7 +456,14 @@ int aeron_send_channel_endpoint_on_nak(
 
     if (NULL != publication)
     {
-        return aeron_network_publication_on_nak(publication, nak_header->term_id, nak_header->term_offset, nak_header->length);
+        int result = aeron_network_publication_on_nak(publication, nak_header->term_id, nak_header->term_offset, nak_header->length);
+
+        if (0 != result)
+        {
+            AERON_APPEND_ERR("%s", "");
+        }
+
+        return result;
     }
 
     // we got a NAK for a publication that doesn't exist...

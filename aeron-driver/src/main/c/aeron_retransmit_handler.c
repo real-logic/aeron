@@ -21,11 +21,11 @@
 #include "aeron_flow_control.h"
 
 int aeron_retransmit_handler_scan_for_available_retransmit(
-    aeron_retransmit_action_t **actionp,
     aeron_retransmit_handler_t *handler,
     int32_t term_id,
     int32_t term_offset,
-    size_t length);
+    size_t length,
+    aeron_retransmit_action_t **actionp);
 
 int aeron_retransmit_handler_init(
     aeron_retransmit_handler_t *handler,
@@ -107,7 +107,7 @@ int aeron_retransmit_handler_on_nak(
     {
         const size_t retransmit_length = flow_control->max_retransmission_length(flow_control->state, term_offset, length, term_length, mtu_length);
         aeron_retransmit_action_t *action = NULL;
-        if (aeron_retransmit_handler_scan_for_available_retransmit(&action, handler, term_id, term_offset, retransmit_length) != 0)
+        if (aeron_retransmit_handler_scan_for_available_retransmit(handler, term_id, term_offset, retransmit_length, &action) != 0)
         {
             AERON_APPEND_ERR("dropping nak termId=%d termOffset=%d retransmit_length=%d", term_id, term_offset, retransmit_length);
             return -1;
@@ -177,11 +177,11 @@ int aeron_retransmit_handler_process_timeouts(
 }
 
 int aeron_retransmit_handler_scan_for_available_retransmit(
-    aeron_retransmit_action_t **actionp,
     aeron_retransmit_handler_t *handler,
     int32_t term_id,
     int32_t term_offset,
-    size_t length)
+    size_t length,
+    aeron_retransmit_action_t **actionp)
 {
    if (0 == handler->active_retransmits)
    {

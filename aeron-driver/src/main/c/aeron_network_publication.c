@@ -590,13 +590,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
     if (bottom_resend_window <= resend_position && resend_position < sender_position)
     {
         size_t index = aeron_logbuffer_index_by_position(resend_position, publication->position_bits_to_shift);
-
-        size_t remaining_bytes = publication->flow_control->max_retransmission_length(
-            publication->flow_control->state,
-            resend_position,
-            length,
-            publication->term_buffer_length,
-            publication->mtu_length);
+        size_t remaining_bytes = length;
         int32_t bytes_sent = 0;
         int32_t offset = term_offset;
 
@@ -659,18 +653,27 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
     return result;
 }
 
-void aeron_network_publication_on_nak(
+int aeron_network_publication_on_nak(
     aeron_network_publication_t *publication, int32_t term_id, int32_t term_offset, int32_t length)
 {
-    aeron_retransmit_handler_on_nak(
+    int result = aeron_retransmit_handler_on_nak(
         &publication->retransmit_handler,
         term_id,
         term_offset,
         (size_t)length,
         (size_t)publication->term_length_mask + 1,
+        publication->mtu_length,
+        publication->flow_control,
         aeron_clock_cached_nano_time(publication->cached_clock),
         aeron_network_publication_resend,
         publication);
+
+    if (0 != result)
+    {
+        AERON_APPEND_ERR("%s", "");
+    }
+
+    return result;
 }
 
 inline static bool aeron_network_publication_has_required_receivers(aeron_network_publication_t *publication)

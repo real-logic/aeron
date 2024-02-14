@@ -85,6 +85,18 @@ public interface TestMediaDriver extends AutoCloseable
         }
     }
 
+    static void dontCoalesceNaksOnReceiverByDefault(final MediaDriver.Context context)
+    {
+        if (shouldRunCMediaDriver())
+        {
+            CTestMediaDriver.dontCoalesceNaksOnReceiverByDefault(context);
+        }
+        else
+        {
+            JavaTestMediaDriver.dontCoalesceNaksOnReceiverByDefault(context);
+        }
+    }
+
     MediaDriver.Context context();
 
     String aeronDirectoryName();

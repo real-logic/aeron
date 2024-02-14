@@ -66,9 +66,9 @@ typedef void (*aeron_flow_control_strategy_on_trigger_send_setup_func_t)(
 
 typedef size_t (*aeron_flow_control_strategy_max_retransmission_length_func_t)(
     void *state,
-    int64_t resend_position,
+    size_t term_offset,
     size_t resend_length,
-    int64_t term_buffer_length,
+    size_t term_buffer_length,
     size_t mtu_length);
 
 typedef int (*aeron_flow_control_strategy_fini_func_t)(aeron_flow_control_strategy_t *strategy);
@@ -184,5 +184,11 @@ aeron_flow_control_strategy_supplier_func_table_entry_t;
 
 int aeron_flow_control_parse_tagged_options(
     size_t options_length, const char *options, aeron_flow_control_tagged_options_t *flow_control_options);
+
+size_t aeron_flow_control_calculate_retransmission_length(
+    size_t resend_length,
+    size_t term_buffer_length,
+    size_t term_offset,
+    size_t retransmit_receiver_window_multiple);
 
 #endif //AERON_FLOW_CONTROL_H

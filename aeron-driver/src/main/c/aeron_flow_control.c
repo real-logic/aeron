@@ -110,34 +110,48 @@ int64_t aeron_max_flow_control_strategy_on_sm(
     return snd_lmt > window_edge ? snd_lmt : window_edge;
 }
 
+size_t aeron_flow_control_calculate_retransmission_length(
+    size_t resend_length,
+    size_t term_buffer_length,
+    size_t term_offset,
+    size_t retransmit_receiver_window_multiple)
+{
+    size_t length_to_end_of_term = term_buffer_length - term_offset;
+    size_t initial_window_length = aeron_driver_context_get_rcv_initial_window_length(NULL);
+    size_t receiver_window_length = aeron_receiver_window_length(initial_window_length, term_buffer_length);
+    size_t estimated_retransmit_length = receiver_window_length * retransmit_receiver_window_multiple;
+
+    return (length_to_end_of_term < estimated_retransmit_length) ?
+        AERON_MIN(length_to_end_of_term, resend_length) :
+        AERON_MIN(estimated_retransmit_length, resend_length);
+}
+
 size_t aeron_max_flow_control_strategy_max_retransmission_length(
     void *state,
-    int64_t resend_position,
+    size_t term_offset,
     size_t resend_length,
-    int64_t term_buffer_length,
+    size_t term_buffer_length,
     size_t mtu_length)
 {
-    size_t initial_window_length = aeron_driver_context_get_rcv_initial_window_length(NULL);
-    size_t estimated_window_length = aeron_receiver_window_length(initial_window_length, term_buffer_length);
-    size_t max_retransmit_length =
-        AERON_MAX_FLOW_CONTROL_RETRANSMIT_RECEIVER_WINDOW_MULTIPLE * estimated_window_length;
-
-    return AERON_MIN(max_retransmit_length, resend_length);
+    return aeron_flow_control_calculate_retransmission_length(
+        resend_length,
+        term_buffer_length,
+        term_offset,
+        AERON_MAX_FLOW_CONTROL_RETRANSMIT_RECEIVER_WINDOW_MULTIPLE);
 }
 
 size_t aeron_unicast_flow_control_strategy_max_retransmission_length(
     void *state,
-    int64_t resend_position,
+    size_t term_offset,
     size_t resend_length,
-    int64_t term_buffer_length,
+    size_t term_buffer_length,
     size_t mtu_length)
 {
-    size_t initial_window_length = aeron_driver_context_get_rcv_initial_window_length(NULL);
-    size_t estimated_window_length = aeron_receiver_window_length(initial_window_length, term_buffer_length);
-    size_t max_retransmit_length =
-        AERON_UNICAST_FLOW_CONTROL_RETRANSMIT_RECEIVER_WINDOW_MULTIPLE * estimated_window_length;
-
-    return AERON_MIN(max_retransmit_length, resend_length);
+    return aeron_flow_control_calculate_retransmission_length(
+        resend_length,
+        term_buffer_length,
+        term_offset,
+        AERON_UNICAST_FLOW_CONTROL_RETRANSMIT_RECEIVER_WINDOW_MULTIPLE);
 }
 
 void aeron_max_flow_control_strategy_on_trigger_send_setup(

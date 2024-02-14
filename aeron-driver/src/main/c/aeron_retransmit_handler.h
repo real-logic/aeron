@@ -47,11 +47,12 @@ typedef int (*aeron_retransmit_handler_resend_func_t)(
 typedef struct aeron_retransmit_handler_stct
 {
     aeron_retransmit_action_t retransmit_action_pool[AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS];
-    aeron_int64_to_ptr_hash_map_t active_retransmits_map;
     uint64_t delay_timeout_ns;
     uint64_t linger_timeout_ns;
 
     int64_t *invalid_packets_counter;
+
+    int active_retransmits;
 }
 aeron_retransmit_handler_t;
 
@@ -69,6 +70,8 @@ int aeron_retransmit_handler_on_nak(
     int32_t term_offset,
     size_t length,
     size_t term_length,
+    size_t mtu_length,
+    aeron_flow_control_strategy_t *flow_control,
     int64_t now_ns,
     aeron_retransmit_handler_resend_func_t resend,
     void *resend_clientd);

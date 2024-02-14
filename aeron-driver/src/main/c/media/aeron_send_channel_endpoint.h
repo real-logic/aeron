@@ -116,7 +116,7 @@ void aeron_send_channel_endpoint_dispatch(
 int aeron_send_channel_endpoint_on_nak(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
-void aeron_send_channel_endpoint_on_status_message(
+int aeron_send_channel_endpoint_on_status_message(
     aeron_send_channel_endpoint_t *endpoint,
     aeron_driver_conductor_proxy_t *conductor_proxy,
     uint8_t *buffer,

@@ -405,7 +405,7 @@ void aeron_send_channel_endpoint_dispatch(
         case AERON_HDR_TYPE_SM:
             if (length >= sizeof(aeron_status_message_header_t) && length >= (size_t)frame_header->frame_length)
             {
-                aeron_send_channel_endpoint_on_status_message(endpoint, conductor_proxy, buffer, length, addr);
+                result = aeron_send_channel_endpoint_on_status_message(endpoint, conductor_proxy, buffer, length, addr);
                 aeron_counter_ordered_increment(sender->status_messages_received_counter, 1);
             }
             else
@@ -470,7 +470,7 @@ int aeron_send_channel_endpoint_on_nak(
     return 0;
 }
 
-void aeron_send_channel_endpoint_on_status_message(
+int aeron_send_channel_endpoint_on_status_message(
     aeron_send_channel_endpoint_t *endpoint,
     aeron_driver_conductor_proxy_t *conductor_proxy,
     uint8_t *buffer,
@@ -482,9 +482,17 @@ void aeron_send_channel_endpoint_on_status_message(
     aeron_network_publication_t *publication = aeron_int64_to_ptr_hash_map_get(
         &endpoint->publication_dispatch_map, key_value);
 
+    int result = 0;
+
     if (NULL != endpoint->destination_tracker)
     {
-        aeron_udp_destination_tracker_on_status_message(endpoint->destination_tracker, buffer, length, addr);
+        result = aeron_udp_destination_tracker_on_status_message(endpoint->destination_tracker, buffer, length, addr);
+
+        if (0 != result)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return result;
+        }
     }
 
     if (NULL != publication)
@@ -500,6 +508,8 @@ void aeron_send_channel_endpoint_on_status_message(
 
         endpoint->time_of_last_sm_ns = aeron_clock_cached_nano_time(endpoint->cached_clock);
     }
+
+    return result;
 }
 
 void aeron_send_channel_endpoint_on_rttm(

@@ -207,7 +207,7 @@ int aeron_retransmit_handler_scan_for_available_retransmit(
             case AERON_RETRANSMIT_ACTION_STATE_LINGERING:
                 if (action->term_id == term_id &&
                     action->term_offset <= term_offset &&
-                    term_offset + length <= action->term_offset + action->length)
+                    term_offset < action->term_offset + (int32_t)action->length)
                 {
                     *actionp = NULL;
                     return 0;
@@ -222,8 +222,7 @@ int aeron_retransmit_handler_scan_for_available_retransmit(
         return 0;
     }
 
-    // it shouldn't be possible to get here...
-    AERON_SET_ERR(EINVAL, "%s", "no available retransmit actions - active retransmit counter appears to be out of sync");
+    AERON_SET_ERR(EINVAL, "%s", "maximum number of active RetransmitActions reached");
     *actionp = NULL;
     return -1;
 }

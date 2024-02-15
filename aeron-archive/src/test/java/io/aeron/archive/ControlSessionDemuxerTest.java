@@ -66,7 +66,8 @@ class ControlSessionDemuxerTest
             .srcControlChannel("src")
             .liveDestination("live")
             .replicationChannel("replication")
-            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length)
+            .srcResponseChannel("response");
         final int replicateRequestLength = replicateRequest2Encoder.encodedLength();
 
         controlSessionDemuxer.onFragment(buffer, 0, replicateRequestLength, mockHeader);
@@ -87,7 +88,15 @@ class ControlSessionDemuxerTest
             expected.srcControlChannel(),
             expected.liveDestination(),
             expected.replicationChannel(),
-            encodedCredentials);
+            encodedCredentials(expected),
+            expected.srcResponseChannel());
+    }
+
+    private static byte[] encodedCredentials(final ReplicateRequest2Decoder decoder)
+    {
+        final byte[] credentials = new byte[decoder.encodedCredentialsLength()];
+        decoder.getEncodedCredentials(credentials, 0, credentials.length);
+        return credentials;
     }
 
     @Test

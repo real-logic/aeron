@@ -27,7 +27,6 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableLong;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,9 +86,6 @@ public class ArchiveResponseClientTest
     @Test
     void shouldReplayUsingResponseChannel()
     {
-        final UnsafeBuffer message = new UnsafeBuffer(new byte[1024]);
-        message.setMemory(0, message.capacity(), (byte)'x');
-
         final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context()
             .controlRequestChannel(archive.context().controlChannel())
             .controlResponseChannel("aeron:udp?control-mode=response|control=localhost:10002");

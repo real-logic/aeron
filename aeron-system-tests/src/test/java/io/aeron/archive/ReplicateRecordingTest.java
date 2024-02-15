@@ -297,6 +297,48 @@ class ReplicateRecordingTest
 
     @Test
     @InterruptAfter(10)
+    void shouldReplicateStoppedRecordingWithResponseChannel()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+        {
+            final CountersReader counters = srcAeron.countersReader();
+            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            Tests.awaitPosition(counters, counterId, publication.position());
+        }
+
+        srcRecordingSignalConsumer.reset();
+        srcAeronArchive.stopRecording(subscriptionId);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
+
+        dstRecordingSignalConsumer.reset();
+        final String srcResponseChannel = "aeron:udp?control-mode=response|control=localhost:10000";
+        final ReplicationParams replicationParams = new ReplicationParams()
+            .replicationChannel(srcResponseChannel)
+            .srcResponseChannel(srcResponseChannel);
+
+        dstAeronArchive.replicate(
+            srcRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, replicationParams);
+
+        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
+        final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.SYNC);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
+    }
+
+    @Test
+    @InterruptAfter(10)
     void shouldReplicateRecordingWithCustomSessionId()
     {
         final String messagePrefix = "Message-Prefix-";

@@ -562,6 +562,7 @@
         <data  name="liveDestination"      id="10" type="varAsciiEncoding"/>
         <data  name="replicationChannel"   id="11" type="varAsciiEncoding"/>
         <data  name="encodedCredentials"   id="14" type="varDataEncoding" sinceVersion="8"/>
+        <data  name="srcResponseChannel"   id="15" type="varAsciiEncoding" sinceVersion="9"/>
     </sbe:message>
 
     <sbe:message name="MaxRecordedPositionRequest"

@@ -598,7 +598,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
                         "",
-                        NullCredentialsSupplier.NULL_CREDENTIAL);
+                        NullCredentialsSupplier.NULL_CREDENTIAL,
+                        "");
                 }
                 break;
             }
@@ -857,7 +858,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         decoder.srcControlChannel(),
                         decoder.liveDestination(),
                         "",
-                        NullCredentialsSupplier.NULL_CREDENTIAL);
+                        NullCredentialsSupplier.NULL_CREDENTIAL,
+                        "");
                 }
                 break;
             }
@@ -965,6 +967,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 {
                     encodedCredentials = NullCredentialsSupplier.NULL_CREDENTIAL;
                 }
+                final String srcResponseChannel = decoder.srcResponseChannel();
 
                 if (null != controlSession)
                 {
@@ -981,7 +984,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                         srcControlChannel,
                         liveDestination,
                         replicationChannel,
-                        encodedCredentials
+                        encodedCredentials,
+                        srcResponseChannel
                     );
                 }
                 break;

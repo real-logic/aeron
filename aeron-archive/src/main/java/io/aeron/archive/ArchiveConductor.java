@@ -1244,6 +1244,25 @@ abstract class ArchiveConductor
         final String srcResponseChannel,
         final ControlSession controlSession)
     {
+        final String replicationChannel0 = Strings.isEmpty(replicationChannel) ?
+            ctx.replicationChannel() : replicationChannel;
+
+        final ChannelUri replicationChannelUri = ChannelUri.parse(replicationChannel0);
+        if (replicationChannelUri.hasControlModeResponse() && !Strings.isEmpty(liveDestination))
+        {
+            final String msg = "response channels can't be used with live destinations";
+            controlSession.sendErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
+            return;
+        }
+
+        if (replicationChannelUri.hasControlModeResponse() &&
+            (NULL_VALUE != channelTagId || NULL_VALUE != subscriptionTagId))
+        {
+            final String msg = "response channels can't be used with tagged replication";
+            controlSession.sendErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
+            return;
+        }
+
         final boolean hasRecording = catalog.hasRecording(dstRecordingId);
         if (NULL_VALUE != dstRecordingId && !hasRecording)
         {
@@ -1287,7 +1306,7 @@ abstract class ArchiveConductor
             replicationId,
             stopPosition,
             liveDestination,
-            Strings.isEmpty(replicationChannel) ? ctx.replicationChannel() : replicationChannel,
+            replicationChannel0,
             fileIoMaxLength,
             replicationSessionId,
             hasRecording ? recordingSummary : null,

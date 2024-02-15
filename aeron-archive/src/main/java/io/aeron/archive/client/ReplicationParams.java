@@ -36,6 +36,7 @@ public class ReplicationParams
     private int fileIoMaxLength;
     private int replicationSessionId;
     private byte[] encodedCredentials;
+    private String srcResponseChannel;
 
     /**
      * Initialise all parameters to defaults.
@@ -62,6 +63,7 @@ public class ReplicationParams
         fileIoMaxLength = Aeron.NULL_VALUE;
         replicationSessionId = Aeron.NULL_VALUE;
         encodedCredentials = NullCredentialsSupplier.NULL_CREDENTIAL;
+        srcResponseChannel = null;
 
         return this;
     }
@@ -270,6 +272,28 @@ public class ReplicationParams
     public byte[] encodedCredentials()
     {
         return encodedCredentials;
+    }
+
+    /**
+     * Control address of the source archive to use response channels during replication.
+     *
+     * @param responseChannel control address of the response publication for the source archive.
+     * @return this for a fluent API.
+     */
+    public ReplicationParams srcResponseChannel(final String responseChannel)
+    {
+        this.srcResponseChannel = responseChannel;
+        return this;
+    }
+
+    /**
+     * Control address of the source archive to use response channels during replication.
+     *
+     * @return control address of the response publication for the source archive.
+     */
+    public String srcResponseChannel()
+    {
+        return srcResponseChannel;
     }
 
     /**

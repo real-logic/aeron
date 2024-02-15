@@ -46,6 +46,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         REPLICATE_DESCRIPTOR,
         SRC_RECORDING_POSITION,
         EXTEND,
+        REPLAY_TOKEN,
+        GET_ARCHIVE_PROXY,
         REPLAY,
         AWAIT_IMAGE,
         REPLICATE,
@@ -89,6 +91,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private Subscription recordingSubscription;
     private Image image;
     private State state = State.CONNECT;
+    private long replayToken = NULL_VALUE;
+    private long responsePublicationRegistrationId = NULL_VALUE;
+    private ExclusivePublication responsePublication = null;
+    private ArchiveProxy responseArchiveProxy = null;
+
 
     ReplicationSession(
         final long srcRecordingId,
@@ -178,6 +185,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
         CloseHelper.close(countedErrorHandler, asyncConnect);
         CloseHelper.close(countedErrorHandler, srcArchive);
+        CloseHelper.close(countedErrorHandler, responsePublication);
 
         archiveConductor.removeReplicationSession(this);
         signal(NULL_POSITION, REPLICATE_END);
@@ -214,6 +222,14 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
                 case EXTEND:
                     workCount += extend();
+                    break;
+
+                case REPLAY_TOKEN:
+                    workCount += replayToken();
+                    break;
+
+                case GET_ARCHIVE_PROXY:
+                    workCount += getArchiveProxy();
                     break;
 
                 case REPLAY:
@@ -481,8 +497,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final boolean isMds = isTagged || null != liveDestination;
         final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
         final String endpoint = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
-        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
         channelUri.put(CommonContext.REJOIN_PARAM_NAME, "false");
+        if (!channelUri.hasControlModeResponse())
+        {
+            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
+        }
 
         if (isMds)
         {
@@ -507,10 +526,96 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 recordingSubscription.asyncAddDestination(replayDestination);
             }
 
-            state(State.REPLAY);
+            state(State.REPLAY_TOKEN);
         }
 
         return 1;
+    }
+
+    private int replayToken()
+    {
+        int workCount = 0;
+
+        if (NULL_VALUE != replayToken || !ChannelUri.parse(replicationChannel).hasControlModeResponse())
+        {
+            workCount++;
+            state(State.GET_ARCHIVE_PROXY);
+            return workCount;
+        }
+
+        if (NULL_VALUE == activeCorrelationId)
+        {
+            final long lastCorrelationId = aeron.nextCorrelationId();
+            if (srcArchive.archiveProxy().requestReplayToken(
+                lastCorrelationId, srcArchive.controlSessionId(), srcRecordingId))
+            {
+                workCount++;
+                activeCorrelationId = lastCorrelationId;
+            }
+            else
+            {
+                return workCount;
+            }
+        }
+
+        final ControlResponsePoller poller = srcArchive.controlResponsePoller();
+        workCount += poller.poll();
+        if (hasResponse(poller))
+        {
+            replayToken = poller.relevantId();
+            state(State.GET_ARCHIVE_PROXY);
+        }
+
+        return workCount;
+    }
+
+    private int getArchiveProxy()
+    {
+        int workCount = 0;
+
+        if (NULL_VALUE == replayToken)
+        {
+            ++workCount;
+            state(State.REPLAY);
+            return workCount;
+        }
+
+        if (NULL_VALUE == responsePublicationRegistrationId)
+        {
+            final String uri = new ChannelUriStringBuilder(context.controlRequestChannel())
+                .responseCorrelationId(recordingSubscription.registrationId())
+                .build();
+            final int controlRequestStreamId = srcArchive.context().controlRequestStreamId();
+
+            responsePublicationRegistrationId = aeron.asyncAddExclusivePublication(uri, controlRequestStreamId);
+        }
+
+        if (null == responsePublication)
+        {
+            responsePublication = aeron.getExclusivePublication(responsePublicationRegistrationId);
+            if (null != responsePublication)
+            {
+                ++workCount;
+            }
+            else
+            {
+                return workCount;
+            }
+        }
+
+        if (responsePublication.isConnected())
+        {
+            ++workCount;
+        }
+        else
+        {
+            return workCount;
+        }
+
+        responseArchiveProxy = new ArchiveProxy(responsePublication);
+        state(State.REPLAY);
+
+        return workCount;
     }
 
     private int replay()
@@ -546,14 +651,25 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 channelUri.put(CommonContext.EOS_PARAM_NAME, "false");
             }
 
+            if (channelUri.hasControlModeResponse())
+            {
+                channelUri.put(
+                    CommonContext.RESPONSE_CORRELATION_ID_PARAM_NAME,
+                    String.valueOf(recordingSubscription.registrationId()));
+            }
+
             final long correlationId = aeron.nextCorrelationId();
 
             final ReplayParams replayParams = new ReplayParams()
                 .position(replayPosition)
                 .length(NULL_POSITION == dstStopPosition ? AeronArchive.NULL_LENGTH : dstStopPosition - replayPosition)
-                .fileIoMaxLength(fileIoMaxLength);
+                .fileIoMaxLength(fileIoMaxLength)
+                .replayToken(replayToken);
 
-            if (srcArchive.archiveProxy().replay(
+            final ArchiveProxy archiveProxy = null != responseArchiveProxy ?
+                responseArchiveProxy : srcArchive.archiveProxy();
+
+            if (archiveProxy.replay(
                 srcRecordingId,
                 channelUri.toString(),
                 replayStreamId,

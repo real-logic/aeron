@@ -1173,6 +1173,7 @@ abstract class ArchiveConductor
         final int fileIoMaxLength,
         final int replicationSessionId,
         final byte[] encodedCredentials,
+        final String srcResponseChannel,
         final ControlSession controlSession)
     {
         final boolean hasRecording = catalog.hasRecording(dstRecordingId);
@@ -1202,6 +1203,11 @@ abstract class ArchiveConductor
         if (null != encodedCredentials && 0 < encodedCredentials.length)
         {
             remoteArchiveContext.credentialsSupplier(new ReplicationCredentialsSupplier(encodedCredentials));
+        }
+
+        if (!Strings.isEmpty(srcResponseChannel))
+        {
+            remoteArchiveContext.controlResponseChannel(srcResponseChannel);
         }
 
         final long replicationId = nextSessionId++;

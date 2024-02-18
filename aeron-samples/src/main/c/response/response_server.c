@@ -102,6 +102,7 @@ void poll_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_hea
         (int)length,
         buffer);
 
+    if (NULL != response_channel_info->publication)
     {
         char message[256] = { 0 };
         int message_len;
@@ -211,34 +212,41 @@ void process_response_channel_info(void *clientd, int64_t key, void *value)
 {
     response_channel_info_t *response_channel_info = (response_channel_info_t *)value;
 
-    if (NULL == response_channel_info->publication)
+    if (NULL != response_channel_info->async_add_pub)
     {
-        if (aeron_async_add_publication_poll(&response_channel_info->publication, response_channel_info->async_add_pub) < 0)
+        int rc;
+
+        rc = aeron_async_add_publication_poll(&response_channel_info->publication, response_channel_info->async_add_pub);
+
+        if (rc == 0)
+        {
+            return; // still waiting
+        }
+
+        if (rc < 0)
         {
             fprintf(stderr, "aeron_async_add_publication_poll: %s\n", aeron_errmsg());
-            return;
         }
+
+        // if we're here, _poll returned either 1 or -1.  Either way, we're done with the async_add_pub
+        response_channel_info->async_add_pub = NULL;
     }
 
-    if (NULL != response_channel_info->publication)
+    int fragments_read = aeron_image_poll(
+        response_channel_info->image,
+        aeron_fragment_assembler_handler,
+        response_channel_info->fragment_assembler,
+        DEFAULT_FRAGMENT_COUNT_LIMIT);
+
+    if (fragments_read < 0)
     {
-        int fragments_read = aeron_image_poll(
-            response_channel_info->image,
-            aeron_fragment_assembler_handler,
-            response_channel_info->fragment_assembler,
-            DEFAULT_FRAGMENT_COUNT_LIMIT);
+        fprintf(stderr, "aeron_image_poll: %s\n", aeron_errmsg());
+    }
+    else
+    {
+        int *total_fragments_read = (int *)clientd;
 
-        if (fragments_read < 0)
-        {
-            fprintf(stderr, "aeron_image_poll: %s\n", aeron_errmsg());
-            return;
-        }
-        else
-        {
-            int *total_fragments_read = (int *)clientd;
-
-            *total_fragments_read += fragments_read;
-        }
+        *total_fragments_read += fragments_read;
     }
 }
 

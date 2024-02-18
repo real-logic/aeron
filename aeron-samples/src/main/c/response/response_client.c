@@ -32,6 +32,7 @@
 #include "aeronc.h"
 #include "concurrent/aeron_atomic.h"
 #include "util/aeron_parse_util.h"
+#include "util/aeron_strutil.h"
 #include "aeron_agent.h"
 
 #include "../samples_configuration.h"

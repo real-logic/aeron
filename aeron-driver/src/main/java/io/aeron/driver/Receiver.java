@@ -24,8 +24,8 @@ import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -33,7 +33,8 @@ import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
 
 import static io.aeron.driver.Configuration.PENDING_SETUPS_TIMEOUT_NS;
-import static io.aeron.driver.status.SystemCounterDescriptor.*;
+import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
+import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
 
 /**
  * Agent that receives messages streams and rebuilds {@link PublicationImage}s, plus iterates over them sending status
@@ -46,7 +47,7 @@ public final class Receiver implements Agent
     private final long reResolutionCheckIntervalNs;
     private long reResolutionDeadlineNs;
     private final DataTransportPoller dataTransportPoller;
-    private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
+    private final ManyToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesReceived;
     private final AtomicCounter resolutionChanges;
     private final NanoClock nanoClock;

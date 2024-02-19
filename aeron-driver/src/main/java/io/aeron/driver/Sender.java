@@ -22,8 +22,8 @@ import io.aeron.driver.status.DutyCycleStallTracker;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -68,7 +68,7 @@ public final class Sender extends SenderRhsPadding implements Agent
     private final long reResolutionCheckIntervalNs;
     private final int dutyCycleRatio;
     private final ControlTransportPoller controlTransportPoller;
-    private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
+    private final ManyToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesSent;
     private final AtomicCounter resolutionChanges;
     private final AtomicCounter shortSends;

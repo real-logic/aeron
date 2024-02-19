@@ -539,8 +539,8 @@ public final class MediaDriver implements AutoCloseable
         private DataTransportPoller dataTransportPoller;
         private ControlTransportPoller controlTransportPoller;
         private ManyToOneConcurrentArrayQueue<Runnable> driverCommandQueue;
-        private OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue;
-        private OneToOneConcurrentArrayQueue<Runnable> senderCommandQueue;
+        private ManyToOneConcurrentArrayQueue<Runnable> receiverCommandQueue;
+        private ManyToOneConcurrentArrayQueue<Runnable> senderCommandQueue;
         private ReceiverProxy receiverProxy;
         private SenderProxy senderProxy;
         private DriverConductorProxy driverConductorProxy;
@@ -3538,23 +3538,23 @@ public final class MediaDriver implements AutoCloseable
             return channelSendTimestampClock;
         }
 
-        OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
+        ManyToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;
         }
 
-        Context receiverCommandQueue(final OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue)
+        Context receiverCommandQueue(final ManyToOneConcurrentArrayQueue<Runnable> receiverCommandQueue)
         {
             this.receiverCommandQueue = receiverCommandQueue;
             return this;
         }
 
-        OneToOneConcurrentArrayQueue<Runnable> senderCommandQueue()
+        ManyToOneConcurrentArrayQueue<Runnable> senderCommandQueue()
         {
             return senderCommandQueue;
         }
 
-        Context senderCommandQueue(final OneToOneConcurrentArrayQueue<Runnable> senderCommandQueue)
+        Context senderCommandQueue(final ManyToOneConcurrentArrayQueue<Runnable> senderCommandQueue)
         {
             this.senderCommandQueue = senderCommandQueue;
             return this;
@@ -3802,6 +3802,11 @@ public final class MediaDriver implements AutoCloseable
                 congestionControlSupplier = Configuration.congestionControlSupplier();
             }
 
+            if (null == threadingMode)
+            {
+                threadingMode = Configuration.threadingMode();
+            }
+
             if (null == driverCommandQueue)
             {
                 driverCommandQueue = new ManyToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
@@ -3809,12 +3814,12 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == receiverCommandQueue)
             {
-                receiverCommandQueue = new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
+                receiverCommandQueue = new ManyToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
             }
 
             if (null == senderCommandQueue)
             {
-                senderCommandQueue = new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
+                senderCommandQueue = new ManyToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
             }
 
             if (null == retransmitUnicastDelayGenerator)
@@ -3837,11 +3842,6 @@ public final class MediaDriver implements AutoCloseable
             {
                 multicastFeedbackDelayGenerator = new OptimalMulticastDelayGenerator(
                     nakMulticastMaxBackoffNs, nakMulticastGroupSize);
-            }
-
-            if (null == threadingMode)
-            {
-                threadingMode = Configuration.threadingMode();
             }
 
             if (null == terminationValidator)

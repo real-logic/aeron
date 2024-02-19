@@ -65,14 +65,8 @@ public final class DriverConductorProxy extends CommandProxy
     public void reResolveEndpoint(
         final String endpoint, final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
     {
-        if (notConcurrent())
-        {
-            driverConductor.onReResolveEndpoint(endpoint, channelEndpoint, address);
-        }
-        else
-        {
-            offer(() -> driverConductor.onReResolveEndpoint(endpoint, channelEndpoint, address));
-        }
+        // safe, because DriverConductor uses the async thread to execute this call
+        driverConductor.onReResolveEndpoint(endpoint, channelEndpoint, address);
     }
 
     /**
@@ -89,14 +83,8 @@ public final class DriverConductorProxy extends CommandProxy
         final ReceiveChannelEndpoint channelEndpoint,
         final InetSocketAddress address)
     {
-        if (notConcurrent())
-        {
-            driverConductor.onReResolveControl(endpoint, udpChannel, channelEndpoint, address);
-        }
-        else
-        {
-            offer(() -> driverConductor.onReResolveControl(endpoint, udpChannel, channelEndpoint, address));
-        }
+        // safe, because DriverConductor uses the async thread to execute this call
+        driverConductor.onReResolveControl(endpoint, udpChannel, channelEndpoint, address);
     }
 
     /**

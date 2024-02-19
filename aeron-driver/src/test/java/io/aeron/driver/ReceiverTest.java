@@ -32,7 +32,10 @@ import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
@@ -148,7 +151,7 @@ class ReceiverTest
             .controlTransportPoller(mockControlTransportPoller)
             .logFactory(new TestLogFactory())
             .systemCounters(mockSystemCounters)
-            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .receiverCommandQueue(new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .nanoClock(nanoClock)
             .cachedNanoClock(nanoClock)
             .senderCachedNanoClock(nanoClock)

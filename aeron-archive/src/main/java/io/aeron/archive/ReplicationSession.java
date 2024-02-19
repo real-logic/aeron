@@ -584,6 +584,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             final String uri = new ChannelUriStringBuilder(context.controlRequestChannel())
                 .responseCorrelationId(recordingSubscription.registrationId())
+                .termId((Integer)null).initialTermId((Integer)null).termOffset((Integer)null)
+                .termLength(64 * 1024)
                 .build();
             final int controlRequestStreamId = srcArchive.context().controlRequestStreamId();
 
@@ -604,6 +606,17 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
 
         if (responsePublication.isConnected())
+        {
+            ++workCount;
+        }
+        else
+        {
+            return workCount;
+        }
+
+        final int pubLmtCounterId = aeron.countersReader().findByTypeIdAndRegistrationId(
+            AeronCounters.DRIVER_PUBLISHER_LIMIT_TYPE_ID, responsePublication.registrationId());
+        if (0 != aeron.countersReader().getCounterValue(pubLmtCounterId))
         {
             ++workCount;
         }

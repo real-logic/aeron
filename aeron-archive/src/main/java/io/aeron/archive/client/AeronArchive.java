@@ -1381,7 +1381,7 @@ public final class AeronArchive implements AutoCloseable
 
         try (Publication publication = aeron.addExclusivePublication(channel, context().controlRequestStreamId()))
         {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(publication);
+            final ArchiveProxy responseArchiveProxy = new ArchiveProxy(publication);
 
             final int pubLmtCounterId = aeron.countersReader().findByTypeIdAndRegistrationId(
                 AeronCounters.DRIVER_PUBLISHER_LIMIT_TYPE_ID, publication.registrationId());
@@ -1397,7 +1397,7 @@ public final class AeronArchive implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            if (!archiveProxy.replay(
+            if (!responseArchiveProxy.replay(
                 recordingId, replayChannel, replayStreamId, replayParams, lastCorrelationId, controlSessionId))
             {
                 throw new ArchiveException("failed to send replay request");

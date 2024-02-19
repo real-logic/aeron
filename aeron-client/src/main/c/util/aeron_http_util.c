@@ -398,6 +398,12 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
     return aeron_http_send_request(response, url, timeout_ns, "GET", AERON_HTTP_UTIL_EMPTY, AERON_HTTP_UTIL_EMPTY);
 }
 
+int aeron_http_get(
+    aeron_http_response_t **response, const char *url, int64_t timeout_ns, const char *headers)
+{
+    return aeron_http_send_request(response, url, timeout_ns, "PUT", headers, AERON_HTTP_UTIL_EMPTY);
+}
+
 int aeron_http_put(
     aeron_http_response_t **response, const char *url, int64_t timeout_ns, const char *headers, const char *body)
 {

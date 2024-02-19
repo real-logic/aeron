@@ -73,6 +73,9 @@ inline void aeron_http_response_delete(aeron_http_response_t *response)
 
 int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64_t timeout_ns);
 
+int aeron_http_get(
+    aeron_http_response_t **response, const char *url, int64_t timeout_ns, const char *header);
+
 int aeron_http_put(
     aeron_http_response_t **response, const char *url, int64_t timeout_ns, const char *header, const char *body);
 

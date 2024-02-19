@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT_DEFAULT_NS;
 import static io.aeron.archive.client.ArchiveProxy.DEFAULT_RETRY_ATTEMPTS;
 import static io.aeron.driver.Configuration.*;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
@@ -1371,14 +1372,28 @@ public final class AeronArchive implements AutoCloseable
         replayParams.replayToken(replayToken);
         final Subscription replaySubscription = aeron.addSubscription(replayChannel, replayStreamId);
         final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder(context.controlRequestChannel())
-            .responseCorrelationId(replaySubscription.registrationId());
+            .responseCorrelationId(replaySubscription.registrationId())
+            .termId((Integer)null).initialTermId((Integer)null).termOffset((Integer)null)
+            .termLength(64 * 1024)
+            .spiesSimulateConnection(false);
 
-        try (Publication publication = aeron.addPublication(uriBuilder.build(), context().controlRequestStreamId()))
+        final String channel = uriBuilder.build();
+
+        try (Publication publication = aeron.addExclusivePublication(channel, context().controlRequestStreamId()))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(publication);
 
-            while (!publication.isConnected())
+            final int pubLmtCounterId = aeron.countersReader().findByTypeIdAndRegistrationId(
+                AeronCounters.DRIVER_PUBLISHER_LIMIT_TYPE_ID, publication.registrationId());
+
+            final long deadlineNs = aeron.context().nanoClock().nanoTime() + context.messageTimeoutNs();
+            while (!publication.isConnected() || 0 == aeron.countersReader().getCounterValue(pubLmtCounterId))
             {
+                if (deadlineNs <= aeron.context().nanoClock().nanoTime())
+                {
+                    throw new ArchiveException("timed out wait for replay publication to connect");
+                }
+
                 idleStrategy.idle();
             }
 

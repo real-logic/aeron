@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.oneOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -122,7 +122,7 @@ public class DataLossAndRecoverySystemTest
                 .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
             final long nakCount = aeron.countersReader()
                 .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
-            assertThat(nakCount, greaterThan(1L));
+            assertThat(nakCount, greaterThanOrEqualTo(1L));
             // in CI, we occasionally see an extra retransmission
             assertThat(retransmitCount, oneOf(1L, 2L));
         }

@@ -247,14 +247,24 @@ int aeron_http_parse_response(aeron_http_response_t *response)
     return 0;
 }
 
+#define AERON_HTTP_UTIL_EMPTY ""
+
 static char aeron_http_request_format[] =
-    "GET %s HTTP/1.1\r\n"
+    "%s %s HTTP/1.1\r\n"
     "Host: %s\r\n"
     "Accept: text/plain, text/*, */*\r\n"
     "Accept-Encoding: identity\r\n"
+    "%s"
+    "%s"
     "\r\n";
 
-int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64_t timeout_ns)
+static int aeron_http_send_request(
+    aeron_http_response_t **response,
+    const char *url,
+    int64_t timeout_ns,
+    const char *method,
+    const char *headers,
+    const char *body)
 {
     aeron_http_parsed_url_t parsed_url;
     aeron_socket_t sock;
@@ -283,7 +293,9 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
 
     char request[sizeof(parsed_url.path_and_query) + sizeof(aeron_http_request_format) + 1];
     int length = snprintf(
-        request, sizeof(request) - 1, aeron_http_request_format, parsed_url.path_and_query, parsed_url.host_and_port);
+        request, sizeof(request) - 1,
+        aeron_http_request_format,
+        method, parsed_url.path_and_query, parsed_url.host_and_port, headers, body);
     ssize_t sent_length = 0;
 
     if (length < 0 || (sent_length = send(sock, request, length, 0)) < length)
@@ -370,15 +382,32 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
     *response = _response;
     return 0;
 
-    error:
-        if (-1 != sock)
-        {
-            aeron_close_socket(sock);
-        }
+error:
+    if (-1 != sock)
+    {
+        aeron_close_socket(sock);
+    }
 
-        aeron_http_response_delete(_response);
+    aeron_http_response_delete(_response);
 
-        return -1;
+    return -1;
+}
+
+int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64_t timeout_ns)
+{
+    return aeron_http_send_request(response, url, timeout_ns, "GET", AERON_HTTP_UTIL_EMPTY, AERON_HTTP_UTIL_EMPTY);
+}
+
+int aeron_http_get(
+    aeron_http_response_t **response, const char *url, int64_t timeout_ns, const char *headers)
+{
+    return aeron_http_send_request(response, url, timeout_ns, "GET", headers, AERON_HTTP_UTIL_EMPTY);
+}
+
+int aeron_http_put(
+    aeron_http_response_t **response, const char *url, int64_t timeout_ns, const char *headers, const char *body)
+{
+    return aeron_http_send_request(response, url, timeout_ns, "PUT", headers, body);
 }
 
 int aeron_http_header_get(aeron_http_response_t *response, const char *header_name, char *line, size_t max_length)

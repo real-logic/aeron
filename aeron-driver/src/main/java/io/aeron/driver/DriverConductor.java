@@ -360,26 +360,29 @@ public final class DriverConductor implements Agent
     void onReResolveEndpoint(
         final String endpoint, final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
     {
-        try
+        ctx.asyncTaskExecutor().execute(() ->
         {
-            final InetSocketAddress newAddress = UdpChannel.resolve(
-                endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver);
-
-            if (newAddress.isUnresolved())
+            try
             {
-                ctx.errorHandler().onError(new AeronEvent("could not re-resolve: endpoint=" + endpoint));
+                final InetSocketAddress newAddress = UdpChannel.resolve(
+                    endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver);
+
+                if (newAddress.isUnresolved())
+                {
+                    ctx.errorHandler().onError(new AeronEvent("could not re-resolve: endpoint=" + endpoint));
+                    errorCounter.increment();
+                }
+                else if (!address.equals(newAddress))
+                {
+                    senderProxy.onResolutionChange(channelEndpoint, endpoint, newAddress);
+                }
+            }
+            catch (final Exception ex)
+            {
+                ctx.errorHandler().onError(ex);
                 errorCounter.increment();
             }
-            else if (!address.equals(newAddress))
-            {
-                senderProxy.onResolutionChange(channelEndpoint, endpoint, newAddress);
-            }
-        }
-        catch (final Exception ex)
-        {
-            ctx.errorHandler().onError(ex);
-            errorCounter.increment();
-        }
+        });
     }
 
     void onReResolveControl(
@@ -388,26 +391,29 @@ public final class DriverConductor implements Agent
         final ReceiveChannelEndpoint channelEndpoint,
         final InetSocketAddress address)
     {
-        try
+        ctx.asyncTaskExecutor().execute(() ->
         {
-            final InetSocketAddress newAddress = UdpChannel.resolve(
-                control, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver);
-
-            if (newAddress.isUnresolved())
+            try
             {
-                ctx.errorHandler().onError(new AeronEvent("could not re-resolve: control=" + control));
+                final InetSocketAddress newAddress = UdpChannel.resolve(
+                    control, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver);
+
+                if (newAddress.isUnresolved())
+                {
+                    ctx.errorHandler().onError(new AeronEvent("could not re-resolve: control=" + control));
+                    errorCounter.increment();
+                }
+                else if (!address.equals(newAddress))
+                {
+                    receiverProxy.onResolutionChange(channelEndpoint, udpChannel, newAddress);
+                }
+            }
+            catch (final Exception ex)
+            {
+                ctx.errorHandler().onError(ex);
                 errorCounter.increment();
             }
-            else if (!address.equals(newAddress))
-            {
-                receiverProxy.onResolutionChange(channelEndpoint, udpChannel, newAddress);
-            }
-        }
-        catch (final Exception ex)
-        {
-            ctx.errorHandler().onError(ex);
-            errorCounter.increment();
-        }
+        });
     }
 
     IpcPublication getSharedIpcPublication(final long streamId)

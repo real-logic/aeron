@@ -169,14 +169,8 @@ final class ReceiverProxy extends CommandProxy
     void onResolutionChange(
         final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel, final InetSocketAddress newAddress)
     {
-        if (notConcurrent())
-        {
-            receiver.onResolutionChange(channelEndpoint, udpChannel, newAddress);
-        }
-        else
-        {
-            offer(() -> receiver.onResolutionChange(channelEndpoint, udpChannel, newAddress));
-        }
+        // must add to the queue, because called from the async thread
+        offer(() -> receiver.onResolutionChange(channelEndpoint, udpChannel, newAddress));
     }
 
     void requestSetup(

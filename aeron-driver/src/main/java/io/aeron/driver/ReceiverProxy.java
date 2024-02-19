@@ -18,43 +18,22 @@ package io.aeron.driver;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.media.UdpChannel;
-import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.QueuedPipe;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
 
-import static io.aeron.driver.ThreadingMode.INVOKER;
-import static io.aeron.driver.ThreadingMode.SHARED;
-
 /**
  * Proxy for offering into the {@link Receiver} Thread's command queue.
  */
-final class ReceiverProxy
+final class ReceiverProxy extends CommandProxy
 {
-    private final ThreadingMode threadingMode;
-    private final QueuedPipe<Runnable> commandQueue;
-    private final AtomicCounter failCount;
-
     private Receiver receiver;
 
     ReceiverProxy(
         final ThreadingMode threadingMode, final QueuedPipe<Runnable> commandQueue, final AtomicCounter failCount)
     {
-        this.threadingMode = threadingMode;
-        this.commandQueue = commandQueue;
-        this.failCount = failCount;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public String toString()
-    {
-        return "ReceiverProxy{" +
-            "threadingMode=" + threadingMode +
-            ", failCount=" + failCount +
-            '}';
+        super(threadingMode, commandQueue, failCount);
     }
 
     void receiver(final Receiver receiver)
@@ -65,11 +44,6 @@ final class ReceiverProxy
     Receiver receiver()
     {
         return receiver;
-    }
-
-    boolean isApplyingBackpressure()
-    {
-        return commandQueue.remainingCapacity() < 1;
     }
 
     void addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
@@ -217,28 +191,6 @@ final class ReceiverProxy
         else
         {
             offer(() -> receiver.onRequestSetup(channelEndpoint, streamId, sessionId));
-        }
-    }
-
-    private boolean notConcurrent()
-    {
-        return threadingMode == SHARED || threadingMode == INVOKER;
-    }
-
-    private void offer(final Runnable cmd)
-    {
-        while (!commandQueue.offer(cmd))
-        {
-            if (!failCount.isClosed())
-            {
-                failCount.increment();
-            }
-
-            Thread.yield();
-            if (Thread.currentThread().isInterrupted())
-            {
-                throw new AgentTerminationException("interrupted");
-            }
         }
     }
 }

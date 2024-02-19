@@ -49,7 +49,9 @@ import org.agrona.concurrent.status.UnsafeBufferPosition;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.*;
@@ -215,8 +217,8 @@ public final class DriverConductor implements Agent
 
         int workCount = 0;
         workCount += processTimers(nowNs);
-        workCount += driverCmdQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
         workCount += clientCommandAdapter.receive();
+        workCount += driverCmdQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
         workCount += trackStreamPositions(workCount, nowNs);
         workCount += nameResolver.doWork(cachedEpochClock.time());
         workCount += freeEndOfLifeResources(ctx.resourceFreeLimit());
@@ -466,74 +468,81 @@ public final class DriverConductor implements Agent
         final long clientId,
         final boolean isExclusive)
     {
-        final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
-        final ChannelUri channelUri = udpChannel.channelUri();
-        final PublicationParams params = getPublicationParams(channelUri, ctx, this, false);
-        validateEndpointForPublication(udpChannel);
-        validateControlForPublication(udpChannel);
-        validateMtuForMaxMessage(params, channel);
-        validateResponseSubscription(params);
-
-        final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(params, udpChannel, correlationId);
-
-        NetworkPublication publication = null;
-        if (!isExclusive)
-        {
-            publication = findPublication(networkPublications, streamId, channelEndpoint, params.responseCorrelationId);
-        }
-
-        final PublicationImage responsePublicationImage = findResponsePublicationImage(params);
-
-        boolean isNewPublication = false;
-        if (null == publication)
-        {
-            if (params.hasSessionId)
-            {
-                checkForSessionClash(params.sessionId, streamId, udpChannel.canonicalForm(), channel);
-            }
-
-            publication = newNetworkPublication(
-                correlationId, clientId, streamId, channel, udpChannel, channelEndpoint, params, isExclusive);
-
-            isNewPublication = true;
-        }
-        else
-        {
-            confirmMatch(
-                channelUri,
-                params,
-                publication.rawLog(),
-                publication.sessionId(),
-                publication.channel(),
-                publication.initialTermId(),
-                publication.startingTermId(),
-                publication.startingTermOffset());
-
-            validateSpiesSimulateConnection(
-                params, publication.spiesSimulateConnection(), channel, publication.channel());
-        }
-
-        publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), publication));
-
-        clientProxy.onPublicationReady(
+        executeAsyncClientTask(
             correlationId,
-            publication.registrationId(),
-            streamId,
-            publication.sessionId(),
-            publication.rawLog().fileName(),
-            publication.publisherLimitId(),
-            channelEndpoint.statusIndicatorCounterId(),
-            isExclusive);
+            () -> UdpChannel.parse(channel, nameResolver, false),
+            (udpChannel) ->
+            {
+                final ChannelUri channelUri = udpChannel.channelUri();
+                final PublicationParams params = getPublicationParams(channelUri, ctx, this, false);
+                validateEndpointForPublication(udpChannel);
+                validateControlForPublication(udpChannel);
+                validateMtuForMaxMessage(params, channel);
+                validateResponseSubscription(params);
 
-        if (isNewPublication)
-        {
-            linkSpies(subscriptionLinks, publication);
-        }
+                final SendChannelEndpoint channelEndpoint =
+                    getOrCreateSendChannelEndpoint(params, udpChannel, correlationId);
 
-        if (null != responsePublicationImage)
-        {
-            responsePublicationImage.responseSessionId(publication.sessionId());
-        }
+                NetworkPublication publication = null;
+                if (!isExclusive)
+                {
+                    publication =
+                        findPublication(networkPublications, streamId, channelEndpoint, params.responseCorrelationId);
+                }
+
+                final PublicationImage responsePublicationImage = findResponsePublicationImage(params);
+
+                boolean isNewPublication = false;
+                if (null == publication)
+                {
+                    if (params.hasSessionId)
+                    {
+                        checkForSessionClash(params.sessionId, streamId, udpChannel.canonicalForm(), channel);
+                    }
+
+                    publication = newNetworkPublication(
+                        correlationId, clientId, streamId, channel, udpChannel, channelEndpoint, params, isExclusive);
+
+                    isNewPublication = true;
+                }
+                else
+                {
+                    confirmMatch(
+                        channelUri,
+                        params,
+                        publication.rawLog(),
+                        publication.sessionId(),
+                        publication.channel(),
+                        publication.initialTermId(),
+                        publication.startingTermId(),
+                        publication.startingTermOffset());
+
+                    validateSpiesSimulateConnection(
+                        params, publication.spiesSimulateConnection(), channel, publication.channel());
+                }
+
+                publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), publication));
+
+                clientProxy.onPublicationReady(
+                    correlationId,
+                    publication.registrationId(),
+                    streamId,
+                    publication.sessionId(),
+                    publication.rawLog().fileName(),
+                    publication.publisherLimitId(),
+                    channelEndpoint.statusIndicatorCounterId(),
+                    isExclusive);
+
+                if (isNewPublication)
+                {
+                    linkSpies(subscriptionLinks, publication);
+                }
+
+                if (null != responsePublicationImage)
+                {
+                    responsePublicationImage.responseSessionId(publication.sessionId());
+                }
+            });
     }
 
     private PublicationImage findResponsePublicationImage(final PublicationParams params)
@@ -936,34 +945,40 @@ public final class DriverConductor implements Agent
     void onAddNetworkSubscription(
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
-        final ControlMode controlMode = udpChannel.controlMode();
+        executeAsyncClientTask(
+            registrationId,
+            () -> UdpChannel.parse(channel, nameResolver, false),
+            (udpChannel) ->
+            {
+                final ControlMode controlMode = udpChannel.controlMode();
 
-        validateControlForSubscription(udpChannel);
-        validateTimestampConfiguration(udpChannel);
+                validateControlForSubscription(udpChannel);
+                validateTimestampConfiguration(udpChannel);
 
-        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
-        checkForClashingSubscription(params, udpChannel, streamId);
+                final SubscriptionParams params =
+                    SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
+                checkForClashingSubscription(params, udpChannel, streamId);
 
-        final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(
-            params, udpChannel, registrationId);
+                final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(
+                    params, udpChannel, registrationId);
 
-        final NetworkSubscriptionLink subscription = new NetworkSubscriptionLink(
-            registrationId, channelEndpoint, streamId, channel, getOrAddClient(clientId), params);
+                final NetworkSubscriptionLink subscription = new NetworkSubscriptionLink(
+                    registrationId, channelEndpoint, streamId, channel, getOrAddClient(clientId), params);
 
-        subscriptionLinks.add(subscription);
+                subscriptionLinks.add(subscription);
 
-        if (ControlMode.RESPONSE == controlMode)
-        {
-            channelEndpoint.incResponseRefToStream(subscription.streamId);
-        }
-        else
-        {
-            addNetworkSubscriptionToReceiver(subscription);
-        }
+                if (ControlMode.RESPONSE == controlMode)
+                {
+                    channelEndpoint.incResponseRefToStream(subscription.streamId);
+                }
+                else
+                {
+                    addNetworkSubscriptionToReceiver(subscription);
+                }
 
-        clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounter().id());
-        linkMatchingImages(subscription);
+                clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounter().id());
+                linkMatchingImages(subscription);
+            });
     }
 
     private void addNetworkSubscriptionToReceiver(final NetworkSubscriptionLink subscription)
@@ -1014,29 +1029,35 @@ public final class DriverConductor implements Agent
 
     void onAddSpySubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
-        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
-        final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
-            registrationId, udpChannel, streamId, getOrAddClient(clientId), params);
-
-        subscriptionLinks.add(subscriptionLink);
-        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
-
-        for (int i = 0, size = networkPublications.size(); i < size; i++)
-        {
-            final NetworkPublication publication = networkPublications.get(i);
-            if (subscriptionLink.matches(publication) && publication.isAcceptingSubscriptions())
+        executeAsyncClientTask(
+            registrationId,
+            () -> UdpChannel.parse(channel, nameResolver, false),
+            (udpChannel) ->
             {
-                clientProxy.onAvailableImage(
-                    publication.registrationId(),
-                    streamId,
-                    publication.sessionId(),
-                    registrationId,
-                    linkSpy(publication, subscriptionLink).id(),
-                    publication.rawLog().fileName(),
-                    CommonContext.IPC_CHANNEL);
-            }
-        }
+                final SubscriptionParams params =
+                    SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
+                final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
+                    registrationId, udpChannel, streamId, getOrAddClient(clientId), params);
+
+                subscriptionLinks.add(subscriptionLink);
+                clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
+
+                for (int i = 0, size = networkPublications.size(); i < size; i++)
+                {
+                    final NetworkPublication publication = networkPublications.get(i);
+                    if (subscriptionLink.matches(publication) && publication.isAcceptingSubscriptions())
+                    {
+                        clientProxy.onAvailableImage(
+                            publication.registrationId(),
+                            streamId,
+                            publication.sessionId(),
+                            registrationId,
+                            linkSpy(publication, subscriptionLink).id(),
+                            publication.rawLog().fileName(),
+                            CommonContext.IPC_CHANNEL);
+                    }
+                }
+            });
     }
 
     void onRemoveSubscription(final long registrationId, final long correlationId)
@@ -1183,61 +1204,78 @@ public final class DriverConductor implements Agent
 
     void onAddRcvSpyDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
-        final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver);
-        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
-        final SubscriptionLink mdsSubscriptionLink = findMdsSubscriptionLink(subscriptionLinks, registrationId);
-
-        if (null == mdsSubscriptionLink)
-        {
-            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown MDS subscription: " + registrationId);
-        }
-
-        final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
-            registrationId, udpChannel, mdsSubscriptionLink.streamId(), mdsSubscriptionLink.aeronClient(), params);
-
-        subscriptionLinks.add(subscriptionLink);
-        clientProxy.operationSucceeded(correlationId);
-
-        for (int i = 0, size = networkPublications.size(); i < size; i++)
-        {
-            final NetworkPublication publication = networkPublications.get(i);
-            if (subscriptionLink.matches(publication) && publication.isAcceptingSubscriptions())
+        executeAsyncClientTask(
+            correlationId,
+            () -> UdpChannel.parse(destinationChannel, nameResolver, false),
+            (udpChannel) ->
             {
-                clientProxy.onAvailableImage(
-                    publication.registrationId(),
-                    mdsSubscriptionLink.streamId(),
-                    publication.sessionId(),
+                final SubscriptionParams params =
+                    SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
+                final SubscriptionLink mdsSubscriptionLink = findMdsSubscriptionLink(subscriptionLinks, registrationId);
+
+                if (null == mdsSubscriptionLink)
+                {
+                    throw new ControlProtocolException(
+                        UNKNOWN_SUBSCRIPTION, "unknown MDS subscription: " + registrationId);
+                }
+
+                final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
                     registrationId,
-                    linkSpy(publication, subscriptionLink).id(),
-                    publication.rawLog().fileName(),
-                    CommonContext.IPC_CHANNEL);
-            }
-        }
+                    udpChannel,
+                    mdsSubscriptionLink.streamId(),
+                    mdsSubscriptionLink.aeronClient(),
+                    params);
+
+                subscriptionLinks.add(subscriptionLink);
+                clientProxy.operationSucceeded(correlationId);
+
+                for (int i = 0, size = networkPublications.size(); i < size; i++)
+                {
+                    final NetworkPublication publication = networkPublications.get(i);
+                    if (subscriptionLink.matches(publication) && publication.isAcceptingSubscriptions())
+                    {
+                        clientProxy.onAvailableImage(
+                            publication.registrationId(),
+                            mdsSubscriptionLink.streamId(),
+                            publication.sessionId(),
+                            registrationId,
+                            linkSpy(publication, subscriptionLink).id(),
+                            publication.rawLog().fileName(),
+                            CommonContext.IPC_CHANNEL);
+                    }
+                }
+            });
     }
 
     void onAddRcvNetworkDestination(
         final long registrationId, final String destinationChannel, final long correlationId)
     {
-        final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver, true);
-        validateDestinationUri(udpChannel.channelUri(), destinationChannel);
+        executeAsyncClientTask(
+            correlationId,
+            () -> UdpChannel.parse(destinationChannel, nameResolver, true),
+            (udpChannel) ->
+            {
+                validateDestinationUri(udpChannel.channelUri(), destinationChannel);
 
-        final SubscriptionLink mdsSubscriptionLink = findMdsSubscriptionLink(subscriptionLinks, registrationId);
+                final SubscriptionLink mdsSubscriptionLink = findMdsSubscriptionLink(subscriptionLinks, registrationId);
 
-        if (null == mdsSubscriptionLink)
-        {
-            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown MDS subscription: " + registrationId);
-        }
+                if (null == mdsSubscriptionLink)
+                {
+                    throw new ControlProtocolException(
+                        UNKNOWN_SUBSCRIPTION, "unknown MDS subscription: " + registrationId);
+                }
 
-        final ReceiveChannelEndpoint receiveChannelEndpoint = mdsSubscriptionLink.channelEndpoint();
+                final ReceiveChannelEndpoint receiveChannelEndpoint = mdsSubscriptionLink.channelEndpoint();
 
-        final AtomicCounter localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
-            tempBuffer, countersManager, registrationId, receiveChannelEndpoint.statusIndicatorCounter().id());
+                final AtomicCounter localSocketAddressIndicator = ReceiveLocalSocketAddress.allocate(
+                    tempBuffer, countersManager, registrationId, receiveChannelEndpoint.statusIndicatorCounter().id());
 
-        final ReceiveDestinationTransport transport = new ReceiveDestinationTransport(
-            udpChannel, ctx, localSocketAddressIndicator, receiveChannelEndpoint);
+                final ReceiveDestinationTransport transport = new ReceiveDestinationTransport(
+                    udpChannel, ctx, localSocketAddressIndicator, receiveChannelEndpoint);
 
-        receiverProxy.addDestination(receiveChannelEndpoint, transport);
-        clientProxy.operationSucceeded(correlationId);
+                receiverProxy.addDestination(receiveChannelEndpoint, transport);
+                clientProxy.operationSucceeded(correlationId);
+            });
     }
 
     void onRemoveRcvDestination(final long registrationId, final String destinationChannel, final long correlationId)
@@ -1290,9 +1328,16 @@ public final class DriverConductor implements Agent
         }
 
         receiveChannelEndpoint.validateAllowsDestinationControl();
-        receiverProxy.removeDestination(
-            receiveChannelEndpoint, UdpChannel.parse(destinationChannel, nameResolver, true));
-        clientProxy.operationSucceeded(correlationId);
+
+        final ReceiveChannelEndpoint endpoint = receiveChannelEndpoint;
+        executeAsyncClientTask(
+            correlationId,
+            () -> UdpChannel.parse(destinationChannel, nameResolver, true),
+            (udpChannel) ->
+            {
+                receiverProxy.removeDestination(endpoint, udpChannel);
+                clientProxy.operationSucceeded(correlationId);
+            });
     }
 
     void closeReceiveDestinationIndicators(final ReceiveDestinationTransport destinationTransport)
@@ -1369,6 +1414,36 @@ public final class DriverConductor implements Agent
         }
 
         return subscriberPositions;
+    }
+
+    <T> void executeAsyncClientTask(
+        final long correlationId, final Callable<T> asyncTask, final Consumer<T> driverCommand)
+    {
+        ctx.asyncTaskExecutor().execute(() ->
+        {
+            final T value;
+            try
+            {
+                value = asyncTask.call();
+            }
+            catch (final Exception ex)
+            {
+                ctx.driverConductorProxy().offer(() -> clientCommandAdapter.onError(correlationId, ex));
+                return;
+            }
+
+            ctx.driverConductorProxy().offer(() ->
+            {
+                try
+                {
+                    driverCommand.accept(value);
+                }
+                catch (final Exception ex)
+                {
+                    clientCommandAdapter.onError(correlationId, ex);
+                }
+            });
+        });
     }
 
     private static NetworkPublication findPublication(

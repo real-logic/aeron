@@ -75,7 +75,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-
 class DriverConductorTest
 {
     private static final String CHANNEL_4000 = "aeron:udp?endpoint=localhost:4000";
@@ -160,6 +159,11 @@ class DriverConductorTest
             spySystemCounters.get(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED),
             1_000_000_000);
 
+        final ThreadingMode threadingMode = ThreadingMode.DEDICATED;
+        final ManyToOneConcurrentArrayQueue<Runnable> driverCommandQueue =
+            new ManyToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
+        final DriverConductorProxy driverConductorProxy =
+            new DriverConductorProxy(threadingMode, driverCommandQueue, mock(AtomicCounter.class));
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))
             .timerIntervalNs(DEFAULT_TIMER_INTERVAL_NS)
@@ -167,7 +171,7 @@ class DriverConductorTest
             .ipcTermBufferLength(TERM_BUFFER_LENGTH)
             .unicastFlowControlSupplier(Configuration.unicastFlowControlSupplier())
             .multicastFlowControlSupplier(Configuration.multicastFlowControlSupplier())
-            .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .driverCommandQueue(driverCommandQueue)
             .errorHandler(mockErrorHandler)
             .logFactory(new TestLogFactory())
             .countersManager(spyCountersManager)
@@ -185,18 +189,20 @@ class DriverConductorTest
             .systemCounters(spySystemCounters)
             .receiverProxy(receiverProxy)
             .senderProxy(senderProxy)
-            .driverConductorProxy(mockDriverConductorProxy)
+            .driverConductorProxy(driverConductorProxy)
             .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals())
             .conductorCycleThresholdNs(600_000_000)
             .nameResolver(DefaultNameResolver.INSTANCE)
-            .threadingMode(ThreadingMode.DEDICATED)
+            .threadingMode(threadingMode)
             .conductorDutyCycleTracker(conductorDutyCycleTracker)
             .nameResolverTimeTracker(nameResolverTimeTracker)
             .senderPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, true))
-            .receiverPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, false));
+            .receiverPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, false))
+            .asyncTaskExecutor(Runnable::run);
 
         driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);
+        ctx.driverConductorProxy().driverConductor(driverConductor);
         driverConductor.onStart();
 
         doAnswer(closeChannelEndpointAnswer).when(receiverProxy).closeReceiveChannelEndpoint(any());
@@ -331,8 +337,9 @@ class DriverConductorTest
     void shouldBeAbleToAddAndRemoveSingleSubscription()
     {
         final long id = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
-        driverProxy.removeSubscription(id);
+        driverConductor.doWork();
 
+        driverProxy.removeSubscription(id);
         driverConductor.doWork();
 
         verify(receiverProxy).registerReceiveChannelEndpoint(any());
@@ -459,6 +466,8 @@ class DriverConductorTest
     void shouldErrorOnRemovePublicationOnUnknownRegistrationId()
     {
         final long id = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
         driverProxy.removePublication(id + 1);
 
         driverConductor.doWork();
@@ -494,8 +503,9 @@ class DriverConductorTest
     void shouldErrorOnRemoveSubscriptionOnUnknownRegistrationId()
     {
         final long id1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
-        driverProxy.removeSubscription(id1 + 100);
+        driverConductor.doWork();
 
+        driverProxy.removeSubscription(id1 + 100);
         driverConductor.doWork();
 
         final InOrder inOrder = inOrder(receiverProxy, mockClientProxy);

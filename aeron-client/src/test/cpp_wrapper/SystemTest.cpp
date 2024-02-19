@@ -197,7 +197,7 @@ TEST_F(SystemTest, shouldAddRemoveCloseHandler)
 // These tests will fail with the sanitizer if not implemented correctly.
 //
 
-TEST_F(SystemTest, shouldFreeSubscritionDataCorrectly)
+TEST_F(SystemTest, shouldFreeSubscriptionDataCorrectly)
 {
     {
         Context ctx;
@@ -214,7 +214,7 @@ TEST_F(SystemTest, shouldFreeSubscritionDataCorrectly)
     }
 }
 
-TEST_F(SystemTest, shouldFreeSubscritionDataCorrectlyWithInvoker)
+TEST_F(SystemTest, shouldFreeSubscriptionDataCorrectlyWithInvoker)
 {
     {
         Context ctx;

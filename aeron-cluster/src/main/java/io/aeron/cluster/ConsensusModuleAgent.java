@@ -44,8 +44,6 @@ import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -3283,33 +3281,17 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    private boolean isIngressMulticast(final ChannelUri ingressUri)
-    {
-        if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
-        {
-            ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.ingressEndpoint());
-        }
-
-        final InetSocketAddress address = UdpChannel.destinationAddress(ingressUri, ctx.nameResolver());
-
-        // assume that if not resolved is a non-multicast address
-        final InetAddress inetAddress;
-        return !address.isUnresolved() &&
-            null != (inetAddress = address.getAddress()) &&
-            inetAddress.isMulticastAddress();
-    }
-
     private void connectIngress()
     {
         final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
-        if (Cluster.Role.LEADER != role && isIngressMulticast(ingressUri))
-        {
-            return; // don't subscribe to ingress if follower and multicast ingress
-        }
-
         if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
         {
             ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.ingressEndpoint());
+        }
+
+        if (Cluster.Role.LEADER != role && UdpChannel.isMulticastDestinationAddress(ingressUri))
+        {
+            return; // don't subscribe to ingress if follower and multicast ingress
         }
 
         final Subscription subscription = aeron.addSubscription(

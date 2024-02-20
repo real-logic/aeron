@@ -40,7 +40,13 @@ import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.collections.ObjectHashSet;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -365,26 +371,39 @@ public final class DriverConductor implements Agent
     {
         ctx.asyncTaskExecutor().execute(() ->
         {
+            AsyncResult<InetSocketAddress> tmp;
             try
             {
-                final InetSocketAddress newAddress = UdpChannel.resolve(
-                    endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver);
-
-                if (newAddress.isUnresolved())
-                {
-                    ctx.errorHandler().onError(new AeronEvent("could not re-resolve: endpoint=" + endpoint));
-                    errorCounter.increment();
-                }
-                else if (!address.equals(newAddress))
-                {
-                    senderProxy.onResolutionChange(channelEndpoint, endpoint, newAddress);
-                }
+                tmp = AsyncResult.of(UdpChannel.resolve(
+                    endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver));
             }
             catch (final Exception ex)
             {
-                ctx.errorHandler().onError(ex);
-                errorCounter.increment();
+                tmp = AsyncResult.error(ex);
             }
+
+            final AsyncResult<InetSocketAddress> asyncResult = tmp;
+            ctx.driverConductorProxy().offer(() ->
+            {
+                try
+                {
+                    final InetSocketAddress newAddress = asyncResult.get();
+                    if (newAddress.isUnresolved())
+                    {
+                        ctx.errorHandler().onError(new AeronEvent("could not re-resolve: endpoint=" + endpoint));
+                        errorCounter.increment();
+                    }
+                    else if (!address.equals(newAddress))
+                    {
+                        senderProxy.onResolutionChange(channelEndpoint, endpoint, newAddress);
+                    }
+                }
+                catch (final Exception ex)
+                {
+                    ctx.errorHandler().onError(ex);
+                    errorCounter.increment();
+                }
+            });
         });
     }
 
@@ -396,26 +415,39 @@ public final class DriverConductor implements Agent
     {
         ctx.asyncTaskExecutor().execute(() ->
         {
+            AsyncResult<InetSocketAddress> tmp;
             try
             {
-                final InetSocketAddress newAddress = UdpChannel.resolve(
-                    control, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver);
-
-                if (newAddress.isUnresolved())
-                {
-                    ctx.errorHandler().onError(new AeronEvent("could not re-resolve: control=" + control));
-                    errorCounter.increment();
-                }
-                else if (!address.equals(newAddress))
-                {
-                    receiverProxy.onResolutionChange(channelEndpoint, udpChannel, newAddress);
-                }
+                tmp = AsyncResult.of(UdpChannel.resolve(
+                    control, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver));
             }
             catch (final Exception ex)
             {
-                ctx.errorHandler().onError(ex);
-                errorCounter.increment();
+                tmp = AsyncResult.error(ex);
             }
+
+            final AsyncResult<InetSocketAddress> asyncResult = tmp;
+            ctx.driverConductorProxy().offer(() ->
+            {
+                try
+                {
+                    final InetSocketAddress newAddress = asyncResult.get();
+                    if (newAddress.isUnresolved())
+                    {
+                        ctx.errorHandler().onError(new AeronEvent("could not re-resolve: control=" + control));
+                        errorCounter.increment();
+                    }
+                    else if (!address.equals(newAddress))
+                    {
+                        receiverProxy.onResolutionChange(channelEndpoint, udpChannel, newAddress);
+                    }
+                }
+                catch (final Exception ex)
+                {
+                    ctx.errorHandler().onError(ex);
+                    errorCounter.increment();
+                }
+            });
         });
     }
 

@@ -267,15 +267,7 @@ public final class DataPacketDispatcher
      */
     public void removePendingSetup(final int sessionId, final int streamId)
     {
-        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
-        if (null != streamInterest)
-        {
-            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
-            if (null != sessionInterest && PENDING_SETUP_FRAME == sessionInterest.state)
-            {
-                streamInterest.sessionInterestByIdMap.remove(sessionId);
-            }
-        }
+        removeByState(sessionId, streamId, PENDING_SETUP_FRAME);
     }
 
     /**
@@ -286,15 +278,7 @@ public final class DataPacketDispatcher
      */
     public void removeCoolDown(final int sessionId, final int streamId)
     {
-        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
-        if (null != streamInterest)
-        {
-            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
-            if (null != sessionInterest && ON_COOL_DOWN == sessionInterest.state)
-            {
-                streamInterest.sessionInterestByIdMap.remove(sessionId);
-            }
-        }
+        removeByState(sessionId, streamId, ON_COOL_DOWN);
     }
 
     /**
@@ -468,6 +452,19 @@ public final class DataPacketDispatcher
     public boolean shouldElicitSetupMessage()
     {
         return !streamInterestByIdMap.isEmpty();
+    }
+
+    private void removeByState(final int sessionId, final int streamId, final SessionState state)
+    {
+        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
+        if (null != streamInterest)
+        {
+            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
+            if (null != sessionInterest && state == sessionInterest.state)
+            {
+                streamInterest.sessionInterestByIdMap.remove(sessionId);
+            }
+        }
     }
 
     private void elicitSetupMessageFromSource(

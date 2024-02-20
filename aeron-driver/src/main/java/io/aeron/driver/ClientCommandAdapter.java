@@ -77,11 +77,6 @@ final class ClientCommandAdapter implements ControlledMessageHandler
     {
         long correlationId = 0;
 
-        if (conductor.notAcceptingClientCommands())
-        {
-            return Action.ABORT;
-        }
-
         try
         {
             switch (msgTypeId)

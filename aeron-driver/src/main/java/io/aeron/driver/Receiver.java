@@ -24,7 +24,7 @@ import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.CachedNanoClock;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -47,7 +47,7 @@ public final class Receiver implements Agent
     private final long reResolutionCheckIntervalNs;
     private long reResolutionDeadlineNs;
     private final DataTransportPoller dataTransportPoller;
-    private final ManyToOneConcurrentArrayQueue<Runnable> commandQueue;
+    private final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesReceived;
     private final AtomicCounter resolutionChanges;
     private final NanoClock nanoClock;
@@ -116,7 +116,7 @@ public final class Receiver implements Agent
         cachedNanoClock.update(nowNs);
         dutyCycleTracker.measureAndUpdate(nowNs);
 
-        int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
+        int workCount = CommandProxy.drain(commandQueue, Configuration.COMMAND_DRAIN_LIMIT, Runnable::run);
 
         final int bytesReceived = dataTransportPoller.pollTransports();
         totalBytesReceived.getAndAddOrdered(bytesReceived);

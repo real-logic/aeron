@@ -36,7 +36,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CachedNanoClock;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
@@ -160,8 +160,7 @@ class DriverConductorTest
             1_000_000_000);
 
         final ThreadingMode threadingMode = ThreadingMode.DEDICATED;
-        final ManyToOneConcurrentArrayQueue<Runnable> driverCommandQueue =
-            new ManyToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
+        final ManyToOneConcurrentLinkedQueue<Runnable> driverCommandQueue = new ManyToOneConcurrentLinkedQueue<>();
         final DriverConductorProxy driverConductorProxy =
             new DriverConductorProxy(threadingMode, driverCommandQueue, mock(AtomicCounter.class));
         final MediaDriver.Context ctx = new MediaDriver.Context()

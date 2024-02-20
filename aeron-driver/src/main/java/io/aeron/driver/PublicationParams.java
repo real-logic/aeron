@@ -22,8 +22,6 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.SystemUtil;
 
-import java.util.Objects;
-
 import static io.aeron.ChannelUri.INVALID_TAG;
 import static io.aeron.CommonContext.*;
 
@@ -124,13 +122,6 @@ final class PublicationParams
 
         params.isResponse = CONTROL_MODE_RESPONSE.equals(channelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
         params.responseCorrelationId = Long.parseLong(channelUri.get(RESPONSE_CORRELATION_ID_PARAM_NAME, "-1"));
-
-        if (params.isResponse && Objects.equals(-1, params.responseCorrelationId))
-        {
-            throw new IllegalArgumentException(
-                RESPONSE_CORRELATION_ID_PARAM_NAME + " must be set when " +
-                MDC_CONTROL_MODE_PARAM_NAME + "=" + CONTROL_MODE_RESPONSE);
-        }
 
         return params;
     }

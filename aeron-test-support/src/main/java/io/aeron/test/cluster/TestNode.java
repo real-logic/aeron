@@ -1085,7 +1085,6 @@ public final class TestNode implements AutoCloseable
         Context(final TestService[] services, final String nodeMappings)
         {
             mediaDriverContext.nameResolver(new RedirectingNameResolver(nodeMappings));
-            consensusModuleContext.nameResolver(new RedirectingNameResolver(nodeMappings));
 
             this.services = services;
             hasServiceTerminated = new AtomicBoolean[services.length];

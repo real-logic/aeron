@@ -18,13 +18,10 @@ package io.aeron.cluster;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Counter;
-import io.aeron.CounterProvider;
 import io.aeron.RethrowingErrorHandler;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.cluster.service.ClusterMarkFile;
-import io.aeron.driver.DefaultNameResolver;
-import io.aeron.driver.NameResolver;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
@@ -41,7 +38,6 @@ import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +45,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.io.IOException;
@@ -442,29 +437,6 @@ class ConsensusModuleContextTest
     }
 
     @Test
-    void shouldUseExplicitlyAssignedNameResolver()
-    {
-        final NameResolver nameResolver = mock(NameResolver.class);
-        assertNull(context.nameResolver());
-
-        context.nameResolver(nameResolver);
-        assertSame(nameResolver, context.nameResolver());
-
-        context.conclude();
-        assertSame(nameResolver, context.nameResolver());
-    }
-
-    @Test
-    void shouldUseDefaultNameResolver()
-    {
-        assertNull(context.nameResolver());
-
-        context.conclude();
-
-        assertSame(DefaultNameResolver.INSTANCE, context.nameResolver());
-    }
-
-    @Test
     void shouldUseCandidateTermIdFromClusterMarkFileIfNodeStateFileIsNew()
     {
         final TestClusterClock epochClock = new TestClusterClock(MILLISECONDS);
@@ -483,22 +455,6 @@ class ConsensusModuleContextTest
         context.conclude();
 
         assertEquals(existingCandidateTermId, context.nodeStateFile().candidateTerm().candidateTermId());
-    }
-
-    @Test
-    void shouldInitializeNameResolver()
-    {
-        final NameResolver nameResolver = mock(NameResolver.class);
-        context.nameResolver(nameResolver);
-
-        context.conclude();
-
-        final ArgumentCaptor<CountersReader> readerCaptor = ArgumentCaptor.forClass(CountersReader.class);
-        final ArgumentCaptor<CounterProvider> providerCaptor = ArgumentCaptor.forClass(CounterProvider.class);
-        verify(nameResolver).init(readerCaptor.capture(), providerCaptor.capture());
-        assertSame(context.aeron().countersReader(), readerCaptor.getValue());
-        assertNotNull(providerCaptor.getValue());
-        verifyNoMoreInteractions(nameResolver);
     }
 
     @Test

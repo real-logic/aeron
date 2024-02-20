@@ -90,7 +90,7 @@ abstract class CommandProxy
         }
     }
 
-    static int drain(
+    static int drainQueue(
         final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue,
         final int limit,
         final Consumer<Runnable> consumer)

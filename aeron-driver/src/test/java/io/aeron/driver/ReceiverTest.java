@@ -232,7 +232,7 @@ class ReceiverTest
             SOURCE_IDENTITY,
             congestionControl);
 
-        final int messagesRead = CommandProxy.drain(
+        final int messagesRead = CommandProxy.drainQueue(
             toConductorQueue,
             Integer.MAX_VALUE,
             (e) ->
@@ -277,7 +277,7 @@ class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = CommandProxy.drain(
+        final int commandsRead = CommandProxy.drainQueue(
             toConductorQueue,
             Integer.MAX_VALUE,
             (e) ->
@@ -345,7 +345,7 @@ class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = CommandProxy.drain(
+        final int commandsRead = CommandProxy.drainQueue(
             toConductorQueue,
             Integer.MAX_VALUE,
             (e) ->
@@ -416,7 +416,7 @@ class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = CommandProxy.drain(
+        final int commandsRead = CommandProxy.drainQueue(
             toConductorQueue,
             Integer.MAX_VALUE,
             (e) ->
@@ -491,7 +491,7 @@ class ReceiverTest
         fillSetupFrame(setupHeader, initialTermOffset);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = CommandProxy.drain(
+        final int commandsRead = CommandProxy.drainQueue(
             toConductorQueue,
             Integer.MAX_VALUE,
             (e) ->

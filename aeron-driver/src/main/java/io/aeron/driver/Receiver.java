@@ -116,7 +116,7 @@ public final class Receiver implements Agent
         cachedNanoClock.update(nowNs);
         dutyCycleTracker.measureAndUpdate(nowNs);
 
-        int workCount = CommandProxy.drain(commandQueue, Configuration.COMMAND_DRAIN_LIMIT, Runnable::run);
+        int workCount = CommandProxy.drainQueue(commandQueue, Configuration.COMMAND_DRAIN_LIMIT, Runnable::run);
 
         final int bytesReceived = dataTransportPoller.pollTransports();
         totalBytesReceived.getAndAddOrdered(bytesReceived);

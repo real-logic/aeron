@@ -19,7 +19,7 @@ import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
-import org.agrona.concurrent.QueuedPipe;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -32,7 +32,9 @@ public final class DriverConductorProxy extends CommandProxy
     private DriverConductor driverConductor;
 
     DriverConductorProxy(
-        final ThreadingMode threadingMode, final QueuedPipe<Runnable> commandQueue, final AtomicCounter failCount)
+        final ThreadingMode threadingMode,
+        final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue,
+        final AtomicCounter failCount)
     {
         super(threadingMode, commandQueue, failCount);
     }

@@ -21,7 +21,11 @@ import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.Tests;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import org.agrona.concurrent.SystemEpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.CountersManager;
@@ -71,7 +75,7 @@ class IpcPublicationTest
             .clientProxy(mock(ClientProxy.class))
             .senderProxy(senderProxy)
             .receiverProxy(receiverProxy)
-            .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(256))
+            .driverCommandQueue(new ManyToOneConcurrentLinkedQueue<>())
             .epochClock(SystemEpochClock.INSTANCE)
             .cachedEpochClock(new CachedEpochClock())
             .cachedNanoClock(new CachedNanoClock())

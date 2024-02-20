@@ -31,7 +31,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CachedNanoClock;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.AtomicLongPosition;
@@ -88,8 +88,7 @@ class SenderTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final SetupFlyweight setupHeader = new SetupFlyweight();
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
-    private final ManyToOneConcurrentArrayQueue<Runnable> senderCommandQueue =
-        new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
+    private final ManyToOneConcurrentLinkedQueue<Runnable> senderCommandQueue = new ManyToOneConcurrentLinkedQueue<>();
 
     private final HeaderWriter headerWriter = HeaderWriter.newInstance(HEADER);
 

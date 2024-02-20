@@ -538,9 +538,9 @@ public final class MediaDriver implements AutoCloseable
         private LogFactory logFactory;
         private DataTransportPoller dataTransportPoller;
         private ControlTransportPoller controlTransportPoller;
-        private ManyToOneConcurrentArrayQueue<Runnable> driverCommandQueue;
-        private ManyToOneConcurrentArrayQueue<Runnable> receiverCommandQueue;
-        private ManyToOneConcurrentArrayQueue<Runnable> senderCommandQueue;
+        private ManyToOneConcurrentLinkedQueue<Runnable> driverCommandQueue;
+        private ManyToOneConcurrentLinkedQueue<Runnable> receiverCommandQueue;
+        private ManyToOneConcurrentLinkedQueue<Runnable> senderCommandQueue;
         private ReceiverProxy receiverProxy;
         private SenderProxy senderProxy;
         private DriverConductorProxy driverConductorProxy;
@@ -3538,34 +3538,34 @@ public final class MediaDriver implements AutoCloseable
             return channelSendTimestampClock;
         }
 
-        ManyToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
+        ManyToOneConcurrentLinkedQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;
         }
 
-        Context receiverCommandQueue(final ManyToOneConcurrentArrayQueue<Runnable> receiverCommandQueue)
+        Context receiverCommandQueue(final ManyToOneConcurrentLinkedQueue<Runnable> receiverCommandQueue)
         {
             this.receiverCommandQueue = receiverCommandQueue;
             return this;
         }
 
-        ManyToOneConcurrentArrayQueue<Runnable> senderCommandQueue()
+        ManyToOneConcurrentLinkedQueue<Runnable> senderCommandQueue()
         {
             return senderCommandQueue;
         }
 
-        Context senderCommandQueue(final ManyToOneConcurrentArrayQueue<Runnable> senderCommandQueue)
+        Context senderCommandQueue(final ManyToOneConcurrentLinkedQueue<Runnable> senderCommandQueue)
         {
             this.senderCommandQueue = senderCommandQueue;
             return this;
         }
 
-        ManyToOneConcurrentArrayQueue<Runnable> driverCommandQueue()
+        ManyToOneConcurrentLinkedQueue<Runnable> driverCommandQueue()
         {
             return driverCommandQueue;
         }
 
-        Context driverCommandQueue(final ManyToOneConcurrentArrayQueue<Runnable> queue)
+        Context driverCommandQueue(final ManyToOneConcurrentLinkedQueue<Runnable> queue)
         {
             this.driverCommandQueue = queue;
             return this;
@@ -3809,17 +3809,17 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == driverCommandQueue)
             {
-                driverCommandQueue = new ManyToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
+                driverCommandQueue = new ManyToOneConcurrentLinkedQueue<>();
             }
 
             if (null == receiverCommandQueue)
             {
-                receiverCommandQueue = new ManyToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
+                receiverCommandQueue = new ManyToOneConcurrentLinkedQueue<>();
             }
 
             if (null == senderCommandQueue)
             {
-                senderCommandQueue = new ManyToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
+                senderCommandQueue = new ManyToOneConcurrentLinkedQueue<>();
             }
 
             if (null == retransmitUnicastDelayGenerator)

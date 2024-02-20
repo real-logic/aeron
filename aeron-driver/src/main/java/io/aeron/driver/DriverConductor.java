@@ -44,7 +44,7 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
@@ -86,7 +86,6 @@ public final class DriverConductor implements Agent
         SOCKET_SNDBUF_PARAM_NAME,
         RESPONSE_CORRELATION_ID_PARAM_NAME
     };
-
     private int nextSessionId = BitUtil.generateRandomisedId();
     private final long timerIntervalNs;
     private final long clientLivenessTimeoutNs;
@@ -102,7 +101,7 @@ public final class DriverConductor implements Agent
     private final ClientProxy clientProxy;
     private final RingBuffer toDriverCommands;
     private final ClientCommandAdapter clientCommandAdapter;
-    private final ManyToOneConcurrentArrayQueue<Runnable> driverCmdQueue;
+    private final ManyToOneConcurrentLinkedQueue<Runnable> driverCmdQueue;
     private final Object2ObjectHashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap =
         new Object2ObjectHashMap<>();
     private final Object2ObjectHashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap =
@@ -227,17 +226,12 @@ public final class DriverConductor implements Agent
         int workCount = 0;
         workCount += processTimers(nowNs);
         workCount += clientCommandAdapter.receive();
-        workCount += driverCmdQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
+        workCount += CommandProxy.drain(driverCmdQueue, Configuration.COMMAND_DRAIN_LIMIT, Runnable::run);
         workCount += trackStreamPositions(workCount, nowNs);
         workCount += nameResolver.doWork(cachedEpochClock.time());
         workCount += freeEndOfLifeResources(ctx.resourceFreeLimit());
 
         return workCount;
-    }
-
-    boolean notAcceptingClientCommands()
-    {
-        return senderProxy.isApplyingBackpressure() || receiverProxy.isApplyingBackpressure();
     }
 
     @SuppressWarnings("MethodLength")

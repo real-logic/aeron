@@ -16,8 +16,10 @@
 package io.aeron.driver;
 
 import org.agrona.concurrent.AgentTerminationException;
-import org.agrona.concurrent.QueuedPipe;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.status.AtomicCounter;
+
+import java.util.function.Consumer;
 
 import static io.aeron.driver.ThreadingMode.INVOKER;
 import static io.aeron.driver.ThreadingMode.SHARED;
@@ -25,12 +27,14 @@ import static io.aeron.driver.ThreadingMode.SHARED;
 abstract class CommandProxy
 {
     private final ThreadingMode threadingMode;
-    private final QueuedPipe<Runnable> commandQueue;
+    private final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue;
     private final AtomicCounter failCount;
     private final boolean notConcurrent;
 
     CommandProxy(
-        final ThreadingMode threadingMode, final QueuedPipe<Runnable> commandQueue, final AtomicCounter failCount)
+        final ThreadingMode threadingMode,
+        final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue,
+        final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
@@ -69,11 +73,6 @@ abstract class CommandProxy
             '}';
     }
 
-    final boolean isApplyingBackpressure()
-    {
-        return commandQueue.remainingCapacity() < 1;
-    }
-
     final void offer(final Runnable cmd)
     {
         while (!commandQueue.offer(cmd))
@@ -89,5 +88,27 @@ abstract class CommandProxy
                 throw new AgentTerminationException("interrupted");
             }
         }
+    }
+
+    static int drain(
+        final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue,
+        final int limit,
+        final Consumer<Runnable> consumer)
+    {
+        int workCount = 0;
+        for (int i = 0; i < limit; i++)
+        {
+            final Runnable command = commandQueue.poll();
+            if (null != command)
+            {
+                consumer.accept(command);
+                workCount++;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return workCount;
     }
 }

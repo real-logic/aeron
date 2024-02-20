@@ -17,7 +17,12 @@ package io.aeron.driver;
 
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.TestLogFactory;
-import io.aeron.driver.media.*;
+import io.aeron.driver.media.ControlTransportPoller;
+import io.aeron.driver.media.DataTransportPoller;
+import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
+import io.aeron.driver.media.UdpChannel;
+import io.aeron.driver.media.WildcardPortManager;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -34,7 +39,7 @@ import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CachedNanoClock;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.AtomicLongPosition;
@@ -110,8 +115,7 @@ class ReceiverTest
     private final InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
-    private final ManyToOneConcurrentArrayQueue<Runnable> toConductorQueue =
-        new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
+    private final ManyToOneConcurrentLinkedQueue<Runnable> toConductorQueue = new ManyToOneConcurrentLinkedQueue<>();
     private final CongestionControl congestionControl = mock(CongestionControl.class);
     private final MediaDriver.Context ctx = new MediaDriver.Context()
         .systemCounters(mockSystemCounters)
@@ -151,7 +155,7 @@ class ReceiverTest
             .controlTransportPoller(mockControlTransportPoller)
             .logFactory(new TestLogFactory())
             .systemCounters(mockSystemCounters)
-            .receiverCommandQueue(new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .receiverCommandQueue(new ManyToOneConcurrentLinkedQueue<>())
             .nanoClock(nanoClock)
             .cachedNanoClock(nanoClock)
             .senderCachedNanoClock(nanoClock)
@@ -227,7 +231,9 @@ class ReceiverTest
             SOURCE_IDENTITY,
             congestionControl);
 
-        final int messagesRead = toConductorQueue.drain(
+        final int messagesRead = CommandProxy.drain(
+            toConductorQueue,
+            Integer.MAX_VALUE,
             (e) ->
             {
                 // pass in new term buffer from conductor, which should trigger SM
@@ -270,7 +276,9 @@ class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = toConductorQueue.drain(
+        final int commandsRead = CommandProxy.drain(
+            toConductorQueue,
+            Integer.MAX_VALUE,
             (e) ->
             {
                 final PublicationImage image = new PublicationImage(
@@ -335,7 +343,9 @@ class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = toConductorQueue.drain(
+        final int commandsRead = CommandProxy.drain(
+            toConductorQueue,
+            Integer.MAX_VALUE,
             (e) ->
             {
                 final PublicationImage image = new PublicationImage(
@@ -403,7 +413,9 @@ class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = toConductorQueue.drain(
+        final int commandsRead = CommandProxy.drain(
+            toConductorQueue,
+            Integer.MAX_VALUE,
             (e) ->
             {
                 final PublicationImage image = new PublicationImage(
@@ -475,7 +487,9 @@ class ReceiverTest
         fillSetupFrame(setupHeader, initialTermOffset);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = toConductorQueue.drain(
+        final int commandsRead = CommandProxy.drain(
+            toConductorQueue,
+            Integer.MAX_VALUE,
             (e) ->
             {
                 final PublicationImage image = new PublicationImage(

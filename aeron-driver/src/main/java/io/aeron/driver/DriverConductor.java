@@ -36,6 +36,7 @@ import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.collections.ObjectHashSet;
@@ -477,8 +478,9 @@ public final class DriverConductor implements Agent
         executeAsyncClientTask(
             correlationId,
             () -> UdpChannel.parse(channel, nameResolver, false),
-            (udpChannel) ->
+            (asyncResult) ->
             {
+                final UdpChannel udpChannel = asyncResult.get();
                 final ChannelUri channelUri = udpChannel.channelUri();
                 final PublicationParams params = getPublicationParams(channelUri, ctx, this, false);
                 validateEndpointForPublication(udpChannel);
@@ -954,8 +956,9 @@ public final class DriverConductor implements Agent
         executeAsyncClientTask(
             registrationId,
             () -> UdpChannel.parse(channel, nameResolver, false),
-            (udpChannel) ->
+            (asyncResult) ->
             {
+                final UdpChannel udpChannel = asyncResult.get();
                 final ControlMode controlMode = udpChannel.controlMode();
 
                 validateControlForSubscription(udpChannel);
@@ -1038,8 +1041,9 @@ public final class DriverConductor implements Agent
         executeAsyncClientTask(
             registrationId,
             () -> UdpChannel.parse(channel, nameResolver, false),
-            (udpChannel) ->
+            (asyncResult) ->
             {
+                final UdpChannel udpChannel = asyncResult.get();
                 final SubscriptionParams params =
                     SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
                 final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
@@ -1213,8 +1217,9 @@ public final class DriverConductor implements Agent
         executeAsyncClientTask(
             correlationId,
             () -> UdpChannel.parse(destinationChannel, nameResolver, false),
-            (udpChannel) ->
+            (asyncResult) ->
             {
+                final UdpChannel udpChannel = asyncResult.get();
                 final SubscriptionParams params =
                     SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
                 final SubscriptionLink mdsSubscriptionLink = findMdsSubscriptionLink(subscriptionLinks, registrationId);
@@ -1259,8 +1264,9 @@ public final class DriverConductor implements Agent
         executeAsyncClientTask(
             correlationId,
             () -> UdpChannel.parse(destinationChannel, nameResolver, true),
-            (udpChannel) ->
+            (asyncResult) ->
             {
+                final UdpChannel udpChannel = asyncResult.get();
                 validateDestinationUri(udpChannel.channelUri(), destinationChannel);
 
                 final SubscriptionLink mdsSubscriptionLink = findMdsSubscriptionLink(subscriptionLinks, registrationId);
@@ -1339,9 +1345,9 @@ public final class DriverConductor implements Agent
         executeAsyncClientTask(
             correlationId,
             () -> UdpChannel.parse(destinationChannel, nameResolver, true),
-            (udpChannel) ->
+            (asyncResult) ->
             {
-                receiverProxy.removeDestination(endpoint, udpChannel);
+                receiverProxy.removeDestination(endpoint, asyncResult.get());
                 clientProxy.operationSucceeded(correlationId);
             });
     }
@@ -1423,26 +1429,26 @@ public final class DriverConductor implements Agent
     }
 
     <T> void executeAsyncClientTask(
-        final long correlationId, final Callable<T> asyncTask, final Consumer<T> driverCommand)
+        final long correlationId, final Callable<T> asyncTask, final Consumer<AsyncResult<T>> driverCommand)
     {
         ctx.asyncTaskExecutor().execute(() ->
         {
-            final T value;
+            AsyncResult<T> tmp;
             try
             {
-                value = asyncTask.call();
+                tmp = AsyncResult.of(asyncTask.call());
             }
             catch (final Exception ex)
             {
-                ctx.driverConductorProxy().offer(() -> clientCommandAdapter.onError(correlationId, ex));
-                return;
+                tmp = AsyncResult.error(ex);
             }
 
+            final AsyncResult<T> asyncResult = tmp;
             ctx.driverConductorProxy().offer(() ->
             {
                 try
                 {
-                    driverCommand.accept(value);
+                    driverCommand.accept(asyncResult);
                 }
                 catch (final Exception ex)
                 {
@@ -2441,6 +2447,25 @@ public final class DriverConductor implements Agent
         else
         {
             return ctx.unicastFeedbackDelayGenerator();
+        }
+    }
+
+    private interface AsyncResult<T>
+    {
+        T get();
+
+        static <T> AsyncResult<T> of(final T value)
+        {
+            return () -> value;
+        }
+
+        static <T> AsyncResult<T> error(final Exception ex)
+        {
+            return () ->
+            {
+                LangUtil.rethrowUnchecked(ex);
+                return null;
+            };
         }
     }
 }

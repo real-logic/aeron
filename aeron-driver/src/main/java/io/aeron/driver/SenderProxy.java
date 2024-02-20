@@ -117,7 +117,7 @@ final class SenderProxy extends CommandProxy
     void onResolutionChange(
         final SendChannelEndpoint channelEndpoint, final String endpoint, final InetSocketAddress newAddress)
     {
-        // must add to the queue, because called from the async thread
+        // called from the async thread
         offer(() -> sender.onResolutionChange(channelEndpoint, endpoint, newAddress));
     }
 }

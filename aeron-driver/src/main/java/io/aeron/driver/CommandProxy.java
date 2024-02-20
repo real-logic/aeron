@@ -15,7 +15,6 @@
  */
 package io.aeron.driver;
 
-import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -75,18 +74,10 @@ abstract class CommandProxy
 
     final void offer(final Runnable cmd)
     {
-        while (!commandQueue.offer(cmd))
+        if (!commandQueue.offer(cmd))
         {
-            if (!failCount.isClosed())
-            {
-                failCount.increment();
-            }
-
-            Thread.yield();
-            if (Thread.currentThread().isInterrupted())
-            {
-                throw new AgentTerminationException("interrupted");
-            }
+            // unreachable for ManyToOneConcurrentLinkedQueue
+            throw new IllegalStateException(commandQueue.getClass().getSimpleName() + ".offer failed!");
         }
     }
 

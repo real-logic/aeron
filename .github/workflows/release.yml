@@ -5,7 +5,7 @@ on:
     types: [published]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.sha }}
   cancel-in-progress: true
 
 env:
@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.sha }}
       - name: Cache Gradle dependencies
         uses: actions/cache@v4
         with:

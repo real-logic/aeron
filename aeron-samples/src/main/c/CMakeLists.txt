@@ -45,6 +45,8 @@ add_executable(streaming_publisher streaming_publisher.c ${HEADERS} ${SOURCES})
 add_executable(streaming_exclusive_publisher streaming_exclusive_publisher.c ${HEADERS} ${SOURCES})
 add_executable(cpong cpong.c ${HEADERS} ${SOURCES})
 add_executable(cping cping.c ${HEADERS} ${SOURCES})
+add_executable(response_client response/response_client.c ${HEADERS} ${SOURCES})
+add_executable(response_server response/response_server.c ${HEADERS} ${SOURCES})
 
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     add_executable(ping_pong_raw raw/ping_pong_raw.c)
@@ -77,6 +79,12 @@ target_link_libraries(cping
     ${CLIENT_LINK_LIB}
     hdr_histogram_static)
 
+target_link_libraries(response_client
+    ${CLIENT_LINK_LIB})
+
+target_link_libraries(response_server
+    ${CLIENT_LINK_LIB})
+
 add_dependencies(cping hdr_histogram)
 
 add_executable(AeronStat aeron_stat.c ${HEADERS})
@@ -101,6 +109,8 @@ if (AERON_INSTALL_TARGETS)
         streaming_exclusive_publisher
         cpong
         cping
+        response_client
+        response_server
         AeronStat
         DriverTool
         ErrorStat

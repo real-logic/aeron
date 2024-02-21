@@ -8,7 +8,7 @@ on:
     - cron: '0 0,12 * * *'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.sha }}
+  group: ${{ github.workflow }}-${{ github.ref}}
   cancel-in-progress: true
 
 env:

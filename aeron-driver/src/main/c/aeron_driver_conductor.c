@@ -55,6 +55,7 @@ const char * const AERON_DRIVER_CONDUCTOR_INVALID_DESTINATION_KEYS[] =
     AERON_URI_RECEIVER_WINDOW_KEY,
     AERON_URI_SOCKET_RCVBUF_KEY,
     AERON_URI_SOCKET_SNDBUF_KEY,
+    AERON_URI_RESPONSE_CORRELATION_ID_KEY,
     NULL
 };
 
@@ -314,6 +315,18 @@ static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *u
                 uri->mutable_uri);
             return -1;
         }
+    }
+
+    if (AERON_URI_UDP == uri->type &&
+        NULL != uri->params.udp.control_mode &&
+        0 == strcmp(uri->params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE))
+    {
+        AERON_SET_ERR(
+            -AERON_ERROR_CODE_INVALID_CHANNEL,
+            "destinations may not specify %s=%s",
+            AERON_UDP_CHANNEL_CONTROL_MODE_KEY,
+            AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE);
+        return -1;
     }
 
     return 0;

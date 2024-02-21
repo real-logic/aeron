@@ -43,6 +43,7 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,6 +77,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
 class DriverConductorTest
 {
     private static final String CHANNEL_4000 = "aeron:udp?endpoint=localhost:4000";
@@ -160,10 +162,6 @@ class DriverConductorTest
             spySystemCounters.get(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED),
             1_000_000_000);
 
-        final ThreadingMode threadingMode = ThreadingMode.DEDICATED;
-        final ManyToOneConcurrentLinkedQueue<Runnable> driverCommandQueue = new ManyToOneConcurrentLinkedQueue<>();
-        final DriverConductorProxy driverConductorProxy =
-            new DriverConductorProxy(threadingMode, driverCommandQueue, mock(AtomicCounter.class));
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))
             .timerIntervalNs(DEFAULT_TIMER_INTERVAL_NS)
@@ -171,7 +169,7 @@ class DriverConductorTest
             .ipcTermBufferLength(TERM_BUFFER_LENGTH)
             .unicastFlowControlSupplier(Configuration.unicastFlowControlSupplier())
             .multicastFlowControlSupplier(Configuration.multicastFlowControlSupplier())
-            .driverCommandQueue(driverCommandQueue)
+            .driverCommandQueue(new ManyToOneConcurrentLinkedQueue<>())
             .errorHandler(mockErrorHandler)
             .logFactory(new TestLogFactory())
             .countersManager(spyCountersManager)
@@ -189,11 +187,11 @@ class DriverConductorTest
             .systemCounters(spySystemCounters)
             .receiverProxy(receiverProxy)
             .senderProxy(senderProxy)
-            .driverConductorProxy(driverConductorProxy)
+            .driverConductorProxy(mockDriverConductorProxy)
             .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals())
             .conductorCycleThresholdNs(600_000_000)
             .nameResolver(DefaultNameResolver.INSTANCE)
-            .threadingMode(threadingMode)
+            .threadingMode(ThreadingMode.DEDICATED)
             .conductorDutyCycleTracker(conductorDutyCycleTracker)
             .nameResolverTimeTracker(nameResolverTimeTracker)
             .senderPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, true))
@@ -202,7 +200,6 @@ class DriverConductorTest
 
         driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);
-        ctx.driverConductorProxy().driverConductor(driverConductor);
         driverConductor.onStart();
 
         doAnswer(closeChannelEndpointAnswer).when(receiverProxy).closeReceiveChannelEndpoint(any());
@@ -337,9 +334,8 @@ class DriverConductorTest
     void shouldBeAbleToAddAndRemoveSingleSubscription()
     {
         final long id = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
-        driverConductor.doWork();
-
         driverProxy.removeSubscription(id);
+
         driverConductor.doWork();
 
         verify(receiverProxy).registerReceiveChannelEndpoint(any());
@@ -466,8 +462,6 @@ class DriverConductorTest
     void shouldErrorOnRemovePublicationOnUnknownRegistrationId()
     {
         final long id = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
-        driverConductor.doWork();
-
         driverProxy.removePublication(id + 1);
 
         driverConductor.doWork();
@@ -503,9 +497,8 @@ class DriverConductorTest
     void shouldErrorOnRemoveSubscriptionOnUnknownRegistrationId()
     {
         final long id1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
-        driverConductor.doWork();
-
         driverProxy.removeSubscription(id1 + 100);
+
         driverConductor.doWork();
 
         final InOrder inOrder = inOrder(receiverProxy, mockClientProxy);
@@ -1122,7 +1115,6 @@ class DriverConductorTest
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
-        driverConductor.doWork();
         driverProxy.removeSubscription(idSpy);
 
         while (true)
@@ -1218,7 +1210,6 @@ class DriverConductorTest
     {
         final long id1 = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         final long id2 = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_2);
-        driverConductor.doWork();
         driverProxy.removePublication(id1);
         driverProxy.removePublication(id2);
 
@@ -1892,18 +1883,21 @@ class DriverConductorTest
             () -> driverConductor.onAddRcvDestination(0, "aeron:udp?control-mode=response", 0)
         );
 
-        assertThat(exception.getMessage(), containsString(MDC_CONTROL_MODE_PARAM_NAME));
-        assertThat(exception.getMessage(), containsString(CONTROL_MODE_RESPONSE));
+        assertEquals(
+            "ERROR - destinations may not specify " + MDC_CONTROL_MODE_PARAM_NAME + "=" + CONTROL_MODE_RESPONSE,
+            exception.getMessage());
     }
 
     @Test
     void shouldThrowExceptionWhenRcvDestinationHasResponseCorrelationIdSet()
     {
         final Exception exception = assertThrows(InvalidChannelException.class,
-            () -> driverConductor.onAddRcvDestination(0, "aeron:udp?response-correlation-id=1234", 0)
+            () -> driverConductor.onAddRcvDestination(0, "aeron:udp?endpoint=localhost:8080|response-correlation-id=1234", 0)
         );
 
-        assertThat(exception.getMessage(), containsString(RESPONSE_CORRELATION_ID_PARAM_NAME));
+        assertThat(
+            exception.getMessage(),
+            CoreMatchers.startsWith("ERROR - destinations must not contain the key: response-correlation-id"));
     }
 
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)

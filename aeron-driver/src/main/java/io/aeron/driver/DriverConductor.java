@@ -56,7 +56,6 @@ import org.agrona.concurrent.status.UnsafeBufferPosition;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -503,7 +502,8 @@ public final class DriverConductor implements Agent
     {
         executeAsyncClientTask(
             correlationId,
-            () -> UdpChannel.parse(channel, nameResolver, false),
+            channel,
+            false,
             (asyncResult) ->
             {
                 final UdpChannel udpChannel = asyncResult.get();
@@ -981,7 +981,8 @@ public final class DriverConductor implements Agent
     {
         executeAsyncClientTask(
             registrationId,
-            () -> UdpChannel.parse(channel, nameResolver, false),
+            channel,
+            false,
             (asyncResult) ->
             {
                 final UdpChannel udpChannel = asyncResult.get();
@@ -1066,7 +1067,8 @@ public final class DriverConductor implements Agent
     {
         executeAsyncClientTask(
             registrationId,
-            () -> UdpChannel.parse(channel, nameResolver, false),
+            channel,
+            false,
             (asyncResult) ->
             {
                 final UdpChannel udpChannel = asyncResult.get();
@@ -1242,7 +1244,8 @@ public final class DriverConductor implements Agent
     {
         executeAsyncClientTask(
             correlationId,
-            () -> UdpChannel.parse(destinationChannel, nameResolver, false),
+            destinationChannel,
+            false,
             (asyncResult) ->
             {
                 final UdpChannel udpChannel = asyncResult.get();
@@ -1289,7 +1292,8 @@ public final class DriverConductor implements Agent
     {
         executeAsyncClientTask(
             correlationId,
-            () -> UdpChannel.parse(destinationChannel, nameResolver, true),
+            destinationChannel,
+            true,
             (asyncResult) ->
             {
                 final UdpChannel udpChannel = asyncResult.get();
@@ -1370,7 +1374,8 @@ public final class DriverConductor implements Agent
         final ReceiveChannelEndpoint endpoint = receiveChannelEndpoint;
         executeAsyncClientTask(
             correlationId,
-            () -> UdpChannel.parse(destinationChannel, nameResolver, true),
+            destinationChannel,
+            true,
             (asyncResult) ->
             {
                 receiverProxy.removeDestination(endpoint, asyncResult.get());
@@ -1454,22 +1459,25 @@ public final class DriverConductor implements Agent
         return subscriberPositions;
     }
 
-    <T> void executeAsyncClientTask(
-        final long correlationId, final Callable<T> asyncTask, final Consumer<AsyncResult<T>> driverCommand)
+    void executeAsyncClientTask(
+        final long correlationId,
+        final String channel,
+        final boolean isDestination,
+        final Consumer<AsyncResult<UdpChannel>> driverCommand)
     {
         ctx.asyncTaskExecutor().execute(() ->
         {
-            AsyncResult<T> tmp;
+            AsyncResult<UdpChannel> tmp;
             try
             {
-                tmp = AsyncResult.of(asyncTask.call());
+                tmp = AsyncResult.of(UdpChannel.parse(channel, nameResolver, isDestination));
             }
             catch (final Exception ex)
             {
                 tmp = AsyncResult.error(ex);
             }
 
-            final AsyncResult<T> asyncResult = tmp;
+            final AsyncResult<UdpChannel> asyncResult = tmp;
             ctx.driverConductorProxy().offer(() ->
             {
                 try

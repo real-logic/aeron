@@ -1858,8 +1858,8 @@ class DriverConductorTest
     @Test
     void shouldThrowExceptionWhenSendDestinationHasControlModeResponseSet()
     {
-        final Exception exception = assertThrows(InvalidChannelException.class,
-            () -> driverConductor.onAddSendDestination(0, "aeron:udp?control-mode=response", 0)
+        final Exception exception = assertThrowsExactly(InvalidChannelException.class,
+            () -> driverConductor.onAddSendDestination(13, "aeron:udp?control-mode=response", 19)
         );
 
         assertThat(exception.getMessage(), containsString(MDC_CONTROL_MODE_PARAM_NAME));
@@ -1869,8 +1869,8 @@ class DriverConductorTest
     @Test
     void shouldThrowExceptionWhenSendDestinationHasResponseCorrelationIdSet()
     {
-        final Exception exception = assertThrows(InvalidChannelException.class,
-            () -> driverConductor.onAddSendDestination(0, "aeron:udp?response-correlation-id=1234", 0)
+        final Exception exception = assertThrowsExactly(InvalidChannelException.class,
+            () -> driverConductor.onAddSendDestination(4, "aeron:udp?response-correlation-id=1234", 8)
         );
 
         assertThat(exception.getMessage(), containsString(RESPONSE_CORRELATION_ID_PARAM_NAME));
@@ -1879,8 +1879,8 @@ class DriverConductorTest
     @Test
     void shouldThrowExceptionWhenRcvDestinationHasControlModeResponseSet()
     {
-        final Exception exception = assertThrows(InvalidChannelException.class,
-            () -> driverConductor.onAddRcvDestination(0, "aeron:udp?control-mode=response", 0)
+        final Exception exception = assertThrowsExactly(InvalidChannelException.class,
+            () -> driverConductor.onAddRcvDestination(5, "aeron:udp?control-mode=response", 7)
         );
 
         assertEquals(
@@ -1891,8 +1891,9 @@ class DriverConductorTest
     @Test
     void shouldThrowExceptionWhenRcvDestinationHasResponseCorrelationIdSet()
     {
-        final Exception exception = assertThrows(InvalidChannelException.class,
-            () -> driverConductor.onAddRcvDestination(0, "aeron:udp?endpoint=localhost:8080|response-correlation-id=1234", 0)
+        final Exception exception = assertThrowsExactly(InvalidChannelException.class,
+            () -> driverConductor.onAddRcvDestination(
+            42, "aeron:udp?endpoint=localhost:8080|response-correlation-id=1234", 1)
         );
 
         assertThat(

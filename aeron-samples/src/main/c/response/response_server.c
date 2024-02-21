@@ -157,7 +157,7 @@ void handle_available_image(void *clientd, aeron_subscription_t *subscription, a
     response_channel_info->subscription = subscription;
 
     {
-        char _channel_buf[256] = { 0 };
+        char _channel_buf[AERON_MAX_PATH] = { 0 };
 
         SNPRINTF(_channel_buf, sizeof(_channel_buf) - 1, "%s|control-mode=response|response-correlation-id=%" PRIi64, response_control_channel, constants.correlation_id);
 

@@ -220,7 +220,7 @@ int main(int argc, char **argv)
     }
 
     {
-        char _response_channel_buf[256] = { 0 };
+        char _response_channel_buf[AERON_MAX_PATH] = { 0 };
 
         SNPRINTF(_response_channel_buf, sizeof(_response_channel_buf) - 1, "%s|control-mode=response", response_control_channel);
 
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
     }
 
     {
-        char _channel_buf[256] = { 0 };
+        char _channel_buf[AERON_MAX_PATH] = { 0 };
 
         SNPRINTF(_channel_buf, sizeof(_channel_buf) - 1, "%s|response-correlation-id=%" PRIi64, request_channel, subscriber_registration_id);
 

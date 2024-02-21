@@ -59,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.*;
@@ -360,21 +361,9 @@ public final class DriverConductor implements Agent
     void onReResolveEndpoint(
         final String endpoint, final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
     {
-        ctx.asyncTaskExecutor().execute(() ->
-        {
-            AsyncResult<InetSocketAddress> tmp;
-            try
-            {
-                tmp = AsyncResult.of(UdpChannel.resolve(
-                    endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver));
-            }
-            catch (final Exception ex)
-            {
-                tmp = AsyncResult.error(ex);
-            }
-
-            final AsyncResult<InetSocketAddress> asyncResult = tmp;
-            ctx.driverConductorProxy().offer(() ->
+        executeAsyncTask(
+            () -> UdpChannel.resolve(endpoint, CommonContext.ENDPOINT_PARAM_NAME, true, nameResolver),
+            (asyncResult) ->
             {
                 try
                 {
@@ -395,7 +384,6 @@ public final class DriverConductor implements Agent
                     errorCounter.increment();
                 }
             });
-        });
     }
 
     void onReResolveControl(
@@ -404,21 +392,9 @@ public final class DriverConductor implements Agent
         final ReceiveChannelEndpoint channelEndpoint,
         final InetSocketAddress address)
     {
-        ctx.asyncTaskExecutor().execute(() ->
-        {
-            AsyncResult<InetSocketAddress> tmp;
-            try
-            {
-                tmp = AsyncResult.of(UdpChannel.resolve(
-                    control, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver));
-            }
-            catch (final Exception ex)
-            {
-                tmp = AsyncResult.error(ex);
-            }
-
-            final AsyncResult<InetSocketAddress> asyncResult = tmp;
-            ctx.driverConductorProxy().offer(() ->
+        executeAsyncTask(
+            () -> UdpChannel.resolve(control, CommonContext.MDC_CONTROL_PARAM_NAME, true, nameResolver),
+            (asyncResult) ->
             {
                 try
                 {
@@ -439,7 +415,6 @@ public final class DriverConductor implements Agent
                     errorCounter.increment();
                 }
             });
-        });
     }
 
     IpcPublication getSharedIpcPublication(final long streamId)
@@ -1463,6 +1438,7 @@ public final class DriverConductor implements Agent
         final boolean isDestination,
         final Consumer<AsyncResult<UdpChannel>> driverCommand)
     {
+        final Thread conductorThread = Thread.currentThread();
         ctx.asyncTaskExecutor().execute(() ->
         {
             AsyncResult<UdpChannel> tmp;
@@ -1476,17 +1452,53 @@ public final class DriverConductor implements Agent
             }
 
             final AsyncResult<UdpChannel> asyncResult = tmp;
-            ctx.driverConductorProxy().offer(() ->
+            final Thread asyncThread = Thread.currentThread();
+            if (conductorThread == asyncThread)
             {
-                try
+                driverCommand.accept(asyncResult);
+            }
+            else
+            {
+                ctx.driverConductorProxy().offer(() ->
                 {
-                    driverCommand.accept(asyncResult);
-                }
-                catch (final Exception ex)
-                {
-                    clientCommandAdapter.onError(correlationId, ex);
-                }
-            });
+                    try
+                    {
+                        driverCommand.accept(asyncResult);
+                    }
+                    catch (final Exception ex)
+                    {
+                        clientCommandAdapter.onError(correlationId, ex);
+                    }
+                });
+            }
+        });
+    }
+
+    <T> void executeAsyncTask(final Supplier<T> asyncTask, final Consumer<AsyncResult<T>> driverCommand)
+    {
+        final Thread conductorThread = Thread.currentThread();
+        ctx.asyncTaskExecutor().execute(() ->
+        {
+            AsyncResult<T> tmp;
+            try
+            {
+                tmp = AsyncResult.of(asyncTask.get());
+            }
+            catch (final Exception ex)
+            {
+                tmp = AsyncResult.error(ex);
+            }
+
+            final AsyncResult<T> asyncResult = tmp;
+            final Thread asyncThread = Thread.currentThread();
+            if (conductorThread == asyncThread)
+            {
+                driverCommand.accept(asyncResult);
+            }
+            else
+            {
+                ctx.driverConductorProxy().offer(() -> driverCommand.accept(asyncResult));
+            }
         });
     }
 

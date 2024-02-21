@@ -49,6 +49,7 @@ import org.agrona.concurrent.status.UnsafeBufferPosition;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
@@ -73,7 +74,8 @@ public final class DriverConductor implements Agent
         MTU_LENGTH_PARAM_NAME,
         RECEIVER_WINDOW_LENGTH_PARAM_NAME,
         SOCKET_RCVBUF_PARAM_NAME,
-        SOCKET_SNDBUF_PARAM_NAME
+        SOCKET_SNDBUF_PARAM_NAME,
+        RESPONSE_CORRELATION_ID_PARAM_NAME
     };
 
     private int nextSessionId = BitUtil.generateRandomisedId();
@@ -2327,6 +2329,12 @@ public final class DriverConductor implements Agent
                 throw new InvalidChannelException(
                     "destinations must not contain the key: " + invalidKey + " channel=" + destinationUri);
             }
+        }
+
+        if (Objects.equals(CONTROL_MODE_RESPONSE, uri.get(MDC_CONTROL_MODE_PARAM_NAME)))
+        {
+            throw new InvalidChannelException("destinations may not specify " +
+                MDC_CONTROL_MODE_PARAM_NAME + "=" + CONTROL_MODE_RESPONSE);
         }
     }
 

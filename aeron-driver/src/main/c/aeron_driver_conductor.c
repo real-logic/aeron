@@ -317,7 +317,9 @@ static int aeron_driver_conductor_validate_destination_uri_params(aeron_uri_t *u
         }
     }
 
-    if (AERON_URI_UDP == uri->type && 0 == strcmp(uri->params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE))
+    if (AERON_URI_UDP == uri->type &&
+        NULL != uri->params.udp.control_mode &&
+        0 == strcmp(uri->params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE))
     {
         AERON_SET_ERR(
             -AERON_ERROR_CODE_INVALID_CHANNEL,

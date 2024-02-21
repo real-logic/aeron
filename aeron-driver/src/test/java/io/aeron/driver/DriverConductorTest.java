@@ -1121,6 +1121,7 @@ class DriverConductorTest
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        driverConductor.doWork();
         driverProxy.removeSubscription(idSpy);
 
         while (true)
@@ -1216,6 +1217,7 @@ class DriverConductorTest
     {
         final long id1 = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         final long id2 = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_2);
+        driverConductor.doWork();
         driverProxy.removePublication(id1);
         driverProxy.removePublication(id2);
 

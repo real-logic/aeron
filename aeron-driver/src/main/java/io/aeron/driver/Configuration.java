@@ -548,7 +548,7 @@ public final class Configuration
     /**
      * Limit for the number of commands drained in one operation.
      */
-    public static final int COMMAND_DRAIN_LIMIT = 2;
+    public static final int COMMAND_DRAIN_LIMIT = 10;
 
     /**
      * Capacity for the command queues used between driver agents.

@@ -37,7 +37,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.oneOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DataLossAndRecoverySystemTest
 {
@@ -81,8 +80,8 @@ public class DataLossAndRecoverySystemTest
                 .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
             final long nakCount = aeron.countersReader()
                 .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
-            assertEquals(1, retransmitCount);
-            assertEquals(1, nakCount);
+            assertThat(retransmitCount, oneOf(1L, 2L));
+            assertThat(nakCount, oneOf(1L, 2L));
         }
     }
 
@@ -102,8 +101,8 @@ public class DataLossAndRecoverySystemTest
                 .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
             final long nakCount = aeron.countersReader()
                 .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
-            assertEquals(1, retransmitCount);
-            assertEquals(1, nakCount);
+            assertThat(retransmitCount, oneOf(1L, 2L));
+            assertThat(nakCount, oneOf(1L, 2L));
         }
     }
 

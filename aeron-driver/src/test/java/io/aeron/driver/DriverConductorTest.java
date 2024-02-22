@@ -57,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongConsumer;
 
+import static io.aeron.CommonContext.*;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.ClientHeartbeatTimestamp.HEARTBEAT_TYPE_ID;
@@ -1850,6 +1851,48 @@ class DriverConductorTest
 
         assertEquals(SECONDS.toNanos(1), maxCycleTime.get());
         assertEquals(3, thresholdExceeded.get());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenSendDestinationHasControlModeResponseSet()
+    {
+        final Exception exception = assertThrows(InvalidChannelException.class,
+            () -> driverConductor.onAddSendDestination(0, "aeron:udp?control-mode=response", 0)
+        );
+
+        assertThat(exception.getMessage(), containsString(MDC_CONTROL_MODE_PARAM_NAME));
+        assertThat(exception.getMessage(), containsString(CONTROL_MODE_RESPONSE));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenSendDestinationHasResponseCorrelationIdSet()
+    {
+        final Exception exception = assertThrows(InvalidChannelException.class,
+            () -> driverConductor.onAddSendDestination(0, "aeron:udp?response-correlation-id=1234", 0)
+        );
+
+        assertThat(exception.getMessage(), containsString(RESPONSE_CORRELATION_ID_PARAM_NAME));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenRcvDestinationHasControlModeResponseSet()
+    {
+        final Exception exception = assertThrows(InvalidChannelException.class,
+            () -> driverConductor.onAddRcvDestination(0, "aeron:udp?control-mode=response", 0)
+        );
+
+        assertThat(exception.getMessage(), containsString(MDC_CONTROL_MODE_PARAM_NAME));
+        assertThat(exception.getMessage(), containsString(CONTROL_MODE_RESPONSE));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenRcvDestinationHasResponseCorrelationIdSet()
+    {
+        final Exception exception = assertThrows(InvalidChannelException.class,
+            () -> driverConductor.onAddRcvDestination(0, "aeron:udp?response-correlation-id=1234", 0)
+        );
+
+        assertThat(exception.getMessage(), containsString(RESPONSE_CORRELATION_ID_PARAM_NAME));
     }
 
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)

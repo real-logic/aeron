@@ -79,7 +79,7 @@ jobs:
 
       # optional: for debugging the uploaded sarif
       - name: Upload loc as a Build Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: sarif-results
           path: sarif-results

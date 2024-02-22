@@ -76,19 +76,6 @@ bool aeron_retransmit_handler_is_invalid(aeron_retransmit_handler_t *handler, in
     return is_invalid;
 }
 
-aeron_retransmit_action_t *aeron_retransmit_handler_assign_action(aeron_retransmit_handler_t *handler)
-{
-    for (size_t i = 0; i < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS; i++)
-    {
-        if (AERON_RETRANSMIT_ACTION_STATE_INACTIVE == handler->retransmit_action_pool[i].state)
-        {
-            return &handler->retransmit_action_pool[i];
-        }
-    }
-
-    return NULL;
-}
-
 int aeron_retransmit_handler_on_nak(
     aeron_retransmit_handler_t *handler,
     int32_t term_id,

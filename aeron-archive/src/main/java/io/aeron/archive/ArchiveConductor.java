@@ -605,6 +605,7 @@ abstract class ArchiveConductor
         }
     }
 
+    @SuppressWarnings("MethodLength")
     void startReplay(
         final long correlationId,
         final long recordingId,
@@ -613,7 +614,7 @@ abstract class ArchiveConductor
         final int fileIoMaxLength,
         final int replayStreamId,
         final String replayChannel,
-        final Counter limitPosition,
+        final Counter limitPositionCounter,
         final ControlSession controlSession)
     {
         if (replaySessionByIdMap.size() >= ctx.maxConcurrentReplays())
@@ -630,16 +631,30 @@ abstract class ArchiveConductor
             return;
         }
 
-        catalog.recordingSummary(recordingId, recordingSummary);
-        long replayPosition = recordingSummary.startPosition;
+        Counter replayLimitPositionCounter = limitPositionCounter;
+        if (null == replayLimitPositionCounter)
+        {
+            final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
+            if (null != recordingSession)
+            {
+                replayLimitPositionCounter = recordingSession.recordingPosition();
+            }
+        }
+        long limitPosition = NULL_POSITION;
+        if (null != replayLimitPositionCounter)
+        {
+            limitPosition = replayLimitPositionCounter.get();
+        }
 
+        catalog.recordingSummary(recordingId, recordingSummary);
+        final long startPosition = recordingSummary.startPosition;
+        long replayPosition = startPosition;
         if (NULL_POSITION != position)
         {
             if (isInvalidReplayPosition(correlationId, controlSession, recordingId, position, recordingSummary))
             {
                 return;
             }
-
             replayPosition = position;
         }
 
@@ -654,6 +669,36 @@ abstract class ArchiveConductor
             final int replayBufferCapacity = ctx.replayBuffer().capacity();
             final String msg = "replayBufferCapacity=" + replayBufferCapacity +
                 " < mtuLength=" + recordingSummary.mtuLength;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return;
+        }
+
+        final long stopPosition;
+        final long maxLength;
+        if (NULL_POSITION != limitPosition)
+        {
+            if (replayPosition > limitPosition)
+            {
+                final String msg = "requested replay start position=" + replayPosition +
+                    " must be less than the limit position=" + limitPosition + " for recording " + recordingId;
+                controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+                return;
+            }
+            stopPosition = limitPosition;
+            maxLength = Long.MAX_VALUE - replayPosition;
+        }
+        else
+        {
+            stopPosition = recordingSummary.stopPosition;
+            maxLength = stopPosition - replayPosition;
+        }
+
+        final long replayLength = AeronArchive.NULL_LENGTH == length ? maxLength : min(length, maxLength);
+        if (replayLength < 0)
+        {
+            final String msg = "replay length must be positive: replayLength=" + replayLength + ", length=" + length +
+                ", stopPosition=" + stopPosition + ", replayPosition=" + replayPosition + " for recording " +
+                recordingId;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return;
         }
@@ -675,15 +720,19 @@ abstract class ArchiveConductor
                 correlationId,
                 recordingId,
                 replayPosition,
-                length,
+                replayLength,
+                startPosition,
+                stopPosition,
+                recordingSummary.segmentFileLength,
+                recordingSummary.termBufferLength,
+                recordingSummary.streamId,
                 aeron.asyncAddExclusivePublication(channelBuilder.build(), replayStreamId),
                 fileIoMaxLength,
-                limitPosition,
+                replayLimitPositionCounter,
                 aeron,
                 controlSession,
                 controlResponseProxy,
                 this));
-
         }
         catch (final Exception ex)
         {
@@ -694,25 +743,21 @@ abstract class ArchiveConductor
     }
 
     void newReplaySession(
+        final long correlationId,
         final long recordingId,
         final long replayPosition,
         final long replayLength,
-        final long correlationId,
+        final long startPosition,
+        final long stopPosition,
+        final int segmentFileLength,
+        final int termBufferLength,
+        final int streamId,
         final int fileIoMaxLength,
         final ControlSession controlSession,
-        final Counter limitPositionCounter,
+        final Counter replayLimitPosition,
         final ExclusivePublication replayPublication)
     {
         final long replaySessionId = ((long)(replayId++) << 32) | (replayPublication.sessionId() & 0xFFFF_FFFFL);
-
-        Counter replayLimitPosition = limitPositionCounter;
-        if (null == replayLimitPosition)
-        {
-            final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
-            replayLimitPosition = null == recordingSession ? null : recordingSession.recordingPosition();
-        }
-
-        catalog.recordingSummary(recordingId, recordingSummary);
 
         final UnsafeBuffer replayBuffer;
         if (0 < fileIoMaxLength && fileIoMaxLength < ctx.replayBuffer().capacity())
@@ -725,19 +770,23 @@ abstract class ArchiveConductor
         }
 
         final ReplaySession replaySession = new ReplaySession(
+            correlationId,
+            recordingId,
             replayPosition,
             replayLength,
+            startPosition,
+            stopPosition,
+            segmentFileLength,
+            termBufferLength,
+            streamId,
             replaySessionId,
             connectTimeoutMs,
-            correlationId,
             controlSession,
-            controlResponseProxy,
             replayBuffer,
             archiveDir,
             cachedEpochClock,
             nanoClock,
             replayPublication,
-            recordingSummary,
             aeron.countersReader(),
             replayLimitPosition,
             ctx.replayChecksum(),
@@ -1094,8 +1143,8 @@ abstract class ArchiveConductor
 
             try
             {
-                recordingSessionByIdMap.remove(recordingId);
                 catalog.recordingStopped(recordingId, position, epochClock.time());
+                recordingSessionByIdMap.remove(recordingId);
                 session.sendPendingError(controlResponseProxy);
                 session.controlSession().sendSignal(
                     session.correlationId(),

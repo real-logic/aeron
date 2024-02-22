@@ -25,6 +25,11 @@ class CreateReplayPublicationSession implements Session
     private final long recordingId;
     private final long replayPosition;
     private final long replayLength;
+    private final long startPosition;
+    private final long stopPosition;
+    private final int segmentFileLength;
+    private final int termBufferLength;
+    private final int streamId;
     private long publicationRegistrationId;
     private final int fileIoMaxLength;
     private boolean isDone = false;
@@ -39,6 +44,11 @@ class CreateReplayPublicationSession implements Session
         final long recordingId,
         final long replayPosition,
         final long replayLength,
+        final long startPosition,
+        final long stopPosition,
+        final int segmentFileLength,
+        final int termBufferLength,
+        final int streamId,
         final long publicationRegistrationId,
         final int fileIoMaxLength,
         final Counter limitPositionCounter,
@@ -51,6 +61,11 @@ class CreateReplayPublicationSession implements Session
         this.recordingId = recordingId;
         this.replayPosition = replayPosition;
         this.replayLength = replayLength;
+        this.startPosition = startPosition;
+        this.stopPosition = stopPosition;
+        this.segmentFileLength = segmentFileLength;
+        this.termBufferLength = termBufferLength;
+        this.streamId = streamId;
         this.publicationRegistrationId = publicationRegistrationId;
         this.fileIoMaxLength = fileIoMaxLength;
         this.limitPositionCounter = limitPositionCounter;
@@ -124,10 +139,15 @@ class CreateReplayPublicationSession implements Session
                 workCount += 1;
 
                 conductor.newReplaySession(
+                    correlationId,
                     recordingId,
                     replayPosition,
                     replayLength,
-                    correlationId,
+                    startPosition,
+                    stopPosition,
+                    segmentFileLength,
+                    termBufferLength,
+                    streamId,
                     fileIoMaxLength,
                     controlSession,
                     limitPositionCounter,

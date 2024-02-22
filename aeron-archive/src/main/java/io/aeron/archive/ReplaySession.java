@@ -38,7 +38,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.EnumSet;
 
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.lang.Math.min;
@@ -105,19 +104,23 @@ class ReplaySession implements Session, AutoCloseable
     private volatile boolean isAborted;
 
     ReplaySession(
-        final long position,
-        final long length,
+        final long correlationId,
+        final long recordingId,
+        final long replayPosition,
+        final long replayLength,
+        final long startPosition,
+        final long stopPosition,
+        final int segmentFileLength,
+        final int termBufferLength,
+        final int streamId,
         final long replaySessionId,
         final long connectTimeoutMs,
-        final long correlationId,
         final ControlSession controlSession,
-        final ControlResponseProxy controlResponseProxy,
         final UnsafeBuffer replayBuffer,
         final File archiveDir,
         final CachedEpochClock epochClock,
         final NanoClock nanoClock,
         final ExclusivePublication publication,
-        final RecordingSummary recordingSummary,
         final CountersReader countersReader,
         final Counter replayLimitPosition,
         final Checksum checksum,
@@ -126,10 +129,10 @@ class ReplaySession implements Session, AutoCloseable
         this.controlSession = controlSession;
         this.sessionId = replaySessionId;
         this.correlationId = correlationId;
-        this.recordingId = recordingSummary.recordingId;
-        this.segmentLength = recordingSummary.segmentFileLength;
-        this.termLength = recordingSummary.termBufferLength;
-        this.streamId = recordingSummary.streamId;
+        this.recordingId = recordingId;
+        this.segmentLength = segmentFileLength;
+        this.termLength = termBufferLength;
+        this.streamId = streamId;
         this.epochClock = epochClock;
         this.nanoClock = nanoClock;
         this.archiveDir = archiveDir;
@@ -139,38 +142,14 @@ class ReplaySession implements Session, AutoCloseable
         this.replayBuffer = replayBuffer;
         this.replayBufferAddress = replayBuffer.addressOffset();
         this.checksum = checksum;
-        this.startPosition = recordingSummary.startPosition;
-        this.stopPosition = null == limitPosition ? recordingSummary.stopPosition : limitPosition.get();
+        this.startPosition = startPosition;
+        this.stopPosition = stopPosition;
         this.replayer = replayer;
 
-        final long fromPosition = position == NULL_POSITION ? startPosition : position;
-        final long maxLength = null == limitPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
-        final long replayLength = length == AeronArchive.NULL_LENGTH ? maxLength : min(length, maxLength);
-        if (replayLength < 0)
-        {
-            close();
-            final String msg = "replay recording " + recordingId + " - " + "length must be positive: " + replayLength;
-            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
-            throw new ArchiveException(msg);
-        }
-
-        if (null != limitPosition)
-        {
-            final long currentPosition = limitPosition.get();
-            if (currentPosition < fromPosition)
-            {
-                close();
-                final String msg = "replay recording " + recordingId + " - " +
-                    fromPosition + " after current position of " + currentPosition;
-                controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
-                throw new ArchiveException(msg);
-            }
-        }
-
         segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
-            startPosition, fromPosition, termLength, segmentLength);
-        replayPosition = fromPosition;
-        replayLimit = fromPosition + replayLength;
+            startPosition, replayPosition, termLength, segmentLength);
+        this.replayPosition = replayPosition;
+        replayLimit = replayPosition + replayLength;
 
         segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFileBasePosition));
         connectDeadlineMs = epochClock.time() + connectTimeoutMs;

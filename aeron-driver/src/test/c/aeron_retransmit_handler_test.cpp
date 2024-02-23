@@ -207,7 +207,7 @@ TEST_F(RetransmitHandlerTest, errorOnRetransmitOverflow)
 
     EXPECT_EQ(m_handler.active_retransmits, 0);
 
-    size_t i = 0;
+    int32_t i = 0;
     for (i = 0; i < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS; i++)
     {
         EXPECT_EQ(aeron_retransmit_handler_on_nak(

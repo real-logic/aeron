@@ -54,6 +54,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
@@ -483,6 +484,7 @@ public final class MediaDriver implements AutoCloseable
         private int lossReportBufferLength = Configuration.lossReportBufferLength();
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
         private int resourceFreeLimit = Configuration.resourceFreeLimit();
+        private int asyncTaskExecutorThreadCount = Configuration.asyncTaskExecutorThreadCount();
 
         private Long receiverGroupTag = Configuration.groupTag();
         private long flowControlGroupTag = Configuration.flowControlGroupTag();
@@ -2209,10 +2211,33 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * Returns the number of threads for async task executor.
+         *
+         * @return number of threads.
+         * @see Configuration#ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME
+         */
+        public int asyncTaskExecutorThreadCount()
+        {
+            return asyncTaskExecutorThreadCount;
+        }
+
+        /**
+         * Sets the number of threads for async task executor.
+         *
+         * @param asyncTaskExecutorThreadCount number of async worker threads.
+         * @return this for a fluent API.
+         */
+        public Context asyncTaskExecutorThreadCount(final int asyncTaskExecutorThreadCount)
+        {
+            this.asyncTaskExecutorThreadCount = asyncTaskExecutorThreadCount;
+            return this;
+        }
+
+        /**
          * {@link Executor} to be used for asynchronous task execution in the {@link DriverConductor}.
          *
-         * @return executor service for asynchronous tasks. Defaults to
-         * {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)}.
+         * @return executor service for asynchronous tasks. If not explicitly assigned uses
+         * {@link #asyncTaskExecutorThreadCount()} to size the thread pool.
          */
         public Executor asyncTaskExecutor()
         {
@@ -3867,12 +3892,22 @@ public final class MediaDriver implements AutoCloseable
             if (null == asyncTaskExecutor)
             {
                 ownsAsyncTaskExecutor = true;
-                asyncTaskExecutor = Executors.newSingleThreadExecutor((r) ->
+                if (asyncTaskExecutorThreadCount <= 0)
                 {
-                    final Thread thread = new Thread(r, "async-task-executor");
-                    thread.setDaemon(true);
-                    return thread;
-                });
+                    asyncTaskExecutor = CALLER_RUNS_TASK_EXECUTOR;
+                }
+                else
+                {
+                    final AtomicInteger id = new AtomicInteger();
+                    asyncTaskExecutor = Executors.newFixedThreadPool(
+                        asyncTaskExecutorThreadCount,
+                        (r) ->
+                        {
+                            final Thread thread = new Thread(r, "async-task-executor-" + id.getAndIncrement());
+                            thread.setDaemon(true);
+                            return thread;
+                        });
+                }
             }
         }
 

@@ -18,6 +18,8 @@ package io.aeron.driver;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.test.Tests;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -30,6 +32,7 @@ import java.nio.file.Path;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.driver.Configuration.*;
@@ -149,9 +152,21 @@ class MediaDriverContextTest
         assertTrue(exception.getMessage().contains("ipcPublicationTermWindowLength"));
     }
 
-    @Test
-    void shouldCreateSingleThreadedExecutorByDefault()
+    @ParameterizedTest
+    @ValueSource(ints = { -100, 42, Integer.MAX_VALUE })
+    void asyncTaskExecutorThreadCount(final int threadCount)
     {
+        assertEquals(1, context.asyncTaskExecutorThreadCount());
+
+        context.asyncTaskExecutorThreadCount(threadCount);
+        assertEquals(threadCount, context.asyncTaskExecutorThreadCount());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -5, 0 })
+    void shouldDisableAsyncExecutionIfThreadsAreNotConfigured(final int asyncExecutorThreadCount)
+    {
+        context.asyncTaskExecutorThreadCount(asyncExecutorThreadCount);
         assertNull(context.asyncTaskExecutor());
         assertFalse(context.ownsAsyncTaskExecutor());
 
@@ -159,7 +174,29 @@ class MediaDriverContextTest
 
         final Executor asyncTaskExecutor = context.asyncTaskExecutor();
         assertNotNull(asyncTaskExecutor);
+        assertSame(CALLER_RUNS_TASK_EXECUTOR, asyncTaskExecutor);
         assertTrue(context.ownsAsyncTaskExecutor());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 1, 4 })
+    void shouldCreateFixedThreadPoolExecutor(final int asyncExecutorThreadCount)
+    {
+        assertNull(context.asyncTaskExecutor());
+        assertFalse(context.ownsAsyncTaskExecutor());
+        context.asyncTaskExecutorThreadCount(asyncExecutorThreadCount);
+
+        context.concludeNullProperties();
+
+        final Executor asyncTaskExecutor = context.asyncTaskExecutor();
+        assertNotNull(asyncTaskExecutor);
+        assertInstanceOf(ThreadPoolExecutor.class, asyncTaskExecutor);
+        assertTrue(context.ownsAsyncTaskExecutor());
+
+        final ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor)asyncTaskExecutor;
+        assertEquals(asyncExecutorThreadCount, threadPoolExecutor.getCorePoolSize());
+        assertEquals(0, threadPoolExecutor.getPoolSize());
+        assertEquals(0, threadPoolExecutor.getActiveCount());
 
         final AtomicInteger count = new AtomicInteger();
         final CopyOnWriteArraySet<Thread> threads = new CopyOnWriteArraySet<>();
@@ -168,7 +205,7 @@ class MediaDriverContextTest
             count.incrementAndGet();
             threads.add(Thread.currentThread());
         };
-        final int numTasks = 7;
+        final int numTasks = asyncExecutorThreadCount * 3;
         for (int i = 0; i < numTasks; i++)
         {
             asyncTaskExecutor.execute(task);
@@ -176,11 +213,13 @@ class MediaDriverContextTest
 
         Tests.await(() -> numTasks == count.get());
 
-        assertEquals(1, threads.size());
-        final Thread asyncThread = threads.iterator().next();
-        assertNotEquals(Thread.currentThread(), asyncThread);
-        assertEquals("async-task-executor", asyncThread.getName());
-        assertTrue(asyncThread.isDaemon());
+        assertEquals(asyncExecutorThreadCount, threads.size());
+        assertEquals(asyncExecutorThreadCount, threadPoolExecutor.getPoolSize());
+        for (final Thread t : threads)
+        {
+            MatcherAssert.assertThat(t.getName(), CoreMatchers.startsWith("async-task-executor-"));
+            assertTrue(t.isDaemon());
+        }
     }
 
     @Test

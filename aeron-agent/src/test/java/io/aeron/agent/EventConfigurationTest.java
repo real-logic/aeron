@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.EnumSet;
 
 import static io.aeron.agent.EventConfiguration.parseEventCodes;
+import static io.aeron.driver.Configuration.ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME;
+import static io.aeron.driver.Configuration.asyncTaskExecutorThreadCount;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,6 +56,61 @@ public class EventConfigurationTest
         finally
         {
             System.setErr(err);
+        }
+    }
+
+    @Test
+    void asyncTaskExecutorThreadCountReturnsOneByDefault()
+    {
+        assertEquals(1, asyncTaskExecutorThreadCount());
+        try
+        {
+        }
+        finally
+        {
+            System.clearProperty(ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME);
+        }
+    }
+
+    @Test
+    void asyncTaskExecutorThreadCountReturnsZeroIfNegative()
+    {
+        System.setProperty(ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME, "-123");
+        try
+        {
+            assertEquals(0, asyncTaskExecutorThreadCount());
+        }
+        finally
+        {
+            System.clearProperty(ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME);
+        }
+    }
+
+    @Test
+    void asyncTaskExecutorThreadCountReturnsAssignedValue()
+    {
+        System.setProperty(ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME, "4");
+        try
+        {
+            assertEquals(4, asyncTaskExecutorThreadCount());
+        }
+        finally
+        {
+            System.clearProperty(ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME);
+        }
+    }
+
+    @Test
+    void asyncTaskExecutorThreadCountReturnsOneIfInvalid()
+    {
+        System.setProperty(ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME, "abc");
+        try
+        {
+            assertEquals(1, asyncTaskExecutorThreadCount());
+        }
+        finally
+        {
+            System.clearProperty(ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME);
         }
     }
 

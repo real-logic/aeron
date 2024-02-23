@@ -36,6 +36,7 @@ import org.agrona.concurrent.status.StatusIndicator;
 
 import java.net.InetSocketAddress;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.ThreadingMode.DEDICATED;
@@ -777,6 +778,17 @@ public final class Configuration
      * Property name for wildcard port range for the Receiver.
      */
     public static final String RECEIVER_WILDCARD_PORT_RANGE_PROP_NAME = "aeron.receiver.wildcard.port.range";
+
+    /**
+     * Property name to configure the number of async executor threads. Defaults to {@code 1}. Value of zero means no
+     * asynchronous threads will be created, i.e. execution will be done on the caller thread.
+     */
+    public static final String ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME = "aeron.driver.async.executor.thread.count";
+
+    /**
+     * {@link Executor} that run tasks on the caller thread.
+     */
+    public static final Executor CALLER_RUNS_TASK_EXECUTOR = Runnable::run;
 
     /**
      * Should the driver configuration be printed on start.
@@ -1543,6 +1555,19 @@ public final class Configuration
     public static String receiverWildcardPortRange()
     {
         return getProperty(RECEIVER_WILDCARD_PORT_RANGE_PROP_NAME);
+    }
+
+
+    /**
+     * Number of async executor threads.
+     *
+     * @return number of threads, defaults to one.
+     * @see #ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME
+     */
+    public static int asyncTaskExecutorThreadCount()
+    {
+        final Integer integer = getInteger(ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME, 1);
+        return integer < 0 ? 0 : integer;
     }
 
     /**

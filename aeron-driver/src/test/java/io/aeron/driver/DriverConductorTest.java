@@ -196,7 +196,8 @@ class DriverConductorTest
             .nameResolverTimeTracker(nameResolverTimeTracker)
             .senderPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, true))
             .receiverPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, false))
-            .asyncTaskExecutor(Runnable::run);
+            .asyncTaskExecutor(CALLER_RUNS_TASK_EXECUTOR)
+            .asyncTaskExecutorThreadCount(0);
 
         driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);

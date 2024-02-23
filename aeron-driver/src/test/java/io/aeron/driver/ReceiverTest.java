@@ -206,6 +206,7 @@ class ReceiverTest
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
+        receiver.doWork();
 
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(
@@ -271,6 +272,7 @@ class ReceiverTest
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
+        receiver.doWork();
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
@@ -339,6 +341,7 @@ class ReceiverTest
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
+        receiver.doWork();
 
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
@@ -406,8 +409,8 @@ class ReceiverTest
     void shouldOverwriteHeartbeatWithDataFrame()
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
+        receiver.doWork();
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
-
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
@@ -483,6 +486,7 @@ class ReceiverTest
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
+        receiver.doWork();
 
         fillSetupFrame(setupHeader, initialTermOffset);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
@@ -554,6 +558,7 @@ class ReceiverTest
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
+        receiver.doWork();
 
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
@@ -575,6 +580,7 @@ class ReceiverTest
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
+        receiver.doWork();
         receiver.doWork();
 
         fillSetupFrame(setupHeader);

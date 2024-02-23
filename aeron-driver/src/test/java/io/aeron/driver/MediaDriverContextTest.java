@@ -16,6 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.driver.MediaDriver.Context;
+import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.test.Tests;
 import org.hamcrest.CoreMatchers;
@@ -42,7 +43,8 @@ import static org.mockito.Mockito.*;
 
 class MediaDriverContextTest
 {
-    private final Context context = new Context();
+    private final Context context = new Context()
+        .dataTransportPoller(mock(DataTransportPoller.class));
 
     @AfterEach
     void afterEach()
@@ -202,8 +204,8 @@ class MediaDriverContextTest
         final CopyOnWriteArraySet<Thread> threads = new CopyOnWriteArraySet<>();
         final Runnable task = () ->
         {
-            count.incrementAndGet();
             threads.add(Thread.currentThread());
+            count.incrementAndGet();
         };
         final int numTasks = asyncExecutorThreadCount * 3;
         for (int i = 0; i < numTasks; i++)

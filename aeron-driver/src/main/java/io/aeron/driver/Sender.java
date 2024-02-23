@@ -129,7 +129,8 @@ public final class Sender extends SenderRhsPadding implements Agent
         cachedNanoClock.update(nowNs);
         dutyCycleTracker.measureAndUpdate(nowNs);
 
-        final int workCount = CommandProxy.drainQueue(commandQueue, Configuration.COMMAND_DRAIN_LIMIT, Runnable::run);
+        final int workCount =
+            CommandProxy.drainQueue(commandQueue, Configuration.COMMAND_DRAIN_LIMIT, CommandProxy.RUN_TASK);
 
         final long shortSendsBefore = shortSends.get();
         final int bytesSent = doSend(nowNs);

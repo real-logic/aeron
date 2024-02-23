@@ -226,7 +226,8 @@ public final class DriverConductor implements Agent
         int workCount = 0;
         workCount += processTimers(nowNs);
         workCount += clientCommandAdapter.receive();
-        workCount += CommandProxy.drainQueue(driverCmdQueue, Configuration.COMMAND_DRAIN_LIMIT, Runnable::run);
+        workCount +=
+            CommandProxy.drainQueue(driverCmdQueue, Configuration.COMMAND_DRAIN_LIMIT, CommandProxy.RUN_TASK);
         workCount += trackStreamPositions(workCount, nowNs);
         workCount += nameResolver.doWork(cachedEpochClock.time());
         workCount += freeEndOfLifeResources(ctx.resourceFreeLimit());

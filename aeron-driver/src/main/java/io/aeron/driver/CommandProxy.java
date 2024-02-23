@@ -25,6 +25,7 @@ import static io.aeron.driver.ThreadingMode.SHARED;
 
 abstract class CommandProxy
 {
+    static final Consumer<Runnable> RUN_TASK = Runnable::run;
     private final ThreadingMode threadingMode;
     private final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue;
     private final AtomicCounter failCount;
@@ -82,9 +83,7 @@ abstract class CommandProxy
     }
 
     static int drainQueue(
-        final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue,
-        final int limit,
-        final Consumer<Runnable> consumer)
+        final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue, final int limit, final Consumer<Runnable> consumer)
     {
         int workCount = 0;
         for (int i = 0; i < limit; i++)

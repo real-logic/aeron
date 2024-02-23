@@ -15,9 +15,17 @@
  */
 package io.aeron.driver;
 
+import io.aeron.Aeron;
 import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.driver.status.SystemCounterDescriptor;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
+import io.aeron.test.driver.TestMediaDriver;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
@@ -31,8 +39,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(InterruptingTestCallback.class)
 class MediaDriverTest
 {
+    @RegisterExtension
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+
     @Test
     void shouldPrintConfigOnStart()
     {
@@ -145,6 +157,35 @@ class MediaDriverTest
         finally
         {
             context.close();
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldExecuteAsyncCommandsInOrder(final @TempDir Path tempDir)
+    {
+        final Path aeronDir = tempDir.resolve("aeron");
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .aeronDirectoryName(aeronDir.toString())
+            .threadingMode(ThreadingMode.DEDICATED)
+            .asyncTaskExecutorThreadCount(2);
+        try (TestMediaDriver mediaDriver = TestMediaDriver.launch(context, systemTestWatcher))
+        {
+            systemTestWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());
+            try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDir.toString())))
+            {
+                final String channel = "aeron:udp?endpoint=localhost:5050";
+                final int streamId = 1111;
+                final long pubId1 = aeron.asyncAddExclusivePublication(channel, streamId);
+                aeron.asyncRemovePublication(pubId1);
+
+                final long pubId2 = aeron.asyncAddExclusivePublication(channel, streamId);
+
+                Tests.await(() -> null != aeron.getExclusivePublication(pubId2));
+
+                assertNull(aeron.getExclusivePublication(pubId1));
+                assertNotNull(aeron.getExclusivePublication(pubId2));
+            }
         }
     }
 

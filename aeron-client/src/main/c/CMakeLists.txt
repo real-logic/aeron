@@ -66,6 +66,7 @@ set(SOURCE
     collections/aeron_map.c
     collections/aeron_str_to_ptr_hash_map.c
     concurrent/aeron_atomic.c
+    concurrent/aeron_blocking_linked_queue.c
     concurrent/aeron_broadcast_receiver.c
     concurrent/aeron_broadcast_transmitter.c
     concurrent/aeron_counters_manager.c
@@ -74,6 +75,7 @@ set(SOURCE
     concurrent/aeron_mpsc_concurrent_array_queue.c
     concurrent/aeron_mpsc_rb.c
     concurrent/aeron_spsc_concurrent_array_queue.c
+    concurrent/aeron_spsc_concurrent_linked_queue.c
     concurrent/aeron_spsc_rb.c
     concurrent/aeron_term_gap_filler.c
     concurrent/aeron_term_gap_scanner.c
@@ -133,6 +135,7 @@ set(HEADERS
     concurrent/aeron_atomic64_gcc_x86_64.h
     concurrent/aeron_atomic64_msvc.h
     concurrent/aeron_atomic64_c11.h
+    concurrent/aeron_blocking_linked_queue.h
     concurrent/aeron_broadcast_descriptor.h
     concurrent/aeron_broadcast_receiver.h
     concurrent/aeron_broadcast_transmitter.h
@@ -144,6 +147,7 @@ set(HEADERS
     concurrent/aeron_mpsc_rb.h
     concurrent/aeron_rb.h
     concurrent/aeron_spsc_concurrent_array_queue.h
+    concurrent/aeron_spsc_concurrent_linked_queue.h
     concurrent/aeron_spsc_rb.h
     concurrent/aeron_term_gap_filler.h
     concurrent/aeron_term_gap_scanner.h

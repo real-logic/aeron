@@ -861,12 +861,19 @@ int aeron_exclusive_publication_async_remove_destination(
         async, &client->conductor, publication, uri);
 }
 
-int aeron_client_handler_cmd_await_processed(aeron_client_handler_cmd_t *cmd)
+int aeron_client_handler_cmd_await_processed(aeron_client_handler_cmd_t *cmd, uint64_t timeout_ms)
 {
     bool processed = cmd->processed;
-
+    int64_t deadline_ms = aeron_epoch_clock() + timeout_ms;
+    
     while (!processed)
     {
+        if (deadline_ms <= aeron_epoch_clock())
+        {
+            AERON_SET_ERR(ETIMEDOUT, "%s", "time out waiting for client conductor thread to process message");
+            return -1;
+        }
+
         sched_yield();
         AERON_GET_VOLATILE(processed, cmd->processed);
     }
@@ -895,7 +902,7 @@ int aeron_add_available_counter_handler(aeron_t *client, aeron_on_available_coun
         return -1;
     }
 
-    return aeron_client_handler_cmd_await_processed(&cmd);
+    return aeron_client_handler_cmd_await_processed(&cmd, aeron_context_get_driver_timeout_ms(client->context));
 }
 
 int aeron_remove_available_counter_handler(aeron_t *client, aeron_on_available_counter_pair_t *pair)
@@ -919,7 +926,7 @@ int aeron_remove_available_counter_handler(aeron_t *client, aeron_on_available_c
         return -1;
     }
 
-    return aeron_client_handler_cmd_await_processed(&cmd);
+    return aeron_client_handler_cmd_await_processed(&cmd, aeron_context_get_driver_timeout_ms(client->context));
 }
 
 int aeron_add_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_pair_t *pair)
@@ -943,7 +950,7 @@ int aeron_add_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_
         return -1;
     }
 
-    return aeron_client_handler_cmd_await_processed(&cmd);
+    return aeron_client_handler_cmd_await_processed(&cmd, aeron_context_get_driver_timeout_ms(client->context));
 }
 
 int aeron_remove_unavailable_counter_handler(aeron_t *client, aeron_on_unavailable_counter_pair_t *pair)
@@ -967,7 +974,7 @@ int aeron_remove_unavailable_counter_handler(aeron_t *client, aeron_on_unavailab
         return -1;
     }
 
-    return aeron_client_handler_cmd_await_processed(&cmd);
+    return aeron_client_handler_cmd_await_processed(&cmd, aeron_context_get_driver_timeout_ms(client->context));
 }
 
 int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair)
@@ -991,7 +998,7 @@ int aeron_add_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair)
         return -1;
     }
 
-    return aeron_client_handler_cmd_await_processed(&cmd);
+    return aeron_client_handler_cmd_await_processed(&cmd, aeron_context_get_driver_timeout_ms(client->context));
 }
 
 int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pair)
@@ -1015,5 +1022,5 @@ int aeron_remove_close_handler(aeron_t *client, aeron_on_close_client_pair_t *pa
         return -1;
     }
 
-    return aeron_client_handler_cmd_await_processed(&cmd);
+    return aeron_client_handler_cmd_await_processed(&cmd, aeron_context_get_driver_timeout_ms(client->context));
 }

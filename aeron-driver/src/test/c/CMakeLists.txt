@@ -109,4 +109,5 @@ if (AERON_UNIT_TESTS)
 
     aeron_driver_test(position_test aeron_position_test.cpp)
     aeron_driver_test(driver_context_config_test aeron_driver_context_config_test.cpp)
+    aeron_driver_test(driver_executor_test aeron_driver_executor_test.cpp)
 endif ()

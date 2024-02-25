@@ -38,4 +38,6 @@ void *aeron_blocking_linked_queue_poll(aeron_blocking_linked_queue_t *queue);
 
 size_t aeron_blocking_linked_queue_size(aeron_blocking_linked_queue_t *queue);
 
+void aeron_blocking_linked_queue_unblock(aeron_blocking_linked_queue_t *queue);
+
 #endif //AERON_BLOCKING_LINKED_QUEUE_H

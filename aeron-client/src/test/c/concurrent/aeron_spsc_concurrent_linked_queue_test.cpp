@@ -24,12 +24,17 @@ extern "C"
 class SpscQueueTest : public testing::Test
 {
 public:
-    SpscQueueTest()
+    void SetUp() override
     {
         if (aeron_spsc_concurrent_linked_queue_init(&m_q) < 0)
         {
             throw std::runtime_error("could not init q");
         }
+    }
+
+    void TearDown() override
+    {
+        ASSERT_EQ(aeron_spsc_concurrent_linked_queue_close(&m_q), 0);
     }
 
 protected:
@@ -39,7 +44,6 @@ protected:
 TEST_F(SpscQueueTest, shouldInitToEmptyQueue)
 {
     EXPECT_EQ(aeron_spsc_concurrent_linked_queue_poll(&m_q), nullptr);
-    ASSERT_EQ(aeron_spsc_concurrent_linked_queue_close(&m_q), 0);
 }
 
 TEST_F(SpscQueueTest, shouldOfferAndPollToEmptyQueue)
@@ -48,7 +52,6 @@ TEST_F(SpscQueueTest, shouldOfferAndPollToEmptyQueue)
 
     EXPECT_EQ(aeron_spsc_concurrent_linked_queue_offer(&m_q, (void *)element), 0);
     EXPECT_EQ(aeron_spsc_concurrent_linked_queue_poll(&m_q), (void *)element);
-    ASSERT_EQ(aeron_spsc_concurrent_linked_queue_close(&m_q), 0);
 }
 
 TEST_F(SpscQueueTest, shouldFIFO)
@@ -59,7 +62,6 @@ TEST_F(SpscQueueTest, shouldFIFO)
     EXPECT_EQ(aeron_spsc_concurrent_linked_queue_poll(&m_q), (void *)0x1);
     EXPECT_EQ(aeron_spsc_concurrent_linked_queue_poll(&m_q), (void *)0x2);
     EXPECT_EQ(aeron_spsc_concurrent_linked_queue_poll(&m_q), (void *)0x3);
-    ASSERT_EQ(aeron_spsc_concurrent_linked_queue_close(&m_q), 0);
 }
 
 TEST_F(SpscQueueTest, shouldPollToEmptyQueueAfterOfferAndPoll)
@@ -69,7 +71,6 @@ TEST_F(SpscQueueTest, shouldPollToEmptyQueueAfterOfferAndPoll)
     EXPECT_EQ(aeron_spsc_concurrent_linked_queue_offer(&m_q, (void *)element), 0);
     EXPECT_EQ(aeron_spsc_concurrent_linked_queue_poll(&m_q), (void *)element);
     EXPECT_EQ(aeron_spsc_concurrent_linked_queue_poll(&m_q), nullptr);
-    ASSERT_EQ(aeron_spsc_concurrent_linked_queue_close(&m_q), 0);
 }
 
 TEST_F(SpscQueueTest, shouldNotCloseWhenNotEmpty)
@@ -79,5 +80,4 @@ TEST_F(SpscQueueTest, shouldNotCloseWhenNotEmpty)
     EXPECT_EQ(aeron_spsc_concurrent_linked_queue_offer(&m_q, (void *)element), 0);
     EXPECT_EQ(aeron_spsc_concurrent_linked_queue_close(&m_q), -1);
     EXPECT_EQ(aeron_spsc_concurrent_linked_queue_poll(&m_q), (void *)element);
-    ASSERT_EQ(aeron_spsc_concurrent_linked_queue_close(&m_q), 0);
 }

@@ -109,3 +109,8 @@ size_t aeron_blocking_linked_queue_size(aeron_blocking_linked_queue_t *queue)
 
     return size;
 }
+
+void aeron_blocking_linked_queue_unblock(aeron_blocking_linked_queue_t *queue)
+{
+    aeron_cond_signal(&queue->cv);
+}

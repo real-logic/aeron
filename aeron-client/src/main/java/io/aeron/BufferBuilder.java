@@ -24,6 +24,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.logbuffer.FrameDescriptor.BEGIN_FRAG_FLAG;
 import static io.aeron.logbuffer.FrameDescriptor.FLAGS_OFFSET;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -45,7 +46,7 @@ public final class BufferBuilder
 
     private final boolean isDirect;
     private int limit;
-    private int nextTermOffset;
+    private int nextTermOffset = NULL_VALUE;
     private final UnsafeBuffer buffer = new UnsafeBuffer();
     final UnsafeBuffer headerBuffer = new UnsafeBuffer();
     final Header completeHeader = new Header(0, 0);
@@ -175,7 +176,7 @@ public final class BufferBuilder
     public BufferBuilder reset()
     {
         limit = 0;
-        nextTermOffset = 0;
+        nextTermOffset = NULL_VALUE;
         return this;
     }
 

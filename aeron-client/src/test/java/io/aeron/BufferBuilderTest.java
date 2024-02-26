@@ -59,6 +59,7 @@ class BufferBuilderTest
     {
         assertEquals(0, bufferBuilder.capacity());
         assertEquals(0, bufferBuilder.limit());
+        assertEquals(Aeron.NULL_VALUE, bufferBuilder.nextTermOffset());
         assertEquals(0, bufferBuilder.buffer().capacity());
         assertNull(bufferBuilder.buffer().byteBuffer());
         assertArrayEquals(ArrayUtil.EMPTY_BYTE_ARRAY, bufferBuilder.buffer().byteArray());
@@ -176,7 +177,7 @@ class BufferBuilderTest
         bufferBuilder.reset();
 
         assertEquals(0, bufferBuilder.limit());
-        assertEquals(0, bufferBuilder.nextTermOffset());
+        assertEquals(Aeron.NULL_VALUE, bufferBuilder.nextTermOffset());
     }
 
     @Test

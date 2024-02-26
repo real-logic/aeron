@@ -16,6 +16,7 @@
 
 #include "aeron_driver_executor.h"
 #include "aeron_alloc.h"
+#include "util/aeron_error.h"
 
 struct aeron_driver_executor_task_stct
 {
@@ -35,6 +36,7 @@ int aeron_driver_executor_init(
 {
     if (aeron_blocking_linked_queue_init(&executor->queue) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -92,6 +94,7 @@ int aeron_driver_executor_execute(
 
         if (aeron_alloc((void **)&task, sizeof(aeron_driver_executor_task_t)) < 0)
         {
+            AERON_APPEND_ERR("%s", "");
             return -1;
         }
 

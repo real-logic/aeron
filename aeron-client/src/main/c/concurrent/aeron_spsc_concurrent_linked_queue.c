@@ -16,6 +16,7 @@
 
 #include "aeron_alloc.h"
 #include "concurrent/aeron_spsc_concurrent_linked_queue.h"
+#include "util/aeron_error.h"
 
 struct aeron_spsc_concurrent_linked_queue_node_stct {
     aeron_spsc_concurrent_linked_queue_node_t *next;
@@ -28,6 +29,7 @@ int aeron_spsc_concurrent_linked_queue_node_create(void *element, aeron_spsc_con
 
     if (aeron_alloc((void **)&node, sizeof(aeron_spsc_concurrent_linked_queue_node_t)) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -52,6 +54,7 @@ int aeron_spsc_concurrent_linked_queue_init(aeron_spsc_concurrent_linked_queue_t
 
     if (aeron_spsc_concurrent_linked_queue_node_create(NULL, &node))
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -81,6 +84,7 @@ int aeron_spsc_concurrent_linked_queue_offer(aeron_spsc_concurrent_linked_queue_
 
     if (aeron_spsc_concurrent_linked_queue_node_create(element, &node))
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 

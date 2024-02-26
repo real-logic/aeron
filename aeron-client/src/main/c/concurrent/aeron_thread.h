@@ -95,6 +95,20 @@ int aeron_thread_set_specific(pthread_key_t key, const void *pointer);
 
 void *aeron_thread_get_specific(pthread_key_t key);
 
+typedef struct aeron_cond_t_stct
+{
+    int something;
+}
+aeron_cond_t;
+
+int aeron_cond_init(aeron_cond_t *cv, void *attr);
+
+int aeron_cond_destroy(aeron_cond_t *cv);
+
+int aeron_cond_wait(aeron_cond_t *cv, aeron_mutex_t *mutex);
+
+int aeron_cond_signal(aeron_cond_t *cv);
+
 #else
 #error Unsupported platform!
 #endif

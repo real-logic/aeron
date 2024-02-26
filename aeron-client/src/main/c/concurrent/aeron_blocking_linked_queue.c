@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
+#include <sys/errno.h>
 #include "concurrent/aeron_blocking_linked_queue.h"
+#include "util/aeron_error.h"
 
 int aeron_blocking_linked_queue_init(aeron_blocking_linked_queue_t *queue)
 {
     if (aeron_spsc_concurrent_linked_queue_init(&queue->spsc_queue) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -38,12 +41,14 @@ int aeron_blocking_linked_queue_close(aeron_blocking_linked_queue_t *queue)
     {
         aeron_mutex_unlock(&queue->mutex);
 
-        // can't delete the queue until it's empty
+        AERON_SET_ERR(EINVAL, "%s", "queue must be empty to be deleted");
+
         return -1;
     }
 
     if (aeron_spsc_concurrent_linked_queue_close(&queue->spsc_queue) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 

@@ -299,6 +299,26 @@ int sched_yield(void)
     return 0;
 }
 
+int aeron_cond_init(aeron_cond_t *cv, void *attr)
+{
+    return 0;
+}
+
+int aeron_cond_destroy(aeron_cond_t *cv)
+{
+    return 0;
+}
+
+int aeron_cond_wait(aeron_cond_t *cv, aeron_mutex_t *mutex)
+{
+    return 0;
+}
+
+int aeron_cond_signal(aeron_cond_t *cv)
+{
+    return 0;
+}
+
 #else
 #error Unsupported platform!
 #endif

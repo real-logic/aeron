@@ -21,6 +21,7 @@
 
 #include "aeronc.h"
 #include "collections/aeron_int64_to_ptr_hash_map.h"
+#include "aeron_image.h"
 
 typedef struct aeron_buffer_builder_stct
 {
@@ -28,6 +29,7 @@ typedef struct aeron_buffer_builder_stct
     size_t buffer_length;
     size_t limit;
     int32_t next_term_offset;
+    aeron_header_t header;
 }
 aeron_buffer_builder_t;
 
@@ -71,7 +73,14 @@ void aeron_buffer_builder_delete(aeron_buffer_builder_t *buffer_builder);
 inline void aeron_buffer_builder_reset(aeron_buffer_builder_t *buffer_builder)
 {
     buffer_builder->limit = 0;
-    buffer_builder->next_term_offset = 0;
+    buffer_builder->next_term_offset = -1;
+}
+
+inline void aeron_buffer_builder_next_term_offset(
+    aeron_buffer_builder_t *buffer_builder, size_t length, aeron_header_t *header)
+{
+    int32_t aligned_length = (int32_t)AERON_ALIGN(AERON_DATA_HEADER_LENGTH + length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    buffer_builder->next_term_offset = header->frame->term_offset + aligned_length;
 }
 
 inline int aeron_buffer_builder_append(
@@ -85,6 +94,23 @@ inline int aeron_buffer_builder_append(
     memcpy(buffer_builder->buffer + buffer_builder->limit, buffer, length);
     buffer_builder->limit += length;
     return 0;
+}
+
+inline void aeron_buffer_builder_capture_header(aeron_buffer_builder_t *buffer_builder, aeron_header_t *header)
+{
+    buffer_builder->header.initial_term_id = header->initial_term_id;
+    buffer_builder->header.position_bits_to_shift = header->position_bits_to_shift;
+    memcpy(buffer_builder->header.frame, header->frame, sizeof(aeron_data_header_t));
+}
+
+inline aeron_header_t* aeron_buffer_builder_complete_header(aeron_buffer_builder_t *buffer_builder, aeron_header_t *header)
+{
+    aeron_frame_header_t *frame_header = &buffer_builder->header.frame->frame_header;
+    int32_t max_payload_length = frame_header->frame_length - (int32_t)AERON_DATA_HEADER_LENGTH;
+    frame_header->frame_length =
+        (int32_t)aeron_logbuffer_compute_fragmented_length(buffer_builder->limit, max_payload_length);
+    frame_header->flags = (uint8_t)(header->frame->frame_header.flags | AERON_DATA_HEADER_BEGIN_FLAG);
+    return &buffer_builder->header;
 }
 
 #endif //AERON_C_IMAGE_FRAGMENT_ASSEMBLER_H

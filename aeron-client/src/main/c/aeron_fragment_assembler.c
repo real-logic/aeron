@@ -27,8 +27,10 @@
 int aeron_buffer_builder_create(aeron_buffer_builder_t **buffer_builder)
 {
     aeron_buffer_builder_t *_buffer_builder;
+    aeron_data_header_t *_frame;
 
-    if (aeron_alloc((void **)&_buffer_builder, sizeof(aeron_buffer_builder_t)) < 0)
+    if (aeron_alloc((void **)&_buffer_builder, sizeof(aeron_buffer_builder_t)) < 0 ||
+        aeron_alloc((void **)&_frame, sizeof(aeron_data_header_t)) < 0)
     {
         AERON_APPEND_ERR("%s", "Failed to allocate buffer_builder");
         return -1;
@@ -37,7 +39,8 @@ int aeron_buffer_builder_create(aeron_buffer_builder_t **buffer_builder)
     _buffer_builder->buffer = NULL;
     _buffer_builder->buffer_length = 0;
     _buffer_builder->limit = 0;
-    _buffer_builder->next_term_offset = 0;
+    _buffer_builder->next_term_offset = -1;
+    _buffer_builder->header.frame = _frame;
 
     *buffer_builder = _buffer_builder;
     return 0;
@@ -104,6 +107,7 @@ void aeron_buffer_builder_delete(aeron_buffer_builder_t *buffer_builder)
     if (buffer_builder)
     {
         aeron_free(buffer_builder->buffer);
+        aeron_free(buffer_builder->header.frame);
         aeron_free(buffer_builder);
     }
 }
@@ -155,28 +159,29 @@ void aeron_image_fragment_assembler_handler(
     {
         assembler->delegate(assembler->delegate_clientd, buffer, length, header);
     }
-    else if (flags & AERON_DATA_HEADER_BEGIN_FLAG)
+    else if ((flags & AERON_DATA_HEADER_BEGIN_FLAG) == AERON_DATA_HEADER_BEGIN_FLAG)
     {
         aeron_buffer_builder_reset(buffer_builder);
+        aeron_buffer_builder_capture_header(buffer_builder, header);
         aeron_buffer_builder_append(buffer_builder, buffer, length);
-
-        int32_t aligned_length = AERON_ALIGN(AERON_DATA_HEADER_LENGTH + length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-        buffer_builder->next_term_offset = header->frame->term_offset + aligned_length;
+        aeron_buffer_builder_next_term_offset(buffer_builder, length, header);
     }
     else if (buffer_builder->next_term_offset == header->frame->term_offset)
     {
         aeron_buffer_builder_append(buffer_builder, buffer, length);
 
-        if (flags & AERON_DATA_HEADER_END_FLAG)
+        if ((flags & AERON_DATA_HEADER_END_FLAG) == AERON_DATA_HEADER_END_FLAG)
         {
             assembler->delegate(
-                assembler->delegate_clientd, buffer_builder->buffer, buffer_builder->limit, header);
+                assembler->delegate_clientd,
+                buffer_builder->buffer,
+                buffer_builder->limit,
+                aeron_buffer_builder_complete_header(buffer_builder, header));
             aeron_buffer_builder_reset(buffer_builder);
         }
         else
         {
-            int32_t aligned_length = AERON_ALIGN(AERON_DATA_HEADER_LENGTH + length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-            buffer_builder->next_term_offset = header->frame->term_offset + aligned_length;
+            aeron_buffer_builder_next_term_offset(buffer_builder, length, header);
         }
     }
     else
@@ -221,7 +226,7 @@ int aeron_image_controlled_fragment_assembler_delete(aeron_image_controlled_frag
     return 0;
 }
 
-aeron_controlled_fragment_handler_action_t aeron_controlled_image_fragment_assembler_handler(
+aeron_controlled_fragment_handler_action_t aeron_image_controlled_fragment_assembler_handler(
     void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
 {
     aeron_image_controlled_fragment_assembler_t *assembler = (aeron_image_controlled_fragment_assembler_t *)clientd;
@@ -233,23 +238,25 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_image_fragment_assem
     {
         action = assembler->delegate(assembler->delegate_clientd, buffer, length, header);
     }
-    else if (flags & AERON_DATA_HEADER_BEGIN_FLAG)
+    else if ((flags & AERON_DATA_HEADER_BEGIN_FLAG) == AERON_DATA_HEADER_BEGIN_FLAG)
     {
         aeron_buffer_builder_reset(buffer_builder);
+        aeron_buffer_builder_capture_header(buffer_builder, header);
         aeron_buffer_builder_append(buffer_builder, buffer, length);
-
-        int32_t aligned_length = AERON_ALIGN(AERON_DATA_HEADER_LENGTH + length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-        buffer_builder->next_term_offset = header->frame->term_offset + aligned_length;
+        aeron_buffer_builder_next_term_offset(buffer_builder, length, header);
     }
     else if (buffer_builder->next_term_offset == header->frame->term_offset)
     {
         size_t limit = buffer_builder->limit;
         aeron_buffer_builder_append(buffer_builder, buffer, length);
 
-        if (flags & AERON_DATA_HEADER_END_FLAG)
+        if ((flags & AERON_DATA_HEADER_END_FLAG) == AERON_DATA_HEADER_END_FLAG)
         {
             action = assembler->delegate(
-                assembler->delegate_clientd, buffer_builder->buffer, buffer_builder->limit, header);
+                assembler->delegate_clientd,
+                buffer_builder->buffer,
+                buffer_builder->limit,
+                aeron_buffer_builder_complete_header(buffer_builder, header));
 
             if (AERON_ACTION_ABORT == action)
             {
@@ -262,8 +269,7 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_image_fragment_assem
         }
         else
         {
-            int32_t aligned_length = AERON_ALIGN(AERON_DATA_HEADER_LENGTH + length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-            buffer_builder->next_term_offset = header->frame->term_offset + aligned_length;
+            aeron_buffer_builder_next_term_offset(buffer_builder, length, header);
         }
     }
     else
@@ -336,7 +342,7 @@ void aeron_fragment_assembler_handler(
         aeron_buffer_builder_t *buffer_builder = aeron_int64_to_ptr_hash_map_get(
             &assembler->builder_by_session_id_map, header->frame->session_id);
 
-        if (flags & AERON_DATA_HEADER_BEGIN_FLAG)
+        if ((flags & AERON_DATA_HEADER_BEGIN_FLAG) == AERON_DATA_HEADER_BEGIN_FLAG)
         {
             if (NULL == buffer_builder)
             {
@@ -349,10 +355,9 @@ void aeron_fragment_assembler_handler(
             }
 
             aeron_buffer_builder_reset(buffer_builder);
+            aeron_buffer_builder_capture_header(buffer_builder, header);
             aeron_buffer_builder_append(buffer_builder, buffer, length);
-
-            int32_t aligned_length = AERON_ALIGN(AERON_DATA_HEADER_LENGTH + length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-            buffer_builder->next_term_offset = header->frame->term_offset + aligned_length;
+            aeron_buffer_builder_next_term_offset(buffer_builder, length, header);
         }
         else if (NULL != buffer_builder)
         {
@@ -360,17 +365,18 @@ void aeron_fragment_assembler_handler(
             {
                 aeron_buffer_builder_append(buffer_builder, buffer, length);
 
-                if (flags & AERON_DATA_HEADER_END_FLAG)
+                if ((flags & AERON_DATA_HEADER_END_FLAG) == AERON_DATA_HEADER_END_FLAG)
                 {
                     assembler->delegate(
-                        assembler->delegate_clientd, buffer_builder->buffer, buffer_builder->limit, header);
+                        assembler->delegate_clientd,
+                        buffer_builder->buffer,
+                        buffer_builder->limit,
+                        aeron_buffer_builder_complete_header(buffer_builder, header));
                     aeron_buffer_builder_reset(buffer_builder);
                 }
                 else
                 {
-                    int32_t aligned_length =
-                        AERON_ALIGN(AERON_DATA_HEADER_LENGTH + length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-                    buffer_builder->next_term_offset = header->frame->term_offset + aligned_length;
+                    aeron_buffer_builder_next_term_offset(buffer_builder, length, header);
                 }
             }
             else
@@ -444,7 +450,7 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_h
         aeron_buffer_builder_t *buffer_builder = aeron_int64_to_ptr_hash_map_get(
             &assembler->builder_by_session_id_map, header->frame->session_id);
 
-        if (flags & AERON_DATA_HEADER_BEGIN_FLAG)
+        if ((flags & AERON_DATA_HEADER_BEGIN_FLAG) == AERON_DATA_HEADER_BEGIN_FLAG)
         {
             if (NULL == buffer_builder)
             {
@@ -457,10 +463,9 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_h
             }
 
             aeron_buffer_builder_reset(buffer_builder);
+            aeron_buffer_builder_capture_header(buffer_builder, header);
             aeron_buffer_builder_append(buffer_builder, buffer, length);
-
-            int32_t aligned_length = AERON_ALIGN(AERON_DATA_HEADER_LENGTH + length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-            buffer_builder->next_term_offset = header->frame->term_offset + aligned_length;
+            aeron_buffer_builder_next_term_offset(buffer_builder, length, header);
         }
         else if (NULL != buffer_builder)
         {
@@ -469,10 +474,13 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_h
                 size_t limit = buffer_builder->limit;
                 aeron_buffer_builder_append(buffer_builder, buffer, length);
 
-                if (flags & AERON_DATA_HEADER_END_FLAG)
+                if ((flags & AERON_DATA_HEADER_END_FLAG) == AERON_DATA_HEADER_END_FLAG)
                 {
                     action = assembler->delegate(
-                        assembler->delegate_clientd, buffer_builder->buffer, buffer_builder->limit, header);
+                        assembler->delegate_clientd,
+                        buffer_builder->buffer,
+                        buffer_builder->limit,
+                        aeron_buffer_builder_complete_header(buffer_builder, header));
 
                     if (AERON_ACTION_ABORT == action)
                     {
@@ -485,9 +493,7 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_h
                 }
                 else
                 {
-                    int32_t aligned_length =
-                        AERON_ALIGN(AERON_DATA_HEADER_LENGTH + length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
-                    buffer_builder->next_term_offset = header->frame->term_offset + aligned_length;
+                    aeron_buffer_builder_next_term_offset(buffer_builder, length, header);
                 }
             }
             else
@@ -501,5 +507,14 @@ aeron_controlled_fragment_handler_action_t aeron_controlled_fragment_assembler_h
 }
 
 extern void aeron_buffer_builder_reset(aeron_buffer_builder_t *buffer_builder);
+
+extern void aeron_buffer_builder_next_term_offset(
+    aeron_buffer_builder_t *buffer_builder, size_t length, aeron_header_t *header);
+
 extern int aeron_buffer_builder_append(
     aeron_buffer_builder_t *buffer_builder, const uint8_t *buffer, size_t length);
+
+extern void aeron_buffer_builder_capture_header(aeron_buffer_builder_t *buffer_builder, aeron_header_t *header);
+
+extern aeron_header_t *aeron_buffer_builder_complete_header(
+    aeron_buffer_builder_t *buffer_builder, aeron_header_t *header);

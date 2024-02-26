@@ -25,33 +25,33 @@ extern "C"
 #include "aeron_image.h"
 }
 
-#define STREAM_ID (10)
-#define SESSION_ID (200)
+#define STREAM_ID (999)
+#define SESSION_ID (-100)
 #define TERM_LENGTH (AERON_LOGBUFFER_TERM_MIN_LENGTH)
-#define INITIAL_TERM_ID (-1234)
-#define ACTIVE_TERM_ID  (INITIAL_TERM_ID + 5)
+#define INITIAL_TERM_ID (3)
+#define ACTIVE_TERM_ID  (INITIAL_TERM_ID + 4)
 #define POSITION_BITS_TO_SHIFT (aeron_number_of_trailing_zeroes(TERM_LENGTH))
-#define MTU_LENGTH (128)
+#define MTU_LENGTH (192)
 
 typedef std::array<uint8_t, TERM_LENGTH> fragment_buffer_t;
 
-class CFragmentAssemblerTest : public testing::Test
+class ControlledImageFragmentAssemblerTest : public testing::Test
 {
 public:
-    CFragmentAssemblerTest()
+    ControlledImageFragmentAssemblerTest()
     {
         m_fragment.fill(0);
         m_header.frame = (aeron_data_header_t *)m_fragment.data();
 
-        if (aeron_fragment_assembler_create(&m_assembler, fragment_handler, this) < 0)
+        if (aeron_image_controlled_fragment_assembler_create(&m_assembler, fragment_handler, this) < 0)
         {
             throw std::runtime_error("could not create aeron_fragment_assembler_create: " + std::string(aeron_errmsg()));
         }
     }
 
-    ~CFragmentAssemblerTest() override
+    ~ControlledImageFragmentAssemblerTest() override
     {
-        aeron_fragment_assembler_delete(m_assembler);
+        aeron_image_controlled_fragment_assembler_delete(m_assembler);
     }
 
     void fillFrame(uint8_t flags, int32_t offset, size_t length, uint8_t initialPayloadValue)
@@ -108,32 +108,33 @@ public:
         }
     }
 
-    static void fragment_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
+    static aeron_controlled_fragment_handler_action_t fragment_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        auto test = reinterpret_cast<CFragmentAssemblerTest *>(clientd);
+        auto test = reinterpret_cast<ControlledImageFragmentAssemblerTest *>(clientd);
 
         if (test->m_handler)
         {
-            test->m_handler(buffer, length, header);
+            return test->m_handler(buffer, length, header);
         }
+        return AERON_ACTION_BREAK;
     }
 
     template<typename F>
-    void handle_fragment(F &&handler, size_t length)
+    aeron_controlled_fragment_handler_action_t handle_fragment(F &&handler, size_t length)
     {
         m_handler = handler;
         uint8_t *buffer = m_fragment.data() + AERON_DATA_HEADER_LENGTH;
-        ::aeron_fragment_assembler_handler(m_assembler, buffer, length, &m_header);
+        return ::aeron_image_controlled_fragment_assembler_handler(m_assembler, buffer, length, &m_header);
     }
 
 protected:
     AERON_DECL_ALIGNED(fragment_buffer_t m_fragment, 16) = {};
     aeron_header_t m_header = {};
-    std::function<void(const uint8_t *, size_t, aeron_header_t *)> m_handler = nullptr;
-    aeron_fragment_assembler_t *m_assembler = nullptr;
+    std::function<aeron_controlled_fragment_handler_action_t(const uint8_t *, size_t, aeron_header_t *)> m_handler = nullptr;
+    aeron_image_controlled_fragment_assembler_t *m_assembler = nullptr;
 };
 
-TEST_F(CFragmentAssemblerTest, shouldPassThroughUnfragmentedMessage)
+TEST_F(ControlledImageFragmentAssemblerTest, shouldPassThroughUnfragmentedMessage)
 {
     size_t fragmentLength = 158;
     fillFrame(AERON_DATA_HEADER_UNFRAGMENTED, 0, fragmentLength, 0);
@@ -146,13 +147,14 @@ TEST_F(CFragmentAssemblerTest, shouldPassThroughUnfragmentedMessage)
         EXPECT_EQ(0, aeron_header_values(header, &header_values));
         EXPECT_EQ(SESSION_ID, header_values.frame.session_id);
         verifyPayload(buffer, length);
+        return AERON_ACTION_CONTINUE;
     };
 
-    handle_fragment(handler, fragmentLength);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
     EXPECT_TRUE(isCalled);
 }
 
-TEST_F(CFragmentAssemblerTest, shouldReassembleFromTwoFragments)
+TEST_F(ControlledImageFragmentAssemblerTest, shouldReassembleFromTwoFragments)
 {
     size_t fragmentLength = MTU_LENGTH - AERON_DATA_HEADER_LENGTH;
     int32_t initialTermId = 420;
@@ -184,6 +186,7 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromTwoFragments)
         EXPECT_EQ(termId, header_values.frame.term_id);
         EXPECT_EQ(reservedValue, header_values.frame.reserved_value);
         verifyPayload(buffer, length);
+        return AERON_ACTION_CONTINUE;
     };
 
     m_header.initial_term_id = initialTermId;
@@ -199,7 +202,7 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromTwoFragments)
         reservedValue,
         fragmentLength,
         0);
-    handle_fragment(handler, fragmentLength);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
     EXPECT_FALSE(isCalled);
 
     termOffset += MTU_LENGTH;
@@ -216,11 +219,11 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromTwoFragments)
         63456385384L,
         fragmentLength,
         fragmentLength % 256);
-    handle_fragment(handler, fragmentLength);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
     EXPECT_TRUE(isCalled);
 }
 
-TEST_F(CFragmentAssemblerTest, shouldReassembleFromThreeFragments)
+TEST_F(ControlledImageFragmentAssemblerTest, shouldReassembleFromThreeFragments)
 {
     size_t fragmentLength = MTU_LENGTH - AERON_DATA_HEADER_LENGTH;
     size_t lastFragmentLength = 111;
@@ -248,6 +251,7 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromThreeFragments)
         EXPECT_EQ(termId, header_values.frame.term_id);
         EXPECT_EQ(reservedValue, header_values.frame.reserved_value);
         verifyPayload(buffer, length);
+        return AERON_ACTION_CONTINUE;
     };
 
     fillFrame(
@@ -261,12 +265,12 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromThreeFragments)
         reservedValue,
         fragmentLength,
         0);
-    handle_fragment(handler, fragmentLength);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
     EXPECT_FALSE(isCalled);
 
     termOffset += MTU_LENGTH;
     fillFrame(0xE, termOffset, fragmentLength, fragmentLength % 256);
-    handle_fragment(handler, fragmentLength);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
     EXPECT_FALSE(isCalled);
 
     termOffset += MTU_LENGTH;
@@ -275,21 +279,22 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromThreeFragments)
     EXPECT_TRUE(isCalled);
 }
 
-TEST_F(CFragmentAssemblerTest, shouldNotReassembleIfEndFirstFragment)
+TEST_F(ControlledImageFragmentAssemblerTest, shouldNotReassembleIfEndFirstFragment)
 {
     size_t fragmentLength = MTU_LENGTH - AERON_DATA_HEADER_LENGTH;
     bool isCalled = false;
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
         isCalled = true;
+        return AERON_ACTION_CONTINUE;
     };
 
     fillFrame(AERON_DATA_HEADER_END_FLAG, 0, fragmentLength, 0);
-    handle_fragment(handler, fragmentLength);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
     EXPECT_FALSE(isCalled);
 }
 
-TEST_F(CFragmentAssemblerTest, shouldNotReassembleIfMissingBegin)
+TEST_F(ControlledImageFragmentAssemblerTest, shouldNotReassembleIfMissingBegin)
 {
     size_t fragmentLength = MTU_LENGTH - AERON_DATA_HEADER_LENGTH;
     int32_t termOffset = 0;
@@ -297,19 +302,20 @@ TEST_F(CFragmentAssemblerTest, shouldNotReassembleIfMissingBegin)
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
         isCalled = true;
+        return AERON_ACTION_CONTINUE;
     };
 
     fillFrame(0, termOffset, fragmentLength, 0);
-    handle_fragment(handler, fragmentLength);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
     EXPECT_FALSE(isCalled);
 
     termOffset += MTU_LENGTH;
     fillFrame(AERON_DATA_HEADER_END_FLAG, termOffset, fragmentLength, fragmentLength % 256);
-    handle_fragment(handler, fragmentLength);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
     EXPECT_FALSE(isCalled);
 }
 
-TEST_F(CFragmentAssemblerTest, shouldReassembleTwoMessagesFromFourFrames)
+TEST_F(ControlledImageFragmentAssemblerTest, shouldReassembleTwoMessagesFromFourFrames)
 {
     size_t fragmentLength = MTU_LENGTH - AERON_DATA_HEADER_LENGTH;
     int32_t termOffset = 0, messageBeginOffset = 0;
@@ -322,15 +328,16 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleTwoMessagesFromFourFrames)
         EXPECT_EQ(0, aeron_header_values(header, &header_values));
         EXPECT_EQ(SESSION_ID, header_values.frame.session_id);
         EXPECT_EQ(messageBeginOffset, header_values.frame.term_offset);
+        return AERON_ACTION_CONTINUE;
     };
 
     fillFrame(AERON_DATA_HEADER_BEGIN_FLAG, termOffset, fragmentLength, 0);
-    handle_fragment(handler, fragmentLength);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
     EXPECT_FALSE(isCalled);
 
     termOffset += MTU_LENGTH;
     fillFrame(AERON_DATA_HEADER_END_FLAG, termOffset, fragmentLength, fragmentLength % 256);
-    handle_fragment(handler, fragmentLength);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
     EXPECT_TRUE(isCalled);
 
     isCalled = false;
@@ -338,11 +345,45 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleTwoMessagesFromFourFrames)
 
     termOffset += MTU_LENGTH;
     fillFrame(AERON_DATA_HEADER_BEGIN_FLAG, termOffset, fragmentLength, 0);
-    handle_fragment(handler, fragmentLength);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
     EXPECT_FALSE(isCalled);
 
     termOffset += MTU_LENGTH;
     fillFrame(AERON_DATA_HEADER_END_FLAG, termOffset, fragmentLength, fragmentLength % 256);
-    handle_fragment(handler, fragmentLength);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
+    EXPECT_TRUE(isCalled);
+
+    isCalled = false;
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
+    EXPECT_FALSE(isCalled);
+}
+
+TEST_F(ControlledImageFragmentAssemblerTest, shouldAbortReassembly)
+{
+    size_t fragmentLength = MTU_LENGTH - AERON_DATA_HEADER_LENGTH;
+    int32_t termOffset = 0;
+    bool isCalled = false;
+    auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
+    {
+        isCalled = true;
+        EXPECT_EQ(length, fragmentLength * 2);
+        aeron_header_values_t header_values;
+        EXPECT_EQ(0, aeron_header_values(header, &header_values));
+        EXPECT_EQ(SESSION_ID, header_values.frame.session_id);
+        EXPECT_EQ(0, header_values.frame.term_offset);
+        return AERON_ACTION_ABORT;
+    };
+
+    fillFrame(AERON_DATA_HEADER_BEGIN_FLAG, termOffset, fragmentLength, 0);
+    EXPECT_EQ(AERON_ACTION_CONTINUE, handle_fragment(handler, fragmentLength));
+    EXPECT_FALSE(isCalled);
+
+    termOffset += MTU_LENGTH;
+    fillFrame(AERON_DATA_HEADER_END_FLAG, termOffset, fragmentLength, fragmentLength % 256);
+    EXPECT_EQ(AERON_ACTION_ABORT, handle_fragment(handler, fragmentLength));
+    EXPECT_TRUE(isCalled);
+
+    isCalled = false;
+    EXPECT_EQ(AERON_ACTION_ABORT, handle_fragment(handler, fragmentLength));
     EXPECT_TRUE(isCalled);
 }

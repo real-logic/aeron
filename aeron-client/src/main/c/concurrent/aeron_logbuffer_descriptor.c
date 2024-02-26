@@ -112,3 +112,4 @@ extern bool aeron_logbuffer_rotate_log(
 extern void aeron_logbuffer_fill_default_header(
     uint8_t *log_meta_data_buffer, int32_t session_id, int32_t stream_id, int32_t initial_term_id);
 extern void aeron_logbuffer_apply_default_header(uint8_t *log_meta_data_buffer, uint8_t *buffer);
+extern size_t aeron_logbuffer_compute_fragmented_length(size_t length, size_t max_payload_length);

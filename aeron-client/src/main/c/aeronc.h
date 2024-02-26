@@ -2048,7 +2048,7 @@ int aeron_image_controlled_fragment_assembler_delete(aeron_image_controlled_frag
  * @param header representing the meta data for the data.
  * @return The action to be taken with regard to the stream position after the callback.
  */
-aeron_controlled_fragment_handler_action_t aeron_controlled_image_fragment_assembler_handler(
+aeron_controlled_fragment_handler_action_t aeron_image_controlled_fragment_assembler_handler(
     void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);
 
 /**

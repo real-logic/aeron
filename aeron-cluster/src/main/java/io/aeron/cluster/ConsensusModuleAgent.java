@@ -3086,6 +3086,16 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
     private void takeSnapshot(final long timestamp, final long logPosition, final ServiceAck[] serviceAcks)
     {
+        for (int serviceId = serviceAcks.length - 1; serviceId >= 0; serviceId--)
+        {
+            final long snapshotId = serviceAcks[serviceId].relevantId();
+            if (NULL_VALUE == snapshotId)
+            {
+                ctx.errorLog().record(new ClusterEvent("service=" + serviceId + " failed to take snapshot"));
+                return;
+            }
+        }
+
         final long recordingId;
         try (ExclusivePublication publication = aeron.addExclusivePublication(
             ctx.snapshotChannel(), ctx.snapshotStreamId()))

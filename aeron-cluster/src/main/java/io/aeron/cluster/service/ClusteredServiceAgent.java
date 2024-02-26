@@ -983,7 +983,16 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
     {
         if (ClusterAction.SNAPSHOT == action && shouldSnapshot(flags))
         {
-            final long recordingId = onTakeSnapshot(logPosition, leadershipTermId);
+            long recordingId = NULL_VALUE;
+            try
+            {
+                recordingId = onTakeSnapshot(logPosition, leadershipTermId);
+            }
+            catch (final Exception ex)
+            {
+                context().errorHandler().onError(ex);
+            }
+
             final long id = ackId++;
             idleStrategy.reset();
             while (!consensusModuleProxy.ack(logPosition, clusterTime, id, recordingId, serviceId))

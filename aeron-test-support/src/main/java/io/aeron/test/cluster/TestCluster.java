@@ -1898,6 +1898,36 @@ public final class TestCluster implements AutoCloseable
         }
     }
 
+    public void awaitServiceErrors(final TestNode node, final long count)
+    {
+        while (count < node.service().cluster().context().errorCounter().get())
+        {
+            Tests.sleep(1, "Errors count=" + count + " not seen on node=" + node.index());
+        }
+    }
+
+    public void awaitServiceErrors(final long count)
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                awaitServiceErrors(node, count);
+            }
+        }
+    }
+
+    public void failNextSnapshot(final boolean failNextSnapshot)
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                node.service().failNextSnapshot(failNextSnapshot);
+            }
+        }
+    }
+
     public static final class Builder
     {
         private int nodeCount = 3;

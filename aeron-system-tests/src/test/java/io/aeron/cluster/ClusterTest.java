@@ -1398,6 +1398,38 @@ class ClusterTest
     }
 
     @Test
+    @InterruptAfter(40)
+    void shouldContinueFromLogIfSnapshotThrowsException()
+    {
+        cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader0 = cluster.awaitLeader();
+
+        final int messageCount = 3;
+        cluster.connectClient();
+        cluster.sendMessages(messageCount);
+        cluster.awaitServicesMessageCount(messageCount);
+
+        cluster.failNextSnapshot(true);
+        cluster.takeSnapshot(leader0);
+
+        cluster.sendMessages(messageCount);
+        cluster.awaitServicesMessageCount(messageCount * 2);
+
+        cluster.awaitSnapshotCount(0);
+        cluster.awaitServiceErrors(1);
+
+        cluster.stopAllNodes();
+        cluster.restartAllNodes(false);
+        cluster.awaitLeader();
+        cluster.reconnectClient();
+
+        cluster.sendMessages(messageCount);
+        cluster.awaitServicesMessageCount(messageCount * 3);
+    }
+
+    @Test
     @InterruptAfter(30)
     void shouldRecoverWhenLastSnapshotForShutdownIsMarkedInvalid()
     {

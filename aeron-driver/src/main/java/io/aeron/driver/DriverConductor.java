@@ -486,8 +486,7 @@ public final class DriverConductor implements Agent
     {
         executeAsyncClientTask(
             correlationId,
-            channel,
-            false,
+            () -> UdpChannel.parse(channel, nameResolver, false),
             (asyncResult) ->
             {
                 final UdpChannel udpChannel = asyncResult.get();
@@ -965,8 +964,7 @@ public final class DriverConductor implements Agent
     {
         executeAsyncClientTask(
             registrationId,
-            channel,
-            false,
+            () -> UdpChannel.parse(channel, nameResolver, false),
             (asyncResult) ->
             {
                 final UdpChannel udpChannel = asyncResult.get();
@@ -1051,8 +1049,7 @@ public final class DriverConductor implements Agent
     {
         executeAsyncClientTask(
             registrationId,
-            channel,
-            false,
+            () -> UdpChannel.parse(channel, nameResolver, false),
             (asyncResult) ->
             {
                 final UdpChannel udpChannel = asyncResult.get();
@@ -1228,8 +1225,7 @@ public final class DriverConductor implements Agent
     {
         executeAsyncClientTask(
             correlationId,
-            destinationChannel,
-            false,
+            () -> UdpChannel.parse(destinationChannel, nameResolver, false),
             (asyncResult) ->
             {
                 final UdpChannel udpChannel = asyncResult.get();
@@ -1276,8 +1272,7 @@ public final class DriverConductor implements Agent
     {
         executeAsyncClientTask(
             correlationId,
-            destinationChannel,
-            true,
+            () -> UdpChannel.parse(destinationChannel, nameResolver, true),
             (asyncResult) ->
             {
                 final UdpChannel udpChannel = asyncResult.get();
@@ -1358,8 +1353,7 @@ public final class DriverConductor implements Agent
         final ReceiveChannelEndpoint endpoint = receiveChannelEndpoint;
         executeAsyncClientTask(
             correlationId,
-            destinationChannel,
-            true,
+            () -> UdpChannel.parse(destinationChannel, nameResolver, true),
             (asyncResult) ->
             {
                 receiverProxy.removeDestination(endpoint, asyncResult.get());
@@ -1445,21 +1439,19 @@ public final class DriverConductor implements Agent
 
     private void executeAsyncClientTask(
         final long correlationId,
-        final String channel,
-        final boolean isDestination,
+        final Supplier<UdpChannel> asyncTask,
         final Consumer<Supplier<UdpChannel>> command)
     {
-        final Supplier<UdpChannel> parsedChannel = () -> UdpChannel.parse(channel, nameResolver, isDestination);
         if (asyncExecutionDisabled)
         {
-            command.accept(parsedChannel);
+            command.accept(asyncTask);
         }
         else
         {
             asyncClientCommandInFlight = true;
             asyncTaskExecutor.execute(() ->
             {
-                final AsyncResult<UdpChannel> asyncResult = AsyncResult.of(parsedChannel);
+                final AsyncResult<UdpChannel> asyncResult = AsyncResult.of(asyncTask);
                 addToCommandQueue(() ->
                 {
                     try

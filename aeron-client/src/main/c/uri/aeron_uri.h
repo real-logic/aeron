@@ -72,6 +72,7 @@ aeron_uri_params_t;
 #define AERON_URI_CHANNEL_SND_TIMESTAMP_OFFSET_KEY "channel-snd-ts-offset"
 #define AERON_URI_TIMESTAMP_OFFSET_RESERVED "reserved"
 #define AERON_URI_RESPONSE_CORRELATION_ID_KEY "response-correlation-id"
+#define AERON_URI_NAK_DELAY_KEY "nak-delay"
 #define AERON_URI_INVALID_TAG (-1)
 
 typedef struct aeron_udp_channel_params_stct

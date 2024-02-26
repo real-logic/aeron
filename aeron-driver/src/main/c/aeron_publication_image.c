@@ -115,9 +115,53 @@ int aeron_publication_image_create(
         return -1;
     }
 
+    aeron_feedback_delay_generator_state_t *feedback_delay_state;
+
+    if (treat_as_multicast)
+    {
+        feedback_delay_state = &context->multicast_delay_feedback_generator;
+    }
+    else
+    {
+        int64_t nak_delay_ns;
+
+        int result = aeron_uri_get_int64(
+            &endpoint->conductor_fields.udp_channel->uri.params.udp.additional_params,
+            AERON_URI_NAK_DELAY_KEY,
+            -1,
+            &nak_delay_ns);
+
+        if (0 == result) // not found - using the default
+        {
+            feedback_delay_state = &context->unicast_delay_feedback_generator;
+        }
+        else if (-1 == result)
+        {
+            AERON_APPEND_ERR("%s", "");
+            aeron_free(_image);
+            return -1;
+        }
+        else
+        {
+            feedback_delay_state = &_image->feedback_delay_state;
+
+            if (aeron_feedback_delay_state_init(
+                feedback_delay_state,
+                aeron_loss_detector_nak_unicast_delay_generator,
+                nak_delay_ns,
+                nak_delay_ns * (int64_t)context->nak_unicast_retry_delay_ratio,
+                1) < 0)
+            {
+                AERON_APPEND_ERR("%s", "Could not init publication image feedback_delay_state");
+                aeron_free(_image);
+                return -1;
+            }
+        }
+    }
+
     if (aeron_loss_detector_init(
         &_image->loss_detector,
-        treat_as_multicast ? &context->multicast_delay_feedback_generator : &context->unicast_delay_feedback_generator,
+        feedback_delay_state,
         aeron_publication_image_on_gap_detected,
         _image) < 0)
     {

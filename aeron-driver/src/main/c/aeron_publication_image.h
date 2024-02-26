@@ -80,6 +80,7 @@ typedef struct aeron_publication_image_stct
     size_t source_identity_length;
     char source_identity[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
     aeron_loss_detector_t loss_detector;
+    aeron_feedback_delay_generator_state_t feedback_delay_state;
 
     aeron_mapped_raw_log_t mapped_raw_log;
     aeron_position_t rcv_hwm_position;

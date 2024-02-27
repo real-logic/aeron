@@ -64,6 +64,48 @@ static bool aeron_publication_image_check_and_get_response_session_id(
     return ((int64_t)INT32_MIN) <= _response_session_id && _response_session_id <= ((int64_t)INT32_MAX);
 }
 
+static aeron_feedback_delay_generator_state_t *aeron_publication_image_acquire_delay_generator_state(
+    bool treat_as_multicast,
+    aeron_driver_context_t *context,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_publication_image_t *image)
+{
+    if (treat_as_multicast)
+    {
+        return &context->multicast_delay_feedback_generator;
+    }
+
+    const char *nak_delay_string = aeron_uri_find_param_value(
+        &endpoint->conductor_fields.udp_channel->uri.params.udp.additional_params,
+        AERON_URI_NAK_DELAY_KEY);
+
+    if (NULL == nak_delay_string)
+    {
+        return &context->unicast_delay_feedback_generator;
+    }
+
+    uint64_t nak_delay_ns;
+
+    if (aeron_parse_duration_ns(nak_delay_string, &nak_delay_ns) < 0)
+    {
+        AERON_SET_ERR(EINVAL, "%s is not parseable: %s", AERON_URI_NAK_DELAY_KEY, nak_delay_string);
+        return NULL;
+    }
+
+    if (aeron_feedback_delay_state_init(
+         &image->feedback_delay_state,
+        aeron_loss_detector_nak_unicast_delay_generator,
+        (int64_t)nak_delay_ns,
+        (int64_t)nak_delay_ns * (int64_t)context->nak_unicast_retry_delay_ratio,
+        1) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Could not init publication image feedback_delay_state");
+        return NULL;
+    }
+
+    return &image->feedback_delay_state;
+}
+
 int aeron_publication_image_create(
     aeron_publication_image_t **image,
     aeron_receive_channel_endpoint_t *endpoint,
@@ -117,46 +159,12 @@ int aeron_publication_image_create(
     }
 
     aeron_feedback_delay_generator_state_t *feedback_delay_state;
-
-    if (treat_as_multicast)
+    feedback_delay_state = aeron_publication_image_acquire_delay_generator_state(treat_as_multicast, context, endpoint, _image);
+    if (NULL == feedback_delay_state)
     {
-        feedback_delay_state = &context->multicast_delay_feedback_generator;
-    }
-    else
-    {
-        const char *nak_delay_string = aeron_uri_find_param_value(
-            &endpoint->conductor_fields.udp_channel->uri.params.udp.additional_params,
-            AERON_URI_NAK_DELAY_KEY);
-
-        if (NULL == nak_delay_string)
-        {
-            feedback_delay_state = &context->unicast_delay_feedback_generator;
-        }
-        else
-        {
-            uint64_t nak_delay_ns;
-
-            if (aeron_parse_duration_ns(nak_delay_string, &nak_delay_ns) < 0)
-            {
-                AERON_SET_ERR(EINVAL, "%s is not parseable: %s", AERON_URI_NAK_DELAY_KEY, nak_delay_string);
-                aeron_free(_image);
-                return -1;
-            }
-
-            feedback_delay_state = &_image->feedback_delay_state;
-
-            if (aeron_feedback_delay_state_init(
-                feedback_delay_state,
-                aeron_loss_detector_nak_unicast_delay_generator,
-                (int64_t)nak_delay_ns,
-                (int64_t)nak_delay_ns * (int64_t)context->nak_unicast_retry_delay_ratio,
-                1) < 0)
-            {
-                AERON_APPEND_ERR("%s", "Could not init publication image feedback_delay_state");
-                aeron_free(_image);
-                return -1;
-            }
-        }
+        AERON_APPEND_ERR("%s", "");
+        aeron_free(_image);
+        return -1;
     }
 
     if (aeron_loss_detector_init(

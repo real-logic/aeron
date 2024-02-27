@@ -88,7 +88,6 @@ public class DataLossAndRecoverySystemTest
     @Test
     void shouldConfigureNakDelayPerStream() throws IOException
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
         dontCoalesceNaksOnReceiverByDefault();
         launch(context);
 

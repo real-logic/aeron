@@ -16,23 +16,22 @@
 
 #include <gtest/gtest.h>
 #include <queue>
-#include <thread>
 
 extern "C"
 {
-#include "aeron_driver_executor.h"
+#include "concurrent/aeron_executor.h"
 }
 
 typedef struct {
     int some_value;
 } task_clientd_t;
 
-class DriverConductorSyncExecutorTest : public testing::Test
+class SyncExecutorTest : public testing::Test
 {
 public:
     void SetUp() override
     {
-        if (aeron_driver_executor_init(
+        if (aeron_executor_init(
             &m_executor,
             on_execution_complete_cb(),
             this) < 0)
@@ -43,17 +42,17 @@ public:
 
     void TearDown() override
     {
-        aeron_driver_executor_close(&m_executor);
+        aeron_executor_close(&m_executor);
     }
 
-    virtual aeron_driver_executor_on_execution_complete_func_t on_execution_complete_cb()
+    virtual aeron_executor_on_execution_complete_func_t on_execution_complete_cb()
     {
         return nullptr;
     }
 
     static int on_execute(void *task_clientd, void *executor_clientd)
     {
-        auto *e = (DriverConductorSyncExecutorTest *)executor_clientd;
+        auto *e = (SyncExecutorTest *)executor_clientd;
 
         e->m_on_execute_count++;
 
@@ -62,7 +61,7 @@ public:
 
     static int on_complete(int result, void *task_clientd, void *executor_clientd)
     {
-        auto *e = (DriverConductorSyncExecutorTest *)executor_clientd;
+        auto *e = (SyncExecutorTest *)executor_clientd;
 
         e->m_on_complete_count++;
 
@@ -70,14 +69,14 @@ public:
     }
 
 protected:
-    aeron_driver_executor_t m_executor = {};
+    aeron_executor_t m_executor = {};
     std::function<int(void *, void *)> m_on_execute;
     std::function<int(int, void *, void *)> m_on_complete;
     int m_on_execute_count = 0;
     int m_on_complete_count = 0;
 };
 
-TEST_F(DriverConductorSyncExecutorTest, shouldExecuteSynchronously)
+TEST_F(SyncExecutorTest, shouldExecuteSynchronously)
 {
     task_clientd_t tcd;
 
@@ -99,13 +98,11 @@ TEST_F(DriverConductorSyncExecutorTest, shouldExecuteSynchronously)
             return ++result;
         };
 
-    int result = aeron_driver_executor_execute(
+    int result = aeron_executor_submit(
         &m_executor,
-        DriverConductorSyncExecutorTest::on_execute,
-        DriverConductorSyncExecutorTest::on_complete,
+        SyncExecutorTest::on_execute,
+        SyncExecutorTest::on_complete,
         &tcd);
-
-    ASSERT_EQ(aeron_driver_executor_do_work(&m_executor), 0);
 
     ASSERT_EQ(result, 2);
     ASSERT_EQ(m_on_execute_count, 1);
@@ -113,17 +110,17 @@ TEST_F(DriverConductorSyncExecutorTest, shouldExecuteSynchronously)
     ASSERT_EQ(tcd.some_value, 200);
 }
 
-class DriverConductorAsyncExecutorTest : public DriverConductorSyncExecutorTest
+class AsyncExecutorTest : public SyncExecutorTest
 {
 public:
-    aeron_driver_executor_on_execution_complete_func_t on_execution_complete_cb() override
+    aeron_executor_on_execution_complete_func_t on_execution_complete_cb() override
     {
-        return DriverConductorAsyncExecutorTest::on_execution_complete_cb;
+        return AsyncExecutorTest::on_execution_complete_cb;
     };
 
-    static int on_execution_complete_cb(aeron_driver_executor_task_t *task, void *executor_clientd)
+    static int on_execution_complete_cb(aeron_executor_task_t *task, void *executor_clientd)
     {
-        auto e = ((DriverConductorAsyncExecutorTest *)executor_clientd);
+        auto e = ((AsyncExecutorTest *)executor_clientd);
 
         e->tasks.push(task);
         e->m_on_execution_complete_count++;
@@ -132,24 +129,17 @@ public:
     }
 
 protected:
-    std::queue<aeron_driver_executor_task_t *> tasks;
+    std::queue<aeron_executor_task_t *> tasks;
     int m_on_execution_complete_count = 0;
 };
 
 #define TOTAL_TASKS 1000
 
-TEST_F(DriverConductorAsyncExecutorTest, shouldExecuteAsynchronously)
+TEST_F(AsyncExecutorTest, shouldExecuteAsynchronously)
 {
-    int work_count = 0;
     task_clientd_t tcd;
 
     tcd.some_value = 0;
-
-    std::thread dequeue_thread = std::thread(
-        [&]()
-        {
-            work_count = aeron_driver_executor_do_work(&m_executor);
-        });
 
     m_on_execute =
         [&](void *task_clientd, void *executor_clientd)
@@ -169,10 +159,10 @@ TEST_F(DriverConductorAsyncExecutorTest, shouldExecuteAsynchronously)
 
     for (int i = 0; i < TOTAL_TASKS; i++)
     {
-        int result = aeron_driver_executor_execute(
+        int result = aeron_executor_submit(
             &m_executor,
-            DriverConductorSyncExecutorTest::on_execute,
-            DriverConductorSyncExecutorTest::on_complete,
+            SyncExecutorTest::on_execute,
+            SyncExecutorTest::on_complete,
             &tcd);
         ASSERT_EQ(result, 0);
     }
@@ -186,16 +176,11 @@ TEST_F(DriverConductorAsyncExecutorTest, shouldExecuteAsynchronously)
 
     while (!tasks.empty())
     {
-        aeron_driver_executor_task_do_complete(tasks.front());
+        aeron_executor_task_do_complete(tasks.front());
         tasks.pop();
     }
 
     ASSERT_EQ(tasks.size(), 0);
-
-    aeron_blocking_linked_queue_unblock(&m_executor.queue);
-
-    dequeue_thread.join();
-
     ASSERT_EQ(m_on_execution_complete_count, TOTAL_TASKS);
     ASSERT_EQ(m_on_execute_count, TOTAL_TASKS);
     ASSERT_EQ(m_on_complete_count, TOTAL_TASKS);

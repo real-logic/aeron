@@ -24,7 +24,7 @@ extern "C"
 #include "concurrent/aeron_blocking_linked_queue.h"
 }
 
-class SpscQueueTest : public testing::Test
+class BlockingQueueTest : public testing::Test
 {
 public:
     void SetUp() override
@@ -44,33 +44,34 @@ protected:
     aeron_blocking_linked_queue_t m_q = {};
 };
 
-TEST_F(SpscQueueTest, shouldInitToEmptyQueue)
+TEST_F(BlockingQueueTest, shouldInitToEmptyQueue)
 {
-    EXPECT_EQ(aeron_blocking_linked_queue_size(&m_q), 0);
+    EXPECT_TRUE(aeron_blocking_linked_queue_is_empty(&m_q));
 }
 
-TEST_F(SpscQueueTest, shouldOfferAndPollToEmptyQueue)
+TEST_F(BlockingQueueTest, shouldOfferAndPollToEmptyQueue)
 {
     int64_t element = 64;
 
     EXPECT_EQ(aeron_blocking_linked_queue_offer(&m_q, (void *)element), 0);
-    EXPECT_EQ(aeron_blocking_linked_queue_size(&m_q), 1);
+    EXPECT_FALSE(aeron_blocking_linked_queue_is_empty(&m_q));
     EXPECT_EQ(aeron_blocking_linked_queue_poll(&m_q), (void *)element);
-    EXPECT_EQ(aeron_blocking_linked_queue_size(&m_q), 0);
+    EXPECT_TRUE(aeron_blocking_linked_queue_is_empty(&m_q));
 }
 
-TEST_F(SpscQueueTest, shouldFIFO)
+TEST_F(BlockingQueueTest, shouldFIFO)
 {
     EXPECT_EQ(aeron_blocking_linked_queue_offer(&m_q, (void *)0x1), 0);
     EXPECT_EQ(aeron_blocking_linked_queue_offer(&m_q, (void *)0x2), 0);
     EXPECT_EQ(aeron_blocking_linked_queue_offer(&m_q, (void *)0x3), 0);
-    EXPECT_EQ(aeron_blocking_linked_queue_size(&m_q), 3);
+    EXPECT_FALSE(aeron_blocking_linked_queue_is_empty(&m_q));
     EXPECT_EQ(aeron_blocking_linked_queue_poll(&m_q), (void *)0x1);
     EXPECT_EQ(aeron_blocking_linked_queue_poll(&m_q), (void *)0x2);
     EXPECT_EQ(aeron_blocking_linked_queue_poll(&m_q), (void *)0x3);
+    EXPECT_TRUE(aeron_blocking_linked_queue_is_empty(&m_q));
 }
 
-TEST_F(SpscQueueTest, shouldNotCloseWhenNotEmpty)
+TEST_F(BlockingQueueTest, shouldNotCloseWhenNotEmpty)
 {
     int64_t element = 64;
 
@@ -81,7 +82,7 @@ TEST_F(SpscQueueTest, shouldNotCloseWhenNotEmpty)
 
 #define TOTAL_MESSAGES 1000
 
-TEST_F(SpscQueueTest, shouldReceiveMessagesFromSeparateThread)
+TEST_F(BlockingQueueTest, shouldReceiveMessagesFromSeparateThread)
 {
     int msgs_received = 0;
 

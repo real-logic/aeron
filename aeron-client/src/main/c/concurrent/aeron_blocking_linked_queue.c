@@ -18,15 +18,16 @@
 #include "concurrent/aeron_blocking_linked_queue.h"
 #include "util/aeron_error.h"
 
+#define QUEUE_IS_EMPTY(_q) (NULL == aeron_linked_queue_peek(&(_q)->queue))
+
 int aeron_blocking_linked_queue_init(aeron_blocking_linked_queue_t *queue)
 {
-    if (aeron_spsc_concurrent_linked_queue_init(&queue->spsc_queue) < 0)
+    if (aeron_linked_queue_init(&queue->queue) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
-    queue->size = 0;
     aeron_mutex_init(&queue->mutex, NULL);
     aeron_cond_init(&queue->cv, NULL);
 
@@ -37,7 +38,7 @@ int aeron_blocking_linked_queue_close(aeron_blocking_linked_queue_t *queue)
 {
     aeron_mutex_lock(&queue->mutex);
 
-    if (0 != queue->size)
+    if (!QUEUE_IS_EMPTY(queue))
     {
         aeron_mutex_unlock(&queue->mutex);
 
@@ -46,7 +47,7 @@ int aeron_blocking_linked_queue_close(aeron_blocking_linked_queue_t *queue)
         return -1;
     }
 
-    if (aeron_spsc_concurrent_linked_queue_close(&queue->spsc_queue) < 0)
+    if (aeron_linked_queue_close(&queue->queue) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         return -1;
@@ -66,11 +67,10 @@ int aeron_blocking_linked_queue_offer(aeron_blocking_linked_queue_t *queue, void
 
     aeron_mutex_lock(&queue->mutex);
 
-    rc = aeron_spsc_concurrent_linked_queue_offer(&queue->spsc_queue, element);
+    rc = aeron_linked_queue_offer(&queue->queue, element);
 
     if (rc == 0)
     {
-        queue->size++;
         aeron_cond_signal(&queue->cv);
     }
 
@@ -79,22 +79,19 @@ int aeron_blocking_linked_queue_offer(aeron_blocking_linked_queue_t *queue, void
     return rc;
 }
 
-void *aeron_blocking_linked_queue_poll(aeron_blocking_linked_queue_t *queue)
+void *aeron_blocking_linked_queue_retrieve(aeron_blocking_linked_queue_t *queue, bool block, aeron_linked_queue_node_t **out_nodep)
 {
     void *element = NULL;
 
     aeron_mutex_lock(&queue->mutex);
 
-    if (0 == queue->size)
+    element = aeron_linked_queue_poll_ex(&queue->queue, out_nodep);
+
+    if (block && NULL == element)
     {
         aeron_cond_wait(&queue->cv, &queue->mutex);
-    }
 
-    element = aeron_spsc_concurrent_linked_queue_poll(&queue->spsc_queue);
-
-    if (NULL != element)
-    {
-        queue->size--;
+        element = aeron_linked_queue_poll_ex(&queue->queue, out_nodep);
     }
 
     aeron_mutex_unlock(&queue->mutex);
@@ -102,17 +99,37 @@ void *aeron_blocking_linked_queue_poll(aeron_blocking_linked_queue_t *queue)
     return element;
 }
 
-size_t aeron_blocking_linked_queue_size(aeron_blocking_linked_queue_t *queue)
+void *aeron_blocking_linked_queue_poll(aeron_blocking_linked_queue_t *queue)
 {
-    size_t size;
+    return aeron_blocking_linked_queue_retrieve(queue, false, NULL);
+}
+
+void *aeron_blocking_linked_queue_poll_ex(aeron_blocking_linked_queue_t *queue, aeron_linked_queue_node_t **out_nodep)
+{
+    return aeron_blocking_linked_queue_retrieve(queue, false, out_nodep);
+}
+
+void *aeron_blocking_linked_queue_take(aeron_blocking_linked_queue_t *queue)
+{
+    return aeron_blocking_linked_queue_retrieve(queue, true, NULL);
+}
+
+void *aeron_blocking_linked_queue_take_ex(aeron_blocking_linked_queue_t *queue, aeron_linked_queue_node_t **out_nodep)
+{
+    return aeron_blocking_linked_queue_retrieve(queue, true, out_nodep);
+}
+
+bool aeron_blocking_linked_queue_is_empty(aeron_blocking_linked_queue_t *queue)
+{
+    bool is_empty;
 
     aeron_mutex_lock(&queue->mutex);
 
-    size = queue->size;
+    is_empty = QUEUE_IS_EMPTY(queue);
 
     aeron_mutex_unlock(&queue->mutex);
 
-    return size;
+    return is_empty;
 }
 
 void aeron_blocking_linked_queue_unblock(aeron_blocking_linked_queue_t *queue)

@@ -140,8 +140,6 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_concurrent_array_queue.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_rb.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_concurrent_array_queue.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_blocking_linked_queue.c
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_concurrent_linked_queue.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_rb.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_filler.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_scanner.c
@@ -211,8 +209,6 @@ set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_rb.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_rb.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_concurrent_array_queue.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_blocking_linked_queue.h
-    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_concurrent_linked_queue.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_spsc_rb.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_filler.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_term_gap_scanner.h
@@ -280,7 +276,6 @@ SET(SOURCE
     aeron_driver_conductor.c
     aeron_driver_conductor_proxy.c
     aeron_driver_context.c
-    aeron_driver_executor.c
     aeron_driver_name_resolver.c
     aeron_driver_receiver.c
     aeron_driver_receiver_proxy.c
@@ -324,7 +319,6 @@ SET(HEADERS
     aeron_driver_conductor.h
     aeron_driver_conductor_proxy.h
     aeron_driver_context.h
-    aeron_driver_executor.h
     aeron_driver_name_resolver.h
     aeron_driver_receiver.h
     aeron_driver_receiver_proxy.h

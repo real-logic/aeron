@@ -16,13 +16,13 @@
 #ifndef AERON_BLOCKING_LINKED_QUEUE_H
 #define AERON_BLOCKING_LINKED_QUEUE_H
 
-#include "aeron_spsc_concurrent_linked_queue.h"
+#include <stdbool.h>
+#include "collections/aeron_linked_queue.h"
 #include "aeron_thread.h"
 
 typedef struct aeron_blocking_linked_queue_stct
 {
-    aeron_spsc_concurrent_linked_queue_t spsc_queue;
-    size_t size;
+    aeron_linked_queue_t queue;
     aeron_mutex_t mutex;
     aeron_cond_t cv;
 }
@@ -36,7 +36,13 @@ int aeron_blocking_linked_queue_offer(aeron_blocking_linked_queue_t *queue, void
 
 void *aeron_blocking_linked_queue_poll(aeron_blocking_linked_queue_t *queue);
 
-size_t aeron_blocking_linked_queue_size(aeron_blocking_linked_queue_t *queue);
+void *aeron_blocking_linked_queue_poll_ex(aeron_blocking_linked_queue_t *queue, aeron_linked_queue_node_t **out_nodep);
+
+void *aeron_blocking_linked_queue_take(aeron_blocking_linked_queue_t *queue);
+
+void *aeron_blocking_linked_queue_take_ex(aeron_blocking_linked_queue_t *queue, aeron_linked_queue_node_t **out_nodep);
+
+bool aeron_blocking_linked_queue_is_empty(aeron_blocking_linked_queue_t *queue);
 
 void aeron_blocking_linked_queue_unblock(aeron_blocking_linked_queue_t *queue);
 

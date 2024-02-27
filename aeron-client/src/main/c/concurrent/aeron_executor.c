@@ -128,13 +128,13 @@ int aeron_executor_init(
         int result;
         if ((result = aeron_thread_attr_init(&attr)) != 0)
         {
-            AERON_SET_ERR(result, "%s", "aeron_thread_attr_init: %s", strerror(result));
+            AERON_SET_ERR(result, "%s", "aeron_thread_attr_init failed");
             return -1;
         }
 
         if ((result = aeron_thread_create(&executor->dispatch_thread, &attr, aeron_executor_dispatch, executor)) != 0)
         {
-            AERON_SET_ERR(result, "%s", "aeron_thread_create: %s", strerror(result));
+            AERON_SET_ERR(result, "%s", "aeron_thread_create failed");
             return -1;
         }
     }

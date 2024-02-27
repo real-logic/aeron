@@ -175,7 +175,7 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromTwoFragments)
         EXPECT_EQ(initialTermId, header_values.initial_term_id);
         EXPECT_EQ(position_bits_to_shift, header_values.position_bits_to_shift);
         EXPECT_EQ(MTU_LENGTH * 2, header_values.frame.frame_length);
-        EXPECT_EQ((uint8_t)(AERON_DATA_HEADER_END_FLAG | AERON_DATA_HEADER_BEGIN_FLAG), header_values.frame.flags);
+        EXPECT_EQ((uint8_t)(AERON_DATA_HEADER_END_FLAG | AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_EOS_FLAG), header_values.frame.flags);
         EXPECT_EQ(version, header_values.frame.version);
         EXPECT_EQ(type, header_values.frame.type);
         EXPECT_EQ(0, header_values.frame.term_offset);
@@ -239,7 +239,7 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromThreeFragments)
         aeron_header_values_t header_values;
         EXPECT_EQ(0, aeron_header_values(header, &header_values));
         EXPECT_EQ(aeron_logbuffer_compute_fragmented_length(length, fragmentLength), header_values.frame.frame_length);
-        EXPECT_EQ(0xFF, header_values.frame.flags);
+        EXPECT_EQ((uint8_t)(AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_EOS_FLAG | AERON_DATA_HEADER_END_FLAG | 0xF), header_values.frame.flags);
         EXPECT_EQ(version, header_values.frame.version);
         EXPECT_EQ(type, header_values.frame.type);
         EXPECT_EQ(0, header_values.frame.term_offset);
@@ -252,7 +252,7 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromThreeFragments)
 
     fillFrame(
         version,
-        (uint8_t)(AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_EOS_FLAG),
+        (uint8_t)(AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_EOS_FLAG | 0x5),
         type,
         termOffset,
         SESSION_ID,
@@ -270,7 +270,7 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromThreeFragments)
     EXPECT_FALSE(isCalled);
 
     termOffset += MTU_LENGTH;
-    fillFrame(0x7F, termOffset, lastFragmentLength, (fragmentLength * 2) % 256);
+    fillFrame((uint8_t)(AERON_DATA_HEADER_END_FLAG | 0xA), termOffset, lastFragmentLength, (fragmentLength * 2) % 256);
     handle_fragment(handler, lastFragmentLength);
     EXPECT_TRUE(isCalled);
 }

@@ -177,7 +177,7 @@ TEST_F(ControlledFragmentAssemblerTest, shouldReassembleFromTwoFragments)
         EXPECT_EQ(initialTermId, header_values.initial_term_id);
         EXPECT_EQ(position_bits_to_shift, header_values.position_bits_to_shift);
         EXPECT_EQ(MTU_LENGTH * 2, header_values.frame.frame_length);
-        EXPECT_EQ((uint8_t)(AERON_DATA_HEADER_END_FLAG | AERON_DATA_HEADER_BEGIN_FLAG), header_values.frame.flags);
+        EXPECT_EQ((uint8_t)(AERON_DATA_HEADER_END_FLAG | AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_EOS_FLAG), header_values.frame.flags);
         EXPECT_EQ(version, header_values.frame.version);
         EXPECT_EQ(type, header_values.frame.type);
         EXPECT_EQ(0, header_values.frame.term_offset);

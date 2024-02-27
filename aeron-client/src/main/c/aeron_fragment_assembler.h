@@ -109,7 +109,7 @@ inline aeron_header_t* aeron_buffer_builder_complete_header(aeron_buffer_builder
     int32_t max_payload_length = frame_header->frame_length - (int32_t)AERON_DATA_HEADER_LENGTH;
     frame_header->frame_length =
         (int32_t)aeron_logbuffer_compute_fragmented_length(buffer_builder->limit, max_payload_length);
-    frame_header->flags = (uint8_t)(header->frame->frame_header.flags | AERON_DATA_HEADER_BEGIN_FLAG);
+    frame_header->flags |= header->frame->frame_header.flags;
     return &buffer_builder->header;
 }
 

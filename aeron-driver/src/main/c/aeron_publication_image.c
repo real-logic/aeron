@@ -22,6 +22,7 @@
 #include "aeron_driver_receiver_proxy.h"
 #include "aeron_driver_conductor.h"
 #include "concurrent/aeron_term_gap_filler.h"
+#include "util/aeron_parse_util.h"
 
 #define AERON_PUBLICATION_RESPONSE_NULL_RESPONSE_SESSION_ID INT64_C(0xF000000000000000)
 
@@ -123,33 +124,32 @@ int aeron_publication_image_create(
     }
     else
     {
-        int64_t nak_delay_ns;
-
-        int result = aeron_uri_get_int64(
+        const char *nak_delay_string = aeron_uri_find_param_value(
             &endpoint->conductor_fields.udp_channel->uri.params.udp.additional_params,
-            AERON_URI_NAK_DELAY_KEY,
-            -1,
-            &nak_delay_ns);
+            AERON_URI_NAK_DELAY_KEY);
 
-        if (0 == result) // not found - using the default
+        if (NULL == nak_delay_string)
         {
             feedback_delay_state = &context->unicast_delay_feedback_generator;
         }
-        else if (-1 == result)
-        {
-            AERON_APPEND_ERR("%s", "");
-            aeron_free(_image);
-            return -1;
-        }
         else
         {
+            uint64_t nak_delay_ns;
+
+            if (aeron_parse_duration_ns(nak_delay_string, &nak_delay_ns) < 0)
+            {
+                AERON_SET_ERR(EINVAL, "%s is not parseable: %s", AERON_URI_NAK_DELAY_KEY, nak_delay_string);
+                aeron_free(_image);
+                return -1;
+            }
+
             feedback_delay_state = &_image->feedback_delay_state;
 
             if (aeron_feedback_delay_state_init(
                 feedback_delay_state,
                 aeron_loss_detector_nak_unicast_delay_generator,
-                nak_delay_ns,
-                nak_delay_ns * (int64_t)context->nak_unicast_retry_delay_ratio,
+                (int64_t)nak_delay_ns,
+                (int64_t)nak_delay_ns * (int64_t)context->nak_unicast_retry_delay_ratio,
                 1) < 0)
             {
                 AERON_APPEND_ERR("%s", "Could not init publication image feedback_delay_state");

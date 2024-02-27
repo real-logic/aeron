@@ -210,4 +210,14 @@ inline void aeron_logbuffer_apply_default_header(uint8_t *log_meta_data_buffer, 
     memcpy(buffer, default_header, (size_t)log_meta_data->default_frame_header_length);
 }
 
+inline size_t aeron_logbuffer_compute_fragmented_length(size_t length, size_t max_payload_length)
+{
+    const size_t num_max_payloads = length / max_payload_length;
+    const size_t remaining_payload = length % max_payload_length;
+    const size_t last_frame_length = (remaining_payload > 0) ?
+        AERON_ALIGN(remaining_payload + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT) : 0;
+
+    return (num_max_payloads * (max_payload_length + AERON_DATA_HEADER_LENGTH)) + last_frame_length;
+}
+
 #endif //AERON_LOGBUFFER_DESCRIPTOR_H

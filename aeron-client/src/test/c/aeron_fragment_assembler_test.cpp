@@ -215,7 +215,7 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromTwoFragments)
         -190,
         63456385384L,
         fragmentLength,
-        (uint8_t)(fragmentLength % 256));
+        (uint8_t)(fragmentLength % (size_t)256));
     handle_fragment(handler, fragmentLength);
     EXPECT_TRUE(isCalled);
 }

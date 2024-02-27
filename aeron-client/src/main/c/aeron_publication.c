@@ -125,16 +125,6 @@ static int64_t aeron_publication_raw_tail_volatile(volatile int64_t *addr)
     return raw_tail;
 }
 
-static inline size_t compute_framed_length(size_t length, size_t max_payload_length)
-{
-    const size_t num_max_payloads = length / max_payload_length;
-    const size_t remaining_payload = length % max_payload_length;
-    const size_t last_frame_length = (remaining_payload > 0) ?
-        AERON_ALIGN(remaining_payload + AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT) : 0;
-
-    return (num_max_payloads * (max_payload_length + AERON_DATA_HEADER_LENGTH)) + last_frame_length;
-}
-
 static void aeron_publication_header_write(
     aeron_publication_t *publication,
     aeron_mapped_buffer_t *term_buffer,
@@ -273,7 +263,7 @@ static int64_t aeron_publication_append_fragmented_message(
     aeron_reserved_value_supplier_t reserved_value_supplier,
     void *clientd)
 {
-    const size_t framed_length = compute_framed_length(length, max_payload_length);
+    const size_t framed_length = aeron_logbuffer_compute_fragmented_length(length, max_payload_length);
     const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(term_tail_counter, framed_length);
     const int32_t term_length = (int32_t)term_buffer->length;
     const int32_t term_offset = aeron_logbuffer_term_offset(raw_tail, term_length);
@@ -393,7 +383,7 @@ static int64_t aeron_publication_append_fragmented_messagev(
     aeron_reserved_value_supplier_t reserved_value_supplier,
     void *clientd)
 {
-    const size_t framed_length = compute_framed_length(length, max_payload_length);
+    const size_t framed_length = aeron_logbuffer_compute_fragmented_length(length, max_payload_length);
     const int64_t raw_tail = aeron_publication_get_and_add_raw_tail(term_tail_counter, framed_length);
     const int32_t term_length = (int32_t)term_buffer->length;
     const int32_t term_offset = aeron_logbuffer_term_offset(raw_tail, term_length);

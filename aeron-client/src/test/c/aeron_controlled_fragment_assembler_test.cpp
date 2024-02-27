@@ -15,7 +15,7 @@
  */
 
 #include <array>
-#include <exception>
+#include <cstdint>
 
 #include <gtest/gtest.h>
 

@@ -780,7 +780,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == errorLog)
             {
-//                System.out.println("service log=" + markFile.toString());
                 errorLog = new DistinctErrorLog(markFile.errorBuffer(), epochClock, US_ASCII);
             }
 

@@ -588,7 +588,7 @@ public final class Configuration
     /**
      * Default max backoff for NAK delay randomisation in nanoseconds.
      */
-    public static final long NAK_MAX_BACKOFF_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
+    public static final long NAK_MAX_BACKOFF_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(10);
 
     /**
      * Unicast NAK delay in nanoseconds property name.
@@ -628,7 +628,7 @@ public final class Configuration
     /**
      * Default delay for linger for unicast in nanoseconds.
      */
-    public static final long RETRANSMIT_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
+    public static final long RETRANSMIT_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(10);
 
     /**
      * Property name of the timeout for when an untethered subscription that is outside the window limit will
@@ -680,11 +680,9 @@ public final class Configuration
     public static final String FLOW_CONTROL_GROUP_TAG_PROP_NAME = "aeron.flow.control.group.tag";
 
     /**
-     * Property name for default minimum group size used by flow control strategies to determine
-     * connectivity.
+     * Property name for default minimum group size used by flow control strategies to determine connectivity.
      */
-    public static final String FLOW_CONTROL_GROUP_MIN_SIZE_PROP_NAME =
-        "aeron.flow.control.group.min.size";
+    public static final String FLOW_CONTROL_GROUP_MIN_SIZE_PROP_NAME = "aeron.flow.control.group.min.size";
 
     /**
      * Default value for the receiver timeout used to determine if the receiver should still be monitored for

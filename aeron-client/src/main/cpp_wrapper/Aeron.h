@@ -79,6 +79,8 @@ public:
 
     ~Aeron()
     {
+        aeron_on_close_client_pair_t closePair = {emptyCallback, nullptr};
+        aeron_add_close_handler(m_aeron, &closePair);
         aeron_close(m_aeron);
         aeron_context_close(m_context.m_context);
 
@@ -984,6 +986,10 @@ private:
     {
         on_close_client_t &callback = *reinterpret_cast<on_close_client_t *>(clientd);
         callback();
+    }
+
+    static void emptyCallback(void *clientd)
+    {
     }
 };
 }

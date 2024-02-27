@@ -215,7 +215,7 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromTwoFragments)
         -190,
         63456385384L,
         fragmentLength,
-        (uint8_t)(fragmentLength % (size_t)256));
+        fragmentLength % 256);
     handle_fragment(handler, fragmentLength);
     EXPECT_TRUE(isCalled);
 }
@@ -265,12 +265,12 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromThreeFragments)
     EXPECT_FALSE(isCalled);
 
     termOffset += MTU_LENGTH;
-    fillFrame(0xE, termOffset, fragmentLength, (uint8_t)(fragmentLength % 256));
+    fillFrame(0xE, termOffset, fragmentLength, fragmentLength % 256);
     handle_fragment(handler, fragmentLength);
     EXPECT_FALSE(isCalled);
 
     termOffset += MTU_LENGTH;
-    fillFrame((uint8_t)(AERON_DATA_HEADER_END_FLAG | 0xA), termOffset, lastFragmentLength, (uint8_t)((fragmentLength * 2) % 256));
+    fillFrame((uint8_t)(AERON_DATA_HEADER_END_FLAG | 0xA), termOffset, lastFragmentLength, (fragmentLength * 2) % 256);
     handle_fragment(handler, lastFragmentLength);
     EXPECT_TRUE(isCalled);
 }
@@ -304,7 +304,7 @@ TEST_F(CFragmentAssemblerTest, shouldNotReassembleIfMissingBegin)
     EXPECT_FALSE(isCalled);
 
     termOffset += MTU_LENGTH;
-    fillFrame(AERON_DATA_HEADER_END_FLAG, termOffset, fragmentLength, (uint8_t)(fragmentLength % 256));
+    fillFrame(AERON_DATA_HEADER_END_FLAG, termOffset, fragmentLength, fragmentLength % 256);
     handle_fragment(handler, fragmentLength);
     EXPECT_FALSE(isCalled);
 }
@@ -329,7 +329,7 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleTwoMessagesFromFourFrames)
     EXPECT_FALSE(isCalled);
 
     termOffset += MTU_LENGTH;
-    fillFrame(AERON_DATA_HEADER_END_FLAG, termOffset, fragmentLength, (uint8_t)(fragmentLength % 256));
+    fillFrame(AERON_DATA_HEADER_END_FLAG, termOffset, fragmentLength, fragmentLength % 256);
     handle_fragment(handler, fragmentLength);
     EXPECT_TRUE(isCalled);
 
@@ -342,7 +342,7 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleTwoMessagesFromFourFrames)
     EXPECT_FALSE(isCalled);
 
     termOffset += MTU_LENGTH;
-    fillFrame(AERON_DATA_HEADER_END_FLAG, termOffset, fragmentLength, (uint8_t)(fragmentLength % 256));
+    fillFrame(AERON_DATA_HEADER_END_FLAG, termOffset, fragmentLength, fragmentLength % 256);
     handle_fragment(handler, fragmentLength);
     EXPECT_TRUE(isCalled);
 }

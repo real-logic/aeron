@@ -92,7 +92,7 @@ TEST_F(BlockingQueueTest, shouldReceiveMessagesFromSeparateThread)
             void *element;
 
             do {
-                element = aeron_blocking_linked_queue_poll(&m_q);
+                element = aeron_blocking_linked_queue_take(&m_q);
 
                 msgs_received++;
             }

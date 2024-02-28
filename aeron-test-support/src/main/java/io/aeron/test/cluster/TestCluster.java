@@ -1287,8 +1287,8 @@ public final class TestCluster implements AutoCloseable
 
     public void awaitServiceMessageCount(final TestNode node, final int messageCount)
     {
-        final TestNode.TestService service = node.service();
-        awaitServiceMessageCount(node, service, messageCount);
+        final TestNode.TestService[] services = node.services();
+        awaitServiceMessageCount(node, services, messageCount);
     }
 
     public void awaitServiceMessagePredicate(final TestNode node, final IntPredicate countPredicate)
@@ -1304,6 +1304,16 @@ public final class TestCluster implements AutoCloseable
     {
         clientKeepAlive.init();
         service.awaitServiceMessageCount(messageCount, clientKeepAlive, node);
+    }
+
+    public void awaitServiceMessageCount(
+        final TestNode node, final TestNode.TestService[] services, final int messageCount)
+    {
+        clientKeepAlive.init();
+        for (final TestNode.TestService service : services)
+        {
+            service.awaitServiceMessageCount(messageCount, clientKeepAlive, node);
+        }
     }
 
     public void awaitServiceMessagePredicate(
@@ -1898,9 +1908,22 @@ public final class TestCluster implements AutoCloseable
         }
     }
 
+    private long countAllServiceErrors(final TestNode node)
+    {
+        final TestNode.TestService[] services = node.services();
+
+        long errorCount = 0;
+        for (final TestNode.TestService service : services)
+        {
+            errorCount += service.cluster().context().errorCounter().get();
+        }
+
+        return errorCount;
+    }
+
     public void awaitServiceErrors(final TestNode node, final long count)
     {
-        while (count < node.service().cluster().context().errorCounter().get())
+        while (count < countAllServiceErrors(node))
         {
             Tests.sleep(1, "Errors count=" + count + " not seen on node=" + node.index());
         }

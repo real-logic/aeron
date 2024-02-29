@@ -163,8 +163,7 @@ int aeron_publication_image_create(
     if (NULL == feedback_delay_state)
     {
         AERON_APPEND_ERR("%s", "");
-        aeron_free(_image);
-        return -1;
+        goto error;
     }
 
     if (aeron_loss_detector_init(

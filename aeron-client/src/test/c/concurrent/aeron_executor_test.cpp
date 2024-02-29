@@ -24,15 +24,17 @@ extern "C"
 
 typedef struct {
     int some_value;
+    int some_other_value;
 } task_clientd_t;
 
-class SyncExecutorTest : public testing::Test
+class ExecutorTest : public testing::Test
 {
 public:
     void SetUp() override
     {
         if (aeron_executor_init(
             &m_executor,
+            be_async(),
             on_execution_complete_cb(),
             this) < 0)
         {
@@ -45,6 +47,8 @@ public:
         aeron_executor_close(&m_executor);
     }
 
+    virtual bool be_async() = 0;
+
     virtual aeron_executor_on_execution_complete_func_t on_execution_complete_cb()
     {
         return nullptr;
@@ -52,7 +56,7 @@ public:
 
     static int on_execute(void *task_clientd, void *executor_clientd)
     {
-        auto *e = (SyncExecutorTest *)executor_clientd;
+        auto *e = (ExecutorTest *)executor_clientd;
 
         e->m_on_execute_count++;
 
@@ -61,7 +65,7 @@ public:
 
     static int on_complete(int result, void *task_clientd, void *executor_clientd)
     {
-        auto *e = (SyncExecutorTest *)executor_clientd;
+        auto *e = (ExecutorTest *)executor_clientd;
 
         e->m_on_complete_count++;
 
@@ -74,6 +78,15 @@ protected:
     std::function<int(int, void *, void *)> m_on_complete;
     int m_on_execute_count = 0;
     int m_on_complete_count = 0;
+};
+
+class SyncExecutorTest : public ExecutorTest
+{
+public:
+    bool be_async() override
+    {
+        return false;
+    }
 };
 
 TEST_F(SyncExecutorTest, shouldExecuteSynchronously)
@@ -110,17 +123,73 @@ TEST_F(SyncExecutorTest, shouldExecuteSynchronously)
     ASSERT_EQ(tcd.some_value, 200);
 }
 
-class AsyncExecutorTest : public SyncExecutorTest
+#define TOTAL_TASKS 1000
+
+
+class AsyncExecutorTest : public ExecutorTest
+{
+public:
+    bool be_async() override
+    {
+        return true;
+    }
+};
+
+TEST_F(AsyncExecutorTest, shouldExecuteAsynchronously)
+{
+    task_clientd_t tcd;
+
+    tcd.some_value = 0;
+    tcd.some_other_value = 0;
+
+    m_on_execute =
+        [&](void *task_clientd, void *executor_clientd)
+        {
+            ((task_clientd_t *)task_clientd)->some_value += 100;
+
+            return 1;
+        };
+
+    m_on_complete =
+        [&](int result, void *task_clientd, void *executor_clientd)
+        {
+            ((task_clientd_t *)task_clientd)->some_other_value += 50;
+
+            return ++result;
+        };
+
+    for (int i = 0; i < TOTAL_TASKS; i++)
+    {
+        int result = aeron_executor_submit(
+            &m_executor,
+            SyncExecutorTest::on_execute,
+            SyncExecutorTest::on_complete,
+            &tcd);
+        ASSERT_EQ(result, 0);
+    }
+
+    while (m_on_complete_count < TOTAL_TASKS)
+    {
+        ASSERT_EQ(aeron_executor_process_completions(&m_executor, 50), 0);
+    }
+
+    ASSERT_EQ(m_on_execute_count, TOTAL_TASKS);
+    ASSERT_EQ(m_on_complete_count, TOTAL_TASKS);
+    ASSERT_EQ(tcd.some_value, TOTAL_TASKS * 100);
+    ASSERT_EQ(tcd.some_other_value, TOTAL_TASKS * 50);
+}
+
+class AsyncNoReturnQueueExecutorTest : public AsyncExecutorTest
 {
 public:
     aeron_executor_on_execution_complete_func_t on_execution_complete_cb() override
     {
-        return AsyncExecutorTest::on_execution_complete_cb;
+        return AsyncNoReturnQueueExecutorTest::on_execution_complete_cb;
     };
 
     static int on_execution_complete_cb(aeron_executor_task_t *task, void *executor_clientd)
     {
-        auto e = ((AsyncExecutorTest *)executor_clientd);
+        auto e = ((AsyncNoReturnQueueExecutorTest *)executor_clientd);
 
         e->tasks.push(task);
         e->m_on_execution_complete_count++;
@@ -133,9 +202,8 @@ protected:
     int m_on_execution_complete_count = 0;
 };
 
-#define TOTAL_TASKS 1000
 
-TEST_F(AsyncExecutorTest, shouldExecuteAsynchronously)
+TEST_F(AsyncNoReturnQueueExecutorTest, shouldExecuteAsynchronously)
 {
     task_clientd_t tcd;
 

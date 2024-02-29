@@ -542,15 +542,6 @@ static int aeron_time_tracking_name_resolver_close(aeron_name_resolver_t *resolv
     return 0;
 }
 
-// IMPORTANT: this executes off the executor thread!!!
-int aeron_driver_conductor_on_execution_complete(aeron_executor_task_t *task, void *clientd)
-{
-    //aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
-
-    // TODO enqueue the task onto the conductor proxy queue?
-    return 0;
-}
-
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context)
 {
     if (aeron_mpsc_rb_init(
@@ -618,7 +609,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->conductor_proxy.threading_mode = context->threading_mode;
     conductor->conductor_proxy.conductor = conductor;
 
-    if (aeron_executor_init(&conductor->executor,aeron_driver_conductor_on_execution_complete,conductor) < 0)
+    if (aeron_executor_init(&conductor->executor, true, NULL, conductor) < 0)
     {
         return -1;
     }

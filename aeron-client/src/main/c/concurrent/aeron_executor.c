@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <sys/errno.h>
 #include "aeron_executor.h"
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
@@ -31,7 +30,7 @@ struct aeron_executor_task_stct
     bool shutdown;
 };
 
-#define EXECUTOR_IS_ASYNC(_executor) (NULL != (_executor)->on_execution_complete)
+#define USE_RETURN_QUEUE(_e) (NULL == (_e)->on_execution_complete)
 
 aeron_executor_task_t *aeron_executor_task_acquire(
     aeron_executor_t *executor,
@@ -61,8 +60,11 @@ aeron_executor_task_t *aeron_executor_task_acquire(
 
 void aeron_executor_task_release(aeron_executor_task_t *task)
 {
-    aeron_linked_queue_node_delete(task->queue_node);
-    aeron_free(task);
+    if (NULL != task)
+    {
+        aeron_linked_queue_node_delete(task->queue_node);
+        aeron_free(task);
+    }
 }
 
 static void *aeron_executor_dispatch(void *arg)
@@ -73,8 +75,9 @@ static void *aeron_executor_dispatch(void *arg)
 
     aeron_executor_task_t *task;
     aeron_linked_queue_node_t *node;
+    bool shutdown = false;
 
-    while (true)
+    do
     {
         task = (aeron_executor_task_t *)aeron_blocking_linked_queue_take_ex(&executor->queue, &node);
 
@@ -83,41 +86,50 @@ static void *aeron_executor_dispatch(void *arg)
             continue;
         }
 
-        task->queue_node = node;
+        shutdown = task->shutdown;
 
-        if (task->shutdown)
+        task->queue_node = node;
+        task->result = (NULL == task->on_execute) ? 0 : task->on_execute(task->clientd, executor->clientd);
+
+        if (USE_RETURN_QUEUE(executor))
+        {
+            aeron_blocking_linked_queue_offer_ex(&executor->return_queue, task, node);
+        }
+        else if (shutdown)
         {
             aeron_executor_task_release(task);
-            break;
         }
-
-        task->result = task->on_execute(task->clientd, executor->clientd);
-
-        // TODO if result is < 0, check the AERON_SET_ERR stuff?
-
-        // TODO check result of the following function as well?
-        executor->on_execution_complete(task, executor->clientd);
+        else
+        {
+            executor->on_execution_complete(task, executor->clientd);
+        }
     }
+    while (false == shutdown);
 
     return NULL;
 }
 
-/*
- * We could, at some point in the future, extend the executor to (optionally) include
- * a 'return queue' onto which dispatch_thread enqueues tasks that have had their
- * execute function called, and then a 'do_work' function that handles the completion
- * of those tasks.
- */
 int aeron_executor_init(
     aeron_executor_t *executor,
+    bool async,
     aeron_executor_on_execution_complete_func_t on_execution_complete,
     void *clientd)
 {
+    executor->async = async,
     executor->on_execution_complete = on_execution_complete;
     executor->clientd = clientd;
 
-    if (EXECUTOR_IS_ASYNC(executor))
+    if (async)
     {
+        if (USE_RETURN_QUEUE(executor))
+        {
+            if (aeron_blocking_linked_queue_init(&executor->return_queue) < 0)
+            {
+                AERON_APPEND_ERR("%s", "");
+                return -1;
+            }
+        }
+
         if (aeron_blocking_linked_queue_init(&executor->queue) < 0)
         {
             AERON_APPEND_ERR("%s", "");
@@ -137,6 +149,7 @@ int aeron_executor_init(
             AERON_SET_ERR(result, "%s", "aeron_thread_create failed");
             return -1;
         }
+
     }
 
     return 0;
@@ -144,36 +157,71 @@ int aeron_executor_init(
 
 int aeron_executor_close(aeron_executor_t *executor)
 {
-    if (EXECUTOR_IS_ASYNC(executor))
+    if (!executor->async)
     {
-        aeron_executor_task_t *task;
+        return 0;
+    }
 
-        // enqueue a task with shutdown = true
-        task = aeron_executor_task_acquire(executor, NULL, NULL, NULL, true);
+    aeron_executor_task_t *task;
+
+    // enqueue a task with shutdown = true
+    task = aeron_executor_task_acquire(executor, NULL, NULL, NULL, true);
+    if (NULL == task)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (aeron_blocking_linked_queue_offer(&executor->queue, task) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int result = aeron_thread_join(executor->dispatch_thread, NULL);
+    if (0 != result)
+    {
+        AERON_SET_ERR(result, "aeron_thread_join: %s", strerror(result));
+        return -1;
+    }
+
+    if (aeron_blocking_linked_queue_close(&executor->queue) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (!USE_RETURN_QUEUE(executor))
+    {
+        // we're done
+        return 0;
+    }
+
+    // at this point, the executor thread has already been joined, so the shutdown task must already be on the return queue
+    aeron_linked_queue_node_t *node;
+    bool shutdown = false;
+
+    // theoretically, if the executor was empty when _close was called, we should only go through this loop one time
+    do
+    {
+        // retrieve the node so that it can be deleted when the task is released
+        task = aeron_blocking_linked_queue_poll_ex(&executor->return_queue, &node);
+
         if (NULL == task)
         {
-            AERON_APPEND_ERR("%s", "");
-            return -1;
+            continue;
         }
 
-        if (aeron_blocking_linked_queue_offer(&executor->queue, task) < 0)
-        {
-            AERON_APPEND_ERR("%s", "");
-            return -1;
-        }
+        shutdown = task->shutdown;
 
-        int result = aeron_thread_join(executor->dispatch_thread, NULL);
-        if (0 != result)
-        {
-            AERON_SET_ERR(result, "aeron_thread_join: %s", strerror(result));
-            return -1;
-        }
+        aeron_executor_task_release(task);
+    }
+    while (shutdown == false);
 
-        if (aeron_blocking_linked_queue_close(&executor->queue) < 0)
-        {
-            AERON_APPEND_ERR("%s", "");
-            return -1;
-        }
+    if (aeron_blocking_linked_queue_close(&executor->return_queue) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
     }
 
     return 0;
@@ -187,7 +235,7 @@ int aeron_executor_submit(
 {
     int result;
 
-    if (EXECUTOR_IS_ASYNC(executor))
+    if (executor->async)
     {
         aeron_executor_task_t *task;
 
@@ -210,6 +258,26 @@ int aeron_executor_submit(
     }
 
     return result;
+}
+
+int aeron_executor_process_completions(aeron_executor_t *executor, int max)
+{
+    aeron_executor_task_t *task;
+    aeron_linked_queue_node_t *node;
+
+    for (int i = 0; i < max; i++)
+    {
+        task = aeron_blocking_linked_queue_poll_ex(&executor->return_queue, &node);
+
+        if (NULL == task)
+        {
+            break;
+        }
+
+        aeron_executor_task_do_complete(task);
+    }
+
+    return 0;
 }
 
 int aeron_executor_task_do_complete(aeron_executor_task_t *task)

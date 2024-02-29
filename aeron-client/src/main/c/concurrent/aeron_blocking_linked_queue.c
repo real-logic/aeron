@@ -63,11 +63,16 @@ int aeron_blocking_linked_queue_close(aeron_blocking_linked_queue_t *queue)
 
 int aeron_blocking_linked_queue_offer(aeron_blocking_linked_queue_t *queue, void *element)
 {
+    return aeron_blocking_linked_queue_offer_ex(queue, element, NULL);
+}
+
+int aeron_blocking_linked_queue_offer_ex(aeron_blocking_linked_queue_t *queue, void *element, aeron_linked_queue_node_t *node)
+{
     int rc;
 
     aeron_mutex_lock(&queue->mutex);
 
-    rc = aeron_linked_queue_offer(&queue->queue, element);
+    rc = aeron_linked_queue_offer_ex(&queue->queue, element, node);
 
     if (rc == 0)
     {

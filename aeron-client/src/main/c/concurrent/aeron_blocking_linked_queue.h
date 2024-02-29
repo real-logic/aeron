@@ -34,6 +34,8 @@ int aeron_blocking_linked_queue_close(aeron_blocking_linked_queue_t *queue);
 
 int aeron_blocking_linked_queue_offer(aeron_blocking_linked_queue_t *queue, void *element);
 
+int aeron_blocking_linked_queue_offer_ex(aeron_blocking_linked_queue_t *queue, void *element, aeron_linked_queue_node_t *node);
+
 void *aeron_blocking_linked_queue_poll(aeron_blocking_linked_queue_t *queue);
 
 void *aeron_blocking_linked_queue_poll_ex(aeron_blocking_linked_queue_t *queue, aeron_linked_queue_node_t **out_nodep);

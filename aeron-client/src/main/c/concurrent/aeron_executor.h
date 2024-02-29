@@ -25,15 +25,18 @@ typedef int (*aeron_executor_on_execution_complete_func_t)(aeron_executor_task_t
 
 typedef struct aeron_executor_stct
 {
-    aeron_blocking_linked_queue_t queue;
+    bool async;
     aeron_executor_on_execution_complete_func_t on_execution_complete;
     void *clientd;
+    aeron_blocking_linked_queue_t queue;
+    aeron_blocking_linked_queue_t return_queue;
     aeron_thread_t dispatch_thread;
 }
 aeron_executor_t;
 
 int aeron_executor_init(
     aeron_executor_t *executor,
+    bool async,
     aeron_executor_on_execution_complete_func_t on_execution_complete,
     void *clientd);
 
@@ -48,6 +51,8 @@ int aeron_executor_submit(
     aeron_executor_task_on_execute_func_t on_execute,
     aeron_executor_task_on_complete_func_t on_complete,
     void *clientd);
+
+int aeron_executor_process_completions(aeron_executor_t *executor, int max);
 
 int aeron_executor_task_do_complete(aeron_executor_task_t *task);
 

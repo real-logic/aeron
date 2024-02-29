@@ -24,47 +24,20 @@ struct aeron_linked_queue_node_stct {
     void *element;
 };
 
-int aeron_linked_queue_node_create(void *element, aeron_linked_queue_node_t **nodep)
-{
-    aeron_linked_queue_node_t *node;
-
-    if (aeron_alloc((void **)&node, sizeof(aeron_linked_queue_node_t)) < 0)
-    {
-        AERON_APPEND_ERR("%s", "");
-        return -1;
-    }
-
-    node->next = NULL;
-    node->element = element;
-
-    *nodep = node;
-
-    return 0;
-}
+#define IS_EMPTY(_q) (NULL == (_q)->head && NULL == (_q)->tail)
 
 int aeron_linked_queue_init(aeron_linked_queue_t *queue)
 {
-    aeron_linked_queue_node_t *node;
-
-    if (aeron_linked_queue_node_create(NULL, &node))
-    {
-        AERON_APPEND_ERR("%s", "");
-        return -1;
-    }
-
-    queue->head = node;
-    queue->tail = node;
+    queue->head = NULL;
+    queue->tail = NULL;
 
     return 0;
 }
 
 int aeron_linked_queue_close(aeron_linked_queue_t *queue)
 {
-    if (NULL == queue->tail->next)
+    if (IS_EMPTY(queue))
     {
-        // the queue is empty
-        aeron_linked_queue_node_delete(queue->tail);
-
         return 0;
     }
 
@@ -75,24 +48,41 @@ int aeron_linked_queue_close(aeron_linked_queue_t *queue)
 
 int aeron_linked_queue_offer(aeron_linked_queue_t *queue, void *element)
 {
-    aeron_linked_queue_node_t *node, *prev;
+    return aeron_linked_queue_offer_ex(queue, element, NULL);
+}
 
-    if (aeron_linked_queue_node_create(element, &node))
+int aeron_linked_queue_offer_ex(aeron_linked_queue_t *queue, void *element, aeron_linked_queue_node_t *in_node)
+{
+    aeron_linked_queue_node_t *node = in_node;
+
+    if (NULL == node)
     {
-        AERON_APPEND_ERR("%s", "");
-        return -1;
+        if (aeron_alloc((void **)&node, sizeof(aeron_linked_queue_node_t)) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
     }
+    node->element = element;
+    node->next = NULL;
 
-    prev = queue->head;
-    queue->head = node;
-    prev->next = node;
+    if (IS_EMPTY(queue))
+    {
+        queue->head = node;
+        queue->tail = node;
+    }
+    else
+    {
+        queue->head->next = node;
+        queue->head = node;
+    }
 
     return 0;
 }
 
 void *aeron_linked_queue_peek(aeron_linked_queue_t *queue)
 {
-    return queue->tail->next == NULL ? NULL : queue->tail->next->element;
+    return queue->tail == NULL ? NULL : queue->tail->element;
 }
 
 void *aeron_linked_queue_poll(aeron_linked_queue_t *queue)
@@ -104,30 +94,35 @@ void *aeron_linked_queue_poll_ex(aeron_linked_queue_t *queue, aeron_linked_queue
 {
     aeron_linked_queue_node_t *next;
 
-    next = queue->tail->next;
+    next = queue->tail;
 
-    if (NULL != next)
+    if (NULL == next)
     {
-        aeron_linked_queue_node_t *prev_tail;
-        void *element;
-
-        prev_tail = queue->tail;
-        element = next->element;
-        queue->tail = next;
-
-        if (NULL == out_nodep)
-        {
-            aeron_linked_queue_node_delete(prev_tail);
-        }
-        else
-        {
-            *out_nodep = prev_tail;
-        }
-
-        return element;
+        return NULL;
     }
 
-    return NULL;
+    void *element = next->element;
+
+    queue->tail = next->next;
+
+    if (queue->tail == NULL)
+    {
+        queue->head = NULL;
+    }
+
+    if (NULL == out_nodep)
+    {
+        aeron_linked_queue_node_delete(next);
+    }
+    else
+    {
+        next->next = NULL;
+        next->element = NULL;
+
+        *out_nodep = next;
+    }
+
+    return element;
 }
 
 int aeron_linked_queue_node_delete(aeron_linked_queue_node_t *node)

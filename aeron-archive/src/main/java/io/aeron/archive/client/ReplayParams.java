@@ -27,6 +27,7 @@ public class ReplayParams
     private int fileIoMaxLength;
     private long position;
     private long length;
+    private long replayToken;
 
     /**
      * Default, initialise all values to "null"
@@ -48,6 +49,7 @@ public class ReplayParams
         fileIoMaxLength = Aeron.NULL_VALUE;
         position = AeronArchive.NULL_POSITION;
         length = AeronArchive.NULL_LENGTH;
+        replayToken = Aeron.NULL_VALUE;
         return this;
     }
 
@@ -155,5 +157,29 @@ public class ReplayParams
     public boolean isBounded()
     {
         return Aeron.NULL_VALUE != boundingLimitCounterId;
+    }
+
+    /**
+     * Set a token used for replays when the initiating image is not the one used to create the archive
+     * connection/session.
+     *
+     * @param replayToken token to identify the replay
+     * @return this for a fluent API.
+     */
+    public ReplayParams replayToken(final long replayToken)
+    {
+        this.replayToken = replayToken;
+        return this;
+    }
+
+    /**
+     * Get a token used for replays when the initiating image is not the one used to create the archive
+     * connection/session.
+     *
+     * @return the replay token
+     */
+    public long replayToken()
+    {
+        return replayToken;
     }
 }

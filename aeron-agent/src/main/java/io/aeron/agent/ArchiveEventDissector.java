@@ -86,6 +86,7 @@ final class ArchiveEventDissector
         new PurgeRecordingRequestDecoder();
     private static final ControlResponseDecoder CONTROL_RESPONSE_DECODER = new ControlResponseDecoder();
     private static final RecordingSignalEventDecoder RECORDING_SIGNAL_EVENT_DECODER = new RecordingSignalEventDecoder();
+    private static final ReplayTokenRequestDecoder REPLAY_TOKEN_REQUEST_DECODER = new ReplayTokenRequestDecoder();
 
     private ArchiveEventDissector()
     {
@@ -409,6 +410,15 @@ final class ArchiveEventDissector
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendReplicate2(builder);
+                break;
+
+            case CMD_IN_REQUEST_REPLAY_TOKEN:
+                REPLAY_TOKEN_REQUEST_DECODER.wrap(
+                    buffer,
+                    offset + encodedLength,
+                    HEADER_DECODER.blockLength(),
+                    HEADER_DECODER.version());
+                appendReplayToken(builder);
                 break;
 
             default:
@@ -906,5 +916,13 @@ final class ArchiveEventDissector
         builder.append(": controlSessionId=").append(PURGE_RECORDING_REQUEST_DECODER.controlSessionId())
             .append(" correlationId=").append(PURGE_RECORDING_REQUEST_DECODER.correlationId())
             .append(" recordingId=").append(PURGE_RECORDING_REQUEST_DECODER.recordingId());
+    }
+
+    private static void appendReplayToken(final StringBuilder builder)
+    {
+        builder
+            .append(": controlSessionId=").append(REPLAY_TOKEN_REQUEST_DECODER.controlSessionId())
+            .append(" correlationId=").append(REPLAY_TOKEN_REQUEST_DECODER.correlationId())
+            .append(" recordingId=").append(REPLAY_TOKEN_REQUEST_DECODER.recordingId());
     }
 }

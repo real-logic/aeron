@@ -549,13 +549,13 @@ public final class ClusterMember
         {
             final String idAndEndpoints = memberValues[i];
             final String[] memberAttributes = idAndEndpoints.split(",");
-            final int clusterMemberId;
 
             if (memberAttributes.length != 6)
             {
                 throw new ClusterException("invalid member value: " + idAndEndpoints + " within: " + value);
             }
 
+            final int clusterMemberId;
             try
             {
                 clusterMemberId = Integer.parseInt(memberAttributes[0]);

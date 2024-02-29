@@ -52,7 +52,7 @@ typedef struct aeron_retransmit_handler_stct
 
     int64_t *invalid_packets_counter;
 
-    int active_retransmits;
+    int active_retransmit_count;
 }
 aeron_retransmit_handler_t;
 
@@ -62,7 +62,7 @@ int aeron_retransmit_handler_init(
     uint64_t delay_timeout_ns,
     uint64_t linger_timeout_ns);
 
-int aeron_retransmit_handler_close(aeron_retransmit_handler_t *handler);
+void aeron_retransmit_handler_close(aeron_retransmit_handler_t *handler);
 
 int aeron_retransmit_handler_on_nak(
     aeron_retransmit_handler_t *handler,

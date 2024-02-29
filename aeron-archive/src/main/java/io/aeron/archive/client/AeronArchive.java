@@ -1565,7 +1565,7 @@ public final class AeronArchive implements AutoCloseable
 
             if (!archiveProxy.getRecordedLength(recordingId, lastCorrelationId, controlSessionId))
             {
-                throw new ArchiveException("failed to send get stop position request");
+                throw new ArchiveException("failed to send get recorded length request");
             }
 
             return pollForResponse(lastCorrelationId);

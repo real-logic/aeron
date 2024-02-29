@@ -298,9 +298,6 @@ public final class DriverConductor implements Agent
                     channelEndpoint.udpChannel(transportIndex).isMulticast() : subscription.group() == FORCE_TRUE;
                 final String sourceIdentity = Configuration.sourceIdentity(sourceAddress);
 
-                final FeedbackDelayGenerator feedbackDelayGenerator = resolveDelayGenerator(
-                    ctx, channelEndpoint.udpChannel(), isMulticastSemantics);
-
                 final PublicationImage image = new PublicationImage(
                     registrationId,
                     ctx,
@@ -314,11 +311,10 @@ public final class DriverConductor implements Agent
                     initialTermOffset,
                     flags,
                     rawLog,
-                    feedbackDelayGenerator,
+                    resolveDelayGenerator(ctx, channelEndpoint.udpChannel(), isMulticastSemantics),
                     subscriberPositions,
                     hwmPos,
                     rcvPos,
-                    sourceAddress,
                     sourceIdentity,
                     congestionControl);
 

@@ -161,7 +161,6 @@ public final class PublicationImage
     private final CongestionControl congestionControl;
     private final ErrorHandler errorHandler;
     private final Position rebuildPosition;
-    private final InetSocketAddress sourceAddress;
     private final String sourceIdentity;
     private final AtomicCounter heartbeatsReceived;
     private final AtomicCounter statusMessagesSent;
@@ -190,7 +189,6 @@ public final class PublicationImage
         final ArrayList<SubscriberPosition> subscriberPositions,
         final Position hwmPosition,
         final Position rebuildPosition,
-        final InetSocketAddress sourceAddress,
         final String sourceIdentity,
         final CongestionControl congestionControl)
     {
@@ -206,7 +204,6 @@ public final class PublicationImage
         this.rawLog = rawLog;
         this.hwmPosition = hwmPosition;
         this.rebuildPosition = rebuildPosition;
-        this.sourceAddress = sourceAddress;
         this.sourceIdentity = sourceIdentity;
         this.initialTermId = initialTermId;
         this.congestionControl = congestionControl;
@@ -402,17 +399,7 @@ public final class PublicationImage
     }
 
     /**
-     * The address of the source associated with the image.
-     *
-     * @return source address
-     */
-    InetSocketAddress sourceAddress()
-    {
-        return sourceAddress;
-    }
-
-    /**
-     * Source identity for a {@link #sourceAddress()}.
+     * Source identity for this stream.
      *
      * @return source identity for a source address.
      * @see Configuration#sourceIdentity(InetSocketAddress)

@@ -55,7 +55,7 @@ final class ConsensusModuleAdapter implements AutoCloseable
         return subscription.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
-    @SuppressWarnings({ "MethodLength", "deprecation" })
+    @SuppressWarnings("MethodLength")
     private ControlledFragmentHandler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
@@ -144,10 +144,6 @@ final class ConsensusModuleAdapter implements AutoCloseable
                 consensusModuleAgent.onClusterMembersQuery(
                     clusterMembersQueryDecoder.correlationId(),
                     BooleanType.TRUE == clusterMembersQueryDecoder.extended());
-                break;
-
-            case RemoveMemberDecoder.TEMPLATE_ID:
-                // Remove Dynamic Join.
                 break;
         }
 

@@ -62,6 +62,7 @@ public final class ArchiveProxy
     private TruncateRecordingRequestEncoder truncateRecordingRequest;
     private PurgeRecordingRequestEncoder purgeRecordingRequest;
     private StopPositionRequestEncoder stopPositionRequest;
+    private RecordedLengthRequestEncoder recordedLengthRequest;
     private FindLastMatchingRecordingRequestEncoder findLastMatchingRecordingRequest;
     private ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequest;
     private BoundedReplayRequestEncoder boundedReplayRequest;
@@ -872,6 +873,30 @@ public final class ArchiveProxy
             .recordingId(recordingId);
 
         return offer(stopPositionRequest.encodedLength());
+    }
+
+    /**
+     * Get the length in bytes of a recording. This operation works if a recording is active or stopped.
+     *
+     * @param recordingId      of the recording that the length is being requested for.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean getRecordedLength(final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        if (null == recordedLengthRequest)
+        {
+            recordedLengthRequest = new RecordedLengthRequestEncoder();
+        }
+
+        recordedLengthRequest
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(recordedLengthRequest.encodedLength());
     }
 
     /**

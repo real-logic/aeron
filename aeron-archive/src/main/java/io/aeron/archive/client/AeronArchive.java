@@ -1548,6 +1548,35 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Get the length in bytes of a recording. This operation works if a recording is active or stopped.
+     *
+     * @param recordingId of the recording for which the length is required.
+     * @return the length of the recording.
+     */
+    public long getRecordedLength(final long recordingId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+            ensureNotReentrant();
+
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.getRecordedLength(recordingId, lastCorrelationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send get stop position request");
+            }
+
+            return pollForResponse(lastCorrelationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Find the last recording that matches the given criteria.
      *
      * @param minRecordingId  to search back to.

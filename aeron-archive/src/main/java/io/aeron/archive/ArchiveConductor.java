@@ -975,6 +975,25 @@ abstract class ArchiveConductor
         }
     }
 
+    void getRecordedLength(final long correlationId, final long recordingId, final ControlSession controlSession)
+    {
+        if (hasRecording(recordingId, correlationId, controlSession))
+        {
+            final long recordedLength;
+            final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
+            if (null != recordingSession)
+            {
+                recordedLength = recordingSession.recordingPosition().get() - catalog.startPosition(recordingId);
+            }
+            else
+            {
+                recordedLength = catalog.stopPosition(recordingId) - catalog.startPosition(recordingId);
+            }
+
+            controlSession.sendOkResponse(correlationId, recordedLength, controlResponseProxy);
+        }
+    }
+
     void truncateRecording(
         final long correlationId, final long recordingId, final long position, final ControlSession controlSession)
     {

@@ -2,7 +2,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
                    package="io.aeron.archive.codecs"
                    id="101"
-                   version="8"
+                   version="9"
                    semanticVersion="5.2"
                    description="Message Codecs for communicating with an Aeron Archive."
                    byteOrder="littleEndian">
@@ -68,8 +68,9 @@
              list-recordings | list-recordings-by-uri | list-recording | find-last-matching-recording |
              list-recording-subscriptions | stop-recording-by-identity
              extend-recording | truncate-recording | replicate-recording | stop-replication | stop-all-replication |
-             start-position | recording-position | stop-position |
-             detach-segments | delete-detached-segments | purge-segments | attach-segments | migrate-segments],
+             start-position | recording-position | stop-position | recorded-length
+             detach-segments | delete-detached-segments | purge-segments | attach-segments | migrate-segments |
+             purge-recording],
            close
                 \
         <-       +[control-response | challenge],
@@ -562,6 +563,15 @@
         <data  name="encodedCredentials"   id="14" type="varDataEncoding" sinceVersion="8"/>
     </sbe:message>
 
+    <sbe:message name="RecordedLengthRequest"
+                 id="67"
+                 description="Request the length of a recording."
+                 sinceVersion="9">
+        <field name="controlSessionId"     id="1" type="int64"/>
+        <field name="correlationId"        id="2" type="int64"/>
+        <field name="recordingId"          id="3" type="int64"/>
+    </sbe:message>
+
     <!-- Archive Recording Progress Events -->
 
     <sbe:message name="RecordingStarted"
@@ -593,7 +603,8 @@
 
     <sbe:message name="PurgeRecordingRequest"
                  id="104"
-                 description="Request the invalidation of stopped recording.">
+                 description="Request the invalidation of stopped recording."
+                 sinceVersion="5">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="recordingId"          id="3" type="int64"/>

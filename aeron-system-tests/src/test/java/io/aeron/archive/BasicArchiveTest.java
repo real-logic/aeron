@@ -152,6 +152,7 @@ class BasicArchiveTest
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
             assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
+            assertEquals(stopPosition - joinPosition, aeronArchive.getRecordedLength(recordingIdFromCounter));
         }
 
         aeronArchive.stopRecording(subscriptionId);
@@ -238,6 +239,7 @@ class BasicArchiveTest
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingId));
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingId));
             assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingId));
+            assertEquals(stopPosition - joinPosition, aeronArchive.getRecordedLength(recordingId));
         }
 
         aeronArchive.stopRecording(subscriptionId);
@@ -297,6 +299,7 @@ class BasicArchiveTest
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
             assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
+            assertEquals(stopPosition - joinPosition, aeronArchive.getRecordedLength(recordingIdFromCounter));
         }
 
         aeronArchive.stopRecording(subscriptionId);
@@ -379,6 +382,7 @@ class BasicArchiveTest
                 assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
                 assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
                 assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
+                assertEquals(stopPosition - joinPosition, aeronArchive.getRecordedLength(recordingIdFromCounter));
 
                 final long recordingId = aeronArchive.findLastMatchingRecording(
                     0, "alias=" + RECORDED_CHANNEL_ALIAS, RECORDED_STREAM_ID, sessionId);
@@ -437,6 +441,7 @@ class BasicArchiveTest
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
             assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
+            assertEquals(stopPosition - joinPosition, aeronArchive.getRecordedLength(recordingIdFromCounter));
         }
 
         aeronArchive.stopRecording(subscriptionId);
@@ -644,6 +649,7 @@ class BasicArchiveTest
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
             assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
+            assertEquals(stopPosition - joinPosition, aeronArchive.getRecordedLength(recordingIdFromCounter));
         }
 
         aeronArchive.stopRecording(subscriptionId);

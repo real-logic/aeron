@@ -461,6 +461,15 @@ final class ControlSession implements Session
         }
     }
 
+    void onGetRecordedLength(final long correlationId, final long recordingId)
+    {
+        attemptToActivate();
+        if (State.ACTIVE == state)
+        {
+            conductor.getRecordedLength(correlationId, recordingId, this);
+        }
+    }
+
     void onListRecordingSubscriptions(
         final long correlationId,
         final int pseudoIndex,

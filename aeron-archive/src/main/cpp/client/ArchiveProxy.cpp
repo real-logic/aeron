@@ -50,6 +50,7 @@
 #include "aeron_archive_client/KeepAliveRequest.h"
 #include "aeron_archive_client/ChallengeResponse.h"
 #include "aeron_archive_client/PurgeRecordingRequest.h"
+#include "aeron_archive_client/RecordedLengthRequest.h"
 
 using namespace aeron;
 using namespace aeron::concurrent;
@@ -416,6 +417,22 @@ util::index_t ArchiveProxy::getStopPosition(
     std::int64_t controlSessionId)
 {
     StopPositionRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .recordingId(recordingId);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::getRecordedLength(
+    AtomicBuffer &buffer,
+    std::int64_t recordingId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    RecordedLengthRequest request;
 
     wrapAndApplyHeader(request, buffer)
         .controlSessionId(controlSessionId)

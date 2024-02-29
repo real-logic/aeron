@@ -1293,6 +1293,30 @@ public:
     }
 
     /**
+     * Get the length in bytes of a recording. This operation works if a recording is active or stopped.
+     *
+     * @param recordingId   of the recording that the length is being requested for.
+     * @tparam IdleStrategy to use for polling operations.
+     * @return the recorded length in bytes.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::int64_t getRecordedLength(std::int64_t recordingId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+        ensureOpen();
+        ensureNotReentrant();
+
+        m_lastCorrelationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->getRecordedLength<IdleStrategy>(recordingId, m_lastCorrelationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send get recorded length request", SOURCEINFO);
+        }
+
+        return pollForResponse<IdleStrategy>("AeronArchive::getRecordedLength", m_lastCorrelationId);
+    }
+
+    /**
      * Find the last recording that matches the given criteria.
      *
      * @param minRecordingId  to search back to.

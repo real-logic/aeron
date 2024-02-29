@@ -47,7 +47,8 @@ public:
         m_subscriptionTagId(NULL_VALUE),
         m_fileIoMaxLength(NULL_VALUE),
         m_replicationSessionId(NULL_VALUE)
-    {}
+    {
+    }
 
     /**
      * The stop position for this replication request.
@@ -278,7 +279,8 @@ public:
         m_fileIoMaxLength(NULL_VALUE),
         m_position(NULL_POSITION),
         m_length(NULL_LENGTH)
-    {}
+    {
+    }
 
     /**
      * Gets the counterId specified for the bounding the replay. Returns aeron::NULL_VALUE if unspecified.
@@ -926,6 +928,23 @@ public:
     bool getRecordingPosition(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
     {
         const util::index_t length = getRecordingPosition(m_buffer, recordingId, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
+     * Get the length in bytes of a recording. This operation works if a recording is active or stopped.
+     *
+     * @param recordingId      of the recording that the length is being requested for.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool getRecordedLength(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
+    {
+        const util::index_t length = getRecordedLength(m_buffer, recordingId, correlationId, controlSessionId);
 
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
@@ -1628,6 +1647,12 @@ private:
         std::int64_t controlSessionId);
 
     static util::index_t getStopPosition(
+        AtomicBuffer &buffer,
+        std::int64_t recordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t getRecordedLength(
         AtomicBuffer &buffer,
         std::int64_t recordingId,
         std::int64_t correlationId,

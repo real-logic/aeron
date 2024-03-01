@@ -168,11 +168,14 @@ TEST_F(AsyncExecutorTest, shouldExecuteAsynchronously)
         ASSERT_EQ(result, 0);
     }
 
+    int work_count = 0;
+
     while (m_on_complete_count < TOTAL_TASKS)
     {
-        ASSERT_EQ(aeron_executor_process_completions(&m_executor, 50), 0);
+        work_count += aeron_executor_process_completions(&m_executor, 50);
     }
 
+    ASSERT_EQ(work_count, TOTAL_TASKS);
     ASSERT_EQ(m_on_execute_count, TOTAL_TASKS);
     ASSERT_EQ(m_on_complete_count, TOTAL_TASKS);
     ASSERT_EQ(tcd.some_value, TOTAL_TASKS * 100);

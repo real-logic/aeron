@@ -52,7 +52,7 @@ int aeron_executor_submit(
     aeron_executor_task_on_complete_func_t on_complete,
     void *clientd);
 
-int aeron_executor_process_completions(aeron_executor_t *executor, int max);
+int aeron_executor_process_completions(aeron_executor_t *executor, int limit);
 
 int aeron_executor_task_do_complete(aeron_executor_task_t *task);
 

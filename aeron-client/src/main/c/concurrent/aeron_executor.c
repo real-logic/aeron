@@ -260,12 +260,13 @@ int aeron_executor_submit(
     return result;
 }
 
-int aeron_executor_process_completions(aeron_executor_t *executor, int max)
+int aeron_executor_process_completions(aeron_executor_t *executor, int limit)
 {
     aeron_executor_task_t *task;
     aeron_linked_queue_node_t *node;
+    int count = 0;
 
-    for (int i = 0; i < max; i++)
+    for (; count < limit; count++)
     {
         task = aeron_blocking_linked_queue_poll_ex(&executor->return_queue, &node);
 
@@ -274,10 +275,13 @@ int aeron_executor_process_completions(aeron_executor_t *executor, int max)
             break;
         }
 
-        aeron_executor_task_do_complete(task);
+        if (aeron_executor_task_do_complete(task) < 0)
+        {
+            // TODO check for errors
+        }
     }
 
-    return 0;
+    return count;
 }
 
 int aeron_executor_task_do_complete(aeron_executor_task_t *task)

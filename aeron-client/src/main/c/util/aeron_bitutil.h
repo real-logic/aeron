@@ -35,6 +35,8 @@
 
 #define AERON_ALIGN(value, alignment) (((value) + ((alignment) - 1u)) & ~((alignment) - 1u))
 
+#define AERON_PADDED_SIZEOF(_struct) AERON_ALIGN(sizeof(_struct), sizeof(int32_t))
+
 #define AERON_IS_POWER_OF_TWO(value) ((value) > 0 && (((value) & (~(value) + 1u)) == (value)))
 
 #define AERON_MIN(a, b) ((a) < (b) ? (a) : (b))

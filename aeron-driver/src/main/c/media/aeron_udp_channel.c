@@ -27,6 +27,7 @@
 #include "util/aeron_error.h"
 #include "media/aeron_udp_channel.h"
 #include "command/aeron_control_protocol.h"
+#include "aeron_driver_conductor.h"
 
 int aeron_ipv4_multicast_control_address(struct sockaddr_in *data_addr, struct sockaddr_in *control_addr)
 {
@@ -194,20 +195,20 @@ static int aeron_udp_channel_verify_timestamp_offsets_do_not_overlap(aeron_udp_c
     return 0;
 }
 
-int aeron_udp_channel_parse(
+struct aeron_udp_channel_async_parse_stct
+{
+    aeron_udp_channel_t *channel;
+    bool is_destination;
+    aeron_udp_channel_async_parse_complete_func_t on_complete;
+};
+
+/* Do the initial allocations required to create an aeron_udp_channel_t */
+int aeron_udp_channel_do_initial_parse(
     size_t uri_length,
     const char *uri,
-    aeron_name_resolver_t *resolver,
-    aeron_udp_channel_t **channel,
-    bool is_destination)
+    aeron_udp_channel_t **channel)
 {
     aeron_udp_channel_t *_channel = NULL;
-    struct sockaddr_storage endpoint_addr, explicit_control_addr, interface_addr;
-    unsigned int interface_index = 0;
-
-    memset(&endpoint_addr, 0, sizeof(endpoint_addr));
-    memset(&explicit_control_addr, 0, sizeof(explicit_control_addr));
-    memset(&interface_addr, 0, sizeof(interface_addr));
 
     if (aeron_alloc((void **)&_channel, sizeof(aeron_udp_channel_t)) < 0)
     {
@@ -217,7 +218,9 @@ int aeron_udp_channel_parse(
 
     if (aeron_uri_parse(uri_length, uri, &_channel->uri) < 0)
     {
-        goto error_cleanup;
+        *channel = NULL;
+        aeron_udp_channel_delete(_channel);
+        return -1;
     }
 
     size_t copy_length = sizeof(_channel->original_uri) - 1;
@@ -226,6 +229,25 @@ int aeron_udp_channel_parse(
     memcpy(_channel->original_uri, uri, copy_length);
     _channel->original_uri[copy_length] = '\0';
     _channel->uri_length = copy_length;
+
+    *channel = _channel;
+    return 0;
+}
+
+/* Finish filling out the channel */
+/* This function is designed to be run off an executor thread */
+int aeron_udp_channel_finish_parse(
+    aeron_name_resolver_t *resolver,
+    aeron_udp_channel_t **channel,
+    bool is_destination)
+{
+    aeron_udp_channel_t *_channel = *channel;
+    struct sockaddr_storage endpoint_addr, explicit_control_addr, interface_addr;
+    unsigned int interface_index = 0;
+
+    memset(&endpoint_addr, 0, sizeof(endpoint_addr));
+    memset(&explicit_control_addr, 0, sizeof(explicit_control_addr));
+    memset(&interface_addr, 0, sizeof(interface_addr));
 
     _channel->has_explicit_endpoint = NULL != _channel->uri.params.udp.endpoint;
     _channel->has_explicit_control = false;
@@ -270,8 +292,8 @@ int aeron_udp_channel_parse(
 
     bool has_no_distinguishing_characteristic =
         NULL == _channel->uri.params.udp.endpoint &&
-        NULL == _channel->uri.params.udp.control &&
-        NULL == _channel->uri.params.udp.channel_tag;
+            NULL == _channel->uri.params.udp.control &&
+            NULL == _channel->uri.params.udp.channel_tag;
 
     if (has_no_distinguishing_characteristic && AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL != _channel->control_mode &&
         AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE != _channel->control_mode)
@@ -297,7 +319,7 @@ int aeron_udp_channel_parse(
         if (aeron_name_resolver_resolve_host_and_port(
             resolver, _channel->uri.params.udp.endpoint, AERON_UDP_CHANNEL_ENDPOINT_KEY, false, &endpoint_addr) < 0)
         {
-            AERON_APPEND_ERR("URI: %.*s", (int) uri_length, uri);
+            AERON_APPEND_ERR("URI: %.*s", (int)_channel->uri_length, _channel->original_uri);
             goto error_cleanup;
         }
     }
@@ -315,8 +337,8 @@ int aeron_udp_channel_parse(
 
     bool requires_additional_suffix =
         (NULL == _channel->uri.params.udp.endpoint && NULL == _channel->uri.params.udp.control) ||
-        (NULL != _channel->uri.params.udp.endpoint && aeron_is_wildcard_port(&endpoint_addr)) ||
-        (NULL != _channel->uri.params.udp.control && aeron_is_wildcard_port(&explicit_control_addr));
+            (NULL != _channel->uri.params.udp.endpoint && aeron_is_wildcard_port(&endpoint_addr)) ||
+            (NULL != _channel->uri.params.udp.control && aeron_is_wildcard_port(&explicit_control_addr));
 
     requires_additional_suffix = requires_additional_suffix && !is_destination;
 
@@ -453,17 +475,116 @@ int aeron_udp_channel_parse(
         goto error_cleanup;
     }
 
-    *channel = _channel;
     return 0;
 
 error_cleanup:
     *channel = NULL;
-    if (NULL != _channel)
-    {
-        aeron_udp_channel_delete(_channel);
-    }
+    aeron_udp_channel_delete(_channel);
 
     return -1;
+}
+
+/* This is an aeron_executor 'execute' callback - it's called from an executor thread */
+int aeron_udp_channel_async_parse_execute(void *task_clientd, void *executor_clientd)
+{
+    aeron_udp_channel_async_parse_t *async_parse = (aeron_udp_channel_async_parse_t *)task_clientd;
+    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)executor_clientd;
+
+    aeron_udp_channel_finish_parse(&conductor->name_resolver, &async_parse->channel, async_parse->is_destination);
+
+    return 0;
+}
+
+/* This is an aeron_executor 'complete' callback - it's called when 'aeron_executor_process_completions' is called */
+int aeron_udp_channel_async_parse_complete(int result, void *task_clientd, void *executor_clientd)
+{
+    aeron_udp_channel_async_parse_t *async_parse = (aeron_udp_channel_async_parse_t *)task_clientd;
+    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)executor_clientd;
+
+    void *clientd = (char *)async_parse + AERON_PADDED_SIZEOF(aeron_udp_channel_async_parse_t);
+
+    async_parse->on_complete(conductor, result, async_parse->channel, clientd);
+
+    aeron_free(async_parse);
+
+    return 0;
+}
+
+/* This does some initial allocations of the aeron_udp_channel_t and then creates an 'async_parse' */
+/* The async_parse_clientd is malloc'd along with the async_parse so a single block of memory
+ * can be handed to the aeron_executor */
+int aeron_udp_channel_build_async_parse(
+    size_t uri_length,
+    const char *uri,
+    bool is_destination,
+    aeron_udp_channel_async_parse_t **async_parse,
+    size_t async_parse_clientd_length,
+    void **async_parse_clientd)
+{
+    aeron_udp_channel_t *channel = NULL;
+    aeron_udp_channel_async_parse_t *_async_parse;
+
+    if (aeron_udp_channel_do_initial_parse(uri_length, uri, &channel) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (aeron_alloc((void **)&_async_parse, AERON_PADDED_SIZEOF(aeron_udp_channel_async_parse_t) + async_parse_clientd_length) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        aeron_udp_channel_delete(channel);
+        return -1;
+    }
+
+    _async_parse->channel = channel;
+    _async_parse->is_destination = is_destination;
+    _async_parse->on_complete = NULL;
+
+    *async_parse_clientd = (char *)_async_parse + AERON_PADDED_SIZEOF(aeron_udp_channel_async_parse_t);
+    *async_parse = _async_parse;
+
+    return 0;
+}
+
+int aeron_udp_channel_submit_async_parse(
+    aeron_executor_t *executor,
+    aeron_udp_channel_async_parse_t *async_parse,
+    aeron_udp_channel_async_parse_complete_func_t on_complete)
+{
+    async_parse->on_complete = on_complete;
+
+    aeron_executor_submit(
+        executor,
+        aeron_udp_channel_async_parse_execute,
+        aeron_udp_channel_async_parse_complete,
+        async_parse);
+
+    return 0;
+}
+
+// This is the old synchronous method of channel parsing.
+// It's deprecated in favor of using the aeron_udp_channel_async_parse_t functions
+int aeron_udp_channel_parse(
+    size_t uri_length,
+    const char *uri,
+    aeron_name_resolver_t *resolver,
+    aeron_udp_channel_t **channel,
+    bool is_destination)
+{
+    if (aeron_udp_channel_do_initial_parse(uri_length, uri, channel) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (aeron_udp_channel_finish_parse(resolver, channel, is_destination) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    return 0;
 }
 
 void aeron_udp_channel_delete(aeron_udp_channel_t *channel)

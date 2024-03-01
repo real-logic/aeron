@@ -31,7 +31,11 @@ import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
 import org.agrona.SemanticVersion;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.NoOpLock;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -82,6 +86,7 @@ public final class AeronArchive implements AutoCloseable
     private boolean isClosed = false;
     private boolean isInCallback = false;
     private long lastCorrelationId = Aeron.NULL_VALUE;
+    private long archiveId = Aeron.NULL_VALUE;
     private final long controlSessionId;
     private final long messageTimeoutNs;
     private final Context context;
@@ -1132,7 +1137,7 @@ public final class AeronArchive implements AutoCloseable
      * Stop an existing replay session.
      *
      * @param replaySessionId to stop replay for which would have been returned from
-     *                       {@link #startReplay(long, long, long, String, int)}.
+     *                        {@link #startReplay(long, long, long, String, int)}.
      */
     public void stopReplay(final long replaySessionId)
     {
@@ -1569,6 +1574,38 @@ public final class AeronArchive implements AutoCloseable
             }
 
             return pollForResponse(lastCorrelationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Get the id of the Archive.
+     *
+     * @return the id of the Archive.
+     */
+    public long archiveId()
+    {
+        lock.lock();
+        try
+        {
+            if (Aeron.NULL_VALUE == archiveId)
+            {
+                ensureOpen();
+                ensureNotReentrant();
+
+                lastCorrelationId = aeron.nextCorrelationId();
+
+                if (!archiveProxy.archiveId(lastCorrelationId, controlSessionId))
+                {
+                    throw new ArchiveException("failed to send get recorded length request");
+                }
+
+                archiveId = pollForResponse(lastCorrelationId);
+            }
+            return archiveId;
         }
         finally
         {

@@ -75,6 +75,7 @@ public final class ArchiveProxy
     private PurgeSegmentsRequestEncoder purgeSegmentsRequest;
     private AttachSegmentsRequestEncoder attachSegmentsRequest;
     private MigrateSegmentsRequestEncoder migrateSegmentsRequest;
+    private ArchiveIdRequestEncoder archiveIdRequestEncoder;
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -898,6 +899,28 @@ public final class ArchiveProxy
             .recordingId(recordingId);
 
         return offer(stopOrRecordingPositionRequest.encodedLength());
+    }
+
+    /**
+     * Get the id of the Archive.
+     *
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean archiveId(final long correlationId, final long controlSessionId)
+    {
+        if (null == archiveIdRequestEncoder)
+        {
+            archiveIdRequestEncoder = new ArchiveIdRequestEncoder();
+        }
+
+        archiveIdRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId);
+
+        return offer(archiveIdRequestEncoder.encodedLength());
     }
 
     /**

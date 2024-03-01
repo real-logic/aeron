@@ -470,6 +470,15 @@ final class ControlSession implements Session
         }
     }
 
+    void onArchiveId(final long correlationId)
+    {
+        attemptToActivate();
+        if (State.ACTIVE == state)
+        {
+            conductor.archiveId(correlationId, this);
+        }
+    }
+
     void onListRecordingSubscriptions(
         final long correlationId,
         final int pseudoIndex,

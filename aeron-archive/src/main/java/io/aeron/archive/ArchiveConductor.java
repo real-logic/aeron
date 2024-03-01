@@ -408,6 +408,11 @@ abstract class ArchiveConductor
         return controlSession;
     }
 
+    void archiveId(final long correlationId, final ControlSession controlSession)
+    {
+        controlSession.sendOkResponse(correlationId, ctx.archiveId(), controlResponseProxy);
+    }
+
     void startRecording(
         final long correlationId,
         final int streamId,

@@ -1279,7 +1279,7 @@ class ReplicateRecordingTest
             {
                 final CountersReader counters = srcAeron.countersReader();
                 final int counterId =
-                    Tests.awaitRecordingCounterId(counters, publication.sessionId(), srcAeronArchive.archiveId());
+                    Tests.awaitRecordingCounterId(counters, publication.sessionId(), aeronArchive.archiveId());
                 srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
 
                 offer(publication, messageCount, messagePrefix);
@@ -1338,7 +1338,7 @@ class ReplicateRecordingTest
             {
                 final CountersReader counters = srcAeron.countersReader();
                 final int counterId =
-                    Tests.awaitRecordingCounterId(counters, publication.sessionId(), srcAeronArchive.archiveId());
+                    Tests.awaitRecordingCounterId(counters, publication.sessionId(), aeronArchive.archiveId());
                 srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
 
                 offer(publication, messageCount, messagePrefix);
@@ -1412,7 +1412,7 @@ class ReplicateRecordingTest
             {
                 final CountersReader counters = aeronArchive.context().aeron().countersReader();
                 final int counterId =
-                    Tests.awaitRecordingCounterId(counters, publication.sessionId(), srcAeronArchive.archiveId());
+                    Tests.awaitRecordingCounterId(counters, publication.sessionId(), aeronArchive.archiveId());
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
 
                 offer(publication, messageCount, payload);

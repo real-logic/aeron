@@ -30,7 +30,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.IOException;
 import java.util.Random;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -67,7 +66,7 @@ public class DataLossAndRecoverySystemTest
     }
 
     @Test
-    void shouldSendStreamOfDataAndHandleLargeGapWithingSingleNakAndRetransmit() throws IOException
+    void shouldSendStreamOfDataAndHandleLargeGapWithingSingleNakAndRetransmit()
     {
         launch(context);
 
@@ -86,7 +85,7 @@ public class DataLossAndRecoverySystemTest
     }
 
     @Test
-    void shouldConfigureNakDelayPerStream() throws IOException
+    void shouldConfigureNakDelayPerStream()
     {
         dontCoalesceNaksOnReceiverByDefault();
         launch(context);
@@ -106,7 +105,7 @@ public class DataLossAndRecoverySystemTest
     }
 
     @Test
-    void shouldSendStreamOfDataAndHandleLargeGapWithSingleRetransmitEvenIfNakkingFrequently() throws IOException
+    void shouldSendStreamOfDataAndHandleLargeGapWithSingleRetransmitEvenIfNakingFrequently()
     {
         dontCoalesceNaksOnReceiverByDefault();
         launch(context);

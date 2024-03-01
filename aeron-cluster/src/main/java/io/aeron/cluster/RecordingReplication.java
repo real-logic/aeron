@@ -183,7 +183,8 @@ final class RecordingReplication implements AutoCloseable
             if (RecordingSignal.EXTEND == signal)
             {
                 final CountersReader counters = archive.context().aeron().countersReader();
-                recordingPositionCounterId = RecordingPos.findCounterIdByRecording(counters, recordingId);
+                recordingPositionCounterId =
+                    RecordingPos.findCounterIdByRecording(counters, recordingId, archive.archiveId());
             }
             else if (RecordingSignal.SYNC == signal)
             {

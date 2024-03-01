@@ -229,7 +229,8 @@ class ArchiveTest
             int counterId;
             final int sessionId = publication.sessionId();
             final CountersReader countersReader = aeron.countersReader();
-            while (Aeron.NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(countersReader, sessionId)))
+            while (Aeron.NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(
+                countersReader, sessionId, archive.archiveId())))
             {
                 Tests.yield();
             }
@@ -637,7 +638,7 @@ class ArchiveTest
                 final int sessionId = publication.sessionId();
 
                 final CountersReader counters = aeron.countersReader();
-                final int counterId = Tests.awaitRecordingCounterId(counters, sessionId);
+                final int counterId = Tests.awaitRecordingCounterId(counters, sessionId, archive.archiveId());
 
                 final BufferClaim bufferClaim = new BufferClaim();
                 for (int i = 0; i < 111; i++)
@@ -695,7 +696,8 @@ class ArchiveTest
                 final int sessionId = publication.sessionId();
                 final CountersReader countersReader = aeron.countersReader();
 
-                while (Aeron.NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(countersReader, sessionId)))
+                while (Aeron.NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(
+                    countersReader, sessionId, archive.archiveId())))
                 {
                     Tests.yield();
                 }

@@ -700,10 +700,10 @@ public class Tests
         };
     }
 
-    public static int awaitRecordingCounterId(final CountersReader counters, final int sessionId)
+    public static int awaitRecordingCounterId(final CountersReader counters, final int sessionId, final long archiveId)
     {
         int counterId;
-        while (NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
+        while (NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId, archiveId)))
         {
             Tests.yield();
         }

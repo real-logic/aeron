@@ -174,6 +174,15 @@ public class EmbeddedReplayThroughput extends EmbeddedReplayThroughputRhsPadding
             final long subscriptionId = aeronArchive.startRecording(channel, STREAM_ID, SourceLocation.LOCAL);
             final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
 
+            final CountersReader countersReader = aeron.countersReader();
+            final long archiveId = aeronArchive.archiveId();
+            int recordingCounterId;
+            while (Aeron.NULL_VALUE == (recordingCounterId = RecordingPos.findCounterIdBySession(
+                countersReader, publicationSessionId, archiveId)))
+            {
+                idleStrategy.idle();
+            }
+
             try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
             {
                 idleStrategy.reset();
@@ -217,7 +226,7 @@ public class EmbeddedReplayThroughput extends EmbeddedReplayThroughputRhsPadding
                     idleStrategy.idle(fragments);
                 }
 
-                awaitRecordingComplete(position, idleStrategy);
+                awaitRecordingComplete(recordingCounterId, position, idleStrategy);
 
                 return position;
             }
@@ -228,11 +237,9 @@ public class EmbeddedReplayThroughput extends EmbeddedReplayThroughputRhsPadding
         }
     }
 
-    private void awaitRecordingComplete(final long position, final IdleStrategy idleStrategy)
+    private void awaitRecordingComplete(final int counterId, final long position, final IdleStrategy idleStrategy)
     {
         final CountersReader counters = aeron.countersReader();
-        final int counterId = RecordingPos.findCounterIdBySession(counters, publicationSessionId);
-
         idleStrategy.reset();
         while (counters.getCounterValue(counterId) < position)
         {

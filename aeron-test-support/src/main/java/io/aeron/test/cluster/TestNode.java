@@ -256,7 +256,8 @@ public final class TestNode implements AutoCloseable
         }
 
         final CountersReader countersReader = countersReader();
-        final int counterId = RecordingPos.findCounterIdByRecording(countersReader, recordingId);
+        final int counterId =
+            RecordingPos.findCounterIdByRecording(countersReader, recordingId, archive.context().archiveId());
         if (NULL_VALUE == counterId)
         {
             fail("recording not active " + recordingId);

@@ -70,7 +70,7 @@ class MultiClusteredServicesTest
         final Service serviceB = new Service();
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
-            .withServiceSupplier(i -> new TestNode.TestService[]{ serviceA, serviceB })
+            .withServiceSupplier((i) -> new TestNode.TestService[]{ serviceA, serviceB })
             .start(3);
         systemTestWatcher.cluster(cluster);
 
@@ -86,15 +86,16 @@ class MultiClusteredServicesTest
     @InterruptAfter(40)
     void shouldContinueFromLogIfSnapshotThrowsException(final int serviceMask)
     {
-        final TestNode.TestService[][] clusterTestServices = {
-            { new TestNode.TestService(), new TestNode.TestService() },
-            { new TestNode.TestService(), new TestNode.TestService() },
-            { new TestNode.TestService(), new TestNode.TestService() }
-        };
+        final TestNode.TestService[][] clusterTestServices =
+            {
+                { new TestNode.TestService(), new TestNode.TestService() },
+                { new TestNode.TestService(), new TestNode.TestService() },
+                { new TestNode.TestService(), new TestNode.TestService() }
+            };
 
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
-            .withServiceSupplier(i -> clusterTestServices[i])
+            .withServiceSupplier((i) -> clusterTestServices[i])
             .start(3);
         systemTestWatcher.cluster(cluster);
 

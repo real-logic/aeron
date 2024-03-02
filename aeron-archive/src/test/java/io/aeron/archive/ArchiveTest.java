@@ -429,10 +429,6 @@ class ArchiveTest
             .threadingMode(ThreadingMode.SHARED)
             .aeronDirectoryName(aeronDir.toString());
 
-        final Archive.Context archive1Ctx = TestContexts.localhostArchive()
-            .deleteArchiveOnStart(true)
-            .threadingMode(SHARED);
-
         try (MediaDriver ignore = MediaDriver.launch(driverCtx);
             Archive archive1 = Archive.launch(
                 new Archive.Context()

@@ -933,18 +933,18 @@ public:
     }
 
     /**
-     * Get the length in bytes of a recording. This operation works if a recording is active or stopped.
+     * Get the stop or active recording position of a recording.
      *
-     * @param recordingId      of the recording that the length is being requested for.
+     * @param recordingId      of the recording that the stop of active recording position is being requested for.
      * @param correlationId    for this request.
      * @param controlSessionId for this request.
      * @tparam IdleStrategy to use between Publication::offer attempts.
      * @return true if successfully offered otherwise false.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    bool getRecordedLength(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
+    bool getStopOrRecordingPosition(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
     {
-        const util::index_t length = getRecordedLength(m_buffer, recordingId, correlationId, controlSessionId);
+        const util::index_t length = getStopOrRecordingPosition(m_buffer, recordingId, correlationId, controlSessionId);
 
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
@@ -1652,7 +1652,7 @@ private:
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
-    static util::index_t getRecordedLength(
+    static util::index_t getStopOrRecordingPosition(
         AtomicBuffer &buffer,
         std::int64_t recordingId,
         std::int64_t correlationId,

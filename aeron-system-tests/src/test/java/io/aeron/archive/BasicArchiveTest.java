@@ -683,7 +683,7 @@ class BasicArchiveTest
 
         final AtomicReference<Image> replayImage = new AtomicReference<>();
         try (Subscription replaySubscription = aeron.addSubscription(
-            channel, REPLAY_STREAM_ID, replayImage::set, (image) -> {}))
+            channel, REPLAY_STREAM_ID, replayImage::set, image -> {}))
         {
             boundingCounter.setOrdered(halfPosition);
 

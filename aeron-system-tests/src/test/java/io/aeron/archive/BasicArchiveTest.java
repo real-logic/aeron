@@ -152,7 +152,7 @@ class BasicArchiveTest
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
             assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
-            assertEquals(stopPosition - joinPosition, aeronArchive.getRecordedLength(recordingIdFromCounter));
+            assertEquals(stopPosition, aeronArchive.getStopOrRecordingPosition(recordingIdFromCounter));
         }
 
         aeronArchive.stopRecording(subscriptionId);
@@ -239,7 +239,7 @@ class BasicArchiveTest
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingId));
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingId));
             assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingId));
-            assertEquals(stopPosition - joinPosition, aeronArchive.getRecordedLength(recordingId));
+            assertEquals(stopPosition, aeronArchive.getStopOrRecordingPosition(recordingId));
         }
 
         aeronArchive.stopRecording(subscriptionId);
@@ -299,7 +299,7 @@ class BasicArchiveTest
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
             assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
-            assertEquals(stopPosition - joinPosition, aeronArchive.getRecordedLength(recordingIdFromCounter));
+            assertEquals(stopPosition, aeronArchive.getStopOrRecordingPosition(recordingIdFromCounter));
         }
 
         aeronArchive.stopRecording(subscriptionId);
@@ -382,7 +382,7 @@ class BasicArchiveTest
                 assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
                 assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
                 assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
-                assertEquals(stopPosition - joinPosition, aeronArchive.getRecordedLength(recordingIdFromCounter));
+                assertEquals(stopPosition, aeronArchive.getStopOrRecordingPosition(recordingIdFromCounter));
 
                 final long recordingId = aeronArchive.findLastMatchingRecording(
                     0, "alias=" + RECORDED_CHANNEL_ALIAS, RECORDED_STREAM_ID, sessionId);
@@ -441,7 +441,7 @@ class BasicArchiveTest
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
             assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
-            assertEquals(stopPosition - joinPosition, aeronArchive.getRecordedLength(recordingIdFromCounter));
+            assertEquals(stopPosition, aeronArchive.getStopOrRecordingPosition(recordingIdFromCounter));
         }
 
         aeronArchive.stopRecording(subscriptionId);
@@ -649,7 +649,7 @@ class BasicArchiveTest
             assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
             assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
             assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
-            assertEquals(stopPosition - joinPosition, aeronArchive.getRecordedLength(recordingIdFromCounter));
+            assertEquals(stopPosition, aeronArchive.getStopOrRecordingPosition(recordingIdFromCounter));
         }
 
         aeronArchive.stopRecording(subscriptionId);
@@ -683,7 +683,7 @@ class BasicArchiveTest
 
         final AtomicReference<Image> replayImage = new AtomicReference<>();
         try (Subscription replaySubscription = aeron.addSubscription(
-            channel, REPLAY_STREAM_ID, replayImage::set, image -> {}))
+            channel, REPLAY_STREAM_ID, replayImage::set, (image) -> {}))
         {
             boundingCounter.setOrdered(halfPosition);
 

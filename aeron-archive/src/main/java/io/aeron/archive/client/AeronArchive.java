@@ -1548,12 +1548,12 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Get the length in bytes of a recording. This operation works if a recording is active or stopped.
+     * Get the stop or active recording position of a recording.
      *
-     * @param recordingId of the recording for which the length is required.
+     * @param recordingId of the recording that the stop of active recording position is being requested for.
      * @return the length of the recording.
      */
-    public long getRecordedLength(final long recordingId)
+    public long getStopOrRecordingPosition(final long recordingId)
     {
         lock.lock();
         try
@@ -1563,7 +1563,7 @@ public final class AeronArchive implements AutoCloseable
 
             lastCorrelationId = aeron.nextCorrelationId();
 
-            if (!archiveProxy.getRecordedLength(recordingId, lastCorrelationId, controlSessionId))
+            if (!archiveProxy.getStopOrRecordingPosition(recordingId, lastCorrelationId, controlSessionId))
             {
                 throw new ArchiveException("failed to send get recorded length request");
             }

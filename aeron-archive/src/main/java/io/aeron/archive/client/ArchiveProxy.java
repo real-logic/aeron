@@ -62,7 +62,7 @@ public final class ArchiveProxy
     private TruncateRecordingRequestEncoder truncateRecordingRequest;
     private PurgeRecordingRequestEncoder purgeRecordingRequest;
     private StopPositionRequestEncoder stopPositionRequest;
-    private RecordedLengthRequestEncoder recordedLengthRequest;
+    private StopOrRecordingPositionRequestEncoder stopOrRecordingPositionRequest;
     private FindLastMatchingRecordingRequestEncoder findLastMatchingRecordingRequest;
     private ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequest;
     private BoundedReplayRequestEncoder boundedReplayRequest;
@@ -876,27 +876,28 @@ public final class ArchiveProxy
     }
 
     /**
-     * Get the length in bytes of a recording. This operation works if a recording is active or stopped.
+     * Get the stop or active recording position of a recording.
      *
-     * @param recordingId      of the recording that the length is being requested for.
+     * @param recordingId      of the recording that the stop of active recording position is being requested for.
      * @param correlationId    for this request.
      * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean getRecordedLength(final long recordingId, final long correlationId, final long controlSessionId)
+    public boolean getStopOrRecordingPosition(
+        final long recordingId, final long correlationId, final long controlSessionId)
     {
-        if (null == recordedLengthRequest)
+        if (null == stopOrRecordingPositionRequest)
         {
-            recordedLengthRequest = new RecordedLengthRequestEncoder();
+            stopOrRecordingPositionRequest = new StopOrRecordingPositionRequestEncoder();
         }
 
-        recordedLengthRequest
+        stopOrRecordingPositionRequest
             .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId);
 
-        return offer(recordedLengthRequest.encodedLength());
+        return offer(stopOrRecordingPositionRequest.encodedLength());
     }
 
     /**

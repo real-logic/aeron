@@ -68,7 +68,7 @@
              list-recordings | list-recordings-by-uri | list-recording | find-last-matching-recording |
              list-recording-subscriptions | stop-recording-by-identity
              extend-recording | truncate-recording | replicate-recording | stop-replication | stop-all-replication |
-             start-position | recording-position | stop-position | recorded-length
+             start-position | recording-position | stop-position | stop-or-recording-position |
              detach-segments | delete-detached-segments | purge-segments | attach-segments | migrate-segments |
              purge-recording],
            close
@@ -563,9 +563,9 @@
         <data  name="encodedCredentials"   id="14" type="varDataEncoding" sinceVersion="8"/>
     </sbe:message>
 
-    <sbe:message name="RecordedLengthRequest"
+    <sbe:message name="StopOrRecordingPositionRequest"
                  id="67"
-                 description="Request the length of a recording."
+                 description="Request the stop or active recording position of a recording."
                  sinceVersion="9">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>

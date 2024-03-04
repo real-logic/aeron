@@ -933,7 +933,7 @@ public:
     }
 
     /**
-     * Get the stop or active recording position of a recording.
+     * Get the stop or active recorded position of a recording.
      *
      * @param recordingId      of the recording that the stop of active recording position is being requested for.
      * @param correlationId    for this request.
@@ -942,9 +942,9 @@ public:
      * @return true if successfully offered otherwise false.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    bool getStopOrRecordingPosition(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
+    bool getMaxRecordedPosition(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
     {
-        const util::index_t length = getStopOrRecordingPosition(m_buffer, recordingId, correlationId, controlSessionId);
+        const util::index_t length = getMaxRecordedPosition(m_buffer, recordingId, correlationId, controlSessionId);
 
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
@@ -1652,7 +1652,7 @@ private:
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
-    static util::index_t getStopOrRecordingPosition(
+    static util::index_t getMaxRecordedPosition(
         AtomicBuffer &buffer,
         std::int64_t recordingId,
         std::int64_t correlationId,

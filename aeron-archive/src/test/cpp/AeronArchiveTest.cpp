@@ -410,7 +410,7 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
 
         EXPECT_EQ(aeronArchive->getRecordingPosition(recordingIdFromCounter), stopPosition);
         EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), aeron::NULL_VALUE);
-        EXPECT_EQ(aeronArchive->getStopOrRecordingPosition(recordingIdFromCounter), stopPosition);
+        EXPECT_EQ(aeronArchive->getMaxRecordedPosition(recordingIdFromCounter), stopPosition);
     }
 
     aeronArchive->stopRecording(subscriptionId);
@@ -650,7 +650,7 @@ TEST_P(AeronArchiveParamTest, shouldRecordThenReplayThenTruncate)
 
         EXPECT_EQ(aeronArchive->getRecordingPosition(recordingIdFromCounter), stopPosition);
         EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), aeron::NULL_VALUE);
-        EXPECT_EQ(aeronArchive->getStopOrRecordingPosition(recordingIdFromCounter), stopPosition);
+        EXPECT_EQ(aeronArchive->getMaxRecordedPosition(recordingIdFromCounter), stopPosition);
     }
 
     aeronArchive->stopRecording(subscriptionId);

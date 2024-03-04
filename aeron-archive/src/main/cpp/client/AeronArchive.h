@@ -1293,14 +1293,14 @@ public:
     }
 
     /**
-     * Get the stop or active recording position of a recording.
+     * Get the stop or active recorded position of a recording.
      *
      * @param recordingId of the recording that the stop of active recording position is being requested for.
      * @tparam IdleStrategy to use for polling operations.
      * @return the recorded length in bytes.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    inline std::int64_t getStopOrRecordingPosition(std::int64_t recordingId)
+    inline std::int64_t getMaxRecordedPosition(std::int64_t recordingId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
@@ -1308,13 +1308,13 @@ public:
 
         m_lastCorrelationId = m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->getStopOrRecordingPosition<IdleStrategy>(
+        if (!m_archiveProxy->getMaxRecordedPosition<IdleStrategy>(
             recordingId, m_lastCorrelationId, m_controlSessionId))
         {
-            throw ArchiveException("failed to send get recorded length request", SOURCEINFO);
+            throw ArchiveException("failed to send MaxRecordedPosition request", SOURCEINFO);
         }
 
-        return pollForResponse<IdleStrategy>("AeronArchive::getStopOrRecordingPosition", m_lastCorrelationId);
+        return pollForResponse<IdleStrategy>("AeronArchive::getMaxRecordedPosition", m_lastCorrelationId);
     }
 
     /**

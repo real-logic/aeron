@@ -1591,20 +1591,22 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            if (Aeron.NULL_VALUE == archiveId)
+            if (Aeron.NULL_VALUE != archiveId)
             {
-                ensureOpen();
-                ensureNotReentrant();
-
-                lastCorrelationId = aeron.nextCorrelationId();
-
-                if (!archiveProxy.archiveId(lastCorrelationId, controlSessionId))
-                {
-                    throw new ArchiveException("failed to send get recorded length request");
-                }
-
-                archiveId = pollForResponse(lastCorrelationId);
+                return archiveId;
             }
+
+            ensureOpen();
+            ensureNotReentrant();
+
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.archiveId(lastCorrelationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send get recorded length request");
+            }
+
+            archiveId = pollForResponse(lastCorrelationId);
             return archiveId;
         }
         finally

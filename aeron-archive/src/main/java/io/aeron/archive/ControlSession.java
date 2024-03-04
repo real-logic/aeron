@@ -461,12 +461,12 @@ final class ControlSession implements Session
         }
     }
 
-    void onGetStopOrRecordingPosition(final long correlationId, final long recordingId)
+    void onGetMaxRecordedPosition(final long correlationId, final long recordingId)
     {
         attemptToActivate();
         if (State.ACTIVE == state)
         {
-            conductor.getStopOrRecordingPosition(correlationId, recordingId, this);
+            conductor.getMaxRecordedPosition(correlationId, recordingId, this);
         }
     }
 

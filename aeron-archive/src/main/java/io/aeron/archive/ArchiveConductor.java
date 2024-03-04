@@ -975,16 +975,16 @@ abstract class ArchiveConductor
         }
     }
 
-    void getStopOrRecordingPosition(
+    void getMaxRecordedPosition(
         final long correlationId, final long recordingId, final ControlSession controlSession)
     {
         if (hasRecording(recordingId, correlationId, controlSession))
         {
             final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
-            final long position = null != recordingSession ?
+            final long maxRecordedPosition = null != recordingSession ?
                 recordingSession.recordingPosition().get() : catalog.stopPosition(recordingId);
 
-            controlSession.sendOkResponse(correlationId, position, controlResponseProxy);
+            controlSession.sendOkResponse(correlationId, maxRecordedPosition, controlResponseProxy);
         }
     }
 

@@ -979,9 +979,9 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 break;
             }
 
-            case StopOrRecordingPositionRequestDecoder.TEMPLATE_ID:
+            case MaxRecordedPositionRequestDecoder.TEMPLATE_ID:
             {
-                final StopOrRecordingPositionRequestDecoder decoder = decoders.stopOrRecordingPositionRequest;
+                final MaxRecordedPositionRequestDecoder decoder = decoders.maxRecordedPositionRequest;
                 decoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -994,7 +994,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 if (null != controlSession)
                 {
-                    controlSession.onGetStopOrRecordingPosition(correlationId, decoder.recordingId());
+                    controlSession.onGetMaxRecordedPosition(correlationId, decoder.recordingId());
                 }
                 break;
             }

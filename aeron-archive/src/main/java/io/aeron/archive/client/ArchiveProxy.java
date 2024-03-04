@@ -62,7 +62,7 @@ public final class ArchiveProxy
     private TruncateRecordingRequestEncoder truncateRecordingRequest;
     private PurgeRecordingRequestEncoder purgeRecordingRequest;
     private StopPositionRequestEncoder stopPositionRequest;
-    private StopOrRecordingPositionRequestEncoder stopOrRecordingPositionRequest;
+    private MaxRecordedPositionRequestEncoder maxRecordedPositionRequestEncoder;
     private FindLastMatchingRecordingRequestEncoder findLastMatchingRecordingRequest;
     private ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequest;
     private BoundedReplayRequestEncoder boundedReplayRequest;
@@ -876,28 +876,28 @@ public final class ArchiveProxy
     }
 
     /**
-     * Get the stop or active recording position of a recording.
+     * Get the stop or active recorded position of a recording.
      *
      * @param recordingId      of the recording that the stop of active recording position is being requested for.
      * @param correlationId    for this request.
      * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean getStopOrRecordingPosition(
+    public boolean getMaxRecordedPosition(
         final long recordingId, final long correlationId, final long controlSessionId)
     {
-        if (null == stopOrRecordingPositionRequest)
+        if (null == maxRecordedPositionRequestEncoder)
         {
-            stopOrRecordingPositionRequest = new StopOrRecordingPositionRequestEncoder();
+            maxRecordedPositionRequestEncoder = new MaxRecordedPositionRequestEncoder();
         }
 
-        stopOrRecordingPositionRequest
+        maxRecordedPositionRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeader)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId);
 
-        return offer(stopOrRecordingPositionRequest.encodedLength());
+        return offer(maxRecordedPositionRequestEncoder.encodedLength());
     }
 
     /**

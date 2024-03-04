@@ -54,8 +54,8 @@ class ControlRequestDecoders
     final DeleteDetachedSegmentsRequestDecoder deleteDetachedSegmentsRequest =
         new DeleteDetachedSegmentsRequestDecoder();
     final PurgeSegmentsRequestDecoder purgeSegmentsRequest = new PurgeSegmentsRequestDecoder();
-    final StopOrRecordingPositionRequestDecoder stopOrRecordingPositionRequest =
-        new StopOrRecordingPositionRequestDecoder();
+    final MaxRecordedPositionRequestDecoder maxRecordedPositionRequest =
+        new MaxRecordedPositionRequestDecoder();
     final AttachSegmentsRequestDecoder attachSegmentsRequest = new AttachSegmentsRequestDecoder();
     final MigrateSegmentsRequestDecoder migrateSegmentsRequest = new MigrateSegmentsRequestDecoder();
     final AuthConnectRequestDecoder authConnectRequest = new AuthConnectRequestDecoder();

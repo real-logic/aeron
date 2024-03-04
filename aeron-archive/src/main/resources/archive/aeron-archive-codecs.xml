@@ -563,7 +563,7 @@
         <data  name="encodedCredentials"   id="14" type="varDataEncoding" sinceVersion="8"/>
     </sbe:message>
 
-    <sbe:message name="StopOrRecordingPositionRequest"
+    <sbe:message name="MaxRecordedPositionRequest"
                  id="67"
                  description="Request the stop or active recording position of a recording."
                  sinceVersion="9">

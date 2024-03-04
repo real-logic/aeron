@@ -209,7 +209,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
             {
                 final int publicationSessionId = publication.sessionId();
                 final CountersReader countersReader = aeron.countersReader();
-                final int counterId = awaitRecordingCounter(publicationSessionId, countersReader);
+                final int counterId = awaitRecordingCounter(publicationSessionId, archive.archiveId(), countersReader);
                 final long newRecordingId = RecordingPos.getRecordingId(countersReader, counterId);
 
                 replayLocalSnapshotRecording(
@@ -229,10 +229,12 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         }
     }
 
-    private static int awaitRecordingCounter(final int publicationSessionId, final CountersReader countersReader)
+    private static int awaitRecordingCounter(
+        final int publicationSessionId, final long archiveId, final CountersReader countersReader)
     {
         int counterId;
-        while (NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(countersReader, publicationSessionId)))
+        while (NULL_VALUE ==
+            (counterId = RecordingPos.findCounterIdBySession(countersReader, publicationSessionId, archiveId)))
         {
             Thread.yield();
         }

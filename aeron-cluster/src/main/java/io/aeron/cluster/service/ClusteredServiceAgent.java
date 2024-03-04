@@ -1010,12 +1010,13 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
     private int awaitRecordingCounter(final int sessionId, final CountersReader counters, final AeronArchive archive)
     {
         idleStrategy.reset();
-        int counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
+        final long archiveId = archive.archiveId();
+        int counterId = RecordingPos.findCounterIdBySession(counters, sessionId, archiveId);
         while (NULL_COUNTER_ID == counterId)
         {
             idle();
             archive.checkForErrorResponse();
-            counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
+            counterId = RecordingPos.findCounterIdBySession(counters, sessionId, archiveId);
         }
 
         return counterId;

@@ -70,7 +70,8 @@ public class RecordedBasicPublisher
                 final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
                 // Wait for recording to have started before publishing.
                 final CountersReader counters = archive.context().aeron().countersReader();
-                int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                final long archiveId = archive.archiveId();
+                int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId(), archiveId);
                 while (CountersReader.NULL_COUNTER_ID == counterId)
                 {
                     if (!running.get())
@@ -79,7 +80,7 @@ public class RecordedBasicPublisher
                     }
 
                     idleStrategy.idle();
-                    counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                    counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId(), archiveId);
                 }
 
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);

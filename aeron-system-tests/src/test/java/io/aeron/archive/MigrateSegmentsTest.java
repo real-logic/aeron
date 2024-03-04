@@ -260,7 +260,8 @@ class MigrateSegmentsTest
         try (Publication publication = aeron.addExclusivePublication(channelUri, streamParams.streamId()))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId =
+                Tests.awaitRecordingCounterId(counters, publication.sessionId(), aeronArchive.archiveId());
 
             offerToPosition(publication, "ext-message-", extendPosition + SEGMENT_LENGTH + 1L);
             Tests.awaitPosition(counters, counterId, publication.position());
@@ -324,7 +325,8 @@ class MigrateSegmentsTest
         final long subscriptionId = aeronArchive.startRecording(
             channelUri, streamParams.streamId(), SourceLocation.LOCAL, false);
         final CountersReader counters = aeron.countersReader();
-        final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
+        final int counterId =
+            Tests.awaitRecordingCounterId(counters, publication.sessionId(), aeronArchive.archiveId());
         final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
         offerToPosition(publication, "src-message-", recordingParams.recordedPosition());

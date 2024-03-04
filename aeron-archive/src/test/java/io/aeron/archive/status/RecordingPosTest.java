@@ -19,15 +19,18 @@ import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.archive.ArchiveCounters;
 import org.agrona.BitUtil;
+import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
 
-import static io.aeron.archive.status.RecordingPos.RECORDING_POSITION_TYPE_ID;
+import static io.aeron.archive.status.RecordingPos.*;
 import static io.aeron.test.Tests.generateStringWithSuffix;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -153,5 +156,58 @@ class RecordingPosTest
         assertEquals(
             " - archiveId=888",
             tempBuffer.getStringWithoutLengthAscii(offset, ArchiveCounters.lengthOfArchiveIdLabel(archiveId)));
+    }
+
+    @Test
+    void shouldFindByRecordingIdAndArchiveId()
+    {
+        final long recordingId = 42;
+        final long archiveId = 19;
+        final int sourceIdentityLength = 10;
+        final CountersReader countersReader = mock(CountersReader.class);
+        when(countersReader.maxCounterId()).thenReturn(5);
+        when(countersReader.getCounterState(anyInt())).thenReturn(RECORD_ALLOCATED);
+        when(countersReader.getCounterTypeId(0)).thenReturn(0);
+        when(countersReader.getCounterTypeId(2)).thenReturn(0);
+        when(countersReader.getCounterTypeId(1)).thenReturn(RECORDING_POSITION_TYPE_ID);
+        when(countersReader.getCounterTypeId(3)).thenReturn(RECORDING_POSITION_TYPE_ID);
+        final AtomicBuffer metaBuffer = mock(AtomicBuffer.class);
+        when(countersReader.metaDataBuffer()).thenReturn(metaBuffer);
+        when(metaBuffer.getLong(METADATA_LENGTH + KEY_OFFSET + RECORDING_ID_OFFSET)).thenReturn(recordingId);
+        final int keyOffset = 3 * METADATA_LENGTH + KEY_OFFSET;
+        when(metaBuffer.getLong(keyOffset + RECORDING_ID_OFFSET)).thenReturn(recordingId);
+        when(metaBuffer.getInt(keyOffset + SOURCE_IDENTITY_LENGTH_OFFSET)).thenReturn(sourceIdentityLength);
+        when(metaBuffer.getLong(keyOffset + SOURCE_IDENTITY_OFFSET + sourceIdentityLength)).thenReturn(archiveId);
+
+        assertEquals(3, RecordingPos.findCounterIdByRecording(countersReader, recordingId, archiveId));
+
+        assertEquals(
+            NULL_RECORDING_ID,
+            RecordingPos.findCounterIdByRecording(countersReader, recordingId, Long.MIN_VALUE));
+    }
+
+    @Test
+    void shouldFindBySessionIdAndArchiveId()
+    {
+        final int sessionId = 888;
+        final long archiveId = 19;
+        final int sourceIdentityLength = 3;
+        final CountersReader countersReader = mock(CountersReader.class);
+        when(countersReader.maxCounterId()).thenReturn(5);
+        when(countersReader.getCounterState(anyInt())).thenReturn(RECORD_ALLOCATED);
+        when(countersReader.getCounterTypeId(anyInt())).thenReturn(RECORDING_POSITION_TYPE_ID);
+        final AtomicBuffer metaBuffer = mock(AtomicBuffer.class);
+        when(countersReader.metaDataBuffer()).thenReturn(metaBuffer);
+        when(metaBuffer.getInt(METADATA_LENGTH + KEY_OFFSET + SESSION_ID_OFFSET)).thenReturn(sessionId);
+        final int keyOffset = 2 * METADATA_LENGTH + KEY_OFFSET;
+        when(metaBuffer.getInt(keyOffset + SESSION_ID_OFFSET)).thenReturn(sessionId);
+        when(metaBuffer.getInt(keyOffset + SOURCE_IDENTITY_LENGTH_OFFSET)).thenReturn(sourceIdentityLength);
+        when(metaBuffer.getLong(keyOffset + SOURCE_IDENTITY_OFFSET + sourceIdentityLength)).thenReturn(archiveId);
+
+        assertEquals(2, RecordingPos.findCounterIdBySession(countersReader, sessionId, archiveId));
+
+        assertEquals(
+            NULL_RECORDING_ID,
+            RecordingPos.findCounterIdBySession(countersReader, sessionId, Long.MIN_VALUE));
     }
 }

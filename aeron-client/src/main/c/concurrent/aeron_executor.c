@@ -28,6 +28,8 @@ struct aeron_executor_task_stct
     int result;
     aeron_linked_queue_node_t *queue_node;
     bool shutdown;
+    int errcode;
+    char errmsg[AERON_ERROR_MAX_TOTAL_LENGTH];
 };
 
 #define USE_RETURN_QUEUE(_e) (NULL == (_e)->on_execution_complete)
@@ -90,6 +92,13 @@ static void *aeron_executor_dispatch(void *arg)
 
         task->queue_node = node;
         task->result = (NULL == task->on_execute) ? 0 : task->on_execute(task->clientd, executor->clientd);
+
+        if (task->result < 0)
+        {
+            task->errcode = aeron_errcode();
+            memcpy(task->errmsg, aeron_errmsg(), strlen(aeron_errmsg()));
+            aeron_err_clear();
+        }
 
         if (USE_RETURN_QUEUE(executor))
         {
@@ -233,7 +242,6 @@ int aeron_executor_submit(
     aeron_executor_task_on_complete_func_t on_complete,
     void *clientd)
 {
-    int result;
 
     if (executor->async)
     {
@@ -246,18 +254,21 @@ int aeron_executor_submit(
             return -1;
         }
 
-        result = aeron_blocking_linked_queue_offer(&executor->queue, task);
-    }
-    else
-    {
-        result = on_execute(clientd, executor->clientd);
-
-        // TODO if result is < 0, check the AERON_SET_ERR stuff?
-
-        result = on_complete(result, clientd, executor->clientd);
+        return aeron_blocking_linked_queue_offer(&executor->queue, task);
     }
 
-    return result;
+    /* not async, so just run execute and complete back to back */
+    int result = on_execute(clientd, executor->clientd);
+
+    /* error handling must be done inside the on_complete function */
+    on_complete(
+        result,
+        aeron_errcode(),
+        aeron_errmsg(),
+        clientd,
+        executor->clientd);
+
+    return 0;
 }
 
 int aeron_executor_process_completions(aeron_executor_t *executor, int limit)
@@ -275,22 +286,20 @@ int aeron_executor_process_completions(aeron_executor_t *executor, int limit)
             break;
         }
 
-        if (aeron_executor_task_do_complete(task) < 0)
-        {
-            // TODO check for errors
-        }
+        aeron_executor_task_do_complete(task);
     }
 
     return count;
 }
 
-int aeron_executor_task_do_complete(aeron_executor_task_t *task)
+void aeron_executor_task_do_complete(aeron_executor_task_t *task)
 {
-    int result = task->on_complete(task->result, task->clientd, task->executor->clientd);
-
-    // TODO if result is < 0, check the AERON_SET_ERR stuff?  Or should that be done by the caller?
+    task->on_complete(
+        task->result,
+        task->errcode,
+        task->errmsg,
+        task->clientd,
+        task->executor->clientd);
 
     aeron_executor_task_release(task);
-
-    return result;
 }

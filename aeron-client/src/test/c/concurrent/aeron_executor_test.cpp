@@ -63,13 +63,13 @@ public:
         return e->m_on_execute(task_clientd, e);
     }
 
-    static int on_complete(int result, void *task_clientd, void *executor_clientd)
+    static void on_complete(int result, int errcode, const char *errmsg, void *task_clientd, void *executor_clientd)
     {
         auto *e = (ExecutorTest *)executor_clientd;
 
         e->m_on_complete_count++;
 
-        return e->m_on_complete(result, task_clientd, e);
+        e->m_on_complete(result, task_clientd, e);
     }
 
 protected:
@@ -117,7 +117,7 @@ TEST_F(SyncExecutorTest, shouldExecuteSynchronously)
         SyncExecutorTest::on_complete,
         &tcd);
 
-    ASSERT_EQ(result, 2);
+    ASSERT_EQ(result, 0);
     ASSERT_EQ(m_on_execute_count, 1);
     ASSERT_EQ(m_on_complete_count, 1);
     ASSERT_EQ(tcd.some_value, 200);

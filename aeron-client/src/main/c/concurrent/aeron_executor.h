@@ -44,7 +44,8 @@ int aeron_executor_close(aeron_executor_t *executor);
 
 typedef int (*aeron_executor_task_on_execute_func_t)(void *task_clientd, void *executor_clientd);
 
-typedef int (*aeron_executor_task_on_complete_func_t)(int execution_result, void *task_clientd, void *executor_clientd);
+/* void return type means error handling must complete inside this function */
+typedef void (*aeron_executor_task_on_complete_func_t)(int execution_result, int errcode, const char *errmsg, void *task_clientd, void *executor_clientd);
 
 int aeron_executor_submit(
     aeron_executor_t *executor,
@@ -54,6 +55,6 @@ int aeron_executor_submit(
 
 int aeron_executor_process_completions(aeron_executor_t *executor, int limit);
 
-int aeron_executor_task_do_complete(aeron_executor_task_t *task);
+void aeron_executor_task_do_complete(aeron_executor_task_t *task);
 
 #endif //AERON_EXECUTOR_H

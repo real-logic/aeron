@@ -64,7 +64,13 @@ typedef struct aeron_udp_channel_stct
 }
 aeron_udp_channel_t;
 
-typedef int (*aeron_udp_channel_async_parse_complete_func_t)(aeron_driver_conductor_t *conductor, int result, aeron_udp_channel_t *channel, void *clientd);
+typedef void (*aeron_udp_channel_async_parse_complete_func_t)(
+    aeron_driver_conductor_t *conductor,
+    int result,
+    int errcode,
+    const char *errmsg,
+    aeron_udp_channel_t *channel,
+    void *clientd);
 
 typedef struct aeron_udp_channel_async_parse_stct aeron_udp_channel_async_parse_t;
 

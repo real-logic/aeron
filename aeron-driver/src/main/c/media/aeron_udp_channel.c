@@ -490,24 +490,29 @@ int aeron_udp_channel_async_parse_execute(void *task_clientd, void *executor_cli
     aeron_udp_channel_async_parse_t *async_parse = (aeron_udp_channel_async_parse_t *)task_clientd;
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)executor_clientd;
 
-    aeron_udp_channel_finish_parse(&conductor->name_resolver, &async_parse->channel, async_parse->is_destination);
+    if (aeron_udp_channel_finish_parse(
+        &conductor->name_resolver,
+        &async_parse->channel,
+        async_parse->is_destination) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
 
     return 0;
 }
 
 /* This is an aeron_executor 'complete' callback - it's called when 'aeron_executor_process_completions' is called */
-int aeron_udp_channel_async_parse_complete(int result, void *task_clientd, void *executor_clientd)
+void aeron_udp_channel_async_parse_complete(int result, int errcode, const char *errmsg, void *task_clientd, void *executor_clientd)
 {
     aeron_udp_channel_async_parse_t *async_parse = (aeron_udp_channel_async_parse_t *)task_clientd;
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)executor_clientd;
 
     void *clientd = (char *)async_parse + AERON_PADDED_SIZEOF(aeron_udp_channel_async_parse_t);
 
-    async_parse->on_complete(conductor, result, async_parse->channel, clientd);
+    async_parse->on_complete(conductor, result, errcode, errmsg, async_parse->channel, clientd);
 
     aeron_free(async_parse);
-
-    return 0;
 }
 
 /* This does some initial allocations of the aeron_udp_channel_t and then creates an 'async_parse' */
@@ -554,11 +559,15 @@ int aeron_udp_channel_submit_async_parse(
 {
     async_parse->on_complete = on_complete;
 
-    aeron_executor_submit(
+    if (aeron_executor_submit(
         executor,
         aeron_udp_channel_async_parse_execute,
         aeron_udp_channel_async_parse_complete,
-        async_parse);
+        async_parse) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
 
     return 0;
 }

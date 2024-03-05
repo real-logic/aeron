@@ -86,8 +86,8 @@ public final class AeronArchive implements AutoCloseable
     private boolean isClosed = false;
     private boolean isInCallback = false;
     private long lastCorrelationId = Aeron.NULL_VALUE;
-    private long archiveId = Aeron.NULL_VALUE;
     private final long controlSessionId;
+    private final long archiveId;
     private final long messageTimeoutNs;
     private final Context context;
     private final Aeron aeron;
@@ -105,7 +105,8 @@ public final class AeronArchive implements AutoCloseable
         final Context context,
         final ControlResponsePoller controlResponsePoller,
         final ArchiveProxy archiveProxy,
-        final long controlSessionId)
+        final long controlSessionId,
+        final long archiveId)
     {
         this.context = context;
         aeron = context.aeron();
@@ -118,6 +119,7 @@ public final class AeronArchive implements AutoCloseable
         this.controlResponsePoller = controlResponsePoller;
         this.archiveProxy = archiveProxy;
         this.controlSessionId = controlSessionId;
+        this.archiveId = archiveId;
     }
 
     /**
@@ -1588,31 +1590,7 @@ public final class AeronArchive implements AutoCloseable
      */
     public long archiveId()
     {
-        lock.lock();
-        try
-        {
-            if (Aeron.NULL_VALUE != archiveId)
-            {
-                return archiveId;
-            }
-
-            ensureOpen();
-            ensureNotReentrant();
-
-            lastCorrelationId = aeron.nextCorrelationId();
-
-            if (!archiveProxy.archiveId(lastCorrelationId, controlSessionId))
-            {
-                throw new ArchiveException("failed to send get recorded length request");
-            }
-
-            archiveId = pollForResponse(lastCorrelationId);
-            return archiveId;
-        }
-        finally
-        {
-            lock.unlock();
-        }
+        return archiveId;
     }
 
     /**
@@ -3507,13 +3485,14 @@ public final class AeronArchive implements AutoCloseable
      */
     public static final class AsyncConnect implements AutoCloseable
     {
+        static final int PROTOCOL_VERSION_WITH_ARCHIVE_ID = SemanticVersion.compose(1, 11, 0);
         private final Context ctx;
         private final ControlResponsePoller controlResponsePoller;
         private ArchiveProxy archiveProxy;
         private final long deadlineNs;
         private long publicationRegistrationId = Aeron.NULL_VALUE;
         private long correlationId = Aeron.NULL_VALUE;
-        private long challengeControlSessionId = Aeron.NULL_VALUE;
+        private long controlSessionId = Aeron.NULL_VALUE;
         private byte[] encodedCredentialsFromChallenge = null;
         private int step = 0;
 
@@ -3546,7 +3525,7 @@ public final class AeronArchive implements AutoCloseable
          */
         public void close()
         {
-            if (5 != step)
+            if (7 != step)
             {
                 final ErrorHandler errorHandler = ctx.errorHandler();
                 CloseHelper.close(errorHandler, controlResponsePoller.subscription());
@@ -3650,61 +3629,104 @@ public final class AeronArchive implements AutoCloseable
                 step(4);
             }
 
-            if (6 == step)
+            if (5 == step)
             {
-                if (!archiveProxy.tryChallengeResponse(
-                    encodedCredentialsFromChallenge, correlationId, challengeControlSessionId))
+                if (!archiveProxy.archiveId(correlationId, controlSessionId))
                 {
                     return null;
                 }
 
-                step(7);
+                step(6);
+            }
+
+            if (8 == step)
+            {
+                if (!archiveProxy.tryChallengeResponse(
+                    encodedCredentialsFromChallenge, correlationId, controlSessionId))
+                {
+                    return null;
+                }
+
+                step(9);
             }
 
             controlResponsePoller.poll();
 
             if (controlResponsePoller.isPollComplete() && controlResponsePoller.correlationId() == correlationId)
             {
-                final long controlSessionId = controlResponsePoller.controlSessionId();
+                controlSessionId = controlResponsePoller.controlSessionId();
                 if (controlResponsePoller.wasChallenged())
                 {
                     encodedCredentialsFromChallenge = ctx.credentialsSupplier().onChallenge(
                         controlResponsePoller.encodedChallenge());
 
                     correlationId = ctx.aeron().nextCorrelationId();
-                    challengeControlSessionId = controlSessionId;
 
-                    step(6);
+                    step(8);
                 }
                 else
                 {
                     final ControlResponseCode code = controlResponsePoller.code();
-                    if (code != ControlResponseCode.OK)
+                    if (ControlResponseCode.OK != code)
                     {
-                        if (code == ControlResponseCode.ERROR)
+                        if (ControlResponseCode.ERROR == code)
                         {
-                            archiveProxy.closeSession(controlSessionId);
+                            final String errorMessage = controlResponsePoller.errorMessage();
+                            final int errorCode = (int)controlResponsePoller.relevantId();
 
-                            throw new ArchiveException(
-                                "error: " + controlResponsePoller.errorMessage(),
-                                (int)controlResponsePoller.relevantId());
+                            archiveProxy.closeSession(controlSessionId);
+                            throw new ArchiveException(errorMessage, errorCode, correlationId);
                         }
 
-                        throw new ArchiveException("unexpected response: code=" + code);
+                        archiveProxy.closeSession(controlSessionId);
+                        throw new ArchiveException(
+                            "unexpected response: code=" + code, correlationId, AeronException.Category.ERROR);
                     }
 
-                    if (!archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE))
+                    if (6 == step)
                     {
-                        throw new ArchiveException("failed to send keep alive after archive connect");
+                        final long archiveId = controlResponsePoller.relevantId();
+                        if (!archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE))
+                        {
+                            archiveProxy.closeSession(controlSessionId);
+                            throw new ArchiveException("failed to send keep alive after archive connect");
+                        }
+
+                        aeronArchive = new AeronArchive(
+                            ctx, controlResponsePoller, archiveProxy, controlSessionId, archiveId);
+
+                        step(7);
                     }
+                    else
+                    {
+                        final int archiveProtocolVersion = controlResponsePoller.version();
+                        if (archiveProtocolVersion < PROTOCOL_VERSION_WITH_ARCHIVE_ID)
+                        {
+                            archiveProxy.closeSession(controlSessionId);
+                            throw new ArchiveException("archive's protocol (" +
+                                SemanticVersion.toString(archiveProtocolVersion) + ") does not support " +
+                                "`archive-id` command added in version (" +
+                                SemanticVersion.toString(PROTOCOL_VERSION_WITH_ARCHIVE_ID) + ")");
+                        }
 
-                    aeronArchive = new AeronArchive(ctx, controlResponsePoller, archiveProxy, controlSessionId);
+                        correlationId = ctx.aeron().nextCorrelationId();
 
-                    step(5);
+                        step(5);
+                    }
                 }
             }
 
             return aeronArchive;
+        }
+
+        long correlationId()
+        {
+            return correlationId;
+        }
+
+        long controlSessionId()
+        {
+            return controlSessionId;
         }
 
         private void step(final int step)

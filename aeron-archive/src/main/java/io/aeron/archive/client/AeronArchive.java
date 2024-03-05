@@ -3485,6 +3485,30 @@ public final class AeronArchive implements AutoCloseable
      */
     public static final class AsyncConnect implements AutoCloseable
     {
+        /**
+         * Represents connection state.
+         */
+        public enum State
+        {
+            ADD_PUBLICATION(0),
+            AWAIT_PUBLICATION_CONNECTED(1),
+            SEND_CONNECT_REQUEST(2),
+            AWAIT_SUBSCRIPTION_CONNECTED(3),
+            AWAIT_CONNECT_RESPONSE(4),
+            SEND_ARCHIVE_ID_REQUEST(5),
+            AWAIT_ARCHIVE_ID_RESULT(6),
+            CONNECTED(7),
+            SEND_CHALLENGE_RESPONSE(8),
+            AWAIT_CHALLENGE_RESPONSE(9);
+
+            final int step;
+
+            State(final int step)
+            {
+                this.step = step;
+            }
+        }
+
         static final int PROTOCOL_VERSION_WITH_ARCHIVE_ID = SemanticVersion.compose(1, 11, 0);
         private final Context ctx;
         private final ControlResponsePoller controlResponsePoller;
@@ -3494,7 +3518,7 @@ public final class AeronArchive implements AutoCloseable
         private long correlationId = Aeron.NULL_VALUE;
         private long controlSessionId = Aeron.NULL_VALUE;
         private byte[] encodedCredentialsFromChallenge = null;
-        private int step = 0;
+        private State state = State.ADD_PUBLICATION;
 
         AsyncConnect(final Context ctx)
         {
@@ -3517,7 +3541,7 @@ public final class AeronArchive implements AutoCloseable
             this.archiveProxy = archiveProxy;
 
             deadlineNs = ctx.aeron().context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
-            step = 1;
+            state = State.AWAIT_PUBLICATION_CONNECTED;
         }
 
         /**
@@ -3525,7 +3549,7 @@ public final class AeronArchive implements AutoCloseable
          */
         public void close()
         {
-            if (7 != step)
+            if (State.CONNECTED != state)
             {
                 final ErrorHandler errorHandler = ctx.errorHandler();
                 CloseHelper.close(errorHandler, controlResponsePoller.subscription());
@@ -3560,7 +3584,17 @@ public final class AeronArchive implements AutoCloseable
          */
         public int step()
         {
-            return step;
+            return state.step;
+        }
+
+        /**
+         * Get the current connection state.
+         *
+         * @return current state.
+         */
+        public State state()
+        {
+            return state;
         }
 
         /**
@@ -3574,7 +3608,7 @@ public final class AeronArchive implements AutoCloseable
             checkDeadline();
             AeronArchive aeronArchive = null;
 
-            if (0 == step)
+            if (State.ADD_PUBLICATION == state)
             {
                 final ExclusivePublication publication = ctx.aeron().getExclusivePublication(publicationRegistrationId);
                 if (null != publication)
@@ -3588,21 +3622,21 @@ public final class AeronArchive implements AutoCloseable
                         DEFAULT_RETRY_ATTEMPTS,
                         ctx.credentialsSupplier());
 
-                    step(1);
+                    state(State.AWAIT_PUBLICATION_CONNECTED);
                 }
             }
 
-            if (1 == step)
+            if (State.AWAIT_PUBLICATION_CONNECTED == state)
             {
                 if (!archiveProxy.publication().isConnected())
                 {
                     return null;
                 }
 
-                step(2);
+                state(State.SEND_CONNECT_REQUEST);
             }
 
-            if (2 == step)
+            if (State.SEND_CONNECT_REQUEST == state)
             {
                 final String responseChannel = controlResponsePoller.subscription().tryResolveChannelEndpointPort();
                 if (null == responseChannel)
@@ -3616,30 +3650,30 @@ public final class AeronArchive implements AutoCloseable
                     return null;
                 }
 
-                step(3);
+                state(State.AWAIT_SUBSCRIPTION_CONNECTED);
             }
 
-            if (3 == step)
+            if (State.AWAIT_SUBSCRIPTION_CONNECTED == state)
             {
                 if (!controlResponsePoller.subscription().isConnected())
                 {
                     return null;
                 }
 
-                step(4);
+                state(State.AWAIT_CONNECT_RESPONSE);
             }
 
-            if (5 == step)
+            if (State.SEND_ARCHIVE_ID_REQUEST == state)
             {
                 if (!archiveProxy.archiveId(correlationId, controlSessionId))
                 {
                     return null;
                 }
 
-                step(6);
+                state(State.AWAIT_ARCHIVE_ID_RESULT);
             }
 
-            if (8 == step)
+            if (State.SEND_CHALLENGE_RESPONSE == state)
             {
                 if (!archiveProxy.tryChallengeResponse(
                     encodedCredentialsFromChallenge, correlationId, controlSessionId))
@@ -3647,7 +3681,7 @@ public final class AeronArchive implements AutoCloseable
                     return null;
                 }
 
-                step(9);
+                state(State.AWAIT_CHALLENGE_RESPONSE);
             }
 
             controlResponsePoller.poll();
@@ -3662,7 +3696,7 @@ public final class AeronArchive implements AutoCloseable
 
                     correlationId = ctx.aeron().nextCorrelationId();
 
-                    step(8);
+                    state(State.SEND_CHALLENGE_RESPONSE);
                 }
                 else
                 {
@@ -3683,7 +3717,7 @@ public final class AeronArchive implements AutoCloseable
                             "unexpected response: code=" + code, correlationId, AeronException.Category.ERROR);
                     }
 
-                    if (6 == step)
+                    if (State.AWAIT_ARCHIVE_ID_RESULT == state)
                     {
                         final long archiveId = controlResponsePoller.relevantId();
                         if (!archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE))
@@ -3695,7 +3729,7 @@ public final class AeronArchive implements AutoCloseable
                         aeronArchive = new AeronArchive(
                             ctx, controlResponsePoller, archiveProxy, controlSessionId, archiveId);
 
-                        step(7);
+                        state(State.CONNECTED);
                     }
                     else
                     {
@@ -3711,7 +3745,7 @@ public final class AeronArchive implements AutoCloseable
 
                         correlationId = ctx.aeron().nextCorrelationId();
 
-                        step(5);
+                        state(State.SEND_ARCHIVE_ID_REQUEST);
                     }
                 }
             }
@@ -3729,18 +3763,18 @@ public final class AeronArchive implements AutoCloseable
             return controlSessionId;
         }
 
-        private void step(final int step)
+        private void state(final State newState)
         {
-            //System.out.println(this.step + " -> " + step);
-            this.step = step;
+//            System.out.println(state + " -> " + newState);
+            state = newState;
         }
 
         private void checkDeadline()
         {
             if (deadlineNs - ctx.aeron().context().nanoClock().nanoTime() < 0)
             {
-                throw new TimeoutException("Archive connect timeout: step=" + step +
-                    (step < 3 ?
+                throw new TimeoutException("Archive connect timeout: step=" + state +
+                    (state.step < 3 ?
                     " publication.uri=" + ctx.controlRequestChannel() :
                     " subscription.uri=" + ctx.controlResponseChannel()));
             }

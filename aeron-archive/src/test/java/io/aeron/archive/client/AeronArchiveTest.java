@@ -37,6 +37,7 @@ import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.archive.client.AeronArchive.AsyncConnect.State.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -206,34 +207,34 @@ class AeronArchiveTest
         try (AeronArchive.AsyncConnect asyncConnect =
             new AeronArchive.AsyncConnect(ctx, controlResponsePoller, archiveProxy))
         {
-            assertEquals(1, asyncConnect.step());
+            assertEquals(AWAIT_PUBLICATION_CONNECTED, asyncConnect.state());
 
             assertNull(asyncConnect.poll());
-            assertEquals(1, asyncConnect.step()); // publication not connected
+            assertEquals(AWAIT_PUBLICATION_CONNECTED, asyncConnect.state()); // publication not connected
 
             assertNull(asyncConnect.poll());
-            assertEquals(2, asyncConnect.step()); // channel not resolved
+            assertEquals(SEND_CONNECT_REQUEST, asyncConnect.state()); // channel not resolved
             assertEquals(Aeron.NULL_VALUE, asyncConnect.correlationId());
 
             when(archiveProxy.tryConnect(anyString(), anyInt(), anyLong())).thenReturn(false, true);
             assertNull(asyncConnect.poll());
-            assertEquals(2, asyncConnect.step()); // tryConnect failed
+            assertEquals(SEND_CONNECT_REQUEST, asyncConnect.state()); // tryConnect failed
             assertEquals(lastCorrelationId.get(), asyncConnect.correlationId());
 
             assertNull(asyncConnect.poll());
-            assertEquals(3, asyncConnect.step()); // subscription not connected
+            assertEquals(AWAIT_SUBSCRIPTION_CONNECTED, asyncConnect.state()); // subscription not connected
 
             final long correlationIdConnect = asyncConnect.correlationId();
             assertEquals(lastCorrelationId.get(), correlationIdConnect);
 
             when(controlResponsePoller.isPollComplete()).thenReturn(false);
             assertNull(asyncConnect.poll());
-            assertEquals(4, asyncConnect.step()); // poll not complete
+            assertEquals(AWAIT_CONNECT_RESPONSE, asyncConnect.state()); // poll not complete
 
             when(controlResponsePoller.isPollComplete()).thenReturn(true);
             when(controlResponsePoller.correlationId()).thenReturn(-correlationIdConnect);
             assertNull(asyncConnect.poll());
-            assertEquals(4, asyncConnect.step()); // wrong correlationId
+            assertEquals(AWAIT_CONNECT_RESPONSE, asyncConnect.state()); // wrong correlationId
 
             when(controlResponsePoller.isPollComplete()).thenReturn(true);
             when(controlResponsePoller.correlationId()).thenReturn(correlationIdConnect);
@@ -243,7 +244,7 @@ class AeronArchiveTest
             final long controlSessionIdConnect = 3759235739475L;
             when(controlResponsePoller.controlSessionId()).thenReturn(controlSessionIdConnect);
             assertNull(asyncConnect.poll());
-            assertEquals(5, asyncConnect.step()); // need to send `archive-id` request
+            assertEquals(SEND_ARCHIVE_ID_REQUEST, asyncConnect.state()); // need to send `archive-id` request
             final long correlationIdArchiveId = lastCorrelationId.get();
             assertEquals(correlationIdArchiveId, asyncConnect.correlationId());
             assertNotEquals(correlationIdConnect, asyncConnect.correlationId());
@@ -252,10 +253,10 @@ class AeronArchiveTest
             when(archiveProxy.archiveId(asyncConnect.correlationId(), asyncConnect.controlSessionId()))
                 .thenReturn(false, true);
             assertNull(asyncConnect.poll());
-            assertEquals(5, asyncConnect.step()); // failed to send `archive-id` request
+            assertEquals(SEND_ARCHIVE_ID_REQUEST, asyncConnect.state()); // failed to send `archive-id` request
 
             assertNull(asyncConnect.poll());
-            assertEquals(6, asyncConnect.step()); // wrong correlationId
+            assertEquals(AWAIT_ARCHIVE_ID_RESULT, asyncConnect.state()); // wrong correlationId
 
             final long controlSessionIdArchiveId = Long.MIN_VALUE;
             final long archiveId = 8888;
@@ -266,7 +267,7 @@ class AeronArchiveTest
 
             aeronArchive = asyncConnect.poll();
             assertNotNull(aeronArchive);
-            assertEquals(7, asyncConnect.step());
+            assertEquals(CONNECTED, asyncConnect.state());
             assertEquals(controlSessionIdArchiveId, asyncConnect.controlSessionId());
             assertEquals(controlSessionIdArchiveId, aeronArchive.controlSessionId());
             assertEquals(archiveId, aeronArchive.archiveId());
@@ -309,23 +310,23 @@ class AeronArchiveTest
         try (AeronArchive.AsyncConnect asyncConnect =
             new AeronArchive.AsyncConnect(ctx, controlResponsePoller, archiveProxy))
         {
-            assertEquals(1, asyncConnect.step());
+            assertEquals(AWAIT_PUBLICATION_CONNECTED, asyncConnect.state());
 
             assertNull(asyncConnect.poll());
-            assertEquals(1, asyncConnect.step()); // publication not connected
+            assertEquals(AWAIT_PUBLICATION_CONNECTED, asyncConnect.state()); // publication not connected
 
             assertNull(asyncConnect.poll());
-            assertEquals(2, asyncConnect.step()); // channel not resolved
+            assertEquals(SEND_CONNECT_REQUEST, asyncConnect.state()); // channel not resolved
             assertEquals(Aeron.NULL_VALUE, asyncConnect.correlationId());
 
             when(archiveProxy.tryConnect(anyString(), anyInt(), anyLong())).thenReturn(false, true);
 
             assertNull(asyncConnect.poll());
-            assertEquals(2, asyncConnect.step()); // tryConnect failed
+            assertEquals(SEND_CONNECT_REQUEST, asyncConnect.state()); // tryConnect failed
             assertEquals(lastCorrelationId.get(), asyncConnect.correlationId());
 
             assertNull(asyncConnect.poll());
-            assertEquals(3, asyncConnect.step()); // subscription not connected
+            assertEquals(AWAIT_SUBSCRIPTION_CONNECTED, asyncConnect.state()); // subscription not connected
 
             final long correlationIdConnect = asyncConnect.correlationId();
             assertEquals(lastCorrelationId.get(), correlationIdConnect);
@@ -333,13 +334,13 @@ class AeronArchiveTest
             when(controlResponsePoller.isPollComplete()).thenReturn(false);
 
             assertNull(asyncConnect.poll());
-            assertEquals(4, asyncConnect.step()); // poll not complete
+            assertEquals(AWAIT_CONNECT_RESPONSE, asyncConnect.state()); // poll not complete
 
             when(controlResponsePoller.isPollComplete()).thenReturn(true);
             when(controlResponsePoller.correlationId()).thenReturn(-correlationIdConnect);
 
             assertNull(asyncConnect.poll());
-            assertEquals(4, asyncConnect.step()); // wrong correlationId
+            assertEquals(AWAIT_CONNECT_RESPONSE, asyncConnect.state()); // wrong correlationId
 
             when(controlResponsePoller.isPollComplete()).thenReturn(true);
             when(controlResponsePoller.correlationId()).thenReturn(correlationIdConnect);
@@ -350,7 +351,7 @@ class AeronArchiveTest
             when(controlResponsePoller.encodedChallenge()).thenReturn(encodedChallenge);
 
             assertNull(asyncConnect.poll());
-            assertEquals(8, asyncConnect.step()); // need to send `challenge` response
+            assertEquals(SEND_CHALLENGE_RESPONSE, asyncConnect.state()); // need to send `challenge` response
             assertEquals(controlSessionIdChallenge, asyncConnect.controlSessionId());
             final long correlationIdChallenge = lastCorrelationId.get();
             assertEquals(correlationIdChallenge, asyncConnect.correlationId());
@@ -361,7 +362,7 @@ class AeronArchiveTest
                 challengeResponseBytes, correlationIdChallenge, controlSessionIdChallenge)).thenReturn(false, true);
 
             assertNull(asyncConnect.poll());
-            assertEquals(8, asyncConnect.step()); // failed to send `challenge` response
+            assertEquals(SEND_CHALLENGE_RESPONSE, asyncConnect.state()); // failed to send `challenge` response
 
             when(controlResponsePoller.correlationId()).thenReturn(Long.MAX_VALUE);
             when(controlResponsePoller.wasChallenged()).thenReturn(false);
@@ -370,24 +371,24 @@ class AeronArchiveTest
                 .thenReturn(AeronArchive.AsyncConnect.PROTOCOL_VERSION_WITH_ARCHIVE_ID);
 
             assertNull(asyncConnect.poll());
-            assertEquals(9, asyncConnect.step()); // wrong correlationId
+            assertEquals(AWAIT_CHALLENGE_RESPONSE, asyncConnect.state()); // wrong correlationId
 
             assertEquals(correlationIdChallenge, asyncConnect.correlationId());
             when(controlResponsePoller.correlationId()).thenReturn(correlationIdChallenge);
 
             assertNull(asyncConnect.poll());
-            assertEquals(5, asyncConnect.step()); // need to send `archive-id` request
+            assertEquals(SEND_ARCHIVE_ID_REQUEST, asyncConnect.state()); // need to send `archive-id` request
 
             when(archiveProxy.archiveId(asyncConnect.correlationId(), asyncConnect.controlSessionId()))
                 .thenReturn(false, true);
 
             assertNull(asyncConnect.poll());
-            assertEquals(5, asyncConnect.step()); // failed to send `archive-id` request
+            assertEquals(SEND_ARCHIVE_ID_REQUEST, asyncConnect.state()); // failed to send `archive-id` request
             assertNotEquals(correlationIdChallenge, asyncConnect.correlationId());
             final long correlationIdArchiveId = asyncConnect.correlationId();
 
             assertNull(asyncConnect.poll());
-            assertEquals(6, asyncConnect.step()); // wrong correlationId
+            assertEquals(AWAIT_ARCHIVE_ID_RESULT, asyncConnect.state()); // wrong correlationId
 
             final long controlSessionIdArchiveId = -4345983675937534593L;
             final long archiveId = -42;
@@ -398,7 +399,7 @@ class AeronArchiveTest
 
             aeronArchive = asyncConnect.poll();
             assertNotNull(aeronArchive);
-            assertEquals(7, asyncConnect.step());
+            assertEquals(CONNECTED, asyncConnect.state());
             assertEquals(controlSessionIdArchiveId, asyncConnect.controlSessionId());
             assertEquals(controlSessionIdArchiveId, aeronArchive.controlSessionId());
             assertEquals(archiveId, aeronArchive.archiveId());
@@ -588,7 +589,7 @@ class AeronArchiveTest
             new AeronArchive.AsyncConnect(ctx, controlResponsePoller, archiveProxy);
 
         asyncConnect.poll();
-        assertEquals(5, asyncConnect.step());
+        assertEquals(SEND_ARCHIVE_ID_REQUEST, asyncConnect.state());
 
         final ArchiveException exception = assertThrowsExactly(ArchiveException.class, asyncConnect::poll);
 

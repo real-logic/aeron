@@ -165,7 +165,7 @@ public final class RecordingPos
      *
      * @param countersReader to search within.
      * @param recordingId    for the active recording.
-     * @param archiveId      to target specific Archive.
+     * @param archiveId      to target specific Archive. Use {@link Aeron#NULL_VALUE} to emulate old behavior.
      * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
      */
     public static int findCounterIdByRecording(
@@ -185,7 +185,7 @@ public final class RecordingPos
                     {
                         final int sourceIdentityLength = buffer.getInt(keyOffset + SOURCE_IDENTITY_LENGTH_OFFSET);
                         final int archiveIdOffset = keyOffset + SOURCE_IDENTITY_OFFSET + sourceIdentityLength;
-                        if (buffer.getLong(archiveIdOffset) == archiveId)
+                        if (Aeron.NULL_VALUE == archiveId || buffer.getLong(archiveIdOffset) == archiveId)
                         {
                             return i;
                         }
@@ -239,7 +239,7 @@ public final class RecordingPos
      *
      * @param countersReader to search within.
      * @param sessionId      for the active recording.
-     * @param archiveId      to target specific Archive.
+     * @param archiveId      to target specific Archive. Use {@link Aeron#NULL_VALUE} to emulate old behavior.
      * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
      */
     public static int findCounterIdBySession(
@@ -259,7 +259,7 @@ public final class RecordingPos
                     {
                         final int sourceIdentityLength = buffer.getInt(keyOffset + SOURCE_IDENTITY_LENGTH_OFFSET);
                         final int archiveIdOffset = keyOffset + SOURCE_IDENTITY_OFFSET + sourceIdentityLength;
-                        if (buffer.getLong(archiveIdOffset) == archiveId)
+                        if (Aeron.NULL_VALUE == archiveId || buffer.getLong(archiveIdOffset) == archiveId)
                         {
                             return i;
                         }

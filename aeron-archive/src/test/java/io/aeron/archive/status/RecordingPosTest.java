@@ -24,6 +24,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.status.RecordingPos.*;
 import static io.aeron.test.Tests.generateStringWithSuffix;
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -184,6 +185,8 @@ class RecordingPosTest
         assertEquals(
             NULL_RECORDING_ID,
             RecordingPos.findCounterIdByRecording(countersReader, recordingId, Long.MIN_VALUE));
+
+        assertEquals(1, RecordingPos.findCounterIdByRecording(countersReader, recordingId, NULL_VALUE));
     }
 
     @Test
@@ -209,5 +212,7 @@ class RecordingPosTest
         assertEquals(
             NULL_RECORDING_ID,
             RecordingPos.findCounterIdBySession(countersReader, sessionId, Long.MIN_VALUE));
+
+        assertEquals(1, RecordingPos.findCounterIdBySession(countersReader, sessionId, NULL_VALUE));
     }
 }

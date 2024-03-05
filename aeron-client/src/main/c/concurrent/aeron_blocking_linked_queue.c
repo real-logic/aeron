@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <sys/errno.h>
+#include <errno.h>
 #include "concurrent/aeron_blocking_linked_queue.h"
 #include "util/aeron_error.h"
 

@@ -58,7 +58,10 @@ typedef pthread_cond_t aeron_cond_t;
 
 #elif defined(AERON_COMPILER_MSVC)
 
-typedef void *aeron_mutex_t;
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
+typedef CRITICAL_SECTION aeron_mutex_t;
 
 struct aeron_thread_stct;
 typedef struct aeron_thread_stct *aeron_thread_t;
@@ -71,6 +74,8 @@ AERON_INIT_ONCE;
 
 typedef unsigned long pthread_attr_t;
 typedef unsigned long pthread_key_t;
+
+typedef CONDITION_VARIABLE aeron_cond_t;
 
 #define AERON_INIT_ONCE_VALUE {0}
 
@@ -94,12 +99,6 @@ int aeron_thread_key_delete(pthread_key_t key);
 int aeron_thread_set_specific(pthread_key_t key, const void *pointer);
 
 void *aeron_thread_get_specific(pthread_key_t key);
-
-typedef struct aeron_cond_t_stct
-{
-    int something;
-}
-aeron_cond_t;
 
 int aeron_cond_init(aeron_cond_t *cv, void *attr);
 

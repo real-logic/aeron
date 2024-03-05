@@ -277,6 +277,11 @@ int aeron_executor_process_completions(aeron_executor_t *executor, int limit)
     aeron_linked_queue_node_t *node;
     int count = 0;
 
+    if (!executor->async || !USE_RETURN_QUEUE(executor))
+    {
+        return 0;
+    }
+
     for (; count < limit; count++)
     {
         task = aeron_blocking_linked_queue_poll_ex(&executor->return_queue, &node);

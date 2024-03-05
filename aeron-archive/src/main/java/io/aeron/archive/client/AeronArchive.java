@@ -3720,32 +3720,20 @@ public final class AeronArchive implements AutoCloseable
                     if (State.AWAIT_ARCHIVE_ID_RESULT == state)
                     {
                         final long archiveId = controlResponsePoller.relevantId();
-                        if (!archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE))
-                        {
-                            archiveProxy.closeSession(controlSessionId);
-                            throw new ArchiveException("failed to send keep alive after archive connect");
-                        }
-
-                        aeronArchive = new AeronArchive(
-                            ctx, controlResponsePoller, archiveProxy, controlSessionId, archiveId);
-
-                        state(State.CONNECTED);
+                        aeronArchive = transitionToConnected(archiveId);
                     }
                     else
                     {
                         final int archiveProtocolVersion = controlResponsePoller.version();
                         if (archiveProtocolVersion < PROTOCOL_VERSION_WITH_ARCHIVE_ID)
                         {
-                            archiveProxy.closeSession(controlSessionId);
-                            throw new ArchiveException("archive's protocol (" +
-                                SemanticVersion.toString(archiveProtocolVersion) + ") does not support " +
-                                "`archive-id` command added in version (" +
-                                SemanticVersion.toString(PROTOCOL_VERSION_WITH_ARCHIVE_ID) + ")");
+                            aeronArchive = transitionToConnected(Aeron.NULL_VALUE);
                         }
-
-                        correlationId = ctx.aeron().nextCorrelationId();
-
-                        state(State.SEND_ARCHIVE_ID_REQUEST);
+                        else
+                        {
+                            correlationId = ctx.aeron().nextCorrelationId();
+                            state(State.SEND_ARCHIVE_ID_REQUEST);
+                        }
                     }
                 }
             }
@@ -3783,6 +3771,21 @@ public final class AeronArchive implements AutoCloseable
             {
                 throw new AeronException("unexpected interrupt");
             }
+        }
+
+        private AeronArchive transitionToConnected(final long archiveId)
+        {
+            if (!archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE))
+            {
+                archiveProxy.closeSession(controlSessionId);
+                throw new ArchiveException("failed to send keep alive after archive connect");
+            }
+
+            final AeronArchive aeronArchive = new AeronArchive(
+                ctx, controlResponsePoller, archiveProxy, controlSessionId, archiveId);
+
+            state(State.CONNECTED);
+            return aeronArchive;
         }
     }
 

@@ -505,7 +505,7 @@ class AeronArchiveTest
     }
 
     @Test
-    void shouldThrowArchiveExceptionIfArchiveIdNotSupported()
+    void shouldReturnNullValueIfArchiveIdCommandNotSupported()
     {
         final Aeron.Context aeronContext = new Aeron.Context();
         aeronContext.nanoClock(SystemNanoClock.INSTANCE);
@@ -535,21 +535,15 @@ class AeronArchiveTest
         when(controlResponsePoller.code()).thenReturn(ControlResponseCode.OK);
         final int invalidVersion = SemanticVersion.compose(1, 5, 9);
         when(controlResponsePoller.version()).thenReturn(invalidVersion);
+        when(archiveProxy.keepAlive(anyLong(), anyLong())).thenReturn(true);
 
         final AeronArchive.AsyncConnect asyncConnect =
             new AeronArchive.AsyncConnect(ctx, controlResponsePoller, archiveProxy);
 
-        final ArchiveException exception = assertThrowsExactly(ArchiveException.class, asyncConnect::poll);
-
-        assertEquals("ERROR - archive's protocol (" +
-            SemanticVersion.toString(invalidVersion) + ") does not support " +
-            "`archive-id` command added in version (" +
-            SemanticVersion.toString(AeronArchive.AsyncConnect.PROTOCOL_VERSION_WITH_ARCHIVE_ID) + ")",
-            exception.getMessage());
-        assertEquals(AeronException.Category.ERROR, exception.category());
-        assertEquals(ArchiveException.GENERIC, exception.errorCode());
-        assertEquals(Aeron.NULL_VALUE, exception.correlationId());
-        verify(archiveProxy, times(1)).closeSession(controlSessionId);
+        final AeronArchive aeronArchive = asyncConnect.poll();
+        assertNotNull(aeronArchive);
+        assertEquals(CONNECTED, asyncConnect.state());
+        assertEquals(Aeron.NULL_VALUE, aeronArchive.archiveId());
     }
 
     @Test

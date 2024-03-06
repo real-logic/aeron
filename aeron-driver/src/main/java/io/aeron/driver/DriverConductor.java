@@ -87,6 +87,7 @@ public final class DriverConductor implements Agent
         SOCKET_SNDBUF_PARAM_NAME,
         RESPONSE_CORRELATION_ID_PARAM_NAME
     };
+
     private int nextSessionId = BitUtil.generateRandomisedId();
     private final long timerIntervalNs;
     private final long clientLivenessTimeoutNs;
@@ -236,13 +237,17 @@ public final class DriverConductor implements Agent
         {
             workCount += clientCommandAdapter.receive();
         }
-        workCount +=
-            CommandProxy.drainQueue(driverCmdQueue, Configuration.COMMAND_DRAIN_LIMIT, CommandProxy.RUN_TASK);
+        workCount += drainCommandQueue();
         workCount += trackStreamPositions(workCount, nowNs);
         workCount += nameResolver.doWork(cachedEpochClock.time());
         workCount += freeEndOfLifeResources(ctx.resourceFreeLimit());
 
         return workCount;
+    }
+
+    boolean notAcceptingClientCommands()
+    {
+        return senderProxy.isApplyingBackpressure() || receiverProxy.isApplyingBackpressure();
     }
 
     @SuppressWarnings("MethodLength")
@@ -2370,6 +2375,25 @@ public final class DriverConductor implements Agent
             workCount += ipcPublications.get(i).updatePublisherPositionAndLimit();
         }
 
+        return workCount;
+    }
+
+    private int drainCommandQueue()
+    {
+        int workCount = 0;
+        for (int i = 0; i < Configuration.COMMAND_DRAIN_LIMIT; i++)
+        {
+            final Runnable command = driverCmdQueue.poll();
+            if (null != command)
+            {
+                command.run();
+                workCount++;
+            }
+            else
+            {
+                break;
+            }
+        }
         return workCount;
     }
 

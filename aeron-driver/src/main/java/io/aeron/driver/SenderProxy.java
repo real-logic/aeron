@@ -17,7 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.ChannelUri;
 import io.aeron.driver.media.SendChannelEndpoint;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -31,7 +31,7 @@ final class SenderProxy extends CommandProxy
 
     SenderProxy(
         final ThreadingMode threadingMode,
-        final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue,
+        final OneToOneConcurrentArrayQueue<Runnable> commandQueue,
         final AtomicCounter failCount)
     {
         super(threadingMode, commandQueue, failCount);

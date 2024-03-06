@@ -541,8 +541,8 @@ public final class MediaDriver implements AutoCloseable
         private DataTransportPoller dataTransportPoller;
         private ControlTransportPoller controlTransportPoller;
         private ManyToOneConcurrentLinkedQueue<Runnable> driverCommandQueue;
-        private ManyToOneConcurrentLinkedQueue<Runnable> receiverCommandQueue;
-        private ManyToOneConcurrentLinkedQueue<Runnable> senderCommandQueue;
+        private OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue;
+        private OneToOneConcurrentArrayQueue<Runnable> senderCommandQueue;
         private ReceiverProxy receiverProxy;
         private SenderProxy senderProxy;
         private DriverConductorProxy driverConductorProxy;
@@ -3563,23 +3563,23 @@ public final class MediaDriver implements AutoCloseable
             return channelSendTimestampClock;
         }
 
-        ManyToOneConcurrentLinkedQueue<Runnable> receiverCommandQueue()
+        OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;
         }
 
-        Context receiverCommandQueue(final ManyToOneConcurrentLinkedQueue<Runnable> receiverCommandQueue)
+        Context receiverCommandQueue(final OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue)
         {
             this.receiverCommandQueue = receiverCommandQueue;
             return this;
         }
 
-        ManyToOneConcurrentLinkedQueue<Runnable> senderCommandQueue()
+        OneToOneConcurrentArrayQueue<Runnable> senderCommandQueue()
         {
             return senderCommandQueue;
         }
 
-        Context senderCommandQueue(final ManyToOneConcurrentLinkedQueue<Runnable> senderCommandQueue)
+        Context senderCommandQueue(final OneToOneConcurrentArrayQueue<Runnable> senderCommandQueue)
         {
             this.senderCommandQueue = senderCommandQueue;
             return this;
@@ -3839,12 +3839,12 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == receiverCommandQueue)
             {
-                receiverCommandQueue = new ManyToOneConcurrentLinkedQueue<>();
+                receiverCommandQueue = new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
             }
 
             if (null == senderCommandQueue)
             {
-                senderCommandQueue = new ManyToOneConcurrentLinkedQueue<>();
+                senderCommandQueue = new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
             }
 
             if (null == retransmitUnicastDelayGenerator)

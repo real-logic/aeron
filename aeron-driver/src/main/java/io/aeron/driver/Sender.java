@@ -22,8 +22,8 @@ import io.aeron.driver.status.DutyCycleStallTracker;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.CachedNanoClock;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -66,7 +66,7 @@ public final class Sender extends SenderRhsPadding implements Agent
     private final long reResolutionCheckIntervalNs;
     private final int dutyCycleRatio;
     private final ControlTransportPoller controlTransportPoller;
-    private final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue;
+    private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesSent;
     private final AtomicCounter resolutionChanges;
     private final AtomicCounter shortSends;
@@ -129,8 +129,7 @@ public final class Sender extends SenderRhsPadding implements Agent
         cachedNanoClock.update(nowNs);
         dutyCycleTracker.measureAndUpdate(nowNs);
 
-        final int workCount =
-            CommandProxy.drainQueue(commandQueue, Configuration.COMMAND_DRAIN_LIMIT, CommandProxy.RUN_TASK);
+        final int workCount = commandQueue.drain(CommandProxy.RUN_TASK, Configuration.COMMAND_DRAIN_LIMIT);
 
         final long shortSendsBefore = shortSends.get();
         final int bytesSent = doSend(nowNs);

@@ -24,19 +24,60 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
 
+import static io.aeron.driver.ThreadingMode.INVOKER;
+import static io.aeron.driver.ThreadingMode.SHARED;
+
 /**
  * Proxy for sending commands to the {@link DriverConductor}.
  */
-public final class DriverConductorProxy extends CommandProxy
+public final class DriverConductorProxy
 {
     private DriverConductor driverConductor;
+    private final ThreadingMode threadingMode;
+    private final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue;
+    private final AtomicCounter failCount;
+    private final boolean notConcurrent;
 
     DriverConductorProxy(
         final ThreadingMode threadingMode,
         final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue,
         final AtomicCounter failCount)
     {
-        super(threadingMode, commandQueue, failCount);
+        this.threadingMode = threadingMode;
+        this.commandQueue = commandQueue;
+        this.failCount = failCount;
+        notConcurrent = SHARED == threadingMode || INVOKER == threadingMode;
+    }
+
+    /**
+     * Is the driver conductor not concurrent with the sender and receiver threads.
+     *
+     * @return true if the {@link DriverConductor} is on the same thread as the sender and receiver.
+     */
+    public boolean notConcurrent()
+    {
+        return notConcurrent;
+    }
+
+    /**
+     * Get the threading mode of the driver.
+     *
+     * @return ThreadingMode of the driver.
+     */
+    public ThreadingMode threadingMode()
+    {
+        return threadingMode;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return getClass().getSimpleName() + "{" +
+            "threadingMode=" + threadingMode +
+            ", failCount=" + failCount +
+            '}';
     }
 
     /**
@@ -206,4 +247,11 @@ public final class DriverConductorProxy extends CommandProxy
         }
     }
 
+    private void offer(final Runnable cmd)
+    {
+        if (!commandQueue.offer(cmd))
+        {
+            throw new IllegalStateException("offer failed");
+        }
+    }
 }

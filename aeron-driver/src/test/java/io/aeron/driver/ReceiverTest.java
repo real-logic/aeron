@@ -40,6 +40,7 @@ import org.agrona.ErrorHandler;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.AtomicLongPosition;
@@ -54,6 +55,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static org.agrona.BitUtil.align;
@@ -155,7 +157,7 @@ class ReceiverTest
             .controlTransportPoller(mockControlTransportPoller)
             .logFactory(new TestLogFactory())
             .systemCounters(mockSystemCounters)
-            .receiverCommandQueue(new ManyToOneConcurrentLinkedQueue<>())
+            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .nanoClock(nanoClock)
             .cachedNanoClock(nanoClock)
             .senderCachedNanoClock(nanoClock)
@@ -232,9 +234,7 @@ class ReceiverTest
             SOURCE_IDENTITY,
             congestionControl);
 
-        final int messagesRead = CommandProxy.drainQueue(
-            toConductorQueue,
-            Integer.MAX_VALUE,
+        final int messagesRead = drainConductorQueue(
             (e) ->
             {
                 // pass in new term buffer from conductor, which should trigger SM
@@ -278,9 +278,7 @@ class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = CommandProxy.drainQueue(
-            toConductorQueue,
-            Integer.MAX_VALUE,
+        final int commandsRead = drainConductorQueue(
             (e) ->
             {
                 final PublicationImage image = new PublicationImage(
@@ -346,9 +344,7 @@ class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = CommandProxy.drainQueue(
-            toConductorQueue,
-            Integer.MAX_VALUE,
+        final int commandsRead = drainConductorQueue(
             (e) ->
             {
                 final PublicationImage image = new PublicationImage(
@@ -416,9 +412,7 @@ class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = CommandProxy.drainQueue(
-            toConductorQueue,
-            Integer.MAX_VALUE,
+        final int commandsRead = drainConductorQueue(
             (e) ->
             {
                 final PublicationImage image = new PublicationImage(
@@ -491,9 +485,7 @@ class ReceiverTest
         fillSetupFrame(setupHeader, initialTermOffset);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = CommandProxy.drainQueue(
-            toConductorQueue,
-            Integer.MAX_VALUE,
+        final int commandsRead = drainConductorQueue(
             (e) ->
             {
                 final PublicationImage image = new PublicationImage(
@@ -636,5 +628,24 @@ class ReceiverTest
             .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
             .flags((byte)0)
             .version(HeaderFlyweight.CURRENT_VERSION);
+    }
+
+    private int drainConductorQueue(final Consumer<Runnable> consumer)
+    {
+        int workCount = 0;
+        for (;;)
+        {
+            final Runnable command = toConductorQueue.poll();
+            if (null != command)
+            {
+                consumer.accept(command);
+                workCount++;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return workCount;
     }
 }

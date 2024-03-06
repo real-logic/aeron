@@ -15,7 +15,8 @@
  */
 package io.aeron.driver;
 
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import org.agrona.concurrent.AgentTerminationException;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.util.function.Consumer;
@@ -27,39 +28,19 @@ abstract class CommandProxy
 {
     static final Consumer<Runnable> RUN_TASK = Runnable::run;
     private final ThreadingMode threadingMode;
-    private final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue;
+    private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter failCount;
     private final boolean notConcurrent;
 
     CommandProxy(
         final ThreadingMode threadingMode,
-        final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue,
+        final OneToOneConcurrentArrayQueue<Runnable> commandQueue,
         final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
         this.failCount = failCount;
         notConcurrent = SHARED == threadingMode || INVOKER == threadingMode;
-    }
-
-    /**
-     * Is the driver conductor not concurrent with the sender and receiver threads.
-     *
-     * @return true if the {@link DriverConductor} is on the same thread as the sender and receiver.
-     */
-    public final boolean notConcurrent()
-    {
-        return notConcurrent;
-    }
-
-    /**
-     * Get the threading mode of the driver.
-     *
-     * @return ThreadingMode of the driver.
-     */
-    public final ThreadingMode threadingMode()
-    {
-        return threadingMode;
     }
 
     /**
@@ -73,32 +54,35 @@ abstract class CommandProxy
             '}';
     }
 
+    final boolean notConcurrent()
+    {
+        return notConcurrent;
+    }
+
+    final ThreadingMode threadingMode()
+    {
+        return threadingMode;
+    }
+
     final void offer(final Runnable cmd)
     {
-        if (!commandQueue.offer(cmd))
+        while (!commandQueue.offer(cmd))
         {
-            // unreachable for ManyToOneConcurrentLinkedQueue
-            throw new IllegalStateException(commandQueue.getClass().getSimpleName() + ".offer failed!");
+            if (!failCount.isClosed())
+            {
+                failCount.increment();
+            }
+
+            Thread.yield();
+            if (Thread.currentThread().isInterrupted())
+            {
+                throw new AgentTerminationException("interrupted");
+            }
         }
     }
 
-    static int drainQueue(
-        final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue, final int limit, final Consumer<Runnable> consumer)
+    final boolean isApplyingBackpressure()
     {
-        int workCount = 0;
-        for (int i = 0; i < limit; i++)
-        {
-            final Runnable command = commandQueue.poll();
-            if (null != command)
-            {
-                consumer.accept(command);
-                workCount++;
-            }
-            else
-            {
-                break;
-            }
-        }
-        return workCount;
+        return commandQueue.remainingCapacity() < 1;
     }
 }

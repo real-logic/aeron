@@ -89,8 +89,9 @@ public:
         std::string aeronDir,
         std::string archiveDir,
         std::ostream& stream,
-        std::string controlChannel = "aeron:udp?endpoint=localhost:8010",
-        std::string replicationChannel = "aeron:udp?endpoint=localhost:0")
+        std::string controlChannel,
+        std::string replicationChannel,
+        std::int64_t archiveId)
         : m_archiveDir(archiveDir), m_aeronDir(aeronDir), m_stream(stream)
     {
         m_stream << currentTimeMillis() << " [SetUp] Starting ArchivingMediaDriver..." << std::endl;
@@ -99,6 +100,7 @@ public:
         std::string archiveDirArg = "-Daeron.archive.dir=" + archiveDir;
         std::string controlChannelArg = "-Daeron.archive.control.channel=" + controlChannel;
         std::string replicationChannelArg = "-Daeron.archive.replication.channel=" + replicationChannel;
+        std::string archiveIdArg = "-Daeron.archive.id=" + std::to_string(archiveId);
         const char *const argv[] =
         {
             "java",
@@ -125,6 +127,7 @@ public:
             "-Daeron.archive.recording.events.enabled=false",
             "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
             "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
+            archiveIdArg.c_str(),
             controlChannelArg.c_str(),
             replicationChannelArg.c_str(),
             "-Daeron.archive.control.response.channel=aeron:udp?endpoint=localhost:0",

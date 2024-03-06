@@ -54,7 +54,8 @@ public:
         std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller,
         std::unique_ptr<RecordingSubscriptionDescriptorPoller> recordingSubscriptionDescriptorPoller,
         std::shared_ptr<Aeron> aeron,
-        std::int64_t controlSessionId);
+        std::int64_t controlSessionId,
+        std::int64_t archiveId);
 
     ~AeronArchive();
 
@@ -81,6 +82,21 @@ public:
             std::int64_t publicationId,
             long long deadlineNs);
 
+        /// Represents connection state
+        enum State : std::uint8_t
+        {
+            ADD_PUBLICATION = 0,
+            AWAIT_PUBLICATION_CONNECTED = 1,
+            SEND_CONNECT_REQUEST = 2,
+            AWAIT_SUBSCRIPTION_CONNECTED = 3,
+            AWAIT_CONNECT_RESPONSE = 4,
+            SEND_ARCHIVE_ID_REQUEST = 5,
+            AWAIT_ARCHIVE_ID_RESPONSE = 6,
+            CONNECTED = 7,
+            SEND_CHALLENGE_RESPONSE = 8,
+            AWAIT_CHALLENGE_RESPONSE = 9
+        };
+
         /**
          * Poll for a complete connection.
          *
@@ -95,7 +111,17 @@ public:
          */
         inline std::uint8_t step() const
         {
-            return m_step;
+            return m_state;
+        }
+
+        /**
+         * The state in the connect process this connect attempt has reached.
+         *
+         * @return the connection state.
+         */
+        inline State state() const
+        {
+            return m_state;
         }
 
     private:
@@ -110,9 +136,37 @@ public:
         const std::int64_t m_publicationId;
         const long long m_deadlineNs;
         std::int64_t m_correlationId = aeron::NULL_VALUE;
-        std::int64_t m_challengeControlSessionId = aeron::NULL_VALUE;
-        std::uint8_t m_step = 0;
+        std::int64_t m_controlSessionId = aeron::NULL_VALUE;
+        State m_state = State::ADD_PUBLICATION;
         std::pair<const char *, std::uint32_t> m_encodedCredentialsFromChallenge = { nullptr, 0 };
+
+        std::shared_ptr<AeronArchive> transitionToConnected(std::int64_t archiveId)
+        {
+            if (!m_archiveProxy->keepAlive(aeron::NULL_VALUE, m_controlSessionId))
+            {
+                m_archiveProxy->closeSession(m_controlSessionId);
+                throw ArchiveException("failed to send keep alive after archive connect",SOURCEINFO);
+            }
+
+            m_state = State::CONNECTED;
+
+            std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller(
+                new RecordingDescriptorPoller(
+                    m_subscription, m_ctx->errorHandler(), m_ctx->recordingSignalConsumer(), m_controlSessionId));
+            std::unique_ptr<RecordingSubscriptionDescriptorPoller> recordingSubscriptionDescriptorPoller(
+                new RecordingSubscriptionDescriptorPoller(
+                    m_subscription, m_ctx->errorHandler(), m_ctx->recordingSignalConsumer(), m_controlSessionId));
+
+            return std::make_shared<AeronArchive>(
+                std::move(m_ctx),
+                std::move(m_archiveProxy),
+                std::move(m_controlResponsePoller),
+                std::move(recordingDescriptorPoller),
+                std::move(recordingSubscriptionDescriptorPoller),
+                m_aeron,
+                m_controlSessionId,
+                archiveId);
+        }
     };
 
     /**
@@ -198,6 +252,16 @@ public:
     inline Context_t &context()
     {
         return *m_ctx;
+    }
+
+    /**
+     * The id of the archive.
+     *
+     * @return id of the archive this client is connected to.
+     */
+    inline std::int64_t archiveId() const
+    {
+        return m_archiveId;
     }
 
     /**
@@ -1919,6 +1983,7 @@ private:
     nano_clock_t m_nanoClock;
 
     const std::int64_t m_controlSessionId;
+    const std::int64_t m_archiveId;
     std::int64_t m_lastCorrelationId = NULL_VALUE;
     const long long m_messageTimeoutNs;
     bool m_isClosed = false;

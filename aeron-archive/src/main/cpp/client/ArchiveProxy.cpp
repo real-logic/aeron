@@ -20,6 +20,7 @@
 #include "concurrent/YieldingIdleStrategy.h"
 #include "aeron_archive_client/BoundedReplayRequest.h"
 #include "aeron_archive_client/AuthConnectRequest.h"
+#include "aeron_archive_client/ArchiveIdRequest.h"
 #include "aeron_archive_client/CloseSessionRequest.h"
 #include "aeron_archive_client/StartRecordingRequest.h"
 #include "aeron_archive_client/StartRecordingRequest2.h"
@@ -93,6 +94,20 @@ util::index_t ArchiveProxy::closeSession(AtomicBuffer &buffer, std::int64_t cont
 
     wrapAndApplyHeader(request, buffer)
         .controlSessionId(controlSessionId);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::archiveId(
+    aeron::concurrent::AtomicBuffer &buffer,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    ArchiveIdRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId);
 
     return messageAndHeaderLength(request);
 }

@@ -498,6 +498,22 @@ public:
     }
 
     /**
+     * Resolve id the archive.
+     *
+     * @param controlSessionId with the archive.
+     * @param correlationId with the archive.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool archiveId(std::int64_t controlSessionId, std::int64_t correlationId)
+    {
+        const util::index_t length = archiveId(m_buffer, controlSessionId, correlationId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
      * Start recording streams for a given channel and stream id pairing.
      *
      * @param channel          to be recorded.
@@ -1521,6 +1537,8 @@ private:
         std::int64_t correlationId);
 
     static util::index_t closeSession(AtomicBuffer &buffer, std::int64_t controlSessionId);
+
+    static util::index_t archiveId(AtomicBuffer &buffer, std::int64_t correlationId, std::int64_t controlSessionId);
 
     static util::index_t startRecording(
         AtomicBuffer &buffer,

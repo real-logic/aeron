@@ -19,6 +19,9 @@
 using namespace aeron;
 using namespace aeron::archive::client;
 
+constexpr const std::int32_t AERON_ARCHIVE_PROTOCOL_VERSION_WITH_ARCHIVE_ID = aeron::util::semanticVersionCompose(
+    1, 11, 0);
+
 AeronArchive::AsyncConnect::AsyncConnect(
     Context_t &context,
     std::shared_ptr<Aeron> aeron,
@@ -39,44 +42,52 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
     if (m_nanoClock() > m_deadlineNs)
     {
         throw TimeoutException(
-            "Archive connect timeout: step=" + std::to_string(m_step) +
-            (m_step < 2 ?
+            "Archive connect timeout: step=" + std::to_string(m_state) +
+            (m_state < State::AWAIT_SUBSCRIPTION_CONNECTED ?
                 " publication.uri=" + (m_publication ? m_publication->channel() : "<publication find pending>") :
                 " subscription.uri=" + (m_subscription ? m_subscription->channel() : "<subscription find pending>")),
             SOURCEINFO);
     }
 
-    if (!m_subscription)
+    if (State::ADD_PUBLICATION == m_state)
     {
-        m_subscription = m_aeron->findSubscription(m_subscriptionId);
+        if (!m_publication)
+        {
+            m_publication = m_aeron->findExclusivePublication(m_publicationId);
+        }
+
+        if (!m_archiveProxy && m_publication)
+        {
+            m_archiveProxy = std::unique_ptr<ArchiveProxy>(new ArchiveProxy(m_publication));
+        }
+
+        if (!m_subscription)
+        {
+            m_subscription = m_aeron->findSubscription(m_subscriptionId);
+        }
+
+        if (!m_controlResponsePoller && m_subscription)
+        {
+            m_controlResponsePoller = std::unique_ptr<ControlResponsePoller>(new ControlResponsePoller(m_subscription));
+        }
+
+        if (m_archiveProxy && m_controlResponsePoller)
+        {
+            m_state = State::AWAIT_PUBLICATION_CONNECTED;
+        }
     }
 
-    if (!m_controlResponsePoller && m_subscription)
-    {
-        m_controlResponsePoller = std::unique_ptr<ControlResponsePoller>(new ControlResponsePoller(m_subscription));
-    }
-
-    if (!m_publication)
-    {
-        m_publication = m_aeron->findExclusivePublication(m_publicationId);
-    }
-
-    if (!m_archiveProxy && m_publication)
-    {
-        m_archiveProxy = std::unique_ptr<ArchiveProxy>(new ArchiveProxy(m_publication));
-    }
-
-    if (0 == m_step && m_archiveProxy)
+    if (State::AWAIT_PUBLICATION_CONNECTED == m_state)
     {
         if (!m_archiveProxy->publication()->isConnected())
         {
             return {};
         }
 
-        m_step = 1;
+        m_state = State::SEND_CONNECT_REQUEST;
     }
 
-    if (1 == m_step && m_subscription)
+    if (State::SEND_CONNECT_REQUEST == m_state)
     {
         std::string controlResponseChannel = m_subscription->tryResolveChannelEndpointPort();
         if (controlResponseChannel.empty())
@@ -95,23 +106,33 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
         }
 
         m_ctx->credentialsSupplier().m_onFree(encodedCredentials);
-        m_step = 2;
+        m_state = State::AWAIT_SUBSCRIPTION_CONNECTED;
     }
 
-    if (2 == m_step && m_controlResponsePoller)
+    if (State::AWAIT_SUBSCRIPTION_CONNECTED == m_state)
     {
         if (!m_subscription->isConnected())
         {
             return {};
         }
 
-        m_step = 3;
+        m_state = State::AWAIT_CONNECT_RESPONSE;
     }
 
-    if (5 == m_step && m_controlResponsePoller)
+    if (State::SEND_ARCHIVE_ID_REQUEST == m_state)
+    {
+        if (!m_archiveProxy->archiveId(m_correlationId, m_controlSessionId))
+        {
+            return {};
+        }
+
+        m_state = State::AWAIT_ARCHIVE_ID_RESPONSE;
+    }
+
+    if (State::SEND_CHALLENGE_RESPONSE == m_state)
     {
         if (!m_archiveProxy->tryChallengeResponse(
-            m_encodedCredentialsFromChallenge, m_correlationId, m_challengeControlSessionId))
+            m_encodedCredentialsFromChallenge, m_correlationId, m_controlSessionId))
         {
             return {};
         }
@@ -119,7 +140,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
         m_ctx->credentialsSupplier().m_onFree(m_encodedCredentialsFromChallenge);
         m_encodedCredentialsFromChallenge.first = nullptr;
         m_encodedCredentialsFromChallenge.second = 0;
-        m_step = 6;
+        m_state = State::AWAIT_CHALLENGE_RESPONSE;
     }
 
     if (m_controlResponsePoller)
@@ -128,16 +149,14 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 
         if (m_controlResponsePoller->isPollComplete() && m_controlResponsePoller->correlationId() == m_correlationId)
         {
-            const std::int64_t sessionId = m_controlResponsePoller->controlSessionId();
-
+            m_controlSessionId = m_controlResponsePoller->controlSessionId();
             if (m_controlResponsePoller->wasChallenged())
             {
                 m_encodedCredentialsFromChallenge = m_ctx->credentialsSupplier().m_onChallenge(
                     m_controlResponsePoller->encodedChallenge());
 
                 m_correlationId = m_aeron->nextCorrelationId();
-                m_challengeControlSessionId = sessionId;
-                m_step = 5;
+                m_state = State::SEND_CHALLENGE_RESPONSE;
             }
             else
             {
@@ -145,39 +164,40 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
                 {
                     if (m_controlResponsePoller->isCodeError())
                     {
-                        m_archiveProxy->closeSession(sessionId);
-
+                        m_archiveProxy->closeSession(m_controlSessionId);
                         throw ArchiveException(
                             static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
-                            "error: " + m_controlResponsePoller->errorMessage(),
+                            m_correlationId,
+                            m_controlResponsePoller->errorMessage(),
                             SOURCEINFO);
                     }
 
+                    m_archiveProxy->closeSession(m_controlSessionId);
                     throw ArchiveException(
+                        ARCHIVE_ERROR_CODE_GENERIC,
+                        m_correlationId,
                         "unexpected response: code=" + std::to_string(m_controlResponsePoller->codeValue()),
                         SOURCEINFO);
                 }
 
-                if (!m_archiveProxy->keepAlive(aeron::NULL_VALUE, sessionId))
+                if (State::AWAIT_ARCHIVE_ID_RESPONSE == m_state)
                 {
-                    throw ArchiveException("failed to send keep alive after archive connect",SOURCEINFO);
+                    std::int64_t archiveId = m_controlResponsePoller->relevantId();
+                    return transitionToConnected(archiveId);
                 }
-
-                std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller(
-                    new RecordingDescriptorPoller(
-                        m_subscription, m_ctx->errorHandler(), m_ctx->recordingSignalConsumer(), sessionId));
-                std::unique_ptr<RecordingSubscriptionDescriptorPoller> recordingSubscriptionDescriptorPoller(
-                    new RecordingSubscriptionDescriptorPoller(
-                        m_subscription, m_ctx->errorHandler(), m_ctx->recordingSignalConsumer(), sessionId));
-
-                return std::make_shared<AeronArchive>(
-                    std::move(m_ctx),
-                    std::move(m_archiveProxy),
-                    std::move(m_controlResponsePoller),
-                    std::move(recordingDescriptorPoller),
-                    std::move(recordingSubscriptionDescriptorPoller),
-                    m_aeron,
-                    sessionId);
+                else
+                {
+                    std::int32_t archiveProtocolVersion = m_controlResponsePoller->version();
+                    if (archiveProtocolVersion < AERON_ARCHIVE_PROTOCOL_VERSION_WITH_ARCHIVE_ID)
+                    {
+                        return transitionToConnected(aeron::NULL_VALUE);
+                    }
+                    else
+                    {
+                        m_correlationId = m_aeron->nextCorrelationId();
+                        m_state = State::SEND_ARCHIVE_ID_REQUEST;
+                    }
+                }
             }
         }
     }
@@ -192,7 +212,8 @@ AeronArchive::AeronArchive(
     std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller,
     std::unique_ptr<RecordingSubscriptionDescriptorPoller> recordingSubscriptionDescriptorPoller,
     std::shared_ptr<Aeron> aeron,
-    std::int64_t controlSessionId) :
+    std::int64_t controlSessionId,
+    std::int64_t archiveId) :
     m_ctx(std::move(ctx)),
     m_archiveProxy(std::move(archiveProxy)),
     m_controlResponsePoller(std::move(controlResponsePoller)),
@@ -201,6 +222,7 @@ AeronArchive::AeronArchive(
     m_aeron(std::move(aeron)),
     m_nanoClock(systemNanoClock),
     m_controlSessionId(controlSessionId),
+    m_archiveId(archiveId),
     m_messageTimeoutNs(m_ctx->messageTimeoutNs())
 {
 }

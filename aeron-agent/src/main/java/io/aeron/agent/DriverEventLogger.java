@@ -511,7 +511,7 @@ public final class DriverEventLogger
     }
 
     /**
-     * Logs a nak messages sent by the receiver for a single control address.
+     * Logs a NAK message sent by the receiver for a single control address.
      *
      * @param controlAddress Nak UDP destination
      * @param sessionId      of the Nak.
@@ -519,7 +519,7 @@ public final class DriverEventLogger
      * @param termId         of the Nak.
      * @param termOffset     of the Nak.
      * @param nakLength      of the Nak.
-     * @param channel
+     * @param channel        of the Nak.
      */
     public void logSendNakMessage(
         final InetSocketAddress controlAddress,
@@ -561,14 +561,14 @@ public final class DriverEventLogger
     }
 
     /**
-     * Logs a nak messages sent by the receiver for a single control address.
+     * Logs a nak message sent by the receiver for a single control address.
      *
      * @param sessionId    of the Resend.
      * @param streamId     of the Resend.
      * @param termId       of the Resend.
      * @param termOffset   of the Resend.
      * @param resendLength of the Resend.
-     * @param channel
+     * @param channel      of the Resend.
      */
     public void logResend(
         final int sessionId,

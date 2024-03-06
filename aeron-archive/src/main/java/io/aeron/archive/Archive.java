@@ -1330,7 +1330,7 @@ public final class Archive implements AutoCloseable
                 {
                     final ChannelUri controlChannelUri = ChannelUri.parse(controlChannel);
                     final String endpoint = controlChannelUri.get(ENDPOINT_PARAM_NAME);
-                    int separatorIndex = -1;
+                    final int separatorIndex;
 
                     if (null == endpoint || -1 == (separatorIndex = endpoint.lastIndexOf(':')))
                     {

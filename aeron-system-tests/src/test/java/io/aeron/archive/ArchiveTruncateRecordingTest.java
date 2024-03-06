@@ -155,7 +155,8 @@ class ArchiveTruncateRecordingTest
                 ChannelUri.addSessionId(channel, publication.sessionId()), streamId, SourceLocation.LOCAL);
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId =
+                Tests.awaitRecordingCounterId(counters, publication.sessionId(), aeronArchive.archiveId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
             assertEquals(startPosition, aeronArchive.getStartPosition(recordingId));
             assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingId));
@@ -232,7 +233,8 @@ class ArchiveTruncateRecordingTest
             Subscription subscription = aeron.addSubscription(channel, streamId))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId =
+                Tests.awaitRecordingCounterId(counters, publication.sessionId(), aeronArchive.archiveId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
             assertEquals(0, aeronArchive.getStartPosition(recordingId));
 
@@ -335,7 +337,8 @@ class ArchiveTruncateRecordingTest
                 ChannelUri.addSessionId(channel, publication.sessionId()), streamId, SourceLocation.LOCAL);
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId =
+                Tests.awaitRecordingCounterId(counters, publication.sessionId(), aeronArchive.archiveId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
             assertEquals(startPosition, aeronArchive.getStartPosition(recordingId));
 

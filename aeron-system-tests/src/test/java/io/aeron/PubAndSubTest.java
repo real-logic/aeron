@@ -52,8 +52,6 @@ import java.util.function.Supplier;
 import static io.aeron.SystemTests.verifyLossOccurredForStream;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
-import static io.aeron.protocol.HeaderFlyweight.CURRENT_VERSION;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_RSP_SETUP;
 import static java.util.Arrays.asList;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.*;
@@ -914,9 +912,8 @@ class PubAndSubTest
             Tests.awaitConnected(unfragmentedSubscription);
 
             final BufferClaim bufferClaim = new BufferClaim();
-            long position;
             final int firstMessageLength = 100;
-            while ((position = publication.tryClaim(firstMessageLength, bufferClaim)) < 0)
+            while (publication.tryClaim(firstMessageLength, bufferClaim) < 0)
             {
                 Tests.yield();
             }
@@ -933,13 +930,14 @@ class PubAndSubTest
             final MutableLong fragmentedReservedValue = new MutableLong(secondReservedValue);
             final ReservedValueSupplier reservedValueSupplier =
                 (tb, to, fl) -> fragmentedReservedValue.getAndAdd(reservedValue);
-            while ((position = publication.offer(data, 0, data.capacity(), reservedValueSupplier)) < 0)
+            while (publication.offer(data, 0, data.capacity(), reservedValueSupplier) < 0)
             {
                 Tests.yield();
             }
-            final int fragmentedMessageLength =
-                LogBufferDescriptor.computeFragmentedFrameLength(data.capacity(), maxPayloadLength);
+            final int fragmentedMessageLength = LogBufferDescriptor.computeFragmentedFrameLength(
+                data.capacity(), maxPayloadLength);
 
+            long position;
             while ((position = publication.tryClaim(maxPayloadLength, bufferClaim)) < 0)
             {
                 Tests.yield();

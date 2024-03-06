@@ -166,7 +166,8 @@ class ExtendRecordingTest
                 offer(publication, 0, messageCount);
 
                 final CountersReader counters = aeron.countersReader();
-                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                final int counterId =
+                    RecordingPos.findCounterIdBySession(counters, publication.sessionId(), aeronArchive.archiveId());
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
 
                 consume(subscription, 0, messageCount);
@@ -206,7 +207,8 @@ class ExtendRecordingTest
                 offer(publication, messageCount, messageCount);
 
                 final CountersReader counters = aeron.countersReader();
-                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                final int counterId =
+                    RecordingPos.findCounterIdBySession(counters, publication.sessionId(), aeronArchive.archiveId());
 
                 consume(subscription, messageCount, messageCount);
 

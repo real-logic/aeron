@@ -146,7 +146,7 @@ inline on_recording_signal_t defaultRecordingSignalConsumer()
 namespace Configuration
 {
 constexpr const std::uint8_t ARCHIVE_MAJOR_VERSION = 1;
-constexpr const std::uint8_t ARCHIVE_MINOR_VERSION = 10;
+constexpr const std::uint8_t ARCHIVE_MINOR_VERSION = 11;
 constexpr const std::uint8_t ARCHIVE_PATCH_VERSION = 0;
 constexpr const std::int32_t ARCHIVE_SEMANTIC_VERSION = aeron::util::semanticVersionCompose(
     ARCHIVE_MAJOR_VERSION, ARCHIVE_MINOR_VERSION, ARCHIVE_PATCH_VERSION);

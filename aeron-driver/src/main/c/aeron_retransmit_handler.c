@@ -42,25 +42,24 @@ int aeron_retransmit_handler_init(
         handler->retransmit_action_pool[i].state = AERON_RETRANSMIT_ACTION_STATE_INACTIVE;
     }
 
-    handler->active_retransmits = 0;
+    handler->active_retransmit_count = 0;
 
     return 0;
 }
 
-int aeron_retransmit_handler_close(aeron_retransmit_handler_t *handler)
+void aeron_retransmit_handler_close(aeron_retransmit_handler_t *handler)
 {
-    return 0;
 }
 
 aeron_retransmit_action_t *aeron_retransmit_handler_add_retransmit(aeron_retransmit_handler_t *handler, aeron_retransmit_action_t *action)
 {
-    ++handler->active_retransmits;
+    ++handler->active_retransmit_count;
     return action;
 }
 
 void aeron_retransmit_handler_remove_retransmit(aeron_retransmit_handler_t *handler, aeron_retransmit_action_t *action)
 {
-    --handler->active_retransmits;
+    --handler->active_retransmit_count;
     action->state = AERON_RETRANSMIT_ACTION_STATE_INACTIVE;
 }
 
@@ -131,31 +130,29 @@ int aeron_retransmit_handler_process_timeouts(
 {
     int result = 0;
 
-    if (0 == handler->active_retransmits)
+    if (handler->active_retransmit_count > 0)
     {
-        return result;
-    }
-
-    for (size_t i = 0; i < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS; i++)
-    {
-        aeron_retransmit_action_t *action = &handler->retransmit_action_pool[i];
-
-        if (AERON_RETRANSMIT_ACTION_STATE_DELAYED == action->state)
+        for (size_t i = 0; i < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS; i++)
         {
-            if (now_ns > action->expiry_ns)
+            aeron_retransmit_action_t *action = &handler->retransmit_action_pool[i];
+
+            if (AERON_RETRANSMIT_ACTION_STATE_DELAYED == action->state)
             {
-                result = resend(resend_clientd, action->term_id, action->term_offset, action->length);
-                action->state = AERON_RETRANSMIT_ACTION_STATE_LINGERING;
-                action->expiry_ns = now_ns + (int64_t)handler->linger_timeout_ns;
-                result++;
+                if (now_ns > action->expiry_ns)
+                {
+                    result = resend(resend_clientd, action->term_id, action->term_offset, action->length);
+                    action->state = AERON_RETRANSMIT_ACTION_STATE_LINGERING;
+                    action->expiry_ns = now_ns + (int64_t)handler->linger_timeout_ns;
+                    result++;
+                }
             }
-        }
-        else if (AERON_RETRANSMIT_ACTION_STATE_LINGERING == action->state)
-        {
-            if (now_ns > action->expiry_ns)
+            else if (AERON_RETRANSMIT_ACTION_STATE_LINGERING == action->state)
             {
-                aeron_retransmit_handler_remove_retransmit(handler, action);
-                result++;
+                if (now_ns > action->expiry_ns)
+                {
+                    aeron_retransmit_handler_remove_retransmit(handler, action);
+                    result++;
+                }
             }
         }
     }
@@ -170,7 +167,7 @@ int aeron_retransmit_handler_scan_for_available_retransmit(
     size_t length,
     aeron_retransmit_action_t **actionp)
 {
-   if (0 == handler->active_retransmits)
+   if (0 == handler->active_retransmit_count)
    {
        *actionp = aeron_retransmit_handler_add_retransmit(handler, &handler->retransmit_action_pool[0]);
        return 0;

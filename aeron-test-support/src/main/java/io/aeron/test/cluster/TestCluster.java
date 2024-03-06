@@ -1287,8 +1287,8 @@ public final class TestCluster implements AutoCloseable
 
     public void awaitServiceMessageCount(final TestNode node, final int messageCount)
     {
-        final TestNode.TestService service = node.service();
-        awaitServiceMessageCount(node, service, messageCount);
+        final TestNode.TestService[] services = node.services();
+        awaitServiceMessageCount(node, services, messageCount);
     }
 
     public void awaitServiceMessagePredicate(final TestNode node, final IntPredicate countPredicate)
@@ -1306,10 +1306,18 @@ public final class TestCluster implements AutoCloseable
         service.awaitServiceMessageCount(messageCount, clientKeepAlive, node);
     }
 
+    public void awaitServiceMessageCount(
+        final TestNode node, final TestNode.TestService[] services, final int messageCount)
+    {
+        clientKeepAlive.init();
+        for (final TestNode.TestService service : services)
+        {
+            service.awaitServiceMessageCount(messageCount, clientKeepAlive, node);
+        }
+    }
+
     public void awaitServiceMessagePredicate(
-        final TestNode node,
-        final TestNode.TestService service,
-        final IntPredicate countPredicate)
+        final TestNode node, final TestNode.TestService service, final IntPredicate countPredicate)
     {
         service.awaitServiceMessagePredicate(countPredicate, clientKeepAlive, node);
     }
@@ -1325,9 +1333,7 @@ public final class TestCluster implements AutoCloseable
     }
 
     public void awaitLiveAndSnapshotMessageCount(
-        final TestNode node,
-        final IntPredicate liveCountPredicate,
-        final IntPredicate snapshotCountPredicate)
+        final TestNode node, final IntPredicate liveCountPredicate, final IntPredicate snapshotCountPredicate)
     {
         final TestNode.TestService service = node.service();
         awaitLiveAndSnapshotMessageCount(node, service, liveCountPredicate, snapshotCountPredicate);
@@ -1496,8 +1502,14 @@ public final class TestCluster implements AutoCloseable
         for (int i = 0; i < memberCount; i++)
         {
             final int memberId = initialMemberId + i;
-            builder.append(memberId).append('=').append(hostname(memberId)).append(":2").append(clusterId).append("11")
-                .append(memberId).append(',');
+            builder.append(memberId)
+                .append('=')
+                .append(hostname(memberId))
+                .append(":2")
+                .append(clusterId)
+                .append("11")
+                .append(memberId)
+                .append(',');
         }
 
         builder.setLength(builder.length() - 1);
@@ -1898,6 +1910,49 @@ public final class TestCluster implements AutoCloseable
         }
     }
 
+    private long countAllServiceErrors(final TestNode node)
+    {
+        final TestNode.TestService[] services = node.services();
+
+        long errorCount = 0;
+        for (final TestNode.TestService service : services)
+        {
+            errorCount += service.cluster().context().errorCounter().get();
+        }
+
+        return errorCount;
+    }
+
+    public void awaitServiceErrors(final TestNode node, final long count)
+    {
+        while (count < countAllServiceErrors(node))
+        {
+            Tests.sleep(1, "Errors count=" + count + " not seen on node=" + node.index());
+        }
+    }
+
+    public void awaitServiceErrors(final long count)
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                awaitServiceErrors(node, count);
+            }
+        }
+    }
+
+    public void failNextSnapshot(final boolean failNextSnapshot)
+    {
+        for (final TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                node.service().failNextSnapshot(failNextSnapshot);
+            }
+        }
+    }
+
     public static final class Builder
     {
         private int nodeCount = 3;
@@ -2270,8 +2325,7 @@ public final class TestCluster implements AutoCloseable
         }
 
         public void onUpdatedRecordingLog(
-            final RecordingLog recordingLog,
-            final List<RecordingLog.Snapshot> snapshotsRetrieved)
+            final RecordingLog recordingLog, final List<RecordingLog.Snapshot> snapshotsRetrieved)
         {
         }
 

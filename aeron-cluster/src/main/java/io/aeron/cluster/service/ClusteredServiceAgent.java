@@ -983,7 +983,16 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
     {
         if (ClusterAction.SNAPSHOT == action && shouldSnapshot(flags))
         {
-            final long recordingId = onTakeSnapshot(logPosition, leadershipTermId);
+            long recordingId = NULL_VALUE;
+            try
+            {
+                recordingId = onTakeSnapshot(logPosition, leadershipTermId);
+            }
+            catch (final Exception ex)
+            {
+                context().errorHandler().onError(ex);
+            }
+
             final long id = ackId++;
             idleStrategy.reset();
             while (!consensusModuleProxy.ack(logPosition, clusterTime, id, recordingId, serviceId))
@@ -1001,12 +1010,13 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
     private int awaitRecordingCounter(final int sessionId, final CountersReader counters, final AeronArchive archive)
     {
         idleStrategy.reset();
-        int counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
+        final long archiveId = archive.archiveId();
+        int counterId = RecordingPos.findCounterIdBySession(counters, sessionId, archiveId);
         while (NULL_COUNTER_ID == counterId)
         {
             idle();
             archive.checkForErrorResponse();
-            counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
+            counterId = RecordingPos.findCounterIdBySession(counters, sessionId, archiveId);
         }
 
         return counterId;

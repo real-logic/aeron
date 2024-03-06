@@ -408,6 +408,11 @@ abstract class ArchiveConductor
         return controlSession;
     }
 
+    void archiveId(final long correlationId, final ControlSession controlSession)
+    {
+        controlSession.sendOkResponse(correlationId, ctx.archiveId(), controlResponseProxy);
+    }
+
     void startRecording(
         final long correlationId,
         final int streamId,
@@ -972,6 +977,19 @@ abstract class ArchiveConductor
         if (hasRecording(recordingId, correlationId, controlSession))
         {
             controlSession.sendOkResponse(correlationId, catalog.stopPosition(recordingId), controlResponseProxy);
+        }
+    }
+
+    void getMaxRecordedPosition(
+        final long correlationId, final long recordingId, final ControlSession controlSession)
+    {
+        if (hasRecording(recordingId, correlationId, controlSession))
+        {
+            final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
+            final long maxRecordedPosition = null != recordingSession ?
+                recordingSession.recordingPosition().get() : catalog.stopPosition(recordingId);
+
+            controlSession.sendOkResponse(correlationId, maxRecordedPosition, controlResponseProxy);
         }
     }
 

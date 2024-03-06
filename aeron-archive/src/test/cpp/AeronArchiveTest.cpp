@@ -63,10 +63,10 @@ public:
         }
     }
 
-    void DoSetUp()
+    void DoSetUp(std::int64_t archiveId = 42)
     {
         std::string sourceArchiveDir = m_archiveDir + AERON_FILE_SEP + "source";
-        m_archive = std::make_shared<TestArchive>(m_context.aeronDirectoryName(), sourceArchiveDir, m_stream);
+        m_archive = std::make_shared<TestArchive>(m_context.aeronDirectoryName(), sourceArchiveDir, m_stream, "aeron:udp?endpoint=localhost:8010", "aeron:udp?endpoint=localhost:0", archiveId);
 
         setCredentials(m_context);
     }
@@ -264,7 +264,7 @@ public:
         const std::string controlChannel = "aeron:udp?endpoint=localhost:8011";
         const std::string replicationChannel = "aeron:udp?endpoint=localhost:8012";
         m_destArchive = std::make_shared<TestArchive>(
-            aeronDir, archiveDir, m_stream, controlChannel, replicationChannel);
+            aeronDir, archiveDir, m_stream, controlChannel, replicationChannel, -7777);
         m_destContext.controlRequestChannel(controlChannel);
         setCredentials(m_destContext);
     }
@@ -324,6 +324,10 @@ public:
     }
 };
 
+class AeronArchiveIdTest : public AeronArchiveTestBase, public testing::Test
+{
+};
+
 class AeronArchiveParamTest : public AeronArchiveTestBase, public testing::TestWithParam<bool>
 {
 public:
@@ -363,6 +367,7 @@ TEST_F(AeronArchiveTest, shouldAsyncConnectToArchive)
     }
 
     EXPECT_TRUE(aeronArchive->controlResponsePoller().subscription()->isConnected());
+    EXPECT_EQ(42, aeronArchive->archiveId());
 }
 
 TEST_F(AeronArchiveTest, shouldConnectToArchive)
@@ -410,6 +415,7 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
 
         EXPECT_EQ(aeronArchive->getRecordingPosition(recordingIdFromCounter), stopPosition);
         EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), aeron::NULL_VALUE);
+        EXPECT_EQ(aeronArchive->getMaxRecordedPosition(recordingIdFromCounter), stopPosition);
     }
 
     aeronArchive->stopRecording(subscriptionId);
@@ -649,6 +655,7 @@ TEST_P(AeronArchiveParamTest, shouldRecordThenReplayThenTruncate)
 
         EXPECT_EQ(aeronArchive->getRecordingPosition(recordingIdFromCounter), stopPosition);
         EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), aeron::NULL_VALUE);
+        EXPECT_EQ(aeronArchive->getMaxRecordedPosition(recordingIdFromCounter), stopPosition);
     }
 
     aeronArchive->stopRecording(subscriptionId);
@@ -1357,6 +1364,8 @@ TEST_F(AeronArchiveTest, shouldRecordReplicateThenReplay)
 
     std::shared_ptr<AeronArchive> srcAeronArchive = AeronArchive::connect(m_context);
     std::shared_ptr<AeronArchive> dstAeronArchive = AeronArchive::connect(m_destContext);
+    EXPECT_EQ(42, srcAeronArchive->archiveId());
+    EXPECT_EQ(-7777, dstAeronArchive->archiveId());
 
     const std::int64_t subscriptionId = srcAeronArchive->startRecording(
         m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
@@ -1529,4 +1538,16 @@ TEST_F(AeronArchiveTest, shouldRecordReplicateTwice)
         dstAeronArchive->pollForRecordingSignals();
         idleStrategy.idle();
     }
+}
+
+TEST_F(AeronArchiveIdTest, shouldResolveArchiveId)
+{
+    std::int64_t archiveId = 0x4236483BEEF;
+    DoSetUp(archiveId);
+
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+    EXPECT_TRUE(aeronArchive->controlResponsePoller().subscription()->isConnected());
+    EXPECT_EQ(archiveId, aeronArchive->archiveId());
+
+    DoTearDown();
 }

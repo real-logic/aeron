@@ -256,7 +256,8 @@ public final class TestNode implements AutoCloseable
         }
 
         final CountersReader countersReader = countersReader();
-        final int counterId = RecordingPos.findCounterIdByRecording(countersReader, recordingId);
+        final int counterId =
+            RecordingPos.findCounterIdByRecording(countersReader, recordingId, archive.context().archiveId());
         if (NULL_VALUE == counterId)
         {
             fail("recording not active " + recordingId);
@@ -343,6 +344,7 @@ public final class TestNode implements AutoCloseable
 
         volatile boolean wasSnapshotTaken = false;
         volatile boolean wasSnapshotLoaded = false;
+        volatile boolean failNextSnapshot = false;
         private int index;
         private volatile boolean hasReceivedUnexpectedMessage = false;
         private volatile Cluster.Role roleChangedTo = null;
@@ -566,6 +568,12 @@ public final class TestNode implements AutoCloseable
 
         public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
+            if (failNextSnapshot)
+            {
+                failNextSnapshot = false;
+                throw new RuntimeException("This is a simulated failure for this snapshot");
+            }
+
             final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SNAPSHOT_MSG_LENGTH]);
             buffer.putInt(0, messageCount.get());
             buffer.putInt(SNAPSHOT_MSG_LENGTH - SIZE_OF_INT, messageCount.get());
@@ -662,6 +670,11 @@ public final class TestNode implements AutoCloseable
 
                 keepAlive.run();
             }
+        }
+
+        public void failNextSnapshot(final boolean failNextSnapshot)
+        {
+            this.failNextSnapshot = failNextSnapshot;
         }
     }
 

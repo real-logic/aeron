@@ -132,6 +132,7 @@ final class ClusterControlAdapter implements AutoCloseable
                     catchupEndpoint,
                     archiveEndpoint,
                     endpoints)
+                    .isLeader(id == leaderMemberId)
                     .leadershipTermId(activeMembersDecoder.leadershipTermId())
                     .logPosition(activeMembersDecoder.logPosition())
                     .timeOfLastAppendPositionNs(activeMembersDecoder.timeOfLastAppendNs()));

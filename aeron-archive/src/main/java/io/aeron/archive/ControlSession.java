@@ -461,6 +461,24 @@ final class ControlSession implements Session
         }
     }
 
+    void onGetMaxRecordedPosition(final long correlationId, final long recordingId)
+    {
+        attemptToActivate();
+        if (State.ACTIVE == state)
+        {
+            conductor.getMaxRecordedPosition(correlationId, recordingId, this);
+        }
+    }
+
+    void onArchiveId(final long correlationId)
+    {
+        attemptToActivate();
+        if (State.ACTIVE == state)
+        {
+            conductor.archiveId(correlationId, this);
+        }
+    }
+
     void onListRecordingSubscriptions(
         final long correlationId,
         final int pseudoIndex,

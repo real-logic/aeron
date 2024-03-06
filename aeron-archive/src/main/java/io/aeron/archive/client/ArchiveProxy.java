@@ -62,6 +62,7 @@ public final class ArchiveProxy
     private TruncateRecordingRequestEncoder truncateRecordingRequest;
     private PurgeRecordingRequestEncoder purgeRecordingRequest;
     private StopPositionRequestEncoder stopPositionRequest;
+    private MaxRecordedPositionRequestEncoder maxRecordedPositionRequestEncoder;
     private FindLastMatchingRecordingRequestEncoder findLastMatchingRecordingRequest;
     private ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequest;
     private BoundedReplayRequestEncoder boundedReplayRequest;
@@ -74,6 +75,7 @@ public final class ArchiveProxy
     private PurgeSegmentsRequestEncoder purgeSegmentsRequest;
     private AttachSegmentsRequestEncoder attachSegmentsRequest;
     private MigrateSegmentsRequestEncoder migrateSegmentsRequest;
+    private ArchiveIdRequestEncoder archiveIdRequestEncoder;
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -872,6 +874,53 @@ public final class ArchiveProxy
             .recordingId(recordingId);
 
         return offer(stopPositionRequest.encodedLength());
+    }
+
+    /**
+     * Get the stop or active recorded position of a recording.
+     *
+     * @param recordingId      of the recording that the stop of active recording position is being requested for.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean getMaxRecordedPosition(
+        final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        if (null == maxRecordedPositionRequestEncoder)
+        {
+            maxRecordedPositionRequestEncoder = new MaxRecordedPositionRequestEncoder();
+        }
+
+        maxRecordedPositionRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(maxRecordedPositionRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Get the id of the Archive.
+     *
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean archiveId(final long correlationId, final long controlSessionId)
+    {
+        if (null == archiveIdRequestEncoder)
+        {
+            archiveIdRequestEncoder = new ArchiveIdRequestEncoder();
+        }
+
+        archiveIdRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId);
+
+        return offer(archiveIdRequestEncoder.encodedLength());
     }
 
     /**

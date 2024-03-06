@@ -1266,9 +1266,9 @@ public class ClusterTool
     {
         File[] clusterMarkFileNames =
             clusterDir.listFiles((dir, name) ->
-                name.startsWith(ClusterMarkFile.SERVICE_FILENAME_PREFIX) &&
-                    (name.endsWith(ClusterMarkFile.FILE_EXTENSION) ||
-                        name.endsWith(ClusterMarkFile.LINK_FILE_EXTENSION)));
+            name.startsWith(ClusterMarkFile.SERVICE_FILENAME_PREFIX) &&
+            (name.endsWith(ClusterMarkFile.FILE_EXTENSION) ||
+            name.endsWith(ClusterMarkFile.LINK_FILE_EXTENSION)));
 
         if (null == clusterMarkFileNames)
         {

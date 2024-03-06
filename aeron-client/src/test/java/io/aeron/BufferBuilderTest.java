@@ -86,7 +86,7 @@ class BufferBuilderTest
 
     @ParameterizedTest
     @ValueSource(booleans = { false, true })
-    void shouldCreateHaderBuffer(final boolean isDirect)
+    void shouldCreateHeaderBuffer(final boolean isDirect)
     {
         final BufferBuilder builder = new BufferBuilder(0, isDirect);
         assertNotNull(builder.buffer());

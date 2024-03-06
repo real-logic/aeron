@@ -221,7 +221,6 @@ class ReceiverTest
             POSITIONS,
             mockHighestReceivedPosition,
             mockRebuildPosition,
-            SOURCE_ADDRESS,
             SOURCE_IDENTITY,
             congestionControl);
 
@@ -288,7 +287,6 @@ class ReceiverTest
                     POSITIONS,
                     mockHighestReceivedPosition,
                     mockRebuildPosition,
-                    SOURCE_ADDRESS,
                     SOURCE_IDENTITY,
                     congestionControl);
 
@@ -299,7 +297,7 @@ class ReceiverTest
 
         receiver.doWork();
 
-        fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);
+        fillDataFrame(dataHeader, 0);
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress, 0);
 
         final int readOutcome = TermReader.read(
@@ -354,7 +352,6 @@ class ReceiverTest
                     POSITIONS,
                     mockHighestReceivedPosition,
                     mockRebuildPosition,
-                    SOURCE_ADDRESS,
                     SOURCE_IDENTITY,
                     congestionControl);
 
@@ -365,10 +362,10 @@ class ReceiverTest
 
         receiver.doWork();
 
-        fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
+        fillDataFrame(dataHeader, 0);  // initial data frame
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress, 0);
 
-        fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // heartbeat with same term offset
+        fillDataFrame(dataHeader, 0);  // heartbeat with same term offset
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress, 0);
 
         final int readOutcome = TermReader.read(
@@ -423,7 +420,6 @@ class ReceiverTest
                     POSITIONS,
                     mockHighestReceivedPosition,
                     mockRebuildPosition,
-                    SOURCE_ADDRESS,
                     SOURCE_IDENTITY,
                     congestionControl);
 
@@ -434,10 +430,10 @@ class ReceiverTest
 
         receiver.doWork();
 
-        fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // heartbeat with same term offset
+        fillDataFrame(dataHeader, 0);  // heartbeat with same term offset
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress, 0);
 
-        fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
+        fillDataFrame(dataHeader, 0);  // initial data frame
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress, 0);
 
         final int readOutcome = TermReader.read(
@@ -496,7 +492,6 @@ class ReceiverTest
                     POSITIONS,
                     mockHighestReceivedPosition,
                     mockRebuildPosition,
-                    SOURCE_ADDRESS,
                     SOURCE_IDENTITY,
                     congestionControl);
 
@@ -509,7 +504,7 @@ class ReceiverTest
 
         receiver.doWork();
 
-        fillDataFrame(dataHeader, initialTermOffset, FAKE_PAYLOAD);  // initial data frame
+        fillDataFrame(dataHeader, initialTermOffset);  // initial data frame
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, alignedDataFrameLength, senderAddress, 0);
 
         verify(mockHighestReceivedPosition).setOrdered(initialTermOffset + alignedDataFrameLength);
@@ -581,7 +576,7 @@ class ReceiverTest
         verify(mockImage, never()).removeFromDispatcher();
     }
 
-    private void fillDataFrame(final DataHeaderFlyweight header, final int termOffset, final byte[] payload)
+    private void fillDataFrame(final DataHeaderFlyweight header, final int termOffset)
     {
         header.wrap(dataBuffer);
         header
@@ -589,14 +584,14 @@ class ReceiverTest
             .termId(ACTIVE_TERM_ID)
             .streamId(STREAM_ID)
             .sessionId(SESSION_ID)
-            .frameLength(DataHeaderFlyweight.HEADER_LENGTH + payload.length)
+            .frameLength(DataHeaderFlyweight.HEADER_LENGTH + ReceiverTest.FAKE_PAYLOAD.length)
             .headerType(HeaderFlyweight.HDR_TYPE_DATA)
             .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
             .version(HeaderFlyweight.CURRENT_VERSION);
 
-        if (0 < payload.length)
+        if (0 < ReceiverTest.FAKE_PAYLOAD.length)
         {
-            dataBuffer.putBytes(header.dataOffset(), payload);
+            dataBuffer.putBytes(header.dataOffset(), ReceiverTest.FAKE_PAYLOAD);
         }
     }
 

@@ -258,6 +258,20 @@ final class LogAdapter implements ControlledFragmentHandler
                     sessionCloseEventDecoder.closeReason());
                 break;
 
+            case ClusterActionRequestDecoder.TEMPLATE_ID:
+                clusterActionRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final int flags = ClusterActionRequestDecoder.flagsNullValue() != clusterActionRequestDecoder.flags() ?
+                    clusterActionRequestDecoder.flags() : ConsensusModule.CLUSTER_ACTION_FLAGS_DEFAULT;
+
+                consensusModuleAgent.onReplayClusterAction(
+                    clusterActionRequestDecoder.leadershipTermId(), clusterActionRequestDecoder.action(), flags);
+                return Action.BREAK;
+
             case NewLeadershipTermEventDecoder.TEMPLATE_ID:
                 newLeadershipTermEventDecoder.wrap(
                     buffer,
@@ -273,24 +287,6 @@ final class LogAdapter implements ControlledFragmentHandler
                     ClusterClock.map(newLeadershipTermEventDecoder.timeUnit()),
                     newLeadershipTermEventDecoder.appVersion());
                 break;
-
-            case MembershipChangeEventDecoder.TEMPLATE_ID:
-                // Removed Dynamic Join.
-                return Action.BREAK;
-
-            case ClusterActionRequestDecoder.TEMPLATE_ID:
-                clusterActionRequestDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                final int flags = ClusterActionRequestDecoder.flagsNullValue() != clusterActionRequestDecoder.flags() ?
-                    clusterActionRequestDecoder.flags() : ConsensusModule.CLUSTER_ACTION_FLAGS_DEFAULT;
-
-                consensusModuleAgent.onReplayClusterAction(
-                    clusterActionRequestDecoder.leadershipTermId(), clusterActionRequestDecoder.action(), flags);
-                return Action.BREAK;
         }
 
         return Action.CONTINUE;

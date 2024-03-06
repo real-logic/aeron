@@ -68,10 +68,10 @@ public final class RecordingPos
      */
     public static final String NAME = "rec-pos";
 
-    private static final int RECORDING_ID_OFFSET = 0;
-    private static final int SESSION_ID_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
-    private static final int SOURCE_IDENTITY_LENGTH_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
-    private static final int SOURCE_IDENTITY_OFFSET = SOURCE_IDENTITY_LENGTH_OFFSET + SIZE_OF_INT;
+    static final int RECORDING_ID_OFFSET = 0;
+    static final int SESSION_ID_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
+    static final int SOURCE_IDENTITY_LENGTH_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
+    static final int SOURCE_IDENTITY_OFFSET = SOURCE_IDENTITY_LENGTH_OFFSET + SIZE_OF_INT;
 
     /**
      * Allocated a recording position counter and populate the metadata.
@@ -133,7 +133,9 @@ public final class RecordingPos
      * @param countersReader to search within.
      * @param recordingId    for the active recording.
      * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
+     * @deprecated Use {@link #findCounterIdByRecording(CountersReader, long, long)} instead.
      */
+    @Deprecated
     public static int findCounterIdByRecording(final CountersReader countersReader, final long recordingId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
@@ -144,9 +146,50 @@ public final class RecordingPos
             if (RECORD_ALLOCATED == counterState)
             {
                 if (countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID &&
-                    buffer.getLong(CountersReader.metaDataOffset(i) + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId)
+                    buffer.getLong(metaDataOffset(i) + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId)
                 {
                     return i;
+                }
+            }
+            else if (RECORD_UNUSED == counterState)
+            {
+                break;
+            }
+        }
+
+        return NULL_COUNTER_ID;
+    }
+
+    /**
+     * Find the active counter id for a stream based on the recording id and archive id.
+     *
+     * @param countersReader to search within.
+     * @param recordingId    for the active recording.
+     * @param archiveId      to target specific Archive. Use {@link Aeron#NULL_VALUE} to emulate old behavior.
+     * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
+     */
+    public static int findCounterIdByRecording(
+        final CountersReader countersReader, final long recordingId, final long archiveId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            final int counterState = countersReader.getCounterState(i);
+            if (RECORD_ALLOCATED == counterState)
+            {
+                if (countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID)
+                {
+                    final int keyOffset = metaDataOffset(i) + KEY_OFFSET;
+                    if (buffer.getLong(keyOffset + RECORDING_ID_OFFSET) == recordingId)
+                    {
+                        final int sourceIdentityLength = buffer.getInt(keyOffset + SOURCE_IDENTITY_LENGTH_OFFSET);
+                        final int archiveIdOffset = keyOffset + SOURCE_IDENTITY_OFFSET + sourceIdentityLength;
+                        if (Aeron.NULL_VALUE == archiveId || buffer.getLong(archiveIdOffset) == archiveId)
+                        {
+                            return i;
+                        }
+                    }
                 }
             }
             else if (RECORD_UNUSED == counterState)
@@ -164,7 +207,9 @@ public final class RecordingPos
      * @param countersReader to search within.
      * @param sessionId      for the active recording.
      * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
+     * @deprecated Use {@link #findCounterIdBySession(CountersReader, int, long)} instead.
      */
+    @Deprecated
     public static int findCounterIdBySession(final CountersReader countersReader, final int sessionId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
@@ -175,9 +220,50 @@ public final class RecordingPos
             if (RECORD_ALLOCATED == counterState)
             {
                 if (countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID &&
-                    buffer.getInt(CountersReader.metaDataOffset(i) + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
+                    buffer.getInt(metaDataOffset(i) + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
                 {
                     return i;
+                }
+            }
+            else if (RECORD_UNUSED == counterState)
+            {
+                break;
+            }
+        }
+
+        return NULL_COUNTER_ID;
+    }
+
+    /**
+     * Find the active counter id for a stream based on the session id and archive id.
+     *
+     * @param countersReader to search within.
+     * @param sessionId      for the active recording.
+     * @param archiveId      to target specific Archive. Use {@link Aeron#NULL_VALUE} to emulate old behavior.
+     * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
+     */
+    public static int findCounterIdBySession(
+        final CountersReader countersReader, final int sessionId, final long archiveId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            final int counterState = countersReader.getCounterState(i);
+            if (RECORD_ALLOCATED == counterState)
+            {
+                if (countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID)
+                {
+                    final int keyOffset = metaDataOffset(i) + KEY_OFFSET;
+                    if (buffer.getInt(keyOffset + SESSION_ID_OFFSET) == sessionId)
+                    {
+                        final int sourceIdentityLength = buffer.getInt(keyOffset + SOURCE_IDENTITY_LENGTH_OFFSET);
+                        final int archiveIdOffset = keyOffset + SOURCE_IDENTITY_OFFSET + sourceIdentityLength;
+                        if (Aeron.NULL_VALUE == archiveId || buffer.getLong(archiveIdOffset) == archiveId)
+                        {
+                            return i;
+                        }
+                    }
                 }
             }
             else if (RECORD_UNUSED == counterState)
@@ -202,7 +288,7 @@ public final class RecordingPos
             countersReader.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID)
         {
             return countersReader.metaDataBuffer()
-                .getLong(CountersReader.metaDataOffset(counterId) + KEY_OFFSET + RECORDING_ID_OFFSET);
+                .getLong(metaDataOffset(counterId) + KEY_OFFSET + RECORDING_ID_OFFSET);
         }
 
         return NULL_RECORDING_ID;
@@ -220,7 +306,7 @@ public final class RecordingPos
         if (counters.getCounterState(counterId) == RECORD_ALLOCATED &&
             counters.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID)
         {
-            final int recordOffset = CountersReader.metaDataOffset(counterId);
+            final int recordOffset = metaDataOffset(counterId);
             return counters.metaDataBuffer().getStringAscii(recordOffset + KEY_OFFSET + SOURCE_IDENTITY_LENGTH_OFFSET);
         }
 

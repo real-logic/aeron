@@ -209,7 +209,8 @@ class RecordingReplicatorTest
         try (ExclusivePublication publication = aeronArchive.addRecordedExclusivePublication(channel, streamId))
         {
             final CountersReader counters = aeronArchive.context().aeron().countersReader();
-            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId =
+                Tests.awaitRecordingCounterId(counters, publication.sessionId(), aeronArchive.archiveId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
             final BufferClaim bufferClaim = new BufferClaim();
 

@@ -47,7 +47,8 @@ public:
         m_subscriptionTagId(NULL_VALUE),
         m_fileIoMaxLength(NULL_VALUE),
         m_replicationSessionId(NULL_VALUE)
-    {}
+    {
+    }
 
     /**
      * The stop position for this replication request.
@@ -278,7 +279,8 @@ public:
         m_fileIoMaxLength(NULL_VALUE),
         m_position(NULL_POSITION),
         m_length(NULL_LENGTH)
-    {}
+    {
+    }
 
     /**
      * Gets the counterId specified for the bounding the replay. Returns aeron::NULL_VALUE if unspecified.
@@ -491,6 +493,22 @@ public:
     bool closeSession(std::int64_t controlSessionId)
     {
         const util::index_t length = closeSession(m_buffer, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
+     * Resolve id the archive.
+     *
+     * @param controlSessionId with the archive.
+     * @param correlationId with the archive.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool archiveId(std::int64_t controlSessionId, std::int64_t correlationId)
+    {
+        const util::index_t length = archiveId(m_buffer, controlSessionId, correlationId);
 
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
@@ -926,6 +944,23 @@ public:
     bool getRecordingPosition(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
     {
         const util::index_t length = getRecordingPosition(m_buffer, recordingId, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
+     * Get the stop or active recorded position of a recording.
+     *
+     * @param recordingId      of the recording that the stop of active recording position is being requested for.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool getMaxRecordedPosition(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
+    {
+        const util::index_t length = getMaxRecordedPosition(m_buffer, recordingId, correlationId, controlSessionId);
 
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
@@ -1503,6 +1538,8 @@ private:
 
     static util::index_t closeSession(AtomicBuffer &buffer, std::int64_t controlSessionId);
 
+    static util::index_t archiveId(AtomicBuffer &buffer, std::int64_t correlationId, std::int64_t controlSessionId);
+
     static util::index_t startRecording(
         AtomicBuffer &buffer,
         const std::string &channel,
@@ -1628,6 +1665,12 @@ private:
         std::int64_t controlSessionId);
 
     static util::index_t getStopPosition(
+        AtomicBuffer &buffer,
+        std::int64_t recordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t getMaxRecordedPosition(
         AtomicBuffer &buffer,
         std::int64_t recordingId,
         std::int64_t correlationId,

@@ -74,7 +74,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
         return subscription.poll(fragmentAssembler, limit);
     }
 
-    @SuppressWarnings({ "MethodLength", "deprecation" })
+    @SuppressWarnings("MethodLength")
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
@@ -212,14 +212,6 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                 consensusModuleAgent.onStopCatchup(
                     stopCatchupDecoder.leadershipTermId(),
                     stopCatchupDecoder.followerMemberId());
-                break;
-
-            case SnapshotRecordingQueryDecoder.TEMPLATE_ID:
-            case AddPassiveMemberDecoder.TEMPLATE_ID:
-            case ClusterMembersChangeDecoder.TEMPLATE_ID:
-            case SnapshotRecordingsDecoder.TEMPLATE_ID:
-            case JoinClusterDecoder.TEMPLATE_ID:
-                // Removed Dynamic Join.
                 break;
 
             case TerminationPositionDecoder.TEMPLATE_ID:
@@ -367,10 +359,8 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                     standbySnapshotEntries,
                     responseStreamId,
                     responseChannel,
-                    encodedCredentials
-                );
+                    encodedCredentials);
             }
-
         }
     }
 }

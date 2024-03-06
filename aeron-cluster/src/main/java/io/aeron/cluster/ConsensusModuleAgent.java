@@ -1193,7 +1193,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             restoreUncommittedEntries(logPosition);
 
             final CountersReader counters = ctx.aeron().countersReader();
-            while (CountersReader.NULL_COUNTER_ID != RecordingPos.findCounterIdByRecording(counters, logRecordingId))
+            final long archiveId = archive.archiveId();
+            while (CountersReader.NULL_COUNTER_ID !=
+                RecordingPos.findCounterIdByRecording(counters, logRecordingId, archiveId))
             {
                 idle();
             }
@@ -2693,7 +2695,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private boolean tryCreateAppendPosition(final int logSessionId)
     {
         final CountersReader counters = aeron.countersReader();
-        final int counterId = RecordingPos.findCounterIdBySession(counters, logSessionId);
+        final int counterId = RecordingPos.findCounterIdBySession(counters, logSessionId, archive.archiveId());
         if (CountersReader.NULL_COUNTER_ID == counterId)
         {
             return false;
@@ -3086,6 +3088,22 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
     private void takeSnapshot(final long timestamp, final long logPosition, final ServiceAck[] serviceAcks)
     {
+        boolean hasSnapshotErrors = false;
+        for (int serviceId = serviceAcks.length - 1; serviceId >= 0; serviceId--)
+        {
+            final long snapshotId = serviceAcks[serviceId].relevantId();
+            if (NULL_VALUE == snapshotId)
+            {
+                ctx.errorLog().record(new ClusterEvent("service=" + serviceId + " failed to take snapshot"));
+                hasSnapshotErrors = true;
+            }
+        }
+
+        if (hasSnapshotErrors)
+        {
+            return;
+        }
+
         final long recordingId;
         try (ExclusivePublication publication = aeron.addExclusivePublication(
             ctx.snapshotChannel(), ctx.snapshotStreamId()))
@@ -3093,7 +3111,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());
             archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL, true);
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounter(counters, publication.sessionId());
+            final int counterId = awaitRecordingCounter(counters, publication.sessionId(), archive.archiveId());
             recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             snapshotState(publication, logPosition, leadershipTermId);
@@ -3148,14 +3166,14 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    private int awaitRecordingCounter(final CountersReader counters, final int sessionId)
+    private int awaitRecordingCounter(final CountersReader counters, final int sessionId, final long archiveId)
     {
         idleStrategy.reset();
-        int counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
+        int counterId = RecordingPos.findCounterIdBySession(counters, sessionId, archiveId);
         while (CountersReader.NULL_COUNTER_ID == counterId)
         {
             idle();
-            counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
+            counterId = RecordingPos.findCounterIdBySession(counters, sessionId, archiveId);
         }
 
         return counterId;

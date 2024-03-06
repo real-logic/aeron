@@ -51,6 +51,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -61,6 +62,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileStore;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -75,6 +77,7 @@ import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static io.aeron.test.TestContexts.*;
 import static org.agrona.BitUtil.align;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
@@ -226,7 +229,8 @@ class ArchiveTest
             int counterId;
             final int sessionId = publication.sessionId();
             final CountersReader countersReader = aeron.countersReader();
-            while (Aeron.NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(countersReader, sessionId)))
+            while (Aeron.NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(
+                countersReader, sessionId, archive.archiveId())))
             {
                 Tests.yield();
             }
@@ -414,6 +418,50 @@ class ArchiveTest
     }
 
     @Test
+    @InterruptAfter(10)
+    void shouldResolveArchiveId(@TempDir final Path dir)
+    {
+        final Path aeronDir = dir.resolve("driver");
+        final Path archive1Dir = dir.resolve("archive1");
+        final Path archive2Dir = dir.resolve("archive2");
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .threadingMode(ThreadingMode.SHARED)
+            .aeronDirectoryName(aeronDir.toString());
+
+        try (MediaDriver ignore = MediaDriver.launch(driverCtx);
+            Archive archive1 = Archive.launch(
+                new Archive.Context()
+                .controlChannel(LOCALHOST_CONTROL_REQUEST_CHANNEL)
+                .replicationChannel(LOCALHOST_REPLICATION_CHANNEL)
+                .deleteArchiveOnStart(true)
+                .threadingMode(SHARED)
+                .aeronDirectoryName(aeronDir.toString())
+                .archiveDir(archive1Dir.toFile())
+                .archiveId(42));
+            Archive archive2 = Archive.launch(
+                new Archive.Context()
+                .controlChannel("aeron:udp?endpoint=localhost:8011")
+                .replicationChannel(LOCALHOST_REPLICATION_CHANNEL)
+                .deleteArchiveOnStart(true)
+                .threadingMode(SHARED)
+                .aeronDirectoryName(aeronDir.toString())
+                .archiveDir(archive2Dir.toFile()));
+            AeronArchive client1 = AeronArchive.connect(new AeronArchive.Context()
+                .aeronDirectoryName(aeronDir.toString())
+                .controlRequestChannel(archive1.context().controlChannel())
+                .controlResponseChannel(LOCALHOST_CONTROL_RESPONSE_CHANNEL));
+            AeronArchive client2 = AeronArchive.connect(new AeronArchive.Context()
+                .aeronDirectoryName(aeronDir.toString())
+                .controlRequestChannel(archive2.context().controlChannel())
+                .controlResponseChannel(LOCALHOST_CONTROL_RESPONSE_CHANNEL)))
+        {
+            assertEquals(42, client1.archiveId());
+            assertEquals(archive2.context().archiveId(), client2.archiveId());
+        }
+    }
+
+    @Test
     void dataBufferIsAllocatedOnDemand()
     {
         final Context context = new Context();
@@ -586,7 +634,7 @@ class ArchiveTest
                 final int sessionId = publication.sessionId();
 
                 final CountersReader counters = aeron.countersReader();
-                final int counterId = Tests.awaitRecordingCounterId(counters, sessionId);
+                final int counterId = Tests.awaitRecordingCounterId(counters, sessionId, archive.archiveId());
 
                 final BufferClaim bufferClaim = new BufferClaim();
                 for (int i = 0; i < 111; i++)
@@ -644,7 +692,8 @@ class ArchiveTest
                 final int sessionId = publication.sessionId();
                 final CountersReader countersReader = aeron.countersReader();
 
-                while (Aeron.NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(countersReader, sessionId)))
+                while (Aeron.NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(
+                    countersReader, sessionId, archive.archiveId())))
                 {
                     Tests.yield();
                 }

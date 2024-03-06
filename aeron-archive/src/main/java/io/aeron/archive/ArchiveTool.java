@@ -1688,7 +1688,12 @@ public class ArchiveTool
             "  count-entries: queries the number of `VALID` recording entries in the catalog.%n%n" +
             "  delete-orphaned-segments: deletes orphaned recording segments that have been detached,%n" +
             "     i.e. outside the start and stop recording range, but are not deleted.%n%n" +
-            "  describe [recordingId]: prints out descriptor(s) in the catalog.%n%n" +
+            "  describe: prints out descriptors for all valid recordings in the catalog. " +
+            "(Excludes invalidated recordings.)%n%n" +
+            "  describe [recordingId]: prints out descriptor for the specified valid recording the catalog. " +
+            "(Excludes invalidated recordings.)%n%n" +
+            "  describe-all: prints out descriptors for all recordings in the catalog. " +
+            "(Includes invalidated recordings.)%n%n" +
             "  dump [data fragment limit per recording]: prints descriptor(s)%n" +
             "     in the catalog and associated recorded data.%n%n" +
             "  errors: prints errors for the archive and media driver.%n%n" +

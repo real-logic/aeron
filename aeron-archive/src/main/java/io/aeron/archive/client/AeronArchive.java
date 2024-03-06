@@ -3496,7 +3496,7 @@ public final class AeronArchive implements AutoCloseable
             AWAIT_SUBSCRIPTION_CONNECTED(3),
             AWAIT_CONNECT_RESPONSE(4),
             SEND_ARCHIVE_ID_REQUEST(5),
-            AWAIT_ARCHIVE_ID_RESULT(6),
+            AWAIT_ARCHIVE_ID_RESPONSE(6),
             CONNECTED(7),
             SEND_CHALLENGE_RESPONSE(8),
             AWAIT_CHALLENGE_RESPONSE(9);
@@ -3670,7 +3670,7 @@ public final class AeronArchive implements AutoCloseable
                     return null;
                 }
 
-                state(State.AWAIT_ARCHIVE_ID_RESULT);
+                state(State.AWAIT_ARCHIVE_ID_RESPONSE);
             }
 
             if (State.SEND_CHALLENGE_RESPONSE == state)
@@ -3703,21 +3703,20 @@ public final class AeronArchive implements AutoCloseable
                     final ControlResponseCode code = controlResponsePoller.code();
                     if (ControlResponseCode.OK != code)
                     {
+                        archiveProxy.closeSession(controlSessionId);
                         if (ControlResponseCode.ERROR == code)
                         {
                             final String errorMessage = controlResponsePoller.errorMessage();
                             final int errorCode = (int)controlResponsePoller.relevantId();
 
-                            archiveProxy.closeSession(controlSessionId);
                             throw new ArchiveException(errorMessage, errorCode, correlationId);
                         }
 
-                        archiveProxy.closeSession(controlSessionId);
                         throw new ArchiveException(
                             "unexpected response: code=" + code, correlationId, AeronException.Category.ERROR);
                     }
 
-                    if (State.AWAIT_ARCHIVE_ID_RESULT == state)
+                    if (State.AWAIT_ARCHIVE_ID_RESPONSE == state)
                     {
                         final long archiveId = controlResponsePoller.relevantId();
                         aeronArchive = transitionToConnected(archiveId);

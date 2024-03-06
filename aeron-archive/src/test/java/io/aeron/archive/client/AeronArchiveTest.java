@@ -256,7 +256,7 @@ class AeronArchiveTest
             assertEquals(SEND_ARCHIVE_ID_REQUEST, asyncConnect.state()); // failed to send `archive-id` request
 
             assertNull(asyncConnect.poll());
-            assertEquals(AWAIT_ARCHIVE_ID_RESULT, asyncConnect.state()); // wrong correlationId
+            assertEquals(AWAIT_ARCHIVE_ID_RESPONSE, asyncConnect.state()); // wrong correlationId
 
             final long controlSessionIdArchiveId = Long.MIN_VALUE;
             final long archiveId = 8888;
@@ -388,7 +388,7 @@ class AeronArchiveTest
             final long correlationIdArchiveId = asyncConnect.correlationId();
 
             assertNull(asyncConnect.poll());
-            assertEquals(AWAIT_ARCHIVE_ID_RESULT, asyncConnect.state()); // wrong correlationId
+            assertEquals(AWAIT_ARCHIVE_ID_RESPONSE, asyncConnect.state()); // wrong correlationId
 
             final long controlSessionIdArchiveId = -4345983675937534593L;
             final long archiveId = -42;

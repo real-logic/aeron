@@ -49,7 +49,6 @@ typedef pthread_t aeron_thread_t;
 #define aeron_thread_get_specific pthread_getspecific
 #define aeron_thread_set_specific pthread_setspecific
 
-// TODO implement the 'pthread_cond_*' functions for MSVC
 typedef pthread_cond_t aeron_cond_t;
 #define aeron_cond_init pthread_cond_init
 #define aeron_cond_destroy pthread_cond_destroy

@@ -21,7 +21,6 @@
 #include "uri/aeron_uri.h"
 #include "util/aeron_netutil.h"
 #include "aeron_name_resolver.h"
-#include "concurrent/aeron_executor.h"
 #include "util/aeron_error.h"
 
 #define AERON_UDP_CHANNEL_RESERVED_VALUE_OFFSET (-8)
@@ -64,28 +63,21 @@ typedef struct aeron_udp_channel_stct
 }
 aeron_udp_channel_t;
 
-typedef void (*aeron_udp_channel_async_parse_complete_func_t)(
-    aeron_driver_conductor_t *conductor,
-    int result,
-    int errcode,
-    const char *errmsg,
-    aeron_udp_channel_t *channel,
-    void *clientd);
+typedef struct aeron_udp_channel_async_parse_stct
+{
+    aeron_udp_channel_t *channel;
+    bool is_destination;
+}
+aeron_udp_channel_async_parse_t;
 
-typedef struct aeron_udp_channel_async_parse_stct aeron_udp_channel_async_parse_t;
-
-int aeron_udp_channel_build_async_parse(
+int aeron_udp_channel_do_initial_parse(
     size_t uri_length,
     const char *uri,
-    bool is_destination,
-    aeron_udp_channel_async_parse_t **async_parse,
-    size_t async_parse_clientd_length,
-    void **async_parse_clientd);
+    aeron_udp_channel_async_parse_t *async_parse);
 
-int aeron_udp_channel_submit_async_parse(
-    aeron_executor_t *executor,
-    aeron_udp_channel_async_parse_t *async_parse,
-    aeron_udp_channel_async_parse_complete_func_t on_complete);
+int aeron_udp_channel_finish_parse(
+    aeron_name_resolver_t *resolver,
+    aeron_udp_channel_async_parse_t *async_parse);
 
 int aeron_udp_channel_parse(
     size_t uri_length,

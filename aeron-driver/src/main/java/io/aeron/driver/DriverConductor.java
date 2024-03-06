@@ -152,7 +152,7 @@ public final class DriverConductor implements Agent
         dutyCycleTracker = ctx.conductorDutyCycleTracker();
 
         asyncTaskExecutor = ctx.asyncTaskExecutor();
-        asyncExecutionDisabled = ctx.asyncTaskExecutorThreadCount() <= 0;
+        asyncExecutionDisabled = ctx.asyncTaskExecutorThreads() <= 0;
 
         countersManager = ctx.countersManager();
 

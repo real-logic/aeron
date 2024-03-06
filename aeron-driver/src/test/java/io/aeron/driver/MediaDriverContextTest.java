@@ -158,17 +158,17 @@ class MediaDriverContextTest
     @ValueSource(ints = { -100, 42, Integer.MAX_VALUE })
     void asyncTaskExecutorThreadCount(final int threadCount)
     {
-        assertEquals(1, context.asyncTaskExecutorThreadCount());
+        assertEquals(1, context.asyncTaskExecutorThreads());
 
-        context.asyncTaskExecutorThreadCount(threadCount);
-        assertEquals(threadCount, context.asyncTaskExecutorThreadCount());
+        context.asyncTaskExecutorThreads(threadCount);
+        assertEquals(threadCount, context.asyncTaskExecutorThreads());
     }
 
     @ParameterizedTest
     @ValueSource(ints = { -5, 0 })
     void shouldDisableAsyncExecutionIfThreadsAreNotConfigured(final int asyncExecutorThreadCount)
     {
-        context.asyncTaskExecutorThreadCount(asyncExecutorThreadCount);
+        context.asyncTaskExecutorThreads(asyncExecutorThreadCount);
         assertNull(context.asyncTaskExecutor());
         assertFalse(context.ownsAsyncTaskExecutor());
 
@@ -186,7 +186,7 @@ class MediaDriverContextTest
     {
         assertNull(context.asyncTaskExecutor());
         assertFalse(context.ownsAsyncTaskExecutor());
-        context.asyncTaskExecutorThreadCount(asyncExecutorThreadCount);
+        context.asyncTaskExecutorThreads(asyncExecutorThreadCount);
 
         context.concludeNullProperties();
 

@@ -780,10 +780,10 @@ public final class Configuration
     public static final String RECEIVER_WILDCARD_PORT_RANGE_PROP_NAME = "aeron.receiver.wildcard.port.range";
 
     /**
-     * Property name to configure the number of async executor threads. Defaults to {@code 1}. Value of zero means no
-     * asynchronous threads will be created, i.e. execution will be done on the caller thread.
+     * Property name to configure the number of async executor threads. Defaults to {@code 1}. Negative value or zero
+     * means no asynchronous threads should be created, i.e. execution will be done on the conductor thread.
      */
-    public static final String ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME = "aeron.driver.async.executor.thread.count";
+    public static final String ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME = "aeron.driver.async.executor.threads";
 
     /**
      * {@link Executor} that run tasks on the caller thread.
@@ -1562,12 +1562,11 @@ public final class Configuration
      * Number of async executor threads.
      *
      * @return number of threads, defaults to one.
-     * @see #ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME
+     * @see #ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME
      */
-    public static int asyncTaskExecutorThreadCount()
+    public static int asyncTaskExecutorThreads()
     {
-        final Integer integer = getInteger(ASYNC_TASK_EXECUTOR_THREAD_COUNT_PROP_NAME, 1);
-        return integer < 0 ? 0 : integer;
+        return getInteger(ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME, 1);
     }
 
     /**

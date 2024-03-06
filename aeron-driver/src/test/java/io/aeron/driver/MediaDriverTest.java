@@ -168,7 +168,7 @@ class MediaDriverTest
         final MediaDriver.Context context = new MediaDriver.Context()
             .aeronDirectoryName(aeronDir.toString())
             .threadingMode(ThreadingMode.DEDICATED)
-            .asyncTaskExecutorThreadCount(2);
+            .asyncTaskExecutorThreads(2);
         try (TestMediaDriver mediaDriver = TestMediaDriver.launch(context, systemTestWatcher))
         {
             systemTestWatcher.dataCollector().add(mediaDriver.context().aeronDirectory());

@@ -554,7 +554,7 @@ public final class Configuration
     /**
      * Capacity for the command queues used between driver agents.
      */
-    public static final int CMD_QUEUE_CAPACITY = 128;
+    public static final int CMD_QUEUE_CAPACITY = 1024;
 
     /**
      * Timeout on cleaning up pending SETUP message state on subscriber.

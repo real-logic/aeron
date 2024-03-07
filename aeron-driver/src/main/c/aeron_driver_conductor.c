@@ -2807,12 +2807,15 @@ typedef int (*aeron_driver_async_client_command_on_execute_func_t)(aeron_driver_
 
 typedef int (*aeron_driver_async_client_command_on_complete_func_t)(aeron_driver_conductor_t *conductor, void *void_async_command, void *clientd);
 
+typedef int (*aeron_driver_async_client_command_on_error_func_t)(aeron_driver_conductor_t *conductor, int result, void *void_async_command, void *clientd);
+
 typedef struct aeron_driver_async_client_command_stct
 {
     aeron_correlated_command_t *correlated;
     aeron_driver_async_client_command_on_execute_func_t on_execute;
     void *on_execute_clientd; // this is passed to the on_execute callback
     aeron_driver_async_client_command_on_complete_func_t on_complete;
+    aeron_driver_async_client_command_on_error_func_t on_error;
     void *void_async_command; // this should contain extra info as well as the original command
 }
 aeron_driver_async_client_command_t;
@@ -2843,7 +2846,22 @@ void aeron_driver_async_client_command_complete(int result, int errcode, const c
 
     if (result < 0)
     {
-        aeron_driver_conductor_on_error(conductor, errcode, errmsg, correlation_id);
+        if (async_client_command->on_error == NULL)
+        {
+            aeron_driver_conductor_on_error(conductor, errcode, errmsg, correlation_id);
+        }
+        else
+        {
+            // TODO set current errcode/errmsg to what was handed to this function???
+            if (async_client_command->on_error(
+                conductor,
+                result,
+                async_client_command->void_async_command,
+                async_client_command->on_execute_clientd) < 0)
+            {
+                aeron_driver_conductor_on_error(conductor, aeron_errcode(), aeron_errmsg(), correlation_id);
+            }
+        }
     }
     else if (async_client_command->on_complete(conductor, async_client_command->void_async_command, async_client_command->on_execute_clientd) < 0)
     {
@@ -2867,6 +2885,7 @@ int aeron_driver_async_client_command_allocate(
         return -1;
     }
 
+    async_client_command->on_error = NULL;
     async_client_command->void_async_command = (void *)((const char *)async_client_command + AERON_PADDED_SIZEOF(aeron_driver_async_client_command_t));
 
     *async_client_commandp = async_client_command;
@@ -2909,6 +2928,24 @@ int aeron_driver_async_parse_udp_channel_execute(aeron_driver_conductor_t *condu
     return 0;
 }
 
+int aeron_driver_async_resolve_execute(aeron_driver_conductor_t *conductor, void *clientd)
+{
+    aeron_name_resolver_async_resolve_t *async_resolve = (aeron_name_resolver_async_resolve_t *) clientd;
+
+    if (aeron_name_resolver_resolve_host_and_port(
+        &conductor->name_resolver,
+        async_resolve->endpoint_name,
+        async_resolve->uri_param_name,
+        async_resolve->is_re_resolution,
+        &async_resolve->sockaddr) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    return 0;
+}
+
 typedef struct aeron_publication_async_command_t_stct
 {
     aeron_udp_channel_async_parse_t async_parse;
@@ -2930,6 +2967,15 @@ typedef struct aeron_destination_async_command_stct
     aeron_destination_command_t *original_command;
 }
 aeron_destination_async_command_t;
+
+typedef struct aeron_send_destination_async_command_stct
+{
+    aeron_name_resolver_async_resolve_t async_resolve;
+    aeron_send_channel_endpoint_t *endpoint;
+    aeron_uri_t *uri;
+    aeron_destination_command_t *original_command;
+}
+aeron_send_destination_async_command_t;
 
 aeron_rb_read_action_t aeron_driver_conductor_on_command(
     int32_t msg_type_id, const void *message, size_t length, void *clientd)
@@ -4463,6 +4509,36 @@ int aeron_driver_conductor_on_client_keepalive(aeron_driver_conductor_t *conduct
     return 0;
 }
 
+int aeron_driver_conductor_on_add_send_destination_complete(
+    aeron_driver_conductor_t *conductor,
+    void *void_async_command,
+    void *on_execute_clientd)
+{
+    aeron_send_destination_async_command_t *async_command = (aeron_send_destination_async_command_t *) void_async_command;
+    aeron_destination_command_t *command = async_command->original_command;
+    aeron_name_resolver_async_resolve_t *async_resolve = (aeron_name_resolver_async_resolve_t *) on_execute_clientd;
+
+    aeron_driver_sender_proxy_on_add_destination(
+        conductor->context->sender_proxy, async_command->endpoint, async_command->uri, &async_resolve->sockaddr);
+    aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+
+    return 0;
+}
+
+int aeron_driver_conductor_on_add_send_destination_error(
+    aeron_driver_conductor_t *conductor,
+    int result,
+    void *void_async_command,
+    void *on_execute_clientd)
+{
+    aeron_name_resolver_async_resolve_t *async_resolve = (aeron_name_resolver_async_resolve_t *)on_execute_clientd;
+
+    memset(&async_resolve->sockaddr, 0, sizeof(async_resolve->sockaddr));
+    async_resolve->sockaddr.ss_family = AF_UNSPEC;
+
+    return aeron_driver_conductor_on_add_send_destination_complete(conductor, void_async_command, on_execute_clientd);
+}
+
 int aeron_driver_conductor_on_add_send_destination(
     aeron_driver_conductor_t *conductor, aeron_destination_command_t *command)
 {
@@ -4479,81 +4555,117 @@ int aeron_driver_conductor_on_add_send_destination(
         }
     }
 
-    if (NULL != endpoint)
+    if (NULL == endpoint)
     {
-        aeron_uri_t *uri = NULL;
-        const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
+        AERON_SET_ERR(
+            -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
+            "unknown add destination client_id=%" PRId64 " registration_id=%" PRId64,
+            command->correlated.client_id,
+            command->registration_id);
 
-        if (aeron_driver_conductor_validate_destination_uri_prefix(command_uri, command->channel_length, "send") < 0)
-        {
-            goto error_cleanup;
-        }
-
-        if (aeron_alloc((void **)&uri, sizeof(aeron_uri_t)) < 0)
-        {
-            AERON_APPEND_ERR("%s", "Failed to allocate uri");
-            goto error_cleanup;
-        }
-
-        size_t uri_length = (size_t)command->channel_length;
-        if (aeron_uri_parse(uri_length, command_uri, uri) < 0 ||
-            aeron_driver_conductor_validate_send_destination_uri(uri, uri_length) < 0)
-        {
-            goto error_cleanup;
-        }
-
-        if (aeron_driver_conductor_validate_destination_uri_params(uri, uri_length) < 0)
-        {
-            AERON_APPEND_ERR("%s", "");
-            goto error_cleanup;
-        }
-
-        if (NULL == endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
-        {
-            AERON_SET_ERR(
-                EINVAL,
-                "channel does not allow manual control of destinations: %.*s",
-                command->channel_length, command_uri);
-            goto error_cleanup;
-        }
-
-        if (uri->type != AERON_URI_UDP || NULL == uri->params.udp.endpoint)
-        {
-            AERON_SET_ERR(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
-            goto error_cleanup;
-        }
-
-        struct sockaddr_storage destination_addr;
-        if (aeron_name_resolver_resolve_host_and_port(
-            &conductor->name_resolver,
-            uri->params.udp.endpoint,
-            AERON_UDP_CHANNEL_ENDPOINT_KEY,
-            false,
-            &destination_addr) < 0)
-        {
-            memset(&destination_addr, 0, sizeof(destination_addr));
-            destination_addr.ss_family = AF_UNSPEC;
-        }
-
-        aeron_driver_sender_proxy_on_add_destination(
-            conductor->context->sender_proxy, endpoint, uri, &destination_addr);
-        aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
-
-        return 0;
-
-error_cleanup:
-        aeron_uri_close(uri);
-        aeron_free(uri);
         return -1;
     }
 
-    AERON_SET_ERR(
-        -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
-        "unknown add destination client_id=%" PRId64 " registration_id=%" PRId64,
-        command->correlated.client_id,
-        command->registration_id);
+    aeron_uri_t *uri = NULL;
+    const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
 
+    if (aeron_driver_conductor_validate_destination_uri_prefix(command_uri, command->channel_length, "send") < 0)
+    {
+        goto error_cleanup;
+    }
+
+    if (aeron_alloc((void **)&uri, sizeof(aeron_uri_t)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Failed to allocate uri");
+        goto error_cleanup;
+    }
+
+    size_t uri_length = (size_t)command->channel_length;
+    if (aeron_uri_parse(uri_length, command_uri, uri) < 0 ||
+        aeron_driver_conductor_validate_send_destination_uri(uri, uri_length) < 0)
+    {
+        goto error_cleanup;
+    }
+
+    if (aeron_driver_conductor_validate_destination_uri_params(uri, uri_length) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        goto error_cleanup;
+    }
+
+    if (NULL == endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "channel does not allow manual control of destinations: %.*s",
+            command->channel_length, command_uri);
+        goto error_cleanup;
+    }
+
+    if (uri->type != AERON_URI_UDP || NULL == uri->params.udp.endpoint)
+    {
+        AERON_SET_ERR(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
+        goto error_cleanup;
+    }
+
+    aeron_driver_async_client_command_t *async_client_command;
+
+    if (aeron_driver_async_client_command_allocate(
+        &async_client_command,
+        AERON_PADDED_SIZEOF(aeron_send_destination_async_command_t) + sizeof(aeron_destination_command_t)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        goto error_cleanup;
+    }
+
+    aeron_send_destination_async_command_t *async_command = (aeron_send_destination_async_command_t *)async_client_command->void_async_command;
+
+    async_command->async_resolve.uri_param_name = AERON_UDP_CHANNEL_ENDPOINT_KEY;
+    async_command->async_resolve.is_re_resolution = false;
+    memcpy(async_command->async_resolve.endpoint_name, uri->params.udp.endpoint, strlen(uri->params.udp.endpoint));
+
+    // TODO instead of storing the pointer, should we be looking this up again in the on_complete callback?
+    async_command->endpoint = endpoint;
+    async_command->uri = uri;
+    async_command->original_command = (aeron_destination_command_t *)((char *)async_command + AERON_PADDED_SIZEOF(aeron_send_destination_async_command_t));
+
+    memcpy(async_command->original_command, command, sizeof(aeron_destination_command_t));
+
+    async_client_command->correlated = &async_command->original_command->correlated;
+    async_client_command->on_execute = aeron_driver_async_resolve_execute;
+    async_client_command->on_execute_clientd = &async_command->async_resolve;
+    async_client_command->on_complete = aeron_driver_conductor_on_add_send_destination_complete;
+    async_client_command->on_error = aeron_driver_conductor_on_add_send_destination_error;
+
+    if (aeron_driver_async_client_command_submit(conductor, async_client_command) < 0)
+    {
+        aeron_free(async_client_command);
+        AERON_APPEND_ERR("%s", "");
+        goto error_cleanup;
+    }
+
+    return 0;
+
+error_cleanup:
+    aeron_uri_close(uri);
+    aeron_free(uri);
     return -1;
+}
+
+int aeron_driver_conductor_on_remove_send_destination_complete(
+    aeron_driver_conductor_t *conductor,
+    void *void_async_command,
+    void *on_execute_clientd)
+{
+    aeron_send_destination_async_command_t *async_command = (aeron_send_destination_async_command_t *)void_async_command;
+    aeron_destination_command_t *command = async_command->original_command;
+    aeron_name_resolver_async_resolve_t *async_resolve = (aeron_name_resolver_async_resolve_t *)on_execute_clientd;
+
+    aeron_driver_sender_proxy_on_remove_destination(
+        conductor->context->sender_proxy, async_command->endpoint, &async_resolve->sockaddr);
+    aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+
+    return 0;
 }
 
 int aeron_driver_conductor_on_remove_send_destination(
@@ -4572,61 +4684,80 @@ int aeron_driver_conductor_on_remove_send_destination(
         }
     }
 
-    if (NULL != endpoint)
+    if (NULL == endpoint)
     {
-        aeron_uri_t uri_params;
-        const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
-        size_t uri_length = (size_t)command->channel_length;
-        if (aeron_uri_parse(uri_length, command_uri, &uri_params) < 0)
-        {
-            goto error_cleanup;
-        }
+        AERON_SET_ERR(
+            -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
+            "unknown remove destination, client_id=%" PRId64 " registration_id=%" PRId64,
+            command->correlated.client_id,
+            command->registration_id);
 
-        if (NULL == endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
-        {
-            AERON_SET_ERR(
-                EINVAL,
-                "channel does not allow manual control of destinations: %.*s",
-                command->channel_length, command_uri);
-            goto error_cleanup;
-        }
-
-        if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint)
-        {
-            AERON_SET_ERR(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
-            goto error_cleanup;
-        }
-
-        struct sockaddr_storage destination_addr;
-        if (aeron_name_resolver_resolve_host_and_port(
-            &conductor->name_resolver,
-            uri_params.params.udp.endpoint,
-            AERON_UDP_CHANNEL_ENDPOINT_KEY,
-            true,
-            &destination_addr) < 0)
-        {
-            AERON_APPEND_ERR("uri: %.*s", (int)uri_length, command_uri);
-            goto error_cleanup;
-        }
-
-        aeron_driver_sender_proxy_on_remove_destination(conductor->context->sender_proxy, endpoint, &destination_addr);
-        aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
-
-        aeron_uri_close(&uri_params);
-        return 0;
-
-error_cleanup:
-        aeron_uri_close(&uri_params);
         return -1;
     }
 
-    AERON_SET_ERR(
-        -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
-        "unknown remove destination, client_id=%" PRId64 " registration_id=%" PRId64,
-        command->correlated.client_id,
-        command->registration_id);
+    int rc = -1;
+    aeron_uri_t uri_params;
+    const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
+    size_t uri_length = (size_t)command->channel_length;
+    if (aeron_uri_parse(uri_length, command_uri, &uri_params) < 0)
+    {
+        goto cleanup;
+    }
 
-    return -1;
+    if (NULL == endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "channel does not allow manual control of destinations: %.*s",
+            command->channel_length, command_uri);
+        goto cleanup;
+    }
+
+    if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint)
+    {
+        AERON_SET_ERR(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
+        goto cleanup;
+    }
+
+    aeron_driver_async_client_command_t *async_client_command;
+
+    if (aeron_driver_async_client_command_allocate(
+        &async_client_command,
+        AERON_PADDED_SIZEOF(aeron_send_destination_async_command_t) + sizeof(aeron_destination_command_t)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        goto cleanup;
+    }
+
+    aeron_send_destination_async_command_t *async_command = (aeron_send_destination_async_command_t *)async_client_command->void_async_command;
+
+    async_command->async_resolve.uri_param_name = AERON_UDP_CHANNEL_ENDPOINT_KEY;
+    async_command->async_resolve.is_re_resolution = true;
+    memcpy(async_command->async_resolve.endpoint_name, uri_params.params.udp.endpoint, strlen(uri_params.params.udp.endpoint));
+
+    async_command->endpoint = endpoint;
+    async_command->uri = NULL;
+    async_command->original_command = (aeron_destination_command_t *)((char *)async_command + AERON_PADDED_SIZEOF(aeron_send_destination_async_command_t));
+
+    memcpy(async_command->original_command, command, sizeof(aeron_destination_command_t));
+
+    async_client_command->correlated = &async_command->original_command->correlated;
+    async_client_command->on_execute = aeron_driver_async_resolve_execute;
+    async_client_command->on_execute_clientd = &async_command->async_resolve;
+    async_client_command->on_complete = aeron_driver_conductor_on_remove_send_destination_complete;
+
+    if (aeron_driver_async_client_command_submit(conductor, async_client_command) < 0)
+    {
+        aeron_free(async_client_command);
+        AERON_APPEND_ERR("%s", "");
+        goto cleanup;
+    }
+
+    rc = 0;
+
+cleanup:
+    aeron_uri_close(&uri_params);
+    return rc;
 }
 
 aeron_subscription_link_t *aeron_driver_conductor_find_mds_subscription(

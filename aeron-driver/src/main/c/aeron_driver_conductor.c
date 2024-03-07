@@ -2878,17 +2878,18 @@ int aeron_driver_async_client_command_submit(
     aeron_driver_conductor_t *conductor,
     aeron_driver_async_client_command_t *async_client_command)
 {
+    conductor->async_client_command_in_flight = true;
+
     if (aeron_executor_submit(
         &conductor->executor,
         aeron_driver_async_client_command_execute,
         aeron_driver_async_client_command_complete,
         async_client_command) < 0)
     {
+        conductor->async_client_command_in_flight = false;
         AERON_APPEND_ERR("%s", "");
         return -1;
     }
-
-    conductor->async_client_command_in_flight = true;
 
     return 0;
 }

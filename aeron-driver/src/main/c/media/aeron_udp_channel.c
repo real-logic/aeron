@@ -284,8 +284,8 @@ int aeron_udp_channel_finish_parse(
 
     bool has_no_distinguishing_characteristic =
         NULL == _channel->uri.params.udp.endpoint &&
-            NULL == _channel->uri.params.udp.control &&
-            NULL == _channel->uri.params.udp.channel_tag;
+        NULL == _channel->uri.params.udp.control &&
+        NULL == _channel->uri.params.udp.channel_tag;
 
     if (has_no_distinguishing_characteristic && AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL != _channel->control_mode &&
         AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE != _channel->control_mode)
@@ -329,8 +329,8 @@ int aeron_udp_channel_finish_parse(
 
     bool requires_additional_suffix =
         (NULL == _channel->uri.params.udp.endpoint && NULL == _channel->uri.params.udp.control) ||
-            (NULL != _channel->uri.params.udp.endpoint && aeron_is_wildcard_port(&endpoint_addr)) ||
-            (NULL != _channel->uri.params.udp.control && aeron_is_wildcard_port(&explicit_control_addr));
+        (NULL != _channel->uri.params.udp.endpoint && aeron_is_wildcard_port(&endpoint_addr)) ||
+        (NULL != _channel->uri.params.udp.control && aeron_is_wildcard_port(&explicit_control_addr));
 
     requires_additional_suffix = requires_additional_suffix && !async_parse->is_destination;
 

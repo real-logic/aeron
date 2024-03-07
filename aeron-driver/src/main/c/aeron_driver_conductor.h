@@ -303,6 +303,8 @@ typedef struct aeron_driver_conductor_stct
     int64_t time_of_last_to_driver_position_change_ns;
     int64_t last_command_consumer_position;
 
+    bool async_client_command_in_flight;
+
     uint8_t padding[AERON_CACHE_LINE_LENGTH];
 }
 aeron_driver_conductor_t;

@@ -4013,6 +4013,12 @@ int aeron_driver_conductor_on_add_spy_subscription_complete(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_driver_uri_subscription_params_t params;
 
+    if (aeron_driver_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
     if (aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id) == NULL)
     {
         return -1;

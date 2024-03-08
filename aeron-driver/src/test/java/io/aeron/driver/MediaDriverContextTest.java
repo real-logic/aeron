@@ -16,7 +16,11 @@
 package io.aeron.driver;
 
 import io.aeron.driver.MediaDriver.Context;
+import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.exceptions.ConfigurationException;
+import io.aeron.test.Tests;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -26,14 +30,21 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class MediaDriverContextTest
 {
-    private final Context context = new Context();
+    private final Context context = new Context()
+        .dataTransportPoller(mock(DataTransportPoller.class));
 
     @AfterEach
     void afterEach()
@@ -141,5 +152,112 @@ class MediaDriverContextTest
 
         final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
         assertTrue(exception.getMessage().contains("ipcPublicationTermWindowLength"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -100, 42, Integer.MAX_VALUE })
+    void asyncTaskExecutorThreadCount(final int threadCount)
+    {
+        assertEquals(1, context.asyncTaskExecutorThreads());
+
+        context.asyncTaskExecutorThreads(threadCount);
+        assertEquals(threadCount, context.asyncTaskExecutorThreads());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -5, 0 })
+    void shouldDisableAsyncExecutionIfThreadsAreNotConfigured(final int asyncExecutorThreadCount)
+    {
+        context.asyncTaskExecutorThreads(asyncExecutorThreadCount);
+        assertNull(context.asyncTaskExecutor());
+        assertFalse(context.ownsAsyncTaskExecutor());
+
+        context.concludeNullProperties();
+
+        final Executor asyncTaskExecutor = context.asyncTaskExecutor();
+        assertNotNull(asyncTaskExecutor);
+        assertSame(CALLER_RUNS_TASK_EXECUTOR, asyncTaskExecutor);
+        assertTrue(context.ownsAsyncTaskExecutor());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 1, 4 })
+    void shouldCreateFixedThreadPoolExecutor(final int asyncExecutorThreadCount)
+    {
+        assertNull(context.asyncTaskExecutor());
+        assertFalse(context.ownsAsyncTaskExecutor());
+        context.asyncTaskExecutorThreads(asyncExecutorThreadCount);
+
+        context.concludeNullProperties();
+
+        final Executor asyncTaskExecutor = context.asyncTaskExecutor();
+        assertNotNull(asyncTaskExecutor);
+        assertInstanceOf(ThreadPoolExecutor.class, asyncTaskExecutor);
+        assertTrue(context.ownsAsyncTaskExecutor());
+
+        final ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor)asyncTaskExecutor;
+        assertEquals(asyncExecutorThreadCount, threadPoolExecutor.getCorePoolSize());
+        assertEquals(0, threadPoolExecutor.getPoolSize());
+        assertEquals(0, threadPoolExecutor.getActiveCount());
+
+        final AtomicInteger count = new AtomicInteger();
+        final CopyOnWriteArraySet<Thread> threads = new CopyOnWriteArraySet<>();
+        final Runnable task = () ->
+        {
+            threads.add(Thread.currentThread());
+            count.incrementAndGet();
+        };
+        final int numTasks = asyncExecutorThreadCount * 3;
+        for (int i = 0; i < numTasks; i++)
+        {
+            asyncTaskExecutor.execute(task);
+        }
+
+        Tests.await(() -> numTasks == count.get());
+
+        assertEquals(asyncExecutorThreadCount, threads.size());
+        assertEquals(asyncExecutorThreadCount, threadPoolExecutor.getPoolSize());
+        for (final Thread t : threads)
+        {
+            MatcherAssert.assertThat(t.getName(), CoreMatchers.startsWith("async-task-executor-"));
+            assertTrue(t.isDaemon());
+        }
+    }
+
+    @Test
+    void shouldAllowSettingTheAsyncTaskExecutor()
+    {
+        final Executor asynTaskExecutor = mock(Executor.class);
+        context.asyncTaskExecutor(asynTaskExecutor);
+        assertSame(asynTaskExecutor, context.asyncTaskExecutor());
+        assertFalse(context.ownsAsyncTaskExecutor());
+
+        context.concludeNullProperties();
+
+        assertSame(asynTaskExecutor, context.asyncTaskExecutor());
+        assertFalse(context.ownsAsyncTaskExecutor());
+    }
+
+    @Test
+    void shouldCloseAsyncTaskExecutorWhenOwned()
+    {
+        final ExecutorService asyncTaskExecutor = mock(ExecutorService.class);
+        context.asyncTaskExecutor(asyncTaskExecutor);
+        context.ownsAsyncTaskExecutor(true);
+
+        context.close();
+
+        verify(asyncTaskExecutor).shutdownNow();
+    }
+
+    @Test
+    void shouldNotCloseAsyncTaskExecutorIfNotOwned()
+    {
+        final ExecutorService asyncTaskExecutor = mock(ExecutorService.class);
+        context.asyncTaskExecutor(asyncTaskExecutor);
+
+        context.close();
+
+        verifyNoInteractions(asyncTaskExecutor);
     }
 }

@@ -283,9 +283,8 @@ class MultiModuleSharedDriverTest
         ConsensusModule consensusModule(final int clusterId, final String aeronDirectoryName)
         {
             final int nodeOffset = (clusterId * 100) + (nodeId * 10);
-            // The `:X` suffix will be removed by the `RedirectingNameResolver:lookup`
             final String ingressChannelWithInvalidEndpointFormatToBeRemovedByNameResolver =
-                "aeron:udp?term-length=64k|endpoint=node" + nodeId + ":2" + clusterId + "11" + nodeId + ":X";
+                "aeron:udp?term-length=64k|endpoint=node" + nodeId + ":2" + clusterId + "11" + nodeId;
             final ConsensusModule.Context ctx = new ConsensusModule.Context()
                 .clusterMemberId(nodeId)
                 .clusterId(clusterId)
@@ -297,7 +296,6 @@ class MultiModuleSharedDriverTest
                 .serviceStreamId(104 + nodeOffset)
                 .consensusModuleStreamId(105 + nodeOffset)
                 .ingressChannel(ingressChannelWithInvalidEndpointFormatToBeRemovedByNameResolver)
-                .nameResolver(nameResolver)
                 .replicationChannel("aeron:udp?endpoint=localhost:0");
 
             return ConsensusModule.launch(ctx);

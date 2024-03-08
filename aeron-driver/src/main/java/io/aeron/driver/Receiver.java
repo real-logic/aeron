@@ -33,7 +33,8 @@ import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
 
 import static io.aeron.driver.Configuration.PENDING_SETUPS_TIMEOUT_NS;
-import static io.aeron.driver.status.SystemCounterDescriptor.*;
+import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
+import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
 
 /**
  * Agent that receives messages streams and rebuilds {@link PublicationImage}s, plus iterates over them sending status
@@ -115,7 +116,7 @@ public final class Receiver implements Agent
         cachedNanoClock.update(nowNs);
         dutyCycleTracker.measureAndUpdate(nowNs);
 
-        int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
+        int workCount = commandQueue.drain(CommandProxy.RUN_TASK, Configuration.COMMAND_DRAIN_LIMIT);
 
         final int bytesReceived = dataTransportPoller.pollTransports();
         totalBytesReceived.getAndAddOrdered(bytesReceived);

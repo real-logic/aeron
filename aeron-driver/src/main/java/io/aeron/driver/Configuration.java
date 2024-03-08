@@ -36,6 +36,7 @@ import org.agrona.concurrent.status.StatusIndicator;
 
 import java.net.InetSocketAddress;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.ThreadingMode.DEDICATED;
@@ -548,12 +549,12 @@ public final class Configuration
     /**
      * Limit for the number of commands drained in one operation.
      */
-    public static final int COMMAND_DRAIN_LIMIT = 2;
+    public static final int COMMAND_DRAIN_LIMIT = 1;
 
     /**
      * Capacity for the command queues used between driver agents.
      */
-    public static final int CMD_QUEUE_CAPACITY = 128;
+    public static final int CMD_QUEUE_CAPACITY = 1024;
 
     /**
      * Timeout on cleaning up pending SETUP message state on subscriber.
@@ -777,6 +778,17 @@ public final class Configuration
      * Property name for wildcard port range for the Receiver.
      */
     public static final String RECEIVER_WILDCARD_PORT_RANGE_PROP_NAME = "aeron.receiver.wildcard.port.range";
+
+    /**
+     * Property name to configure the number of async executor threads. Defaults to {@code 1}. Negative value or zero
+     * means no asynchronous threads should be created, i.e. execution will be done on the conductor thread.
+     */
+    public static final String ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME = "aeron.driver.async.executor.threads";
+
+    /**
+     * {@link Executor} that run tasks on the caller thread.
+     */
+    public static final Executor CALLER_RUNS_TASK_EXECUTOR = Runnable::run;
 
     /**
      * Should the driver configuration be printed on start.
@@ -1543,6 +1555,18 @@ public final class Configuration
     public static String receiverWildcardPortRange()
     {
         return getProperty(RECEIVER_WILDCARD_PORT_RANGE_PROP_NAME);
+    }
+
+
+    /**
+     * Number of async executor threads.
+     *
+     * @return number of threads, defaults to one.
+     * @see #ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME
+     */
+    public static int asyncTaskExecutorThreads()
+    {
+        return getInteger(ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME, 1);
     }
 
     /**

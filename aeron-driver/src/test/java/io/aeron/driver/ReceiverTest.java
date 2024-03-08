@@ -17,7 +17,12 @@ package io.aeron.driver;
 
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.TestLogFactory;
-import io.aeron.driver.media.*;
+import io.aeron.driver.media.ControlTransportPoller;
+import io.aeron.driver.media.DataTransportPoller;
+import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
+import io.aeron.driver.media.UdpChannel;
+import io.aeron.driver.media.WildcardPortManager;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -32,7 +37,11 @@ import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
@@ -46,6 +55,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static org.agrona.BitUtil.align;
@@ -107,8 +117,7 @@ class ReceiverTest
     private final InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
-    private final ManyToOneConcurrentArrayQueue<Runnable> toConductorQueue =
-        new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
+    private final ManyToOneConcurrentLinkedQueue<Runnable> toConductorQueue = new ManyToOneConcurrentLinkedQueue<>();
     private final CongestionControl congestionControl = mock(CongestionControl.class);
     private final MediaDriver.Context ctx = new MediaDriver.Context()
         .systemCounters(mockSystemCounters)
@@ -199,6 +208,7 @@ class ReceiverTest
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
+        receiver.doWork();
 
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(
@@ -224,7 +234,7 @@ class ReceiverTest
             SOURCE_IDENTITY,
             congestionControl);
 
-        final int messagesRead = toConductorQueue.drain(
+        final int messagesRead = drainConductorQueue(
             (e) ->
             {
                 // pass in new term buffer from conductor, which should trigger SM
@@ -263,11 +273,12 @@ class ReceiverTest
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
+        receiver.doWork();
 
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = toConductorQueue.drain(
+        final int commandsRead = drainConductorQueue(
             (e) ->
             {
                 final PublicationImage image = new PublicationImage(
@@ -328,11 +339,12 @@ class ReceiverTest
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
+        receiver.doWork();
 
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = toConductorQueue.drain(
+        final int commandsRead = drainConductorQueue(
             (e) ->
             {
                 final PublicationImage image = new PublicationImage(
@@ -393,14 +405,14 @@ class ReceiverTest
     void shouldOverwriteHeartbeatWithDataFrame()
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
+        receiver.doWork();
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
-
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = toConductorQueue.drain(
+        final int commandsRead = drainConductorQueue(
             (e) ->
             {
                 final PublicationImage image = new PublicationImage(
@@ -468,11 +480,12 @@ class ReceiverTest
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
+        receiver.doWork();
 
         fillSetupFrame(setupHeader, initialTermOffset);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
 
-        final int commandsRead = toConductorQueue.drain(
+        final int commandsRead = drainConductorQueue(
             (e) ->
             {
                 final PublicationImage image = new PublicationImage(
@@ -537,6 +550,7 @@ class ReceiverTest
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
+        receiver.doWork();
 
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
@@ -558,6 +572,7 @@ class ReceiverTest
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
+        receiver.doWork();
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
@@ -613,5 +628,24 @@ class ReceiverTest
             .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
             .flags((byte)0)
             .version(HeaderFlyweight.CURRENT_VERSION);
+    }
+
+    private int drainConductorQueue(final Consumer<Runnable> consumer)
+    {
+        int workCount = 0;
+        for (;;)
+        {
+            final Runnable command = toConductorQueue.poll();
+            if (null != command)
+            {
+                consumer.accept(command);
+                workCount++;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return workCount;
     }
 }

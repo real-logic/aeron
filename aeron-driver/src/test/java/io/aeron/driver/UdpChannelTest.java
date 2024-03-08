@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.ChannelUri;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.driver.media.UdpChannel;
@@ -27,11 +28,14 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -622,6 +626,38 @@ class UdpChannelTest
         assertEquals(
             MICROSECONDS.toNanos(27),
             UdpChannel.parse("aeron:udp?endpoint=localhost:8080|nak-delay=27us").nakDelayNs());
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidMulticastAddresses")
+    void isMulticastDestinationAddressThrowsInvalidChannelExceptionIfInvalid(final ChannelUri uri)
+    {
+        assertThrowsExactly(InvalidChannelException.class, () -> UdpChannel.isMulticastDestinationAddress(uri));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "aeron:udp?mtu=8192|endpoint=192.168.0.1:5656, false",
+        "aeron:udp?mtu=8192|endpoint=224.0.0.1:5656, true",
+        "aeron:udp?endpoint=239.255.255.250:1010, true",
+        "aeron:udp?endpoint=[FF01:0:0:0:0:0:0:18C]:5555, true",
+        "aeron:udp?endpoint=[ff02::1]:1234, true",
+        "aeron:udp?endpoint=[fe80::ce81:b1c:bd2c:69e%utun3]:8080, false"
+    })
+    void shouldDetectMulticastAddress(final String uri, final boolean expected)
+    {
+        assertEquals(expected, UdpChannel.isMulticastDestinationAddress(ChannelUri.parse(uri)));
+    }
+
+    private static List<ChannelUri> invalidMulticastAddresses()
+    {
+        return Arrays.asList(
+            null,
+            ChannelUri.parse("aeron:ipc"),
+            ChannelUri.parse("aeron:udp?mtu=4096"),
+            ChannelUri.parse("aeron:udp?endpoint=test"),
+            ChannelUri.parse("aeron:udp?endpoint=test:a"),
+            ChannelUri.parse("aeron:udp?endpoint=[xx:xx:xx:xx]:5656"));
     }
 
     private static Matcher<NetworkInterface> supportsMulticastOrIsLoopback()

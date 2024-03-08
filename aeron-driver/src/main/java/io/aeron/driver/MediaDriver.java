@@ -49,8 +49,12 @@ import java.nio.channels.DatagramChannel;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
@@ -434,6 +438,7 @@ public final class MediaDriver implements AutoCloseable
         private boolean reliableStream = Configuration.reliableStream();
         private boolean tetherSubscriptions = Configuration.tetherSubscriptions();
         private boolean rejoinStream = Configuration.rejoinStream();
+        private boolean ownsAsyncTaskExecutor;
 
         private long lowStorageWarningThreshold = Configuration.lowStorageWarningThreshold();
         private long timerIntervalNs = Configuration.timerIntervalNs();
@@ -479,6 +484,7 @@ public final class MediaDriver implements AutoCloseable
         private int lossReportBufferLength = Configuration.lossReportBufferLength();
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
         private int resourceFreeLimit = Configuration.resourceFreeLimit();
+        private int asyncTaskExecutorThreads = Configuration.asyncTaskExecutorThreads();
 
         private Long receiverGroupTag = Configuration.groupTag();
         private long flowControlGroupTag = Configuration.flowControlGroupTag();
@@ -502,6 +508,7 @@ public final class MediaDriver implements AutoCloseable
         private ThreadFactory receiverThreadFactory;
         private ThreadFactory sharedThreadFactory;
         private ThreadFactory sharedNetworkThreadFactory;
+        private Executor asyncTaskExecutor;
         private IdleStrategy conductorIdleStrategy;
         private IdleStrategy senderIdleStrategy;
         private IdleStrategy receiverIdleStrategy;
@@ -533,7 +540,7 @@ public final class MediaDriver implements AutoCloseable
         private LogFactory logFactory;
         private DataTransportPoller dataTransportPoller;
         private ControlTransportPoller controlTransportPoller;
-        private ManyToOneConcurrentArrayQueue<Runnable> driverCommandQueue;
+        private ManyToOneConcurrentLinkedQueue<Runnable> driverCommandQueue;
         private OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue;
         private OneToOneConcurrentArrayQueue<Runnable> senderCommandQueue;
         private ReceiverProxy receiverProxy;
@@ -578,6 +585,14 @@ public final class MediaDriver implements AutoCloseable
         {
             if (IS_CLOSED_UPDATER.compareAndSet(this, 0, 1))
             {
+                if (ownsAsyncTaskExecutor)
+                {
+                    if (asyncTaskExecutor instanceof ExecutorService)
+                    {
+                        ((ExecutorService)asyncTaskExecutor).shutdownNow();
+                    }
+                }
+
                 CloseHelper.close(errorHandler, logFactory);
 
                 if (null != systemCounters)
@@ -2196,6 +2211,74 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * Returns the number of threads for async task executor.
+         *
+         * @return number of threads.
+         * @see Configuration#ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME
+         */
+        public int asyncTaskExecutorThreads()
+        {
+            return asyncTaskExecutorThreads;
+        }
+
+        /**
+         * Sets the number of threads for async task executor.
+         *
+         * @param asyncTaskExecutorThreads number of async worker threads.
+         * @return this for a fluent API.
+         */
+        public Context asyncTaskExecutorThreads(final int asyncTaskExecutorThreads)
+        {
+            this.asyncTaskExecutorThreads = asyncTaskExecutorThreads;
+            return this;
+        }
+
+        /**
+         * {@link Executor} to be used for asynchronous task execution in the {@link DriverConductor}.
+         *
+         * @return executor service for asynchronous tasks. If not explicitly assigned uses
+         * {@link #asyncTaskExecutorThreads()} to size the thread pool.
+         */
+        public Executor asyncTaskExecutor()
+        {
+            return asyncTaskExecutor;
+        }
+
+        /**
+         * {@link Executor} to be used for asynchronous task execution in the {@link DriverConductor}.
+         *
+         * @param asyncTaskExecutor to be used for asynchronous task execution in the {@link DriverConductor}.
+         * @return this for a fluent API.
+         */
+        public Context asyncTaskExecutor(final Executor asyncTaskExecutor)
+        {
+            this.asyncTaskExecutor = asyncTaskExecutor;
+            return this;
+        }
+
+        /**
+         * Does this context own the {@link #asyncTaskExecutor()} client and this takes responsibility for closing it?
+         *
+         * @return does this context own the {@link #asyncTaskExecutor()} and this takes responsibility for closing it?
+         */
+        public boolean ownsAsyncTaskExecutor()
+        {
+            return ownsAsyncTaskExecutor;
+        }
+
+        /**
+         * Does this context own the {@link #asyncTaskExecutor()} client and this takes responsibility for closing it?
+         *
+         * @param ownsAsyncTaskExecutor does this context own the {@link #asyncTaskExecutor()}.
+         * @return this for a fluent API.
+         */
+        public Context ownsAsyncTaskExecutor(final boolean ownsAsyncTaskExecutor)
+        {
+            this.ownsAsyncTaskExecutor = ownsAsyncTaskExecutor;
+            return this;
+        }
+
+        /**
          * {@link IdleStrategy} to be used by the {@link Sender} when in {@link ThreadingMode#DEDICATED}.
          *
          * @return {@link IdleStrategy} to be used by the {@link Sender} when in {@link ThreadingMode#DEDICATED}.
@@ -3502,12 +3585,12 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        ManyToOneConcurrentArrayQueue<Runnable> driverCommandQueue()
+        ManyToOneConcurrentLinkedQueue<Runnable> driverCommandQueue()
         {
             return driverCommandQueue;
         }
 
-        Context driverCommandQueue(final ManyToOneConcurrentArrayQueue<Runnable> queue)
+        Context driverCommandQueue(final ManyToOneConcurrentLinkedQueue<Runnable> queue)
         {
             this.driverCommandQueue = queue;
             return this;
@@ -3744,9 +3827,14 @@ public final class MediaDriver implements AutoCloseable
                 congestionControlSupplier = Configuration.congestionControlSupplier();
             }
 
+            if (null == threadingMode)
+            {
+                threadingMode = Configuration.threadingMode();
+            }
+
             if (null == driverCommandQueue)
             {
-                driverCommandQueue = new ManyToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
+                driverCommandQueue = new ManyToOneConcurrentLinkedQueue<>();
             }
 
             if (null == receiverCommandQueue)
@@ -3781,11 +3869,6 @@ public final class MediaDriver implements AutoCloseable
                     nakMulticastMaxBackoffNs, nakMulticastGroupSize);
             }
 
-            if (null == threadingMode)
-            {
-                threadingMode = Configuration.threadingMode();
-            }
-
             if (null == terminationValidator)
             {
                 terminationValidator = Configuration.terminationValidator();
@@ -3804,6 +3887,27 @@ public final class MediaDriver implements AutoCloseable
             if (null == channelSendTimestampClock)
             {
                 channelSendTimestampClock = new SystemEpochNanoClock();
+            }
+
+            if (null == asyncTaskExecutor)
+            {
+                ownsAsyncTaskExecutor = true;
+                if (asyncTaskExecutorThreads <= 0)
+                {
+                    asyncTaskExecutor = CALLER_RUNS_TASK_EXECUTOR;
+                }
+                else
+                {
+                    final AtomicInteger id = new AtomicInteger();
+                    asyncTaskExecutor = Executors.newFixedThreadPool(
+                        asyncTaskExecutorThreads,
+                        (r) ->
+                        {
+                            final Thread thread = new Thread(r, "async-task-executor-" + id.getAndIncrement());
+                            thread.setDaemon(true);
+                            return thread;
+                        });
+                }
             }
         }
 

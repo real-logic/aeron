@@ -868,8 +868,28 @@ public final class UdpChannel
             validateConfiguration(uri);
 
             final String endpointValue = uri.get(ENDPOINT_PARAM_NAME);
-            return SocketAddressParser.parse(
-                endpointValue, ENDPOINT_PARAM_NAME, false, nameResolver);
+            return SocketAddressParser.parse(endpointValue, ENDPOINT_PARAM_NAME, false, nameResolver);
+        }
+        catch (final Exception ex)
+        {
+            throw new InvalidChannelException(ex);
+        }
+    }
+
+    /**
+     * Check if the address pointed to by the endpoint is multicast.
+     *
+     * @param uri to check.
+     * @return {@code true} if the destination uses multicast address.
+     */
+    public static boolean isMulticastDestinationAddress(final ChannelUri uri)
+    {
+        try
+        {
+            validateConfiguration(uri);
+
+            final String endpointValue = uri.get(ENDPOINT_PARAM_NAME);
+            return SocketAddressParser.isMulticastAddress(endpointValue);
         }
         catch (final Exception ex)
         {

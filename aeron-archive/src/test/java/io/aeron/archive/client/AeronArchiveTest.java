@@ -267,7 +267,7 @@ class AeronArchiveTest
 
             aeronArchive = asyncConnect.poll();
             assertNotNull(aeronArchive);
-            assertEquals(CONNECTED, asyncConnect.state());
+            assertEquals(DONE, asyncConnect.state());
             assertEquals(controlSessionIdArchiveId, asyncConnect.controlSessionId());
             assertEquals(controlSessionIdArchiveId, aeronArchive.controlSessionId());
             assertEquals(archiveId, aeronArchive.archiveId());
@@ -399,7 +399,7 @@ class AeronArchiveTest
 
             aeronArchive = asyncConnect.poll();
             assertNotNull(aeronArchive);
-            assertEquals(CONNECTED, asyncConnect.state());
+            assertEquals(DONE, asyncConnect.state());
             assertEquals(controlSessionIdArchiveId, asyncConnect.controlSessionId());
             assertEquals(controlSessionIdArchiveId, aeronArchive.controlSessionId());
             assertEquals(archiveId, aeronArchive.archiveId());
@@ -542,7 +542,7 @@ class AeronArchiveTest
 
         final AeronArchive aeronArchive = asyncConnect.poll();
         assertNotNull(aeronArchive);
-        assertEquals(CONNECTED, asyncConnect.state());
+        assertEquals(DONE, asyncConnect.state());
         assertEquals(Aeron.NULL_VALUE, aeronArchive.archiveId());
     }
 

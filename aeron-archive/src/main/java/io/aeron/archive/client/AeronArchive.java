@@ -3497,7 +3497,7 @@ public final class AeronArchive implements AutoCloseable
             AWAIT_CONNECT_RESPONSE(4),
             SEND_ARCHIVE_ID_REQUEST(5),
             AWAIT_ARCHIVE_ID_RESPONSE(6),
-            CONNECTED(7),
+            DONE(7),
             SEND_CHALLENGE_RESPONSE(8),
             AWAIT_CHALLENGE_RESPONSE(9);
 
@@ -3549,7 +3549,7 @@ public final class AeronArchive implements AutoCloseable
          */
         public void close()
         {
-            if (State.CONNECTED != state)
+            if (State.DONE != state)
             {
                 final ErrorHandler errorHandler = ctx.errorHandler();
                 CloseHelper.close(errorHandler, controlResponsePoller.subscription());
@@ -3783,7 +3783,7 @@ public final class AeronArchive implements AutoCloseable
             final AeronArchive aeronArchive = new AeronArchive(
                 ctx, controlResponsePoller, archiveProxy, controlSessionId, archiveId);
 
-            state(State.CONNECTED);
+            state(State.DONE);
             return aeronArchive;
         }
     }

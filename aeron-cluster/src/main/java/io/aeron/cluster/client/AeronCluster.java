@@ -603,7 +603,7 @@ public final class AeronCluster implements AutoCloseable
         controlledEgressListener.onNewLeader(clusterSessionId, leadershipTermId, leaderMemberId, ingressEndpoints);
     }
 
-    static Int2ObjectHashMap<MemberIngress> parseIngressEndpoints(final String endpoints)
+    static Int2ObjectHashMap<MemberIngress> parseIngressEndpoints(final Context ctx, final String endpoints)
     {
         final Int2ObjectHashMap<MemberIngress> endpointByIdMap = new Int2ObjectHashMap<>();
 
@@ -618,7 +618,7 @@ public final class AeronCluster implements AutoCloseable
                 }
 
                 final int memberId = AsciiEncoding.parseIntAscii(endpoint, 0, i);
-                endpointByIdMap.put(memberId, new MemberIngress(memberId, endpoint.substring(i + 1)));
+                endpointByIdMap.put(memberId, new MemberIngress(ctx, memberId, endpoint.substring(i + 1)));
             }
         }
 
@@ -665,7 +665,7 @@ public final class AeronCluster implements AutoCloseable
     {
         CloseHelper.closeAll(endpointByIdMap.values());
 
-        final Int2ObjectHashMap<MemberIngress> map = parseIngressEndpoints(ingressEndpoints);
+        final Int2ObjectHashMap<MemberIngress> map = parseIngressEndpoints(ctx, ingressEndpoints);
         final MemberIngress newLeader = map.get(leaderMemberId);
         final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
 
@@ -1748,7 +1748,7 @@ public final class AeronCluster implements AutoCloseable
         {
             this.ctx = ctx;
 
-            memberByIdMap = parseIngressEndpoints(ctx.ingressEndpoints());
+            memberByIdMap = parseIngressEndpoints(ctx, ctx.ingressEndpoints());
             nanoClock = ctx.aeron().context().nanoClock();
             this.deadlineNs = deadlineNs;
         }
@@ -1761,10 +1761,25 @@ public final class AeronCluster implements AutoCloseable
             if (State.DONE != state)
             {
                 final ErrorHandler errorHandler = ctx.errorHandler();
-                CloseHelper.close(errorHandler, ingressPublication);
-                CloseHelper.close(errorHandler, egressSubscription);
-                CloseHelper.closeAll(errorHandler, memberByIdMap.values());
+                if (null != ingressPublication)
+                {
+                    CloseHelper.close(errorHandler, ingressPublication);
+                }
+                else if (NULL_VALUE != ingressRegistrationId)
+                {
+                    ctx.aeron().asyncRemovePublication(ingressRegistrationId);
+                }
 
+                if (null != egressSubscription)
+                {
+                    CloseHelper.close(errorHandler, egressSubscription);
+                }
+                else if (NULL_VALUE != egressRegistrationId)
+                {
+                    ctx.aeron().asyncRemoveSubscription(egressRegistrationId);
+                }
+
+                CloseHelper.closeAll(errorHandler, memberByIdMap.values());
                 ctx.close();
             }
         }
@@ -1891,6 +1906,7 @@ public final class AeronCluster implements AutoCloseable
             if (null != egressSubscription)
             {
                 egressPoller = new EgressPoller(egressSubscription, FRAGMENT_LIMIT);
+                egressRegistrationId = NULL_VALUE;
                 state(State.CREATE_INGRESS_PUBLICATIONS);
             }
         }
@@ -1950,6 +1966,7 @@ public final class AeronCluster implements AutoCloseable
 
                         if (null != member.publication)
                         {
+                            member.registrationId = NULL_VALUE;
                             publicationCount++;
                         }
                     }
@@ -2092,7 +2109,7 @@ public final class AeronCluster implements AutoCloseable
             }
 
             CloseHelper.closeAll(memberByIdMap.values());
-            memberByIdMap = parseIngressEndpoints(egressPoller.detail());
+            memberByIdMap = parseIngressEndpoints(ctx, egressPoller.detail());
 
             if (null == ingressPublication)
             {
@@ -2135,23 +2152,32 @@ public final class AeronCluster implements AutoCloseable
 
     static final class MemberIngress implements AutoCloseable
     {
+        private final Context ctx;
         final int memberId;
         final String endpoint;
         long registrationId = NULL_VALUE;
         Publication publication;
         RegistrationException publicationException;
 
-        MemberIngress(final int memberId, final String endpoint)
+        MemberIngress(final Context ctx, final int memberId, final String endpoint)
         {
+            this.ctx = ctx;
             this.memberId = memberId;
             this.endpoint = endpoint;
         }
 
         public void close()
         {
-            CloseHelper.close(publication);
-            publication = null;
+            if (null != publication)
+            {
+                CloseHelper.close(publication);
+            }
+            else if (NULL_VALUE != registrationId)
+            {
+                ctx.aeron().asyncRemovePublication(registrationId);
+            }
             registrationId = NULL_VALUE;
+            publication = null;
         }
 
         public String toString()

@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.command.*;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConductorServiceTimeoutException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.exceptions.RegistrationException;
@@ -558,6 +559,87 @@ class ClientConductorTest
         verify(mockClientErrorHandler, never()).onError(any(TimeoutException.class));
 
         assertFalse(conductor.isClosed());
+    }
+
+    @Test
+    void shouldRemovePendingSubscriptionByRegistrationId()
+    {
+        final String channel = "aeron:ipc?alias=test";
+        final int streamId = 42;
+        final long subscriptionId = -7777777777777L;
+        when(driverProxy.addSubscription(channel, streamId)).thenReturn(subscriptionId);
+
+        assertEquals(subscriptionId, conductor.asyncAddSubscription(channel, streamId));
+
+        assertTrue(conductor.asyncCommandIdSet.contains(subscriptionId));
+        final ClientConductor.PendingSubscription pendingSubscription =
+            (ClientConductor.PendingSubscription)conductor.resourceByRegIdMap.get(subscriptionId);
+        assertNotNull(pendingSubscription);
+        assertNotNull(pendingSubscription.subscription);
+        assertFalse(pendingSubscription.subscription.isClosed);
+
+        conductor.removeSubscription(subscriptionId);
+        assertFalse(conductor.asyncCommandIdSet.contains(subscriptionId));
+        assertNull(conductor.resourceByRegIdMap.get(subscriptionId));
+        verify(driverProxy, atMostOnce()).removeSubscription(subscriptionId);
+        assertTrue(pendingSubscription.subscription.isClosed());
+    }
+
+    @Test
+    void shouldRemoveSubscriptionByRegistrationId()
+    {
+        final String channel = "aeron:ipc?alias=test";
+        final int streamId = 42;
+        final long subscriptionId = 472394234579L;
+        final int statusIndicatorId = -444;
+        when(driverProxy.addSubscription(channel, streamId)).thenReturn(subscriptionId);
+        assertEquals(subscriptionId, conductor.asyncAddSubscription(channel, streamId));
+        conductor.onNewSubscription(subscriptionId, statusIndicatorId);
+
+
+        final Subscription subscription =
+            (Subscription)conductor.resourceByRegIdMap.get(subscriptionId);
+        assertNotNull(subscription);
+        assertFalse(subscription.isClosed);
+
+        conductor.removeSubscription(subscriptionId);
+        assertFalse(conductor.asyncCommandIdSet.contains(subscriptionId));
+        assertNull(conductor.resourceByRegIdMap.get(subscriptionId));
+        verify(driverProxy, atMostOnce()).removeSubscription(subscriptionId);
+        assertTrue(subscription.isClosed());
+    }
+
+    @Test
+    void shouldNotifyDriverWhenAsyncSubscriptionByRegistrationId()
+    {
+        final long subscriptionId = 42;
+        conductor.asyncCommandIdSet.add(subscriptionId);
+
+        conductor.removeSubscription(subscriptionId);
+        assertFalse(conductor.asyncCommandIdSet.contains(subscriptionId));
+        verify(driverProxy, only()).removeSubscription(subscriptionId);
+    }
+
+    @Test
+    void removeSubscriptionByRegistrationIdIsANoOpIfIdIsUnknown()
+    {
+        final long subscriptionId = 666;
+
+        conductor.removeSubscription(subscriptionId);
+
+        assertFalse(conductor.asyncCommandIdSet.contains(subscriptionId));
+        verify(driverProxy, never()).removeSubscription(subscriptionId);
+    }
+
+    @Test
+    void shouldThrowAeronExceptionOnAttemptToRemoveWrongResourceUsingSubscriptionRegistrationId()
+    {
+        final long registrationId = 42;
+        conductor.resourceByRegIdMap.put(registrationId, "test resource");
+
+        final AeronException exception =
+            assertThrowsExactly(AeronException.class, () -> conductor.removeSubscription(registrationId));
+        assertEquals("ERROR - registration id is not a Subscription: String", exception.getMessage());
     }
 
     void whenReceiveBroadcastOnMessage(

@@ -429,6 +429,18 @@ public class Aeron implements AutoCloseable
     }
 
     /**
+     * Asynchronously remove a {@link Subscription}.
+     *
+     * @param registrationId to be of the subscription removed.
+     * @see #asyncAddSubscription(String, int)
+     * @see #asyncAddSubscription(String, int, AvailableImageHandler, UnavailableImageHandler)
+     */
+    public void asyncRemoveSubscription(final long registrationId)
+    {
+        conductor.removeSubscription(registrationId);
+    }
+
+    /**
      * Get a {@link Subscription} for subscribing to messages from publishers.
      *
      * @param registrationId returned from

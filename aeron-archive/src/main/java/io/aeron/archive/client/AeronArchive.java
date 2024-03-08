@@ -3719,14 +3719,14 @@ public final class AeronArchive implements AutoCloseable
                     if (State.AWAIT_ARCHIVE_ID_RESPONSE == state)
                     {
                         final long archiveId = controlResponsePoller.relevantId();
-                        aeronArchive = transitionToConnected(archiveId);
+                        aeronArchive = transitionToDone(archiveId);
                     }
                     else
                     {
                         final int archiveProtocolVersion = controlResponsePoller.version();
                         if (archiveProtocolVersion < PROTOCOL_VERSION_WITH_ARCHIVE_ID)
                         {
-                            aeronArchive = transitionToConnected(Aeron.NULL_VALUE);
+                            aeronArchive = transitionToDone(Aeron.NULL_VALUE);
                         }
                         else
                         {
@@ -3772,7 +3772,7 @@ public final class AeronArchive implements AutoCloseable
             }
         }
 
-        private AeronArchive transitionToConnected(final long archiveId)
+        private AeronArchive transitionToDone(final long archiveId)
         {
             if (!archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE))
             {

@@ -183,14 +183,14 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
                 if (State::AWAIT_ARCHIVE_ID_RESPONSE == m_state)
                 {
                     std::int64_t archiveId = m_controlResponsePoller->relevantId();
-                    return transitionToConnected(archiveId);
+                    return transitionToDone(archiveId);
                 }
                 else
                 {
                     std::int32_t archiveProtocolVersion = m_controlResponsePoller->version();
                     if (archiveProtocolVersion < AERON_ARCHIVE_PROTOCOL_VERSION_WITH_ARCHIVE_ID)
                     {
-                        return transitionToConnected(aeron::NULL_VALUE);
+                        return transitionToDone(aeron::NULL_VALUE);
                     }
                     else
                     {

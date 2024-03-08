@@ -3497,7 +3497,7 @@ public final class AeronArchive implements AutoCloseable
             AWAIT_CONNECT_RESPONSE(4),
             SEND_ARCHIVE_ID_REQUEST(5),
             AWAIT_ARCHIVE_ID_RESPONSE(6),
-            CONNECTED(7),
+            DONE(7),
             SEND_CHALLENGE_RESPONSE(8),
             AWAIT_CHALLENGE_RESPONSE(9);
 
@@ -3549,7 +3549,7 @@ public final class AeronArchive implements AutoCloseable
          */
         public void close()
         {
-            if (State.CONNECTED != state)
+            if (State.DONE != state)
             {
                 final ErrorHandler errorHandler = ctx.errorHandler();
                 CloseHelper.close(errorHandler, controlResponsePoller.subscription());
@@ -3719,14 +3719,14 @@ public final class AeronArchive implements AutoCloseable
                     if (State.AWAIT_ARCHIVE_ID_RESPONSE == state)
                     {
                         final long archiveId = controlResponsePoller.relevantId();
-                        aeronArchive = transitionToConnected(archiveId);
+                        aeronArchive = transitionToDone(archiveId);
                     }
                     else
                     {
                         final int archiveProtocolVersion = controlResponsePoller.version();
                         if (archiveProtocolVersion < PROTOCOL_VERSION_WITH_ARCHIVE_ID)
                         {
-                            aeronArchive = transitionToConnected(Aeron.NULL_VALUE);
+                            aeronArchive = transitionToDone(Aeron.NULL_VALUE);
                         }
                         else
                         {
@@ -3772,7 +3772,7 @@ public final class AeronArchive implements AutoCloseable
             }
         }
 
-        private AeronArchive transitionToConnected(final long archiveId)
+        private AeronArchive transitionToDone(final long archiveId)
         {
             if (!archiveProxy.keepAlive(controlSessionId, Aeron.NULL_VALUE))
             {
@@ -3783,7 +3783,7 @@ public final class AeronArchive implements AutoCloseable
             final AeronArchive aeronArchive = new AeronArchive(
                 ctx, controlResponsePoller, archiveProxy, controlSessionId, archiveId);
 
-            state(State.CONNECTED);
+            state(State.DONE);
             return aeronArchive;
         }
     }

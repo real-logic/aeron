@@ -28,7 +28,6 @@ import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.StandbySnapshotDecoder;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
-import io.aeron.driver.DefaultNameResolver;
 import io.aeron.driver.DutyCycleTracker;
 import io.aeron.driver.NameResolver;
 import io.aeron.driver.status.DutyCycleStallTracker;
@@ -1456,7 +1455,6 @@ public final class ConsensusModule implements AutoCloseable
         private boolean isLogMdc;
         private boolean useAgentInvoker = false;
         private ConsensusModuleStateExport boostrapState = null;
-        private NameResolver nameResolver;
         private boolean acceptStandbySnapshots = Configuration.acceptStandbySnapshots();
 
         /**
@@ -1860,12 +1858,6 @@ public final class ConsensusModule implements AutoCloseable
             {
                 egressPublisher = new EgressPublisher();
             }
-
-            if (null == nameResolver)
-            {
-                nameResolver = DefaultNameResolver.INSTANCE;
-            }
-            nameResolver.init(aeron.countersReader(), aeron::addCounter);
 
             final ChannelUri channelUri = ChannelUri.parse(logChannel());
             isLogMdc = channelUri.isUdp() && null == channelUri.get(ENDPOINT_PARAM_NAME);
@@ -3944,24 +3936,25 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the {@link NameResolver} to use for resolving endpoints and control names.
+         * Deprecated for removal.
          *
-         * @return {@link NameResolver} to use for resolving endpoints and control names.
+         * @return {@code null}.
          */
+        @Deprecated
         public NameResolver nameResolver()
         {
-            return nameResolver;
+            return null;
         }
 
         /**
-         * Set the {@link NameResolver} to use for resolving endpoints and control names.
+         * Deprecated for removal.
          *
-         * @param nameResolver to use for resolving endpoints and control names.
+         * @param ignore as deprected.
          * @return this for fluent API.
          */
-        public Context nameResolver(final NameResolver nameResolver)
+        @Deprecated
+        public Context nameResolver(final NameResolver ignore)
         {
-            this.nameResolver = nameResolver;
             return this;
         }
 

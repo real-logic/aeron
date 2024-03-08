@@ -19,8 +19,7 @@ import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
-import org.agrona.concurrent.AgentTerminationException;
-import org.agrona.concurrent.QueuedPipe;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -33,18 +32,52 @@ import static io.aeron.driver.ThreadingMode.SHARED;
  */
 public final class DriverConductorProxy
 {
-    private final ThreadingMode threadingMode;
-    private final QueuedPipe<Runnable> commandQueue;
-    private final AtomicCounter failCount;
-
     private DriverConductor driverConductor;
+    private final ThreadingMode threadingMode;
+    private final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue;
+    private final AtomicCounter failCount;
+    private final boolean notConcurrent;
 
     DriverConductorProxy(
-        final ThreadingMode threadingMode, final QueuedPipe<Runnable> commandQueue, final AtomicCounter failCount)
+        final ThreadingMode threadingMode,
+        final ManyToOneConcurrentLinkedQueue<Runnable> commandQueue,
+        final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
         this.failCount = failCount;
+        notConcurrent = SHARED == threadingMode || INVOKER == threadingMode;
+    }
+
+    /**
+     * Is the driver conductor not concurrent with the sender and receiver threads.
+     *
+     * @return true if the {@link DriverConductor} is on the same thread as the sender and receiver.
+     */
+    public boolean notConcurrent()
+    {
+        return notConcurrent;
+    }
+
+    /**
+     * Get the threading mode of the driver.
+     *
+     * @return ThreadingMode of the driver.
+     */
+    public ThreadingMode threadingMode()
+    {
+        return threadingMode;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return getClass().getSimpleName() + "{" +
+            "threadingMode=" + threadingMode +
+            ", failCount=" + failCount +
+            '}';
     }
 
     /**
@@ -161,36 +194,6 @@ public final class DriverConductorProxy
         }
     }
 
-    /**
-     * Is the driver conductor not concurrent with the sender and receiver threads.
-     *
-     * @return true if the {@link DriverConductor} is on the same thread as the sender and receiver.
-     */
-    public boolean notConcurrent()
-    {
-        return threadingMode == SHARED || threadingMode == INVOKER;
-    }
-
-    /**
-     * Get the threading mode of the driver.
-     * @return ThreadingMode of the driver.
-     */
-    public ThreadingMode threadingMode()
-    {
-        return threadingMode;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public String toString()
-    {
-        return "DriverConductorProxy{" +
-            "threadingMode=" + threadingMode +
-            ", failCount=" + failCount +
-            '}';
-    }
-
     void driverConductor(final DriverConductor driverConductor)
     {
         this.driverConductor = driverConductor;
@@ -246,18 +249,9 @@ public final class DriverConductorProxy
 
     private void offer(final Runnable cmd)
     {
-        while (!commandQueue.offer(cmd))
+        if (!commandQueue.offer(cmd))
         {
-            if (!failCount.isClosed())
-            {
-                failCount.increment();
-            }
-
-            Thread.yield();
-            if (Thread.currentThread().isInterrupted())
-            {
-                throw new AgentTerminationException("interrupted");
-            }
+            throw new IllegalStateException("offer failed");
         }
     }
 }

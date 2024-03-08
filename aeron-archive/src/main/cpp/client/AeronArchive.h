@@ -92,7 +92,7 @@ public:
             AWAIT_CONNECT_RESPONSE = 4,
             SEND_ARCHIVE_ID_REQUEST = 5,
             AWAIT_ARCHIVE_ID_RESPONSE = 6,
-            CONNECTED = 7,
+            DONE = 7,
             SEND_CHALLENGE_RESPONSE = 8,
             AWAIT_CHALLENGE_RESPONSE = 9
         };
@@ -140,7 +140,7 @@ public:
         State m_state = State::ADD_PUBLICATION;
         std::pair<const char *, std::uint32_t> m_encodedCredentialsFromChallenge = { nullptr, 0 };
 
-        std::shared_ptr<AeronArchive> transitionToConnected(std::int64_t archiveId)
+        std::shared_ptr<AeronArchive> transitionToDone(std::int64_t archiveId)
         {
             if (!m_archiveProxy->keepAlive(aeron::NULL_VALUE, m_controlSessionId))
             {
@@ -148,7 +148,7 @@ public:
                 throw ArchiveException("failed to send keep alive after archive connect",SOURCEINFO);
             }
 
-            m_state = State::CONNECTED;
+            m_state = State::DONE;
 
             std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller(
                 new RecordingDescriptorPoller(

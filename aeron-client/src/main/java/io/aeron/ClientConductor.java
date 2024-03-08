@@ -70,10 +70,10 @@ final class ClientConductor implements Agent
     private final LogBuffersFactory logBuffersFactory;
     private final Long2ObjectHashMap<LogBuffers> logBuffersByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<LogBuffers> lingeringLogBuffers = new ArrayList<>();
-    private final Long2ObjectHashMap<Object> resourceByRegIdMap = new Long2ObjectHashMap<>();
+    final Long2ObjectHashMap<Object> resourceByRegIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RegistrationException> asyncExceptionByRegIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<String> stashedChannelByRegistrationId = new Long2ObjectHashMap<>();
-    private final LongHashSet asyncCommandIdSet = new LongHashSet();
+    final LongHashSet asyncCommandIdSet = new LongHashSet();
     private final AvailableImageHandler defaultAvailableImageHandler;
     private final UnavailableImageHandler defaultUnavailableImageHandler;
     private final Long2ObjectHashMap<AvailableCounterHandler> availableCounterHandlerById = new Long2ObjectHashMap<>();
@@ -606,7 +606,8 @@ final class ClientConductor implements Agent
             final Object resource = resourceByRegIdMap.get(publicationRegistrationId);
             if (null != resource && !(resource instanceof Publication))
             {
-                throw new AeronException("registration id is not a Publication");
+                throw new AeronException("registration id is not a Publication: " +
+                    resource.getClass().getSimpleName());
             }
 
             final Publication publication = (Publication)resource;
@@ -620,7 +621,7 @@ final class ClientConductor implements Agent
 
             if (asyncCommandIdSet.remove(publicationRegistrationId) || null != publication)
             {
-                driverProxy.removePublication(publicationRegistrationId);
+                asyncCommandIdSet.add(driverProxy.removePublication(publicationRegistrationId));
                 stashedChannelByRegistrationId.remove(publicationRegistrationId);
             }
         }
@@ -745,6 +746,44 @@ final class ClientConductor implements Agent
                 {
                     asyncCommandIdSet.add(driverProxy.removeSubscription(registrationId));
                 }
+            }
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void removeSubscription(final long subscriptionRegistrationId)
+    {
+        clientLock.lock();
+        try
+        {
+            if (NULL_VALUE == subscriptionRegistrationId || isTerminating || isClosed)
+            {
+                return;
+            }
+
+            ensureNotReentrant();
+
+            final Object resource = resourceByRegIdMap.get(subscriptionRegistrationId);
+            if (resource != null && !(resource instanceof PendingSubscription || resource instanceof Subscription))
+            {
+                throw new AeronException("registration id is not a Subscription: " +
+                    resource.getClass().getSimpleName());
+            }
+
+            final Subscription subscription = resource instanceof PendingSubscription ?
+                ((PendingSubscription)resource).subscription : (Subscription)resource;
+            if (null != subscription)
+            {
+                resourceByRegIdMap.remove(subscriptionRegistrationId);
+                subscription.internalClose(EXPLICIT_CLOSE_LINGER_NS);
+            }
+
+            if (asyncCommandIdSet.remove(subscriptionRegistrationId) || null != subscription)
+            {
+                asyncCommandIdSet.add(driverProxy.removeSubscription(subscriptionRegistrationId));
             }
         }
         finally
@@ -1438,7 +1477,7 @@ final class ClientConductor implements Agent
 
                 throw new DriverTimeoutException(
                     "MediaDriver (" + aeron.context().aeronDirectoryName() + ") keepalive: age=" +
-                    (nowMs - lastKeepAliveMs) + "ms > timeout=" + driverTimeoutMs + "ms");
+                        (nowMs - lastKeepAliveMs) + "ms > timeout=" + driverTimeoutMs + "ms");
             }
 
             if (null == heartbeatTimestamp)
@@ -1639,9 +1678,9 @@ final class ClientConductor implements Agent
         return correlationId != NO_CORRELATION_ID;
     }
 
-    private static final class PendingSubscription
+    static final class PendingSubscription
     {
-        private final Subscription subscription;
+        final Subscription subscription;
 
         private PendingSubscription(final Subscription subscription)
         {

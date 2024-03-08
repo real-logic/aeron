@@ -268,33 +268,13 @@ final class ClientCommandAdapter implements ControlledMessageHandler
                     final ControlProtocolException ex = new ControlProtocolException(
                         ErrorCode.UNKNOWN_COMMAND_TYPE_ID, "command typeId=" + msgTypeId);
 
-                    recordError(ex);
-                    clientProxy.onError(correlationId, ex.errorCode(), ex.getMessage());
+                    onError(correlationId, ex);
                 }
             }
         }
-        catch (final ControlProtocolException ex)
-        {
-            recordError(ex);
-            clientProxy.onError(correlationId, ex.errorCode(), ex.getMessage());
-        }
-        catch (final StorageSpaceException ex)
-        {
-            recordError(ex);
-            clientProxy.onError(correlationId, STORAGE_SPACE, ex.getMessage());
-        }
         catch (final Exception ex)
         {
-            recordError(ex);
-            if (StorageSpaceException.isStorageSpaceError(ex))
-            {
-                clientProxy.onError(correlationId, STORAGE_SPACE, ex.getMessage());
-            }
-            else
-            {
-                final String errorMessage = ex.getClass().getName() + " : " + ex.getMessage();
-                clientProxy.onError(correlationId, GENERIC_ERROR, errorMessage);
-            }
+            onError(correlationId, ex);
         }
 
         return Action.CONTINUE;
@@ -316,13 +296,27 @@ final class ClientCommandAdapter implements ControlledMessageHandler
         }
     }
 
-    private void recordError(final Exception ex)
+    void onError(final long correlationId, final Exception error)
     {
         if (!errors.isClosed())
         {
             errors.increment();
         }
 
-        errorHandler.onError(ex);
+        errorHandler.onError(error);
+
+        if (error instanceof ControlProtocolException)
+        {
+            clientProxy.onError(correlationId, ((ControlProtocolException)error).errorCode(), error.getMessage());
+        }
+        else if (error instanceof StorageSpaceException || StorageSpaceException.isStorageSpaceError(error))
+        {
+            clientProxy.onError(correlationId, STORAGE_SPACE, error.getMessage());
+        }
+        else
+        {
+            final String errorMessage = error.getClass().getName() + " : " + error.getMessage();
+            clientProxy.onError(correlationId, GENERIC_ERROR, errorMessage);
+        }
     }
 }

@@ -28,9 +28,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
 
-import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_SENT;
-import static io.aeron.driver.status.SystemCounterDescriptor.RESOLUTION_CHANGES;
-import static io.aeron.driver.status.SystemCounterDescriptor.SHORT_SENDS;
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 
 class SenderLhsPadding
 {
@@ -131,7 +129,7 @@ public final class Sender extends SenderRhsPadding implements Agent
         cachedNanoClock.update(nowNs);
         dutyCycleTracker.measureAndUpdate(nowNs);
 
-        final int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
+        final int workCount = commandQueue.drain(CommandProxy.RUN_TASK, Configuration.COMMAND_DRAIN_LIMIT);
 
         final long shortSendsBefore = shortSends.get();
         final int bytesSent = doSend(nowNs);

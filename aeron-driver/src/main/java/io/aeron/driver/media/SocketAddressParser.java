@@ -54,23 +54,68 @@ class SocketAddressParser
         }
 
         final String nameAndPort = nameResolver.lookup(value, uriParamName, isReResolution);
-        InetSocketAddress address = tryParseIpV4(nameAndPort, uriParamName, isReResolution, nameResolver);
-
-        if (null == address)
+        ParseResult result = tryParseIpV4(nameAndPort);
+        if (null == result)
         {
-            address = tryParseIpV6(nameAndPort, uriParamName, isReResolution, nameResolver);
+            result = tryParseIpV6(nameAndPort);
+        }
+        if (null == result)
+        {
+            throw new IllegalArgumentException("invalid format: " + nameAndPort);
         }
 
-        if (null == address)
-        {
-            throw new IllegalArgumentException("invalid format: " + value);
-        }
-
-        return address;
+        final InetAddress inetAddress = nameResolver.resolve(result.host, uriParamName, isReResolution);
+        return null == inetAddress ? InetSocketAddress.createUnresolved(result.host, result.port) :
+        new InetSocketAddress(inetAddress, result.port);
     }
 
-    private static InetSocketAddress tryParseIpV4(
-        final String str, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
+    static boolean isMulticastAddress(final String hostAndPort)
+    {
+        ParseResult result = tryParseIpV4(hostAndPort);
+        if (null != result)
+        {
+            final String host = result.host;
+            for (int i = 0, dotIndex = 0, end = host.length() - 1; i <= end; i++)
+            {
+                final char c = host.charAt(i);
+                if ('.' == c || end == i)
+                {
+                    final int length = end == i ? i - dotIndex : i - 1 - dotIndex;
+                    if (length <= 0 || length > 3)
+                    {
+                        return false;
+                    }
+                    if (0 == dotIndex)
+                    {
+                        final int firstByte = AsciiEncoding.parseIntAscii(host, 0, i);
+                        // IPv4 multicast addresses are defined by the most-significant bit pattern of 1110
+                        if (firstByte > 0xFF || 0xE0 != (firstByte & 0xF0))
+                        {
+                            return false;
+                        }
+                    }
+                    dotIndex = i;
+                }
+                else if (c < '0' || c > '9')
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        else
+        {
+            result = tryParseIpV6(hostAndPort);
+            if (null != result)
+            {
+                final String firstByte = result.host.substring(0, 2);
+                return "ff".equalsIgnoreCase(firstByte);
+            }
+            throw new IllegalArgumentException("invalid format: " + hostAndPort);
+        }
+    }
+
+    private static ParseResult tryParseIpV4(final String str)
     {
         IpV4State state = IpV4State.HOST;
         int separatorIndex = -1;
@@ -90,14 +135,11 @@ class SocketAddressParser
                     break;
 
                 case PORT:
-                    if (':' == c)
+                    if (c < '0' || '9' < c)
                     {
                         return null;
                     }
-                    else if (c < '0' || '9' < c)
-                    {
-                        return null;
-                    }
+                    break;
             }
         }
 
@@ -106,17 +148,13 @@ class SocketAddressParser
             final String hostname = str.substring(0, separatorIndex);
             final int portIndex = separatorIndex + 1;
             final int port = AsciiEncoding.parseIntAscii(str, portIndex, length - portIndex);
-            final InetAddress inetAddress = nameResolver.resolve(hostname, uriParamName, isReResolution);
-
-            return null == inetAddress ?
-                InetSocketAddress.createUnresolved(hostname, port) : new InetSocketAddress(inetAddress, port);
+            return new ParseResult(hostname, port);
         }
 
-        throw new IllegalArgumentException("address 'port' is required for ipv4: " + str);
+        throw new IllegalArgumentException("address:port is required for ipv4: " + str);
     }
 
-    private static InetSocketAddress tryParseIpV6(
-        final String str, final String uriParamName, final boolean isReResolution, final NameResolver nameResolver)
+    private static ParseResult tryParseIpV6(final String str)
     {
         IpV6State state = IpV6State.START_ADDR;
         int portIndex = -1;
@@ -181,14 +219,11 @@ class SocketAddressParser
                     break;
 
                 case PORT:
-                    if (':' == c)
+                    if (c < '0' || '9' < c)
                     {
                         return null;
                     }
-                    else if (c < '0' || '9' < c)
-                    {
-                        return null;
-                    }
+                    break;
             }
         }
 
@@ -197,12 +232,21 @@ class SocketAddressParser
             final String hostname = str.substring(1, scopeIndex != -1 ? scopeIndex : portIndex - 1);
             portIndex++;
             final int port = AsciiEncoding.parseIntAscii(str, portIndex, length - portIndex);
-            final InetAddress inetAddress = nameResolver.resolve(hostname, uriParamName, isReResolution);
-
-            return null == inetAddress ?
-                InetSocketAddress.createUnresolved(hostname, port) : new InetSocketAddress(inetAddress, port);
+            return new ParseResult(hostname, port);
         }
 
-        throw new IllegalArgumentException("address 'port' is required for ipv6: " + str);
+        throw new IllegalArgumentException("[address]:port is required for ipv6: " + str);
+    }
+
+    private static final class ParseResult
+    {
+        final String host;
+        final int port;
+
+        private ParseResult(final String host, final int port)
+        {
+            this.host = host;
+            this.port = port;
+        }
     }
 }

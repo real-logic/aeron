@@ -609,8 +609,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->conductor_proxy.threading_mode = context->threading_mode;
     conductor->conductor_proxy.conductor = conductor;
 
-    // if it's shared or invoker, run the executor synchronously
-    bool async_executor = !AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(context->threading_mode);
+    bool async_executor = (!AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(context->threading_mode)) && context->async_executor_threads == 1;
 
     if (aeron_executor_init(&conductor->executor, async_executor, NULL, conductor) < 0)
     {

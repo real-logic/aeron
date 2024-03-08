@@ -337,6 +337,7 @@ static void aeron_driver_untethered_subscription_state_change_null(
 #define AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT UINT32_C(2)
 #define AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT UINT32_C(2)
 #define AERON_DRIVER_RESOURCE_FREE_LIMIT_DEFAULT UINT32_C(10)
+#define AERON_DRIVER_ASYNC_EXECUTOR_THREADS_DEFAULT UINT32_C(1)
 #define AERON_CPU_AFFINITY_DEFAULT (-1)
 #define AERON_DRIVER_CONNECT_DEFAULT true
 
@@ -559,6 +560,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->sender_io_vector_capacity = AERON_SENDER_IO_VECTOR_CAPACITY_DEFAULT;
     _context->network_publication_max_messages_per_send = AERON_SENDER_MAX_MESSAGES_PER_SEND_DEFAULT;
     _context->resource_free_limit = AERON_DRIVER_RESOURCE_FREE_LIMIT_DEFAULT;
+    _context->async_executor_threads = AERON_DRIVER_ASYNC_EXECUTOR_THREADS_DEFAULT;
     _context->connect_enabled = AERON_DRIVER_CONNECT_DEFAULT;
     _context->conductor_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
     _context->sender_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
@@ -1056,6 +1058,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         _context->resource_free_limit,
         1,
         INT32_MAX);
+
+    _context->async_executor_threads = aeron_config_parse_uint32(
+        AERON_DRIVER_ASYNC_EXECUTOR_THREADS_ENV_VAR,
+        getenv(AERON_DRIVER_ASYNC_EXECUTOR_THREADS_ENV_VAR),
+        _context->async_executor_threads,
+        0,
+        1);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;
@@ -3110,6 +3119,22 @@ int aeron_driver_context_set_resource_free_limit(aeron_driver_context_t *context
 uint32_t aeron_driver_context_get_resource_free_limit(aeron_driver_context_t *context)
 {
     return NULL != context ? context->resource_free_limit : AERON_DRIVER_RESOURCE_FREE_LIMIT_DEFAULT;
+}
+
+int aeron_driver_context_set_async_executor_threads(aeron_driver_context_t *context, uint32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->async_executor_threads = value;
+    return 0;
+}
+
+uint32_t aeron_driver_context_get_async_executor_threads(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->async_executor_threads : AERON_DRIVER_ASYNC_EXECUTOR_THREADS_DEFAULT;
 }
 
 void aeron_set_thread_affinity_on_start(void *state, const char *role_name)

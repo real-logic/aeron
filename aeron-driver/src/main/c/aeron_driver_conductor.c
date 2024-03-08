@@ -2977,6 +2977,29 @@ typedef struct aeron_send_destination_async_command_stct
 }
 aeron_send_destination_async_command_t;
 
+typedef struct aeron_async_re_resolve_stct
+{
+    aeron_name_resolver_async_resolve_t async_resolve;
+    struct sockaddr_storage existing_addr;
+    void *endpoint;
+    void *destination;
+}
+aeron_async_re_resolve_t;
+
+int aeron_driver_async_resolve_host_and_port_execute(void *task_clientd, void *executor_clientd)
+{
+    aeron_async_re_resolve_t *async_cmd = (aeron_async_re_resolve_t *) task_clientd;
+    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)executor_clientd;
+
+    if (aeron_driver_async_resolve_execute(conductor, &async_cmd->async_resolve) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    return 0;
+}
+
 aeron_rb_read_action_t aeron_driver_conductor_on_command(
     int32_t msg_type_id, const void *message, size_t length, void *clientd)
 {
@@ -5346,8 +5369,6 @@ void aeron_driver_conductor_on_delete_send_destination(void *clientd, void *cmd)
 
     aeron_uri_close(uri);
     aeron_free(uri);
-
-    aeron_driver_sender_proxy_on_delete_cmd(conductor->context->sender_proxy, command);
 }
 
 int aeron_driver_conductor_on_add_counter(aeron_driver_conductor_t *conductor, aeron_counter_command_t *command)
@@ -5672,6 +5693,27 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
     }
 }
 
+void aeron_driver_conductor_on_re_resolve_endpoint_complete(int result, int errcode, const char *errmsg, void *task_clientd, void *executor_clientd)
+{
+    aeron_async_re_resolve_t *async_cmd = (aeron_async_re_resolve_t *) task_clientd;
+    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)executor_clientd;
+
+    if (result < 0)
+    {
+        aeron_driver_conductor_log_explicit_error(conductor, errcode, errmsg);
+    }
+    else if (0 != memcmp(&async_cmd->async_resolve.sockaddr, &async_cmd->existing_addr, sizeof(struct sockaddr_storage)))
+    {
+        aeron_driver_sender_proxy_on_resolution_change(
+            conductor->context->sender_proxy,
+            async_cmd->async_resolve.endpoint_name,
+            async_cmd->endpoint,
+            &async_cmd->async_resolve.sockaddr);
+    }
+
+    aeron_free(async_cmd);
+}
+
 void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
 {
     aeron_driver_conductor_t *conductor = clientd;
@@ -5685,22 +5727,53 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
         return;
     }
 
-    if (aeron_name_resolver_resolve_host_and_port(
-        &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_ENDPOINT_KEY, true, &resolved_addr) < 0)
+    aeron_async_re_resolve_t *async_cmd;
+
+    if (aeron_alloc((void **)&async_cmd, sizeof(aeron_async_re_resolve_t)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return;
+    }
+
+    async_cmd->async_resolve.uri_param_name = AERON_UDP_CHANNEL_ENDPOINT_KEY;
+    async_cmd->async_resolve.is_re_resolution = true;
+    memcpy(async_cmd->async_resolve.endpoint_name, cmd->endpoint_name, strlen(cmd->endpoint_name));
+
+    memcpy(&async_cmd->existing_addr, &cmd->existing_addr, sizeof(cmd->existing_addr));
+    async_cmd->endpoint = endpoint;
+    async_cmd->destination = NULL;
+
+    if (aeron_executor_submit(
+        &conductor->executor,
+        aeron_driver_async_resolve_host_and_port_execute,
+        aeron_driver_conductor_on_re_resolve_endpoint_complete,
+        async_cmd) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         aeron_driver_conductor_log_error(conductor);
-        goto cleanup;
     }
+}
 
-    if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
+void aeron_driver_conductor_on_re_resolve_control_complete(int result, int errcode, const char *errmsg, void *task_clientd, void *executor_clientd)
+{
+    aeron_async_re_resolve_t *async_cmd = (aeron_async_re_resolve_t *)task_clientd;
+    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)executor_clientd;
+
+    if (result < 0)
     {
-        aeron_driver_sender_proxy_on_resolution_change(
-            conductor->context->sender_proxy, cmd->endpoint_name, endpoint, &resolved_addr);
+        aeron_driver_conductor_log_explicit_error(conductor, errcode, errmsg);
+    }
+    else if (0 != memcmp(&async_cmd->async_resolve.sockaddr, &async_cmd->existing_addr, sizeof(struct sockaddr_storage)))
+    {
+        aeron_driver_receiver_proxy_on_resolution_change(
+            conductor->context->receiver_proxy,
+            async_cmd->async_resolve.endpoint_name,
+            async_cmd->endpoint,
+            async_cmd->destination,
+            &async_cmd->async_resolve.sockaddr);
     }
 
-cleanup:
-    aeron_driver_sender_proxy_on_delete_cmd(conductor->context->sender_proxy, item);
+    aeron_free(async_cmd);
 }
 
 void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
@@ -5710,18 +5783,30 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
     struct sockaddr_storage resolved_addr;
     memset(&resolved_addr, 0, sizeof(resolved_addr));
 
-    if (aeron_name_resolver_resolve_host_and_port(
-        &conductor->name_resolver, cmd->endpoint_name, AERON_UDP_CHANNEL_CONTROL_KEY, true, &resolved_addr) < 0)
+    aeron_async_re_resolve_t *async_cmd;
+
+    if (aeron_alloc((void **)&async_cmd, sizeof(aeron_async_re_resolve_t)) < 0)
     {
         AERON_APPEND_ERR("%s", "");
-        aeron_driver_conductor_log_error(conductor);
         return;
     }
 
-    if (0 != memcmp(&resolved_addr, &cmd->existing_addr, sizeof(struct sockaddr_storage)))
+    async_cmd->async_resolve.uri_param_name = AERON_UDP_CHANNEL_CONTROL_KEY;
+    async_cmd->async_resolve.is_re_resolution = true;
+    memcpy(async_cmd->async_resolve.endpoint_name, cmd->endpoint_name, strlen(cmd->endpoint_name));
+
+    memcpy(&async_cmd->existing_addr, &cmd->existing_addr, sizeof(cmd->existing_addr));
+    async_cmd->endpoint = cmd->endpoint;
+    async_cmd->destination = cmd->destination;
+
+    if (aeron_executor_submit(
+        &conductor->executor,
+        aeron_driver_async_resolve_host_and_port_execute,
+        aeron_driver_conductor_on_re_resolve_control_complete,
+        async_cmd) < 0)
     {
-        aeron_driver_receiver_proxy_on_resolution_change(
-            conductor->context->receiver_proxy, cmd->endpoint_name, cmd->endpoint, cmd->destination, &resolved_addr);
+        AERON_APPEND_ERR("%s", "");
+        aeron_driver_conductor_log_error(conductor);
     }
 }
 

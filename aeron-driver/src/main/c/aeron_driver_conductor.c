@@ -609,9 +609,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->conductor_proxy.threading_mode = context->threading_mode;
     conductor->conductor_proxy.conductor = conductor;
 
-    bool async_executor = (!AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(context->threading_mode)) && context->async_executor_threads == 1;
-
-    if (aeron_executor_init(&conductor->executor, async_executor, NULL, conductor) < 0)
+    if (aeron_executor_init(&conductor->executor, context->async_executor_threads >= 1, NULL, conductor) < 0)
     {
         return -1;
     }
@@ -3392,6 +3390,8 @@ int aeron_driver_conductor_do_work(void *clientd)
 void aeron_driver_conductor_on_close(void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
+
+    aeron_executor_close(&conductor->executor);
 
     conductor->name_resolver.close_func(&conductor->name_resolver);
 

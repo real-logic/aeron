@@ -31,8 +31,6 @@ import org.agrona.DirectBuffer;
  */
 public final class ConsensusModuleProxy implements AutoCloseable
 {
-    private static final int SEND_ATTEMPTS = 3;
-
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ScheduleTimerEncoder scheduleTimerEncoder = new ScheduleTimerEncoder();
@@ -63,26 +61,20 @@ public final class ConsensusModuleProxy implements AutoCloseable
     boolean scheduleTimer(final long correlationId, final long deadline)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerEncoder.BLOCK_LENGTH;
-
-        int attempts = SEND_ATTEMPTS;
-        do
+        final long result = publication.tryClaim(length, bufferClaim);
+        if (result > 0)
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                scheduleTimerEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .deadline(deadline);
+            scheduleTimerEncoder
+                .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                .correlationId(correlationId)
+                .deadline(deadline);
 
-                bufferClaim.commit();
+            bufferClaim.commit();
 
-                return true;
-            }
-
-            checkResult(result);
+            return true;
         }
-        while (--attempts > 0);
+
+        checkResult(result);
 
         return false;
     }
@@ -90,25 +82,19 @@ public final class ConsensusModuleProxy implements AutoCloseable
     boolean cancelTimer(final long correlationId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerEncoder.BLOCK_LENGTH;
-
-        int attempts = SEND_ATTEMPTS;
-        do
+        final long result = publication.tryClaim(length, bufferClaim);
+        if (result > 0)
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                cancelTimerEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId);
+            cancelTimerEncoder
+                .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                .correlationId(correlationId);
 
-                bufferClaim.commit();
+            bufferClaim.commit();
 
-                return true;
-            }
-
-            checkResult(result);
+            return true;
         }
-        while (--attempts > 0);
+
+        checkResult(result);
 
         return false;
     }
@@ -121,12 +107,23 @@ public final class ConsensusModuleProxy implements AutoCloseable
         final int messageOffset,
         final int messageLength)
     {
-        return publication.offer(headerBuffer, headerOffset, headerLength, messageBuffer, messageOffset, messageLength);
+        final long result =
+            publication.offer(headerBuffer, headerOffset, headerLength, messageBuffer, messageOffset, messageLength);
+        if (result < 0)
+        {
+            checkResult(result);
+        }
+        return result;
     }
 
     long offer(final DirectBufferVector[] vectors)
     {
-        return publication.offer(vectors, null);
+        final long result = publication.offer(vectors, null);
+        if (result < 0)
+        {
+            checkResult(result);
+        }
+        return result;
     }
 
     long tryClaim(final int length, final BufferClaim bufferClaim, final DirectBuffer sessionHeader)
@@ -136,6 +133,10 @@ public final class ConsensusModuleProxy implements AutoCloseable
         {
             bufferClaim.putBytes(sessionHeader, 0, AeronCluster.SESSION_HEADER_LENGTH);
         }
+        else
+        {
+            checkResult(result);
+        }
 
         return result;
     }
@@ -144,29 +145,23 @@ public final class ConsensusModuleProxy implements AutoCloseable
         final long logPosition, final long timestamp, final long ackId, final long relevantId, final int serviceId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceAckEncoder.BLOCK_LENGTH;
-
-        int attempts = SEND_ATTEMPTS;
-        do
+        final long result = publication.tryClaim(length, bufferClaim);
+        if (result > 0)
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                serviceAckEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .logPosition(logPosition)
-                    .timestamp(timestamp)
-                    .ackId(ackId)
-                    .relevantId(relevantId)
-                    .serviceId(serviceId);
+            serviceAckEncoder
+                .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                .logPosition(logPosition)
+                .timestamp(timestamp)
+                .ackId(ackId)
+                .relevantId(relevantId)
+                .serviceId(serviceId);
 
-                bufferClaim.commit();
+            bufferClaim.commit();
 
-                return true;
-            }
-
-            checkResult(result);
+            return true;
         }
-        while (--attempts > 0);
+
+        checkResult(result);
 
         return false;
     }
@@ -174,25 +169,19 @@ public final class ConsensusModuleProxy implements AutoCloseable
     boolean closeSession(final long clusterSessionId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CloseSessionEncoder.BLOCK_LENGTH;
-
-        int attempts = SEND_ATTEMPTS;
-        do
+        final long result = publication.tryClaim(length, bufferClaim);
+        if (result > 0)
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                closeSessionEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .clusterSessionId(clusterSessionId);
+            closeSessionEncoder
+                .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                .clusterSessionId(clusterSessionId);
 
-                bufferClaim.commit();
+            bufferClaim.commit();
 
-                return true;
-            }
-
-            checkResult(result);
+            return true;
         }
-        while (--attempts > 0);
+
+        checkResult(result);
 
         return false;
     }
@@ -206,26 +195,20 @@ public final class ConsensusModuleProxy implements AutoCloseable
     public boolean clusterMembersQuery(final long correlationId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersQueryEncoder.BLOCK_LENGTH;
-
-        int attempts = SEND_ATTEMPTS;
-        do
+        final long result = publication.tryClaim(length, bufferClaim);
+        if (result > 0)
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                clusterMembersQueryEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .extended(BooleanType.TRUE);
+            clusterMembersQueryEncoder
+                .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                .correlationId(correlationId)
+                .extended(BooleanType.TRUE);
 
-                bufferClaim.commit();
+            bufferClaim.commit();
 
-                return true;
-            }
-
-            checkResult(result);
+            return true;
         }
-        while (--attempts > 0);
+
+        checkResult(result);
 
         return false;
     }

@@ -626,8 +626,8 @@ public class ClusterTool
      *
      * @param out        to print the output to.
      * @param clusterDir where the cluster is running.
-     * @return           0 if the node is an active leader in a closed election, 1 if not,
-     *                   -1 if the mark file does not exist.
+     * @return 0 if the node is an active leader in a closed election, 1 if not,
+     * -1 if the mark file does not exist.
      */
     public static int isLeader(final PrintStream out, final File clusterDir)
     {
@@ -790,22 +790,25 @@ public class ClusterTool
             ClusterControlAdapter clusterControlAdapter = new ClusterControlAdapter(aeron.addSubscription(
                 controlProperties.controlChannel, controlProperties.serviceStreamId), listener))
         {
-            id.set(aeron.nextCorrelationId());
-            if (consensusModuleProxy.clusterMembersQuery(id.get()))
+            final long correlationId = aeron.nextCorrelationId();
+            id.set(correlationId);
+            final long deadlineMs = System.currentTimeMillis() + timeoutMs;
+            boolean querySent = false;
+            while (NULL_VALUE != id.get())
             {
-                final long deadlineMs = System.currentTimeMillis() + timeoutMs;
-                do
+                if (!querySent)
                 {
-                    if (clusterControlAdapter.poll() == 0)
-                    {
-                        if (System.currentTimeMillis() > deadlineMs)
-                        {
-                            break;
-                        }
-                        Thread.yield();
-                    }
+                    querySent = consensusModuleProxy.clusterMembersQuery(correlationId);
                 }
-                while (NULL_VALUE != id.get());
+
+                if (querySent && 0 == clusterControlAdapter.poll())
+                {
+                    if (System.currentTimeMillis() > deadlineMs)
+                    {
+                        break;
+                    }
+                    Thread.yield();
+                }
             }
         }
 

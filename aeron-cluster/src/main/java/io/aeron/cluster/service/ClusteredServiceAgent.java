@@ -287,11 +287,17 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
             return true;
         }
 
-        if (consensusModuleProxy.closeSession(clusterSessionId))
+        int attempts = 3;
+        do
         {
-            clientSession.markClosing();
-            return true;
+            if (consensusModuleProxy.closeSession(clusterSessionId))
+            {
+                clientSession.markClosing();
+                return true;
+            }
+            idle();
         }
+        while (--attempts > 0);
 
         return false;
     }
@@ -731,7 +737,6 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         }
 
         final long id = ackId++;
-        idleStrategy.reset();
         while (!consensusModuleProxy.ack(logPosition, clusterTime, id, aeron.clientId(), serviceId))
         {
             idle();
@@ -799,7 +804,6 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
             logSubscription = null;
 
             final long id = ackId++;
-            idleStrategy.reset();
             while (!consensusModuleProxy.ack(activeLog.logPosition, clusterTime, id, NULL_VALUE, serviceId))
             {
                 idle();
@@ -994,7 +998,6 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
             }
 
             final long id = ackId++;
-            idleStrategy.reset();
             while (!consensusModuleProxy.ack(logPosition, clusterTime, id, recordingId, serviceId))
             {
                 idle();
@@ -1094,14 +1097,16 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
             if (logPosition > requestedAckPosition)
             {
                 ctx.countedErrorHandler().onError(new ClusterEvent(
-                    "service terminate: logPosition=" + logPosition +
+                    "invalid ack request: logPosition=" + logPosition +
                     " > requestedAckPosition=" + terminationPosition));
             }
 
-            if (consensusModuleProxy.ack(logPosition, clusterTime, ackId++, NULL_VALUE, serviceId))
+            final long id = ackId++;
+            while (!consensusModuleProxy.ack(logPosition, clusterTime, id, NULL_VALUE, serviceId))
             {
-                requestedAckPosition = NULL_POSITION;
+                idle();
             }
+            requestedAckPosition = NULL_POSITION;
         }
 
         return workCount;

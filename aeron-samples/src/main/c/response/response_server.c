@@ -67,6 +67,7 @@ const char *response_control_channel = DEFAULT_RESPONSE_CONTROL_CHANNEL;
 int32_t response_stream_id = DEFAULT_RESPONSE_STREAM_ID;
 
 aeron_int64_to_ptr_hash_map_t response_channel_info_map;
+aeron_mutex_t info_lock;
 
 void sigint_handler(int signal)
 {
@@ -178,11 +179,12 @@ void handle_available_image(void *clientd, aeron_subscription_t *subscription, a
         return;
     }
 
+    aeron_mutex_lock(&info_lock);
     if (aeron_int64_to_ptr_hash_map_put(&response_channel_info_map, constants.correlation_id, response_channel_info) < 0)
     {
         fprintf(stderr, "aeron_int64_to_ptr_hash_map_put: %s\n", aeron_errmsg());
-        return;
     }
+    aeron_mutex_unlock(&info_lock);
 }
 
 void handle_unavailable_image(void *clientd, aeron_subscription_t *subscription, aeron_image_t *image)
@@ -198,7 +200,9 @@ void handle_unavailable_image(void *clientd, aeron_subscription_t *subscription,
         return;
     }
 
+    aeron_mutex_lock(&info_lock);
     response_channel_info = aeron_int64_to_ptr_hash_map_remove(&response_channel_info_map, constants.correlation_id);
+    aeron_mutex_unlock(&info_lock);
 
     if (NULL != response_channel_info)
     {
@@ -326,6 +330,8 @@ int main(int argc, char **argv)
         goto cleanup;
     }
 
+    aeron_mutex_init(&info_lock, NULL);
+
     printf("Subscribing to channel %s on Stream ID %" PRId32 "\n", request_channel, request_stream_id);
 
     if (aeron_context_init(&context) < 0)
@@ -386,7 +392,9 @@ int main(int argc, char **argv)
     {
         int total_fragments_read = 0;
 
+        aeron_mutex_lock(&info_lock);
         aeron_int64_to_ptr_hash_map_for_each(&response_channel_info_map, process_response_channel_info, &total_fragments_read);
+        aeron_mutex_unlock(&info_lock);
 
         aeron_idle_strategy_sleeping_idle((void *)&idle_duration_ns, total_fragments_read);
     }
@@ -399,6 +407,7 @@ cleanup:
     aeron_close(aeron);
     aeron_context_close(context);
     aeron_int64_to_ptr_hash_map_delete(&response_channel_info_map);
+    aeron_mutex_destroy(&info_lock);
 
     return status;
 }

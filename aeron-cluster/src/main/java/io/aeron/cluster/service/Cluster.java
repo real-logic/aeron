@@ -264,7 +264,7 @@ public interface Cluster
 
     /**
      * Offer a message as ingress to the cluster for sequencing. This will happen efficiently over IPC to the
-     * consensus module and have the cluster session of as the negative value of the
+     * consensus module and have the cluster session of as the
      * {@link io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME}.
      * <p>
      * Callers of this method should loop until the method succeeds.
@@ -304,7 +304,7 @@ public interface Cluster
 
     /**
      * Offer a message as ingress to the cluster for sequencing. This will happen efficiently over IPC to the
-     * consensus module and have the cluster session of as the negative value of the
+     * consensus module and have the cluster session of as the
      * {@link io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME}.
      * <p>
      * The first vector must be left free to be filled in for the session message header.

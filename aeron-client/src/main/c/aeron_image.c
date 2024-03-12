@@ -303,7 +303,8 @@ int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, voi
                 {
                     frame,
                     image->metadata->initial_term_id,
-                    image->position_bits_to_shift
+                    image->position_bits_to_shift,
+                    AERON_NULL_VALUE
                 };
 
             ++fragments_read;
@@ -377,7 +378,8 @@ int aeron_image_controlled_poll(
             {
                 frame,
                 image->metadata->initial_term_id,
-                image->position_bits_to_shift
+                image->position_bits_to_shift,
+                AERON_NULL_VALUE,
             };
 
         ++fragments_read;
@@ -476,7 +478,8 @@ int aeron_image_bounded_poll(
                 {
                     frame,
                     image->metadata->initial_term_id,
-                    image->position_bits_to_shift
+                    image->position_bits_to_shift,
+                    AERON_NULL_VALUE
                 };
 
             ++fragments_read;
@@ -561,7 +564,8 @@ int aeron_image_bounded_controlled_poll(
             {
                 frame,
                 image->metadata->initial_term_id,
-                image->position_bits_to_shift
+                image->position_bits_to_shift,
+                AERON_NULL_VALUE
             };
 
         ++fragments_read;
@@ -671,7 +675,8 @@ int64_t aeron_image_controlled_peek(
             {
                 frame,
                 image->metadata->initial_term_id,
-                image->position_bits_to_shift
+                image->position_bits_to_shift,
+                AERON_NULL_VALUE
             };
 
         aeron_controlled_fragment_handler_action_t action = handler(

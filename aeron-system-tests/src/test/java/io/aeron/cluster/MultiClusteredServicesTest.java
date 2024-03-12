@@ -82,9 +82,9 @@ class MultiClusteredServicesTest
     }
 
     @ParameterizedTest
-    @ValueSource(ints = { 1, 2, 3 })
+    @ValueSource(ints = { 1, 2 })
     @InterruptAfter(40)
-    void shouldContinueFromLogIfSnapshotThrowsException(final int serviceMask)
+    void shouldContinueFromLogIfSnapshotThrowsException(final int failedServiceCount)
     {
         final TestNode.TestService[][] clusterTestServices =
             {
@@ -108,12 +108,9 @@ class MultiClusteredServicesTest
 
         for (final TestNode.TestService[] testServices : clusterTestServices)
         {
-            for (int i = 0; i < testServices.length; i++)
+            for (int i = 0; i < failedServiceCount; i++)
             {
-                if ((serviceMask & (1 << i)) != 0)
-                {
-                    testServices[i].failNextSnapshot(true);
-                }
+                testServices[i].failNextSnapshot(true);
             }
         }
 
@@ -122,7 +119,7 @@ class MultiClusteredServicesTest
         cluster.awaitServicesMessageCount(messageCount * 2);
 
         cluster.awaitSnapshotCount(0);
-        cluster.awaitServiceErrors(1);
+        cluster.awaitServiceErrors(failedServiceCount);
 
         Tests.sleep(1_000);
 

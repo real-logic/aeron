@@ -34,8 +34,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import static io.aeron.BufferBuilder.INIT_MIN_CAPACITY;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeFragmentedFrameLength;
+import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.*;
+import static java.lang.Math.min;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -357,9 +359,6 @@ class BufferBuilderTest
     void shouldPrepareCompleteHeader()
     {
         final UnsafeBuffer data = new UnsafeBuffer(new byte[999]);
-        bufferBuilder.append(data, 0, data.capacity());
-        assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
-        assertEquals(data.capacity(), bufferBuilder.limit());
 
         final int frameLength = 128;
         final int termOffset = 1024;
@@ -387,8 +386,11 @@ class BufferBuilderTest
 
         assertSame(bufferBuilder, bufferBuilder.captureHeader(header));
 
+        bufferBuilder.append(data, 0, frameLength - HEADER_LENGTH);
+        bufferBuilder.append(data, 0, frameLength - HEADER_LENGTH);
+
         headerFlyweight.wrap(new byte[88], 19, 42);
-        headerFlyweight.frameLength(200);
+        headerFlyweight.frameLength(frameLength);
         headerFlyweight.version((short)0xC);
         headerFlyweight.flags((short)0b0100_0100);
         headerFlyweight.headerType(HDR_TYPE_ATS_SETUP);
@@ -405,7 +407,7 @@ class BufferBuilderTest
         assertNotSame(header, completeHeader);
 
         assertEquals(INIT_MIN_CAPACITY, bufferBuilder.capacity());
-        assertEquals(data.capacity(), bufferBuilder.limit());
+        assertEquals(2 * (frameLength - HEADER_LENGTH), bufferBuilder.limit());
         assertSame(originalHeaderBuffer, header.buffer());
         assertEquals(headerFlyweight.wrapAdjustment(), header.offset());
         assertNotSame(bufferBuilder.headerBuffer, bufferBuilder.buffer());
@@ -413,9 +415,7 @@ class BufferBuilderTest
         assertEquals(0, completeHeader.offset());
         assertEquals(4, completeHeader.initialTermId());
         assertEquals(48, completeHeader.positionBitsToShift());
-        assertEquals(
-            computeFragmentedFrameLength(data.capacity(), frameLength - HEADER_LENGTH),
-            completeHeader.frameLength());
+        assertEquals(HEADER_LENGTH + (2 * (frameLength - HEADER_LENGTH)), completeHeader.frameLength());
         assertEquals((byte)version, completeHeader.buffer().getByte(VERSION_FIELD_OFFSET));
         assertEquals((byte)0xFD, completeHeader.flags());
         assertNotEquals(0, completeHeader.flags() & BEGIN_FRAG_FLAG);
@@ -425,6 +425,77 @@ class BufferBuilderTest
         assertEquals(streamId, completeHeader.streamId());
         assertEquals(termId, completeHeader.termId());
         assertEquals(reservedValue, completeHeader.reservedValue());
+    }
+
+
+    @ParameterizedTest
+    @CsvSource({
+        "1024, 1408",
+        "1024, 128",
+        "8192, 1408"
+    })
+    void shouldCalculatePositionAndFrameLengthWhenReassembling(final int totalPayloadLength, final int mtu)
+    {
+        final int maxPayloadLength = mtu - HEADER_LENGTH;
+        final int termOffset = 1024;
+        final int termId = 10;
+        final int initialTermId = 4;
+        final int positionBitsToShift = 16;
+
+        final int expectedFrameLength = HEADER_LENGTH + totalPayloadLength;
+        final int fragmentedFrameLength = computeFragmentedFrameLength(totalPayloadLength, maxPayloadLength);
+        final long startPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
+        final long expectedPosition = startPosition + fragmentedFrameLength;
+
+        final UnsafeBuffer data = new UnsafeBuffer(new byte[totalPayloadLength]);
+
+        final DataHeaderFlyweight firstHeader = new DataHeaderFlyweight();
+        firstHeader.wrap(new byte[32]);
+        firstHeader.frameLength(mtu);
+        firstHeader.version((short)15);
+        firstHeader.flags((short)0b1011_1001);
+        firstHeader.headerType(HDR_TYPE_DATA);
+        firstHeader.termOffset(termOffset);
+        firstHeader.sessionId(87);
+        firstHeader.streamId(-9);
+        firstHeader.termId(termId);
+        firstHeader.reservedValue(0xCAFE_BABE_DEAD_BEEFL);
+
+        final Header header = new Header(initialTermId, positionBitsToShift);
+        header.buffer(new UnsafeBuffer(firstHeader.byteArray()));
+        header.offset(firstHeader.wrapAdjustment());
+
+        bufferBuilder.captureHeader(header);
+
+        int lastPayloadLength = 0;
+        for (int position = 0; position < data.capacity(); position += maxPayloadLength)
+        {
+            lastPayloadLength = min(maxPayloadLength, data.capacity() - position);
+            bufferBuilder.append(data, position, lastPayloadLength);
+        }
+
+        assertNotEquals(0, lastPayloadLength);
+
+        final int valueIsIgnored = Integer.MIN_VALUE;
+
+        final DataHeaderFlyweight lastHeader = new DataHeaderFlyweight();
+        lastHeader.wrap(new byte[32]);
+        lastHeader.frameLength(HEADER_LENGTH + lastPayloadLength);
+        lastHeader.version((short)15);
+        lastHeader.flags((short)0b1011_1001);
+        lastHeader.headerType(HDR_TYPE_DATA);
+        lastHeader.termOffset(valueIsIgnored);
+        lastHeader.sessionId(87);
+        lastHeader.streamId(-9);
+        lastHeader.termId(10);
+        lastHeader.reservedValue(0xCAFE_BABE_DEAD_BEEFL);
+        header.buffer(new UnsafeBuffer(lastHeader.byteArray()));
+        header.offset(lastHeader.wrapAdjustment());
+
+        final Header completeHeader = bufferBuilder.completeHeader(header);
+
+        assertEquals(expectedFrameLength, completeHeader.frameLength());
+        assertEquals(expectedPosition, completeHeader.position());
     }
 
     @Test

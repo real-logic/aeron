@@ -898,4 +898,19 @@ public class LogBufferDescriptor
 
         return (numMaxPayloads * (maxPayloadSize + HEADER_LENGTH)) + lastFrameLength;
     }
+
+    /**
+     * Compute frame length for a message that has been reassembled from chunks of {@code maxPayloadSize}.
+     *
+     * @param length of the message.
+     * @param maxPayloadSize fragment size without the header.
+     * @return message length after fragmentation.
+     */
+    public static int computeAssembledFrameLength(final int length, final int maxPayloadSize)
+    {
+        final int numMaxPayloads = length / maxPayloadSize;
+        final int remainingPayload = length % maxPayloadSize;
+
+        return HEADER_LENGTH + (numMaxPayloads * maxPayloadSize) + remainingPayload;
+    }
 }

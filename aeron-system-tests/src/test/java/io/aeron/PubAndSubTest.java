@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
@@ -51,6 +52,7 @@ import java.util.function.Supplier;
 
 import static io.aeron.SystemTests.verifyLossOccurredForStream;
 import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeFragmentedFrameLength;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.util.Arrays.asList;
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -147,6 +149,39 @@ class PubAndSubTest
             anyInt());
 
         assertTrue(channelArgumentCaptor.getValue().isOpen(), "File Channel is closed");
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1408, 128})
+    void shouldSendAndReceiveMessage(final int mtu)
+    {
+        launch("aeron:udp?endpoint=localhost:24325|mtu=" + mtu);
+        final MutableInteger frameLength = new MutableInteger(-1);
+        final MutableLong position = new MutableLong(-1);
+
+        final int payloadLength = 500;
+        final FragmentHandler handler = (buffer, offset, length, header) ->
+        {
+            frameLength.set(header.frameLength());
+            position.set(header.position());
+        };
+
+        final FragmentHandler assembler =
+            HEADER_LENGTH + payloadLength < mtu ? handler : new FragmentAssembler(handler);
+
+        while (publication.offer(buffer, 0, payloadLength) < 0)
+        {
+            Tests.yield();
+        }
+
+        while (-1 == frameLength.get() || -1 == position.get())
+        {
+            subscription.poll(assembler, 10);
+            Tests.yield();
+        }
+
+        assertEquals(HEADER_LENGTH + payloadLength, frameLength.get());
+        assertEquals(subscription.imageAtIndex(0).position(), position.get());
     }
 
     @ParameterizedTest
@@ -934,8 +969,8 @@ class PubAndSubTest
             {
                 Tests.yield();
             }
-            final int fragmentedMessageLength = LogBufferDescriptor.computeFragmentedFrameLength(
-                data.capacity(), maxPayloadLength);
+            final int fragmentedMessageLength = computeFragmentedFrameLength(data.capacity(), maxPayloadLength);
+            final int frameLength = HEADER_LENGTH + data.capacity();
 
             long position;
             while ((position = publication.tryClaim(maxPayloadLength, bufferClaim)) < 0)
@@ -967,7 +1002,7 @@ class PubAndSubTest
                 0,
                 firstMessageLength));
             messages.add(new ExpectedFragment(
-                fragmentedMessageLength,
+                frameLength,
                 CURRENT_VERSION,
                 (byte)BEGIN_AND_END_FLAGS,
                 (short)HDR_TYPE_DATA,

@@ -35,7 +35,6 @@ import io.aeron.cluster.service.SnapshotDurationTracker;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.security.AuthorisationService;
 import io.aeron.test.EventLogExtension;
@@ -2167,9 +2166,9 @@ class ClusterTest
         bufferClaim.reservedValue(unfragmentedReservedValue);
         bufferClaim.commit();
 
-        final int fragmentedMessageLength = 5979;
-        msgBuffer.setMemory(0, fragmentedMessageLength, (byte)0xBC);
-        while (client.offer(msgBuffer, 0, fragmentedMessageLength) < 0)
+        final int messageLength = 5979;
+        msgBuffer.setMemory(0, messageLength, (byte)0xBC);
+        while (client.offer(msgBuffer, 0, messageLength) < 0)
         {
             Tests.sleep(1);
             ClusterTests.failOnClusterError();
@@ -2204,9 +2203,7 @@ class ClusterTest
         final int offset =
             BitUtil.align(unfragmentedMessageLength + SESSION_HEADER_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
         headerFlyweight.wrap(messages, offset, HEADER_LENGTH);
-        assertEquals(LogBufferDescriptor.computeFragmentedFrameLength(
-            fragmentedMessageLength + SESSION_HEADER_LENGTH, ingressPublication.maxPayloadLength()),
-            headerFlyweight.frameLength());
+        assertEquals(HEADER_LENGTH + SESSION_HEADER_LENGTH + messageLength, headerFlyweight.frameLength());
         assertEquals(CURRENT_VERSION, headerFlyweight.version());
         assertEquals(UNFRAGMENTED, (byte)headerFlyweight.flags());
         assertEquals(HDR_TYPE_DATA, headerFlyweight.headerType());
@@ -2219,7 +2216,7 @@ class ClusterTest
         assertEquals(client.leadershipTermId(), sessionMessageHeaderDecoder.leadershipTermId());
         assertEquals(client.clusterSessionId(), sessionMessageHeaderDecoder.clusterSessionId());
         assertNotEquals(0, sessionMessageHeaderDecoder.timestamp());
-        for (int i = 0; i < fragmentedMessageLength; i++)
+        for (int i = 0; i < messageLength; i++)
         {
             assertEquals((byte)0xBC, messages.getByte(HEADER_LENGTH + SESSION_HEADER_LENGTH + offset + i));
         }

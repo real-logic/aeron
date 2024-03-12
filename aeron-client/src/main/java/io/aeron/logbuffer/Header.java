@@ -15,6 +15,7 @@
  */
 package io.aeron.logbuffer;
 
+import io.aeron.Aeron;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
@@ -31,11 +32,12 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
  */
 public final class Header
 {
+    private final Object context;
     private int positionBitsToShift;
     private int initialTermId;
     private int offset = 0;
     private DirectBuffer buffer;
-    private final Object context;
+    private int fragmentedFrameLength = Aeron.NULL_VALUE;
 
     /**
      * Construct a header that references a buffer for the log.
@@ -79,9 +81,8 @@ public final class Header
      */
     public long position()
     {
-        final int frameLength = buffer.getInt(offset, LITTLE_ENDIAN);
         final int termOffset = buffer.getInt(offset + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
-        final int resultingOffset = BitUtil.align(termOffset + frameLength, FRAME_ALIGNMENT);
+        final int resultingOffset = BitUtil.align(termOffset + termOccupancyLength(), FRAME_ALIGNMENT);
         final int termId = buffer.getInt(offset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
         return computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
     }
@@ -260,5 +261,21 @@ public final class Header
     public long reservedValue()
     {
         return buffer.getLong(offset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Total amount of space occupied by this message when it is within the term buffer. When fragmented this will
+     * include the length of the header for each fragment. Used when doing reassembly of fragmented packets.
+     *
+     * @param fragmentedFrameLength total fragmented length of the message.
+     */
+    public void fragmentedFrameLength(final int fragmentedFrameLength)
+    {
+        this.fragmentedFrameLength = fragmentedFrameLength;
+    }
+
+    private int termOccupancyLength()
+    {
+        return Aeron.NULL_VALUE == fragmentedFrameLength ? frameLength() : fragmentedFrameLength;
     }
 }

@@ -394,6 +394,18 @@ public final class AeronCounters
      */
     public static final int CLUSTER_TOTAL_SNAPSHOT_DURATION_THRESHOLD_EXCEEDED_TYPE_ID = 235;
 
+    /**
+     * The type id of the {@link Counter} used for keeping track of the maximum snapshot duration
+     * for a given clustered service.
+     */
+    public static final int CLUSTERED_SERVICE_MAX_SNAPSHOT_DURATION_TYPE_ID = 236;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the count snapshot duration
+     * has exceeded the threshold for a given clustered service.
+     */
+    public static final int CLUSTERED_SERVICE_SNAPSHOT_DURATION_THRESHOLD_EXCEEDED_TYPE_ID = 237;
+
     private AeronCounters()
     {
     }

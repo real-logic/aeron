@@ -1933,10 +1933,12 @@ class ClusterTest
         cluster = aCluster()
             .withServiceSupplier(
                 (i) -> new TestNode.TestService[]
-                {
-                    new TestNode.SleepOnSnapshotTestService()
-                        .sleepNsOnTakeSnapshot(TimeUnit.MILLISECONDS.toNanos(101)).index(i)
-                })
+                    {
+                        new TestNode.SleepOnSnapshotTestService()
+                            .sleepNsOnTakeSnapshot(TimeUnit.MILLISECONDS.toNanos(101)).index(i),
+                        new TestNode.SleepOnSnapshotTestService()
+                            .sleepNsOnTakeSnapshot(TimeUnit.MILLISECONDS.toNanos(201)).index(i)
+                    })
             .withStaticNodes(3)
             .withAuthorisationServiceSupplier(() -> AuthorisationService.ALLOW_ALL)
             .start();
@@ -1944,13 +1946,14 @@ class ClusterTest
 
         final TestNode leader = cluster.awaitLeader();
 
-        final SnapshotDurationTracker snapshotDurationTracker = leader.consensusModule().context()
+        final SnapshotDurationTracker totalSnapshotDurationTracker = leader.consensusModule().context()
             .totalSnapshotDurationTracker();
 
-        final AtomicCounter snapshotDurationThresholdExceededCount = snapshotDurationTracker
-            .snapshotDurationThresholdExceededCount();
+        final SnapshotDurationTracker service1SnapshotDurationTracker = leader.container(0).context()
+            .snapshotDurationTracker();
 
-        final AtomicCounter maxSnapshotDuration = snapshotDurationTracker.maxSnapshotDuration();
+        final SnapshotDurationTracker service2SnapshotDurationTracker = leader.container(1).context()
+            .snapshotDurationTracker();
 
         final long requestCorrelationId = System.nanoTime();
         final MutableBoolean hasResponse = injectAdminResponseEgressListener(
@@ -1958,8 +1961,14 @@ class ClusterTest
 
         final AeronCluster client = cluster.connectClient();
 
-        assertEquals(0L, snapshotDurationThresholdExceededCount.get());
-        assertEquals(0, maxSnapshotDuration.get());
+        assertEquals(0L, totalSnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertEquals(0, totalSnapshotDurationTracker.maxSnapshotDuration().get());
+
+        assertEquals(0L, service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertEquals(0, service1SnapshotDurationTracker.maxSnapshotDuration().get());
+
+        assertEquals(0L, service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertEquals(0, service2SnapshotDurationTracker.maxSnapshotDuration().get());
 
         while (!client.sendAdminRequestToTakeASnapshot(requestCorrelationId))
         {
@@ -1975,8 +1984,14 @@ class ClusterTest
         cluster.awaitSnapshotCount(1);
         cluster.awaitNeutralControlToggle(leader);
 
-        assertEquals(1L, snapshotDurationThresholdExceededCount.get());
-        assertTrue(maxSnapshotDuration.get() > 0);
+        assertEquals(1L, totalSnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertTrue(totalSnapshotDurationTracker.maxSnapshotDuration().get() > 0);
+
+        assertEquals(1L, service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertTrue(service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get() > 0);
+
+        assertEquals(1L, service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertTrue(service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get() > 0);
     }
 
     @Test

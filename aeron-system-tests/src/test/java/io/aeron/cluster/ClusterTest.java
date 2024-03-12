@@ -1988,10 +1988,10 @@ class ClusterTest
         assertTrue(totalSnapshotDurationTracker.maxSnapshotDuration().get() > 0);
 
         assertEquals(1L, service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
-        assertTrue(service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get() > 0);
+        assertTrue(service1SnapshotDurationTracker.maxSnapshotDuration().get() > 0);
 
         assertEquals(1L, service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
-        assertTrue(service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get() > 0);
+        assertTrue(service2SnapshotDurationTracker.maxSnapshotDuration().get() > 0);
     }
 
     @Test

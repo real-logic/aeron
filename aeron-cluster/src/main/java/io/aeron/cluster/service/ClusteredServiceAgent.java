@@ -1016,6 +1016,10 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
             {
                 recordingId = onTakeSnapshot(logPosition, leadershipTermId);
             }
+            catch (final AgentTerminationException ex)
+            {
+                throw ex;
+            }
             catch (final Exception ex)
             {
                 context().errorHandler().onError(ex);

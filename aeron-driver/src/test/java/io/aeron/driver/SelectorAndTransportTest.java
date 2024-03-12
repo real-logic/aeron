@@ -182,6 +182,39 @@ class SelectorAndTransportTest
     }
 
     @Test
+    void shouldSetSocketToSFromUdpChannelForReceiveChannel() throws IOException
+    {
+        final DatagramChannel spyChannel = spy(DatagramChannel.open(StandardProtocolFamily.INET));
+        final UdpChannel channel = UdpChannel.parse("aeron:udp?endpoint=localhost:" + RCV_PORT + "|so-tos=32");
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+                channel, mockDispatcher, mockReceiveStatusIndicator, context);
+
+        try (MockedStatic<DatagramChannel> mockDatagramChannel = Mockito.mockStatic(DatagramChannel.class))
+        {
+            mockDatagramChannel.when(() -> DatagramChannel.open(StandardProtocolFamily.INET)).thenReturn(spyChannel);
+            receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+
+            verify(spyChannel).setOption(StandardSocketOptions.IP_TOS, 32);
+        }
+    }
+
+    @Test
+    void shouldSetSocketToSFromUdpChannelForSendChannel() throws IOException
+    {
+        final DatagramChannel spyChannel = spy(DatagramChannel.open(StandardProtocolFamily.INET));
+        final UdpChannel channel = UdpChannel.parse("aeron:udp?endpoint=localhost:" + RCV_PORT + "|so-tos=32");
+        sendChannelEndpoint = new SendChannelEndpoint(channel, mockReceiveStatusIndicator, context);
+
+        try (MockedStatic<DatagramChannel> mockDatagramChannel = Mockito.mockStatic(DatagramChannel.class))
+        {
+            mockDatagramChannel.when(() -> DatagramChannel.open(StandardProtocolFamily.INET)).thenReturn(spyChannel);
+            sendChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+
+            verify(spyChannel).setOption(StandardSocketOptions.IP_TOS, 32);
+        }
+    }
+
+    @Test
     @InterruptAfter(10)
     void shouldSendEmptyDataFrameUnicastFromSourceToReceiver()
     {

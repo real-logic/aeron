@@ -324,6 +324,11 @@ public class CommonContext implements Cloneable
     public static final String SOCKET_RCVBUF_PARAM_NAME = "so-rcvbuf";
 
     /**
+     * Parameter name for the underlying OS socket type of service (IP_TOS).
+     */
+    public static final String SOCKET_TOS_PARAM_NAME = "so-tos";
+
+    /**
      * Parameter name for the congestion control's initial receiver window length.
      */
     public static final String RECEIVER_WINDOW_LENGTH_PARAM_NAME = "rcv-wnd";

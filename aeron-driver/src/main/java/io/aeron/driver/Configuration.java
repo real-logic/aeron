@@ -277,9 +277,19 @@ public final class Configuration
     public static final String SOCKET_MULTICAST_TTL_PROP_NAME = "aeron.socket.multicast.ttl";
 
     /**
+     * Property name for IP_TOS setting on UDP sockets.
+     */
+    public static final String SOCKET_TOS_PROP_NAME = "aeron.socket.tos";
+
+    /**
      * Multicast TTL value, 0 means use OS default.
      */
     public static final int SOCKET_MULTICAST_TTL_DEFAULT = 0;
+
+    /**
+     * IP_TOS value, -1 means use OS defaults.
+     */
+    public static final int SOCKET_TOS_DEFAULT = Aeron.NULL_VALUE;
 
     /**
      * Property name for linger timeout after draining on {@link Publication}s so they can respond to NAKs.
@@ -1305,6 +1315,17 @@ public final class Configuration
     public static int socketMulticastTtl()
     {
         return getInteger(SOCKET_MULTICAST_TTL_PROP_NAME, SOCKET_MULTICAST_TTL_DEFAULT);
+    }
+
+    /**
+     * IP_TOS setting to UDP sockets.
+     *
+     * @return IP_TOS setting on UDP sockets.
+     * @see #SOCKET_TOS_PROP_NAME
+     */
+    public static int socketToS()
+    {
+        return getInteger(SOCKET_TOS_PROP_NAME, SOCKET_TOS_DEFAULT);
     }
 
     /**

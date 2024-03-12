@@ -1012,18 +1012,14 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         if (ClusterAction.SNAPSHOT == action && shouldSnapshot(flags))
         {
             long recordingId = NULL_VALUE;
-            AgentTerminationException terminationException = null;
+            Exception exception = null;
             try
             {
                 recordingId = onTakeSnapshot(logPosition, leadershipTermId);
             }
-            catch (final AgentTerminationException ex)
-            {
-                terminationException = ex;
-            }
             catch (final Exception ex)
             {
-                context().errorHandler().onError(ex);
+                exception = ex;
             }
 
             final long id = ackId++;
@@ -1032,9 +1028,9 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
                 idle();
             }
 
-            if (null != terminationException)
+            if (null != exception)
             {
-                throw terminationException;
+                LangUtil.rethrowUnchecked(exception);
             }
         }
     }

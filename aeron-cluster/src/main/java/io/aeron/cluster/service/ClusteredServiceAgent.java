@@ -1128,7 +1128,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
             {
                 ctx.countedErrorHandler().onError(new ClusterEvent(
                     "invalid ack request: logPosition=" + logPosition +
-                    " > requestedAckPosition=" + terminationPosition));
+                    " > requestedAckPosition=" + requestedAckPosition));
             }
 
             final long id = ackId++;

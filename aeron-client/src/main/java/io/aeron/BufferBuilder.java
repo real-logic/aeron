@@ -16,7 +16,6 @@
 package io.aeron;
 
 import io.aeron.logbuffer.Header;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -26,6 +25,7 @@ import java.util.Arrays;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.logbuffer.FrameDescriptor.FLAGS_OFFSET;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeFragmentedFrameLength;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -176,6 +176,7 @@ public final class BufferBuilder
     {
         limit = 0;
         nextTermOffset = NULL_VALUE;
+        completeHeader.fragmentedFrameLength(NULL_VALUE);
         return this;
     }
 
@@ -240,14 +241,14 @@ public final class BufferBuilder
      */
     public Header completeHeader(final Header header)
     {
-        // compute the `frame length` of the complete message
         final int firstFrameLength = headerBuffer.getInt(FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
-        final int fragmentedMessageLength = LogBufferDescriptor.computeFragmentedFrameLength(
-            limit, firstFrameLength - HEADER_LENGTH);
-        headerBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, fragmentedMessageLength, LITTLE_ENDIAN);
+        final int fragmentedFrameLength = computeFragmentedFrameLength(limit, firstFrameLength - HEADER_LENGTH);
+        completeHeader.fragmentedFrameLength(fragmentedFrameLength);
 
+        headerBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, HEADER_LENGTH + limit, LITTLE_ENDIAN);
         // compute complete flags
         headerBuffer.putByte(FLAGS_OFFSET, (byte)(headerBuffer.getByte(FLAGS_OFFSET) | header.flags()));
+        // compute the `fragmented frame length` of the complete message
 
         return completeHeader;
     }

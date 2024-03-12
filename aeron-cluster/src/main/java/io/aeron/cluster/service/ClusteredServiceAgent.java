@@ -61,7 +61,32 @@ abstract class ClusteredServiceAgentLhsPadding
 
 abstract class ClusteredServiceAgentHotFields extends ClusteredServiceAgentLhsPadding
 {
-    boolean isBackgroundInvocation;
+    static final int LIFECYCLE_CALLBACK_NONE = 0;
+    static final int LIFECYCLE_CALLBACK_ON_START = 1;
+    static final int LIFECYCLE_CALLBACK_ON_TERMINATE = 2;
+    static final int LIFECYCLE_CALLBACK_ON_ROLE_CHANGE = 3;
+    static final int LIFECYCLE_CALLBACK_DO_BACKGROUND_WORK = 4;
+
+    static String lifecycleName(final int activeLifecycleCallback)
+    {
+        switch (activeLifecycleCallback)
+        {
+            case LIFECYCLE_CALLBACK_NONE:
+                return "none";
+            case LIFECYCLE_CALLBACK_ON_START:
+                return "onStart";
+            case LIFECYCLE_CALLBACK_ON_TERMINATE:
+                return "onTerminate";
+            case LIFECYCLE_CALLBACK_ON_ROLE_CHANGE:
+                return "onRoleChange";
+            case LIFECYCLE_CALLBACK_DO_BACKGROUND_WORK:
+                return "doBackgroundWork";
+            default:
+                return "unknown";
+        }
+    }
+
+    int activeLifecycleCallback;
 }
 
 abstract class ClusteredServiceAgentRhsPadding extends ClusteredServiceAgentHotFields
@@ -115,7 +140,6 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
     private final String subscriptionAlias;
     private final int standbySnapshotFlags;
 
-    private String activeLifecycleCallbackName;
     private ReadableCounter commitPosition;
     private ActiveLogEvent activeLogEvent;
     private Role role = Role.FOLLOWER;
@@ -699,14 +723,14 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         if (newRole != role)
         {
             role = newRole;
-            activeLifecycleCallbackName = "onRoleChange";
+            activeLifecycleCallback = LIFECYCLE_CALLBACK_ON_ROLE_CHANGE;
             try
             {
                 service.onRoleChange(newRole);
             }
             finally
             {
-                activeLifecycleCallbackName = null;
+                activeLifecycleCallback = LIFECYCLE_CALLBACK_NONE;
             }
         }
     }
@@ -719,7 +743,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         final long leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
         sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
 
-        activeLifecycleCallbackName = "onStart";
+        activeLifecycleCallback = LIFECYCLE_CALLBACK_ON_START;
         try
         {
             if (NULL_VALUE != leadershipTermId)
@@ -733,7 +757,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         }
         finally
         {
-            activeLifecycleCallbackName = null;
+            activeLifecycleCallback = LIFECYCLE_CALLBACK_NONE;
         }
 
         final long id = ackId++;
@@ -988,19 +1012,25 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         if (ClusterAction.SNAPSHOT == action && shouldSnapshot(flags))
         {
             long recordingId = NULL_VALUE;
+            Exception exception = null;
             try
             {
                 recordingId = onTakeSnapshot(logPosition, leadershipTermId);
             }
             catch (final Exception ex)
             {
-                context().errorHandler().onError(ex);
+                exception = ex;
             }
 
             final long id = ackId++;
             while (!consensusModuleProxy.ack(logPosition, clusterTime, id, recordingId, serviceId))
             {
                 idle();
+            }
+
+            if (null != exception)
+            {
+                LangUtil.rethrowUnchecked(exception);
             }
         }
     }
@@ -1115,7 +1145,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
     private void terminate(final boolean isTerminationExpected)
     {
         isServiceActive = false;
-        activeLifecycleCallbackName = "onTerminate";
+        activeLifecycleCallback = LIFECYCLE_CALLBACK_ON_TERMINATE;
         try
         {
             service.onTerminate(this);
@@ -1126,7 +1156,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         }
         finally
         {
-            activeLifecycleCallbackName = null;
+            activeLifecycleCallback = LIFECYCLE_CALLBACK_NONE;
         }
 
         try
@@ -1153,16 +1183,10 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
 
     private void checkForValidInvocation()
     {
-        if (null != activeLifecycleCallbackName)
+        if (LIFECYCLE_CALLBACK_NONE != activeLifecycleCallback)
         {
             throw new ClusterException(
-                "sending messages or scheduling timers is not allowed from " + activeLifecycleCallbackName);
-        }
-
-        if (isBackgroundInvocation)
-        {
-            throw new ClusterException(
-                "sending messages or scheduling timers is not allowed from ClusteredService.doBackgroundWork");
+                "sending messages or scheduling timers is not allowed from " + lifecycleName(activeLifecycleCallback));
         }
     }
 
@@ -1197,14 +1221,14 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
 
     private int invokeBackgroundWork(final long nowNs)
     {
+        activeLifecycleCallback = LIFECYCLE_CALLBACK_DO_BACKGROUND_WORK;
         try
         {
-            isBackgroundInvocation = true;
             return service.doBackgroundWork(nowNs);
         }
         finally
         {
-            isBackgroundInvocation = false;
+            activeLifecycleCallback = LIFECYCLE_CALLBACK_NONE;
         }
     }
 

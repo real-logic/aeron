@@ -74,6 +74,7 @@ inline void aeron_buffer_builder_reset(aeron_buffer_builder_t *buffer_builder)
 {
     buffer_builder->limit = 0;
     buffer_builder->next_term_offset = -1;
+    buffer_builder->header.fragmented_frame_length = AERON_NULL_VALUE;
 }
 
 inline void aeron_buffer_builder_next_term_offset(
@@ -106,10 +107,15 @@ inline void aeron_buffer_builder_capture_header(aeron_buffer_builder_t *buffer_b
 inline aeron_header_t* aeron_buffer_builder_complete_header(aeron_buffer_builder_t *buffer_builder, aeron_header_t *header)
 {
     aeron_frame_header_t *frame_header = &buffer_builder->header.frame->frame_header;
+
     int32_t max_payload_length = frame_header->frame_length - (int32_t)AERON_DATA_HEADER_LENGTH;
-    frame_header->frame_length =
-        (int32_t)aeron_logbuffer_compute_fragmented_length(buffer_builder->limit, max_payload_length);
+    int32_t fragmented_frame_length = (int32_t)aeron_logbuffer_compute_fragmented_length(
+        buffer_builder->limit, max_payload_length);
+    buffer_builder->header.fragmented_frame_length = fragmented_frame_length;
+
+    frame_header->frame_length = AERON_DATA_HEADER_LENGTH + buffer_builder->limit;
     frame_header->flags |= header->frame->frame_header.flags;
+
     return &buffer_builder->header;
 }
 

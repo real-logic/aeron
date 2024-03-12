@@ -58,6 +58,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -87,6 +88,8 @@ public final class DriverConductor implements Agent
         SOCKET_SNDBUF_PARAM_NAME,
         RESPONSE_CORRELATION_ID_PARAM_NAME
     };
+
+    static final long EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS = 1;
 
     private int nextSessionId = BitUtil.generateRandomisedId();
     private final long timerIntervalNs;
@@ -206,6 +209,22 @@ public final class DriverConductor implements Agent
      */
     public void onClose()
     {
+        if (asyncTaskExecutor instanceof ExecutorService)
+        {
+            try
+            {
+                final ExecutorService executor = (ExecutorService)asyncTaskExecutor;
+                executor.shutdownNow();
+                if (!executor.awaitTermination(EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS))
+                {
+                    ctx.errorHandler().onError(new AeronEvent("failed to shutdown async task executor"));
+                }
+            }
+            catch (final Exception e)
+            {
+                ctx.errorHandler().onError(e);
+            }
+        }
         CloseHelper.close(ctx.errorHandler(), nameResolver);
         publicationImages.forEach(PublicationImage::free);
         networkPublications.forEach(NetworkPublication::free);

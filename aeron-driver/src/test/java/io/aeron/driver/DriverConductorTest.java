@@ -27,6 +27,7 @@ import io.aeron.driver.media.WildcardPortManager;
 import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.driver.status.SystemCounters;
+import io.aeron.exceptions.AeronEvent;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.StatusMessageFlyweight;
@@ -54,6 +55,7 @@ import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongConsumer;
@@ -61,6 +63,7 @@ import java.util.function.LongConsumer;
 import static io.aeron.CommonContext.*;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
+import static io.aeron.driver.DriverConductor.EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS;
 import static io.aeron.driver.status.ClientHeartbeatTimestamp.HEARTBEAT_TYPE_ID;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -127,6 +130,7 @@ class DriverConductorTest
     private SystemCounters spySystemCounters;
 
     private CountersManager spyCountersManager;
+    private MediaDriver.Context ctx;
     private DriverProxy driverProxy;
     private DriverConductor driverConductor;
 
@@ -162,7 +166,7 @@ class DriverConductorTest
             spySystemCounters.get(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED),
             1_000_000_000);
 
-        final MediaDriver.Context ctx = new MediaDriver.Context()
+        ctx = new MediaDriver.Context()
             .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))
             .timerIntervalNs(DEFAULT_TIMER_INTERVAL_NS)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
@@ -1926,6 +1930,70 @@ class DriverConductorTest
         assertThat(
             exception.getMessage(),
             CoreMatchers.startsWith("ERROR - destinations must not contain the key: response-correlation-id"));
+    }
+
+    @Test
+    void onCloseMustShutdownAsyncExecutor() throws InterruptedException
+    {
+        final ExecutorService asyncTaskExecutor = mock(ExecutorService.class);
+        final DriverConductor conductor = new DriverConductor(ctx.asyncTaskExecutor(asyncTaskExecutor));
+
+        conductor.onClose();
+
+        final InOrder inOrder = inOrder(asyncTaskExecutor);
+        inOrder.verify(asyncTaskExecutor).shutdownNow();
+        inOrder.verify(asyncTaskExecutor).awaitTermination(EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS, SECONDS);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void onCloseHandlesExceptionFromClosingAsyncExecutor()
+    {
+        final ExecutorService asyncTaskExecutor = mock(ExecutorService.class);
+        final IllegalStateException closeException = new IllegalStateException("executor failed");
+        doThrow(closeException).when(asyncTaskExecutor).shutdownNow();
+        final DriverConductor conductor = new DriverConductor(ctx.asyncTaskExecutor(asyncTaskExecutor));
+
+        conductor.onClose();
+
+        final InOrder inOrder = inOrder(asyncTaskExecutor, mockErrorHandler);
+        inOrder.verify(asyncTaskExecutor).shutdownNow();
+        inOrder.verify(mockErrorHandler).onError(closeException);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void onCloseHandlesExceptionFromClosingAsyncExecutor2() throws InterruptedException
+    {
+        final ExecutorService asyncTaskExecutor = mock(ExecutorService.class);
+        final IllegalStateException closeException = new IllegalStateException("executor failed");
+        doThrow(closeException).when(asyncTaskExecutor).awaitTermination(anyLong(), any(TimeUnit.class));
+        final DriverConductor conductor = new DriverConductor(ctx.asyncTaskExecutor(asyncTaskExecutor));
+
+        conductor.onClose();
+
+        final InOrder inOrder = inOrder(asyncTaskExecutor, mockErrorHandler);
+        inOrder.verify(asyncTaskExecutor).shutdownNow();
+        inOrder.verify(asyncTaskExecutor).awaitTermination(EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS, SECONDS);
+        inOrder.verify(mockErrorHandler).onError(closeException);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void onCloseShouldNotifyIfExecutorDoesNotCloseOnTime() throws InterruptedException
+    {
+        final ExecutorService asyncTaskExecutor = mock(ExecutorService.class);
+        final DriverConductor conductor = new DriverConductor(ctx.asyncTaskExecutor(asyncTaskExecutor));
+
+        conductor.onClose();
+
+        final InOrder inOrder = inOrder(asyncTaskExecutor, mockErrorHandler);
+        inOrder.verify(asyncTaskExecutor).shutdownNow();
+        inOrder.verify(asyncTaskExecutor).awaitTermination(EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS, SECONDS);
+        inOrder.verify(mockErrorHandler).onError(argThat(
+            arg -> arg instanceof AeronEvent &&
+            arg.getMessage().equals("WARN - failed to shutdown async task executor")));
+        inOrder.verifyNoMoreInteractions();
     }
 
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)

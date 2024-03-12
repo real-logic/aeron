@@ -67,6 +67,7 @@ typedef struct aeron_header_stct
     aeron_data_header_t *frame;
     int32_t initial_term_id;
     size_t position_bits_to_shift;
+    int32_t fragmented_frame_length;
 }
 aeron_header_t;
 

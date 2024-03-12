@@ -170,14 +170,12 @@ class MediaDriverContextTest
     {
         context.asyncTaskExecutorThreads(asyncExecutorThreadCount);
         assertNull(context.asyncTaskExecutor());
-        assertFalse(context.ownsAsyncTaskExecutor());
 
         context.concludeNullProperties();
 
         final Executor asyncTaskExecutor = context.asyncTaskExecutor();
         assertNotNull(asyncTaskExecutor);
         assertSame(CALLER_RUNS_TASK_EXECUTOR, asyncTaskExecutor);
-        assertTrue(context.ownsAsyncTaskExecutor());
     }
 
     @ParameterizedTest
@@ -185,7 +183,6 @@ class MediaDriverContextTest
     void shouldCreateFixedThreadPoolExecutor(final int asyncExecutorThreadCount)
     {
         assertNull(context.asyncTaskExecutor());
-        assertFalse(context.ownsAsyncTaskExecutor());
         context.asyncTaskExecutorThreads(asyncExecutorThreadCount);
 
         context.concludeNullProperties();
@@ -193,7 +190,6 @@ class MediaDriverContextTest
         final Executor asyncTaskExecutor = context.asyncTaskExecutor();
         assertNotNull(asyncTaskExecutor);
         assertInstanceOf(ThreadPoolExecutor.class, asyncTaskExecutor);
-        assertTrue(context.ownsAsyncTaskExecutor());
 
         final ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor)asyncTaskExecutor;
         assertEquals(asyncExecutorThreadCount, threadPoolExecutor.getCorePoolSize());
@@ -230,34 +226,20 @@ class MediaDriverContextTest
         final Executor asynTaskExecutor = mock(Executor.class);
         context.asyncTaskExecutor(asynTaskExecutor);
         assertSame(asynTaskExecutor, context.asyncTaskExecutor());
-        assertFalse(context.ownsAsyncTaskExecutor());
 
         context.concludeNullProperties();
 
         assertSame(asynTaskExecutor, context.asyncTaskExecutor());
-        assertFalse(context.ownsAsyncTaskExecutor());
     }
 
     @Test
-    void shouldCloseAsyncTaskExecutorWhenOwned()
-    {
-        final ExecutorService asyncTaskExecutor = mock(ExecutorService.class);
-        context.asyncTaskExecutor(asyncTaskExecutor);
-        context.ownsAsyncTaskExecutor(true);
-
-        context.close();
-
-        verify(asyncTaskExecutor).shutdownNow();
-    }
-
-    @Test
-    void shouldNotCloseAsyncTaskExecutorIfNotOwned()
+    void shouldNotCloseAsyncTaskExecutor()
     {
         final ExecutorService asyncTaskExecutor = mock(ExecutorService.class);
         context.asyncTaskExecutor(asyncTaskExecutor);
 
         context.close();
 
-        verifyNoInteractions(asyncTaskExecutor);
+        verify(asyncTaskExecutor, never()).shutdownNow();
     }
 }

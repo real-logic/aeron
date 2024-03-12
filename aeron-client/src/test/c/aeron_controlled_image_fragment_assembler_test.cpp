@@ -158,25 +158,30 @@ TEST_F(ControlledImageFragmentAssemblerTest, shouldReassembleFromTwoFragments)
 {
     size_t fragmentLength = MTU_LENGTH - AERON_DATA_HEADER_LENGTH;
     int32_t initialTermId = 420;
-    size_t position_bits_to_shift = 20;
+    size_t positionBitsToShift = 20;
     int8_t version = 42;
     int16_t type = AERON_HDR_TYPE_ERR;
     int32_t sessionId = 18;
     int32_t streamId = 31;
     int32_t termId = initialTermId + 5;
     int64_t reservedValue = -47923742793L;
-
     int32_t termOffset = 0;
+
+    const int64_t startPosition = ::aeron_logbuffer_compute_position(
+        termId, termOffset, positionBitsToShift, initialTermId);
+
     bool isCalled = false;
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
+        const int64_t expectedPosition = startPosition + ::aeron_logbuffer_compute_fragmented_length(length, fragmentLength);
+
         isCalled = true;
         EXPECT_EQ(length, fragmentLength * 2);
         aeron_header_values_t header_values;
         EXPECT_EQ(0, aeron_header_values(header, &header_values));
         EXPECT_EQ(initialTermId, header_values.initial_term_id);
-        EXPECT_EQ(position_bits_to_shift, header_values.position_bits_to_shift);
-        EXPECT_EQ(MTU_LENGTH * 2, header_values.frame.frame_length);
+        EXPECT_EQ(positionBitsToShift, header_values.position_bits_to_shift);
+        EXPECT_EQ(AERON_DATA_HEADER_LENGTH + length, header_values.frame.frame_length);
         EXPECT_EQ((uint8_t)(AERON_DATA_HEADER_END_FLAG | AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_EOS_FLAG), header_values.frame.flags);
         EXPECT_EQ(version, header_values.frame.version);
         EXPECT_EQ(type, header_values.frame.type);
@@ -185,12 +190,13 @@ TEST_F(ControlledImageFragmentAssemblerTest, shouldReassembleFromTwoFragments)
         EXPECT_EQ(streamId, header_values.frame.stream_id);
         EXPECT_EQ(termId, header_values.frame.term_id);
         EXPECT_EQ(reservedValue, header_values.frame.reserved_value);
+        EXPECT_EQ(expectedPosition, aeron_header_position(header));
         verifyPayload(buffer, length);
         return AERON_ACTION_CONTINUE;
     };
 
     m_header.initial_term_id = initialTermId;
-    m_header.position_bits_to_shift = position_bits_to_shift;
+    m_header.position_bits_to_shift = positionBitsToShift;
     fillFrame(
         version,
         (uint8_t)(AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_EOS_FLAG),
@@ -227,21 +233,28 @@ TEST_F(ControlledImageFragmentAssemblerTest, shouldReassembleFromThreeFragments)
 {
     size_t fragmentLength = MTU_LENGTH - AERON_DATA_HEADER_LENGTH;
     size_t lastFragmentLength = 111;
-
+    int32_t initialTermId = 420;
+    size_t positionBitsToShift = 20;
     int8_t version = 3;
     int16_t type = AERON_HDR_TYPE_RTTM;
     int32_t streamId = 106;
-    int32_t termId = 42;
+    int32_t termId = initialTermId + 5;
     int64_t reservedValue = 5734957345793759L;
     int32_t termOffset = 0;
+
+    const int64_t startPosition = ::aeron_logbuffer_compute_position(
+        termId, termOffset, positionBitsToShift, initialTermId);
+
     bool isCalled = false;
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
+        const int64_t expectedPosition = startPosition + ::aeron_logbuffer_compute_fragmented_length(length, fragmentLength);
+
         isCalled = true;
         EXPECT_EQ(length, fragmentLength * 2 + lastFragmentLength);
         aeron_header_values_t header_values;
         EXPECT_EQ(0, aeron_header_values(header, &header_values));
-        EXPECT_EQ(aeron_logbuffer_compute_fragmented_length(length, fragmentLength), header_values.frame.frame_length);
+        EXPECT_EQ(AERON_DATA_HEADER_LENGTH + length, header_values.frame.frame_length);
         EXPECT_EQ(0xFF, header_values.frame.flags);
         EXPECT_EQ(version, header_values.frame.version);
         EXPECT_EQ(type, header_values.frame.type);
@@ -250,10 +263,13 @@ TEST_F(ControlledImageFragmentAssemblerTest, shouldReassembleFromThreeFragments)
         EXPECT_EQ(streamId, header_values.frame.stream_id);
         EXPECT_EQ(termId, header_values.frame.term_id);
         EXPECT_EQ(reservedValue, header_values.frame.reserved_value);
+        EXPECT_EQ(expectedPosition, aeron_header_position(header));
         verifyPayload(buffer, length);
         return AERON_ACTION_CONTINUE;
     };
 
+    m_header.initial_term_id = initialTermId;
+    m_header.position_bits_to_shift = positionBitsToShift;
     fillFrame(
         version,
         (uint8_t)(AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_EOS_FLAG),

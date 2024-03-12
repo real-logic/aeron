@@ -2793,6 +2793,11 @@ void aeron_driver_conductor_on_unavailable_image(
 
 static bool aeron_driver_conductor_not_accepting_client_commands(aeron_driver_conductor_t *conductor)
 {
+    if (conductor->async_client_command_in_flight)
+    {
+        return true;
+    }
+
     aeron_mpsc_rb_t *sender_rb = conductor->context->sender_proxy->command_queue;
     aeron_mpsc_rb_t *receiver_rb = conductor->context->receiver_proxy->command_queue;
     return
@@ -3269,6 +3274,11 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
     if (result < 0)
     {
         aeron_driver_conductor_on_error(conductor, aeron_errcode(), aeron_errmsg(), correlation_id);
+    }
+
+    if (conductor->async_client_command_in_flight)
+    {
+        return AERON_RB_BREAK;
     }
 
     return AERON_RB_CONTINUE;

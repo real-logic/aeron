@@ -27,6 +27,11 @@ public class TestClusterClock implements ClusterClock, EpochClock, NanoClock
     private final AtomicLong tick = new AtomicLong();
     private final TimeUnit timeUnit;
 
+    public TestClusterClock()
+    {
+        this(TimeUnit.MILLISECONDS);
+    }
+
     public TestClusterClock(final TimeUnit timeUnit)
     {
         this.timeUnit = timeUnit;

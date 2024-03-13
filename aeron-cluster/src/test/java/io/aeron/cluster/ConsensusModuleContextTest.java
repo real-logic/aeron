@@ -21,6 +21,7 @@ import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
+import io.aeron.cluster.service.ClusterClock;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
@@ -583,6 +584,70 @@ class ConsensusModuleContextTest
         final File linkFile = new File(context.clusterDir(), ClusterMarkFile.LINK_FILENAME);
         assertTrue(linkFile.exists());
         assertEquals(otherDir.getCanonicalPath(), new String(Files.readAllBytes(linkFile.toPath()), US_ASCII));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "io.aeron.cluster.MillisecondClusterClock",
+        "io.aeron.cluster.NanosecondClusterClock",
+        "io.aeron.test.cluster.TestClusterClock" })
+    void shouldSetClusterClockViaSystemProperty(final String clockClassName)
+    {
+        System.setProperty(CLUSTER_CLOCK_PROP_NAME, clockClassName);
+        try
+        {
+            context.clusterClock(null);
+
+            context.conclude();
+
+            final ClusterClock clusterClock = context.clusterClock();
+            assertNotNull(clusterClock);
+            assertEquals(clockClassName, clusterClock.getClass().getName());
+        }
+        finally
+        {
+            System.clearProperty(CLUSTER_CLOCK_PROP_NAME);
+        }
+    }
+
+    @Test
+    void shouldThrowClusterExceptionIfClockCannotBeCreated()
+    {
+        final String clockClassName = String.class.getName();
+        System.setProperty(CLUSTER_CLOCK_PROP_NAME, clockClassName);
+        try
+        {
+            context.clusterClock(null);
+
+            final ClusterException clusterException =
+                assertThrowsExactly(ClusterException.class, context::conclude);
+            assertEquals("ERROR - failed to instantiate ClusterClock " + clockClassName, clusterException.getMessage());
+            final Throwable cause = clusterException.getCause();
+            assertInstanceOf(ClassCastException.class, cause);
+        }
+        finally
+        {
+            System.clearProperty(CLUSTER_CLOCK_PROP_NAME);
+        }
+    }
+
+    @Test
+    void shouldUseExplicitlyAssignedClockInstance()
+    {
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.NANOSECONDS);
+        System.setProperty(CLUSTER_CLOCK_PROP_NAME, String.class.getName());
+        try
+        {
+            context.clusterClock(clock);
+
+            context.conclude();
+
+            assertSame(clock, context.clusterClock());
+        }
+        finally
+        {
+            System.clearProperty(CLUSTER_CLOCK_PROP_NAME);
+        }
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

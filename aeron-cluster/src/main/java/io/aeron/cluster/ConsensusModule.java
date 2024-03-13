@@ -60,6 +60,7 @@ import static io.aeron.AeronCounters.CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID;
 import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.AeronCounters.validateCounterTypeId;
 import static io.aeron.CommonContext.*;
+import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.COMMIT_POSITION_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
@@ -863,6 +864,12 @@ public final class ConsensusModule implements AutoCloseable
             "aeron.cluster.accept.standby.snapshots";
 
         /**
+         * Property name of setting {@link ClusterClock}. Should specify a fully qualified class name.
+         * Defaults to {@link MillisecondClusterClock}.
+         */
+        public static final String CLUSTER_CLOCK_PROP_NAME = "aeron.cluster.clock";
+
+        /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
          * {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME} if set.
          *
@@ -1539,7 +1546,16 @@ public final class ConsensusModule implements AutoCloseable
 
             if (null == clusterClock)
             {
-                clusterClock = new MillisecondClusterClock();
+                final String clockClassName =
+                    System.getProperty(CLUSTER_CLOCK_PROP_NAME, MillisecondClusterClock.class.getName());
+                try
+                {
+                    clusterClock = (ClusterClock)Class.forName(clockClassName).getConstructor().newInstance();
+                }
+                catch (final Exception e)
+                {
+                    throw new ClusterException("failed to instantiate ClusterClock " + clockClassName, e);
+                }
             }
 
             if (null == epochClock)

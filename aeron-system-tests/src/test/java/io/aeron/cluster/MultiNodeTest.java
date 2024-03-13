@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.Cluster;
+import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SlowTest;
@@ -32,7 +33,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ExtendWith(InterruptingTestCallback.class)
+@ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 class MultiNodeTest
 {
     @RegisterExtension

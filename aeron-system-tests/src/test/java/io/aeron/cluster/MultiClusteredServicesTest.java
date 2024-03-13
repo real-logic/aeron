@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
@@ -35,7 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
 
-@ExtendWith(InterruptingTestCallback.class)
+@ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 class MultiClusteredServicesTest
 {
     @RegisterExtension

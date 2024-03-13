@@ -25,6 +25,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.samples.cluster.ClusterConfig;
 import io.aeron.samples.cluster.EchoServiceNode;
 import io.aeron.samples.cluster.tutorial.BasicAuctionClusterClient;
+import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
@@ -72,7 +73,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 
 @TopologyTest
-@ExtendWith(InterruptingTestCallback.class)
+@ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 class ClusterNetworkTopologyTest
 {
     private static final int REMOTE_LAUNCH_PORT = 11112;

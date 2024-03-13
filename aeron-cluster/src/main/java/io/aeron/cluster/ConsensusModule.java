@@ -1789,7 +1789,7 @@ public final class ConsensusModule implements AutoCloseable
                         aeron,
                         buffer,
                         "Total max snapshot duration exceeded count: threshold=" +
-                            totalSnapshotDurationThresholdNs,
+                            totalSnapshotDurationThresholdNs + "ns",
                         AeronCounters.CLUSTER_TOTAL_SNAPSHOT_DURATION_THRESHOLD_EXCEEDED_TYPE_ID,
                         clusterId),
                     totalSnapshotDurationThresholdNs);

@@ -869,7 +869,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     ClusterCounters.allocateServiceCounter(
                         aeron,
                         tempBuffer,
-                        "Cluster container work cycle time exceeded count: threshold=" + cycleThresholdNs,
+                        "Cluster container work cycle time exceeded count: threshold=" + cycleThresholdNs + "ns",
                         AeronCounters.CLUSTER_CLUSTERED_SERVICE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
                         clusterId,
                         serviceId),

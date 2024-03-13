@@ -1942,25 +1942,23 @@ public final class AeronCluster implements AutoCloseable
                 {
                     try
                     {
-                        if (channelUri.isUdp())
-                        {
-                            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
-                        }
-
                         if (null != member.publicationException)
                         {
                             failureCount++;
                             continue;
                         }
 
-                        if (NULL_VALUE == member.registrationId)
-                        {
-                            member.registrationId = asyncAddIngressPublication(
-                                ctx, channelUri.toString(), ctx.ingressStreamId());
-                        }
-
                         if (null == member.publication)
                         {
+                            if (NULL_VALUE == member.registrationId)
+                            {
+                                if (channelUri.isUdp())
+                                {
+                                    channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
+                                }
+                                member.registrationId = asyncAddIngressPublication(
+                                    ctx, channelUri.toString(), ctx.ingressStreamId());
+                            }
                             member.publication = getIngressPublication(ctx, member.registrationId);
                         }
 

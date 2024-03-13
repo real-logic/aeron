@@ -83,12 +83,15 @@ private:
         {
             auto nextOffset = BitUtil::align(
                 offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-            m_builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
+            m_builder.reset()
+                .captureHeader(header)
+                .append(buffer, offset, length)
+                .nextTermOffset(nextOffset);
         }
         else if (offset == m_builder.nextTermOffset())
         {
             const std::uint32_t limit = m_builder.limit();
-            m_builder.append(buffer, offset, length, header);
+            m_builder.append(buffer, offset, length);
 
             if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
             {
@@ -96,7 +99,7 @@ private:
                     static_cast<util::index_t>(m_builder.limit()) - DataFrameHeader::LENGTH;
                 AtomicBuffer msgBuffer(m_builder.buffer(), m_builder.limit());
 
-                action = m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
+                action = m_delegate(msgBuffer, 0, msgLength, m_builder.completeHeader(header));
 
                 if (ControlledPollAction::ABORT == action)
                 {

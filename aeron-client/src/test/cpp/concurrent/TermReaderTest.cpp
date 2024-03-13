@@ -55,7 +55,7 @@ class TermReaderTest : public testing::Test
 public:
     TermReaderTest() :
         m_log(&m_logBuffer[0], m_logBuffer.size()),
-        m_fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY, nullptr),
+        m_fragmentHeader(INITIAL_TERM_ID, LogBufferDescriptor::positionBitsToShift(TERM_BUFFER_CAPACITY), nullptr),
         m_handler_func(std::bind(&MockDataHandler::onData, &m_handler, _1, _2, _3, _4))
     {
         m_logBuffer.fill(0);

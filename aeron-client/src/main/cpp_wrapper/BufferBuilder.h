@@ -31,10 +31,16 @@ class BufferBuilder
 public:
     using this_t = BufferBuilder;
 
-    explicit BufferBuilder(std::uint32_t initialLength) :
-        m_capacity(BitUtil::findNextPowerOfTwo(initialLength)),
+    explicit BufferBuilder(std::uint32_t initialCapacity = 0) :
+        m_capacity(initialCapacity),
         m_buffer(new std::uint8_t[m_capacity])
     {
+        if (BUFFER_BUILDER_MAX_CAPACITY < m_capacity)
+        {
+            throw IllegalArgumentException(
+                "initialCapacity outside range 0 - " + std::to_string(BUFFER_BUILDER_MAX_CAPACITY) +
+                ": capacity=" + std::to_string(m_capacity), SOURCEINFO);
+        }
     }
 
     BufferBuilder(BufferBuilder &&builder) noexcept:
@@ -53,6 +59,11 @@ public:
     std::uint32_t limit() const
     {
         return m_limit;
+    }
+
+    std::uint32_t capacity() const
+    {
+        return m_capacity;
     }
 
     void limit(std::uint32_t limit)
@@ -79,8 +90,20 @@ public:
 
     this_t &reset()
     {
-        m_limit = static_cast<std::uint32_t>(DataFrameHeader::LENGTH);
-        m_nextTermOffset = 0;
+        m_limit = 0;
+        m_nextTermOffset = NULL_VALUE;
+        return *this;
+    }
+
+    this_t &compact()
+    {
+        const std::uint32_t newCapacity =
+            BUFFER_BUILDER_INIT_MIN_CAPACITY < m_limit ? m_limit : BUFFER_BUILDER_INIT_MIN_CAPACITY;
+        if (newCapacity < m_capacity)
+        {
+            resize(newCapacity);
+        }
+
         return *this;
     }
 
@@ -93,10 +116,24 @@ public:
         return *this;
     }
 
+    this_t &append(AtomicBuffer &buffer, util::index_t offset, util::index_t length)
+    {
+        ensureCapacity(static_cast<std::uint32_t>(length));
+
+        ::memcpy(&m_buffer[0] + m_limit, buffer.buffer() + offset, static_cast<std::uint32_t>(length));
+        m_limit += length;
+        return *this;
+    }
+
+    this_t &captureHeader(Header &header)
+    {
+        return *this;
+    }
+
 private:
     std::uint32_t m_capacity = 0;
-    std::uint32_t m_limit = static_cast<std::uint32_t>(DataFrameHeader::LENGTH);
-    util::index_t m_nextTermOffset = 0;
+    std::uint32_t m_limit = 0;
+    util::index_t m_nextTermOffset = NULL_VALUE;
     std::unique_ptr<std::uint8_t[]> m_buffer;
 
     inline static std::uint32_t findSuitableCapacity(
@@ -130,12 +167,17 @@ private:
             }
 
             const std::uint32_t newCapacity = findSuitableCapacity(m_capacity, requiredCapacity);
-            std::unique_ptr<std::uint8_t[]> newBuffer(new std::uint8_t[newCapacity]);
-
-            ::memcpy(&newBuffer[0], &m_buffer[0], m_limit);
-            m_buffer = std::move(newBuffer);
-            m_capacity = newCapacity;
+            resize(newCapacity);
         }
+    }
+
+    void resize(std::uint32_t newCapacity)
+    {
+        std::unique_ptr<std::uint8_t[]> newBuffer(new std::uint8_t[newCapacity]);
+
+        ::memcpy(&newBuffer[0], &m_buffer[0], m_limit);
+        m_buffer = std::move(newBuffer);
+        m_capacity = newCapacity;
     }
 };
 

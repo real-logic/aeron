@@ -24,6 +24,7 @@ using namespace aeron;
 
 static const std::int32_t STREAM_ID = 10;
 static const std::int32_t SESSION_ID = 200;
+static const std::int32_t TERM_OFFSET = 1024;
 static const std::int32_t TERM_LENGTH = LogBufferDescriptor::TERM_MIN_LENGTH;
 static const std::int32_t INITIAL_TERM_ID = -1234;
 static const std::int32_t ACTIVE_TERM_ID = INITIAL_TERM_ID + 5;
@@ -37,7 +38,7 @@ class FragmentAssemblerTest : public testing::Test
 public:
     FragmentAssemblerTest() :
         m_buffer(&m_fragment[0], m_fragment.size()),
-        m_header(INITIAL_TERM_ID, TERM_LENGTH, nullptr)
+        m_header(INITIAL_TERM_ID, LogBufferDescriptor::positionBitsToShift(TERM_LENGTH), nullptr)
     {
         m_header.buffer(m_buffer);
         m_fragment.fill(0);
@@ -56,7 +57,7 @@ public:
         frame.version = DataFrameHeader::CURRENT_VERSION;
         frame.flags = flags;
         frame.type = DataFrameHeader::HDR_TYPE_DATA;
-        frame.termOffset = offset;
+        frame.termOffset = TERM_OFFSET;
         frame.sessionId = SESSION_ID;
         frame.streamId = STREAM_ID;
         frame.termId = ACTIVE_TERM_ID;
@@ -100,7 +101,7 @@ TEST_F(FragmentAssemblerTest, shouldPassThroughUnfragmentedMessage)
             EXPECT_EQ(header.sessionId(), SESSION_ID);
             EXPECT_EQ(header.streamId(), STREAM_ID);
             EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
-            EXPECT_EQ(header.termOffset(), 0);
+            EXPECT_EQ(header.termOffset(), TERM_OFFSET);
             EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + fragmentLength);
             EXPECT_EQ(header.flags(), FrameDescriptor::UNFRAGMENTED);
             EXPECT_EQ(
@@ -126,20 +127,20 @@ TEST_F(FragmentAssemblerTest, shouldReassembleFromTwoFragments)
         [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
         {
             isCalled = true;
-            EXPECT_EQ(offset, DataFrameHeader::LENGTH);
+            EXPECT_EQ(offset, 0);
             EXPECT_EQ(length, fragmentLength * 2);
             EXPECT_EQ(header.sessionId(), SESSION_ID);
             EXPECT_EQ(header.streamId(), STREAM_ID);
             EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
             EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
-            EXPECT_EQ(header.termOffset(), MTU_LENGTH);
-            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + fragmentLength);
-            EXPECT_EQ(header.flags(), FrameDescriptor::END_FRAG);
+            EXPECT_EQ(header.termOffset(), TERM_OFFSET);
+            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + (2 * fragmentLength));
+            EXPECT_EQ(header.flags(), FrameDescriptor::BEGIN_FRAG | FrameDescriptor::END_FRAG);
             EXPECT_EQ(
                 header.position(),
                 LogBufferDescriptor::computePosition(
                     ACTIVE_TERM_ID,
-                    BitUtil::align(header.termOffset() + header.frameLength(), FrameDescriptor::FRAME_ALIGNMENT),
+                    header.termOffset() + LogBufferDescriptor::computeFragmentedFrameLength(2 * fragmentLength, fragmentLength),
                     POSITION_BITS_TO_SHIFT,
                     INITIAL_TERM_ID));
             verifyPayload(buffer, offset, length);
@@ -166,7 +167,7 @@ TEST_F(FragmentAssemblerTest, shouldReassembleFromThreeFragments)
         [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
         {
             isCalled = true;
-            EXPECT_EQ(offset, DataFrameHeader::LENGTH);
+            EXPECT_EQ(offset, 0);
             EXPECT_EQ(length, fragmentLength * 3);
             EXPECT_EQ(header.positionBitsToShift(), POSITION_BITS_TO_SHIFT);
             EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
@@ -174,14 +175,14 @@ TEST_F(FragmentAssemblerTest, shouldReassembleFromThreeFragments)
             EXPECT_EQ(header.streamId(), STREAM_ID);
             EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
             EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
-            EXPECT_EQ(header.termOffset(), MTU_LENGTH * 2);
-            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + fragmentLength);
-            EXPECT_EQ(header.flags(), FrameDescriptor::END_FRAG);
+            EXPECT_EQ(header.termOffset(), TERM_OFFSET);
+            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + (3 * fragmentLength));
+            EXPECT_EQ(header.flags(), FrameDescriptor::BEGIN_FRAG | FrameDescriptor::END_FRAG);
             EXPECT_EQ(
                 header.position(),
                 LogBufferDescriptor::computePosition(
                     ACTIVE_TERM_ID,
-                    BitUtil::align(header.termOffset() + header.frameLength(), FrameDescriptor::FRAME_ALIGNMENT),
+                    header.termOffset() + LogBufferDescriptor::computeFragmentedFrameLength(3 * fragmentLength, fragmentLength),
                     POSITION_BITS_TO_SHIFT,
                     INITIAL_TERM_ID));
             verifyPayload(buffer, offset, length);
@@ -255,20 +256,20 @@ TEST_F(FragmentAssemblerTest, shouldReassembleTwoMessagesFromFourFrames)
         [&](AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
         {
             isCalled = true;
-            EXPECT_EQ(offset, DataFrameHeader::LENGTH);
+            EXPECT_EQ(offset, 0);
             EXPECT_EQ(length, fragmentLength * 2);
             EXPECT_EQ(header.sessionId(), SESSION_ID);
             EXPECT_EQ(header.streamId(), STREAM_ID);
             EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);
             EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
-            EXPECT_EQ(header.termOffset(), termOffset);
-            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + fragmentLength);
-            EXPECT_EQ(header.flags(), FrameDescriptor::END_FRAG);
+            EXPECT_EQ(header.termOffset(), TERM_OFFSET);
+            EXPECT_EQ(header.frameLength(), DataFrameHeader::LENGTH + (2 * fragmentLength));
+            EXPECT_EQ(header.flags(), FrameDescriptor::BEGIN_FRAG | FrameDescriptor::END_FRAG);
             EXPECT_EQ(
                 header.position(),
                 LogBufferDescriptor::computePosition(
                     ACTIVE_TERM_ID,
-                    BitUtil::align(header.termOffset() + header.frameLength(), FrameDescriptor::FRAME_ALIGNMENT),
+                    header.termOffset() + LogBufferDescriptor::computeFragmentedFrameLength(2 * fragmentLength, fragmentLength),
                     POSITION_BITS_TO_SHIFT,
                     INITIAL_TERM_ID));
         };

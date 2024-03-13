@@ -100,7 +100,10 @@ private:
             auto nextOffset = BitUtil::align(
                 offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
 
-            builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
+            builder.reset()
+                .captureHeader(header)
+                .append(buffer, offset, length)
+                .nextTermOffset(nextOffset);
         }
         else
         {
@@ -113,7 +116,7 @@ private:
 
                 if (offset == builder.nextTermOffset())
                 {
-                    builder.append(buffer, offset, length, header);
+                    builder.append(buffer, offset, length);
 
                     if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
                     {
@@ -121,7 +124,7 @@ private:
                             static_cast<util::index_t>(builder.limit()) - DataFrameHeader::LENGTH;
                         AtomicBuffer msgBuffer(builder.buffer(), builder.limit());
 
-                        action = m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
+                        action = m_delegate(msgBuffer, 0, msgLength, builder.completeHeader(header));
 
                         if (ControlledPollAction::ABORT == action)
                         {

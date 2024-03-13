@@ -83,11 +83,14 @@ private:
         {
             auto nextOffset = BitUtil::align(
                 offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-            m_builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
+            m_builder.reset()
+                .captureHeader(header)
+                .append(buffer, offset, length)
+                .nextTermOffset(nextOffset);
         }
         else if (m_builder.nextTermOffset() == offset)
         {
-            m_builder.append(buffer, offset, length, header);
+            m_builder.append(buffer, offset, length);
 
             if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
             {
@@ -95,7 +98,7 @@ private:
                     static_cast<util::index_t>(m_builder.limit()) - DataFrameHeader::LENGTH;
                 AtomicBuffer msgBuffer(m_builder.buffer(), m_builder.limit());
 
-                m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
+                m_delegate(msgBuffer, 0, msgLength, m_builder.completeHeader(header));
 
                 m_builder.reset();
             }

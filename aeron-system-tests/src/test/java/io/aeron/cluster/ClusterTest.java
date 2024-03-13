@@ -23,13 +23,7 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.client.ControlledEgressListener;
 import io.aeron.cluster.client.EgressListener;
-import io.aeron.cluster.codecs.AdminRequestEncoder;
-import io.aeron.cluster.codecs.AdminRequestType;
-import io.aeron.cluster.codecs.AdminResponseCode;
-import io.aeron.cluster.codecs.AdminResponseEncoder;
-import io.aeron.cluster.codecs.MessageHeaderDecoder;
-import io.aeron.cluster.codecs.MessageHeaderEncoder;
-import io.aeron.cluster.codecs.SessionMessageHeaderDecoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.SnapshotDurationTracker;
 import io.aeron.logbuffer.BufferClaim;
@@ -37,12 +31,7 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.security.AuthorisationService;
-import io.aeron.test.EventLogExtension;
-import io.aeron.test.InterruptAfter;
-import io.aeron.test.InterruptingTestCallback;
-import io.aeron.test.SlowTest;
-import io.aeron.test.SystemTestWatcher;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
@@ -54,7 +43,6 @@ import org.agrona.collections.Hashing;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1929,13 +1917,19 @@ class ClusterTest
     @InterruptAfter(20)
     void shouldTrackSnapshotDuration()
     {
+        final long service1SleepDuration = TimeUnit.MILLISECONDS.toNanos(101);
+        final long service2SleepDuration = TimeUnit.MILLISECONDS.toNanos(201);
+        final long totalSleepDuration = service1SleepDuration + service2SleepDuration;
+
         cluster = aCluster()
             .withServiceSupplier(
                 (i) -> new TestNode.TestService[]
-                {
+                    {
                     new TestNode.SleepOnSnapshotTestService()
-                        .sleepNsOnTakeSnapshot(TimeUnit.MILLISECONDS.toNanos(101)).index(i)
-                })
+                        .sleepNsOnTakeSnapshot(service1SleepDuration).index(i),
+                    new TestNode.SleepOnSnapshotTestService()
+                        .sleepNsOnTakeSnapshot(service2SleepDuration).index(i)
+                    })
             .withStaticNodes(3)
             .withAuthorisationServiceSupplier(() -> AuthorisationService.ALLOW_ALL)
             .start();
@@ -1943,13 +1937,14 @@ class ClusterTest
 
         final TestNode leader = cluster.awaitLeader();
 
-        final SnapshotDurationTracker snapshotDurationTracker = leader.consensusModule().context()
+        final SnapshotDurationTracker totalSnapshotDurationTracker = leader.consensusModule().context()
             .totalSnapshotDurationTracker();
 
-        final AtomicCounter snapshotDurationThresholdExceededCount = snapshotDurationTracker
-            .snapshotDurationThresholdExceededCount();
+        final SnapshotDurationTracker service1SnapshotDurationTracker = leader.container(0).context()
+            .snapshotDurationTracker();
 
-        final AtomicCounter maxSnapshotDuration = snapshotDurationTracker.maxSnapshotDuration();
+        final SnapshotDurationTracker service2SnapshotDurationTracker = leader.container(1).context()
+            .snapshotDurationTracker();
 
         final long requestCorrelationId = System.nanoTime();
         final MutableBoolean hasResponse = injectAdminResponseEgressListener(
@@ -1957,8 +1952,14 @@ class ClusterTest
 
         final AeronCluster client = cluster.connectClient();
 
-        assertEquals(0L, snapshotDurationThresholdExceededCount.get());
-        assertEquals(0, maxSnapshotDuration.get());
+        assertEquals(0L, totalSnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertEquals(0, totalSnapshotDurationTracker.maxSnapshotDuration().get());
+
+        assertEquals(0L, service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertEquals(0, service1SnapshotDurationTracker.maxSnapshotDuration().get());
+
+        assertEquals(0L, service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertEquals(0, service2SnapshotDurationTracker.maxSnapshotDuration().get());
 
         while (!client.sendAdminRequestToTakeASnapshot(requestCorrelationId))
         {
@@ -1974,8 +1975,14 @@ class ClusterTest
         cluster.awaitSnapshotCount(1);
         cluster.awaitNeutralControlToggle(leader);
 
-        assertEquals(1L, snapshotDurationThresholdExceededCount.get());
-        assertTrue(maxSnapshotDuration.get() > 0);
+        assertEquals(1L, totalSnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertTrue(totalSnapshotDurationTracker.maxSnapshotDuration().get() >= totalSleepDuration);
+
+        assertEquals(1L, service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertTrue(service1SnapshotDurationTracker.maxSnapshotDuration().get() >= service1SleepDuration);
+
+        assertEquals(1L, service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertTrue(service2SnapshotDurationTracker.maxSnapshotDuration().get() >= service2SleepDuration);
     }
 
     @Test

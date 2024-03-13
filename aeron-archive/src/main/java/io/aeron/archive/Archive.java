@@ -1214,14 +1214,14 @@ public final class Archive implements AutoCloseable
                         aeron,
                         tempBuffer,
                         AeronCounters.ARCHIVE_MAX_CYCLE_TIME_TYPE_ID,
-                        "archive-conductor max cycle time in ns",
+                        "archive-conductor max cycle time in ns: " + threadingMode.name(),
                         archiveId),
                     ArchiveCounters.allocate(
                         aeron,
                         tempBuffer,
                         AeronCounters.ARCHIVE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
                         "archive-conductor work cycle time exceeded count: threshold=" +
-                        conductorCycleThresholdNs + "ns",
+                        conductorCycleThresholdNs + "ns " + threadingMode.name(),
                         archiveId),
                     conductorCycleThresholdNs);
             }

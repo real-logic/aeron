@@ -58,6 +58,11 @@ public:
         aeron_fragment_assembler_create(&m_fragment_assembler, handlerCallback, reinterpret_cast<void *>(this));
     }
 
+    ~FragmentAssembler()
+    {
+        aeron_fragment_assembler_delete(m_fragment_assembler);
+    }
+
     /**
      * Compose a fragment_handler_t that calls the this FragmentAssembler instance for reassembly. Suitable for
      * passing to Subscription::poll(fragment_handler_t, int).

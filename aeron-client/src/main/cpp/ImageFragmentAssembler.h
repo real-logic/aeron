@@ -81,32 +81,25 @@ private:
         }
         else if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
         {
-            auto nextOffset = BitUtil::align(
-                offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
             m_builder.reset()
                 .captureHeader(header)
                 .append(buffer, offset, length)
-                .nextTermOffset(nextOffset);
+                .nextTermOffset(header.nextTermOffset());
         }
-        else if (m_builder.nextTermOffset() == offset)
+        else if (m_builder.nextTermOffset() == header.termOffset())
         {
             m_builder.append(buffer, offset, length);
 
             if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
             {
-                util::index_t msgLength =
-                    static_cast<util::index_t>(m_builder.limit()) - DataFrameHeader::LENGTH;
                 AtomicBuffer msgBuffer(m_builder.buffer(), m_builder.limit());
-
-                m_delegate(msgBuffer, 0, msgLength, m_builder.completeHeader(header));
+                m_delegate(msgBuffer, 0, m_builder.limit(), m_builder.completeHeader(header));
 
                 m_builder.reset();
             }
             else
             {
-                auto nextOffset = BitUtil::align(
-                    offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-                m_builder.nextTermOffset(nextOffset);
+                m_builder.nextTermOffset(header.nextTermOffset());
             }
         }
         else

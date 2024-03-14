@@ -81,25 +81,20 @@ private:
         }
         else if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
         {
-            auto nextOffset = BitUtil::align(
-                offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
             m_builder.reset()
                 .captureHeader(header)
                 .append(buffer, offset, length)
-                .nextTermOffset(nextOffset);
+                .nextTermOffset(header.nextTermOffset());
         }
-        else if (offset == m_builder.nextTermOffset())
+        else if (header.termOffset() == m_builder.nextTermOffset())
         {
             const std::uint32_t limit = m_builder.limit();
             m_builder.append(buffer, offset, length);
 
             if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
             {
-                util::index_t msgLength =
-                    static_cast<util::index_t>(m_builder.limit()) - DataFrameHeader::LENGTH;
                 AtomicBuffer msgBuffer(m_builder.buffer(), m_builder.limit());
-
-                action = m_delegate(msgBuffer, 0, msgLength, m_builder.completeHeader(header));
+                action = m_delegate(msgBuffer, 0, m_builder.limit(), m_builder.completeHeader(header));
 
                 if (ControlledPollAction::ABORT == action)
                 {
@@ -112,9 +107,7 @@ private:
             }
             else
             {
-                auto nextOffset = BitUtil::align(
-                    offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-                m_builder.nextTermOffset(nextOffset);
+                m_builder.nextTermOffset(header.nextTermOffset());
             }
         }
         else

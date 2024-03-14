@@ -97,13 +97,10 @@ private:
         else if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
         {
             BufferBuilder &builder = getBuffer(header.sessionId());
-            auto nextOffset = BitUtil::align(
-                offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-
             builder.reset()
                 .captureHeader(header)
                 .append(buffer, offset, length)
-                .nextTermOffset(nextOffset);
+                .nextTermOffset(header.nextTermOffset());
         }
         else
         {
@@ -114,17 +111,14 @@ private:
                 BufferBuilder &builder = result->second;
                 const std::uint32_t limit = builder.limit();
 
-                if (offset == builder.nextTermOffset())
+                if (header.termOffset() == builder.nextTermOffset())
                 {
                     builder.append(buffer, offset, length);
 
                     if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
                     {
-                        util::index_t msgLength =
-                            static_cast<util::index_t>(builder.limit()) - DataFrameHeader::LENGTH;
                         AtomicBuffer msgBuffer(builder.buffer(), builder.limit());
-
-                        action = m_delegate(msgBuffer, 0, msgLength, builder.completeHeader(header));
+                        action = m_delegate(msgBuffer, 0, builder.limit(), builder.completeHeader(header));
 
                         if (ControlledPollAction::ABORT == action)
                         {
@@ -137,9 +131,7 @@ private:
                     }
                     else
                     {
-                        auto nextOffset = BitUtil::align(
-                            offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-                        builder.nextTermOffset(nextOffset);
+                        builder.nextTermOffset(header.nextTermOffset());
                     }
                 }
                 else

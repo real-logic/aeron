@@ -169,6 +169,11 @@ public:
         return m_context;
     }
 
+    aeron_header_t *hdr()
+    {
+        return m_header;
+    }
+
 private:
     aeron_header_t *m_header = nullptr;
     aeron_header_values_t m_headerValues = {};

@@ -1457,6 +1457,13 @@ int64_t aeron_header_position(aeron_header_t *header);
  */
 size_t aeron_header_position_bits_to_shift(aeron_header_t *header);
 
+/**
+ * Calculates the offset of the frame immediately after this one.
+ *
+ * @return the offset of the next frame.
+ */
+int32_t aeron_header_next_term_offset(aeron_header_t *header);
+
 typedef struct aeron_subscription_constants_stct
 {
     /**

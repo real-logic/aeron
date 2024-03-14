@@ -106,13 +106,10 @@ private:
         if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
         {
             BufferBuilder &builder = getBuffer(header.sessionId());
-            auto nextOffset = BitUtil::align(
-                offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-
             builder.reset()
                 .captureHeader(header)
                 .append(buffer, offset, length)
-                .nextTermOffset(nextOffset);
+                .nextTermOffset(header.nextTermOffset());
         }
         else
         {
@@ -122,7 +119,7 @@ private:
             {
                 BufferBuilder &builder = result->second;
 
-                if (offset == builder.nextTermOffset())
+                if (header.termOffset() == builder.nextTermOffset())
                 {
                     builder.append(buffer, offset, length);
 
@@ -135,9 +132,7 @@ private:
                     }
                     else
                     {
-                        auto nextOffset = BitUtil::align(
-                            offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-                        builder.nextTermOffset(nextOffset);
+                        builder.nextTermOffset(header.nextTermOffset());
                     }
                 }
                 else

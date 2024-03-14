@@ -24,13 +24,18 @@
 #include "concurrent/logbuffer/FrameDescriptor.h"
 #include "concurrent/logbuffer/DataFrameHeader.h"
 
+extern "C"
+{
+#include "concurrent/aeron_logbuffer_descriptor.h"
+};
+
 namespace aeron { namespace concurrent { namespace logbuffer { namespace LogBufferDescriptor
 {
 
 const std::int32_t TERM_MIN_LENGTH = 64 * 1024;
 const std::int32_t TERM_MAX_LENGTH = 1024 * 1024 * 1024;
-const std::int32_t AERON_PAGE_MIN_SIZE = 4 * 1024;
-const std::int32_t AERON_PAGE_MAX_SIZE = 1024 * 1024 * 1024;
+//const std::int32_t AERON_PAGE_MIN_SIZE = 4 * 1024;
+//const std::int32_t AERON_PAGE_MAX_SIZE = 1024 * 1024 * 1024;
 
 #if defined(__GNUC__) || _MSC_VER >= 1900
 static constexpr const int PARTITION_COUNT = 3;
@@ -392,6 +397,20 @@ inline void initializeTailWithTermId(AtomicBuffer &logMetaDataBuffer, int partit
     auto rawTail = static_cast<std::int64_t>(termId) << 32;
     util::index_t index = TERM_TAIL_COUNTER_OFFSET + static_cast<util::index_t>(partitionIndex * sizeof(std::int64_t));
     logMetaDataBuffer.putInt64(index, rawTail);
+}
+
+/**
+ * Compute frame length for a message that is fragmented into chunks of {@code maxPayloadSize}.
+ *
+ * @param length of the message.
+ * @param maxPayloadSize fragment size without the header.
+ * @return message length after fragmentation.
+ */
+inline static util::index_t computeFragmentedFrameLength(
+    const util::index_t length,
+    const util::index_t maxPayloadLength)
+{
+    return aeron_logbuffer_compute_fragmented_length(length, maxPayloadLength);
 }
 
 }

@@ -53,9 +53,9 @@ public:
      */
     explicit FragmentAssembler(
         const fragment_handler_t &delegate, std::size_t initialBufferLength = DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
-        m_initialBufferLength(initialBufferLength),
         m_delegate(delegate)
     {
+        aeron_fragment_assembler_create(&m_fragment_assembler, handlerCallback, reinterpret_cast<void *>(this));
     }
 
     /**
@@ -80,80 +80,24 @@ public:
      */
     void deleteSessionBuffer(std::int32_t sessionId)
     {
-        m_builderBySessionIdMap.erase(sessionId);
+        // No-op???
     }
 
 private:
-    const std::size_t m_initialBufferLength;
+    aeron_fragment_assembler_t *m_fragment_assembler;
     fragment_handler_t m_delegate;
-    std::unordered_map<std::int32_t, BufferBuilder> m_builderBySessionIdMap;
+
+    static void handlerCallback(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
+    {
+        FragmentAssembler *assembler = reinterpret_cast<FragmentAssembler *>(clientd);
+        Header header1{header, nullptr};
+        AtomicBuffer buffer1{const_cast<uint8_t *>(buffer), length};
+        assembler->m_delegate(buffer1, 0, length, header1);
+    }
 
     inline void onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
     {
-        const std::uint8_t flags = header.flags();
-
-        if ((flags & FrameDescriptor::UNFRAGMENTED) == FrameDescriptor::UNFRAGMENTED)
-        {
-            m_delegate(buffer, offset, length, header);
-        }
-        else if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
-        {
-            BufferBuilder &builder = getBuffer(header.sessionId());
-            auto nextOffset = BitUtil::align(
-                header.termOffset() + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-
-            builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
-        }
-        else
-        {
-            auto result = m_builderBySessionIdMap.find(header.sessionId());
-
-            if (result != m_builderBySessionIdMap.end())
-            {
-                BufferBuilder &builder = result->second;
-
-                if (header.termOffset() == builder.nextTermOffset())
-                {
-                    builder.append(buffer, offset, length, header);
-
-                    if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
-                    {
-                        util::index_t msgLength =
-                            static_cast<util::index_t>(builder.limit()) - DataFrameHeader::LENGTH;
-                        AtomicBuffer msgBuffer(builder.buffer(), builder.limit());
-
-                        m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
-
-                        builder.reset();
-                    }
-                    else
-                    {
-                        auto nextOffset = BitUtil::align(
-                            header.termOffset() + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-                        builder.nextTermOffset(nextOffset);
-                    }
-                }
-                else
-                {
-                    builder.reset();
-                }
-            }
-        }
-    }
-
-    inline BufferBuilder &getBuffer(std::int32_t sessionId)
-    {
-        auto result = m_builderBySessionIdMap.find(sessionId);
-        if (result != m_builderBySessionIdMap.end())
-        {
-            return result->second;
-        }
-        else
-        {
-            auto pair = m_builderBySessionIdMap.emplace(
-                sessionId, BufferBuilder(static_cast<std::uint32_t>(m_initialBufferLength)));
-            return pair.first->second;
-        }
+        aeron_fragment_assembler_handler(m_fragment_assembler, buffer.buffer() + offset, length, header.hdr());
     }
 };
 

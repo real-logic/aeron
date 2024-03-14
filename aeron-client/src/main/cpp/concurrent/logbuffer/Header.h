@@ -146,13 +146,23 @@ public:
     }
 
     /**
-     * The offset in the term at which the frame begins. This will be the same as {@link #offset()}
+     * The offset in the term at which the frame begins.
      *
      * @return the offset in the term at which the frame begins.
      */
     inline std::int32_t termOffset() const
     {
         return m_buffer.getInt32(m_offset + DataFrameHeader::TERM_OFFSET_FIELD_OFFSET);
+    }
+
+    /**
+     * Calculates the offset of the frame immediately after this one.
+     *
+     * @return the offset of the next frame.
+     */
+    inline std::int32_t nextTermOffset() const
+    {
+        return BitUtil::align(termOffset() + termOccupancyLength(), FrameDescriptor::FRAME_ALIGNMENT);
     }
 
     /**
@@ -184,9 +194,7 @@ public:
      */
     inline std::int64_t position() const
     {
-        const std::int32_t resultingOffset = util::BitUtil::align(
-            termOffset() + termOccupancyLength(), FrameDescriptor::FRAME_ALIGNMENT);
-        return LogBufferDescriptor::computePosition(termId(), resultingOffset, m_positionBitsToShift, m_initialTermId);
+        return LogBufferDescriptor::computePosition(termId(), nextTermOffset(), m_positionBitsToShift, m_initialTermId);
     }
 
     /**

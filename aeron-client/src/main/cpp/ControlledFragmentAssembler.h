@@ -85,7 +85,7 @@ private:
     controlled_poll_fragment_handler_t m_delegate;
     std::unordered_map<std::int32_t, BufferBuilder> m_builderBySessionIdMap;
 
-    ControlledPollAction onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+    inline ControlledPollAction onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
     {
         const std::uint8_t flags = header.flags();
         ControlledPollAction action = ControlledPollAction::CONTINUE;
@@ -94,7 +94,20 @@ private:
         {
             action = m_delegate(buffer, offset, length, header);
         }
-        else if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
+        else
+        {
+            action = handleFragment(buffer, offset, length, header);
+        }
+
+        return action;
+    }
+
+    ControlledPollAction handleFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+    {
+        const std::uint8_t flags = header.flags();
+        ControlledPollAction action = ControlledPollAction::CONTINUE;
+
+        if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
         {
             BufferBuilder &builder = getBuffer(header.sessionId());
             builder.reset()

@@ -70,7 +70,11 @@ private:
     controlled_poll_fragment_handler_t m_delegate;
     BufferBuilder m_builder;
 
-    ControlledPollAction onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+    inline ControlledPollAction onFragment(
+        AtomicBuffer &buffer,
+        util::index_t offset,
+        util::index_t length,
+        Header &header)
     {
         std::uint8_t flags = header.flags();
         ControlledPollAction action = ControlledPollAction::CONTINUE;
@@ -79,7 +83,24 @@ private:
         {
             action = m_delegate(buffer, offset, length, header);
         }
-        else if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
+        else
+        {
+            action = handleFragment(buffer, offset, length, header);
+        }
+
+        return action;
+    }
+
+    ControlledPollAction handleFragment(
+        AtomicBuffer &buffer,
+        util::index_t offset,
+        util::index_t length,
+        Header &header)
+    {
+        std::uint8_t flags = header.flags();
+        ControlledPollAction action = ControlledPollAction::CONTINUE;
+
+        if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
         {
             m_builder.reset()
                 .captureHeader(header)
@@ -121,3 +142,4 @@ private:
 
 }
 #endif
+

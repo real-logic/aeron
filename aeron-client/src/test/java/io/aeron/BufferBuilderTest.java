@@ -427,7 +427,6 @@ class BufferBuilderTest
         assertEquals(reservedValue, completeHeader.reservedValue());
     }
 
-
     @ParameterizedTest
     @CsvSource({
         "1024, 1408",
@@ -451,7 +450,7 @@ class BufferBuilderTest
 
         final DataHeaderFlyweight firstHeader = new DataHeaderFlyweight();
         firstHeader.wrap(new byte[32]);
-        firstHeader.frameLength(mtu);
+        firstHeader.frameLength(HEADER_LENGTH + maxPayloadLength);
         firstHeader.version((short)15);
         firstHeader.flags((short)0b1011_1001);
         firstHeader.headerType(HDR_TYPE_DATA);

@@ -17,11 +17,9 @@ package io.aeron;
 
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
-import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
  * A {@link FragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages
@@ -124,9 +122,9 @@ public class ImageFragmentAssembler implements FragmentHandler
             builder.reset()
                 .captureHeader(header)
                 .append(buffer, offset, length)
-                .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+                .nextTermOffset(header.nextTermOffset());
         }
-        else if (offset == builder.nextTermOffset())
+        else if (header.termOffset() == builder.nextTermOffset())
         {
             builder.append(buffer, offset, length);
 
@@ -137,7 +135,7 @@ public class ImageFragmentAssembler implements FragmentHandler
             }
             else
             {
-                builder.nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+                builder.nextTermOffset(header.nextTermOffset());
             }
         }
         else

@@ -70,7 +70,7 @@ private:
     controlled_poll_fragment_handler_t m_delegate;
     BufferBuilder m_builder;
 
-    ControlledPollAction onFragment(
+    inline ControlledPollAction onFragment(
         AtomicBuffer &buffer,
         util::index_t offset,
         util::index_t length,

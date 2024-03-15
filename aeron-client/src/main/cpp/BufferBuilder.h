@@ -119,6 +119,7 @@ public:
 
     this_t &append(AtomicBuffer &buffer, util::index_t offset, util::index_t length)
     {
+        std::cout << "*** Debug: offset=" << offset << ", length=" << length << ", limit=" << m_limit << ", capacity=" << m_capacity << std::endl;
         ensureCapacity(static_cast<std::uint32_t>(length));
 
         ::memcpy(m_buffer.get() + m_limit, buffer.buffer() + offset, static_cast<std::uint32_t>(length));

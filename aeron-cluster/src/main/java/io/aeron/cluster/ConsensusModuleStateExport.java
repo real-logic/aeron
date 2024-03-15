@@ -53,6 +53,20 @@ class ConsensusModuleStateExport
         this.pendingMessageTrackers = unmodifiableList(pendingMessageTrackers);
     }
 
+    public String toString()
+    {
+        return "ConsensusModuleStateExport{" +
+            "logRecordingId=" + logRecordingId +
+            ", leadershipTermId=" + leadershipTermId +
+            ", expectedAckPosition=" + expectedAckPosition +
+            ", nextSessionId=" + nextSessionId +
+            ", serviceAckId=" + serviceAckId +
+            ", timers=" + timers +
+            ", sessions=" + sessions +
+            ", pendingMessageTrackers=" + pendingMessageTrackers +
+            '}';
+    }
+
     static class TimerStateExport
     {
         final long correlationId;

@@ -1879,6 +1879,11 @@ public final class ConsensusModule implements AutoCloseable
             isLogMdc = channelUri.isUdp() && null == channelUri.get(ENDPOINT_PARAM_NAME);
 
             concludeMarkFile();
+
+            if (io.aeron.driver.Configuration.printConfigurationOnStart())
+            {
+                System.out.println(this);
+            }
         }
 
         /**
@@ -4245,16 +4250,25 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    clusterNodeRoleCounter=" + clusterNodeRoleCounter +
                 "\n    commitPosition=" + commitPosition +
                 "\n    controlToggle=" + clusterControlToggle +
+                "\n    nodeControlToggle=" + nodeControlToggle +
                 "\n    snapshotCounter=" + snapshotCounter +
                 "\n    timedOutClientCounter=" + timedOutClientCounter +
+                "\n    standbySnapshotCounter=" + standbySnapshotCounter +
                 "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +
                 "\n    terminationHook=" + terminationHook +
                 "\n    archiveContext=" + archiveContext +
                 "\n    authenticatorSupplier=" + authenticatorSupplier +
+                "\n    authorisationServiceSupplier=" + authorisationServiceSupplier +
                 "\n    logPublisher=" + logPublisher +
+                "\n    egressPublisher=" + egressPublisher +
                 "\n    isLogMdc=" + isLogMdc +
+                "\n    useAgentInvoker=" + useAgentInvoker +
                 "\n    cycleThresholdNs=" + cycleThresholdNs +
                 "\n    dutyCycleTracker=" + dutyCycleTracker +
+                "\n    totalSnapshotDurationThresholdNs=" + totalSnapshotDurationThresholdNs +
+                "\n    totalSnapshotDurationTracker=" + totalSnapshotDurationTracker +
+                "\n    acceptStandbySnapshots=" + acceptStandbySnapshots +
+                "\n    boostrapState=" + boostrapState +
                 "\n}";
         }
     }

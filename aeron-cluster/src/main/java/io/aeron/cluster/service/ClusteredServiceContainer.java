@@ -940,6 +940,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             abortLatch = new CountDownLatch(aeron.conductorAgentInvoker() == null ? 1 : 0);
             concludeMarkFile();
+
+            if (io.aeron.driver.Configuration.printConfigurationOnStart())
+            {
+                System.out.println(this);
+            }
         }
 
         /**
@@ -1988,6 +1993,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 "\n    terminationHook=" + terminationHook +
                 "\n    cycleThresholdNs=" + cycleThresholdNs +
                 "\n    dutyCyleTracker=" + dutyCycleTracker +
+                "\n    snapshotDurationThresholdNs=" + snapshotDurationThresholdNs +
+                "\n    snapshotDurationTracker=" + snapshotDurationTracker +
                 "\n    markFile=" + markFile +
                 "\n}";
         }

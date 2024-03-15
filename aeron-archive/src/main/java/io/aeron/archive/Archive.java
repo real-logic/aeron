@@ -1465,6 +1465,11 @@ public final class Archive implements AutoCloseable
             abortLatch = new CountDownLatch(expectedCount);
 
             markFile.signalReady();
+
+            if (io.aeron.driver.Configuration.printConfigurationOnStart())
+            {
+                System.out.println(this);
+            }
         }
 
         /**
@@ -3552,6 +3557,12 @@ public final class Archive implements AutoCloseable
                 "\n    conductorDutyCycleTracker=" + conductorDutyCycleTracker +
                 "\n    recorderDutyCycleTracker=" + recorderDutyCycleTracker +
                 "\n    replayerDutyCycleTracker=" + replayerDutyCycleTracker +
+                "\n    totalWriteBytesCounter=" + totalWriteBytesCounter +
+                "\n    totalWriteTimeCounter=" + totalWriteTimeCounter +
+                "\n    maxWriteTimeCounter=" + maxWriteTimeCounter +
+                "\n    totalReadBytesCounter=" + totalReadBytesCounter +
+                "\n    totalReadTimeCounter=" + totalReadTimeCounter +
+                "\n    maxReadTimeCounter=" + maxReadTimeCounter +
                 "\n}";
         }
     }

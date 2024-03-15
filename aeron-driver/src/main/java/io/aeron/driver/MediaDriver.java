@@ -4216,6 +4216,8 @@ public final class MediaDriver implements AutoCloseable
                 "\n    senderPortManager=" + senderPortManager +
                 "\n    receiverPortManager=" + receiverPortManager +
                 "\n    resourceFreeLimit=" + resourceFreeLimit +
+                "\n    asyncTaskExecutorThreads=" + asyncTaskExecutorThreads +
+                "\n    asyncTaskExecutor=" + asyncTaskExecutor +
                 "\n}";
         }
     }

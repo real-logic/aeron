@@ -686,11 +686,11 @@ public final class TestNode implements AutoCloseable
 
     public static class SleepOnSnapshotTestService extends TestNode.TestService
     {
-        long sleepNsWhenTakingSnapshot = Long.MIN_VALUE;
+        long snapshotDelayMs = 0;
 
-        public TestService sleepNsOnTakeSnapshot(final long sleepNsWhenTakingSnapshot)
+        public TestService snapshotDelayMs(final long snapshotDelayMs)
         {
-            this.sleepNsWhenTakingSnapshot = sleepNsWhenTakingSnapshot;
+            this.snapshotDelayMs = snapshotDelayMs;
             return this;
         }
 
@@ -698,9 +698,9 @@ public final class TestNode implements AutoCloseable
         {
             super.onTakeSnapshot(snapshotPublication);
 
-            if (sleepNsWhenTakingSnapshot > 0)
+            if (snapshotDelayMs > 0)
             {
-                LockSupport.parkNanos(sleepNsWhenTakingSnapshot);
+                Tests.sleep(snapshotDelayMs);
             }
         }
     }

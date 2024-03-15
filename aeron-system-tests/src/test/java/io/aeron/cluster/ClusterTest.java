@@ -67,6 +67,8 @@ import static io.aeron.test.cluster.TestNode.atMost;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.number.OrderingComparison.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
@@ -1919,7 +1921,6 @@ class ClusterTest
     {
         final long service1SleepDuration = TimeUnit.MILLISECONDS.toNanos(101);
         final long service2SleepDuration = TimeUnit.MILLISECONDS.toNanos(201);
-        final long totalSleepDuration = service1SleepDuration + service2SleepDuration;
 
         cluster = aCluster()
             .withServiceSupplier(
@@ -1952,13 +1953,13 @@ class ClusterTest
 
         final AeronCluster client = cluster.connectClient();
 
-        assertEquals(0L, totalSnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertEquals(0, totalSnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
         assertEquals(0, totalSnapshotDurationTracker.maxSnapshotDuration().get());
 
-        assertEquals(0L, service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertEquals(0, service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
         assertEquals(0, service1SnapshotDurationTracker.maxSnapshotDuration().get());
 
-        assertEquals(0L, service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertEquals(0, service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
         assertEquals(0, service2SnapshotDurationTracker.maxSnapshotDuration().get());
 
         while (!client.sendAdminRequestToTakeASnapshot(requestCorrelationId))
@@ -1975,14 +1976,18 @@ class ClusterTest
         cluster.awaitSnapshotCount(1);
         cluster.awaitNeutralControlToggle(leader);
 
-        assertEquals(1L, totalSnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
-        assertTrue(totalSnapshotDurationTracker.maxSnapshotDuration().get() >= totalSleepDuration);
+        assertEquals(1, totalSnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertThat(
+            totalSnapshotDurationTracker.maxSnapshotDuration().get(),
+            greaterThanOrEqualTo(Math.max(service1SleepDuration, service2SleepDuration)));
 
-        assertEquals(1L, service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
-        assertTrue(service1SnapshotDurationTracker.maxSnapshotDuration().get() >= service1SleepDuration);
+        assertEquals(1, service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertThat(
+            service1SnapshotDurationTracker.maxSnapshotDuration().get(), greaterThanOrEqualTo(service1SleepDuration));
 
-        assertEquals(1L, service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
-        assertTrue(service2SnapshotDurationTracker.maxSnapshotDuration().get() >= service2SleepDuration);
+        assertEquals(1, service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+        assertThat(
+            service2SnapshotDurationTracker.maxSnapshotDuration().get(), greaterThanOrEqualTo(service2SleepDuration));
     }
 
     @Test
@@ -2133,6 +2138,7 @@ class ClusterTest
             (i) -> new TestNode.TestService[]{ new TestNode.TestService()
             {
                 private int messageOffset;
+
                 public void onSessionMessage(
                     final ClientSession session,
                     final long timestamp,

@@ -47,7 +47,7 @@ TEST(BufferBuilderTest, shouldGrowDirectBuffer)
     ASSERT_EQ(0, builder.limit());
     ASSERT_EQ(0, builder.capacity());
 
-    buffer_t buf;
+    buffer_t buf = {};
     AtomicBuffer buffer{buf};
     builder.append(buffer, 0, buf.size());
     ASSERT_EQ(BUFFER_BUILDER_INIT_MIN_CAPACITY, builder.capacity());
@@ -75,7 +75,7 @@ TEST(BufferBuilderTest, shouldThrowIllegateStateExceptionIfDataExceedsMaxCapacit
 TEST(BufferBuilderTest, shouldAppendNothingForZeroLength)
 {
     BufferBuilder builder{};
-    buffer_t buf;
+    buffer_t buf = {};
     AtomicBuffer buffer{buf};
     builder.append(buffer, 0, 0);
     ASSERT_EQ(0, builder.limit());
@@ -84,7 +84,7 @@ TEST(BufferBuilderTest, shouldAppendNothingForZeroLength)
 
 TEST(BufferBuilderTest, shouldGrowToMultipleOfInitialCapacity)
 {
-    big_buffer_t buf;
+    big_buffer_t buf = {};
     AtomicBuffer buffer{buf};
     BufferBuilder builder{};
 
@@ -96,7 +96,7 @@ TEST(BufferBuilderTest, shouldGrowToMultipleOfInitialCapacity)
 
 TEST(BufferBuilderTest, shouldAppendThenReset)
 {
-    buffer_t buf;
+    buffer_t buf = {};
     AtomicBuffer buffer{buf};
     BufferBuilder builder{};
 
@@ -132,7 +132,7 @@ TEST(BufferBuilderTest, shouldAppendOneBufferWithoutResizing)
 TEST(BufferBuilderTest, shouldAppendTwoBufferWithoutResizing)
 {
     BufferBuilder builder{};
-    buffer_t buf;
+    buffer_t buf = {};
     AtomicBuffer buffer{buf};
     std::string msg = "1111111122222222";
     std::string bufferMessage;
@@ -152,7 +152,7 @@ TEST(BufferBuilderTest, shouldFillBufferWithoutResizing)
     const std::int32_t length = 128;
 
     BufferBuilder builder{length};
-    buffer_t buf;
+    buffer_t buf = {};
     buf.fill('a');
     AtomicBuffer buffer{buf};
 
@@ -171,7 +171,7 @@ TEST(BufferBuilderTest, shouldResizeWhenBufferJustDoesNotFit)
     const std::int32_t length = 128;
 
     BufferBuilder builder{length};
-    buffer_t buf;
+    buffer_t buf = {};
     buf.fill('a');
     AtomicBuffer buffer{buf};
 
@@ -190,7 +190,7 @@ TEST(BufferBuilderTest, shouldAppendTwoBuffersAndResize)
     const std::int32_t secondLength = length / 4;
 
     BufferBuilder builder{ firstLength };
-    buffer_t buf;
+    buffer_t buf = {};
     buf.fill('a');
     AtomicBuffer buffer{buf};
 
@@ -208,7 +208,7 @@ TEST(BufferBuilderTest, shouldCompactBufferToLowerLimit)
     const std::int32_t length = BUFFER_BUILDER_INIT_MIN_CAPACITY / 2;
 
     BufferBuilder builder{};
-    buffer_t buf;
+    buffer_t buf = {};
     buf.fill('a');
     AtomicBuffer buffer{buf};
 

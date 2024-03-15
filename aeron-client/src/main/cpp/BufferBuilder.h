@@ -24,7 +24,8 @@
 namespace aeron
 {
 
-static constexpr std::uint32_t BUFFER_BUILDER_MAX_CAPACITY = std::numeric_limits<std::int32_t>::max() - 8;
+static constexpr std::uint32_t BUFFER_BUILDER_MAX_CAPACITY =
+    (std::uint32_t)(std::numeric_limits<std::int32_t>::max() - 8);
 static constexpr std::uint32_t BUFFER_BUILDER_INIT_MIN_CAPACITY = 4096;
 
 class BufferBuilder
@@ -135,10 +136,10 @@ public:
     {
         const std::int32_t firstFrameLength = m_header.frameLength();
         const std::int32_t fragmentedFrameLength = LogBufferDescriptor::computeFragmentedFrameLength(
-            m_limit, firstFrameLength - DataFrameHeader::LENGTH);
+            (util::index_t)m_limit, firstFrameLength - DataFrameHeader::LENGTH);
         m_header.fragmentedFrameLength(fragmentedFrameLength);
 
-        m_header.buffer().putInt32(DataFrameHeader::FRAME_LENGTH_FIELD_OFFSET + m_header.offset(), DataFrameHeader::LENGTH + m_limit);
+        m_header.buffer().putInt32(DataFrameHeader::FRAME_LENGTH_FIELD_OFFSET + m_header.offset(), DataFrameHeader::LENGTH + (util::index_t)m_limit);
         m_header.buffer().putUInt8(DataFrameHeader::FLAGS_FIELD_OFFSET + m_header.offset(), m_header.flags() | header.flags());
 
         return m_header;

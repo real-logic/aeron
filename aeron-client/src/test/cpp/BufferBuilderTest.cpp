@@ -61,14 +61,21 @@ TEST(BufferBuilderTest, shouldThrowIllegalArgumentExceptionIfInitialCapacityIsOu
 
 TEST(BufferBuilderTest, shouldThrowIllegateStateExceptionIfDataExceedsMaxCapacity)
 {
-    BufferBuilder builder{64};
+    uint32_t initialCapacity = 64;
+    BufferBuilder builder{ initialCapacity };
     buffer_t buf = {};
     AtomicBuffer buffer{buf};
-    builder.append(buffer, 0, 64);
-    ASSERT_EQ(64, builder.limit());
+    builder.append(buffer, 0, (util::index_t)initialCapacity);
+    ASSERT_EQ(initialCapacity, builder.limit());
+    ASSERT_EQ(initialCapacity, builder.capacity());
 
     ASSERT_THROW(builder.append(buffer, 0, std::numeric_limits<std::int32_t>::max()), IllegalStateException);
+    ASSERT_EQ(initialCapacity, builder.limit());
+    ASSERT_EQ(initialCapacity, builder.capacity());
+
     ASSERT_THROW(builder.append(buffer, 0, std::numeric_limits<std::int32_t>::max() - 23), IllegalStateException);
+    ASSERT_EQ(initialCapacity, builder.limit());
+    ASSERT_EQ(initialCapacity, builder.capacity());
 }
 
 TEST(BufferBuilderTest, shouldAppendNothingForZeroLength)

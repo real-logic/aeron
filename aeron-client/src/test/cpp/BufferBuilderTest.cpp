@@ -62,8 +62,8 @@ TEST(BufferBuilderTest, shouldThrowIllegalArgumentExceptionIfInitialCapacityIsOu
 TEST(BufferBuilderTest, shouldThrowIllegateStateExceptionIfDataExceedsMaxCapacity)
 {
     BufferBuilder builder{64};
-    auto *buf = new std::uint8_t[std::numeric_limits<std::int32_t>::max()];
-    AtomicBuffer buffer{buf, (size_t)std::numeric_limits<std::int32_t>::max()};
+    buffer_t buf = {};
+    AtomicBuffer buffer{buf};
     builder.append(buffer, 0, 64);
     ASSERT_EQ(64, builder.limit());
 

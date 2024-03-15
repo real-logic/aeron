@@ -408,7 +408,7 @@ inline static util::index_t computeFragmentedFrameLength(
     const util::index_t length,
     const util::index_t maxPayloadLength)
 {
-    return aeron_logbuffer_compute_fragmented_length(length, maxPayloadLength);
+    return (util::index_t)aeron_logbuffer_compute_fragmented_length(length, maxPayloadLength);
 }
 
 }

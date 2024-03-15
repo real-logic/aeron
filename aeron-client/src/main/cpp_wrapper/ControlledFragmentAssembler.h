@@ -95,7 +95,7 @@ private:
         ControlledFragmentAssembler *assembler = reinterpret_cast<ControlledFragmentAssembler *>(clientd);
         Header _header{header, nullptr};
         AtomicBuffer _buffer{const_cast<uint8_t *>(buffer), length};
-        ControlledPollAction action = assembler->m_delegate(_buffer, 0, length, _header);
+        ControlledPollAction action = assembler->m_delegate(_buffer, 0, (util::index_t)length, _header);
 
         switch (action)
         {

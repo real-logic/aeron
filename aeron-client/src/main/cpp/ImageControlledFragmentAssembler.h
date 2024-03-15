@@ -115,7 +115,7 @@ private:
             if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
             {
                 AtomicBuffer msgBuffer(m_builder.buffer(), m_builder.limit());
-                action = m_delegate(msgBuffer, 0, m_builder.limit(), m_builder.completeHeader(header));
+                action = m_delegate(msgBuffer, 0, (util::index_t)m_builder.limit(), m_builder.completeHeader(header));
 
                 if (ControlledPollAction::ABORT == action)
                 {

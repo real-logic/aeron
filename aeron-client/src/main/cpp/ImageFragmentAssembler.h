@@ -79,17 +79,7 @@ private:
         {
             m_delegate(buffer, offset, length, header);
         }
-        else
-        {
-            handleFragment(buffer, offset, length, header);
-        }
-    }
-
-    void handleFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
-    {
-        std::uint8_t flags = header.flags();
-
-        if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
+        else if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
         {
             m_builder.reset()
                 .captureHeader(header)

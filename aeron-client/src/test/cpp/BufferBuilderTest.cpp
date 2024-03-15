@@ -15,7 +15,6 @@
  */
 
 #include "gtest/gtest.h"
-#include "gmock/gmock.h"
 #include "gmock/gmock-matchers.h"
 
 #include "ChannelUriStringBuilder.h"
@@ -49,7 +48,7 @@ TEST(BufferBuilderTest, shouldGrowDirectBuffer)
 
     buffer_t buf = {};
     AtomicBuffer buffer{buf};
-    builder.append(buffer, 0, buf.size());
+    builder.append(buffer, 0, (util::index_t)buf.size());
     ASSERT_EQ(BUFFER_BUILDER_INIT_MIN_CAPACITY, builder.capacity());
     ASSERT_EQ(buf.size(), builder.limit());
 }
@@ -63,7 +62,7 @@ TEST(BufferBuilderTest, shouldThrowIllegalArgumentExceptionIfInitialCapacityIsOu
 TEST(BufferBuilderTest, shouldThrowIllegateStateExceptionIfDataExceedsMaxCapacity)
 {
     BufferBuilder builder{64};
-    std::uint8_t *buf = new std::uint8_t[std::numeric_limits<std::int32_t>::max()];
+    auto *buf = new std::uint8_t[std::numeric_limits<std::int32_t>::max()];
     AtomicBuffer buffer{buf, (size_t)std::numeric_limits<std::int32_t>::max()};
     builder.append(buffer, 0, 64);
     ASSERT_EQ(64, builder.limit());
@@ -121,8 +120,8 @@ TEST(BufferBuilderTest, shouldAppendOneBufferWithoutResizing)
     std::string msg = "Hello World";
     std::string bufferMessage;
 
-    buffer.putBytes(0, reinterpret_cast<const uint8_t *>(msg.c_str()), msg.length());
-    builder.append(buffer, 0, msg.length());
+    buffer.putBytes(0, reinterpret_cast<const uint8_t *>(msg.c_str()), (util::index_t)msg.length());
+    builder.append(buffer, 0, (util::index_t)msg.length());
 
     ASSERT_EQ(msg.length(), builder.limit());
     ASSERT_EQ(BUFFER_BUILDER_INIT_MIN_CAPACITY, builder.capacity());
@@ -137,10 +136,10 @@ TEST(BufferBuilderTest, shouldAppendTwoBufferWithoutResizing)
     std::string msg = "1111111122222222";
     std::string bufferMessage;
 
-    buffer.putBytes(0, reinterpret_cast<const uint8_t *>(msg.c_str()), msg.length());
+    buffer.putBytes(0, reinterpret_cast<const uint8_t *>(msg.c_str()), (util::index_t)msg.length());
 
-    builder.append(buffer, 0, msg.length() / 2);
-    builder.append(buffer, msg.length() / 2, msg.length() / 2);
+    builder.append(buffer, 0, (util::index_t)msg.length() / 2);
+    builder.append(buffer, (util::index_t)msg.length() / 2, (util::index_t)msg.length() / 2);
 
     ASSERT_EQ(msg.length(), builder.limit());
     ASSERT_EQ(BUFFER_BUILDER_INIT_MIN_CAPACITY, builder.capacity());
@@ -156,7 +155,7 @@ TEST(BufferBuilderTest, shouldFillBufferWithoutResizing)
     buf.fill('a');
     AtomicBuffer buffer{buf};
 
-    const std::int32_t initialCapacity = builder.capacity();
+    const std::uint32_t initialCapacity = builder.capacity();
 
     builder.append(buffer, 0, length);
 
@@ -218,8 +217,8 @@ TEST(BufferBuilderTest, shouldCompactBufferToLowerLimit)
         builder.append(buffer, 0, length);
     }
 
-    const std::int32_t expectedLimit = length * bufferCount;
-    const std::int32_t expandedCapacity = builder.capacity();
+    const auto expectedLimit = (std::uint32_t)(length * bufferCount);
+    const auto expandedCapacity = builder.capacity();
     ASSERT_EQ(expectedLimit, builder.limit());
     ASSERT_GT(expandedCapacity, expectedLimit);
 
@@ -296,7 +295,7 @@ TEST(BufferBuilderTest, shouldPrepareCompleteHeader)
     const std::int32_t sessionId = 87;
     const std::int32_t streamId = -9;
     const std::int32_t termId = 10;
-    const std::int64_t reservedValue = 0xCAFEBABEDEADBEEFL;
+    const auto reservedValue = (std::int64_t)0xCAFEBABEDEADBEEF;
 
     aeron::protocol::DataHeaderFlyweight headerFlyweight1{buffer1, 0};
     headerFlyweight1.frameLength(frameLength);
@@ -384,13 +383,13 @@ TEST_P(BufferBuilderHeaderParameterisedTest, shouldCalculatePositionAndFrameLeng
     aeron::protocol::DataHeaderFlyweight firstHeader{buffer1, 0};
     firstHeader.frameLength(DataHeaderFlyweight::headerLength() + maxPayloadLength);
     firstHeader.version((short)15);
-    firstHeader.flags((uint8_t)0b10111001);
+    firstHeader.flags((int8_t)0b10111001);
     firstHeader.type(DataHeaderFlyweight::HDR_TYPE_DATA);
     firstHeader.termOffset(termOffset);
     firstHeader.sessionId(87);
     firstHeader.streamId(-9);
     firstHeader.termId(termId);
-    firstHeader.reservedValue(0xCAFEBABEDEADBEEFL);
+    firstHeader.reservedValue((std::int64_t)0xCAFEBABEDEADBEEF);
 
     Header header{initialTermId, positionBitsToShift, nullptr};
     header.buffer(buffer1);
@@ -412,13 +411,13 @@ TEST_P(BufferBuilderHeaderParameterisedTest, shouldCalculatePositionAndFrameLeng
     aeron::protocol::DataHeaderFlyweight lastHeader{buffer2, 0};
     lastHeader.frameLength(DataHeaderFlyweight::headerLength() + lastPayloadLength);
     lastHeader.version((short)15);
-    lastHeader.flags((uint8_t)0b10111001);
+    lastHeader.flags((int8_t)0b10111001);
     lastHeader.type(DataHeaderFlyweight::HDR_TYPE_DATA);
     lastHeader.termOffset(valueIsIgnored);
     lastHeader.sessionId(87);
     lastHeader.streamId(-9);
     lastHeader.termId(termId);
-    lastHeader.reservedValue(0xCAFEBABEDEADBEEFL);
+    lastHeader.reservedValue((std::int64_t)0xCAFEBABEDEADBEEF);
 
     header.buffer(buffer2);
     header.offset(0);

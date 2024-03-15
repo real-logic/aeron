@@ -80,10 +80,10 @@ private:
 
     static void handlerCallback(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        ImageFragmentAssembler *assembler = reinterpret_cast<ImageFragmentAssembler *>(clientd);
+        auto *assembler = reinterpret_cast<ImageFragmentAssembler *>(clientd);
         Header _header{header, nullptr};
         AtomicBuffer _buffer{const_cast<uint8_t *>(buffer), length};
-        assembler->m_delegate(_buffer, 0, length, _header);
+        assembler->m_delegate(_buffer, 0, (util::index_t)length, _header);
     }
 
     inline void onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)

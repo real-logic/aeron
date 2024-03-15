@@ -92,7 +92,7 @@ private:
 
     static aeron_controlled_fragment_handler_action_t handlerCallback(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        ControlledFragmentAssembler *assembler = reinterpret_cast<ControlledFragmentAssembler *>(clientd);
+        auto *assembler = reinterpret_cast<ControlledFragmentAssembler *>(clientd);
         Header _header{header, nullptr};
         AtomicBuffer _buffer{const_cast<uint8_t *>(buffer), length};
         ControlledPollAction action = assembler->m_delegate(_buffer, 0, (util::index_t)length, _header);

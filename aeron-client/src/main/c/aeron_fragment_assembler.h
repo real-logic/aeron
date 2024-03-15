@@ -111,7 +111,7 @@ inline aeron_header_t* aeron_buffer_builder_complete_header(aeron_buffer_builder
         buffer_builder->limit, max_payload_length);
     buffer_builder->header.fragmented_frame_length = fragmented_frame_length;
 
-    frame_header->frame_length = (int32_t)AERON_DATA_HEADER_LENGTH + buffer_builder->limit;
+    frame_header->frame_length = (int32_t)AERON_DATA_HEADER_LENGTH + (int32_t)buffer_builder->limit;
     frame_header->flags |= header->frame->frame_header.flags;
 
     return &buffer_builder->header;

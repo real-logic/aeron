@@ -94,10 +94,10 @@ private:
 
     static void handlerCallback(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        FragmentAssembler *assembler = reinterpret_cast<FragmentAssembler *>(clientd);
+        auto *assembler = reinterpret_cast<FragmentAssembler *>(clientd);
         Header header1{header, nullptr};
         AtomicBuffer buffer1{const_cast<uint8_t *>(buffer), length};
-        assembler->m_delegate(buffer1, 0, length, header1);
+        assembler->m_delegate(buffer1, 0, (util::index_t)length, header1);
     }
 
     inline void onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)

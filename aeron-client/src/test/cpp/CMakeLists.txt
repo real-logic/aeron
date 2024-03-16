@@ -41,6 +41,7 @@ function(aeron_client_test name file)
     target_include_directories(${name} PRIVATE "../cpp_shared")
     target_link_libraries(${name} aeron_client aeron_driver aeron_client_test gmock_main ${CMAKE_THREAD_LIBS_INIT})
     target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
+    target_compile_options(${name} PRIVATE "-Wno-error=array-bounds")
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 

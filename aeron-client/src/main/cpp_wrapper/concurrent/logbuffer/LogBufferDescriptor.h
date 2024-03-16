@@ -24,16 +24,18 @@
 #include "concurrent/logbuffer/FrameDescriptor.h"
 #include "concurrent/logbuffer/DataFrameHeader.h"
 
-extern "C"
-{
-#include "concurrent/aeron_logbuffer_descriptor.h"
-}
+//extern "C"
+//{
+//#include "concurrent/aeron_logbuffer_descriptor.h"
+//}
 
 namespace aeron { namespace concurrent { namespace logbuffer { namespace LogBufferDescriptor
 {
 
 const std::int32_t TERM_MIN_LENGTH = 64 * 1024;
 const std::int32_t TERM_MAX_LENGTH = 1024 * 1024 * 1024;
+const std::int32_t AERON_PAGE_MIN_SIZE = 4 * 1024;
+const std::int32_t AERON_PAGE_MAX_SIZE = 1024 * 1024 * 1024;
 
 #if defined(__GNUC__) || _MSC_VER >= 1900
 static constexpr const int PARTITION_COUNT = 3;
@@ -408,7 +410,12 @@ inline static util::index_t computeFragmentedFrameLength(
     const util::index_t length,
     const util::index_t maxPayloadLength)
 {
-    return (util::index_t)aeron_logbuffer_compute_fragmented_length(length, maxPayloadLength);
+    const int numMaxPayloads = length / maxPayloadLength;
+    const util::index_t remainingPayload = length % maxPayloadLength;
+    const util::index_t lastFrameLength = remainingPayload > 0 ?
+        util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
+
+    return (numMaxPayloads * (maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
 }
 
 }

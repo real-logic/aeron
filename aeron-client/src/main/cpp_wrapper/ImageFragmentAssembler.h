@@ -18,8 +18,6 @@
 #define AERON_IMAGE_FRAGMENT_ASSEMBLER_H
 
 #include "Aeron.h"
-#include "BufferBuilder.h"
-#include "concurrent/logbuffer/FrameDescriptor.h"
 
 namespace aeron
 {

@@ -15,6 +15,7 @@
 #
 
 set(TEST_HEADERS
+    ../cpp_shared/EmbeddedMediaDriver.h
     TestUtil.h)
 
 if (MSVC AND ${CMAKE_VERSION} VERSION_LESS "3.13.0")

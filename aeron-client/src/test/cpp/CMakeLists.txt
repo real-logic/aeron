@@ -15,6 +15,7 @@
 #
 
 set(TEST_HEADERS
+    ../cpp_shared/EmbeddedMediaDriver.h
     ClientConductorFixture.h
     util/TestUtils.h
     concurrent/MockAtomicBuffer.h)

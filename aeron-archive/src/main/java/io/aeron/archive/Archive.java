@@ -1164,6 +1164,11 @@ public final class Archive implements AutoCloseable
                 if (null == errorCounter)
                 {
                     concludeArchiveId();
+                    if (NULL_VALUE !=
+                        ArchiveCounters.find(aeron.countersReader(), ARCHIVE_ERROR_COUNT_TYPE_ID, archiveId))
+                    {
+                        throw new ArchiveException("found existing archive for archiveId=" + archiveId);
+                    }
                     errorCounter = ArchiveCounters.allocateErrorCounter(aeron, tempBuffer, archiveId);
                 }
             }

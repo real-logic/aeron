@@ -761,6 +761,30 @@ class ArchiveTest
         }
     }
 
+    @Test
+    void shouldRejectArchiveCreationIfAnotherArchiveWithTheSameArchiveIdIsAlreadyRunning(@TempDir final Path root)
+    {
+        final Path aeronDir = root.resolve("media-driver");
+        final Path archiveDir1 = root.resolve("archive1");
+        final Path archiveDir2 = root.resolve("archive2");
+        final long archiveId = -432946792374923L;
+        try (MediaDriver driver =
+            MediaDriver.launch(new MediaDriver.Context().aeronDirectoryName(aeronDir.toString()));
+            Archive archive = Archive.launch(TestContexts.localhostArchive()
+                .archiveId(archiveId)
+                .archiveDir(archiveDir1.toFile())
+                .aeronDirectoryName(driver.context().aeronDirectoryName())))
+        {
+            final Context archiveContext2 = TestContexts.localhostArchive()
+                .archiveId(archive.context().archiveId())
+                .archiveDir(archiveDir2.toFile())
+                .aeronDirectoryName(driver.context().aeronDirectoryName());
+
+            final ArchiveException exception = assertThrowsExactly(ArchiveException.class, archiveContext2::conclude);
+            assertEquals("ERROR - found existing archive for archiveId=" + archiveId, exception.getMessage());
+        }
+    }
+
     private static int calculateFragmentedMessageLength(final Publication publication, final int maxMessageLength)
     {
         final int maxPayloadLength = publication.maxPayloadLength();

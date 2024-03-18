@@ -316,7 +316,13 @@ void response_server_handle_available_image(void *clientd, aeron_subscription_t 
     {
         char _channel_buf[AERON_MAX_PATH] = { 0 };
 
-        SNPRINTF(_channel_buf, sizeof(_channel_buf) - 1, "%s|control-mode=response|response-correlation-id=%" PRIi64, response_server->response_control_channel, constants.correlation_id);
+        SNPRINTF(
+            _channel_buf,
+            sizeof(_channel_buf) - 1,
+            "%.*s|control-mode=response|response-correlation-id=%" PRIi64,
+            (int)strlen(response_server->response_control_channel),
+            response_server->response_control_channel,
+            constants.correlation_id);
 
         printf("Responding on channel %s on Stream ID %" PRId32 "\n", _channel_buf, response_server->response_stream_id);
 
@@ -383,8 +389,8 @@ int response_server_create(
 
     aeron_alloc((void **)&response_server, sizeof(response_server_t));
 
-    // TODO response_control_channel might be larger than AERON_MAX_PATH
-    strncpy(response_server->response_control_channel, response_control_channel, strlen(response_control_channel));
+    response_server->aeron = aeron,
+    strncpy(response_server->response_control_channel, response_control_channel, sizeof(response_server->response_control_channel));
     response_server->response_stream_id = response_stream_id;
     response_server->delegate = delegate;
 

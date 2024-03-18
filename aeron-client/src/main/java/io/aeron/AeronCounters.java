@@ -406,6 +406,11 @@ public final class AeronCounters
      */
     public static final int CLUSTERED_SERVICE_SNAPSHOT_DURATION_THRESHOLD_EXCEEDED_TYPE_ID = 237;
 
+    /**
+     * The type id of the {@link Counter} used for keeping track of the number of elections that have occurred.
+     */
+    public static final int CLUSTER_ELECTION_COUNT_TYPE_ID = 238;
+
     private AeronCounters()
     {
     }

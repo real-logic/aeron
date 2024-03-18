@@ -89,8 +89,10 @@ class ClusterTest
         cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
 
-        cluster.awaitLeader();
+        final TestNode leader = cluster.awaitLeader();
+        assertEquals(1, leader.consensusModule().context().electionCounter().get());
         TestNode follower = cluster.followers().get(0);
+        assertEquals(1, follower.consensusModule().context().electionCounter().get());
 
         awaitElectionClosed(follower);
         cluster.stopNode(follower);
@@ -99,6 +101,8 @@ class ClusterTest
 
         awaitElectionClosed(follower);
         assertEquals(FOLLOWER, follower.role());
+        assertEquals(1 /* new counter */, follower.consensusModule().context().electionCounter().get());
+        assertEquals(1, leader.consensusModule().context().electionCounter().get());
     }
 
     @Test
@@ -109,12 +113,22 @@ class ClusterTest
         systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
+        assertEquals(1, leader.consensusModule().context().electionCounter().get());
+        final List<TestNode> followers = cluster.followers();
+        for (final TestNode follower : followers)
+        {
+            assertEquals(1, follower.consensusModule().context().electionCounter().get());
+        }
 
         cluster.connectClient();
         cluster.awaitActiveSessionCount(1);
 
         cluster.stopNode(leader);
         cluster.awaitNewLeadershipEvent(1);
+        for (final TestNode follower : followers)
+        {
+            assertEquals(2, follower.consensusModule().context().electionCounter().get());
+        }
     }
 
     @Test

@@ -56,9 +56,7 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
-import static io.aeron.AeronCounters.CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID;
-import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
-import static io.aeron.AeronCounters.validateCounterTypeId;
+import static io.aeron.AeronCounters.*;
 import static io.aeron.CommonContext.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
@@ -1448,6 +1446,7 @@ public final class ConsensusModule implements AutoCloseable
         private Counter snapshotCounter;
         private Counter timedOutClientCounter;
         private Counter standbySnapshotCounter;
+        private Counter electionCounter;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
 
@@ -1705,6 +1704,12 @@ public final class ConsensusModule implements AutoCloseable
             }
             validateCounterTypeId(aeron, electionStateCounter, ELECTION_STATE_TYPE_ID);
 
+            if (null == electionCounter)
+            {
+                electionCounter = ClusterCounters.allocate(
+                    aeron, buffer, "Cluster election count", CLUSTER_ELECTION_COUNT_TYPE_ID, clusterId);
+            }
+            validateCounterTypeId(aeron, electionCounter, CLUSTER_ELECTION_COUNT_TYPE_ID);
 
             if (null == clusterNodeRoleCounter)
             {
@@ -1794,7 +1799,6 @@ public final class ConsensusModule implements AutoCloseable
                         clusterId),
                     totalSnapshotDurationThresholdNs);
             }
-
 
             if (null == threadFactory)
             {
@@ -4030,6 +4034,28 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Get the counter used to track the number of elections on this node.
+         *
+         * @return the counter for elections.
+         */
+        public Counter electionCounter()
+        {
+            return electionCounter;
+        }
+
+        /**
+         * Set the counter used to track the number of elections on this node.
+         *
+         * @param electionCounter the counter for elections.
+         * @return this for a fluentAPI.
+         */
+        public Context electionCounter(final Counter electionCounter)
+        {
+            this.electionCounter = electionCounter;
+            return this;
+        }
+
+        /**
          * Delete the cluster directory.
          */
         public void deleteDirectory()
@@ -4254,6 +4280,7 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    snapshotCounter=" + snapshotCounter +
                 "\n    timedOutClientCounter=" + timedOutClientCounter +
                 "\n    standbySnapshotCounter=" + standbySnapshotCounter +
+                "\n    electionCounter=" + electionCounter +
                 "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +
                 "\n    terminationHook=" + terminationHook +
                 "\n    archiveContext=" + archiveContext +

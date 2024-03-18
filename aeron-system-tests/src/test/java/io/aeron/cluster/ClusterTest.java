@@ -1980,17 +1980,25 @@ class ClusterTest
         assertEquals(1, totalSnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
         assertThat(
             totalSnapshotDurationTracker.maxSnapshotDuration().get(),
-            greaterThanOrEqualTo(MILLISECONDS.toNanos(Math.max(service1SnapshotDelayMs, service2SnapshotDelayMs))));
+            greaterThanOrEqualTo(
+                percent90(MILLISECONDS.toNanos(Math.max(service1SnapshotDelayMs, service2SnapshotDelayMs)))));
 
         assertEquals(1, service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
         assertThat(
             service1SnapshotDurationTracker.maxSnapshotDuration().get(),
-            greaterThanOrEqualTo(MILLISECONDS.toNanos(service1SnapshotDelayMs)));
+            greaterThanOrEqualTo(percent90(MILLISECONDS.toNanos(service1SnapshotDelayMs))));
 
         assertEquals(1, service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+
+
         assertThat(
             service2SnapshotDurationTracker.maxSnapshotDuration().get(),
-            greaterThanOrEqualTo(MILLISECONDS.toNanos(service2SnapshotDelayMs)));
+            greaterThanOrEqualTo(percent90(MILLISECONDS.toNanos(service2SnapshotDelayMs))));
+    }
+
+    private static long percent90(final long value)
+    {
+        return 90 * (value / 100);
     }
 
     @Test

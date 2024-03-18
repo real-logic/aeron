@@ -1981,7 +1981,7 @@ class ClusterTest
         assertThat(
             totalSnapshotDurationTracker.maxSnapshotDuration().get(),
             greaterThanOrEqualTo(
-                percent90(MILLISECONDS.toNanos(Math.max(service1SnapshotDelayMs, service2SnapshotDelayMs)))));
+            percent90(MILLISECONDS.toNanos(Math.max(service1SnapshotDelayMs, service2SnapshotDelayMs)))));
 
         assertEquals(1, service1SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
         assertThat(

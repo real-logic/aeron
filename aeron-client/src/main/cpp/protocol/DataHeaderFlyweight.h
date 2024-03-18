@@ -110,11 +110,6 @@ public:
         return *this;
     }
 
-//    inline std::uint8_t *data()
-//    {
-//        return m_struct.data;
-//    }
-
     inline static constexpr std::int32_t headerLength()
     {
         return sizeof(DataHeaderDefn);

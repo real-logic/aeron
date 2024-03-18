@@ -271,7 +271,6 @@ TEST(BufferBuilderTest, captureFirstHeaderShouldCopyTheEntireHeader)
     ASSERT_EQ(0, builder.limit());
 
     ASSERT_EQ(srcHeaderFlyweight.frameLength(), builder.completeHeader().frameLength());
-//    ASSERT_EQ(srcHeaderFlyweight.version(), builder.completeHeader().version());
     ASSERT_EQ(srcHeaderFlyweight.flags(), builder.completeHeader().flags());
     ASSERT_EQ(srcHeaderFlyweight.type(), builder.completeHeader().type());
     ASSERT_EQ(srcHeaderFlyweight.termOffset(), builder.completeHeader().termOffset());

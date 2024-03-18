@@ -781,7 +781,8 @@ class ArchiveTest
                 .aeronDirectoryName(driver.context().aeronDirectoryName());
             try
             {
-                final ArchiveException exception = assertThrowsExactly(ArchiveException.class, archiveContext2::conclude);
+                final ArchiveException exception =
+                    assertThrowsExactly(ArchiveException.class, archiveContext2::conclude);
                 assertEquals("ERROR - found existing archive for archiveId=" + archiveId, exception.getMessage());
             }
             finally

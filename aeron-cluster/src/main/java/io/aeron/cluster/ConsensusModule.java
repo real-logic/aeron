@@ -56,10 +56,9 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
-import static io.aeron.AeronCounters.CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID;
-import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
-import static io.aeron.AeronCounters.validateCounterTypeId;
+import static io.aeron.AeronCounters.*;
 import static io.aeron.CommonContext.*;
+import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.COMMIT_POSITION_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
@@ -863,6 +862,12 @@ public final class ConsensusModule implements AutoCloseable
             "aeron.cluster.accept.standby.snapshots";
 
         /**
+         * Property name of setting {@link ClusterClock}. Should specify a fully qualified class name.
+         * Defaults to {@link MillisecondClusterClock}.
+         */
+        public static final String CLUSTER_CLOCK_PROP_NAME = "aeron.cluster.clock";
+
+        /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
          * {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME} if set.
          *
@@ -1441,6 +1446,7 @@ public final class ConsensusModule implements AutoCloseable
         private Counter snapshotCounter;
         private Counter timedOutClientCounter;
         private Counter standbySnapshotCounter;
+        private Counter electionCounter;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
 
@@ -1539,7 +1545,16 @@ public final class ConsensusModule implements AutoCloseable
 
             if (null == clusterClock)
             {
-                clusterClock = new MillisecondClusterClock();
+                final String clockClassName =
+                    System.getProperty(CLUSTER_CLOCK_PROP_NAME, MillisecondClusterClock.class.getName());
+                try
+                {
+                    clusterClock = (ClusterClock)Class.forName(clockClassName).getConstructor().newInstance();
+                }
+                catch (final Exception e)
+                {
+                    throw new ClusterException("failed to instantiate ClusterClock " + clockClassName, e);
+                }
             }
 
             if (null == epochClock)
@@ -1689,6 +1704,12 @@ public final class ConsensusModule implements AutoCloseable
             }
             validateCounterTypeId(aeron, electionStateCounter, ELECTION_STATE_TYPE_ID);
 
+            if (null == electionCounter)
+            {
+                electionCounter = ClusterCounters.allocate(
+                    aeron, buffer, "Cluster election count", CLUSTER_ELECTION_COUNT_TYPE_ID, clusterId);
+            }
+            validateCounterTypeId(aeron, electionCounter, CLUSTER_ELECTION_COUNT_TYPE_ID);
 
             if (null == clusterNodeRoleCounter)
             {
@@ -1773,12 +1794,11 @@ public final class ConsensusModule implements AutoCloseable
                         aeron,
                         buffer,
                         "Total max snapshot duration exceeded count: threshold=" +
-                            totalSnapshotDurationThresholdNs,
+                            totalSnapshotDurationThresholdNs + "ns",
                         AeronCounters.CLUSTER_TOTAL_SNAPSHOT_DURATION_THRESHOLD_EXCEEDED_TYPE_ID,
                         clusterId),
                     totalSnapshotDurationThresholdNs);
             }
-
 
             if (null == threadFactory)
             {
@@ -1863,6 +1883,11 @@ public final class ConsensusModule implements AutoCloseable
             isLogMdc = channelUri.isUdp() && null == channelUri.get(ENDPOINT_PARAM_NAME);
 
             concludeMarkFile();
+
+            if (io.aeron.driver.Configuration.printConfigurationOnStart())
+            {
+                System.out.println(this);
+            }
         }
 
         /**
@@ -4009,6 +4034,28 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Get the counter used to track the number of elections on this node.
+         *
+         * @return the counter for elections.
+         */
+        public Counter electionCounter()
+        {
+            return electionCounter;
+        }
+
+        /**
+         * Set the counter used to track the number of elections on this node.
+         *
+         * @param electionCounter the counter for elections.
+         * @return this for a fluentAPI.
+         */
+        public Context electionCounter(final Counter electionCounter)
+        {
+            this.electionCounter = electionCounter;
+            return this;
+        }
+
+        /**
          * Delete the cluster directory.
          */
         public void deleteDirectory()
@@ -4229,16 +4276,26 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    clusterNodeRoleCounter=" + clusterNodeRoleCounter +
                 "\n    commitPosition=" + commitPosition +
                 "\n    controlToggle=" + clusterControlToggle +
+                "\n    nodeControlToggle=" + nodeControlToggle +
                 "\n    snapshotCounter=" + snapshotCounter +
                 "\n    timedOutClientCounter=" + timedOutClientCounter +
+                "\n    standbySnapshotCounter=" + standbySnapshotCounter +
+                "\n    electionCounter=" + electionCounter +
                 "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +
                 "\n    terminationHook=" + terminationHook +
                 "\n    archiveContext=" + archiveContext +
                 "\n    authenticatorSupplier=" + authenticatorSupplier +
+                "\n    authorisationServiceSupplier=" + authorisationServiceSupplier +
                 "\n    logPublisher=" + logPublisher +
+                "\n    egressPublisher=" + egressPublisher +
                 "\n    isLogMdc=" + isLogMdc +
+                "\n    useAgentInvoker=" + useAgentInvoker +
                 "\n    cycleThresholdNs=" + cycleThresholdNs +
                 "\n    dutyCycleTracker=" + dutyCycleTracker +
+                "\n    totalSnapshotDurationThresholdNs=" + totalSnapshotDurationThresholdNs +
+                "\n    totalSnapshotDurationTracker=" + totalSnapshotDurationTracker +
+                "\n    acceptStandbySnapshots=" + acceptStandbySnapshots +
+                "\n    boostrapState=" + boostrapState +
                 "\n}";
         }
     }

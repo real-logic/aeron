@@ -55,7 +55,6 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/DataFrameHeader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/FrameDescriptor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/Header.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/HeaderWriter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/LogBufferDescriptor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/TermReader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/status/ReadablePosition.h

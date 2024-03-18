@@ -17,6 +17,7 @@
 #ifndef AERON_CONCURRENT_LOGBUFFER_HEADER_H
 #define AERON_CONCURRENT_LOGBUFFER_HEADER_H
 
+#include "Context.h"
 #include "util/BitUtil.h"
 #include "concurrent/AtomicBuffer.h"
 #include "concurrent/logbuffer/DataFrameHeader.h"
@@ -29,13 +30,32 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 class Header
 {
 public:
-    Header(std::int32_t initialTermId, util::index_t capacity, void *context) :
+    Header(std::int32_t initialTermId, std::int32_t positionBitsToShift, void *context) :
         m_context(context),
         m_offset(0),
         m_initialTermId(initialTermId),
-        m_positionBitsToShift(util::BitUtil::numberOfTrailingZeroes(capacity))
+        m_positionBitsToShift(positionBitsToShift),
+        m_fragmentedFrameLength(aeron::NULL_VALUE)
     {
     }
+
+    /// @cond HIDDEN_SYMBOLS
+    inline void copyFrom(const Header &header)
+    {
+        m_context = header.m_context;
+        m_initialTermId = header.m_initialTermId;
+        m_positionBitsToShift = header.m_positionBitsToShift;
+        ::memcpy(
+            m_buffer.buffer() + m_offset,
+            header.m_buffer.buffer() + header.m_offset,
+            DataFrameHeader::LENGTH);
+    }
+
+    inline void fragmentedFrameLength(std::int32_t fragmentedFrameLength)
+    {
+        m_fragmentedFrameLength = fragmentedFrameLength;
+    }
+    /// @endcond
 
     /**
      * Get the initial term id this stream started at.
@@ -126,13 +146,23 @@ public:
     }
 
     /**
-     * The offset in the term at which the frame begins. This will be the same as {@link #offset()}
+     * The offset in the term at which the frame begins.
      *
      * @return the offset in the term at which the frame begins.
      */
     inline std::int32_t termOffset() const
     {
-        return m_offset;
+        return m_buffer.getInt32(m_offset + DataFrameHeader::TERM_OFFSET_FIELD_OFFSET);
+    }
+
+    /**
+     * Calculates the offset of the frame immediately after this one.
+     *
+     * @return the offset of the next frame.
+     */
+    inline std::int32_t nextTermOffset() const
+    {
+        return BitUtil::align(termOffset() + termOccupancyLength(), FrameDescriptor::FRAME_ALIGNMENT);
     }
 
     /**
@@ -164,9 +194,7 @@ public:
      */
     inline std::int64_t position() const
     {
-        const std::int32_t resultingOffset = util::BitUtil::align(
-            termOffset() + frameLength(), FrameDescriptor::FRAME_ALIGNMENT);
-        return LogBufferDescriptor::computePosition(termId(), resultingOffset, m_positionBitsToShift, m_initialTermId);
+        return LogBufferDescriptor::computePosition(termId(), nextTermOffset(), m_positionBitsToShift, m_initialTermId);
     }
 
     /**
@@ -206,6 +234,12 @@ private:
     util::index_t m_offset;
     std::int32_t m_initialTermId;
     std::int32_t m_positionBitsToShift;
+    std::int32_t m_fragmentedFrameLength;
+
+    std::int32_t termOccupancyLength() const
+    {
+        return aeron::NULL_VALUE == m_fragmentedFrameLength ? frameLength() : m_fragmentedFrameLength;
+    }
 };
 
 }}}

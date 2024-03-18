@@ -1164,6 +1164,11 @@ public final class Archive implements AutoCloseable
                 if (null == errorCounter)
                 {
                     concludeArchiveId();
+                    if (NULL_VALUE !=
+                        ArchiveCounters.find(aeron.countersReader(), ARCHIVE_ERROR_COUNT_TYPE_ID, archiveId))
+                    {
+                        throw new ArchiveException("found existing archive for archiveId=" + archiveId);
+                    }
                     errorCounter = ArchiveCounters.allocateErrorCounter(aeron, tempBuffer, archiveId);
                 }
             }
@@ -1214,14 +1219,14 @@ public final class Archive implements AutoCloseable
                         aeron,
                         tempBuffer,
                         AeronCounters.ARCHIVE_MAX_CYCLE_TIME_TYPE_ID,
-                        "archive-conductor max cycle time in ns",
+                        "archive-conductor max cycle time in ns: " + threadingMode.name(),
                         archiveId),
                     ArchiveCounters.allocate(
                         aeron,
                         tempBuffer,
                         AeronCounters.ARCHIVE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
                         "archive-conductor work cycle time exceeded count: threshold=" +
-                        conductorCycleThresholdNs + "ns",
+                        conductorCycleThresholdNs + "ns " + threadingMode.name(),
                         archiveId),
                     conductorCycleThresholdNs);
             }
@@ -1465,6 +1470,11 @@ public final class Archive implements AutoCloseable
             abortLatch = new CountDownLatch(expectedCount);
 
             markFile.signalReady();
+
+            if (io.aeron.driver.Configuration.printConfigurationOnStart())
+            {
+                System.out.println(this);
+            }
         }
 
         /**
@@ -3552,6 +3562,12 @@ public final class Archive implements AutoCloseable
                 "\n    conductorDutyCycleTracker=" + conductorDutyCycleTracker +
                 "\n    recorderDutyCycleTracker=" + recorderDutyCycleTracker +
                 "\n    replayerDutyCycleTracker=" + replayerDutyCycleTracker +
+                "\n    totalWriteBytesCounter=" + totalWriteBytesCounter +
+                "\n    totalWriteTimeCounter=" + totalWriteTimeCounter +
+                "\n    maxWriteTimeCounter=" + maxWriteTimeCounter +
+                "\n    totalReadBytesCounter=" + totalReadBytesCounter +
+                "\n    totalReadTimeCounter=" + totalReadTimeCounter +
+                "\n    maxReadTimeCounter=" + maxReadTimeCounter +
                 "\n}";
         }
     }

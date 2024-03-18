@@ -23,7 +23,8 @@
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
-namespace LogBufferDescriptor {
+namespace LogBufferDescriptor
+{
 
 const std::int32_t TERM_MIN_LENGTH = 64 * 1024;
 const std::int32_t TERM_MAX_LENGTH = 1024 * 1024 * 1024;
@@ -129,7 +130,7 @@ struct LogMetaDataDefn
     std::int32_t mtuLength;
     std::int32_t termLength;
     std::int32_t pageSize;
-    std::int8_t pad3[(util::BitUtil::CACHE_LINE_LENGTH) - (7 * sizeof(std::int32_t))];
+    std::int8_t pad3[(util::BitUtil::CACHE_LINE_LENGTH)-(7 * sizeof(std::int32_t))];
 };
 #pragma pack(pop)
 
@@ -154,14 +155,14 @@ inline void checkTermLength(std::int32_t termLength)
     {
         throw util::IllegalStateException(
             "term length less than min size of " + std::to_string(TERM_MIN_LENGTH) +
-            ", length=" + std::to_string(termLength), SOURCEINFO);
+                ", length=" + std::to_string(termLength), SOURCEINFO);
     }
 
     if (termLength > TERM_MAX_LENGTH)
     {
         throw util::IllegalStateException(
             "term length greater than max size of " + std::to_string(TERM_MAX_LENGTH) +
-            ", length=" + std::to_string(termLength), SOURCEINFO);
+                ", length=" + std::to_string(termLength), SOURCEINFO);
     }
 
     if (!util::BitUtil::isPowerOfTwo(termLength))
@@ -177,14 +178,14 @@ inline void checkPageSize(std::int32_t pageSize)
     {
         throw util::IllegalStateException(
             "page size less than min size of " + std::to_string(AERON_PAGE_MIN_SIZE) +
-            ", size=" + std::to_string(pageSize), SOURCEINFO);
+                ", size=" + std::to_string(pageSize), SOURCEINFO);
     }
 
     if (pageSize > AERON_PAGE_MAX_SIZE)
     {
         throw util::IllegalStateException(
             "page size greater than max size of " + std::to_string(AERON_PAGE_MAX_SIZE) +
-            ", size=" + std::to_string(pageSize), SOURCEINFO);
+                ", size=" + std::to_string(pageSize), SOURCEINFO);
     }
 
     if (!util::BitUtil::isPowerOfTwo(pageSize))
@@ -390,6 +391,78 @@ inline void initializeTailWithTermId(AtomicBuffer &logMetaDataBuffer, int partit
     const std::int64_t rawTail = static_cast<std::int64_t>(termId) << 32;
     util::index_t index = TERM_TAIL_COUNTER_OFFSET + static_cast<util::index_t>(partitionIndex * sizeof(std::int64_t));
     logMetaDataBuffer.putInt64(index, rawTail);
+}
+
+/**
+ * Compute frame length for a message that is fragmented into chunks of {@code maxPayloadSize}.
+ *
+ * @param length of the message.
+ * @param maxPayloadSize fragment size without the header.
+ * @return message length after fragmentation.
+ */
+inline static util::index_t computeFragmentedFrameLength(
+    const util::index_t length,
+    const util::index_t maxPayloadLength)
+{
+    const int numMaxPayloads = length / maxPayloadLength;
+    const util::index_t remainingPayload = length % maxPayloadLength;
+    const util::index_t lastFrameLength = remainingPayload > 0 ?
+        util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
+
+    return (numMaxPayloads * (maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
+}
+
+inline static std::int32_t positionBitsToShift(const std::int32_t termBufferLength)
+{
+    switch (termBufferLength)
+    {
+        case 64 * 1024:
+            return 16;
+
+        case 128 * 1024:
+            return 17;
+
+        case 256 * 1024:
+            return 18;
+
+        case 512 * 1024:
+            return 19;
+
+        case 1024 * 1024:
+            return 20;
+
+        case 2 * 1024 * 1024:
+            return 21;
+
+        case 4 * 1024 * 1024:
+            return 22;
+
+        case 8 * 1024 * 1024:
+            return 23;
+
+        case 16 * 1024 * 1024:
+            return 24;
+
+        case 32 * 1024 * 1024:
+            return 25;
+
+        case 64 * 1024 * 1024:
+            return 26;
+
+        case 128 * 1024 * 1024:
+            return 27;
+
+        case 256 * 1024 * 1024:
+            return 28;
+
+        case 512 * 1024 * 1024:
+            return 29;
+
+        case 1024 * 1024 * 1024:
+            return 30;
+    }
+
+    throw util::IllegalArgumentException("invalid term buffer length: " + std::to_string(termBufferLength), SOURCEINFO);
 }
 
 }

@@ -15,7 +15,7 @@
  */
 
 #include "concurrent/logbuffer/FrameDescriptor.h"
-#include "FragmentAssemblerTestFixture.h"
+#include "ImageFragmentAssemblerTestFixture.h"
 
 extern "C"
 {
@@ -50,6 +50,6 @@ void fillHeader(Header &header, std::int32_t termOffset, std::uint8_t flags, std
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    FragmentAssemblerParameterisedTest,
-    FragmentAssemblerParameterisedTest,
+    ImageFragmentAssemblerParameterisedTest,
+    ImageFragmentAssemblerParameterisedTest,
     testing::Values(std::make_tuple(initHeader, freeHeader, fillHeader)));

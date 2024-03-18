@@ -21,6 +21,7 @@ import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
+import io.aeron.cluster.service.ClusterClock;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
@@ -52,6 +53,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.AeronCounters.CLUSTER_ELECTION_COUNT_TYPE_ID;
 import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE;
@@ -82,7 +84,18 @@ class ConsensusModuleContextTest
         final Aeron aeron = mock(Aeron.class);
         when(aeron.addCounter(
             anyInt(), any(DirectBuffer.class), anyInt(), anyInt(), any(DirectBuffer.class), anyInt(), anyInt()))
-            .thenAnswer(invocation -> mock(Counter.class));
+            .thenAnswer(invocation ->
+            {
+                final int counterId = countersManager.allocate(
+                    invocation.getArgument(0),
+                    invocation.getArgument(1),
+                    invocation.getArgument(2),
+                    invocation.getArgument(3),
+                    invocation.getArgument(4),
+                    invocation.getArgument(5),
+                    invocation.getArgument(6));
+                return new Counter(countersManager, registrationId++, counterId);
+            });
         when(aeron.context()).thenReturn(aeronContext);
         when(aeron.conductorAgentInvoker()).thenReturn(conductorInvoker);
         when(aeron.countersReader()).thenReturn(countersManager);
@@ -95,6 +108,7 @@ class ConsensusModuleContextTest
             .replicationChannel("must be specified")
             .moduleStateCounter(newCounter("moduleState", CONSENSUS_MODULE_STATE_TYPE_ID))
             .electionStateCounter(newCounter("electionState", ELECTION_STATE_TYPE_ID))
+            .electionCounter(newCounter("electionCount", CLUSTER_ELECTION_COUNT_TYPE_ID))
             .clusterNodeRoleCounter(newCounter("clusterNodeRole", CLUSTER_NODE_ROLE_TYPE_ID))
             .commitPositionCounter(newCounter("commitPosition", COMMIT_POSITION_TYPE_ID))
             .controlToggleCounter(newCounter("controlToggle", CONTROL_TOGGLE_TYPE_ID))
@@ -583,6 +597,106 @@ class ConsensusModuleContextTest
         final File linkFile = new File(context.clusterDir(), ClusterMarkFile.LINK_FILENAME);
         assertTrue(linkFile.exists());
         assertEquals(otherDir.getCanonicalPath(), new String(Files.readAllBytes(linkFile.toPath()), US_ASCII));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "io.aeron.cluster.MillisecondClusterClock",
+        "io.aeron.cluster.NanosecondClusterClock",
+        "io.aeron.test.cluster.TestClusterClock" })
+    void shouldSetClusterClockViaSystemProperty(final String clockClassName)
+    {
+        System.setProperty(CLUSTER_CLOCK_PROP_NAME, clockClassName);
+        try
+        {
+            context.clusterClock(null);
+
+            context.conclude();
+
+            final ClusterClock clusterClock = context.clusterClock();
+            assertNotNull(clusterClock);
+            assertEquals(clockClassName, clusterClock.getClass().getName());
+        }
+        finally
+        {
+            System.clearProperty(CLUSTER_CLOCK_PROP_NAME);
+        }
+    }
+
+    @Test
+    void shouldThrowClusterExceptionIfClockCannotBeCreated()
+    {
+        final String clockClassName = String.class.getName();
+        System.setProperty(CLUSTER_CLOCK_PROP_NAME, clockClassName);
+        try
+        {
+            context.clusterClock(null);
+
+            final ClusterException clusterException =
+                assertThrowsExactly(ClusterException.class, context::conclude);
+            assertEquals("ERROR - failed to instantiate ClusterClock " + clockClassName, clusterException.getMessage());
+            final Throwable cause = clusterException.getCause();
+            assertInstanceOf(ClassCastException.class, cause);
+        }
+        finally
+        {
+            System.clearProperty(CLUSTER_CLOCK_PROP_NAME);
+        }
+    }
+
+    @Test
+    void shouldUseExplicitlyAssignedClockInstance()
+    {
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.NANOSECONDS);
+        System.setProperty(CLUSTER_CLOCK_PROP_NAME, String.class.getName());
+        try
+        {
+            context.clusterClock(clock);
+
+            context.conclude();
+
+            assertSame(clock, context.clusterClock());
+        }
+        finally
+        {
+            System.clearProperty(CLUSTER_CLOCK_PROP_NAME);
+        }
+    }
+
+    @Test
+    void shouldAllowElectionCounterToBeExplicitlySet()
+    {
+        final Counter electionCounter = newCounter("x", CLUSTER_ELECTION_COUNT_TYPE_ID);
+        context.electionCounter(electionCounter);
+        assertSame(electionCounter, context.electionCounter());
+
+        context.conclude();
+
+        assertSame(electionCounter, context.electionCounter());
+    }
+
+    @Test
+    void shouldThrowConfigurationExceptionIfElectionCounterHasWrongType()
+    {
+        final Counter electionCounter = newCounter("wrong type id", 1);
+        context.electionCounter(electionCounter);
+        assertSame(electionCounter, context.electionCounter());
+
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
+        assertEquals(
+            "ERROR - The type for counterId=9, typeId=1 does not match the expected=238",
+            exception.getMessage());
+    }
+
+    @Test
+    void shouldCreateElectionCounter()
+    {
+        context.electionCounter(null);
+
+        context.conclude();
+
+        final Counter electionCounter = context.electionCounter();
+        assertNotNull(electionCounter);
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

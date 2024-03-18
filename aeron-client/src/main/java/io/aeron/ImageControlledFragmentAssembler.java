@@ -17,11 +17,9 @@ package io.aeron;
 
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
-import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
  * A {@link ControlledFragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented
@@ -119,9 +117,9 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
             builder.reset()
                 .captureHeader(header)
                 .append(buffer, offset, length)
-                .nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+                .nextTermOffset(header.nextTermOffset());
         }
-        else if (offset == builder.nextTermOffset())
+        else if (header.termOffset() == builder.nextTermOffset())
         {
             final int limit = builder.limit();
 
@@ -143,7 +141,7 @@ public class ImageControlledFragmentAssembler implements ControlledFragmentHandl
             }
             else
             {
-                builder.nextTermOffset(BitUtil.align(offset + length + HEADER_LENGTH, FRAME_ALIGNMENT));
+                builder.nextTermOffset(header.nextTermOffset());
             }
         }
         else

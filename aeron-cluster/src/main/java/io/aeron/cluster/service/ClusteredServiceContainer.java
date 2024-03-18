@@ -335,6 +335,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final long CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
         /**
+         * Property name for threshold value, which is used for tracking snapshot duration breaches.
+         */
+        public static final String SNAPSHOT_DURATION_THRESHOLD_PROP_NAME = "aeron.cluster.service.snapshot.threshold";
+
+        /**
+         * Default threshold value, which is used for tracking snapshot duration breaches.
+         */
+        public static final long SNAPSHOT_DURATION_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
+
+        /**
          * Counter type id for the cluster node role.
          */
         public static final int CLUSTER_NODE_ROLE_TYPE_ID = AeronCounters.CLUSTER_NODE_ROLE_TYPE_ID;
@@ -560,6 +570,17 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
+         * Get threshold value, which is used for monitoring snapshot duration breaches of its predefined
+         * threshold.
+         *
+         * @return threshold value in nanoseconds.
+         */
+        public static long snapshotDurationThresholdNs()
+        {
+            return getDurationInNanos(SNAPSHOT_DURATION_THRESHOLD_PROP_NAME, SNAPSHOT_DURATION_THRESHOLD_DEFAULT_NS);
+        }
+
+        /**
          * Get the configuration value to determine if this node should take standby snapshots be enabled.
          *
          * @return configuration value for standby snapshots being enabled.
@@ -656,6 +677,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private boolean isRespondingService = Configuration.isRespondingService();
         private int logFragmentLimit = Configuration.logFragmentLimit();
         private long cycleThresholdNs = Configuration.cycleThresholdNs();
+        private long snapshotDurationThresholdNs = Configuration.snapshotDurationThresholdNs();
         private boolean standbySnapshotEnabled = Configuration.standbySnapshotEnabled();
 
         private CountDownLatch abortLatch;
@@ -675,6 +697,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
         private DutyCycleTracker dutyCycleTracker;
+        private SnapshotDurationTracker snapshotDurationTracker;
         private AppVersionValidator appVersionValidator;
         private boolean ownsAeronClient;
 
@@ -846,11 +869,34 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     ClusterCounters.allocateServiceCounter(
                         aeron,
                         tempBuffer,
-                        "Cluster container work cycle time exceeded count: threshold=" + cycleThresholdNs,
+                        "Cluster container work cycle time exceeded count: threshold=" + cycleThresholdNs + "ns",
                         AeronCounters.CLUSTER_CLUSTERED_SERVICE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID,
                         clusterId,
                         serviceId),
                     cycleThresholdNs);
+            }
+
+            if (null == snapshotDurationTracker)
+            {
+                snapshotDurationTracker = new SnapshotDurationTracker(
+                    ClusterCounters.allocateServiceCounter(
+                        aeron,
+                        tempBuffer,
+                        "Clustered service max snapshot duration in ns",
+                        AeronCounters.CLUSTERED_SERVICE_MAX_SNAPSHOT_DURATION_TYPE_ID,
+                        clusterId,
+                        serviceId
+                    ),
+                    ClusterCounters.allocateServiceCounter(
+                        aeron,
+                        tempBuffer,
+                        "Clustered service max snapshot duration exceeded count: threshold=" +
+                            snapshotDurationThresholdNs,
+                        AeronCounters.CLUSTERED_SERVICE_SNAPSHOT_DURATION_THRESHOLD_EXCEEDED_TYPE_ID,
+                        clusterId,
+                        serviceId
+                    ),
+                    snapshotDurationThresholdNs);
             }
 
             if (null == archiveContext)
@@ -894,6 +940,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             abortLatch = new CountDownLatch(aeron.conductorAgentInvoker() == null ? 1 : 0);
             concludeMarkFile();
+
+            if (io.aeron.driver.Configuration.printConfigurationOnStart())
+            {
+                System.out.println(this);
+            }
         }
 
         /**
@@ -1768,6 +1819,52 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
+         * Set a threshold for snapshot duration which when exceeded will result in a counter increment.
+         *
+         * @param thresholdNs value in nanoseconds
+         * @return this for fluent API.
+         * @see Configuration#SNAPSHOT_DURATION_THRESHOLD_PROP_NAME
+         * @see Configuration#SNAPSHOT_DURATION_THRESHOLD_DEFAULT_NS
+         */
+        public Context snapshotDurationThresholdNs(final long thresholdNs)
+        {
+            this.snapshotDurationThresholdNs = thresholdNs;
+            return this;
+        }
+
+        /**
+         * Threshold for snapshot duration which when exceeded will result in a counter increment.
+         *
+         * @return threshold value in nanoseconds.
+         */
+        public long snapshotDurationThresholdNs()
+        {
+            return snapshotDurationThresholdNs;
+        }
+
+        /**
+         * Set snapshot duration tracker used for monitoring snapshot duration.
+         *
+         * @param snapshotDurationTracker snapshot duration tracker.
+         * @return this for fluent API.
+         */
+        public Context snapshotDurationTracker(final SnapshotDurationTracker snapshotDurationTracker)
+        {
+            this.snapshotDurationTracker = snapshotDurationTracker;
+            return this;
+        }
+
+        /**
+         * Get snapshot duration tracker used for monitoring snapshot duration.
+         *
+         * @return snapshot duration tracker
+         */
+        public SnapshotDurationTracker snapshotDurationTracker()
+        {
+            return snapshotDurationTracker;
+        }
+
+        /**
          * Delete the cluster container directory.
          */
         public void deleteDirectory()
@@ -1896,6 +1993,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 "\n    terminationHook=" + terminationHook +
                 "\n    cycleThresholdNs=" + cycleThresholdNs +
                 "\n    dutyCyleTracker=" + dutyCycleTracker +
+                "\n    snapshotDurationThresholdNs=" + snapshotDurationThresholdNs +
+                "\n    snapshotDurationTracker=" + snapshotDurationTracker +
                 "\n    markFile=" + markFile +
                 "\n}";
         }

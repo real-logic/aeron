@@ -137,6 +137,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
     private final Collection<ClientSession> unmodifiableClientSessions = Collections.unmodifiableCollection(sessions);
     private final BoundedLogAdapter logAdapter;
     private final DutyCycleTracker dutyCycleTracker;
+    private final SnapshotDurationTracker snapshotDurationTracker;
     private final String subscriptionAlias;
     private final int standbySnapshotFlags;
 
@@ -160,6 +161,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         epochClock = ctx.epochClock();
         nanoClock = ctx.nanoClock();
         dutyCycleTracker = ctx.dutyCycleTracker();
+        snapshotDurationTracker = ctx.snapshotDurationTracker();
         subscriptionAlias = "log-sc-" + ctx.serviceId();
 
         final String channel = ctx.controlChannel();
@@ -951,7 +953,11 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
             snapshotState(publication, logPosition, leadershipTermId);
             checkForClockTick(nanoClock.nanoTime());
             archive.checkForErrorResponse();
+
+            snapshotDurationTracker.onSnapshotBegin(nanoClock.nanoTime());
             service.onTakeSnapshot(publication);
+            snapshotDurationTracker.onSnapshotEnd(nanoClock.nanoTime());
+
             awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
 
             return recordingId;
@@ -1128,7 +1134,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
             {
                 ctx.countedErrorHandler().onError(new ClusterEvent(
                     "invalid ack request: logPosition=" + logPosition +
-                    " > requestedAckPosition=" + terminationPosition));
+                    " > requestedAckPosition=" + requestedAckPosition));
             }
 
             final long id = ackId++;

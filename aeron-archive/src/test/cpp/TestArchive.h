@@ -234,7 +234,11 @@ private:
     const std::string m_archiveDir;
     const std::string m_aeronDir;
     std::ostream &m_stream;
+#if defined(_WIN32)
+    intptr_t m_pid = -1;
+#else
     pid_t m_pid = -1;
+#endif
 };
 
 #endif //AERON_TESTARCHIVE_H

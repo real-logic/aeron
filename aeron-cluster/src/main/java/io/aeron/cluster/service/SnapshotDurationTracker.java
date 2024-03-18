@@ -32,9 +32,9 @@ public class SnapshotDurationTracker
     /**
      * Create a tracker to track max snapshot duration and breaches of a threshold.
      *
-     * @param maxSnapshotDuration                     counter for tracking.
-     * @param snapshotDurationThresholdExceededCount  counter for tracking.
-     * @param durationThresholdNs                     to use for tracking breaches.
+     * @param maxSnapshotDuration                    counter for tracking.
+     * @param snapshotDurationThresholdExceededCount counter for tracking.
+     * @param durationThresholdNs                    to use for tracking breaches.
      */
     public SnapshotDurationTracker(
         final AtomicCounter maxSnapshotDuration,
@@ -94,5 +94,17 @@ public class SnapshotDurationTracker
 
             maxSnapshotDuration.proposeMax(snapshotDurationNs);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "SnapshotDurationTracker{" +
+            "maxSnapshotDuration=" + maxSnapshotDuration +
+            ", snapshotDurationThresholdExceededCount=" + snapshotDurationThresholdExceededCount +
+            ", durationThresholdNs=" + durationThresholdNs +
+            '}';
     }
 }

@@ -191,19 +191,21 @@ class AeronClusterAsyncConnectTest
         final Subscription subscription = mock(Subscription.class);
         when(aeron.getSubscription(subscriptionId)).thenReturn(subscription);
 
+        final int insgressStreamId = 878;
         context
             .isIngressExclusive(true)
-            .ingressEndpoints("0=localhost:20000,1=localhost:20001,2=localhost:20002");
+            .ingressEndpoints("0=localhost:20000,1=localhost:20001,2=localhost:20002")
+            .ingressStreamId(insgressStreamId);
         final long publicationId1 = -6342756432L;
         final ExclusivePublication publication1 = mock(ExclusivePublication.class);
-        when(aeron.asyncAddExclusivePublication("aeron:udp?endpoint=localhost:20000", context.ingressStreamId()))
+        when(aeron.asyncAddExclusivePublication("aeron:udp?endpoint=localhost:20000", insgressStreamId))
             .thenReturn(publicationId1);
-        when(aeron.getExclusivePublication(publicationId1)).thenReturn(publication1);
+        when(aeron.getExclusivePublication(publicationId1)).thenReturn(null, publication1);
         final long publicationId2 = Aeron.NULL_VALUE;
-        when(aeron.asyncAddExclusivePublication("aeron:udp?endpoint=localhost:20001", context.ingressStreamId()))
+        when(aeron.asyncAddExclusivePublication("aeron:udp?endpoint=localhost:20001", insgressStreamId))
             .thenReturn(publicationId2);
         final long publicationId3 = 573495;
-        when(aeron.asyncAddExclusivePublication("aeron:udp?endpoint=localhost:20002", context.ingressStreamId()))
+        when(aeron.asyncAddExclusivePublication("aeron:udp?endpoint=localhost:20002", insgressStreamId))
             .thenReturn(publicationId3);
 
         final AeronCluster.AsyncConnect asyncConnect = new AeronCluster.AsyncConnect(
@@ -212,10 +214,25 @@ class AeronClusterAsyncConnectTest
         assertNull(asyncConnect.poll());
         assertEquals(CREATE_INGRESS_PUBLICATIONS, asyncConnect.state());
 
-        assertNull(asyncConnect.poll());
-        assertEquals(CREATE_INGRESS_PUBLICATIONS, asyncConnect.state());
+        final int iterations = 10;
+        for (int i = 0; i < iterations; i++)
+        {
+            assertNull(asyncConnect.poll());
+            assertEquals(CREATE_INGRESS_PUBLICATIONS, asyncConnect.state());
+        }
+
+        verify(aeron, atMostOnce())
+            .asyncAddExclusivePublication("aeron:udp?endpoint=localhost:20000", insgressStreamId);
+        verify(aeron, times(iterations))
+            .asyncAddExclusivePublication("aeron:udp?endpoint=localhost:20001", insgressStreamId);
+        verify(aeron, atMostOnce())
+            .asyncAddExclusivePublication("aeron:udp?endpoint=localhost:20002", insgressStreamId);
+        verify(aeron, times(2)).getExclusivePublication(publicationId1);
+        verify(aeron, times(iterations)).getExclusivePublication(publicationId2);
+        verify(aeron, times(iterations)).getExclusivePublication(publicationId3);
 
         asyncConnect.close();
+
         verify(subscription, only()).close();
         verify(publication1, only()).close();
         verify(context).close();

@@ -92,4 +92,16 @@ public class DutyCycleStallTracker extends DutyCycleTracker
             }
         }
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "DutyCycleStallTracker{" +
+            "maxCycleTime=" + maxCycleTime +
+            ", cycleTimeThresholdExceededCount=" + cycleTimeThresholdExceededCount +
+            ", cycleTimeThresholdNs=" + cycleTimeThresholdNs +
+            '}';
+    }
 }

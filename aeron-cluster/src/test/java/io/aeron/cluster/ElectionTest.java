@@ -47,6 +47,7 @@ public class ElectionTest
     private static final int VERSION = ConsensusModule.Configuration.PROTOCOL_SEMANTIC_VERSION;
     private final Aeron aeron = mock(Aeron.class);
     private final Counter electionStateCounter = mock(Counter.class);
+    private final Counter electionCounter = mock(Counter.class);
     private final Counter commitPositionCounter = mock(Counter.class);
     private final Subscription subscription = mock(Subscription.class);
     private final Image logImage = mock(Image.class);
@@ -67,6 +68,7 @@ public class ElectionTest
         .epochClock(clock)
         .random(new Random())
         .electionStateCounter(electionStateCounter)
+        .electionCounter(electionCounter)
         .commitPositionCounter(commitPositionCounter)
         .clusterMarkFile(clusterMarkFile)
         .nodeStateFile(nodeStateFile)
@@ -119,6 +121,7 @@ public class ElectionTest
 
         verify(consensusModuleAgent).joinLogAsLeader(eq(newLeadershipTermId), eq(logPosition), anyInt(), eq(true));
         verify(electionStateCounter).setOrdered(ElectionState.LEADER_READY.code());
+        verify(electionCounter).incrementOrdered();
         verify(recordingLog).ensureCoherent(
             RECORDING_ID,
             NULL_VALUE,

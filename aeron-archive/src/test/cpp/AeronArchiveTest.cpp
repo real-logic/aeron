@@ -287,7 +287,6 @@ protected:
     AeronArchive::Context_t m_destContext;
     AeronArchive::Context_t m_context;
 
-    pid_t m_pid = -1;
     bool m_debug = true;
 
 private:

@@ -115,7 +115,7 @@ public:
         m_subscriberPosition(subscriberPosition),
         m_header(
             LogBufferDescriptor::initialTermId(m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
-            m_logBuffers->atomicBuffer(0).capacity(),
+            LogBufferDescriptor::positionBitsToShift(m_logBuffers->atomicBuffer(0).capacity()),
             this),
         m_sessionId(sessionId),
         m_subscriptionRegistrationId(subscriptionRegistrationId),

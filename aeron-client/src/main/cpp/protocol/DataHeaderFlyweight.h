@@ -41,7 +41,7 @@ struct DataHeaderDefn
     std::int32_t sessionId;
     std::int32_t streamId;
     std::int32_t termId;
-    std::uint8_t data[0];
+    std::int64_t reservedValue;
 };
 #pragma pack(pop)
 
@@ -99,10 +99,21 @@ public:
         return *this;
     }
 
-    inline std::uint8_t *data()
+    inline std::int64_t reservedValue()
     {
-        return m_struct.data;
+        return m_struct.reservedValue;
     }
+
+    inline this_t &reservedValue(std::int64_t value)
+    {
+        m_struct.reservedValue = value;
+        return *this;
+    }
+
+//    inline std::uint8_t *data()
+//    {
+//        return m_struct.data;
+//    }
 
     inline static constexpr std::int32_t headerLength()
     {

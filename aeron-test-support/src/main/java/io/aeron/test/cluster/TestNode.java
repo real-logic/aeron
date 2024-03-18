@@ -117,6 +117,7 @@ public final class TestNode implements AutoCloseable
                     .clusterDir(context.consensusModuleContext.clusterDir())
                     .markFileDir(context.consensusModuleContext.markFileDir())
                     .clusteredService(services[i])
+                    .snapshotDurationThresholdNs(TimeUnit.MILLISECONDS.toNanos(100))
                     .serviceId(i);
                 containers[i] = ClusteredServiceContainer.launch(ctx);
             }
@@ -171,7 +172,12 @@ public final class TestNode implements AutoCloseable
             throw new IllegalStateException("container count expected=1 actual=" + containers.length);
         }
 
-        return containers[0];
+        return container(0);
+    }
+
+    public ClusteredServiceContainer container(final int index)
+    {
+        return containers[index];
     }
 
     public TestService service()
@@ -680,11 +686,11 @@ public final class TestNode implements AutoCloseable
 
     public static class SleepOnSnapshotTestService extends TestNode.TestService
     {
-        long sleepNsWhenTakingSnapshot = Long.MIN_VALUE;
+        long snapshotDelayMs = 0;
 
-        public TestService sleepNsOnTakeSnapshot(final long sleepNsWhenTakingSnapshot)
+        public TestService snapshotDelayMs(final long snapshotDelayMs)
         {
-            this.sleepNsWhenTakingSnapshot = sleepNsWhenTakingSnapshot;
+            this.snapshotDelayMs = snapshotDelayMs;
             return this;
         }
 
@@ -692,9 +698,9 @@ public final class TestNode implements AutoCloseable
         {
             super.onTakeSnapshot(snapshotPublication);
 
-            if (sleepNsWhenTakingSnapshot > 0)
+            if (snapshotDelayMs > 0)
             {
-                LockSupport.parkNanos(sleepNsWhenTakingSnapshot);
+                Tests.sleep(snapshotDelayMs);
             }
         }
     }

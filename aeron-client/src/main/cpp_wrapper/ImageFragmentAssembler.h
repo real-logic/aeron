@@ -18,8 +18,6 @@
 #define AERON_IMAGE_FRAGMENT_ASSEMBLER_H
 
 #include "Aeron.h"
-#include "BufferBuilder.h"
-#include "concurrent/logbuffer/FrameDescriptor.h"
 
 namespace aeron
 {
@@ -50,9 +48,14 @@ public:
     explicit ImageFragmentAssembler(
         const fragment_handler_t &delegate,
         std::size_t initialBufferLength = DEFAULT_IMAGE_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
-        m_delegate(delegate),
-        m_builder(static_cast<std::int32_t>(initialBufferLength))
+        m_delegate(delegate)
     {
+        aeron_image_fragment_assembler_create(&m_fragment_assembler, handlerCallback, reinterpret_cast<void *>(this));
+    }
+
+    ~ImageFragmentAssembler()
+    {
+        aeron_image_fragment_assembler_delete(m_fragment_assembler);
     }
 
     /**
@@ -70,48 +73,20 @@ public:
     }
 
 private:
+    aeron_image_fragment_assembler_t *m_fragment_assembler;
     fragment_handler_t m_delegate;
-    BufferBuilder m_builder;
+
+    static void handlerCallback(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
+    {
+        auto *assembler = reinterpret_cast<ImageFragmentAssembler *>(clientd);
+        Header _header{header, nullptr};
+        AtomicBuffer _buffer{const_cast<uint8_t *>(buffer), length};
+        assembler->m_delegate(_buffer, 0, (util::index_t)length, _header);
+    }
 
     inline void onFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
     {
-        std::uint8_t flags = header.flags();
-
-        if ((flags & FrameDescriptor::UNFRAGMENTED) == FrameDescriptor::UNFRAGMENTED)
-        {
-            m_delegate(buffer, offset, length, header);
-        }
-        else if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
-        {
-            auto nextOffset = BitUtil::align(
-                offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-            m_builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
-        }
-        else if (m_builder.nextTermOffset() == offset)
-        {
-            m_builder.append(buffer, offset, length, header);
-
-            if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
-            {
-                util::index_t msgLength =
-                    static_cast<util::index_t>(m_builder.limit()) - DataFrameHeader::LENGTH;
-                AtomicBuffer msgBuffer(m_builder.buffer(), m_builder.limit());
-
-                m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
-
-                m_builder.reset();
-            }
-            else
-            {
-                auto nextOffset = BitUtil::align(
-                    offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-                m_builder.nextTermOffset(nextOffset);
-            }
-        }
-        else
-        {
-            m_builder.reset();
-        }
+        aeron_image_fragment_assembler_handler(m_fragment_assembler, buffer.buffer() + offset, length, header.hdr());
     }
 };
 

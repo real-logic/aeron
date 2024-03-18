@@ -81,10 +81,7 @@ public final class Header
      */
     public long position()
     {
-        final int termOffset = buffer.getInt(offset + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
-        final int resultingOffset = BitUtil.align(termOffset + termOccupancyLength(), FRAME_ALIGNMENT);
-        final int termId = buffer.getInt(offset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
-        return computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
+        return computePosition(termId(), nextTermOffset(), positionBitsToShift, initialTermId);
     }
 
     /**
@@ -226,6 +223,16 @@ public final class Header
     public int termOffset()
     {
         return buffer.getInt(offset + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Calculates the offset of the frame immediately after this one.
+     *
+     * @return the offset of the next frame.
+     */
+    public int nextTermOffset()
+    {
+        return BitUtil.align(termOffset() + termOccupancyLength(), FRAME_ALIGNMENT);
     }
 
     /**

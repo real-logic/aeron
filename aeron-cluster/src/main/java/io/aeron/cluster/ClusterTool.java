@@ -785,23 +785,37 @@ public class ClusterTool
         };
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(controlProperties.aeronDirectoryName));
-            ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(
-                controlProperties.controlChannel, controlProperties.consensusModuleStreamId));
+            ConcurrentPublication publication = aeron.addPublication(
+                controlProperties.controlChannel, controlProperties.consensusModuleStreamId);
+            ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(publication);
             ClusterControlAdapter clusterControlAdapter = new ClusterControlAdapter(aeron.addSubscription(
                 controlProperties.controlChannel, controlProperties.serviceStreamId), listener))
         {
+            final long deadlineMs = System.currentTimeMillis() + timeoutMs;
             final long correlationId = aeron.nextCorrelationId();
             id.set(correlationId);
-            final long deadlineMs = System.currentTimeMillis() + timeoutMs;
-            boolean querySent = false;
+
+            while (!publication.isConnected())
+            {
+                if (System.currentTimeMillis() > deadlineMs)
+                {
+                    break;
+                }
+                Thread.yield();
+            }
+
+            while (!consensusModuleProxy.clusterMembersQuery(correlationId))
+            {
+                if (System.currentTimeMillis() > deadlineMs)
+                {
+                    break;
+                }
+                Thread.yield();
+            }
+
             while (NULL_VALUE != id.get())
             {
-                if (!querySent)
-                {
-                    querySent = consensusModuleProxy.clusterMembersQuery(correlationId);
-                }
-
-                if (querySent && 0 == clusterControlAdapter.poll())
+                if (0 == clusterControlAdapter.poll())
                 {
                     if (System.currentTimeMillis() > deadlineMs)
                     {
@@ -812,7 +826,7 @@ public class ClusterTool
             }
         }
 
-        return id.get() == NULL_VALUE;
+        return true;
     }
 
     /**

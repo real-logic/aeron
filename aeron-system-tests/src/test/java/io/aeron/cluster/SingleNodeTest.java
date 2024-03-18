@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
+import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
@@ -31,7 +32,7 @@ import static io.aeron.Aeron.Configuration.PRE_TOUCH_MAPPED_MEMORY_PROP_NAME;
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ExtendWith(InterruptingTestCallback.class)
+@ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 class SingleNodeTest
 {
     @RegisterExtension

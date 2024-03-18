@@ -93,13 +93,23 @@ private:
         {
             m_delegate(buffer, offset, length, header);
         }
-        else if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
+        else
+        {
+            handleFragment(buffer, offset, length, header);
+        }
+    }
+
+    void handleFragment(AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+    {
+        const std::uint8_t flags = header.flags();
+
+        if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
         {
             BufferBuilder &builder = getBuffer(header.sessionId());
-            auto nextOffset = BitUtil::align(
-                offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-
-            builder.reset().append(buffer, offset, length, header).nextTermOffset(nextOffset);
+            builder.reset()
+                .captureHeader(header)
+                .append(buffer, offset, length)
+                .nextTermOffset(header.nextTermOffset());
         }
         else
         {
@@ -109,25 +119,20 @@ private:
             {
                 BufferBuilder &builder = result->second;
 
-                if (offset == builder.nextTermOffset())
+                if (header.termOffset() == builder.nextTermOffset())
                 {
-                    builder.append(buffer, offset, length, header);
+                    builder.append(buffer, offset, length);
 
                     if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
                     {
-                        util::index_t msgLength =
-                            static_cast<util::index_t>(builder.limit()) - DataFrameHeader::LENGTH;
                         AtomicBuffer msgBuffer(builder.buffer(), builder.limit());
-
-                        m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
+                        m_delegate(msgBuffer, 0, (util::index_t)builder.limit(), builder.completeHeader(header));
 
                         builder.reset();
                     }
                     else
                     {
-                        auto nextOffset = BitUtil::align(
-                            offset + length + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-                        builder.nextTermOffset(nextOffset);
+                        builder.nextTermOffset(header.nextTermOffset());
                     }
                 }
                 else

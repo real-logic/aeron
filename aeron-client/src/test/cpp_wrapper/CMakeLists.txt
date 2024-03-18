@@ -15,7 +15,7 @@
 #
 
 set(TEST_HEADERS
-    EmbeddedMediaDriver.h
+    ../cpp_shared/EmbeddedMediaDriver.h
     TestUtil.h)
 
 if (MSVC AND ${CMAKE_VERSION} VERSION_LESS "3.13.0")
@@ -25,6 +25,7 @@ endif ()
 function(aeron_client_native_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
     add_dependencies(${name} gmock)
+    target_include_directories(${name} PRIVATE "../cpp_shared")
     target_link_libraries(${name} aeron_client aeron_driver gmock_main ${CMAKE_THREAD_LIBS_INIT})
     target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_test(NAME ${name} COMMAND ${name})
@@ -34,6 +35,7 @@ function(aeron_client_wrapper_test name file)
     set(wrapper_name "${name}W")
     add_executable(${wrapper_name} ${file} ${TEST_HEADERS})
     add_dependencies(${wrapper_name} gmock)
+    target_include_directories(${wrapper_name} PRIVATE "../cpp_shared")
     target_link_libraries(${wrapper_name} aeron_client_wrapper aeron_driver gmock_main ${CMAKE_THREAD_LIBS_INIT})
     target_compile_definitions(${wrapper_name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_test(NAME ${wrapper_name} COMMAND ${wrapper_name})
@@ -66,4 +68,10 @@ if (AERON_UNIT_TESTS)
 
     aeron_client_wrapper_test(exceptionsTest ExceptionsTest.cpp)
     aeron_client_wrapper_test(channelUriStringBuilderTest ChannelUriStringBuilderTest.cpp)
+
+    aeron_client_wrapper_test(fragmentAssemblerTest FragmentAssemblerTest.cpp)
+    aeron_client_wrapper_test(imageFragmentAssemblerTest ImageFragmentAssemblerTest.cpp)
+    aeron_client_wrapper_test(controlledFragmentAssemblerTest ControlledFragmentAssemblerTest.cpp)
+    aeron_client_wrapper_test(imageControlledFragmentAssemblerTest ImageControlledFragmentAssemblerTest.cpp)
+
 endif ()

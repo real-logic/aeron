@@ -126,6 +126,7 @@ class Election
 
         Objects.requireNonNull(thisMember);
         ctx.electionStateCounter().setOrdered(INIT.code());
+        ctx.electionCounter().incrementOrdered();
 
         if (clusterMembers.length == 1 && thisMember.id() == clusterMembers[0].id())
         {

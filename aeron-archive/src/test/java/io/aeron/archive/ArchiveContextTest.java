@@ -28,6 +28,7 @@ import io.aeron.security.AuthorisationServiceSupplier;
 import io.aeron.test.TestContexts;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
@@ -73,10 +75,19 @@ class ArchiveContextTest
     @BeforeEach
     void beforeEach(final @TempDir Path tempDir)
     {
+        final CountersReader countersReader = mock(CountersReader.class);
+        final MutableInteger nextCounterId = new MutableInteger(1000);
         when(aeron.addCounter(
             anyInt(), any(DirectBuffer.class), anyInt(), anyInt(), any(DirectBuffer.class), anyInt(), anyInt()))
-            .thenAnswer(invocation -> mock(Counter.class));
-        final CountersReader countersReader = mock(CountersReader.class);
+            .thenAnswer(invocation ->
+            {
+                final int typeId = invocation.getArgument(0);
+                final DirectBuffer labelBuffer = invocation.getArgument(4);
+                final int labelOffset = invocation.getArgument(5);
+                final int labelLength = invocation.getArgument(6);
+                final String label = labelBuffer.getStringWithoutLengthAscii(labelOffset, labelLength);
+                return mockCounter(countersReader, typeId, nextCounterId.getAndIncrement(), label);
+            });
         final Aeron.Context aeronContext = new Aeron.Context();
         aeronContext.subscriberErrorHandler(RethrowingErrorHandler.INSTANCE);
         aeronContext.useConductorAgentInvoker(true);
@@ -87,16 +98,17 @@ class ArchiveContextTest
         context
             .aeron(aeron)
             .errorCounter(mock(AtomicCounter.class))
-            .controlSessionsCounter(
-                mockCounter(countersReader, ARCHIVE_CONTROL_SESSIONS_TYPE_ID, ARCHIVE_CONTROL_SESSIONS_COUNTER_ID))
-            .recordingSessionCounter(mockCounter(countersReader, ARCHIVE_RECORDING_SESSION_COUNT_TYPE_ID, 101))
-            .replaySessionCounter(mockCounter(countersReader, ARCHIVE_REPLAY_SESSION_COUNT_TYPE_ID, 102))
-            .totalWriteBytesCounter(mockCounter(countersReader, ARCHIVE_RECORDER_TOTAL_WRITE_BYTES_TYPE_ID, 111))
-            .totalWriteTimeCounter(mockCounter(countersReader, ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID, 222))
-            .maxWriteTimeCounter(mockCounter(countersReader, ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID, 333))
-            .totalReadBytesCounter(mockCounter(countersReader, ARCHIVE_REPLAYER_TOTAL_READ_BYTES_TYPE_ID, 77))
-            .totalReadTimeCounter(mockCounter(countersReader, ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID, 88))
-            .maxReadTimeCounter(mockCounter(countersReader, ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID, 99))
+            .controlSessionsCounter(mockCounter(
+                countersReader, ARCHIVE_CONTROL_SESSIONS_TYPE_ID, ARCHIVE_CONTROL_SESSIONS_COUNTER_ID, "label"))
+            .recordingSessionCounter(mockCounter(countersReader, ARCHIVE_RECORDING_SESSION_COUNT_TYPE_ID, 101, "label"))
+            .replaySessionCounter(mockCounter(countersReader, ARCHIVE_REPLAY_SESSION_COUNT_TYPE_ID, 102, "label"))
+            .totalWriteBytesCounter(mockCounter(
+                countersReader, ARCHIVE_RECORDER_TOTAL_WRITE_BYTES_TYPE_ID, 111, "label"))
+            .totalWriteTimeCounter(mockCounter(countersReader, ARCHIVE_RECORDER_TOTAL_WRITE_TIME_TYPE_ID, 222, "label"))
+            .maxWriteTimeCounter(mockCounter(countersReader, ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID, 333, "label"))
+            .totalReadBytesCounter(mockCounter(countersReader, ARCHIVE_REPLAYER_TOTAL_READ_BYTES_TYPE_ID, 77, "label"))
+            .totalReadTimeCounter(mockCounter(countersReader, ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID, 88, "label"))
+            .maxReadTimeCounter(mockCounter(countersReader, ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID, 99, "label"))
             .archiveDir(tempDir.resolve("archive-test").toFile());
     }
 
@@ -1001,23 +1013,47 @@ class ArchiveContextTest
         assertEquals(archiveDir.getCanonicalPath(), context.archiveDirectoryName());
     }
 
+    @ParameterizedTest
+    @EnumSource(ArchiveThreadingMode.class)
+    void shouldExposeThreadingModeInfoViaConductorDutyCycleTrackers(final ArchiveThreadingMode threadingMode)
+    {
+        final long thresholdNs = 123456789;
+        context
+            .conductorCycleThresholdNs(thresholdNs)
+            .threadingMode(threadingMode)
+            .archiveId(888);
+
+        context.conclude();
+
+        final DutyCycleStallTracker dutyCycleTracker = (DutyCycleStallTracker)context.conductorDutyCycleTracker();
+        assertNotNull(dutyCycleTracker);
+        assertEquals(
+            "archive-conductor max cycle time in ns: " + threadingMode + " - archiveId=" + context.archiveId(),
+            dutyCycleTracker.maxCycleTime().label());
+        assertEquals(
+            "archive-conductor work cycle time exceeded count: threshold=" + thresholdNs + "ns " +
+            threadingMode + " - archiveId=" + context.archiveId(),
+            dutyCycleTracker.cycleTimeThresholdExceededCount().label());
+    }
+
     private Counter mockArchiveCounter(
         final long archiveId, final int typeId, final int id, final ArgumentCaptor<DirectBuffer> tempBuffer)
     {
         context.archiveId(archiveId);
         final Aeron aeron = context.aeron();
-        final Counter counter = mockCounter(aeron.countersReader(), typeId, id);
+        final Counter counter = mockCounter(aeron.countersReader(), typeId, id, "label");
         when(aeron.addCounter(
             eq(typeId), tempBuffer.capture(), eq(0), eq(SIZE_OF_LONG), any(), eq(SIZE_OF_LONG), anyInt()))
             .thenReturn(counter);
         return counter;
     }
 
-    private static Counter mockCounter(final CountersReader countersReader, final int typeId, final int id)
+    private static Counter mockCounter(
+        final CountersReader countersReader, final int typeId, final int id, final String label)
     {
         final Counter counter = mock(Counter.class);
         when(counter.id()).thenReturn(id);
-
+        when(counter.label()).thenReturn(label);
         when(countersReader.getCounterTypeId(id)).thenReturn(typeId);
         return counter;
     }

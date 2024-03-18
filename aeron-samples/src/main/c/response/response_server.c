@@ -390,7 +390,7 @@ int response_server_create(
     aeron_alloc((void **)&response_server, sizeof(response_server_t));
 
     response_server->aeron = aeron,
-    strncpy(response_server->response_control_channel, response_control_channel, sizeof(response_server->response_control_channel));
+    strncpy(response_server->response_control_channel, response_control_channel, sizeof(response_server->response_control_channel) - 1);
     response_server->response_stream_id = response_stream_id;
     response_server->delegate = delegate;
 

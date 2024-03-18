@@ -1857,6 +1857,9 @@ public final class AeronCluster implements AutoCloseable
 
                 case CONCLUDE_CONNECT:
                     return concludeConnect();
+
+                default:
+                    break;
             }
 
             return null;

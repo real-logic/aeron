@@ -779,9 +779,15 @@ class ArchiveTest
                 .archiveId(archive.context().archiveId())
                 .archiveDir(archiveDir2.toFile())
                 .aeronDirectoryName(driver.context().aeronDirectoryName());
-
-            final ArchiveException exception = assertThrowsExactly(ArchiveException.class, archiveContext2::conclude);
-            assertEquals("ERROR - found existing archive for archiveId=" + archiveId, exception.getMessage());
+            try
+            {
+                final ArchiveException exception = assertThrowsExactly(ArchiveException.class, archiveContext2::conclude);
+                assertEquals("ERROR - found existing archive for archiveId=" + archiveId, exception.getMessage());
+            }
+            finally
+            {
+                archiveContext2.close();
+            }
         }
     }
 

@@ -411,6 +411,11 @@ public final class AeronCounters
      */
     public static final int CLUSTER_ELECTION_COUNT_TYPE_ID = 238;
 
+    /**
+     * The type id of the {@link Counter} used for keeping track of the Cluster leadership term id.
+     */
+    public static final int CLUSTER_LEADERSHIP_TERM_ID_TYPE_ID = 239;
+
     private AeronCounters()
     {
     }

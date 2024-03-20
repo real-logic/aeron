@@ -1877,6 +1877,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     void leadershipTermId(final long leadershipTermId)
     {
         this.leadershipTermId = leadershipTermId;
+        ctx.leadershipTermIdCounter().setOrdered(leadershipTermId);
         for (final PendingServiceMessageTracker tracker : pendingServiceMessageTrackers)
         {
             tracker.leadershipTermId(leadershipTermId);

@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCounters;
 import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
@@ -53,6 +54,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.AeronCounters.*;
 import static io.aeron.AeronCounters.CLUSTER_ELECTION_COUNT_TYPE_ID;
 import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
@@ -109,12 +111,13 @@ class ConsensusModuleContextTest
             .moduleStateCounter(newCounter("moduleState", CONSENSUS_MODULE_STATE_TYPE_ID))
             .electionStateCounter(newCounter("electionState", ELECTION_STATE_TYPE_ID))
             .electionCounter(newCounter("electionCount", CLUSTER_ELECTION_COUNT_TYPE_ID))
-            .clusterNodeRoleCounter(newCounter("clusterNodeRole", CLUSTER_NODE_ROLE_TYPE_ID))
+            .leadershipTermIdCounter(newCounter("leadershipTermId", CLUSTER_LEADERSHIP_TERM_ID_TYPE_ID))
+            .clusterNodeRoleCounter(newCounter("clusterNodeRole", AeronCounters.CLUSTER_NODE_ROLE_TYPE_ID))
             .commitPositionCounter(newCounter("commitPosition", COMMIT_POSITION_TYPE_ID))
             .controlToggleCounter(newCounter("controlToggle", CONTROL_TOGGLE_TYPE_ID))
             .nodeControlToggleCounter(newCounter("nodeControlToggle", NODE_CONTROL_TOGGLE_TYPE_ID))
             .snapshotCounter(newCounter("snapshot", SNAPSHOT_COUNTER_TYPE_ID))
-            .timedOutClientCounter(newCounter("timedOut", CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID));
+            .timedOutClientCounter(newCounter("timedOut", AeronCounters.CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID));
     }
 
     private Counter newCounter(final String name, final int typeId)
@@ -684,7 +687,8 @@ class ConsensusModuleContextTest
 
         final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
         assertEquals(
-            "ERROR - The type for counterId=9, typeId=1 does not match the expected=238",
+            "ERROR - The type for counterId=" + electionCounter.id() +
+            ", typeId=1 does not match the expected=" + CLUSTER_ELECTION_COUNT_TYPE_ID,
             exception.getMessage());
     }
 
@@ -697,6 +701,45 @@ class ConsensusModuleContextTest
 
         final Counter electionCounter = context.electionCounter();
         assertNotNull(electionCounter);
+        assertEquals(CLUSTER_ELECTION_COUNT_TYPE_ID, countersManager.getCounterTypeId(electionCounter.id()));
+    }
+
+    @Test
+    void shouldAllowLeadershipTermIdCounterToBeExplicitlySet()
+    {
+        final Counter counter = newCounter("x", CLUSTER_LEADERSHIP_TERM_ID_TYPE_ID);
+        context.leadershipTermIdCounter(counter);
+        assertSame(counter, context.leadershipTermIdCounter());
+
+        context.conclude();
+
+        assertSame(counter, context.leadershipTermIdCounter());
+    }
+
+    @Test
+    void shouldThrowConfigurationExceptionIfLeadershipTermIdCounterHasWrongType()
+    {
+        final Counter counter = newCounter("wrong type id", 5);
+        context.leadershipTermIdCounter(counter);
+        assertSame(counter, context.leadershipTermIdCounter());
+
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, context::conclude);
+        assertEquals(
+            "ERROR - The type for counterId=" + counter.id() +
+            ", typeId=5 does not match the expected=" + CLUSTER_LEADERSHIP_TERM_ID_TYPE_ID,
+            exception.getMessage());
+    }
+
+    @Test
+    void shouldCreateLeadershipTermIdCounter()
+    {
+        context.leadershipTermIdCounter(null);
+
+        context.conclude();
+
+        final Counter counter = context.leadershipTermIdCounter();
+        assertNotNull(counter);
+        assertEquals(CLUSTER_LEADERSHIP_TERM_ID_TYPE_ID, countersManager.getCounterTypeId(counter.id()));
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

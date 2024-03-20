@@ -45,7 +45,6 @@ import java.util.TreeMap;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.lang.Math.max;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
@@ -244,7 +243,7 @@ public final class RecordingLog implements AutoCloseable
             final int unalignedLength = (ENTRY_TYPE_STANDBY_SNAPSHOT == type) ?
                 ENDPOINT_OFFSET + SIZE_OF_INT + archiveEndpoint.length() : ENDPOINT_OFFSET;
 
-            return align(unalignedLength, FRAME_ALIGNMENT);
+            return align(unalignedLength, RECORD_ALIGNMENT);
         }
 
         private void position(final long position)
@@ -696,6 +695,8 @@ public final class RecordingLog implements AutoCloseable
     public static final int MAX_ENTRY_LENGTH = 4096;
 
     static final int MAX_ENDPOINT_LENGTH = MAX_ENTRY_LENGTH - ENDPOINT_OFFSET - SIZE_OF_INT;
+
+    private static final int RECORD_ALIGNMENT = 64;
 
     private static final Comparator<Entry> ENTRY_COMPARATOR =
         (Entry e1, Entry e2) ->
@@ -1742,7 +1743,7 @@ public final class RecordingLog implements AutoCloseable
         {
             if (NULL_VALUE == entry.position)
             {
-                final long nextPosition = align(fileChannel.size(), FRAME_ALIGNMENT);
+                final long nextPosition = align(fileChannel.size(), RECORD_ALIGNMENT);
                 entry.position(nextPosition);
             }
 

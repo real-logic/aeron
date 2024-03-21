@@ -1645,14 +1645,14 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
     return buffer;
 }
 
-static char *dissect_flags(uint8_t flags, char *dissected_flags, size_t flags_length)
+static char *dissect_flags(uint8_t flags, char *dissected_flags)
 {
-    const size_t len = flags_length < sizeof(uint8_t) ? flags_length : sizeof(uint8_t);
+    const size_t len = 8;
     uint8_t flag_mask = (uint8_t)(1 << (len - 1));
 
     for (size_t i = 0; i < len; i++)
     {
-        dissected_flags[i] = (flags & flag_mask) == (flag_mask ? '1' : '0');
+        dissected_flags[i] = (flags & flag_mask) == flag_mask ? '1' : '0';
         flag_mask >>= 1;
     }
 
@@ -1713,7 +1713,7 @@ static const char *dissect_frame_type(int16_t type)
 static const char *dissect_frame(const void *message, size_t length)
 {
     static char buffer[256];
-    static char dissected_flags[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    static char dissected_flags[8] = { '0', '0', '0', '0', '0', '0', '0', '0' };
     aeron_frame_header_t *hdr = (aeron_frame_header_t *)message;
 
     buffer[0] = '\0';
@@ -1728,7 +1728,7 @@ static const char *dissect_frame(const void *message, size_t length)
             snprintf(buffer, sizeof(buffer) - 1, "%s %.*s len %d %d:%d:%d @%d",
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
-                dissect_flags(hdr->flags, dissected_flags, sizeof(dissected_flags)),
+                dissect_flags(hdr->flags, dissected_flags),
                 hdr->frame_length,
                 data->session_id,
                 data->stream_id,
@@ -1745,7 +1745,7 @@ static const char *dissect_frame(const void *message, size_t length)
             snprintf(buffer, sizeof(buffer) - 1, "%s %.*s len %d %d:%d:%d @%d %d %" PRId64,
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
-                dissect_flags(hdr->flags, dissected_flags, sizeof(dissected_flags)),
+                dissect_flags(hdr->flags, dissected_flags),
                 hdr->frame_length,
                 sm->session_id,
                 sm->stream_id,
@@ -1763,7 +1763,7 @@ static const char *dissect_frame(const void *message, size_t length)
             snprintf(buffer, sizeof(buffer) - 1, "%s %.*s len %d %d:%d:%d @%d %d",
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
-                dissect_flags(hdr->flags, dissected_flags, sizeof(dissected_flags)),
+                dissect_flags(hdr->flags, dissected_flags),
                 hdr->frame_length,
                 nak->session_id,
                 nak->stream_id,
@@ -1781,7 +1781,7 @@ static const char *dissect_frame(const void *message, size_t length)
             snprintf(buffer, sizeof(buffer) - 1, "%s %.*s len %d %d:%d:%d %d @%d %d MTU %d TTL %d",
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
-                dissect_flags(hdr->flags, dissected_flags, sizeof(dissected_flags)),
+                dissect_flags(hdr->flags, dissected_flags),
                 hdr->frame_length,
                 setup->session_id,
                 setup->stream_id,
@@ -1801,7 +1801,7 @@ static const char *dissect_frame(const void *message, size_t length)
             snprintf(buffer, sizeof(buffer) - 1, "%s %.*s len %d %d:%d RSP_SESSION_ID %d",
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
-                dissect_flags(hdr->flags, dissected_flags, sizeof(dissected_flags)),
+                dissect_flags(hdr->flags, dissected_flags),
                 hdr->frame_length,
                 rsp_setup->session_id,
                 rsp_setup->stream_id,
@@ -1816,7 +1816,7 @@ static const char *dissect_frame(const void *message, size_t length)
             snprintf(buffer, sizeof(buffer) - 1, "%s %.*s len %d %d:%d %" PRId64 " %" PRId64 " %" PRId64,
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
-                dissect_flags(hdr->flags, dissected_flags, sizeof(dissected_flags)),
+                dissect_flags(hdr->flags, dissected_flags),
                 hdr->frame_length,
                 rttm->session_id,
                 rttm->stream_id,
@@ -1880,7 +1880,7 @@ static const char *dissect_frame(const void *message, size_t length)
                     " [%" PRId8 " %.*s port %" PRIu16 " %" PRId32 " %s %.*s]",
                     res->res_type,
                     (int)sizeof(dissected_flags),
-                    dissect_flags(res->res_flags, dissected_flags, sizeof(dissected_flags)),
+                    dissect_flags(res->res_flags, dissected_flags),
                     res->udp_port,
                     res->age_in_ms,
                     dissect_res_address(res->res_type, address),

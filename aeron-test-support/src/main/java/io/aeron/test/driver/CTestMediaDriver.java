@@ -289,6 +289,7 @@ public final class CTestMediaDriver implements TestMediaDriver
             environment.put("AERON_RECEIVER_WILDCARD_PORT_RANGE", receiverWildcardPortRange);
         }
 
+        environment.put("AERON_ENABLE_EXPERIMENTAL_FEATURES", String.valueOf(context.enableExperimentalFeatures()));
         setFlowControlStrategy(environment, context);
         setLogging(environment);
         setTransportSecurity(environment);

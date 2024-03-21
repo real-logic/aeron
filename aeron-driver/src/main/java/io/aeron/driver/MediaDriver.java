@@ -4245,6 +4245,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    resourceFreeLimit=" + resourceFreeLimit +
                 "\n    asyncTaskExecutorThreads=" + asyncTaskExecutorThreads +
                 "\n    asyncTaskExecutor=" + asyncTaskExecutor +
+                "\n    enabledExperimentalFeatures=" + enableExperimentalFeatures +
                 "\n}";
         }
     }

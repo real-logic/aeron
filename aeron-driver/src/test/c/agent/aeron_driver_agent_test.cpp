@@ -1597,3 +1597,15 @@ TEST_F(DriverAgentTest, shouldInitializeResendFunction)
 
     EXPECT_NE(nullptr, m_context->log.resend);
 }
+
+TEST_F(DriverAgentTest, shouldDissect)
+{
+    EXPECT_EQ(nullptr, m_context->log.resend);
+
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("RESEND", nullptr));
+    aeron_driver_agent_init_logging_events_interceptors(m_context);
+
+    EXPECT_NE(nullptr, m_context->log.resend);
+}
+
+

@@ -1835,9 +1835,10 @@ static const char *dissect_frame(const void *message, size_t length)
             int buffer_used = snprintf(
                 buffer,
                 buffer_available,
-                "%s 0x%x len %d",
+                "%s %.*s len %d",
                 dissect_frame_type(hdr->type),
-                hdr->flags,
+                (int)sizeof(dissected_flags),
+                dissect_flags(hdr->flags, dissected_flags),
                 hdr->frame_length);
             size_t message_offset = sizeof(aeron_frame_header_t);
 

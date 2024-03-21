@@ -2525,7 +2525,7 @@ public final class DriverConductor implements Agent
         }
 
         if (null != channel.channelUri().get(RESPONSE_CORRELATION_ID_PARAM_NAME) ||
-            ControlMode.RESPONSE.name().equalsIgnoreCase(channel.channelUri().get(MDC_CONTROL_MODE_PARAM_NAME)))
+            ControlMode.RESPONSE == channel.controlMode())
         {
             throw new IllegalArgumentException(
                 "Response Channels is an experimental feature, and " +

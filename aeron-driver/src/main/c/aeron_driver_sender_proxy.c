@@ -178,7 +178,3 @@ void aeron_driver_sender_proxy_on_resolution_change(
         aeron_driver_sender_proxy_offer(sender_proxy, &cmd, sizeof(cmd));
     }
 }
-
-void aeron_driver_sender_proxy_on_delete_cmd(aeron_driver_sender_proxy_t *sender_proxy, aeron_command_base_t *cmd)
-{
-}

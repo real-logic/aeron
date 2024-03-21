@@ -22,6 +22,7 @@
 #include "aeron_driver_common.h"
 #include "aeron_driver_context.h"
 #include "aeron_system_counters.h"
+#include "util/aeron_parse_util.h"
 
 #define AERON_NAME_RESOLVER_CSV_TABLE "csv_table"
 #define AERON_NAME_RESOLVER_DRIVER "driver"
@@ -85,6 +86,15 @@ int aeron_default_name_resolver_lookup(
 int aeron_default_name_resolver_do_work(aeron_name_resolver_t *resolver, int64_t now_ms);
 
 int aeron_default_name_resolver_close(aeron_name_resolver_t *resolver);
+
+typedef struct aeron_name_resolver_async_resolve_stct
+{
+    const char *uri_param_name;
+    bool is_re_resolution;
+    struct sockaddr_storage sockaddr;
+    char endpoint_name[AERON_MAX_HOST_LENGTH];
+}
+aeron_name_resolver_async_resolve_t;
 
 int aeron_name_resolver_resolve_host_and_port(
     aeron_name_resolver_t *resolver,

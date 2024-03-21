@@ -75,11 +75,11 @@ public class ResponseChannelsTest
         watcher.dataCollector().add(driver.context().aeronDirectory());
     }
 
-    @AfterEach
-    void tearDown()
-    {
-        CloseHelper.quietClose(driver);
-    }
+        @AfterEach
+        void tearDown()
+        {
+            CloseHelper.quietClose(driver);
+        }
 
     @Test
     @InterruptAfter(10)

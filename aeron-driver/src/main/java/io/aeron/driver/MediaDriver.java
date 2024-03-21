@@ -492,6 +492,7 @@ public final class MediaDriver implements AutoCloseable
         private String resolverBootstrapNeighbor = Configuration.resolverBootstrapNeighbor();
         private String senderWildcardPortRange = Configuration.senderWildcardPortRange();
         private String receiverWildcardPortRange = Configuration.receiverWildcardPortRange();
+        private boolean enableExperimentalFeatures = Aeron.Configuration.enableExperimentalFeatures();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -3528,6 +3529,32 @@ public final class MediaDriver implements AutoCloseable
         public EpochNanoClock channelSendTimestampClock()
         {
             return channelSendTimestampClock;
+        }
+
+        /**
+         * Should experimental features for the driver be enabled.
+         *
+         * @return <code>true</code> if enabled, <code>false</code> otherwise.
+         * @see #enableExperimentalFeatures(boolean)
+         */
+        public boolean enableExperimentalFeatures()
+        {
+            return enableExperimentalFeatures;
+        }
+
+        /**
+         * Should experimental features for the driver be enabled.
+         *
+         * @param enableExperimentalFeatures indicate whether experimental features for the driver should be enabled.
+         * @return this for a fluent API
+         * @see Aeron.Configuration#enableExperimentalFeatures()
+         * @see Aeron.Configuration#ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME
+         * @see #enableExperimentalFeatures()
+         */
+        public Context enableExperimentalFeatures(final boolean enableExperimentalFeatures)
+        {
+            this.enableExperimentalFeatures = enableExperimentalFeatures;
+            return this;
         }
 
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()

@@ -691,7 +691,7 @@ TEST_F(DriverAgentTest, shouldLogSmallAgentLogFrames)
     message.msg_controllen = 0;
     message.msg_namelen = sizeof(struct sockaddr_storage);
 
-    aeron_driver_agent_log_frame(22, &message, 500, message_length);
+    aeron_driver_agent_log_frame(22, &message, message_length);
 
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
@@ -706,7 +706,6 @@ TEST_F(DriverAgentTest, shouldLogSmallAgentLogFrames)
             char *buffer = (char *)msg;
             auto *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
             EXPECT_NE(hdr->time_ns, 0);
-            EXPECT_EQ(hdr->result, 500);
             EXPECT_EQ(hdr->sockaddr_len, (int32_t)sizeof(struct sockaddr_storage));
             EXPECT_EQ(memcmp(buffer + length - 1, "c", 1), 0);
         };
@@ -739,7 +738,7 @@ TEST_F(DriverAgentTest, shouldLogAgentLogFramesAndCopyUpToMaxFrameLengthMessage)
     message.msg_controllen = 0;
     message.msg_namelen = sizeof(struct sockaddr_storage);
 
-    aeron_driver_agent_log_frame(13, &message, 1, message_length);
+    aeron_driver_agent_log_frame(13, &message, message_length);
 
     auto message_handler =
         [](int32_t msg_type_id, const void *msg, size_t length, void *clientd)
@@ -754,7 +753,6 @@ TEST_F(DriverAgentTest, shouldLogAgentLogFramesAndCopyUpToMaxFrameLengthMessage)
             char *buffer = (char *)msg;
             auto *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
             EXPECT_NE(hdr->time_ns, 0);
-            EXPECT_EQ(hdr->result, 1);
             EXPECT_EQ(hdr->sockaddr_len, (int32_t)sizeof(struct sockaddr_storage));
             char tmp[AERON_MAX_FRAME_LENGTH];
             memset(tmp, 'x', AERON_MAX_FRAME_LENGTH);

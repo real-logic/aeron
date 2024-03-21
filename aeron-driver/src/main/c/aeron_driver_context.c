@@ -1214,14 +1214,6 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         }
     }
 
-    if (getenv(AERON_EVENT_LOG_ENV_VAR))
-    {
-        if (aeron_driver_agent_context_init(_context) < 0)
-        {
-            return -1;
-        }
-    }
-
 #ifdef HAVE_UUID_GENERATE
     uuid_t id;
     uuid_generate(id);
@@ -1250,6 +1242,15 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     {
         AERON_APPEND_ERR("%s", "Failed to allocate bindings_clientd entries");
         return -1;
+    }
+
+    // Should be last in the initialization chain
+    if (getenv(AERON_EVENT_LOG_ENV_VAR))
+    {
+        if (aeron_driver_agent_context_init(_context) < 0)
+        {
+            return -1;
+        }
     }
 
     *context = _context;

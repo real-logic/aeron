@@ -726,5 +726,5 @@ TEST_F(NameResolverTest, shouldHandleDissection)
     aeron_driver_agent_log_dissector(AERON_DRIVER_EVENT_FRAME_IN, buffer, res_offset, nullptr);
 
     std::string output = testing::internal::GetCapturedStdout();
-    EXPECT_EQ("[0.000000] DRIVER: FRAME_IN [112/112]: 127.0.0.1:5555 RES 10101011 len 112 [2 10000000 port 9872 100 ::1 ABCDEFHG] [1 00110011 port 8080 333 127.0.0.1 test]\n", output);
+    EXPECT_EQ("[0.000000] DRIVER: FRAME_IN [104/104]: 127.0.0.1:5555 RES 10101011 len 104 [2 10000000 port 9872 100 ::1 ABCDEFHG] [1 00110011 port 8080 333 127.0.0.1 test]\n", output);
 }

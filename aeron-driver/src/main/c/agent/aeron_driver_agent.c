@@ -650,8 +650,7 @@ void aeron_driver_agent_conductor_to_client_interceptor(
     }
 }
 
-void aeron_driver_agent_log_frame(
-    int32_t msg_type_id, const struct msghdr *msghdr, int result, int32_t message_len)
+void aeron_driver_agent_log_frame(int32_t msg_type_id, const struct msghdr *msghdr, int32_t message_len)
 {
     const int32_t copy_length = message_len < AERON_MAX_FRAME_LENGTH ? message_len : AERON_MAX_FRAME_LENGTH;
     const size_t command_length =
@@ -664,7 +663,6 @@ void aeron_driver_agent_log_frame(
         aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)ptr;
 
         hdr->time_ns = aeron_nano_clock();
-        hdr->result = (int32_t)result;
         hdr->sockaddr_len = msghdr->msg_namelen;
         hdr->message_len = message_len;
 
@@ -684,7 +682,7 @@ void aeron_driver_agent_log_frame(
 }
 
 void aeron_driver_agent_log_frame_iov(
-    int32_t msg_type_id, const struct sockaddr_storage *address, struct iovec *iov, int32_t message_len, int result)
+    int32_t msg_type_id, const struct sockaddr_storage *address, struct iovec *iov, int32_t message_len)
 {
     const int32_t copy_length = message_len < AERON_MAX_FRAME_LENGTH ? message_len : AERON_MAX_FRAME_LENGTH;
     size_t address_length = AERON_ADDR_LEN(address);
@@ -698,7 +696,6 @@ void aeron_driver_agent_log_frame_iov(
         aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)ptr;
 
         hdr->time_ns = aeron_nano_clock();
-        hdr->result = (int32_t)result;
         hdr->sockaddr_len = (int32_t)address_length;
         hdr->message_len = message_len;
 
@@ -721,17 +718,20 @@ int aeron_driver_agent_outgoing_send(
     size_t iov_length,
     int64_t *bytes_sent)
 {
-    int result = delegate->outgoing_send_func(
-        delegate->interceptor_state, delegate->next_interceptor, transport, address, iov, iov_length, bytes_sent);
-
-    for (int i = 0; i < result; i++)
+    for (size_t i = 0; i < iov_length; i++)
     {
         aeron_driver_agent_log_frame_iov(
             AERON_DRIVER_EVENT_FRAME_OUT,
             address,
             &iov[i],
-            iov[i].iov_len,
-            result);
+            (int32_t)iov[i].iov_len);
+    }
+
+    int result = 0;
+    if (NULL != delegate)
+    {
+        result = delegate->outgoing_send_func(
+            delegate->interceptor_state, delegate->next_interceptor, transport, address, iov, iov_length, bytes_sent);
     }
 
     return result;
@@ -761,19 +761,22 @@ void aeron_driver_agent_incoming_msg(
     message.msg_controllen = 0;
     message.msg_namelen = AERON_ADDR_LEN(addr);
 
-    aeron_driver_agent_log_frame(AERON_DRIVER_EVENT_FRAME_IN, &message, (int32_t)length, (int32_t)length);
+    aeron_driver_agent_log_frame(AERON_DRIVER_EVENT_FRAME_IN, &message, (int32_t)length);
 
-    delegate->incoming_func(
-        delegate->interceptor_state,
-        delegate->next_interceptor,
-        transport,
-        receiver_clientd,
-        endpoint_clientd,
-        destination_clientd,
-        buffer,
-        length,
-        addr,
-        media_timestamp);
+    if (NULL != delegate)
+    {
+        delegate->incoming_func(
+            delegate->interceptor_state,
+            delegate->next_interceptor,
+            transport,
+            receiver_clientd,
+            endpoint_clientd,
+            destination_clientd,
+            buffer,
+            length,
+            addr,
+            media_timestamp);
+    }
 }
 
 void aeron_driver_agent_untethered_subscription_state_change(
@@ -1150,109 +1153,106 @@ int aeron_driver_agent_interceptor_init(
     return 0;
 }
 
+aeron_udp_channel_interceptor_bindings_t *aeron_driver_agent_new_interceptor(void)
+{
+    aeron_udp_channel_interceptor_bindings_t *interceptor = NULL;
+
+    if (aeron_alloc((void **)&interceptor, sizeof(aeron_udp_channel_interceptor_bindings_t)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "failed to allocate interceptor bindings for logging agent");
+        return NULL;
+    }
+
+    interceptor->incoming_init_func = aeron_driver_agent_interceptor_init;
+    interceptor->incoming_close_func = NULL;
+    interceptor->incoming_func = NULL;
+    interceptor->incoming_transport_notification_func = NULL;
+    interceptor->incoming_publication_notification_func = NULL;
+    interceptor->incoming_image_notification_func = NULL;
+    interceptor->outgoing_init_func = aeron_driver_agent_interceptor_init;
+    interceptor->outgoing_close_func = NULL;
+    interceptor->outgoing_send_func = NULL;
+    interceptor->outgoing_transport_notification_func = NULL;
+    interceptor->outgoing_publication_notification_func = NULL;
+    interceptor->outgoing_image_notification_func = NULL;
+
+    interceptor->meta_info.name = "logging";
+    interceptor->meta_info.type = "interceptor";
+    interceptor->meta_info.source_symbol = (aeron_fptr_t)aeron_driver_agent_context_init;
+    interceptor->meta_info.next_interceptor_bindings = NULL;
+
+    return interceptor;
+}
+
 int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *context)
 {
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_IN))
     {
-        aeron_udp_channel_interceptor_bindings_t *last_interceptor = NULL;
-
-        if (aeron_alloc((void **)&last_interceptor, sizeof(aeron_udp_channel_interceptor_bindings_t)) < 0)
+        aeron_udp_channel_interceptor_bindings_t *interceptors = context->udp_channel_incoming_interceptor_bindings;
+        aeron_udp_channel_interceptor_bindings_t *first_interceptor = aeron_driver_agent_new_interceptor();
+        if (NULL == first_interceptor)
         {
-            AERON_APPEND_ERR("%s", "failed to allocate incoming interceptor bindings for logging agent");
+            AERON_APPEND_ERR("%s", "");
             return -1;
         }
+        first_interceptor->incoming_func = aeron_driver_agent_incoming_msg;
+        first_interceptor->meta_info.name = "incoming pre logging";
+        first_interceptor->meta_info.next_interceptor_bindings = interceptors;
+        context->udp_channel_incoming_interceptor_bindings = first_interceptor;
 
-        last_interceptor->outgoing_init_func = NULL;
-        last_interceptor->outgoing_close_func = NULL;
-        last_interceptor->outgoing_send_func = NULL;
-        last_interceptor->incoming_init_func = aeron_driver_agent_interceptor_init;
-        last_interceptor->incoming_close_func = NULL;
-        last_interceptor->incoming_func = aeron_driver_agent_incoming_msg;
-        last_interceptor->outgoing_transport_notification_func = NULL;
-        last_interceptor->outgoing_publication_notification_func = NULL;
-        last_interceptor->outgoing_image_notification_func = NULL;
-        last_interceptor->incoming_transport_notification_func = NULL;
-        last_interceptor->incoming_publication_notification_func = NULL;
-        last_interceptor->incoming_image_notification_func = NULL;
-
-        last_interceptor->meta_info.name = "logging";
-        last_interceptor->meta_info.type = "interceptor";
-        last_interceptor->meta_info.source_symbol = (aeron_fptr_t)aeron_driver_agent_context_init;
-        last_interceptor->meta_info.next_interceptor_bindings = NULL;
-
-        if (NULL == context->udp_channel_incoming_interceptor_bindings)
+        if (NULL != interceptors)
         {
-            context->udp_channel_incoming_interceptor_bindings = last_interceptor;
-        }
-        else
-        {
-            aeron_udp_channel_interceptor_bindings_t *first_interceptor = NULL;
-            if (aeron_alloc((void **)&first_interceptor, sizeof(aeron_udp_channel_interceptor_bindings_t)) < 0)
+            aeron_udp_channel_interceptor_bindings_t *last_interceptor = aeron_driver_agent_new_interceptor();
+            if (NULL == last_interceptor)
             {
-                AERON_APPEND_ERR("%s", "failed to allocate incoming interceptor bindings for logging agent");
+                AERON_APPEND_ERR("%s", "");
                 return -1;
             }
-            memcpy(first_interceptor, last_interceptor, sizeof(aeron_udp_channel_interceptor_bindings_t));
 
-            aeron_udp_channel_interceptor_bindings_t *iter = context->udp_channel_incoming_interceptor_bindings;
-            while (NULL != iter->meta_info.next_interceptor_bindings)
+            last_interceptor->incoming_func = aeron_driver_agent_incoming_msg;
+            last_interceptor->meta_info.name = "incoming post logging";
+
+            while (NULL != interceptors->meta_info.next_interceptor_bindings)
             {
-                iter = (aeron_udp_channel_interceptor_bindings_t *)iter->meta_info.next_interceptor_bindings;
+                interceptors = (aeron_udp_channel_interceptor_bindings_t *)interceptors->meta_info.next_interceptor_bindings;
             }
-
-            first_interceptor->meta_info.next_interceptor_bindings = context->udp_channel_incoming_interceptor_bindings;
-            context->udp_channel_incoming_interceptor_bindings = first_interceptor;
-            iter->meta_info.next_interceptor_bindings = last_interceptor;
+            interceptors->meta_info.next_interceptor_bindings = last_interceptor;
         }
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_FRAME_OUT))
     {
-        aeron_udp_channel_interceptor_bindings_t *first_interceptor = NULL;
-
-        if (aeron_alloc((void **)&first_interceptor, sizeof(aeron_udp_channel_interceptor_bindings_t)) < 0)
+        aeron_udp_channel_interceptor_bindings_t *interceptors = context->udp_channel_outgoing_interceptor_bindings;
+        aeron_udp_channel_interceptor_bindings_t *first_interceptor = aeron_driver_agent_new_interceptor();
+        if (NULL == first_interceptor)
         {
-            AERON_APPEND_ERR("%s", "failed to allocate outgoing interceptor bindings for logging agent");
+            AERON_APPEND_ERR("%s", "");
             return -1;
         }
 
-        first_interceptor->outgoing_init_func = aeron_driver_agent_interceptor_init;
-        first_interceptor->outgoing_close_func = NULL;
         first_interceptor->outgoing_send_func = aeron_driver_agent_outgoing_send;
-        first_interceptor->incoming_init_func = NULL;
-        first_interceptor->incoming_close_func = NULL;
-        first_interceptor->incoming_func = NULL;
-        first_interceptor->outgoing_transport_notification_func = NULL;
-        first_interceptor->outgoing_publication_notification_func = NULL;
-        first_interceptor->outgoing_image_notification_func = NULL;
-        first_interceptor->incoming_transport_notification_func = NULL;
-        first_interceptor->incoming_publication_notification_func = NULL;
-        first_interceptor->incoming_image_notification_func = NULL;
+        first_interceptor->meta_info.name = "outgoing pre logging";
+        first_interceptor->meta_info.next_interceptor_bindings = interceptors;
+        context->udp_channel_outgoing_interceptor_bindings = first_interceptor;
 
-        first_interceptor->meta_info.name = "logging";
-        first_interceptor->meta_info.type = "interceptor";
-        first_interceptor->meta_info.source_symbol = (aeron_fptr_t)aeron_driver_agent_context_init;
-        first_interceptor->meta_info.next_interceptor_bindings = context->udp_channel_outgoing_interceptor_bindings;
-
-        if (NULL != context->udp_channel_outgoing_interceptor_bindings)
+        if (NULL != interceptors)
         {
-            aeron_udp_channel_interceptor_bindings_t *iter = context->udp_channel_outgoing_interceptor_bindings;
-            while (NULL != iter->meta_info.next_interceptor_bindings)
+            aeron_udp_channel_interceptor_bindings_t *last_interceptor = aeron_driver_agent_new_interceptor();
+            if (NULL == last_interceptor)
             {
-                iter = (aeron_udp_channel_interceptor_bindings_t *)iter->meta_info.next_interceptor_bindings;
-            }
-
-            aeron_udp_channel_interceptor_bindings_t *last_interceptor = NULL;
-            if (aeron_alloc((void **)&last_interceptor, sizeof(aeron_udp_channel_interceptor_bindings_t)) < 0)
-            {
-                AERON_APPEND_ERR("%s", "failed to create outgoing interceptor bindings for logging agent");
+                AERON_APPEND_ERR("%s", "");
                 return -1;
             }
-            memcpy(last_interceptor, first_interceptor, sizeof(aeron_udp_channel_interceptor_bindings_t));
 
-            iter->meta_info.next_interceptor_bindings = last_interceptor;
+            last_interceptor->outgoing_send_func = aeron_driver_agent_outgoing_send;
+            last_interceptor->meta_info.name = "outgoing post logging";
+
+            while (NULL != interceptors->meta_info.next_interceptor_bindings)
+            {
+                interceptors = (aeron_udp_channel_interceptor_bindings_t *)interceptors->meta_info.next_interceptor_bindings;
+            }
+            interceptors->meta_info.next_interceptor_bindings = last_interceptor;
         }
-        context->udp_channel_outgoing_interceptor_bindings = first_interceptor;
     }
 
     if (any_event_enabled(AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN))

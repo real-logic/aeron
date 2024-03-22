@@ -108,6 +108,7 @@ protected:
         aeron_driver_context_set_term_buffer_length(m_context, 64 * 1024);
         aeron_driver_context_set_timer_interval_ns(m_context, m_livenessTimeoutNs / 10);
         aeron_driver_context_set_client_liveness_timeout_ns(m_context, m_livenessTimeoutNs);
+        aeron_driver_context_set_enable_experimental_features(m_context, true);
 
         long long debugTimeoutMs;
         if (0 != (debugTimeoutMs = EmbeddedMediaDriver::getDebugTimeoutMs()))

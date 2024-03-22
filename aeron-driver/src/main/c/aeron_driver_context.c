@@ -339,6 +339,7 @@ static void aeron_driver_untethered_subscription_state_change_null(
 #define AERON_DRIVER_RESOURCE_FREE_LIMIT_DEFAULT UINT32_C(10)
 #define AERON_CPU_AFFINITY_DEFAULT (-1)
 #define AERON_DRIVER_CONNECT_DEFAULT true
+#define AERON_ENABLE_EXPERIMENTAL_FEATURES_DEFAULT false
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -563,6 +564,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->conductor_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
     _context->sender_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
     _context->receiver_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
+    _context->enable_experimental_features = AERON_ENABLE_EXPERIMENTAL_FEATURES_DEFAULT;
 
     char *value = NULL;
 
@@ -1056,6 +1058,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         _context->resource_free_limit,
         1,
         INT32_MAX);
+
+    _context->enable_experimental_features = aeron_parse_bool(
+        getenv(AERON_ENABLE_EXPERIMENTAL_FEATURES_ENV_VAR), _context->enable_experimental_features);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;
@@ -2985,6 +2990,19 @@ int aeron_driver_context_set_receiver_port_manager(
 aeron_port_manager_t *aeron_driver_context_get_receiver_port_manager(aeron_driver_context_t *context)
 {
     return NULL != context ? context->receiver_port_manager : NULL;
+}
+
+int aeron_driver_context_set_enable_experimental_features(aeron_driver_context_t *context, bool value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->enable_experimental_features = value;
+    return 0;
+}
+
+int aeron_driver_context_get_enable_experimental_features(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->enable_experimental_features : false;
 }
 
 int aeron_driver_context_bindings_clientd_find_first_free_index(aeron_driver_context_t *context)

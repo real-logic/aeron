@@ -462,6 +462,30 @@ static int aeron_driver_conductor_validate_response_subscription(
     return 0;
 }
 
+static int aeron_driver_conductor_validate_experimental_features(
+    bool enable_experimental_features,
+    aeron_udp_channel_t *udp_channel)
+{
+    if (enable_experimental_features)
+    {
+        return 0;
+    }
+
+    if (NULL != aeron_uri_find_param_value(&udp_channel->uri.params.udp.additional_params, AERON_URI_RESPONSE_CORRELATION_ID_KEY) ||
+        AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE == udp_channel->control_mode)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "%s",
+            "Response Channels is an experimental feature, and "
+            "MediaDriver.Context.enableExperimentalFeatures is false");
+
+        return -1;
+    }
+
+    return 0;
+}
+
 static int aeron_time_tracking_name_resolver_resolve(
     aeron_name_resolver_t *resolver,
     const char *name,
@@ -3545,6 +3569,7 @@ int aeron_driver_conductor_on_add_network_publication(
             &params,
             conductor,
             is_exclusive) < 0 ||
+        aeron_driver_conductor_validate_experimental_features(conductor->context->enable_experimental_features, udp_channel) < 0 ||
         aeron_driver_conductor_validate_endpoint_for_publication(udp_channel) < 0 ||
         aeron_driver_conductor_validate_control_for_publication(udp_channel) < 0 ||
         aeron_driver_conductor_validate_response_subscription(conductor, udp_channel, &params) < 0)
@@ -3916,6 +3941,7 @@ int aeron_driver_conductor_on_add_network_subscription(
 
     if (aeron_udp_channel_parse(uri_length, uri, &conductor->name_resolver, &udp_channel, false) < 0 ||
         aeron_driver_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0 ||
+        aeron_driver_conductor_validate_experimental_features(conductor->context->enable_experimental_features, udp_channel) < 0 ||
         aeron_driver_conductor_validate_control_for_subscription(udp_channel) < 0)
     {
         AERON_APPEND_ERR("%s", "");

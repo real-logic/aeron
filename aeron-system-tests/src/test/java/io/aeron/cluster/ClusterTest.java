@@ -49,7 +49,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.zip.CRC32;
@@ -65,8 +64,7 @@ import static io.aeron.test.cluster.ClusterTests.*;
 import static io.aeron.test.cluster.TestCluster.*;
 import static io.aeron.test.cluster.TestNode.atMost;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.*;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.greaterThanOrEqualTo;
@@ -1793,7 +1791,7 @@ class ClusterTest
         }
 
         long time = System.nanoTime();
-        final long deadline = time + TimeUnit.SECONDS.toNanos(2);
+        final long deadline = time + SECONDS.toNanos(2);
         do
         {
             assertEquals(0, cluster.getSnapshotCount(leader));
@@ -2266,6 +2264,57 @@ class ClusterTest
         {
             assertEquals((byte)0xBC, messages.getByte(HEADER_LENGTH + SESSION_HEADER_LENGTH + offset + i));
         }
+    }
+
+    @Test
+    @InterruptAfter(90)
+    void shouldCatchupAndJoinAsFollowerWhileSendingBigMessages()
+    {
+        cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+        assertEquals(1, leader.consensusModule().context().electionCounter().get());
+        final List<TestNode> followers = cluster.followers();
+        for (final TestNode follower : followers)
+        {
+            assertEquals(1, follower.consensusModule().context().electionCounter().get());
+        }
+        final TestNode follower1 = followers.get(0);
+        TestNode follower2 = followers.get(1);
+
+        cluster.connectClient();
+        int messageCount = 1000;
+        cluster.sendLargeMessages(messageCount);
+
+        cluster.stopNode(follower2);
+        long startNs = System.nanoTime();
+        long endNs = startNs + SECONDS.toNanos(10);
+        final int messageLength = cluster.msgBuffer().putStringWithoutLengthAscii(0, LARGE_MSG);
+        while (System.nanoTime() < endNs)
+        {
+            cluster.pollUntilMessageSent(messageLength);
+            messageCount++;
+            Tests.sleep(50);
+        }
+
+        follower2 = cluster.startStaticNode(follower2.index(), false);
+        awaitElectionClosed(follower2);
+
+        startNs = System.nanoTime();
+        endNs = startNs + SECONDS.toNanos(30);
+        while (System.nanoTime() < endNs)
+        {
+            cluster.pollUntilMessageSent(messageLength);
+            messageCount++;
+            Tests.sleep(50);
+        }
+
+        cluster.awaitResponseMessageCount(messageCount);
+        cluster.awaitServicesMessageCount(messageCount);
+        assertEquals(1, leader.consensusModule().context().electionCounter().get());
+        assertEquals(1, follower1.consensusModule().context().electionCounter().get());
+        assertEquals(1, follower2.consensusModule().context().electionCounter().get());
     }
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)

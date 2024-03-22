@@ -124,12 +124,20 @@ class ChannelEndpointInterceptor
                 final int length,
                 @Advice.This final Object thisObject)
             {
+                if (null == connections || null == thisObject)
+                {
+                    return;
+                }
+
                 final ReceiveChannelEndpoint endpoint = (ReceiveChannelEndpoint)thisObject;
                 final String channel = endpoint.originalUriString();
                 for (final ImageConnection connection : connections)
                 {
-                    LOGGER.logSendNakMessage(
-                        connection.controlAddress, sessionId, streamId, termId, termOffset, length, channel);
+                    if (null != connection)
+                    {
+                        LOGGER.logSendNakMessage(
+                            connection.controlAddress, sessionId, streamId, termId, termOffset, length, channel);
+                    }
                 }
             }
         }

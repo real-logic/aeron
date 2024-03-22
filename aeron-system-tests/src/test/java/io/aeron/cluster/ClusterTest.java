@@ -2314,7 +2314,7 @@ class ClusterTest
         cluster.awaitServicesMessageCount(messageCount);
         assertEquals(1, leader.consensusModule().context().electionCounter().get());
         assertEquals(1, follower1.consensusModule().context().electionCounter().get());
-        assertEquals(1, follower2.consensusModule().context().electionCounter().get());
+        assertEquals(1, follower2.consensusModule().context().electionCounter().get(), "election loop detected");
     }
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)

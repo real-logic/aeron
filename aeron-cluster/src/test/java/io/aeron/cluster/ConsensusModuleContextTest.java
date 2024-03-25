@@ -55,8 +55,6 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.AeronCounters.*;
-import static io.aeron.AeronCounters.CLUSTER_ELECTION_COUNT_TYPE_ID;
-import static io.aeron.AeronCounters.NODE_CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE;
 import static io.aeron.cluster.service.ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;

@@ -656,7 +656,7 @@ public:
 private:
     aeron_t *m_aeron = nullptr;
     aeron_exclusive_publication_t *m_publication = nullptr;
-    aeron_publication_constants_t m_constants;
+    aeron_publication_constants_t m_constants = {};
     std::string m_channel = {};
     std::unordered_map<std::int64_t, AsyncDestination *> m_pendingDestinations = {};
     std::recursive_mutex m_adminLock = {};

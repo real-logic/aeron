@@ -92,7 +92,7 @@ char *aeron_format_number_to_locale(long long value, char *buffer, size_t buffer
     return buffer;
 }
 
-void aeron_format_to_hex(char *str, size_t str_length, uint8_t *data, size_t data_len)
+void aeron_format_to_hex(char *str, size_t str_length, const uint8_t *data, size_t data_len)
 {
     static char table[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 

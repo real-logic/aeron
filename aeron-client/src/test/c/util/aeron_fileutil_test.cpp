@@ -44,10 +44,10 @@ TEST_F(FileUtilTest, rawLogCloseShouldUnmapAndDeleteLogFile)
     EXPECT_EQ(term_length, mapped_raw_log.term_length);
     EXPECT_NE(nullptr, mapped_raw_log.log_meta_data.addr);
     EXPECT_EQ(AERON_LOGBUFFER_META_DATA_LENGTH, mapped_raw_log.log_meta_data.length);
-    for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+    for (auto &term_buffer : mapped_raw_log.term_buffers)
     {
-        EXPECT_NE(nullptr, mapped_raw_log.term_buffers[i].addr);
-        EXPECT_EQ(term_length, mapped_raw_log.term_buffers[i].length);
+        EXPECT_NE(nullptr, term_buffer.addr);
+        EXPECT_EQ(term_length, term_buffer.length);
     }
 
     ASSERT_EQ(0, aeron_raw_log_close(&mapped_raw_log, file)) << aeron_errmsg();
@@ -229,10 +229,10 @@ TEST_F(FileUtilTest, rawLogMapExistingShouldHandleMaxTermBufferLength)
     logbuffer_metadata = (aeron_logbuffer_metadata_t *)(mapped_raw_log.log_meta_data.addr);
     EXPECT_EQ(term_length, (size_t)logbuffer_metadata->term_length);
     EXPECT_EQ(page_size, (size_t)logbuffer_metadata->page_size);
-    for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+    for (auto &term_buffer : mapped_raw_log.term_buffers)
     {
-        EXPECT_NE(nullptr, mapped_raw_log.term_buffers[i].addr);
-        EXPECT_EQ(term_length, mapped_raw_log.term_buffers[i].length);
+        EXPECT_NE(nullptr, term_buffer.addr);
+        EXPECT_EQ(term_length, term_buffer.length);
     }
 
     ASSERT_TRUE(aeron_raw_log_free(&mapped_raw_log, file)) << aeron_errmsg();
@@ -276,10 +276,10 @@ TEST_F(FileUtilTest, rawLogMapShouldCreateNonSparseFile)
     EXPECT_EQ(term_length, mapped_raw_log.term_length);
     EXPECT_NE(nullptr, mapped_raw_log.log_meta_data.addr);
     EXPECT_EQ(AERON_LOGBUFFER_META_DATA_LENGTH, mapped_raw_log.log_meta_data.length);
-    for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+    for (auto &term_buffer : mapped_raw_log.term_buffers)
     {
-        EXPECT_NE(nullptr, mapped_raw_log.term_buffers[i].addr);
-        EXPECT_EQ(term_length, mapped_raw_log.term_buffers[i].length);
+        EXPECT_NE(nullptr, term_buffer.addr);
+        EXPECT_EQ(term_length, term_buffer.length);
     }
 
     ASSERT_TRUE(aeron_raw_log_free(&mapped_raw_log, file)) << aeron_errmsg();

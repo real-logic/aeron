@@ -74,7 +74,7 @@ public:
 
 private:
     controlled_poll_fragment_handler_t m_delegate;
-    aeron_image_controlled_fragment_assembler_t *m_fragment_assembler;
+    aeron_image_controlled_fragment_assembler_t *m_fragment_assembler = nullptr;
 
     static aeron_controlled_fragment_handler_action_t handlerCallback(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)
     {

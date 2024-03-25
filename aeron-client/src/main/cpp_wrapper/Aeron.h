@@ -671,7 +671,7 @@ public:
         auto handler_ptr = std::make_shared<on_available_counter_t>(handler);
 
         std::int64_t registrationId = aeron_next_correlation_id(m_aeron);
-        m_availableCounterHandlers.emplace_back(std::make_pair(registrationId, handler_ptr));
+        m_availableCounterHandlers.emplace_back(registrationId, handler_ptr);
         auto &storedHandler = m_availableCounterHandlers.back();
 
         aeron_on_available_counter_pair_t counterPair;
@@ -733,7 +733,7 @@ public:
         auto handler_ptr = std::make_shared<on_unavailable_counter_t>(handler);
 
         std::int64_t registrationId = aeron_next_correlation_id(m_aeron);
-        m_unavailableCounterHandlers.emplace_back(std::make_pair(registrationId, handler_ptr));
+        m_unavailableCounterHandlers.emplace_back(registrationId, handler_ptr);
         auto &storedHandler = m_unavailableCounterHandlers.back();
 
         aeron_on_unavailable_counter_pair_t counterPair;
@@ -795,7 +795,7 @@ public:
         std::shared_ptr<on_close_client_t> handler_ptr = std::make_shared<on_close_client_t>(handler);
 
         std::int64_t registrationId = aeron_next_correlation_id(m_aeron);
-        m_closeClientHandlers.emplace_back(std::make_pair(registrationId, handler_ptr));
+        m_closeClientHandlers.emplace_back(registrationId, handler_ptr);
 
         aeron_on_close_client_pair_t counterPair;
         counterPair.handler = onCloseClientCallback;

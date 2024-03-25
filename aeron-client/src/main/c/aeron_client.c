@@ -864,7 +864,7 @@ int aeron_exclusive_publication_async_remove_destination(
 int aeron_client_handler_cmd_await_processed(aeron_client_handler_cmd_t *cmd, uint64_t timeout_ms)
 {
     bool processed = cmd->processed;
-    int64_t deadline_ms = aeron_epoch_clock() + timeout_ms;
+    int64_t deadline_ms = (int64_t)(aeron_epoch_clock() + timeout_ms);
     
     while (!processed)
     {

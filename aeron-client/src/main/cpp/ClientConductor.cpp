@@ -546,7 +546,7 @@ std::int64_t ClientConductor::addAvailableCounterHandler(const on_available_coun
     ensureOpen();
 
     const std::int64_t registrationId = m_driverProxy.nextCorrelationId();
-    m_onAvailableCounterHandlers.emplace_back(std::make_pair(registrationId, handler));
+    m_onAvailableCounterHandlers.emplace_back(registrationId, handler);
 
     return registrationId;
 }
@@ -592,7 +592,7 @@ std::int64_t ClientConductor::addUnavailableCounterHandler(const on_unavailable_
     ensureOpen();
 
     std::int64_t registrationId = m_driverProxy.nextCorrelationId();
-    m_onUnavailableCounterHandlers.emplace_back(std::make_pair(registrationId, handler));
+    m_onUnavailableCounterHandlers.emplace_back(registrationId, handler);
 
     return registrationId;
 }
@@ -638,7 +638,7 @@ std::int64_t ClientConductor::addCloseClientHandler(const on_close_client_t &han
     ensureOpen();
 
     std::int64_t registrationId = m_driverProxy.nextCorrelationId();
-    m_onCloseClientHandlers.emplace_back(std::make_pair(registrationId, handler));
+    m_onCloseClientHandlers.emplace_back(registrationId, handler);
 
     return registrationId;
 }

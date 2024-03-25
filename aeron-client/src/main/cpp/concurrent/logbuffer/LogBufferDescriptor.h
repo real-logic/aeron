@@ -460,6 +460,9 @@ inline static std::int32_t positionBitsToShift(const std::int32_t termBufferLeng
 
         case 1024 * 1024 * 1024:
             return 30;
+
+        default:
+            break;
     }
 
     throw util::IllegalArgumentException("invalid term buffer length: " + std::to_string(termBufferLength), SOURCEINFO);

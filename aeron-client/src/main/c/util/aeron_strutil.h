@@ -27,7 +27,7 @@ void aeron_format_date(char *str, size_t count, int64_t timestamp);
 char *aeron_format_number_to_locale(long long value, char *buffer, size_t buffer_len);
 
 #define AERON_FORMAT_HEX_LENGTH(b) ((2 * (b)) + 1)
-void aeron_format_to_hex(char *str, size_t str_length, uint8_t *data, size_t data_len);
+void aeron_format_to_hex(char *str, size_t str_length, const uint8_t *data, size_t data_len);
 
 /*
  * FNV-1a hash function

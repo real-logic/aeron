@@ -18,6 +18,8 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.status.ChannelEndpointStatus;
+import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
@@ -46,7 +48,7 @@ public class MdsAndMdcInteractionTest
     private static final String CATCHUP_ENDPOINT = "aeron:udp?endpoint=localhost:20001|alias=catchup";
     private static final String LIVE_ENDPOINT_EARLY = "aeron:udp?endpoint=localhost:20002|alias=live";
     private static final String LIVE_ENDPOINT_LATE = "aeron:udp?endpoint=localhost:20003|alias=live";
-    private static final String LATE_URI = "aeron:udp?control-mode=manual|session-id=" + SESSION_ID;
+    private static final String LIVE_URI = "aeron:udp?control-mode=manual|session-id=" + SESSION_ID;
 
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();
@@ -72,7 +74,7 @@ public class MdsAndMdcInteractionTest
 
 
     @Test
-    @InterruptAfter(10)
+    @InterruptAfter(15)
     void shouldSwitchFromCatchupToLive()
     {
         final UnsafeBuffer msg = new UnsafeBuffer("Hello World".getBytes(StandardCharsets.US_ASCII));
@@ -82,7 +84,6 @@ public class MdsAndMdcInteractionTest
         final int termLength = 64 * 1024;
         final int positionBitsToShift = positionBitsToShift(termLength);
         final long position = computePosition(activeTermId, termOffset, positionBitsToShift, initialTermId);
-        final MutableInteger messagesReceived = new MutableInteger();
         final int messageCount = 10;
 
         final String catchupUri = new ChannelUriStringBuilder(CATCHUP_ENDPOINT)
@@ -90,20 +91,22 @@ public class MdsAndMdcInteractionTest
             .initialPosition(position, initialTermId, termLength)
             .build();
 
-        final String liveUri = new ChannelUriStringBuilder(LATE_URI)
+        final String liveUri = new ChannelUriStringBuilder(LIVE_URI)
+            .flowControl("min,t:1s")
             .sessionId(SESSION_ID)
             .initialPosition(position, initialTermId, termLength)
             .build();
 
         try (Aeron follower = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Aeron leader = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Subscription lateJoinSub = follower.addSubscription(LATE_URI, STREAM_ID);
+            Subscription lateJoinSub = follower.addSubscription(LIVE_URI, STREAM_ID);
             Publication livePub = leader.addPublication(liveUri, STREAM_ID);
             Subscription earlySub = follower.addSubscription(LIVE_ENDPOINT_EARLY, STREAM_ID))
         {
             final Publication catchupPub = leader.addPublication(catchupUri, STREAM_ID);
             lateJoinSub.addDestination(CATCHUP_ENDPOINT);
             livePub.addDestination(LIVE_ENDPOINT_EARLY);
+            livePub.addDestination(LIVE_ENDPOINT_LATE);
 
             Tests.awaitConnected(lateJoinSub);
             Tests.awaitConnected(earlySub);
@@ -123,25 +126,10 @@ public class MdsAndMdcInteractionTest
                 }
             }
 
-            while (messageCount != messagesReceived.get())
-            {
-                if (0 == lateJoinSub.poll((buffer, offset, length, header) -> messagesReceived.increment(), 10))
-                {
-                    Tests.yield();
-                }
-            }
-
-            messagesReceived.set(0);
-            while (messageCount != messagesReceived.get())
-            {
-                if (0 == earlySub.poll((buffer, offset, length, header) -> messagesReceived.increment(), 10))
-                {
-                    Tests.yield();
-                }
-            }
+            awaitMessages(lateJoinSub, messageCount);
+            awaitMessages(earlySub, messageCount);
 
             lateJoinSub.addDestination(LIVE_ENDPOINT_LATE);
-            livePub.addDestination(LIVE_ENDPOINT_LATE);
             lateJoinSub.removeDestination(CATCHUP_ENDPOINT);
 
             CloseHelper.quietClose(catchupPub);
@@ -154,16 +142,133 @@ public class MdsAndMdcInteractionTest
                 }
             }
 
-            messagesReceived.set(0);
-            while (messageCount != messagesReceived.get())
+            awaitMessages(lateJoinSub, messageCount);
+            assertEquals(livePub.position(), lateJoinSub.imageBySessionId(SESSION_ID).position());
+        }
+    }
+
+    @SuppressWarnings("methodlength")
+    @Test
+    @InterruptAfter(15)
+    void shouldSwitchFromCatchupToLiveWhenRestartingClient()
+    {
+        final UnsafeBuffer msg = new UnsafeBuffer("Hello World".getBytes(StandardCharsets.US_ASCII));
+        final int initialTermId = 100;
+        final int activeTermId = 100;
+        final int termOffset = 0;
+        final int termLength = 64 * 1024;
+        final int positionBitsToShift = positionBitsToShift(termLength);
+        final long position = computePosition(activeTermId, termOffset, positionBitsToShift, initialTermId);
+        final int messageCount = 10;
+
+        final String liveUri = new ChannelUriStringBuilder(LIVE_URI)
+            .flowControl("min,t:1s")
+            .sessionId(SESSION_ID)
+            .initialPosition(position, initialTermId, termLength)
+            .build();
+
+        try (Aeron leader = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+            Publication livePub = leader.addPublication(liveUri, STREAM_ID);
+            Subscription earlySub = leader.addSubscription(LIVE_ENDPOINT_EARLY, STREAM_ID))
+        {
+            livePub.addDestination(LIVE_ENDPOINT_EARLY);
+            livePub.addDestination(LIVE_ENDPOINT_LATE);
+            Tests.awaitConnected(earlySub);
+
+            final int lateJoinChannelStatusId;
+
+            try (Aeron follower = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+                Subscription lateJoinSub = follower.addSubscription(LIVE_URI, STREAM_ID))
             {
-                if (0 == lateJoinSub.poll((buffer, offset, length, header) -> messagesReceived.increment(), 10))
+                lateJoinSub.addDestination(LIVE_ENDPOINT_LATE);
+                Tests.awaitConnected(lateJoinSub);
+                Tests.awaitConnected(livePub);
+
+                lateJoinChannelStatusId = lateJoinSub.channelStatusId();
+
+                for (int i = 0; i < messageCount; i++)
+                {
+                    while (livePub.offer(msg) < 0)
+                    {
+                        Tests.yield();
+                    }
+                }
+
+                awaitMessages(earlySub, messageCount);
+                awaitMessages(lateJoinSub, messageCount);
+            }
+
+            while (!LocalSocketAddressStatus.findAddresses(
+                leader.countersReader(), ChannelEndpointStatus.ACTIVE, lateJoinChannelStatusId).isEmpty())
+            {
+                Tests.yield();
+            }
+
+            final long restartPosition = livePub.position();
+
+            for (int i = 0; i < messageCount; i++)
+            {
+                while (livePub.offer(msg) < 0)
                 {
                     Tests.yield();
                 }
             }
 
-            assertEquals(livePub.position(), lateJoinSub.imageBySessionId(SESSION_ID).position());
+            awaitMessages(earlySub, messageCount);
+
+            try (Aeron follower = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+                Subscription lateJoinSub = follower.addSubscription(LIVE_URI, STREAM_ID))
+            {
+                lateJoinSub.addDestination(CATCHUP_ENDPOINT);
+
+                final String catchupUri = new ChannelUriStringBuilder(CATCHUP_ENDPOINT)
+                    .sessionId(SESSION_ID)
+                    .initialPosition(restartPosition, initialTermId, termLength)
+                    .build();
+
+                final Publication catchupPub = leader.addPublication(catchupUri, STREAM_ID);
+                Tests.awaitConnected(lateJoinSub);
+
+                for (int i = 0; i < messageCount; i++)
+                {
+                    while (catchupPub.offer(msg) < 0)
+                    {
+                        Tests.yield();
+                    }
+                }
+
+                awaitMessages(lateJoinSub, messageCount);
+
+                assertEquals(livePub.position(), lateJoinSub.imageBySessionId(SESSION_ID).position());
+
+                lateJoinSub.addDestination(LIVE_ENDPOINT_LATE);
+                lateJoinSub.removeDestination(CATCHUP_ENDPOINT);
+
+                for (int i = 0; i < messageCount; i++)
+                {
+                    while (livePub.offer(msg) < 0)
+                    {
+                        Tests.yield();
+                    }
+                }
+
+                awaitMessages(earlySub, messageCount);
+                awaitMessages(lateJoinSub, messageCount);
+            }
         }
     }
+
+    private void awaitMessages(final Subscription sub, final int count)
+    {
+        final MutableInteger messageCount = new MutableInteger(0);
+
+        while (count != messageCount.get())
+        {
+            if (0 == sub.poll((buffer, offset, length, header) -> messageCount.increment(), 10))
+            {
+                Tests.yield();
+            }
+        }
+    }
+
 }

@@ -398,7 +398,7 @@ public final class CTestMediaDriver implements TestMediaDriver
     {
         environment.put("AERON_EVENT_LOG", System.getProperty(
             "aeron.event.log",
-            "admin,NAME_RESOLUTION_RESOLVE,FLOW_CONTROL_RECEIVER_ADDED,FLOW_CONTROL_RECEIVER_REMOVED"));
+            "all"));
         environment.put("AERON_EVENT_LOG_DISABLE", System.getProperty("aeron.event.log.disable", ""));
 
         final String driverAgentPath = System.getProperty(DRIVER_AGENT_PATH_PROP_NAME);

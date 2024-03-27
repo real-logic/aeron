@@ -553,6 +553,11 @@ int aeron_data_packet_dispatcher_on_unconnected_stream(
 {
     aeron_data_packet_dispatcher_stream_interest_t *stream_interest =
         aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, header->stream_id);
+    if (NULL == stream_interest)
+    {
+        AERON_SET_ERR(EINVAL, "%s", "no stream interest found for streamId=%" PRId32 "", header->stream_id);
+        return -1;
+    }
 
     if (aeron_data_packet_dispatcher_stream_interest_for_session(stream_interest, header->session_id))
     {

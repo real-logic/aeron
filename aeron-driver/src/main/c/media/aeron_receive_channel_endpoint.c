@@ -496,7 +496,7 @@ void aeron_receive_channel_endpoint_dispatch(
             break;
 
         case AERON_HDR_TYPE_UNCONNECTED_STREAM:
-            if (length >= sizeof(aeron_unknown_stream_header_t))
+            if (length >= sizeof(aeron_unconnected_stream_header_t))
             {
                 if (aeron_receive_channel_endpoint_on_unconnected_stream(endpoint, destination, buffer, length, addr) < 0)
                 {
@@ -610,7 +610,7 @@ int aeron_receive_channel_endpoint_on_unconnected_stream(
     size_t length,
     struct sockaddr_storage *addr)
 {
-    aeron_unknown_stream_header_t *unknown_stream_header = (aeron_unknown_stream_header_t *)buffer;
+    aeron_unconnected_stream_header_t *unknown_stream_header = (aeron_unconnected_stream_header_t *)buffer;
 
     aeron_receive_destination_update_last_activity_ns(
         destination, aeron_clock_cached_nano_time(endpoint->cached_clock));

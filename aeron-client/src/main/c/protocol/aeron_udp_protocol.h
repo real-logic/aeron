@@ -96,7 +96,7 @@ typedef struct aeron_rttm_header_stct
 }
 aeron_rttm_header_t;
 
-typedef struct aeron_unknown_stream_header_stct
+typedef struct aeron_unconnected_stream_header_stct
 {
     aeron_frame_header_t frame_header;
     int32_t term_offset;
@@ -105,7 +105,7 @@ typedef struct aeron_unknown_stream_header_stct
     int32_t term_id;
     int64_t reserved_value;
 }
-aeron_unknown_stream_header_t;
+aeron_unconnected_stream_header_t;
 
 #pragma pack(pop)
 

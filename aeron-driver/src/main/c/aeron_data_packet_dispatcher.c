@@ -104,6 +104,25 @@ bool aeron_data_packet_dispatcher_stream_interest_for_session(
         NULL != aeron_int64_to_ptr_hash_map_get(&stream_interest->subscribed_sessions, session_id);
 }
 
+int aeron_data_packet_dispatcher_mark_image_pending_setup(
+    aeron_data_packet_dispatcher_stream_interest_t *stream_interest,
+    int32_t session_id)
+{
+    if (aeron_int64_to_tagged_ptr_hash_map_put(
+        &stream_interest->image_by_session_id_map,
+        session_id,
+        AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME,
+        NULL) < 0)
+    {
+        AERON_APPEND_ERR(
+            "Unable to set IMAGE_PENDING_SETUP_FRAME for session_id (%" PRId32 ") in image_by_session_id_map",
+            session_id);
+        return -1;
+    }
+
+    return 0;
+}
+
 bool aeron_data_packet_dispatcher_match_tombstone(void *clientd, int64_t key, uint32_t tag, void *value)
 {
     return AERON_DATA_PACKET_DISPATCHER_IMAGE_NO_INTEREST == tag;
@@ -338,7 +357,21 @@ int aeron_data_packet_dispatcher_on_data(
         const bool found = aeron_int64_to_tagged_ptr_hash_map_get(
             &stream_interest->image_by_session_id_map, header->session_id, NULL, (void **)&image);
 
-        if (NULL != image)
+        if (0 != (AERON_DATA_HEADER_UNCONNECTED_FLAG & header->frame_header.flags))
+        {
+            if (aeron_data_packet_dispatcher_stream_interest_for_session(stream_interest, header->session_id))
+            {
+                if (aeron_data_packet_dispatcher_elicit_setup_from_source(
+                    dispatcher, stream_interest, endpoint, destination, addr, header->stream_id, header->session_id) < 0)
+                {
+                    AERON_APPEND_ERR("%s", "");
+                    return -1;
+                }
+            }
+
+            return 0;
+        }
+        else if (NULL != image)
         {
             return aeron_publication_image_insert_packet(
                 image, destination, header->term_id, header->term_offset, buffer, length, addr);
@@ -347,8 +380,20 @@ int aeron_data_packet_dispatcher_on_data(
         {
             if (aeron_data_packet_dispatcher_stream_interest_for_session(stream_interest, header->session_id))
             {
-                return aeron_data_packet_dispatcher_elicit_setup_from_source(
-                    dispatcher, stream_interest, endpoint, destination, addr, header->stream_id, header->session_id);
+                if (aeron_data_packet_dispatcher_mark_image_pending_setup(stream_interest, header->session_id) < 0)
+                {
+                    AERON_APPEND_ERR("%s", "");
+                    return -1;
+                }
+
+                if (aeron_data_packet_dispatcher_elicit_setup_from_source(
+                    dispatcher, stream_interest, endpoint, destination, addr, header->stream_id, header->session_id) < 0)
+                {
+                    AERON_APPEND_ERR("%s", "");
+                    return -1;
+                }
+
+                return 0;
             }
             else
             {
@@ -420,6 +465,10 @@ int aeron_data_packet_dispatcher_on_setup(
         aeron_publication_image_t *image = NULL;
         bool found = aeron_int64_to_tagged_ptr_hash_map_get(
             &stream_interest->image_by_session_id_map, header->session_id, &tag, (void **)&image);
+
+        printf(
+            "session_id=%d, found=%s, stream_interest=%p image=%p tag=%d\n",
+            (int)header->session_id, found ? "true" : "false", (void *)stream_interest, (void *)image, (int)tag);
 
         if (found)
         {
@@ -519,27 +568,22 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
     struct sockaddr_storage *control_addr = destination->conductor_fields.udp_channel->is_multicast ?
         &destination->conductor_fields.udp_channel->remote_control : addr;
 
-    if (aeron_int64_to_tagged_ptr_hash_map_put(
-        &stream_interest->image_by_session_id_map,
-        session_id,
-        AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME,
-        NULL) < 0)
-    {
-        AERON_APPEND_ERR(
-            "Unable to set IMAGE_PENDING_SETUP_FRAME for session_id (%" PRId32 ") in image_by_session_id_map",
-            session_id);
-        return -1;
-    }
-
     if (aeron_receive_channel_endpoint_send_sm(
         endpoint, destination, control_addr, stream_id, session_id, 0, 0, 0,
         AERON_STATUS_MESSAGE_HEADER_SEND_SETUP_FLAG) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
-    return aeron_driver_receiver_add_pending_setup(
-        dispatcher->receiver, endpoint, destination, session_id, stream_id, NULL);
+    if (aeron_driver_receiver_add_pending_setup(
+        dispatcher->receiver, endpoint, destination, session_id, stream_id, NULL))
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    return 0;
 }
 
 extern void aeron_data_packet_dispatcher_remove_matching_state(

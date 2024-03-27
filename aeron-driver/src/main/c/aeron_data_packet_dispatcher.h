@@ -107,6 +107,15 @@ int aeron_data_packet_dispatcher_on_rttm(
     size_t length,
     struct sockaddr_storage *addr);
 
+int aeron_data_packet_dispatcher_on_unconnected_stream(
+    aeron_data_packet_dispatcher_t *dispatcher,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
+    aeron_unknown_stream_header_t *header,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
+
 int aeron_data_packet_dispatcher_elicit_setup_from_source(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_data_packet_dispatcher_stream_interest_t *stream_interest,

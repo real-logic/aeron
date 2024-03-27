@@ -357,21 +357,7 @@ int aeron_data_packet_dispatcher_on_data(
         const bool found = aeron_int64_to_tagged_ptr_hash_map_get(
             &stream_interest->image_by_session_id_map, header->session_id, NULL, (void **)&image);
 
-        if (0 != (AERON_DATA_HEADER_UNCONNECTED_FLAG & header->frame_header.flags))
-        {
-            if (aeron_data_packet_dispatcher_stream_interest_for_session(stream_interest, header->session_id))
-            {
-                if (aeron_data_packet_dispatcher_elicit_setup_from_source(
-                    dispatcher, stream_interest, endpoint, destination, addr, header->stream_id, header->session_id) < 0)
-                {
-                    AERON_APPEND_ERR("%s", "");
-                    return -1;
-                }
-            }
-
-            return 0;
-        }
-        else if (NULL != image)
+        if (NULL != image)
         {
             return aeron_publication_image_insert_packet(
                 image, destination, header->term_id, header->term_offset, buffer, length, addr);
@@ -550,6 +536,31 @@ int aeron_data_packet_dispatcher_on_rttm(
             {
                 return aeron_publication_image_on_rttm(image, header, addr);
             }
+        }
+    }
+
+    return 0;
+}
+
+int aeron_data_packet_dispatcher_on_unconnected_stream(
+    aeron_data_packet_dispatcher_t *dispatcher,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
+    aeron_unknown_stream_header_t *header,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
+{
+    aeron_data_packet_dispatcher_stream_interest_t *stream_interest =
+        aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, header->stream_id);
+
+    if (aeron_data_packet_dispatcher_stream_interest_for_session(stream_interest, header->session_id))
+    {
+        if (aeron_data_packet_dispatcher_elicit_setup_from_source(
+            dispatcher, stream_interest, endpoint, destination, addr, header->stream_id, header->session_id) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
         }
     }
 

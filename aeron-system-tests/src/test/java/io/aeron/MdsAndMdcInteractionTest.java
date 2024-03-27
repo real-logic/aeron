@@ -36,15 +36,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class MdsAndMdcInteractionTest

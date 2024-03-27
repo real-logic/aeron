@@ -22,6 +22,7 @@ import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SlowTest;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
@@ -35,10 +36,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class MdsAndMdcInteractionTest
@@ -130,6 +136,12 @@ public class MdsAndMdcInteractionTest
             awaitMessages(earlySub, messageCount);
 
             lateJoinSub.addDestination(LIVE_ENDPOINT_LATE);
+
+            while (2 != lateJoinSub.imageBySessionId(SESSION_ID).activeTransportCount())
+            {
+                Tests.yield();
+            }
+
             lateJoinSub.removeDestination(CATCHUP_ENDPOINT);
 
             CloseHelper.quietClose(catchupPub);
@@ -150,6 +162,7 @@ public class MdsAndMdcInteractionTest
     @SuppressWarnings("methodlength")
     @Test
     @InterruptAfter(15)
+    @SlowTest
     void shouldSwitchFromCatchupToLiveWhenRestartingClient()
     {
         final UnsafeBuffer msg = new UnsafeBuffer("Hello World".getBytes(StandardCharsets.US_ASCII));
@@ -242,6 +255,12 @@ public class MdsAndMdcInteractionTest
                 assertEquals(livePub.position(), lateJoinSub.imageBySessionId(SESSION_ID).position());
 
                 lateJoinSub.addDestination(LIVE_ENDPOINT_LATE);
+
+                while (2 != lateJoinSub.imageBySessionId(SESSION_ID).activeTransportCount())
+                {
+                    Tests.yield();
+                }
+
                 lateJoinSub.removeDestination(CATCHUP_ENDPOINT);
 
                 for (int i = 0; i < messageCount; i++)
@@ -261,12 +280,13 @@ public class MdsAndMdcInteractionTest
     private void awaitMessages(final Subscription sub, final int count)
     {
         final MutableInteger messageCount = new MutableInteger(0);
+        final Supplier<String> msg = () -> "expected=" + count + ", actual=" + messageCount.get();
 
         while (count != messageCount.get())
         {
             if (0 == sub.poll((buffer, offset, length, header) -> messageCount.increment(), 10))
             {
-                Tests.yield();
+                Tests.yieldingIdle(msg);
             }
         }
     }

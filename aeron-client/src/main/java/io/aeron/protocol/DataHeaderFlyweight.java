@@ -58,6 +58,11 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     public static final short EOS_FLAG = 0x20;
 
     /**
+     * (U) - Flag for heartbeats to indicate that they have come from an unconnected stream
+     */
+    public static final short UNCONNECTED_FLAG = 0x10;
+
+    /**
      * Begin, End, and EOS Flags.
      */
     public static final short BEGIN_END_AND_EOS_FLAGS = BEGIN_FLAG | END_FLAG | EOS_FLAG;

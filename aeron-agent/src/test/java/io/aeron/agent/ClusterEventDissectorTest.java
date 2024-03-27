@@ -56,7 +56,7 @@ class ClusterEventDissectorTest
 
         ClusterEventDissector.dissectNewLeadershipTerm(buffer, 0, builder);
 
-        assertEquals("[33.000000] " + CONTEXT + ": " + NEW_LEADERSHIP_TERM.name() + " [8/9]: memberId=13 " +
+        assertEquals("[33.000000000] " + CONTEXT + ": " + NEW_LEADERSHIP_TERM.name() + " [8/9]: memberId=13 " +
             "logLeadershipTermId=1 nextLeadershipTermId=2 nextTermBaseLogPosition=3 nextLogPosition=13 " +
             "leadershipTermId=23 termBaseLogPosition=4 logPosition=5 leaderRecordingId=6 " +
             "timestamp=7 leaderId=100 logSessionId=200 appVersion=0.1.44 isStartup=true",
@@ -73,7 +73,7 @@ class ClusterEventDissectorTest
 
         ClusterEventDissector.dissectStateChange(code, buffer, 0, builder);
 
-        assertEquals("[-1.000000] " + CONTEXT + ": " + code.name() + " [100/200]: memberId=42 a -> b",
+        assertEquals("[-1.000000000] " + CONTEXT + ": " + code.name() + " [100/200]: memberId=42 a -> b",
             builder.toString());
     }
 
@@ -103,7 +103,7 @@ class ClusterEventDissectorTest
 
         ClusterEventDissector.dissectElectionStateChange(buffer, offset, builder);
 
-        assertEquals("[5.000000] " + CONTEXT + ": " + ELECTION_STATE_CHANGE.name() + " [100/200]: memberId=86" +
+        assertEquals("[5.000000000] " + CONTEXT + ": " + ELECTION_STATE_CHANGE.name() + " [100/200]: memberId=86" +
             " old -> new leaderId=3 candidateTermId=101010 leadershipTermId=6 logPosition=1024 logLeadershipTermId=2" +
             " appendPosition=1218 catchupPosition=800",
             builder.toString());
@@ -137,7 +137,7 @@ class ClusterEventDissectorTest
 
         ClusterEventDissector.dissectTruncateLogEntry(TRUNCATE_LOG_ENTRY, buffer, offset, builder);
 
-        assertEquals("[5.000000] " + CONTEXT + ": " + TRUNCATE_LOG_ENTRY.name() + " [100/200]: memberId=123 " +
+        assertEquals("[5.000000000] " + CONTEXT + ": " + TRUNCATE_LOG_ENTRY.name() + " [100/200]: memberId=123 " +
             "state=election state logLeadershipTermId=555 leadershipTermId=166 candidateTermId=42 " +
             "commitPosition=1024 logPosition=998 appendPosition=1024 oldPosition=1200 newPosition=800",
             builder.toString());

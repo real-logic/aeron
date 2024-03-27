@@ -34,16 +34,16 @@ public class LogUtil
     public static void appendTimestamp(final StringBuilder builder, final long timestampNs)
     {
         final long seconds = timestampNs / NANOS_PER_SECOND;
-        final long micros = (timestampNs - seconds * NANOS_PER_SECOND) / NANOS_PER_MICROSECOND;
-        final int numDigitsAfterDot = AsciiEncoding.digitCount(micros);
+        final long nanos = timestampNs - seconds * NANOS_PER_SECOND;
+        final int numDigitsAfterDot = AsciiEncoding.digitCount(nanos);
         builder.append('[');
         builder.append(seconds);
         builder.append('.');
-        for (int i = 0, size = 6 - numDigitsAfterDot; i < size; i++)
+        for (int i = 0, size = 9 - numDigitsAfterDot; i < size; i++)
         {
             builder.append('0');
         }
-        builder.append(micros);
+        builder.append(nanos);
         builder.append(']').append(' ');
     }
 }

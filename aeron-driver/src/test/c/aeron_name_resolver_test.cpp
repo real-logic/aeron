@@ -729,5 +729,5 @@ TEST_F(NameResolverTest, shouldHandleDissection)
     GTEST_SKIP();
 #endif
     std::string output = testing::internal::GetCapturedStdout();
-    EXPECT_EQ("[0.000000000] DRIVER: FRAME_IN [104/104]: 127.0.0.1:5555 RES 10101011 len 104 [2 10000000 port 9872 100 ::1 ABCDEFHG] [1 00110011 port 8080 333 127.0.0.1 test]\n", output);
+    EXPECT_EQ("[0.000000000] DRIVER: FRAME_IN [104/104]: address=127.0.0.1:5555 type=RES flags=10101011 frameLength=104 [resType=2 flags=10000000 port=9872 ageInMs=100 address=::1 name=ABCDEFHG] [resType=1 flags=00110011 port=8080 ageInMs=333 address=127.0.0.1 name=test]\n", output);
 }

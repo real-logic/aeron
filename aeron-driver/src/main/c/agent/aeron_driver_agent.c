@@ -1418,12 +1418,15 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             aeron_publication_command_t *command = (aeron_publication_command_t *)message;
 
             const char *channel = (const char *)message + sizeof(aeron_publication_command_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%d %.*s [%" PRId64 ":%" PRId64 "]",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "streamId=%d clientId=%" PRId64 " correlationId=%" PRId64 " channel=%*.s",
                 command->stream_id,
-                command->channel_length,
-                channel,
                 command->correlated.client_id,
-                command->correlated.correlation_id);
+                command->correlated.correlation_id,
+                command->channel_length,
+                channel);
             break;
         }
 
@@ -1433,7 +1436,10 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
         {
             aeron_remove_command_t *command = (aeron_remove_command_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 " [%" PRId64 ":%" PRId64 "]",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "registrationId=%" PRId64 " clientId=%" PRId64 " correlationId=%" PRId64 "]",
                 command->registration_id,
                 command->correlated.client_id,
                 command->correlated.correlation_id);
@@ -1446,13 +1452,16 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             aeron_subscription_command_t *command = (aeron_subscription_command_t *)message;
 
             const char *channel = (const char *)message + sizeof(aeron_subscription_command_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%d %.*s [%" PRId64 "][%" PRId64 ":%" PRId64 "]",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "streamId=%d registrationCorrelationId=%" PRId64 " clientId=%" PRId64 " correlationId=%" PRId64 " channel=%.*s",
                 command->stream_id,
-                command->channel_length,
-                channel,
                 command->registration_correlation_id,
                 command->correlated.client_id,
-                command->correlated.correlation_id);
+                command->correlated.correlation_id,
+                command->channel_length,
+                channel);
             break;
         }
 
@@ -1461,7 +1470,10 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
         {
             aeron_correlated_command_t *command = (aeron_correlated_command_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "[%" PRId64 ":%" PRId64 "]",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "clientId=%" PRId64 " correlationId=%" PRId64,
                 command->client_id,
                 command->correlation_id);
             break;
@@ -1475,12 +1487,14 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             aeron_destination_command_t *command = (aeron_destination_command_t *)message;
 
             const char *channel = (const char *)message + sizeof(aeron_destination_command_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%.*s %" PRId64 " [%" PRId64 ":%" PRId64 "]",
-                command->channel_length,
-                channel,
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1, "registrationCorrelationId=%" PRId64 " clientId=%" PRId64 " correlationId=%" PRId64 " channel=%.*s",
                 command->registration_id,
                 command->correlated.client_id,
-                command->correlated.correlation_id);
+                command->correlated.correlation_id,
+                command->channel_length,
+                channel);
             break;
         }
 
@@ -1499,12 +1513,14 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             int32_t label_length;
             memcpy(&label_length, cursor, sizeof(label_length));
 
-            snprintf(buffer, sizeof(buffer) - 1, "ADD_COUNTER %d [%d %d][%d %d][%" PRId64 ":%" PRId64 "]",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "ADD_COUNTER typeId=%d keyBufferOffset=%d keyBufferLength=%d labelBufferOffset=%d labelBufferLength=%d clientId=%" PRId64 " correlationId=%" PRId64,
                 command->type_id,
                 (int)(sizeof(aeron_counter_command_t) + sizeof(int32_t)),
                 key_length,
-                (int)(sizeof(aeron_counter_command_t) + (2 * sizeof(int32_t)) +
-                    AERON_ALIGN(key_length, sizeof(int32_t))),
+                (int)(sizeof(aeron_counter_command_t) + (2 * sizeof(int32_t)) + AERON_ALIGN(key_length, sizeof(int32_t))),
                 label_length,
                 command->correlated.client_id,
                 command->correlated.correlation_id);
@@ -1515,7 +1531,10 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
         {
             aeron_terminate_driver_command_t *command = (aeron_terminate_driver_command_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 " %d",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "clientId=%" PRId64 " tokenBufferLength=%d",
                 command->correlated.client_id,
                 command->token_length);
             break;
@@ -1539,7 +1558,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
         {
             aeron_operation_succeeded_t *command = (aeron_operation_succeeded_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64, command->correlation_id);
+            snprintf(buffer, sizeof(buffer) - 1, "correlationId=%" PRId64, command->correlation_id);
             break;
         }
 
@@ -1550,7 +1569,10 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
 
             const char *log_file_name = (const char *)message + sizeof(aeron_publication_buffers_ready_t);
 
-            snprintf(buffer, sizeof(buffer) - 1, "%d:%d %d %d [%" PRId64 " %" PRId64 "]\n    \"%.*s\"",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "sessionId=%d streamId=%d publicationLimitCounterId=%d channelStatusCounterId=%d correlationId=%" PRId64 " registrationId=%" PRId64 " logFileName=%.*s",
                 command->session_id,
                 command->stream_id,
                 command->position_limit_counter_id,
@@ -1566,7 +1588,10 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
         {
             aeron_subscription_ready_t *command = (aeron_subscription_ready_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 " %d",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "correlationId=%" PRId64 " channelStatusCounterId=%d",
                 command->correlation_id,
                 command->channel_status_indicator_id);
             break;
@@ -1577,9 +1602,12 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             aeron_error_response_t *command = (aeron_error_response_t *)message;
 
             const char *error_message = (const char *)message + sizeof(aeron_error_response_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 " %d %.*s",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "offendingCommandCorrelationId=%" PRId64 " errorCode=%s message=%.*s",
                 command->offending_command_correlation_id,
-                command->error_code,
+                aeron_error_code_str(command->error_code),
                 command->error_message_length,
                 error_message);
             break;
@@ -1590,11 +1618,14 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             aeron_image_message_t *command = (aeron_image_message_t *)message;
 
             const char *channel = (const char *)message + sizeof(aeron_image_message_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%d %.*s [%" PRId64 "]",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1, "streamId=%d correlationId=%" PRId64 " subscriptionRegistrationId=%" PRId64 " channel=%.*s",
                 command->stream_id,
+                command->correlation_id,
+                command->subscription_registration_id,
                 command->channel_length,
-                channel,
-                command->correlation_id);
+                channel);
             break;
         }
 
@@ -1615,14 +1646,14 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             snprintf(
                 buffer,
                 sizeof(buffer) - 1,
-                "%d:%d [%" PRId32 ":%" PRId64 "] \"%.*s\" [%" PRId64 "] \"%.*s\"",
+                "sessionId=%d streamId=%d subscriberPositionId=%" PRId32 " subscriptionRegistrationId=%" PRId64 " correlationId=%" PRId64 " sourceIdentity=%.*s logFileName=%.*s",
                 command->session_id,
                 command->stream_id,
                 command->subscriber_position_id,
                 command->subscriber_registration_id,
+                command->correlation_id,
                 source_identity_length,
                 source_identity,
-                command->correlation_id,
                 log_file_name_length,
                 log_file_name);
             break;
@@ -1632,7 +1663,10 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
         {
             aeron_counter_update_t *command = (aeron_counter_update_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 " %d",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "correlationId=%" PRId64 " counterId=%d",
                 command->correlation_id,
                 command->counter_id);
             break;
@@ -1642,7 +1676,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
         {
             aeron_client_timeout_t *command = (aeron_client_timeout_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%" PRId64, command->client_id);
+            snprintf(buffer, sizeof(buffer) - 1, "clientId=%" PRId64, command->client_id);
             break;
         }
 
@@ -1733,7 +1767,10 @@ static const char *dissect_frame(const void *message, size_t length)
         {
             aeron_data_header_t *data = (aeron_data_header_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%s %.*s len %d %d:%d:%d @%d",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "type=%s flags=%.*s frameLength=%d sessionId=%d streamId=%d termId=%d termOffset=%d",
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
                 dissect_flags(hdr->flags, dissected_flags),
@@ -1750,7 +1787,10 @@ static const char *dissect_frame(const void *message, size_t length)
         {
             aeron_status_message_header_t *sm = (aeron_status_message_header_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%s %.*s len %d %d:%d:%d @%d %d %" PRId64,
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "type=%s flags=%.*s frameLength=%d sessionId=%d streamId=%d termId=%d termOffset=%d receiverWindowLength=%d receiverId=%" PRId64,
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
                 dissect_flags(hdr->flags, dissected_flags),
@@ -1768,7 +1808,10 @@ static const char *dissect_frame(const void *message, size_t length)
         {
             aeron_nak_header_t *nak = (aeron_nak_header_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%s %.*s len %d %d:%d:%d @%d %d",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "type=%s flags=%.*s frameLength=%d sessionId=%d streamId=%d termId=%d termOffset=%d length=%d",
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
                 dissect_flags(hdr->flags, dissected_flags),
@@ -1786,7 +1829,10 @@ static const char *dissect_frame(const void *message, size_t length)
         {
             aeron_setup_header_t *setup = (aeron_setup_header_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%s %.*s len %d %d:%d:%d %d @%d %d MTU %d TTL %d",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "type=%s flags=%.*s frameLength=%d sessionId=%d streamId=%d activeTermId=%d initialTermId=%d termOffset=%d termLength=%d mtu=%d ttl=%d",
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
                 dissect_flags(hdr->flags, dissected_flags),
@@ -1806,7 +1852,10 @@ static const char *dissect_frame(const void *message, size_t length)
         {
             aeron_response_setup_header_t *rsp_setup = (aeron_response_setup_header_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%s %.*s len %d %d:%d RSP_SESSION_ID %d",
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "type=%s flags=%.*s frameLength=%d sessionId=%d streamId=%d responseSessionId=%d",
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
                 dissect_flags(hdr->flags, dissected_flags),
@@ -1821,7 +1870,10 @@ static const char *dissect_frame(const void *message, size_t length)
         {
             aeron_rttm_header_t *rttm = (aeron_rttm_header_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "%s %.*s len %d %d:%d %" PRId64 " %" PRId64 " %" PRId64,
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "type=%s flags=%.*s frameLength=%d sessionId=%d streamId=%d echoTimestampNs=%" PRId64 " receptionDelta=%" PRId64 " receiverId=%" PRId64,
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
                 dissect_flags(hdr->flags, dissected_flags),
@@ -1843,7 +1895,7 @@ static const char *dissect_frame(const void *message, size_t length)
             int buffer_used = snprintf(
                 buffer,
                 buffer_available,
-                "%s %.*s len %d",
+                "type=%s flags=%.*s frameLength=%d",
                 dissect_frame_type(hdr->type),
                 (int)sizeof(dissected_flags),
                 dissect_flags(hdr->flags, dissected_flags),
@@ -1886,7 +1938,7 @@ static const char *dissect_frame(const void *message, size_t length)
 
                 buffer_used += snprintf(
                     &buffer[buffer_used], buffer_available - buffer_used,
-                    " [%" PRId8 " %.*s port %" PRIu16 " %" PRId32 " %s %.*s]",
+                    " [resType=%" PRId8 " flags=%.*s port=%" PRIu16 " ageInMs=%" PRId32 " address=%s name=%.*s]",
                     res->res_type,
                     (int)sizeof(dissected_flags),
                     dissect_flags(res->res_flags, dissected_flags),
@@ -1949,7 +2001,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 
             fprintf(
                 logfp,
-                "%s: %.*s %s\n",
+                "%s: address=%.*s %s\n",
                 aeron_driver_agent_dissect_log_header(hdr->time_ns, msg_type_id, length, (size_t)hdr->message_len),
                 addr_length,
                 addr_buf,

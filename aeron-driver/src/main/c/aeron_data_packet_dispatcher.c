@@ -106,18 +106,31 @@ bool aeron_data_packet_dispatcher_stream_interest_for_session(
 
 int aeron_data_packet_dispatcher_mark_image_pending_setup(
     aeron_data_packet_dispatcher_stream_interest_t *stream_interest,
-    int32_t session_id)
+    int32_t session_id,
+    bool *should_elicit_setup)
 {
-    if (aeron_int64_to_tagged_ptr_hash_map_put(
-        &stream_interest->image_by_session_id_map,
-        session_id,
-        AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME,
-        NULL) < 0)
+    aeron_publication_image_t *image = NULL;
+    uint32_t tag = 0;
+    *should_elicit_setup = false;
+
+    bool found = aeron_int64_to_tagged_ptr_hash_map_get(
+        &stream_interest->image_by_session_id_map, session_id, &tag, (void **)&image);
+
+    if (!found || AERON_DATA_PACKET_DISPATCHER_IMAGE_ACTIVE == tag)
     {
-        AERON_APPEND_ERR(
-            "Unable to set IMAGE_PENDING_SETUP_FRAME for session_id (%" PRId32 ") in image_by_session_id_map",
-            session_id);
-        return -1;
+        if (aeron_int64_to_tagged_ptr_hash_map_put(
+            &stream_interest->image_by_session_id_map,
+            session_id,
+            AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME,
+            image) < 0)
+        {
+            AERON_APPEND_ERR(
+                "Unable to set IMAGE_PENDING_SETUP_FRAME for session_id (%" PRId32 ") in image_by_session_id_map",
+                session_id);
+            return -1;
+        }
+
+        *should_elicit_setup = true;
     }
 
     return 0;
@@ -366,12 +379,6 @@ int aeron_data_packet_dispatcher_on_data(
         {
             if (aeron_data_packet_dispatcher_stream_interest_for_session(stream_interest, header->session_id))
             {
-                if (aeron_data_packet_dispatcher_mark_image_pending_setup(stream_interest, header->session_id) < 0)
-                {
-                    AERON_APPEND_ERR("%s", "");
-                    return -1;
-                }
-
                 if (aeron_data_packet_dispatcher_elicit_setup_from_source(
                     dispatcher, stream_interest, endpoint, destination, addr, header->stream_id, header->session_id) < 0)
                 {
@@ -451,10 +458,6 @@ int aeron_data_packet_dispatcher_on_setup(
         aeron_publication_image_t *image = NULL;
         bool found = aeron_int64_to_tagged_ptr_hash_map_get(
             &stream_interest->image_by_session_id_map, header->session_id, &tag, (void **)&image);
-
-        printf(
-            "session_id=%d, found=%s, stream_interest=%p image=%p tag=%d\n",
-            (int)header->session_id, found ? "true" : "false", (void *)stream_interest, (void *)image, (int)tag);
 
         if (found)
         {
@@ -581,6 +584,18 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
     int32_t stream_id,
     int32_t session_id)
 {
+    bool should_elicit_setup = false;
+    if (aeron_data_packet_dispatcher_mark_image_pending_setup(stream_interest, session_id, &should_elicit_setup) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (!should_elicit_setup)
+    {
+        return 0;
+    }
+
     struct sockaddr_storage *control_addr = destination->conductor_fields.udp_channel->is_multicast ?
         &destination->conductor_fields.udp_channel->remote_control : addr;
 
@@ -605,8 +620,36 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
 extern void aeron_data_packet_dispatcher_remove_matching_state(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id, uint32_t image_state);
 
-extern void aeron_data_packet_dispatcher_remove_pending_setup(
-    aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);
+void aeron_data_packet_dispatcher_remove_pending_setup(
+    aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id)
+{
+    aeron_data_packet_dispatcher_stream_interest_t *stream_interest =
+        (aeron_data_packet_dispatcher_stream_interest_t *)aeron_int64_to_ptr_hash_map_get(
+            &dispatcher->session_by_stream_id_map, stream_id);
+
+    if (NULL != stream_interest)
+    {
+        uint32_t tag = 0;
+        aeron_publication_image_t *image = NULL;
+        aeron_int64_to_tagged_ptr_hash_map_get(
+            &stream_interest->image_by_session_id_map, session_id, &tag, (void **)&image);
+
+        if (AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME == tag)
+        {
+            if (NULL == image)
+            {
+                aeron_int64_to_tagged_ptr_hash_map_remove(
+                    &stream_interest->image_by_session_id_map, session_id, NULL, NULL);
+            }
+            else
+            {
+                aeron_int64_to_tagged_ptr_hash_map_put(
+                    &stream_interest->image_by_session_id_map, session_id,
+                    AERON_DATA_PACKET_DISPATCHER_IMAGE_ACTIVE, image);
+            }
+        }
+    }
+}
 
 extern void aeron_data_packet_dispatcher_remove_cool_down(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);

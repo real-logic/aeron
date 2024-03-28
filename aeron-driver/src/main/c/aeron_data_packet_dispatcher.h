@@ -147,12 +147,8 @@ inline void aeron_data_packet_dispatcher_remove_matching_state(
     }
 }
 
-inline void aeron_data_packet_dispatcher_remove_pending_setup(
-    aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id)
-{
-    aeron_data_packet_dispatcher_remove_matching_state(
-        dispatcher, session_id, stream_id, AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME);
-}
+void aeron_data_packet_dispatcher_remove_pending_setup(
+    aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);
 
 inline void aeron_data_packet_dispatcher_remove_cool_down(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id)

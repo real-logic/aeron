@@ -87,6 +87,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
             if (null != ctx.markFile)
             {
                 ctx.markFile.signalFailedStart();
+                ctx.markFile.force();
             }
 
             ctx.close();
@@ -1949,6 +1950,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();
+            markFile.force();
         }
 
         /**

@@ -263,6 +263,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
 
         markFile.updateActivityTimestamp(NULL_VALUE);
+        markFile.force();
         ctx.close();
     }
 

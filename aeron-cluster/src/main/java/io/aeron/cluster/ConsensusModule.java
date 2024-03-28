@@ -255,6 +255,7 @@ public final class ConsensusModule implements AutoCloseable
             if (null != ctx.markFile)
             {
                 ctx.markFile.signalFailedStart();
+                ctx.markFile.force();
             }
 
             CloseHelper.quietClose(ctx::close);
@@ -4200,6 +4201,7 @@ public final class ConsensusModule implements AutoCloseable
 
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();
+            markFile.force();
         }
 
         private TimerServiceSupplier getTimerServiceSupplierFromSystemProperty()

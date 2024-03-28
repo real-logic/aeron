@@ -1889,6 +1889,7 @@ public final class ClusterBackup implements AutoCloseable
 
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();
+            markFile.force();
         }
     }
 }

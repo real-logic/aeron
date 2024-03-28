@@ -234,6 +234,7 @@ public final class ClusterBackupAgent implements Agent
             recordingLog);
 
         markFile.updateActivityTimestamp(NULL_VALUE);
+        markFile.force();
         ctx.close();
     }
 

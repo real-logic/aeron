@@ -20,6 +20,8 @@ import org.agrona.MarkFile;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -52,6 +54,7 @@ class ClusterMarkFileTest
     }
 
     @Test
+    @DisabledForJreRange(min = JRE.JAVA_21)
     void shouldCallForceIfMarkFileIsNotClosed()
     {
         final MarkFile markFile = mock(MarkFile.class);
@@ -71,6 +74,7 @@ class ClusterMarkFileTest
     }
 
     @Test
+    @DisabledForJreRange(min = JRE.JAVA_21)
     void shouldNotCallForceIfMarkFileIsClosed()
     {
         final MarkFile markFile = mock(MarkFile.class);

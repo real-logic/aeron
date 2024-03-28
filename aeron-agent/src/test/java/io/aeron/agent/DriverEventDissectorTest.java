@@ -378,7 +378,7 @@ class DriverEventDissectorTest
 
         assertEquals("[21.032000000] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             "sessionId=" + eventCode.ordinal() + " streamId=22 subscriberPositionId=0 subscriptionRegistrationId=245 " +
-            "correlationId=767 logFileName=log2.txt sourceIdentity=source identity",
+            "correlationId=767 sourceIdentity=source identity logFileName=log2.txt",
             builder.toString());
     }
 

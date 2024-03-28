@@ -567,8 +567,7 @@ final class DriverEventDissector
 
         builder
             .append(" frameLength=")
-            .append(HEADER.frameLength())
-            .append(' ');
+            .append(HEADER.frameLength());
 
         while (length > currentOffset)
         {
@@ -605,7 +604,7 @@ final class DriverEventDissector
     private static void dissectResEntry(final StringBuilder builder)
     {
         builder
-            .append("[resType=")
+            .append(" [resType=")
             .append(RESOLUTION.resType())
             .append(" flags=");
 
@@ -669,13 +668,12 @@ final class DriverEventDissector
             .append(" streamId=").append(IMAGE_READY.streamId())
             .append(" subscriberPositionId=").append(IMAGE_READY.subscriberPositionId())
             .append(" subscriptionRegistrationId=").append(IMAGE_READY.subscriptionRegistrationId())
-            .append(" correlationId=").append(IMAGE_READY.correlationId())
-            .append(" logFileName=");
+            .append(" correlationId=").append(IMAGE_READY.correlationId());
 
-        IMAGE_READY.appendLogFileName(builder);
         builder.append(" sourceIdentity=");
-
         IMAGE_READY.appendSourceIdentity(builder);
+        builder.append(" logFileName=");
+        IMAGE_READY.appendLogFileName(builder);
     }
 
     private static void dissectCorrelationEvent(final StringBuilder builder)

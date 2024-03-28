@@ -409,7 +409,7 @@ TEST_F(DriverAgentTest, shouldDissectLogHeader)
     auto log_header = aeron_driver_agent_dissect_log_header(time_ns, id, capture_length, message_length);
 
     EXPECT_EQ(
-        std::string("[3274398573.945794582] DRIVER: CMD_OUT_EXCLUSIVE_PUBLICATION_READY [59/256]"),
+        std::string("[3274398573.945794359] DRIVER: CMD_OUT_EXCLUSIVE_PUBLICATION_READY [59/256]"),
         std::string(log_header));
 }
 
@@ -1489,12 +1489,12 @@ TEST_F(DriverAgentTest, shouldLogFlowControlReceiverRemoved)
 
 TEST_F(DriverAgentTest, dissecLogStartShouldFormatNanoTimeWithMicrosecondPrecision)
 {
-    int64_t time_ns = 55555123456789;
+    int64_t time_ns = 55555001234567;
     int64_t time_ms = 1234567890987;
 
     auto result = std::string(aeron_driver_agent_dissect_log_start(time_ns, time_ms));
 
-    ASSERT_EQ(0, result.find("[55555.123456789] log started 2009-02-1", 0));
+    ASSERT_EQ(0, result.find("[55555.001234567] log started 2009-02-1", 0));
 }
 
 TEST_F(DriverAgentTest, dissecLogHeaderShouldFormatNanoTimeWithMicrosecondPrecision)
@@ -1506,7 +1506,7 @@ TEST_F(DriverAgentTest, dissecLogHeaderShouldFormatNanoTimeWithMicrosecondPrecis
 
     auto result = std::string(aeron_driver_agent_dissect_log_header(time_ns, event, capture_length, message_length));
 
-    ASSERT_EQ("[333000555.000998974] DRIVER: CMD_IN_CLIENT_CLOSE [100/200]", result);
+    ASSERT_EQ("[333000555.000999001] DRIVER: CMD_IN_CLIENT_CLOSE [100/200]", result);
 }
 
 TEST_F(DriverAgentTest, shouldNotAssignOnNameResolveFunctionWhenNotConfigured)

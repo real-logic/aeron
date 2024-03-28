@@ -686,6 +686,7 @@ public final class MediaDriver implements AutoCloseable
                 toDriverCommands.nextCorrelationId();
                 toDriverCommands.consumerHeartbeatTime(epochClock.time());
                 CncFileDescriptor.signalCncReady(cncMetaDataBuffer);
+                cncByteBuffer.force();
             }
             catch (final Exception ex)
             {

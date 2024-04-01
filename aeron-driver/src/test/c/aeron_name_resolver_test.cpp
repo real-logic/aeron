@@ -674,40 +674,60 @@ TEST_F(NameResolverTest, shouldTimeoutNeighbor)
     ASSERT_EQ(0, readNeighborCounter(&m_a));
 }
 
-TEST_F(NameResolverTest, DISABLED_shouldHandleDissection) // Useful for checking dissection formatting manually...
+TEST_F(NameResolverTest, shouldHandleDissection)
 {
-    uint8_t buffer[65536] = { 0 };
+    uint8_t buffer[128] = { 0 };
     initResolver(&m_a, AERON_NAME_RESOLVER_DRIVER, "", 0, "A", "[::1]:8050");
-    const char *name = "ABCDEFGH";
 
     auto *log_header = reinterpret_cast<aeron_driver_agent_frame_log_header_t *>(&buffer[0]);
-    log_header->sockaddr_len = sizeof(struct sockaddr_in6);
+    log_header->sockaddr_len = sizeof(struct sockaddr_in);
 
-    size_t frame_offset = sizeof(aeron_driver_agent_frame_log_header_t) + log_header->sockaddr_len;
+    size_t socket_offset = sizeof(aeron_driver_agent_frame_log_header_t);
+    auto *socket_address = reinterpret_cast<sockaddr_in *>(&buffer[socket_offset]);
+    ASSERT_EQ(1, inet_pton(AF_INET, "127.0.0.1", &socket_address->sin_addr));
+    socket_address->sin_port = htons(5555);
+    socket_address->sin_family = AF_INET;
+
+    size_t frame_offset = socket_offset + log_header->sockaddr_len;
     auto *frame = reinterpret_cast<aeron_frame_header_t *>(&buffer[frame_offset]);
 
     size_t res_offset = sizeof(aeron_frame_header_t) + frame_offset;
-    do
-    {
-        auto *res = reinterpret_cast<aeron_resolution_header_ipv6_t *>(&buffer[res_offset]);
+    auto *res = reinterpret_cast<aeron_resolution_header_ipv6_t *>(&buffer[res_offset]);
 
-        res->resolution_header.res_type = AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD;
-        res->resolution_header.res_flags = AERON_RES_HEADER_SELF_FLAG;
-        res->resolution_header.age_in_ms = 100;
-        res->resolution_header.udp_port = 9872;
-        inet_pton(AF_INET6, "::1", &res->addr);
-        res->name_length = 8;
-        memcpy(&buffer[res_offset + sizeof(aeron_resolution_header_ipv6_t)], name, 8);
+    res->resolution_header.res_type = AERON_RES_HEADER_TYPE_NAME_TO_IP6_MD;
+    res->resolution_header.res_flags = AERON_RES_HEADER_SELF_FLAG;
+    res->resolution_header.age_in_ms = 100;
+    res->resolution_header.udp_port = 9872;
+    inet_pton(AF_INET6, "::1", &res->addr);
+    res->name_length = 8;
+    memcpy(&buffer[res_offset + sizeof(aeron_resolution_header_ipv6_t)], "ABCDEFHG", res->name_length);
+    res_offset += aeron_res_header_entry_length_ipv6(res);
 
-        res_offset += aeron_res_header_entry_length_ipv6(res);
-    }
-    while (res_offset < sizeof(buffer));
+    auto *res2 = reinterpret_cast<aeron_resolution_header_ipv4_t *>(&buffer[res_offset]);
+
+    res2->resolution_header.res_type = AERON_RES_HEADER_TYPE_NAME_TO_IP4_MD;
+    res2->resolution_header.res_flags = 0b00110011;
+    res2->resolution_header.age_in_ms = 333;
+    res2->resolution_header.udp_port = 8080;
+    inet_pton(AF_INET, "127.0.0.1", &res2->addr);
+    res2->name_length = 4;
+    memcpy(&buffer[res_offset + sizeof(aeron_resolution_header_ipv4_t)], "test", res2->name_length);
+    res_offset += aeron_res_header_entry_length_ipv4(res2);
 
     frame->type = AERON_HDR_TYPE_RES;
     frame->frame_length = (int32_t)res_offset;
+    frame->flags = 0b10101011;
     log_header->message_len = frame->frame_length;
 
     aeron_env_set(AERON_EVENT_LOG_ENV_VAR, AERON_DRIVER_AGENT_ALL_EVENTS);
     aeron_driver_agent_context_init(m_a.context);
+
+    testing::internal::CaptureStdout();
     aeron_driver_agent_log_dissector(AERON_DRIVER_EVENT_FRAME_IN, buffer, res_offset, nullptr);
+
+#if AERON_COMPILER_MSVC
+    GTEST_SKIP();
+#endif
+    std::string output = testing::internal::GetCapturedStdout();
+    EXPECT_EQ("[0.000000000] DRIVER: FRAME_IN [104/104]: address=127.0.0.1:5555 type=RES flags=10101011 frameLength=104 [resType=2 flags=10000000 port=9872 ageInMs=100 address=::1 name=ABCDEFHG] [resType=1 flags=00110011 port=8080 ageInMs=333 address=127.0.0.1 name=test]\n", output);
 }

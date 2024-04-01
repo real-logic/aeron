@@ -24,11 +24,6 @@
 #include "concurrent/logbuffer/FrameDescriptor.h"
 #include "concurrent/logbuffer/DataFrameHeader.h"
 
-//extern "C"
-//{
-//#include "concurrent/aeron_logbuffer_descriptor.h"
-//}
-
 namespace aeron { namespace concurrent { namespace logbuffer { namespace LogBufferDescriptor
 {
 

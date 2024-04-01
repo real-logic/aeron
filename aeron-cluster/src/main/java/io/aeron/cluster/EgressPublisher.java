@@ -162,4 +162,9 @@ class EgressPublisher
 
         return false;
     }
+
+    public String toString()
+    {
+        return "EgressPublisher{}";
+    }
 }

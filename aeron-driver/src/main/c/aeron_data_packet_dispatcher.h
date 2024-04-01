@@ -107,6 +107,15 @@ int aeron_data_packet_dispatcher_on_rttm(
     size_t length,
     struct sockaddr_storage *addr);
 
+int aeron_data_packet_dispatcher_on_unconnected_stream(
+    aeron_data_packet_dispatcher_t *dispatcher,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
+    aeron_unconnected_stream_header_t *header,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
+
 int aeron_data_packet_dispatcher_elicit_setup_from_source(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_data_packet_dispatcher_stream_interest_t *stream_interest,
@@ -138,12 +147,8 @@ inline void aeron_data_packet_dispatcher_remove_matching_state(
     }
 }
 
-inline void aeron_data_packet_dispatcher_remove_pending_setup(
-    aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id)
-{
-    aeron_data_packet_dispatcher_remove_matching_state(
-        dispatcher, session_id, stream_id, AERON_DATA_PACKET_DISPATCHER_IMAGE_PENDING_SETUP_FRAME);
-}
+void aeron_data_packet_dispatcher_remove_pending_setup(
+    aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);
 
 inline void aeron_data_packet_dispatcher_remove_cool_down(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id)

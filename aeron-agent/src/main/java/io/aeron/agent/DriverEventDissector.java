@@ -70,7 +70,7 @@ final class DriverEventDissector
     {
         int encodedLength = dissectLogHeader(CONTEXT, eventCode, buffer, offset, builder);
 
-        builder.append(": ");
+        builder.append(": address=");
 
         encodedLength += dissectSocketAddress(buffer, offset + encodedLength, builder);
 
@@ -116,7 +116,7 @@ final class DriverEventDissector
                 break;
 
             default:
-                builder.append("FRAME_UNKNOWN: ").append(frameType);
+                builder.append("type=UNKNOWN(").append(frameType).append(")");
                 break;
         }
     }
@@ -446,109 +446,110 @@ final class DriverEventDissector
     private static void dissectDataFrame(final StringBuilder builder)
     {
         builder
+            .append("type=")
             .append(DATA_HEADER.headerType() == HeaderFlyweight.HDR_TYPE_PAD ? "PAD" : "DATA")
-            .append(' ');
+            .append(" flags=");
 
         HeaderFlyweight.appendFlagsAsChars(DATA_HEADER.flags(), builder);
 
         builder
-            .append(" len ")
+            .append(" frameLength=")
             .append(DATA_HEADER.frameLength())
-            .append(' ')
+            .append(" sessionId=")
             .append(DATA_HEADER.sessionId())
-            .append(':')
+            .append(" streamId=")
             .append(DATA_HEADER.streamId())
-            .append(':')
+            .append(" termId=")
             .append(DATA_HEADER.termId())
-            .append(" @")
+            .append(" termOffset=")
             .append(DATA_HEADER.termOffset());
     }
 
     private static void dissectStatusFrame(final StringBuilder builder)
     {
-        builder.append("SM ");
+        builder.append("type=SM flags=");
         HeaderFlyweight.appendFlagsAsChars(SM_HEADER.flags(), builder);
 
         builder
-            .append(" len ")
+            .append(" frameLength=")
             .append(SM_HEADER.frameLength())
-            .append(' ')
+            .append(" sessionId=")
             .append(SM_HEADER.sessionId())
-            .append(':')
+            .append(" streamId=")
             .append(SM_HEADER.streamId())
-            .append(':')
+            .append(" termId=")
             .append(SM_HEADER.consumptionTermId())
-            .append(" @")
+            .append(" termOffset=")
             .append(SM_HEADER.consumptionTermOffset())
-            .append(' ')
+            .append(" receiverWindowLength=")
             .append(SM_HEADER.receiverWindowLength())
-            .append(' ')
+            .append(" receiverId=")
             .append(SM_HEADER.receiverId());
     }
 
     private static void dissectNakFrame(final StringBuilder builder)
     {
-        builder.append("NAK ");
+        builder.append("type=NAK flags=");
         HeaderFlyweight.appendFlagsAsChars(NAK_HEADER.flags(), builder);
 
         builder
-            .append(" len ")
+            .append(" frameLength=")
             .append(NAK_HEADER.frameLength())
-            .append(' ')
+            .append(" sessionId=")
             .append(NAK_HEADER.sessionId())
-            .append(':')
+            .append(" streamId=")
             .append(NAK_HEADER.streamId())
-            .append(':')
+            .append(" termId=")
             .append(NAK_HEADER.termId())
-            .append(" @")
+            .append(" termOffset=")
             .append(NAK_HEADER.termOffset())
-            .append(' ')
+            .append(" length=")
             .append(NAK_HEADER.length());
     }
 
     private static void dissectSetupFrame(final StringBuilder builder)
     {
-        builder.append("SETUP ");
+        builder.append("type=SETUP flags=");
         HeaderFlyweight.appendFlagsAsChars(SETUP_HEADER.flags(), builder);
 
         builder
-            .append(" len ")
+            .append(" frameLength=")
             .append(SETUP_HEADER.frameLength())
-            .append(' ')
+            .append(" sessionId=")
             .append(SETUP_HEADER.sessionId())
-            .append(':')
+            .append(" streamId=")
             .append(SETUP_HEADER.streamId())
-            .append(':')
+            .append(" activeTermId=")
             .append(SETUP_HEADER.activeTermId())
-            .append(' ')
+            .append(" initialTermId=")
             .append(SETUP_HEADER.initialTermId())
-            .append(" @")
+            .append(" termOffset=")
             .append(SETUP_HEADER.termOffset())
-            .append(' ')
+            .append(" termLength=")
             .append(SETUP_HEADER.termLength())
-            .append(" MTU ")
+            .append(" mtu=")
             .append(SETUP_HEADER.mtuLength())
-            .append(" TTL ")
+            .append(" ttl=")
             .append(SETUP_HEADER.ttl());
     }
 
     private static void dissectRttFrame(final StringBuilder builder)
     {
-        builder.append("RTT ");
+        builder.append("type=RTT flags=");
         HeaderFlyweight.appendFlagsAsChars(RTT_MEASUREMENT.flags(), builder);
 
         builder
-            .append(" len ")
+            .append(" frameLength=")
             .append(RTT_MEASUREMENT.frameLength())
-            .append(' ')
+            .append(" sessionId=")
             .append(RTT_MEASUREMENT.sessionId())
-            .append(':')
+            .append(" streamId=")
             .append(RTT_MEASUREMENT.streamId())
-            .append(' ')
+            .append(" echoTimestampNs=")
             .append(RTT_MEASUREMENT.echoTimestampNs())
-            .append(' ')
+            .append(" receptionDelta=")
             .append(RTT_MEASUREMENT.receptionDelta())
-            .append(' ')
+            .append(" receiverId=")
             .append(RTT_MEASUREMENT.receiverId());
     }
 
@@ -561,13 +562,12 @@ final class DriverEventDissector
         final int length = offset + Math.min(HEADER.frameLength(), CommonEventEncoder.MAX_CAPTURE_LENGTH);
         currentOffset += HeaderFlyweight.MIN_HEADER_LENGTH;
 
-        builder.append("RES ");
+        builder.append("type=RES flags=");
         HeaderFlyweight.appendFlagsAsChars(HEADER.flags(), builder);
 
         builder
-            .append(" len ")
-            .append(HEADER.frameLength())
-            .append(' ');
+            .append(" frameLength=")
+            .append(HEADER.frameLength());
 
         while (length > currentOffset)
         {
@@ -587,39 +587,39 @@ final class DriverEventDissector
 
     private static void dissectRspSetupFrame(final StringBuilder builder)
     {
-        builder.append("RSP_SETUP ");
+        builder.append("type=RSP_SETUP flags=");
         HeaderFlyweight.appendFlagsAsChars(RSP_SETUP.flags(), builder);
 
         builder
-            .append(" len ")
+            .append(" frameLength=")
             .append(RSP_SETUP.frameLength())
-            .append(' ')
+            .append(" sessionId=")
             .append(RSP_SETUP.sessionId())
-            .append(':')
+            .append(" streamId=")
             .append(RSP_SETUP.streamId())
-            .append(" RSP_SESSION_ID ")
+            .append(" responseSessionId=")
             .append(RSP_SETUP.responseSessionId());
     }
 
     private static void dissectResEntry(final StringBuilder builder)
     {
         builder
-            .append('[')
+            .append(" [resType=")
             .append(RESOLUTION.resType())
-            .append(' ');
+            .append(" flags=");
 
         HeaderFlyweight.appendFlagsAsChars(RESOLUTION.flags(), builder);
 
         builder
-            .append(" port ")
+            .append(" port=")
             .append(RESOLUTION.udpPort())
-            .append(' ')
-            .append(RESOLUTION.ageInMs())
-            .append(' ');
+            .append(" ageInMs=")
+            .append(RESOLUTION.ageInMs());
 
+        builder.append(" address=");
         RESOLUTION.appendAddress(builder);
-        builder.append(' ');
 
+        builder.append(" name=");
         RESOLUTION.appendName(builder);
         builder.append(']');
     }
@@ -627,12 +627,10 @@ final class DriverEventDissector
     private static void dissectPublication(final StringBuilder builder)
     {
         builder
-            .append(PUB_MSG.streamId())
-            .append(" [")
-            .append(PUB_MSG.clientId())
-            .append(':')
-            .append(PUB_MSG.correlationId())
-            .append("] ");
+            .append("streamId=").append(PUB_MSG.streamId())
+            .append(" clientId=").append(PUB_MSG.clientId())
+            .append(" correlationId=").append(PUB_MSG.correlationId())
+            .append(" channel=");
 
         PUB_MSG.appendChannel(builder);
     }
@@ -640,14 +638,11 @@ final class DriverEventDissector
     private static void dissectSubscription(final StringBuilder builder)
     {
         builder
-            .append(SUB_MSG.streamId())
-            .append(" [")
-            .append(SUB_MSG.registrationCorrelationId())
-            .append("][")
-            .append(SUB_MSG.clientId())
-            .append(':')
-            .append(SUB_MSG.correlationId())
-            .append("] ");
+            .append("streamId=").append(SUB_MSG.streamId())
+            .append(" registrationCorrelationId=").append(SUB_MSG.registrationCorrelationId())
+            .append(" clientId=").append(SUB_MSG.clientId())
+            .append(" correlationId=").append(SUB_MSG.correlationId())
+            .append(" channel=");
 
         SUB_MSG.appendChannel(builder);
     }
@@ -655,18 +650,13 @@ final class DriverEventDissector
     private static void dissectPublicationReady(final StringBuilder builder)
     {
         builder
-            .append(PUB_READY.sessionId())
-            .append(':')
-            .append(PUB_READY.streamId())
-            .append(' ')
-            .append(PUB_READY.publicationLimitCounterId())
-            .append(' ')
-            .append(PUB_READY.channelStatusCounterId())
-            .append(" [")
-            .append(PUB_READY.correlationId())
-            .append(' ')
-            .append(PUB_READY.registrationId())
-            .append("] ");
+            .append("sessionId=").append(PUB_READY.sessionId())
+            .append(" streamId=").append(PUB_READY.streamId())
+            .append(" publicationLimitCounterId=").append(PUB_READY.publicationLimitCounterId())
+            .append(" channelStatusCounterId=").append(PUB_READY.channelStatusCounterId())
+            .append(" correlationId=").append(PUB_READY.correlationId())
+            .append(" registrationId=").append(PUB_READY.registrationId())
+            .append(" logFileName=");
 
         PUB_READY.appendLogFileName(builder);
     }
@@ -674,42 +664,33 @@ final class DriverEventDissector
     private static void dissectImageReady(final StringBuilder builder)
     {
         builder
-            .append(IMAGE_READY.sessionId())
-            .append(':')
-            .append(IMAGE_READY.streamId())
-            .append(" [")
-            .append(IMAGE_READY.subscriberPositionId())
-            .append(':')
-            .append(IMAGE_READY.subscriptionRegistrationId())
-            .append("] [")
-            .append(IMAGE_READY.correlationId())
-            .append("] ");
+            .append("sessionId=").append(IMAGE_READY.sessionId())
+            .append(" streamId=").append(IMAGE_READY.streamId())
+            .append(" subscriberPositionId=").append(IMAGE_READY.subscriberPositionId())
+            .append(" subscriptionRegistrationId=").append(IMAGE_READY.subscriptionRegistrationId())
+            .append(" correlationId=").append(IMAGE_READY.correlationId());
 
-        IMAGE_READY.appendLogFileName(builder);
-        builder.append(' ');
-
+        builder.append(" sourceIdentity=");
         IMAGE_READY.appendSourceIdentity(builder);
+        builder.append(" logFileName=");
+        IMAGE_READY.appendLogFileName(builder);
     }
 
     private static void dissectCorrelationEvent(final StringBuilder builder)
     {
         builder
-            .append('[')
-            .append(CORRELATED_MSG.clientId())
-            .append(':')
-            .append(CORRELATED_MSG.correlationId())
-            .append(']');
+            .append("clientId=").append(CORRELATED_MSG.clientId())
+            .append(" correlationId=").append(CORRELATED_MSG.correlationId());
     }
 
     private static void dissectImage(final StringBuilder builder)
     {
         builder
-            .append(IMAGE_MSG.streamId())
-            .append(" [")
-            .append(IMAGE_MSG.correlationId())
-            .append(' ')
+            .append("streamId=").append(IMAGE_MSG.streamId())
+            .append(" correlationId=").append(IMAGE_MSG.correlationId())
+            .append(" subscriptionRegistrationId=")
             .append(IMAGE_MSG.subscriptionRegistrationId())
-            .append("] ");
+            .append(" channel=");
 
         IMAGE_MSG.appendChannel(builder);
     }
@@ -717,23 +698,18 @@ final class DriverEventDissector
     private static void dissectRemoveEvent(final StringBuilder builder)
     {
         builder
-            .append(REMOVE_MSG.registrationId())
-            .append(" [")
-            .append(REMOVE_MSG.clientId())
-            .append(':')
-            .append(REMOVE_MSG.correlationId())
-            .append(']');
+            .append("registrationId=").append(REMOVE_MSG.registrationId())
+            .append(" clientId=").append(REMOVE_MSG.clientId())
+            .append(" correlationId=").append(REMOVE_MSG.correlationId());
     }
 
     private static void dissectDestination(final StringBuilder builder)
     {
         builder
-            .append(DESTINATION_MSG.registrationCorrelationId())
-            .append(" [")
-            .append(DESTINATION_MSG.clientId())
-            .append(':')
-            .append(DESTINATION_MSG.correlationId())
-            .append("] ");
+            .append("registrationCorrelationId=").append(DESTINATION_MSG.registrationCorrelationId())
+            .append(" clientId=").append(DESTINATION_MSG.clientId())
+            .append(" correlationId=").append(DESTINATION_MSG.correlationId())
+            .append(" channel=");
 
         DESTINATION_MSG.appendChannel(builder);
     }
@@ -741,10 +717,9 @@ final class DriverEventDissector
     private static void dissectError(final StringBuilder builder)
     {
         builder
-            .append(ERROR_MSG.offendingCommandCorrelationId())
-            .append(' ')
-            .append(ERROR_MSG.errorCode())
-            .append(' ');
+            .append("offendingCommandCorrelationId=").append(ERROR_MSG.offendingCommandCorrelationId())
+            .append(" errorCode=").append(ERROR_MSG.errorCode())
+            .append(" message=");
 
         ERROR_MSG.appendMessage(builder);
     }
@@ -752,43 +727,43 @@ final class DriverEventDissector
     private static void dissectCounter(final StringBuilder builder)
     {
         builder
-            .append(COUNTER_MSG.typeId())
-            .append(" [")
-            .append(COUNTER_MSG.keyBufferOffset()).append(' ').append(COUNTER_MSG.keyBufferLength())
-            .append("][")
-            .append(COUNTER_MSG.labelBufferOffset()).append(' ').append(COUNTER_MSG.labelBufferLength())
-            .append("][")
-            .append(COUNTER_MSG.clientId())
-            .append(':')
-            .append(COUNTER_MSG.correlationId())
-            .append(']');
+            .append("typeId=").append(COUNTER_MSG.typeId())
+            .append(" keyBufferOffset=").append(COUNTER_MSG.keyBufferOffset())
+            .append(" keyBufferLength=").append(COUNTER_MSG.keyBufferLength())
+            .append(" labelBufferOffset=").append(COUNTER_MSG.labelBufferOffset())
+            .append(" labelBufferLength=").append(COUNTER_MSG.labelBufferLength())
+            .append(" clientId=").append(COUNTER_MSG.clientId())
+            .append(" correlationId=").append(COUNTER_MSG.correlationId());
     }
 
     private static void dissectCounterUpdate(final StringBuilder builder)
     {
-        builder.append(COUNTER_UPDATE.correlationId()).append(' ').append(COUNTER_UPDATE.counterId());
+        builder
+            .append("correlationId=").append(COUNTER_UPDATE.correlationId())
+            .append(" counterId=").append(COUNTER_UPDATE.counterId());
     }
 
     private static void dissectOperationSuccess(final StringBuilder builder)
     {
-        builder.append(OPERATION_SUCCEEDED.correlationId());
+        builder.append("correlationId=").append(OPERATION_SUCCEEDED.correlationId());
     }
 
     private static void dissectSubscriptionReady(final StringBuilder builder)
     {
         builder
-            .append(SUBSCRIPTION_READY.correlationId())
-            .append(' ')
-            .append(SUBSCRIPTION_READY.channelStatusCounterId());
+            .append("correlationId=").append(SUBSCRIPTION_READY.correlationId())
+            .append(" channelStatusCounterId=").append(SUBSCRIPTION_READY.channelStatusCounterId());
     }
 
     private static void dissectClientTimeout(final StringBuilder builder)
     {
-        builder.append(CLIENT_TIMEOUT.clientId());
+        builder.append("clientId=").append(CLIENT_TIMEOUT.clientId());
     }
 
     private static void dissectTerminateDriver(final StringBuilder builder)
     {
-        builder.append(TERMINATE_DRIVER.clientId()).append(' ').append(TERMINATE_DRIVER.tokenBufferLength());
+        builder
+            .append("clientId=").append(TERMINATE_DRIVER.clientId())
+            .append(" tokenBufferLength=").append(TERMINATE_DRIVER.tokenBufferLength());
     }
 }

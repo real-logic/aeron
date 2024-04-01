@@ -263,6 +263,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
 
         markFile.updateActivityTimestamp(NULL_VALUE);
+        markFile.force();
         ctx.close();
     }
 
@@ -1877,6 +1878,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     void leadershipTermId(final long leadershipTermId)
     {
         this.leadershipTermId = leadershipTermId;
+        ctx.leadershipTermIdCounter().setOrdered(leadershipTermId);
         for (final PendingServiceMessageTracker tracker : pendingServiceMessageTrackers)
         {
             tracker.leadershipTermId(leadershipTermId);

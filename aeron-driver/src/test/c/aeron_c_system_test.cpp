@@ -107,7 +107,7 @@ TEST_P(CSystemTest, shouldReallocateBindingsClientd)
 
     ASSERT_EQ(0, aeron_driver_init(&driver, context)) << aeron_errmsg();
 
-    ASSERT_EQ(3U, context->num_bindings_clientd_entries);
+    ASSERT_EQ(4U, context->num_bindings_clientd_entries);
 
     ASSERT_STREQ(name0, context->bindings_clientd_entries[0].name);
     ASSERT_EQ((void *)&val0, context->bindings_clientd_entries[0].clientd);

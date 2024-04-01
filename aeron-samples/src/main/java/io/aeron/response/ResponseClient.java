@@ -109,7 +109,6 @@ public class ResponseClient implements AutoCloseable, Agent
         this(aeron, handler, requestEndpoint, requestStreamId, responseControl, responseStreamId, null, null);
     }
 
-
     /**
      * {@inheritDoc}
      */
@@ -152,7 +151,6 @@ public class ResponseClient implements AutoCloseable, Agent
      */
     public void close()
     {
-
     }
 
     /**

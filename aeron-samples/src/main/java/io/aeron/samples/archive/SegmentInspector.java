@@ -81,13 +81,13 @@ public class SegmentInspector
         while (offset < length)
         {
             dataHeaderFlyweight.wrap(buffer, offset, length - offset);
-            out.println(offset + ": " + dataHeaderFlyweight);
 
             final int frameLength = dataHeaderFlyweight.frameLength();
             if (frameLength < DataHeaderFlyweight.HEADER_LENGTH)
             {
                 break;
             }
+            out.println(offset + ": " + dataHeaderFlyweight);
 
             final int limit = min(frameLength - HEADER_LENGTH, messageDumpLimit);
             out.println(LogInspector.formatBytes(buffer, offset + HEADER_LENGTH, limit));

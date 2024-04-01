@@ -289,6 +289,7 @@ public final class CTestMediaDriver implements TestMediaDriver
             environment.put("AERON_RECEIVER_WILDCARD_PORT_RANGE", receiverWildcardPortRange);
         }
 
+        environment.put("AERON_ENABLE_EXPERIMENTAL_FEATURES", String.valueOf(context.enableExperimentalFeatures()));
         setFlowControlStrategy(environment, context);
         setLogging(environment);
         setTransportSecurity(environment);
@@ -397,7 +398,7 @@ public final class CTestMediaDriver implements TestMediaDriver
     {
         environment.put("AERON_EVENT_LOG", System.getProperty(
             "aeron.event.log",
-            "admin,NAME_RESOLUTION_RESOLVE,FLOW_CONTROL_RECEIVER_ADDED,FLOW_CONTROL_RECEIVER_REMOVED"));
+            "all"));
         environment.put("AERON_EVENT_LOG_DISABLE", System.getProperty("aeron.event.log.disable", ""));
 
         final String driverAgentPath = System.getProperty(DRIVER_AGENT_PATH_PROP_NAME);

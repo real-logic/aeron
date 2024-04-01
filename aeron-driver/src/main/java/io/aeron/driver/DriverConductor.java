@@ -516,6 +516,7 @@ public final class DriverConductor implements Agent
                 final UdpChannel udpChannel = asyncResult.get();
                 final ChannelUri channelUri = udpChannel.channelUri();
                 final PublicationParams params = getPublicationParams(channelUri, ctx, this, false);
+                validateExperimentalFeatures(ctx.enableExperimentalFeatures(), udpChannel);
                 validateEndpointForPublication(udpChannel);
                 validateControlForPublication(udpChannel);
                 validateMtuForMaxMessage(params, channel);
@@ -994,6 +995,7 @@ public final class DriverConductor implements Agent
                 final UdpChannel udpChannel = asyncResult.get();
                 final ControlMode controlMode = udpChannel.controlMode();
 
+                validateExperimentalFeatures(ctx.enableExperimentalFeatures(), udpChannel);
                 validateControlForSubscription(udpChannel);
                 validateTimestampConfiguration(udpChannel);
 
@@ -2512,6 +2514,22 @@ public final class DriverConductor implements Agent
         {
             throw new InvalidChannelException(ENDPOINT_PARAM_NAME + " has port=0 for send destination: channel=" +
                 destinationUri);
+        }
+    }
+
+    private static void validateExperimentalFeatures(final boolean enableExperimentalFeatures, final UdpChannel channel)
+    {
+        if (enableExperimentalFeatures)
+        {
+            return;
+        }
+
+        if (null != channel.channelUri().get(RESPONSE_CORRELATION_ID_PARAM_NAME) ||
+            ControlMode.RESPONSE == channel.controlMode())
+        {
+            throw new IllegalArgumentException(
+                "Response Channels is an experimental feature, and " +
+                "MediaDriver.Context.enableExperimentalFeatures is false");
         }
     }
 

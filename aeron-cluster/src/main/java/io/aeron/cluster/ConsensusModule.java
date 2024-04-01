@@ -255,6 +255,7 @@ public final class ConsensusModule implements AutoCloseable
             if (null != ctx.markFile)
             {
                 ctx.markFile.signalFailedStart();
+                ctx.markFile.force();
             }
 
             CloseHelper.quietClose(ctx::close);
@@ -1447,6 +1448,7 @@ public final class ConsensusModule implements AutoCloseable
         private Counter timedOutClientCounter;
         private Counter standbySnapshotCounter;
         private Counter electionCounter;
+        private Counter leadershipTermId;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
 
@@ -1710,6 +1712,13 @@ public final class ConsensusModule implements AutoCloseable
                     aeron, buffer, "Cluster election count", CLUSTER_ELECTION_COUNT_TYPE_ID, clusterId);
             }
             validateCounterTypeId(aeron, electionCounter, CLUSTER_ELECTION_COUNT_TYPE_ID);
+
+            if (null == leadershipTermId)
+            {
+                leadershipTermId = ClusterCounters.allocate(
+                    aeron, buffer, "Cluster leadership term id", CLUSTER_LEADERSHIP_TERM_ID_TYPE_ID, clusterId);
+            }
+            validateCounterTypeId(aeron, leadershipTermId, CLUSTER_LEADERSHIP_TERM_ID_TYPE_ID);
 
             if (null == clusterNodeRoleCounter)
             {
@@ -4056,6 +4065,28 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Get the counter used to track the leadership term id.
+         *
+         * @return the counter containing the leadership term id.
+         */
+        public Counter leadershipTermIdCounter()
+        {
+            return leadershipTermId;
+        }
+
+        /**
+         * Set the counter used to track the number of elections on this node.
+         *
+         * @param leadershipTermId the counter for elections.
+         * @return this for a fluentAPI.
+         */
+        public Context leadershipTermIdCounter(final Counter leadershipTermId)
+        {
+            this.leadershipTermId = leadershipTermId;
+            return this;
+        }
+
+        /**
          * Delete the cluster directory.
          */
         public void deleteDirectory()
@@ -4170,6 +4201,7 @@ public final class ConsensusModule implements AutoCloseable
 
             markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();
+            markFile.force();
         }
 
         private TimerServiceSupplier getTimerServiceSupplierFromSystemProperty()
@@ -4281,6 +4313,7 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    timedOutClientCounter=" + timedOutClientCounter +
                 "\n    standbySnapshotCounter=" + standbySnapshotCounter +
                 "\n    electionCounter=" + electionCounter +
+                "\n    leadershipTermId=" + leadershipTermId +
                 "\n    shutdownSignalBarrier=" + shutdownSignalBarrier +
                 "\n    terminationHook=" + terminationHook +
                 "\n    archiveContext=" + archiveContext +

@@ -2,8 +2,8 @@
 // Created by mike on 14/03/24.
 //
 
-#ifndef AERON_CONTROLLEDFRAGMENTASSEMBLERTESTFIXTURE_H
-#define AERON_CONTROLLEDFRAGMENTASSEMBLERTESTFIXTURE_H
+#ifndef AERON_IMAGECONTROLLEDFRAGMENTASSEMBLERTESTFIXTURE_H
+#define AERON_IMAGECONTROLLEDFRAGMENTASSEMBLERTESTFIXTURE_H
 
 #include <functional>
 #include "gtest/gtest.h"
@@ -73,8 +73,8 @@ public:
     }
 
 protected:
-    Header *m_header;
-    fragment_buffer_t m_buffer;
+    Header *m_header = nullptr;
+    fragment_buffer_t m_buffer = {};
 
 private:
     std::uint8_t headerBuffer[DataFrameHeader::LENGTH] = {};
@@ -300,4 +300,4 @@ TEST_P(ImageControlledFragmentAssemblerParameterisedTest, shouldReassembleTwoMes
     ASSERT_TRUE(isCalled);
 }
 
-#endif //AERON_CONTROLLEDFRAGMENTASSEMBLERTESTFIXTURE_H
+#endif //AERON_IMAGECONTROLLEDFRAGMENTASSEMBLERTESTFIXTURE_H

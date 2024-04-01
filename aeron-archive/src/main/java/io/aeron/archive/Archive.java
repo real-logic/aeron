@@ -1469,7 +1469,9 @@ public final class Archive implements AutoCloseable
             expectedCount += aeron.conductorAgentInvoker() == null ? 1 : 0;
             abortLatch = new CountDownLatch(expectedCount);
 
+            markFile.updateActivityTimestamp(epochClock.time());
             markFile.signalReady();
+            markFile.force();
 
             if (io.aeron.driver.Configuration.printConfigurationOnStart())
             {

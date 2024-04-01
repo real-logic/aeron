@@ -32,6 +32,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.nio.MappedByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.Consumer;
@@ -172,7 +173,7 @@ public final class ClusterMarkFile implements AutoCloseable
         final long timeoutMs,
         final Consumer<String> logger)
     {
-        markFile = new MarkFile(
+        this(new MarkFile(
             directory,
             filename,
             MarkFileHeaderDecoder.versionEncodingOffset(),
@@ -188,13 +189,16 @@ public final class ClusterMarkFile implements AutoCloseable
                         " does not match software: " + MAJOR_VERSION);
                 }
             },
-            logger);
+            logger));
+    }
 
+    ClusterMarkFile(final MarkFile markFile)
+    {
+        this.markFile = markFile;
         buffer = markFile.buffer();
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
         errorBuffer = new UnsafeBuffer(buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
     }
-
 
     /**
      * Get the parent directory containing the mark file.
@@ -461,6 +465,19 @@ public final class ClusterMarkFile implements AutoCloseable
             decoder.consensusModuleStreamId(),
             decoder.aeronDirectory(),
             decoder.controlChannel());
+    }
+
+    /**
+     * Forces any changes made to the mark file's content to be written to the storage device containing the mapped
+     * file.
+     */
+    public void force()
+    {
+        if (!markFile.isClosed())
+        {
+            final MappedByteBuffer mappedByteBuffer = markFile.mappedByteBuffer();
+            mappedByteBuffer.force();
+        }
     }
 
     /**

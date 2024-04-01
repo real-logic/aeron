@@ -18,13 +18,20 @@ package io.aeron.archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.test.TestContexts;
+import org.agrona.MarkFile;
 import org.agrona.concurrent.SystemEpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.InOrder;
 
 import java.io.File;
+import java.nio.MappedByteBuffer;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class ArchiveMarkFileTest
 {
@@ -84,6 +91,46 @@ class ArchiveMarkFileTest
         {
             assertTrue(new File(archiveDir, ArchiveMarkFile.FILENAME).exists());
             assertFalse(new File(archiveDir, ArchiveMarkFile.LINK_FILENAME).exists());
+        }
+    }
+
+
+    @Test
+    @DisabledForJreRange(min = JRE.JAVA_21)
+    void shouldCallForceIfMarkFileIsNotClosed()
+    {
+        final MarkFile markFile = mock(MarkFile.class);
+        final MappedByteBuffer mappedByteBuffer = mock(MappedByteBuffer.class);
+        when(markFile.mappedByteBuffer()).thenReturn(mappedByteBuffer);
+        when(markFile.buffer()).thenReturn(new UnsafeBuffer(new byte[128]));
+        try (ArchiveMarkFile clusterMarkFile = new ArchiveMarkFile(markFile))
+        {
+            clusterMarkFile.force();
+
+            final InOrder inOrder = inOrder(markFile, mappedByteBuffer);
+            inOrder.verify(markFile).isClosed();
+            inOrder.verify(markFile).mappedByteBuffer();
+            inOrder.verify(mappedByteBuffer).force();
+            inOrder.verifyNoMoreInteractions();
+        }
+    }
+
+    @Test
+    @DisabledForJreRange(min = JRE.JAVA_21)
+    void shouldNotCallForceIfMarkFileIsClosed()
+    {
+        final MarkFile markFile = mock(MarkFile.class);
+        final MappedByteBuffer mappedByteBuffer = mock(MappedByteBuffer.class);
+        when(markFile.mappedByteBuffer()).thenReturn(mappedByteBuffer);
+        when(markFile.buffer()).thenReturn(new UnsafeBuffer(new byte[128]));
+        when(markFile.isClosed()).thenReturn(true);
+        try (ArchiveMarkFile clusterMarkFile = new ArchiveMarkFile(markFile))
+        {
+            clusterMarkFile.force();
+
+            final InOrder inOrder = inOrder(markFile, mappedByteBuffer);
+            inOrder.verify(markFile).isClosed();
+            inOrder.verifyNoMoreInteractions();
         }
     }
 }

@@ -900,6 +900,10 @@ uint32_t aeron_driver_context_get_async_executor_threads(aeron_driver_context_t 
  */
 #define AERON_DRIVER_DYNAMIC_LIBRARIES_ENV_VAR "AERON_DRIVER_DYNAMIC_LIBRARIES"
 
+#define AERON_ENABLE_EXPERIMENTAL_FEATURES_ENV_VAR "AERON_ENABLE_EXPERIMENTAL_FEATURES"
+int aeron_driver_context_set_enable_experimental_features(aeron_driver_context_t *context, bool value);
+int aeron_driver_context_get_enable_experimental_features(aeron_driver_context_t *context);
+
 /**
  * Return full version and build string.
  *

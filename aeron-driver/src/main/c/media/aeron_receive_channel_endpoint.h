@@ -180,6 +180,13 @@ int aeron_receive_channel_endpoint_on_rttm(
     size_t length,
     struct sockaddr_storage *addr);
 
+int aeron_receive_channel_endpoint_on_unconnected_stream(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
+
 void aeron_receive_channel_endpoint_try_remove_endpoint(aeron_receive_channel_endpoint_t *endpoint);
 
 int aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);

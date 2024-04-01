@@ -59,8 +59,7 @@ public:
         }
 
         log_buffer->mapped_raw_log.term_length = TERM_LENGTH;
-        aeron_logbuffer_metadata_t *log_meta_data =
-            (aeron_logbuffer_metadata_t *)log_buffer->mapped_raw_log.log_meta_data.addr;
+        auto *log_meta_data = (aeron_logbuffer_metadata_t *)log_buffer->mapped_raw_log.log_meta_data.addr;
         log_meta_data->term_length = TERM_LENGTH;
         log_meta_data->mtu_length = MTU_LENGTH;
         log_meta_data->initial_term_id = INITIAL_TERM_ID;
@@ -117,7 +116,7 @@ public:
         const int32_t expected_term_id,
         const uint8_t expected_flags)
     {
-        aeron_data_header_t *header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
+        auto *header = (aeron_data_header_t *)(term_buffer->addr + term_offset);
         EXPECT_EQ(expected_frame_length, header->frame_header.frame_length);
         EXPECT_EQ(AERON_HDR_TYPE_DATA, header->frame_header.type);
         EXPECT_EQ(AERON_FRAME_HEADER_VERSION, header->frame_header.version);
@@ -135,8 +134,8 @@ protected:
     aeron_publication_t *m_publication = nullptr;
     std::string m_filename;
 
-    int64_t *m_position_limit_addr;
-    int64_t *m_channel_status_addr;
+    int64_t *m_position_limit_addr = nullptr;
+    int64_t *m_channel_status_addr = nullptr;
 
     static const size_t NUM_COUNTERS = 4;
     std::array<std::uint8_t, NUM_COUNTERS * AERON_COUNTERS_MANAGER_METADATA_LENGTH> m_counters_metadata = {};
@@ -572,7 +571,7 @@ TEST_F(PublicationTest, offerMaxPositionExceededIfPublicationLimitReached)
     const size_t length = strlen(payload);
     const int32_t term_count = INT32_MAX;
     const size_t partition_index = aeron_logbuffer_index_by_term_count(term_count);
-    const int32_t term_offset = (int32_t)(TERM_LENGTH - length - 1);
+    const auto term_offset = (int32_t)(TERM_LENGTH - length - 1);
     const int32_t term_id = INT32_MIN + (INITIAL_TERM_ID - 1);
     m_publication->log_meta_data->active_term_count = term_count;
     m_publication->log_meta_data->term_tail_counters[partition_index] = packTail(term_id, term_offset);

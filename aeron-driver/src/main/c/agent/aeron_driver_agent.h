@@ -101,7 +101,6 @@ aeron_driver_agent_cmd_log_header_t;
 typedef struct aeron_driver_agent_frame_log_header_stct
 {
     int64_t time_ns;
-    int32_t result;
     int32_t sockaddr_len;
     int32_t message_len;
 }
@@ -286,8 +285,7 @@ void aeron_driver_agent_conductor_to_driver_interceptor(
 void aeron_driver_agent_conductor_to_client_interceptor(
     aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length);
 
-void aeron_driver_agent_log_frame(
-    int32_t msg_type_id, const struct msghdr *msghdr, int result, int32_t message_len);
+void aeron_driver_agent_log_frame(int32_t msg_type_id, const struct msghdr *msghdr, int32_t message_len);
 
 void aeron_driver_agent_sender_proxy_on_add_endpoint(const void *channel);
 

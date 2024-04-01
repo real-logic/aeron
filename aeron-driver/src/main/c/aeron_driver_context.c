@@ -340,6 +340,7 @@ static void aeron_driver_untethered_subscription_state_change_null(
 #define AERON_DRIVER_ASYNC_EXECUTOR_THREADS_DEFAULT UINT32_C(1)
 #define AERON_CPU_AFFINITY_DEFAULT (-1)
 #define AERON_DRIVER_CONNECT_DEFAULT true
+#define AERON_ENABLE_EXPERIMENTAL_FEATURES_DEFAULT false
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -565,6 +566,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->conductor_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
     _context->sender_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
     _context->receiver_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
+    _context->enable_experimental_features = AERON_ENABLE_EXPERIMENTAL_FEATURES_DEFAULT;
 
     char *value = NULL;
 
@@ -1066,6 +1068,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         0,
         1);
 
+    _context->enable_experimental_features = aeron_parse_bool(
+        getenv(AERON_ENABLE_EXPERIMENTAL_FEATURES_ENV_VAR), _context->enable_experimental_features);
+
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;
     _context->counters_values_buffer = NULL;
@@ -1223,14 +1228,6 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         }
     }
 
-    if (getenv(AERON_EVENT_LOG_ENV_VAR))
-    {
-        if (aeron_driver_agent_context_init(_context) < 0)
-        {
-            return -1;
-        }
-    }
-
 #ifdef HAVE_UUID_GENERATE
     uuid_t id;
     uuid_generate(id);
@@ -1259,6 +1256,15 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     {
         AERON_APPEND_ERR("%s", "Failed to allocate bindings_clientd entries");
         return -1;
+    }
+
+    // Should be last in the initialization chain
+    if (getenv(AERON_EVENT_LOG_ENV_VAR))
+    {
+        if (aeron_driver_agent_context_init(_context) < 0)
+        {
+            return -1;
+        }
     }
 
     *context = _context;
@@ -2993,6 +2999,19 @@ int aeron_driver_context_set_receiver_port_manager(
 aeron_port_manager_t *aeron_driver_context_get_receiver_port_manager(aeron_driver_context_t *context)
 {
     return NULL != context ? context->receiver_port_manager : NULL;
+}
+
+int aeron_driver_context_set_enable_experimental_features(aeron_driver_context_t *context, bool value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->enable_experimental_features = value;
+    return 0;
+}
+
+int aeron_driver_context_get_enable_experimental_features(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->enable_experimental_features : false;
 }
 
 int aeron_driver_context_bindings_clientd_find_first_free_index(aeron_driver_context_t *context)

@@ -70,7 +70,8 @@ public class ResponseChannelsTest
     {
         driver = TestMediaDriver.launch(new MediaDriver.Context()
                 .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-                .threadingMode(ThreadingMode.SHARED),
+                .threadingMode(ThreadingMode.SHARED)
+                .enableExperimentalFeatures(true),
             watcher);
         watcher.dataCollector().add(driver.context().aeronDirectory());
     }

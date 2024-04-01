@@ -15,11 +15,7 @@
  */
 package io.aeron.response;
 
-import io.aeron.Aeron;
-import io.aeron.ChannelUriStringBuilder;
-import io.aeron.Image;
-import io.aeron.Publication;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -38,9 +34,25 @@ import java.util.function.Function;
  */
 public class ResponseServer implements AutoCloseable, Agent
 {
+    /**
+     * Interface to manage callback from the response server onto a session.
+     */
+    public interface ResponseHandler
+    {
+        /**
+         * Called when a message is received via the request subscription.
+         *
+         * @param buffer                containing the data.
+         * @param offset                at which the data begins.
+         * @param length                of the data in bytes.
+         * @param header                representing the metadata for the data.
+         * @param responsePublication   to send responses back to the client.
+         */
+        void onMessage(DirectBuffer buffer, int offset, int length, Header header, Publication responsePublication);
+    }
+
     private final Aeron aeron;
-    private final Long2ObjectHashMap<ResponseSession> clientToPublicationMap =
-        new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<ResponseSession> clientToPublicationMap = new Long2ObjectHashMap<>();
     private final OneToOneConcurrentArrayQueue<Image> availableImages =
         new OneToOneConcurrentArrayQueue<>(1024);
     private final OneToOneConcurrentArrayQueue<Image> unavailableImages =
@@ -50,6 +62,7 @@ public class ResponseServer implements AutoCloseable, Agent
     private final int responseStreamId;
     private final ChannelUriStringBuilder requestUriBuilder;
     private final ChannelUriStringBuilder responseUriBuilder;
+    private final FragmentAssembler requestAssembler = new FragmentAssembler(this::onRequestMessage);
 
     private Subscription serverSubscription;
 
@@ -97,31 +110,6 @@ public class ResponseServer implements AutoCloseable, Agent
             .controlEndpoint(responseControl);
     }
 
-    ResponseSession getOrCreateSession(final Image image)
-    {
-        ResponseSession session = clientToPublicationMap.get(image.correlationId());
-
-        if (null == session)
-        {
-            final Publication responsePublication = aeron.addPublication(
-                responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
-                responseStreamId);
-
-            final ResponseHandler handler = handlerFactory.apply(image);
-            session = new ResponseSession(responsePublication, handler);
-
-            clientToPublicationMap.put(image.correlationId(), session);
-        }
-
-        return session;
-    }
-
-    void removeSession(final Image image)
-    {
-        final ResponseSession session = clientToPublicationMap.remove(image.correlationId());
-        CloseHelper.quietClose(session);
-    }
-
     /**
      * Poll the server process messages and state.
      *
@@ -154,15 +142,7 @@ public class ResponseServer implements AutoCloseable, Agent
             removeSession(image);
         }
 
-        workCount += serverSubscription.poll(
-            (buffer, offset, length, header) ->
-            {
-                final ResponseSession session = getOrCreateSession(
-                    serverSubscription.imageBySessionId(header.sessionId()));
-
-                session.process(buffer, offset, length, header);
-            },
-            1);
+        workCount += serverSubscription.poll(requestAssembler, 1);
 
 
         return workCount;
@@ -195,23 +175,6 @@ public class ResponseServer implements AutoCloseable, Agent
         return "ResponseServer";
     }
 
-    /**
-     * Interface to manage callback from the response server onto a session.
-     */
-    public interface ResponseHandler
-    {
-        /**
-         * Called when a message is received via the request subscription.
-         *
-         * @param buffer                containing the data.
-         * @param offset                at which the data begins.
-         * @param length                of the data in bytes.
-         * @param header                representing the metadata for the data.
-         * @param responsePublication   to send responses back to the client.
-         */
-        void onMessage(DirectBuffer buffer, int offset, int length, Header header, Publication responsePublication);
-    }
-
     private void enqueueAvailableImage(final Image image)
     {
         if (!availableImages.offer(image))
@@ -226,6 +189,40 @@ public class ResponseServer implements AutoCloseable, Agent
         {
             throw new RuntimeException("Unable to enqueue removed image");
         }
+    }
+
+    private void onRequestMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    {
+        final ResponseSession session = getOrCreateSession(
+            serverSubscription.imageBySessionId(header.sessionId()));
+
+        session.process(buffer, offset, length, header);
+    }
+
+    private ResponseSession getOrCreateSession(final Image image)
+    {
+        ResponseSession session = clientToPublicationMap.get(image.correlationId());
+
+        if (null == session)
+        {
+            final Publication responsePublication = aeron.addPublication(
+                responseUriBuilder.responseCorrelationId(image.correlationId()).build(),
+                responseStreamId);
+
+            final ResponseHandler handler = handlerFactory.apply(image);
+            session = new ResponseSession(responsePublication, handler);
+
+            clientToPublicationMap.put(image.correlationId(), session);
+        }
+
+        return session;
+    }
+
+    private void removeSession(final Image image)
+    {
+        requestAssembler.freeSessionBuffer(image.sessionId());
+        final ResponseSession session = clientToPublicationMap.remove(image.correlationId());
+        CloseHelper.quietClose(session);
     }
 
     private static final class ResponseSession implements AutoCloseable

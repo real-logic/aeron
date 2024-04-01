@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.test.Tests;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,9 +36,7 @@ import java.util.function.Predicate;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
-import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_STANDBY_SNAPSHOT;
-import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_SNAPSHOT;
-import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_TERM;
+import static io.aeron.cluster.RecordingLog.*;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
@@ -1034,6 +1033,44 @@ class RecordingLogTest
 
             assertEquals(2, requireNonNull(log.getLatestSnapshot(SERVICE_ID)).recordingId);
             assertEquals(preInvalidate, log.latestStandbySnapshots(2));
+        }
+    }
+
+    @Test
+    void shouldHandleEntriesStraddlingPageBoundary(@TempDir final File tempDir)
+    {
+        final String endpoint = Tests.generateStringWithSuffix("a", "x", 3079);
+        try (RecordingLog log = new RecordingLog(tempDir, true))
+        {
+            log.appendStandbySnapshot(1, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, endpoint);
+            log.appendStandbySnapshot(2, 2, 1000, 2000, 1_000_000_000L, 0, endpoint);
+            log.appendStandbySnapshot(3, 2, 1000, 2000, 1_000_000_000L, 1, endpoint);
+            log.append(ENTRY_TYPE_TERM, 4, 3, 10000, 11111, 2_000_000_000L, SERVICE_ID, RECORDING_LOG_FILE_NAME);
+            log.appendSnapshot(5, 4, 20000, 22222, 3_000_000_000L, SERVICE_ID);
+            log.appendSnapshot(6, 4, 20000, 22222, 3_000_000_000L, 0);
+        }
+
+        try (RecordingLog log = new RecordingLog(tempDir, false))
+        {
+            assertLogEntry(log, 1, ENTRY_TYPE_STANDBY_SNAPSHOT, endpoint);
+            assertLogEntry(log, 2, ENTRY_TYPE_STANDBY_SNAPSHOT, endpoint);
+            assertLogEntry(log, 3, ENTRY_TYPE_STANDBY_SNAPSHOT, endpoint);
+            assertLogEntry(log, 4, ENTRY_TYPE_TERM, null);
+            assertLogEntry(log, 5, ENTRY_TYPE_SNAPSHOT, null);
+            assertLogEntry(log, 6, ENTRY_TYPE_SNAPSHOT, null);
+        }
+    }
+
+    @Test
+    void shouldRejectSnapshotEntryIfEndointIsTooLong(@TempDir final File tempDir)
+    {
+        final String endpoint = Tests.generateStringWithSuffix("a", "x", 5000);
+        try (RecordingLog log = new RecordingLog(tempDir, true))
+        {
+            final ClusterException exception = assertThrowsExactly(ClusterException.class,
+                () -> log.appendStandbySnapshot(1, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, endpoint));
+            assertEquals("ERROR - Endpoint is too long: " + endpoint.length() + " vs " + MAX_ENDPOINT_LENGTH,
+                exception.getMessage());
         }
     }
 

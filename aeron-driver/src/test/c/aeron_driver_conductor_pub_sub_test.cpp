@@ -258,7 +258,7 @@ TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkSubscri
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, channel, STREAM_ID_1), 0);
 
     doWorkUntilDone();
-    EXPECT_EQ(GetParam()->numSubscriptions(&m_conductor.m_conductor), 1u);
+    EXPECT_EQ(GetParam()->numSubscriptions(&m_conductor.m_conductor), 1u) << "channel: " << GetParam()->m_channel;
     ASSERT_TRUE(GetParam()->receiveEndpointExists(&m_conductor.m_conductor, channel));
 
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_COUNTER_READY, _, _));

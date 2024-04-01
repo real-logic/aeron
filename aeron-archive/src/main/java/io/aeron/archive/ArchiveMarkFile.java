@@ -95,7 +95,6 @@ public class ArchiveMarkFile implements AutoCloseable
             LIVENESS_TIMEOUT_MS);
 
         encode(ctx);
-        updateActivityTimestamp(ctx.epochClock().time());
     }
 
     ArchiveMarkFile(
@@ -191,7 +190,7 @@ public class ArchiveMarkFile implements AutoCloseable
         final IntConsumer versionCheck,
         final Consumer<String> logger)
     {
-        markFile = new MarkFile(
+        this(new MarkFile(
             directory,
             filename,
             MarkFileHeaderDecoder.versionEncodingOffset(),
@@ -199,7 +198,12 @@ public class ArchiveMarkFile implements AutoCloseable
             timeoutMs,
             epochClock,
             versionCheck,
-            logger);
+            logger));
+    }
+
+    ArchiveMarkFile(final MarkFile markFile)
+    {
+        this.markFile = markFile;
 
         buffer = markFile.buffer();
         headerEncoder.wrap(buffer, 0);
@@ -300,7 +304,7 @@ public class ArchiveMarkFile implements AutoCloseable
      */
     public static boolean isArchiveMarkFile(final Path path, final BasicFileAttributes attributes)
     {
-        return path.getFileName().toString().equals(FILENAME);
+        return FILENAME.equals(path.getFileName().toString());
     }
 
     /**
@@ -312,6 +316,18 @@ public class ArchiveMarkFile implements AutoCloseable
     public File parentDirectory()
     {
         return markFile.parentDirectory();
+    }
+
+    /**
+     * Forces any changes made to the mark file's content to be written to the storage device containing the mapped
+     * file.
+     */
+    public void force()
+    {
+        if (!markFile.isClosed())
+        {
+            markFile.mappedByteBuffer().force();
+        }
     }
 
     private static int alignedTotalFileLength(final Archive.Context ctx)

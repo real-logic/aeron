@@ -68,7 +68,7 @@ public final class EventLogAgent
      */
     public static void premain(final String agentArgs, final Instrumentation instrumentation)
     {
-        startLogging(AgentBuilder.RedefinitionStrategy.DISABLED, instrumentation, ConfigOption.fromSystemProperties());
+        startLogging(instrumentation, ConfigOption.fromSystemProperties());
     }
 
     /**
@@ -79,23 +79,15 @@ public final class EventLogAgent
      */
     public static void agentmain(final String agentArgs, final Instrumentation instrumentation)
     {
-        if (Strings.isEmpty(agentArgs))
-        {
-            startLogging(
-                AgentBuilder.RedefinitionStrategy.RETRANSFORMATION,
-                instrumentation,
-                ConfigOption.fromSystemProperties());
-        }
-        else if (STOP_COMMAND.equals(agentArgs))
+        if (STOP_COMMAND.equals(agentArgs))
         {
             stopLogging();
         }
         else
         {
-            startLogging(
-                AgentBuilder.RedefinitionStrategy.RETRANSFORMATION,
-                instrumentation,
-                ConfigOption.parseAgentArgs(agentArgs));
+            final Map<String, String> configOptions = Strings.isEmpty(agentArgs) ? fromSystemProperties() :
+                parseAgentArgs(agentArgs);
+            startLogging(instrumentation, configOptions);
         }
     }
 
@@ -133,9 +125,7 @@ public final class EventLogAgent
     }
 
     private static synchronized void startLogging(
-        final AgentBuilder.RedefinitionStrategy redefinitionStrategy,
-        final Instrumentation instrumentation,
-        final Map<String, String> configOptions)
+        final Instrumentation instrumentation, final Map<String, String> configOptions)
     {
         if (null != logTransformer)
         {
@@ -152,7 +142,9 @@ public final class EventLogAgent
             .with(TypeValidation.DISABLED))
             .disableClassFormatChanges()
             .with(new AgentBuilderListener())
-            .with(redefinitionStrategy);
+            .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)
+            .with(AgentBuilder.RedefinitionStrategy.DiscoveryStrategy.Reiterating.INSTANCE);
+
         final AgentBuilder initialAgentBuilder = agentBuilder;
 
         for (final ComponentLogger componentLogger : loggers)

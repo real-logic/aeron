@@ -19,8 +19,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'org.ow2.asm:asm:9.6'
-        classpath 'org.ow2.asm:asm-commons:9.6'
+        classpath 'org.ow2.asm:asm:9.7'
+        classpath 'org.ow2.asm:asm-commons:9.7'
     }
 }
 
@@ -55,15 +55,15 @@ def toolchainLauncher = javaToolchains.launcherFor {
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
-def agronaVersion = '1.20.0'
-def agronaVersionRange = '[1.20.0,2.0[' // allow any release >= 1.20.0 and < 2.0.0
+def agronaVersion = '1.21.1'
+def agronaVersionRange = '[1.21.1,2.0[' // allow any release >= 1.21.1 and < 2.0.0
 def sbeVersion = '1.30.0'
 def checkstyleVersion = '9.3'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.10.2'
 def junitPlatformVersion = '1.10.2'
 def mockitoVersion = '4.11.0'
-def byteBuddyVersion = '1.14.12'
+def byteBuddyVersion = '1.14.13'
 def findbugsAnnotationsVersion = '3.0.1'
 def hdrHistogramVersion = '2.1.12'
 def gitCommitHash = io.aeron.build.GithubUtil.currentGitHash("${projectDir}")

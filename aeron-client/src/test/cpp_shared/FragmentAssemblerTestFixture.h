@@ -73,8 +73,8 @@ public:
     }
 
 protected:
-    Header *m_header;
-    fragment_buffer_t m_buffer;
+    Header *m_header = nullptr;
+    fragment_buffer_t m_buffer = {};
 
 private:
     std::uint8_t headerBuffer[DataFrameHeader::LENGTH] = {};

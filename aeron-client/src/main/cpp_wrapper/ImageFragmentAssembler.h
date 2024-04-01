@@ -73,7 +73,7 @@ public:
     }
 
 private:
-    aeron_image_fragment_assembler_t *m_fragment_assembler;
+    aeron_image_fragment_assembler_t *m_fragment_assembler = nullptr;
     fragment_handler_t m_delegate;
 
     static void handlerCallback(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header)

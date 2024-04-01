@@ -40,11 +40,11 @@ extern "C"
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-#define CHANNEL_1 "aeron:udp?endpoint=localhost:40001"
-#define CHANNEL_1_UNRELIABLE "aeron:udp?endpoint=localhost:40001|reliable=false"
-#define CHANNEL_2 "aeron:udp?endpoint=localhost:40002"
-#define CHANNEL_3 "aeron:udp?endpoint=localhost:40003"
-#define CHANNEL_4 "aeron:udp?endpoint=localhost:40004"
+#define CHANNEL_1 "aeron:udp?endpoint=localhost:10001"
+#define CHANNEL_1_UNRELIABLE "aeron:udp?endpoint=localhost:10001|reliable=false"
+#define CHANNEL_2 "aeron:udp?endpoint=localhost:10002"
+#define CHANNEL_3 "aeron:udp?endpoint=localhost:10003"
+#define CHANNEL_4 "aeron:udp?endpoint=localhost:10004"
 #define CHANNEL_MDC_MANUAL "aeron:udp?control-mode=manual"
 #define INVALID_URI "aeron:udp://"
 
@@ -58,10 +58,10 @@ extern "C"
 #define MTU_1 (4096)
 #define MTU_2 (8192)
 
-#define CHANNEL_1_WITH_TAG_1001 "aeron:udp?endpoint=localhost:40001|tags=1001"
+#define CHANNEL_1_WITH_TAG_1001 "aeron:udp?endpoint=localhost:10001|tags=1001"
 #define CHANNEL_TAG_1001 "aeron:udp?tags=1001"
 
-#define CHANNEL_1_WITH_SESSION_ID_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(SESSION_ID_1_)
+#define CHANNEL_1_WITH_SESSION_ID_1 "aeron:udp?endpoint=localhost:10001|session-id=" STR(SESSION_ID_1_)
 
 #define SESSION_ID_1 (SESSION_ID_1_)
 #define SESSION_ID_3 (100000)

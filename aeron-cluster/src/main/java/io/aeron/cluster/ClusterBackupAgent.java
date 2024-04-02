@@ -43,6 +43,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
+import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.AgentTerminationException;
@@ -51,6 +52,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -808,8 +810,7 @@ public final class ClusterBackupAgent implements Agent
             if (NULL_VALUE == correlationId)
             {
                 final RecordingLog.Entry logEntry = recordingLog.findLastTerm();
-                final long startPosition = null == logEntry ?
-                    NULL_POSITION : backupArchive.getStopPosition(logEntry.recordingId);
+                final long startPosition = replayStartPosition(logEntry);
                 final long replayId = ctx.aeron().nextCorrelationId();
 
                 if (clusterArchive.archiveProxy().boundedReplay(
@@ -1072,6 +1073,54 @@ public final class ClusterBackupAgent implements Agent
     private boolean hasProgressStalled(final long nowMs)
     {
         return (NULL_COUNTER_ID == liveLogRecCounterId) && (nowMs > (timeOfLastProgressMs + backupProgressTimeoutMs));
+    }
+
+    private long replayStartPosition(final RecordingLog.Entry lastTerm)
+    {
+        return replayStartPosition(lastTerm, snapshotsRetrieved, ctx.clusterReplayInitialLogPosition(), backupArchive);
+    }
+
+    static long replayStartPosition(
+        final RecordingLog.Entry lastTerm,
+        final List<RecordingLog.Snapshot> snapshotsRetrieved,
+        final long replayInitialStartPosition,
+        final AeronArchive backupArchive)
+    {
+        if (null != lastTerm)
+        {
+            return backupArchive.getStopPosition(lastTerm.recordingId);
+        }
+
+        if (snapshotsRetrieved.isEmpty())
+        {
+            return NULL_POSITION;
+        }
+
+        final LongArrayList snapshotPositions = new LongArrayList();
+        for (final RecordingLog.Snapshot snapshot : snapshotsRetrieved)
+        {
+            if (ConsensusModule.Configuration.SERVICE_ID == snapshot.serviceId)
+            {
+                snapshotPositions.add(snapshot.logPosition);
+            }
+        }
+
+        long replayStartPosition = NULL_POSITION;
+        snapshotPositions.sort(Long::compare);
+        for (int i = 0, n = snapshotPositions.size(); i < n; i++)
+        {
+            final long logPosition = snapshotPositions.getLong(i);
+            if (replayInitialStartPosition < logPosition)
+            {
+                break;
+            }
+            else
+            {
+                replayStartPosition = logPosition;
+            }
+        }
+
+        return replayStartPosition;
     }
 
     private void runTerminationHook(final AgentTerminationException ex)

@@ -494,6 +494,40 @@ public final class ClusterBackup implements AutoCloseable
         {
             return System.getProperty(CLUSTER_BACKUP_SOURCE_TYPE_PROP_NAME, CLUSTER_BACKUP_SOURCE_TYPE_DEFAULT);
         }
+
+        /**
+         * Sets the initial cluster replay start position so that it will start from the most recent snapshot
+         */
+        public static final long CLUSTER_REPLAY_LATEST_LOG_POSITION = Long.MAX_VALUE;
+
+        /**
+         * Sets the initial cluster replay start position to the earliest possible position, either the beginning of
+         * the log or the earliest snapshot.
+         */
+        public static final long CLUSTER_REPLAY_EARLIEST_LOG_POSITION = 0;
+
+        /**
+         * Default value for the initial cluster replay start position.
+         */
+        public static final long CLUSTER_REPLAY_INITIAL_LOG_POSITION_DEFAULT = CLUSTER_REPLAY_EARLIEST_LOG_POSITION;
+
+        /**
+         * Property name for setting the cluster replay log position.
+         */
+        public static final String CLUSTER_REPLAY_INITIAL_LOG_POSITION_PROP_NAME =
+            "cluster.backup.replay.initial.log.position";
+
+        /**
+         * Get the initial value for the cluster relay initial log position
+         *
+         * @return initial position to determine where to start replaying the log from.
+         * @see ClusterBackup.Context#clusterReplayInitialLogPosition(long)
+         */
+        public static long clusterReplayInitialLogPosition()
+        {
+            return Long.getLong(
+                CLUSTER_REPLAY_INITIAL_LOG_POSITION_PROP_NAME, CLUSTER_REPLAY_INITIAL_LOG_POSITION_DEFAULT);
+        }
     }
 
     /**
@@ -552,6 +586,7 @@ public final class ClusterBackup implements AutoCloseable
         private String sourceType = Configuration.clusterBackupSourceType();
         private long replicationProgressTimeoutNs = ConsensusModule.Configuration.replicationProgressTimeoutNs();
         private long replicationProgressIntervalNs = ConsensusModule.Configuration.replicationProgressIntervalNs();
+        private long clusterReplayInitialLogPosition = Configuration.clusterReplayInitialLogPosition();
 
         /**
          * Perform a shallow copy of the object.
@@ -1783,6 +1818,38 @@ public final class ClusterBackup implements AutoCloseable
         public long replicationProgressIntervalNs()
         {
             return replicationProgressIntervalNs;
+        }
+
+        /**
+         * Set the log position to start from for the first time that the backup connects to the cluster. This will
+         * only be used if there is no existing local log recording (that will resume from the recording stop position).
+         * The standby will search for the most recent snapshot less than the supplied value. Therefore, a value of 0
+         * ({@link Configuration#CLUSTER_REPLAY_EARLIEST_LOG_POSITION}) will start at the earliest possible position and
+         * a value of {@link Long#MAX_VALUE} ({@link Configuration#CLUSTER_REPLAY_LATEST_LOG_POSITION}) will use the
+         * most recent snapshot to start from. The default is 0.
+         *
+         * @param clusterReplayInitialLogPosition position to start the cluster log replay from when no log exists on
+         *                                        the standby.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_REPLAY_INITIAL_LOG_POSITION_DEFAULT
+         * @see Configuration#CLUSTER_REPLAY_EARLIEST_LOG_POSITION
+         * @see Configuration#CLUSTER_REPLAY_LATEST_LOG_POSITION
+         */
+        public Context clusterReplayInitialLogPosition(final long clusterReplayInitialLogPosition)
+        {
+            this.clusterReplayInitialLogPosition = clusterReplayInitialLogPosition;
+            return this;
+        }
+
+        /**
+         * Get the log position to start the cluster replay from when no local copy of the log exists.
+         *
+         * @return the cluster replay initial log position.
+         * @see #clusterReplayInitialLogPosition(long)
+         */
+        public long clusterReplayInitialLogPosition()
+        {
+            return this.clusterReplayInitialLogPosition;
         }
 
         /**

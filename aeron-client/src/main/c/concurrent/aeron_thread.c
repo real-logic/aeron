@@ -162,7 +162,7 @@ int aeron_mutex_destroy(aeron_mutex_t *mutex)
     return 0;
 }
 
-int aeron_thread_attr_init(pthread_attr_t *attr)
+int aeron_thread_attr_init(aeron_thread_attr_t *attr)
 {
     return 0;
 }

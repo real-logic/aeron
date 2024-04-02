@@ -36,6 +36,7 @@ typedef pthread_mutex_t aeron_mutex_t;
 #define AERON_INIT_ONCE_VALUE PTHREAD_ONCE_INIT
 
 typedef pthread_t aeron_thread_t;
+typedef pthread_attr_t aeron_thread_attr_t;
 #define aeron_mutex_init pthread_mutex_init
 #define aeron_mutex_lock pthread_mutex_lock
 #define aeron_mutex_unlock pthread_mutex_unlock
@@ -71,7 +72,7 @@ typedef union aeron_init_once_union
 }
 AERON_INIT_ONCE;
 
-typedef unsigned long pthread_attr_t;
+typedef unsigned long aeron_thread_attr_t;
 typedef unsigned long pthread_key_t;
 
 typedef CONDITION_VARIABLE aeron_cond_t;
@@ -85,7 +86,7 @@ int aeron_mutex_destroy(aeron_mutex_t *mutex);
 int aeron_mutex_lock(aeron_mutex_t *mutex);
 int aeron_mutex_unlock(aeron_mutex_t *mutex);
 
-int aeron_thread_attr_init(pthread_attr_t *attr);
+int aeron_thread_attr_init(aeron_thread_attr_t *attr);
 
 int aeron_thread_create(aeron_thread_t *thread_ptr, void *attr, void *(*callback)(void *), void *arg0);
 

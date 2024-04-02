@@ -145,7 +145,7 @@ int aeron_executor_init(
             return -1;
         }
 
-        pthread_attr_t attr;
+        aeron_thread_attr_t attr;
         int result;
         if ((result = aeron_thread_attr_init(&attr)) != 0)
         {

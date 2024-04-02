@@ -24,6 +24,7 @@ import io.aeron.status.HeartbeatTimestamp;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
+import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.NoOpLock;
@@ -33,6 +34,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -40,7 +43,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
-@InterruptAfter(10)
 class ClientContextTest
 {
     @RegisterExtension
@@ -66,6 +68,7 @@ class ClientContextTest
     }
 
     @Test
+    @InterruptAfter(10)
     @SuppressWarnings("try")
     void shouldPreventCreatingMultipleClientsWithTheSameContext()
     {
@@ -90,6 +93,7 @@ class ClientContextTest
     }
 
     @Test
+    @InterruptAfter(10)
     @SuppressWarnings("try")
     void shouldAllowCustomLockInAgentRunnerModeIfNotInstanceOfNoOpLock()
     {
@@ -104,6 +108,7 @@ class ClientContextTest
     }
 
     @Test
+    @InterruptAfter(10)
     void shouldHaveUniqueCorrelationIdsAcrossMultipleClientsToTheSameDriver()
     {
         final Aeron.Context ctx = new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName());
@@ -112,15 +117,17 @@ class ClientContextTest
             Aeron aeron1 = Aeron.connect(ctx.clone()))
         {
             assertNotEquals(aeron0.nextCorrelationId(), aeron1.nextCorrelationId());
-
         }
     }
 
-    @Test
-    void shouldAddClientVersionInfoToTheHeartbeatTimestampCounter()
+    @ParameterizedTest
+    @ValueSource(strings = {"", "my-test-client"})
+    @InterruptAfter(10)
+    void shouldAddClientInfoToTheHeartbeatTimestampCounter(final String clientName)
     {
         try (Aeron aeron = Aeron.connect(new Aeron.Context()
             .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+            .clientName(clientName)
             .keepAliveIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))))
         {
             // trigger creation of the timestamp counter on the driver side
@@ -129,7 +136,8 @@ class ClientContextTest
             final long clientId = aeron.clientId();
             int counterId = Aeron.NULL_VALUE;
             final CountersReader countersReader = aeron.countersReader();
-            final String expectedLabel = ClientHeartbeatTimestamp.NAME + ": " + clientId + " " +
+            final String baseLabel = ClientHeartbeatTimestamp.NAME + ": clientId=" + clientId;
+            final String expandedLabel = baseLabel + " name=" + clientName + " " +
                 AeronCounters.formatVersionInfo(AeronVersion.VERSION, AeronVersion.GIT_SHA);
             while (true)
             {
@@ -143,13 +151,13 @@ class ClientContextTest
                     final int labelLength =
                         countersReader.metaDataBuffer().getInt(
                         CountersReader.metaDataOffset(counterId) + CountersReader.LABEL_OFFSET);
-                    if (expectedLabel.length() == labelLength &&
-                        expectedLabel.equals(countersReader.getCounterLabel(counterId)))
+                    if (labelLength > baseLabel.length())
                     {
+                        assertEquals(expandedLabel, countersReader.getCounterLabel(counterId));
                         break;
                     }
                 }
-                Thread.yield();
+                Tests.yield();
             }
         }
     }

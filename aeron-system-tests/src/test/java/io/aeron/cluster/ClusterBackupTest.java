@@ -38,6 +38,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import static io.aeron.cluster.ClusterBackup.Configuration.ReplayStart.LATEST_SNAPSHOT;
 import static io.aeron.test.SystemTestWatcher.UNKNOWN_HOST_FILTER;
 import static io.aeron.test.cluster.TestCluster.*;
 import static java.util.Collections.singletonList;
@@ -410,7 +411,7 @@ class ClusterBackupTest
     {
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
-            .replayInitialLogPosition(Long.MAX_VALUE)
+            .replayStart(LATEST_SNAPSHOT)
             .start();
         systemTestWatcher.cluster(cluster);
 

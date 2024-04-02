@@ -43,7 +43,6 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
-import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.AgentTerminationException;
@@ -1077,13 +1076,13 @@ public final class ClusterBackupAgent implements Agent
 
     private long replayStartPosition(final RecordingLog.Entry lastTerm)
     {
-        return replayStartPosition(lastTerm, snapshotsRetrieved, ctx.clusterReplayInitialLogPosition(), backupArchive);
+        return replayStartPosition(lastTerm, snapshotsRetrieved, ctx.initialReplayStart(), backupArchive);
     }
 
     static long replayStartPosition(
         final RecordingLog.Entry lastTerm,
         final List<RecordingLog.Snapshot> snapshotsRetrieved,
-        final long replayInitialStartPosition,
+        final ClusterBackup.Configuration.ReplayStart replayStart,
         final AeronArchive backupArchive)
     {
         if (null != lastTerm)
@@ -1091,32 +1090,20 @@ public final class ClusterBackupAgent implements Agent
             return backupArchive.getStopPosition(lastTerm.recordingId);
         }
 
-        if (snapshotsRetrieved.isEmpty())
+        if (ClusterBackup.Configuration.ReplayStart.BEGINNING == replayStart)
         {
-            return NULL_POSITION;
+            return -1;
         }
 
-        final LongArrayList snapshotPositions = new LongArrayList();
+        long replayStartPosition = NULL_POSITION;
         for (final RecordingLog.Snapshot snapshot : snapshotsRetrieved)
         {
             if (ConsensusModule.Configuration.SERVICE_ID == snapshot.serviceId)
             {
-                snapshotPositions.add(snapshot.logPosition);
-            }
-        }
-
-        long replayStartPosition = NULL_POSITION;
-        snapshotPositions.sort(Long::compare);
-        for (int i = 0, n = snapshotPositions.size(); i < n; i++)
-        {
-            final long logPosition = snapshotPositions.getLong(i);
-            if (replayInitialStartPosition < logPosition)
-            {
-                break;
-            }
-            else
-            {
-                replayStartPosition = logPosition;
+                if (replayStartPosition < snapshot.logPosition)
+                {
+                    replayStartPosition = snapshot.logPosition;
+                }
             }
         }
 

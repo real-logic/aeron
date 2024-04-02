@@ -19,12 +19,13 @@ import io.aeron.archive.client.AeronArchive;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.cluster.ClusterBackup.Configuration.ReplayStart;
 import static io.aeron.cluster.ClusterBackupAgent.replayStartPosition;
-import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Collections.emptyList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -43,14 +44,15 @@ class ClusterBackupAgentTest
 
         when(mockAeronArchive.getStopPosition(anyLong())).thenReturn(expectedStartPosition);
 
-        assertEquals(
-            expectedStartPosition, replayStartPosition(lastTerm, Collections.emptyList(), -1, mockAeronArchive));
+        final long replayStartPosition = replayStartPosition(
+            lastTerm, emptyList(), ReplayStart.BEGINNING, mockAeronArchive);
+        assertEquals(expectedStartPosition, replayStartPosition);
     }
 
     @Test
     void shouldReturnNullPositionIfLastTermIsNullAndSnapshotsIsEmpty()
     {
-        assertEquals(NULL_POSITION, replayStartPosition(null, Collections.emptyList(), -1, mockAeronArchive));
+        assertEquals(NULL_POSITION, replayStartPosition(null, emptyList(), ReplayStart.BEGINNING, mockAeronArchive));
     }
 
     @Test
@@ -64,13 +66,8 @@ class ClusterBackupAgentTest
             new RecordingLog.Snapshot(1, 0, 0, 5000, 0, ConsensusModule.Configuration.SERVICE_ID),
             new RecordingLog.Snapshot(1, 0, 0, 6000, 0, ConsensusModule.Configuration.SERVICE_ID));
 
-        assertEquals(NULL_POSITION, replayStartPosition(null, snapshots, 0, mockAeronArchive));
-        assertEquals(NULL_POSITION, replayStartPosition(null, snapshots, 999, mockAeronArchive));
-        assertEquals(1000, replayStartPosition(null, snapshots, 1000, mockAeronArchive));
-        assertEquals(1000, replayStartPosition(null, snapshots, 1001, mockAeronArchive));
-        assertEquals(1000, replayStartPosition(null, snapshots, 1999, mockAeronArchive));
-        assertEquals(2000, replayStartPosition(null, snapshots, 2000, mockAeronArchive));
-        assertEquals(2000, replayStartPosition(null, snapshots, 2001, mockAeronArchive));
-        assertEquals(6000, replayStartPosition(null, snapshots, Long.MAX_VALUE, mockAeronArchive));
+        assertEquals(NULL_POSITION, replayStartPosition(null, snapshots, ReplayStart.BEGINNING, mockAeronArchive));
+        assertEquals(
+            6000, replayStartPosition(null, snapshots, ReplayStart.LATEST_SNAPSHOT, mockAeronArchive));
     }
 }

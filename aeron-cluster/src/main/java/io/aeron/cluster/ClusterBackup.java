@@ -49,6 +49,7 @@ import java.util.function.Supplier;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.LIVENESS_TIMEOUT_MS;
+import static java.lang.System.getProperty;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getDurationInNanos;
@@ -496,37 +497,46 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Sets the initial cluster replay start position so that it will start from the most recent snapshot
+         * Determines what position to start from when backing up the log from the cluster.
          */
-        public static final long CLUSTER_REPLAY_LATEST_LOG_POSITION = Long.MAX_VALUE;
-
-        /**
-         * Sets the initial cluster replay start position to the earliest possible position, either the beginning of
-         * the log or the earliest snapshot.
-         */
-        public static final long CLUSTER_REPLAY_EARLIEST_LOG_POSITION = 0;
-
-        /**
-         * Default value for the initial cluster replay start position.
-         */
-        public static final long CLUSTER_REPLAY_INITIAL_LOG_POSITION_DEFAULT = CLUSTER_REPLAY_EARLIEST_LOG_POSITION;
-
-        /**
-         * Property name for setting the cluster replay log position.
-         */
-        public static final String CLUSTER_REPLAY_INITIAL_LOG_POSITION_PROP_NAME =
-            "cluster.backup.replay.initial.log.position";
-
-        /**
-         * Get the initial value for the cluster relay initial log position
-         *
-         * @return initial position to determine where to start replaying the log from.
-         * @see ClusterBackup.Context#clusterReplayInitialLogPosition(long)
-         */
-        public static long clusterReplayInitialLogPosition()
+        public enum ReplayStart
         {
-            return Long.getLong(
-                CLUSTER_REPLAY_INITIAL_LOG_POSITION_PROP_NAME, CLUSTER_REPLAY_INITIAL_LOG_POSITION_DEFAULT);
+            /**
+             * Start from the earliest available position in the cluster log. May not be 0 if the cluster log was
+             * truncated at some point.
+             */
+            BEGINNING,
+            /**
+             * Start backing up from the log position of the most recent snapshot in the log.
+             */
+            LATEST_SNAPSHOT
+        }
+
+        /**
+         * Default value for the initial cluster replay start.
+         */
+        public static final ReplayStart CLUSTER_INITIAL_REPLAY_START_DEFAULT = ReplayStart.BEGINNING;
+
+        /**
+         * Property name for setting the cluster replay start.
+         */
+        public static final String CLUSTER_INITIAL_REPLAY_START_PROP_NAME = "cluster.backup.initial.replay.start";
+
+        /**
+         * Get the initial value for the cluster relay start
+         *
+         * @return enum to determine where to start replaying the log from.
+         * @see Context#initialReplayStart(ReplayStart)
+         */
+        public static ReplayStart clusterInitialReplayStart()
+        {
+            final String propertyValue = getProperty(CLUSTER_INITIAL_REPLAY_START_PROP_NAME);
+            if (null == propertyValue)
+            {
+                return CLUSTER_INITIAL_REPLAY_START_DEFAULT;
+            }
+
+            return ReplayStart.valueOf(propertyValue);
         }
     }
 
@@ -586,7 +596,7 @@ public final class ClusterBackup implements AutoCloseable
         private String sourceType = Configuration.clusterBackupSourceType();
         private long replicationProgressTimeoutNs = ConsensusModule.Configuration.replicationProgressTimeoutNs();
         private long replicationProgressIntervalNs = ConsensusModule.Configuration.replicationProgressIntervalNs();
-        private long clusterReplayInitialLogPosition = Configuration.clusterReplayInitialLogPosition();
+        private Configuration.ReplayStart initialReplayStart = Configuration.clusterInitialReplayStart();
 
         /**
          * Perform a shallow copy of the object.
@@ -1821,35 +1831,30 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Set the log position to start from for the first time that the backup connects to the cluster. This will
-         * only be used if there is no existing local log recording (that will resume from the recording stop position).
-         * The standby will search for the most recent snapshot less than the supplied value. Therefore, a value of 0
-         * ({@link Configuration#CLUSTER_REPLAY_EARLIEST_LOG_POSITION}) will start at the earliest possible position and
-         * a value of {@link Long#MAX_VALUE} ({@link Configuration#CLUSTER_REPLAY_LATEST_LOG_POSITION}) will use the
-         * most recent snapshot to start from. The default is 0.
+         * Where to start the replay from the cluster used for the backup. Doesn't set a specific position, but instead
+         * it will use an enum value to derive appropriate place to start. This only applies to the first replay used
+         * for this backup.
          *
-         * @param clusterReplayInitialLogPosition position to start the cluster log replay from when no log exists on
-         *                                        the standby.
+         * @param replayStart determines the position to be used to start the backup replay from.
          * @return this for a fluent API.
-         * @see Configuration#CLUSTER_REPLAY_INITIAL_LOG_POSITION_DEFAULT
-         * @see Configuration#CLUSTER_REPLAY_EARLIEST_LOG_POSITION
-         * @see Configuration#CLUSTER_REPLAY_LATEST_LOG_POSITION
+         * @see Configuration.ReplayStart
+         * @see Configuration#CLUSTER_INITIAL_REPLAY_START_DEFAULT
          */
-        public Context clusterReplayInitialLogPosition(final long clusterReplayInitialLogPosition)
+        public Context initialReplayStart(final Configuration.ReplayStart replayStart)
         {
-            this.clusterReplayInitialLogPosition = clusterReplayInitialLogPosition;
+            this.initialReplayStart = replayStart;
             return this;
         }
 
         /**
-         * Get the log position to start the cluster replay from when no local copy of the log exists.
+         * Get the place for the cluster replay to start from when no local copy of the log exists.
          *
-         * @return the cluster replay initial log position.
-         * @see #clusterReplayInitialLogPosition(long)
+         * @return the cluster replay start.
+         * @see #initialReplayStart(Configuration.ReplayStart)
          */
-        public long clusterReplayInitialLogPosition()
+        public Configuration.ReplayStart initialReplayStart()
         {
-            return this.clusterReplayInitialLogPosition;
+            return this.initialReplayStart;
         }
 
         /**

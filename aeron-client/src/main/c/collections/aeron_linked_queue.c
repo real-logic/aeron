@@ -19,7 +19,8 @@
 #include "collections/aeron_linked_queue.h"
 #include "util/aeron_error.h"
 
-struct aeron_linked_queue_node_stct {
+struct aeron_linked_queue_node_stct
+{
     aeron_linked_queue_node_t *next;
     void *element;
 };

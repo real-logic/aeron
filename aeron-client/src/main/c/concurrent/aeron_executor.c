@@ -27,7 +27,7 @@ struct aeron_executor_task_stct
     void *clientd;
     int result;
     aeron_linked_queue_node_t *queue_node;
-    bool shutdown;
+    volatile bool shutdown;
     int errcode;
     char errmsg[AERON_ERROR_MAX_TOTAL_LENGTH];
 };

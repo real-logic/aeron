@@ -22,10 +22,12 @@ extern "C"
 #include "concurrent/aeron_executor.h"
 }
 
-typedef struct {
+typedef struct
+{
     int some_value;
     int some_other_value;
-} task_clientd_t;
+}
+task_clientd_t;
 
 class ExecutorTest : public testing::Test
 {

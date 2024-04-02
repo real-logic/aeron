@@ -42,6 +42,14 @@
 
 #define STATIC_BIT_SET_U64_LEN (512u)
 
+#define COPY_ENDPOINT_NAME(_d, _s)                    \
+do                                                    \
+{                                                     \
+    size_t _len = strnlen(_s, AERON_MAX_HOST_LENGTH); \
+    memcpy(_d, _s, _len);                             \
+    _d[_len] = '\0';                                  \
+} while (0)                                           \
+
 typedef struct aeron_time_tracking_name_resolver_stct
 {
     aeron_name_resolver_t delegate_resolver;
@@ -2883,7 +2891,7 @@ void aeron_driver_async_client_command_complete(int result, int errcode, const c
 
     if (result < 0)
     {
-        if (async_client_command->on_error == NULL)
+        if (NULL == async_client_command->on_error)
         {
             aeron_driver_conductor_on_error(conductor, errcode, errmsg, correlation_id);
         }
@@ -4645,7 +4653,7 @@ int aeron_driver_conductor_on_add_send_destination(
 
     async_client_command->async_command.async_resolve.uri_param_name = AERON_UDP_CHANNEL_ENDPOINT_KEY;
     async_client_command->async_command.async_resolve.is_re_resolution = false;
-    memcpy(async_client_command->async_command.async_resolve.endpoint_name, uri->params.udp.endpoint, strlen(uri->params.udp.endpoint));
+    COPY_ENDPOINT_NAME(async_client_command->async_command.async_resolve.endpoint_name, uri->params.udp.endpoint);
 
     // TODO instead of storing the pointer, should we be looking this up again in the on_complete callback?
     async_client_command->async_command.endpoint = endpoint;
@@ -4751,7 +4759,7 @@ int aeron_driver_conductor_on_remove_send_destination(
 
     async_client_command->async_command.async_resolve.uri_param_name = AERON_UDP_CHANNEL_ENDPOINT_KEY;
     async_client_command->async_command.async_resolve.is_re_resolution = true;
-    memcpy(async_client_command->async_command.async_resolve.endpoint_name, uri_params.params.udp.endpoint, strlen(uri_params.params.udp.endpoint));
+    COPY_ENDPOINT_NAME(async_client_command->async_command.async_resolve.endpoint_name, uri_params.params.udp.endpoint);
 
     async_client_command->async_command.endpoint = endpoint;
     async_client_command->async_command.uri = NULL;
@@ -5710,7 +5718,7 @@ void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item)
 
     async_cmd->async_resolve.uri_param_name = AERON_UDP_CHANNEL_ENDPOINT_KEY;
     async_cmd->async_resolve.is_re_resolution = true;
-    memcpy(async_cmd->async_resolve.endpoint_name, cmd->endpoint_name, strlen(cmd->endpoint_name));
+    COPY_ENDPOINT_NAME(async_cmd->async_resolve.endpoint_name, cmd->endpoint_name);
 
     memcpy(&async_cmd->existing_addr, &cmd->existing_addr, sizeof(cmd->existing_addr));
     async_cmd->endpoint = endpoint;
@@ -5766,7 +5774,7 @@ void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item)
 
     async_cmd->async_resolve.uri_param_name = AERON_UDP_CHANNEL_CONTROL_KEY;
     async_cmd->async_resolve.is_re_resolution = true;
-    memcpy(async_cmd->async_resolve.endpoint_name, cmd->endpoint_name, strlen(cmd->endpoint_name));
+    COPY_ENDPOINT_NAME(async_cmd->async_resolve.endpoint_name, cmd->endpoint_name);
 
     memcpy(&async_cmd->existing_addr, &cmd->existing_addr, sizeof(cmd->existing_addr));
     async_cmd->endpoint = cmd->endpoint;

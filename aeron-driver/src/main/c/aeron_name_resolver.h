@@ -92,7 +92,7 @@ typedef struct aeron_name_resolver_async_resolve_stct
     const char *uri_param_name;
     bool is_re_resolution;
     struct sockaddr_storage sockaddr;
-    char endpoint_name[AERON_MAX_HOST_LENGTH];
+    char endpoint_name[AERON_MAX_HOST_LENGTH + 1];
 }
 aeron_name_resolver_async_resolve_t;
 

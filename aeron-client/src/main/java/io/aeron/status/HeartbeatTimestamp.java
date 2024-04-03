@@ -88,7 +88,7 @@ public class HeartbeatTimestamp
         final int labelOffset = BitUtil.align(keyLength, SIZE_OF_INT);
         int labelLength = 0;
         labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, name);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, ": clientId=");
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, ": id=");
         labelLength += tempBuffer.putLongAscii(labelOffset + labelLength, registrationId);
 
         return countersManager.allocate(

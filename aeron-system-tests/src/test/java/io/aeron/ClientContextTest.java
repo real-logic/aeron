@@ -136,7 +136,7 @@ class ClientContextTest
             final long clientId = aeron.clientId();
             int counterId = Aeron.NULL_VALUE;
             final CountersReader countersReader = aeron.countersReader();
-            final String baseLabel = ClientHeartbeatTimestamp.NAME + ": clientId=" + clientId;
+            final String baseLabel = ClientHeartbeatTimestamp.NAME + ": id=" + clientId;
             final String expandedLabel = baseLabel + " name=" + clientName + " " +
                 AeronCounters.formatVersionInfo(AeronVersion.VERSION, AeronVersion.GIT_SHA);
             while (true)

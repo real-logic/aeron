@@ -455,7 +455,7 @@ public final class ClusterMarkFile implements AutoCloseable
         final MarkFileHeaderDecoder decoder = new MarkFileHeaderDecoder();
         decoder.wrap(
             headerDecoder.buffer(),
-            headerDecoder.initialOffset(),
+            headerDecoder.offset(),
             MarkFileHeaderDecoder.BLOCK_LENGTH,
             MarkFileHeaderDecoder.SCHEMA_VERSION);
 

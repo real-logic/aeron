@@ -132,6 +132,11 @@ public class CommonContext implements Cloneable
     public static final String AERON_DIR_PROP_DEFAULT;
 
     /**
+     * Should new/experimental features be enabled.
+     */
+    public static final String ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME = "aeron.enable.experimental.features";
+
+    /**
      * Media type used for IPC shared memory from {@link Publication} to {@link Subscription} channels.
      */
     public static final String IPC_MEDIA = "ipc";
@@ -423,7 +428,7 @@ public class CommonContext implements Cloneable
     private File cncFile;
     private UnsafeBuffer countersMetaDataBuffer;
     private UnsafeBuffer countersValuesBuffer;
-    private boolean enableExperimentalFeatures = Aeron.Configuration.enableExperimentalFeatures();
+    private boolean enableExperimentalFeatures = Boolean.getBoolean(ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME);
 
     static
     {
@@ -686,8 +691,7 @@ public class CommonContext implements Cloneable
      *
      * @param enableExperimentalFeatures indicate whether experimental features for the driver should be enabled.
      * @return this for a fluent API
-     * @see Aeron.Configuration#enableExperimentalFeatures()
-     * @see Aeron.Configuration#ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME
+     * @see #ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME
      * @see #enableExperimentalFeatures()
      */
     public CommonContext enableExperimentalFeatures(final boolean enableExperimentalFeatures)

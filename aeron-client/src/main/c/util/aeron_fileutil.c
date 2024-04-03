@@ -134,6 +134,16 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file)
     return 0;
 }
 
+int aeron_msync(void *addr, size_t length)
+{
+    if (NULL != addr && 0 == FlushViewOfFile(addr, length))
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "%s", "FlushViewOfFile failed");
+        return -1;
+    }
+    return 0;
+}
+
 int aeron_mkdir(const char *path, int permission)
 {
     return _mkdir(path);
@@ -311,11 +321,22 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file)
     return 0;
 }
 
+int aeron_msync(void *addr, size_t length)
+{
+    if (NULL != addr && 0 != msync(addr, length, MS_SYNC | MS_INVALIDATE))
+    {
+        AERON_SET_ERR(errno, "%s", "msync failed");
+        return -1;
+    }
+    return 0;
+}
+
 static int unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
 {
     if (remove(path) != 0)
     {
         AERON_SET_ERR(errno, "could not remove %s", path);
+        return -1;
     }
 
     return 0;

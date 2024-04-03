@@ -288,3 +288,38 @@ TEST_F(FileUtilTest, rawLogMapShouldCreateNonSparseFile)
     EXPECT_EQ((size_t)0, mapped_raw_log.mapped_file.length);
     EXPECT_EQ((int64_t)-1, aeron_file_length(file));
 }
+
+TEST_F(FileUtilTest, shouldMsyncMappedFile)
+{
+    aeron_mapped_file_t mapped_file = {};
+    const char *file = "test.txt";
+    const size_t file_length = 1024 * 512;
+    mapped_file.length = file_length;
+    ASSERT_EQ(0, aeron_map_new_file(&mapped_file, file, false)) << aeron_errmsg();
+
+    EXPECT_NE(nullptr, mapped_file.addr);
+    EXPECT_EQ(file_length, mapped_file.length);
+    EXPECT_EQ((int64_t)file_length, aeron_file_length(file));
+
+    ASSERT_EQ(0, aeron_msync(mapped_file.addr, mapped_file.length));
+    ASSERT_EQ(0, aeron_msync(mapped_file.addr, 1));
+
+    ASSERT_EQ(0, aeron_unmap(&mapped_file)) << aeron_errmsg();
+
+    EXPECT_NE(nullptr, mapped_file.addr);
+    EXPECT_EQ(file_length, mapped_file.length);
+    EXPECT_EQ(0, remove(file));
+    EXPECT_EQ((int64_t)-1, aeron_file_length(file));
+}
+
+TEST_F(FileUtilTest, shouldErrorIfMSyncingNonMappedData)
+{
+    char data[10];
+    ASSERT_EQ(-1, aeron_msync(&data, 1));
+    ASSERT_EQ(EINVAL, aeron_errcode());
+}
+
+TEST_F(FileUtilTest, shouldNotErrorIfAddressIsNull)
+{
+    ASSERT_EQ(0, aeron_msync(nullptr, 10));
+}

@@ -931,10 +931,6 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         aeron_system_counter_addr(context->system_counters, AERON_SYSTEM_COUNTER_BYTES_CURRENTLY_MAPPED),
         (int64_t)(_driver->context->cnc_map.length + _driver->context->loss_report_length));
 
-    aeron_mpsc_rb_next_correlation_id(&_driver->conductor.to_driver_commands);
-    aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epoch_clock());
-    aeron_cnc_version_signal_cnc_ready((aeron_cnc_metadata_t *)context->cnc_map.addr, AERON_CNC_VERSION);
-
     if (aeron_feedback_delay_state_init(
         &_driver->context->unicast_delay_feedback_generator,
         aeron_loss_detector_nak_unicast_delay_generator,
@@ -954,6 +950,11 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     {
         goto error;
     }
+
+    aeron_mpsc_rb_next_correlation_id(&_driver->conductor.to_driver_commands);
+    aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epoch_clock());
+    aeron_cnc_version_signal_cnc_ready((aeron_cnc_metadata_t *)context->cnc_map.addr, AERON_CNC_VERSION);
+    aeron_msync(context->cnc_map.addr, context->cnc_map.length);
 
     if (_driver->context->print_configuration_on_start)
     {

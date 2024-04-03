@@ -44,6 +44,8 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
 int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path);
 int aeron_unmap(aeron_mapped_file_t *mapped_file);
 
+int aeron_msync(void *addr, size_t length);
+
 #if defined(AERON_COMPILER_GCC)
 #include <unistd.h>
 

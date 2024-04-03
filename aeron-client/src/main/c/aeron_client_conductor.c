@@ -81,6 +81,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     }
 
     conductor->client_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
+    conductor->client_name = aeron_context_get_client_name(context);
 
     conductor->available_counter_handlers.array = NULL;
     conductor->available_counter_handlers.capacity = 0;
@@ -418,16 +419,24 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
                 aeron_counter_metadata_descriptor_t *counter_metadata = (aeron_counter_metadata_descriptor_t *)(
                     conductor->counters_reader.metadata + AERON_COUNTER_METADATA_OFFSET(id));
 
-                char version_info[AERON_COUNTER_MAX_LABEL_LENGTH];
-                snprintf(version_info,
-                    sizeof(version_info) - 1,
-                    " version=%s commit=%s",
+                char *extended_info;
+                size_t available_label_length = AERON_COUNTER_MAX_LABEL_LENGTH - counter_metadata->label_length;
+                if (aeron_alloc((void **)&extended_info, available_label_length) < 0)
+                {
+                    AERON_APPEND_ERR("%s", "");
+                }
+                size_t extended_info_length = snprintf(
+                    extended_info,
+                    available_label_length,
+                    " name=%s version=%s commit=%s",
+                    conductor->client_name,
                     aeron_version_text(),
                     aeron_version_gitsha());
-                size_t version_info_length = strlen(version_info);
 
-                memcpy(counter_metadata->label + counter_metadata->label_length, version_info, version_info_length);
-                counter_metadata->label_length += (int32_t)version_info_length;
+                memcpy(counter_metadata->label + counter_metadata->label_length, extended_info, extended_info_length);
+                counter_metadata->label_length += (int32_t)extended_info_length;
+
+                aeron_free(extended_info);
 
                 conductor->heartbeat_timestamp.counter_id = id;
                 conductor->heartbeat_timestamp.addr = aeron_counters_reader_addr(

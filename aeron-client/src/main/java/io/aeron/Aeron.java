@@ -47,6 +47,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getDurationInNanos;
+import static org.agrona.SystemUtil.getProperty;
 
 /**
  * Aeron entry point for communicating to the Media Driver for creating {@link Publication}s and {@link Subscription}s.
@@ -724,6 +725,13 @@ public class Aeron implements AutoCloseable
         public static final boolean PRE_TOUCH_MAPPED_MEMORY_DEFAULT = false;
 
         /**
+         * System property to name Aeron client. Default to empty string.
+         *
+         * @since 1.44.0
+         */
+        public static final String CLIENT_NAME_PROP_NAME = "aeron.client.name";
+
+        /**
          * The Default handler for Aeron runtime exceptions.
          * When a {@link DriverTimeoutException} is encountered, this handler will exit the program.
          * <p>
@@ -804,6 +812,16 @@ public class Aeron implements AutoCloseable
             return PRE_TOUCH_MAPPED_MEMORY_DEFAULT;
         }
 
+        /**
+         * Get the configured client name.
+         *
+         * @return specified client name or empty string if not set.
+         * @see #CLIENT_NAME_PROP_NAME
+         */
+        public static String clientName()
+        {
+            return getProperty(CLIENT_NAME_PROP_NAME, "");
+        }
     }
 
     /**
@@ -822,6 +840,7 @@ public class Aeron implements AutoCloseable
     public static class Context extends CommonContext
     {
         private long clientId;
+        private String clientName = Configuration.clientName();
         private boolean useConductorAgentInvoker = false;
         private boolean preTouchMappedMemory = Configuration.preTouchMappedMemory();
         private AgentInvoker driverAgentInvoker;
@@ -975,6 +994,32 @@ public class Aeron implements AutoCloseable
         public long clientId()
         {
             return clientId;
+        }
+
+        /**
+         * Sets the name used to identify this client among other clients connected to the media driver.
+         *
+         * @param clientName to use.
+         * @return this for a fluent API.
+         * @see Configuration#CLIENT_NAME_PROP_NAME
+         * @since 1.44.0
+         */
+        public Context clientName(final String clientName)
+        {
+            this.clientName = Strings.isEmpty(clientName) ? "" : clientName;
+            return this;
+        }
+
+        /**
+         * Returns the name of this client.
+         *
+         * @return name of this client or empty String if not configured.
+         * @see Configuration#CLIENT_NAME_PROP_NAME
+         * @since 1.44.0
+         */
+        public String clientName()
+        {
+            return clientName;
         }
 
         /**
@@ -1622,6 +1667,7 @@ public class Aeron implements AutoCloseable
                 "\n    countersValuesBuffer=" + countersValuesBuffer() +
                 "\n    driverTimeoutMs=" + driverTimeoutMs() +
                 "\n    clientId=" + clientId +
+                "\n    clientName=" + clientName +
                 "\n    useConductorAgentInvoker=" + useConductorAgentInvoker +
                 "\n    preTouchMappedMemory=" + preTouchMappedMemory +
                 "\n    driverAgentInvoker=" + driverAgentInvoker +

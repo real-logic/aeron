@@ -73,6 +73,7 @@ int aeron_context_init(aeron_context_t **context)
 
     aeron_default_path(_context->aeron_dir, AERON_MAX_PATH - 1);
 
+    _context->client_name = NULL;
     _context->error_handler = aeron_default_error_handler;
     _context->error_handler_clientd = NULL;
     _context->on_new_publication = NULL;
@@ -105,6 +106,11 @@ int aeron_context_init(aeron_context_t **context)
     if ((value = getenv(AERON_DIR_ENV_VAR)))
     {
         snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s", value);
+    }
+
+    if ((value = getenv(AERON_CLIENT_NAME_ENV_VAR)))
+    {
+        _context->client_name = value;
     }
 
     if ((value = getenv(AERON_DRIVER_TIMEOUT_ENV_VAR)))
@@ -171,6 +177,7 @@ int aeron_context_close(aeron_context_t *context)
         aeron_mpsc_concurrent_array_queue_close(&context->command_queue);
 
         aeron_free((void *)context->aeron_dir);
+        aeron_free((void *)context->client_name);
         aeron_free(context->idle_strategy_state);
         aeron_free(context);
     }
@@ -202,6 +209,20 @@ int aeron_context_set_dir(aeron_context_t *context, const char *value)
 const char *aeron_context_get_dir(aeron_context_t *context)
 {
     return NULL != context ? context->aeron_dir : NULL;
+}
+
+int aeron_context_set_client_name(aeron_context_t *context, const char *value)
+{
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
+
+    context->client_name = value;
+    return 0;
+}
+
+const char *aeron_context_get_client_name(aeron_context_t *context)
+{
+    return NULL != context && context->client_name ? context->client_name : "";
 }
 
 int aeron_context_set_driver_timeout_ms(aeron_context_t *context, uint64_t value)

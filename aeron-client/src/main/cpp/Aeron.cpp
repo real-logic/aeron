@@ -54,7 +54,8 @@ Aeron::Aeron(Context &context) :
         m_context.m_mediaDriverTimeout,
         m_context.m_resourceLingerTimeout,
         CncFileDescriptor::clientLivenessTimeout(m_cncBuffer),
-        m_context.m_preTouchMappedMemory),
+        m_context.m_preTouchMappedMemory,
+        m_context.m_clientName),
     m_idleStrategy(std::chrono::duration<long, std::milli>(m_context.idleSleepDuration())),
     m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler, AGENT_NAME),
     m_conductorInvoker(m_conductor, m_context.m_exceptionHandler)

@@ -219,6 +219,7 @@ typedef struct aeron_client_conductor_stct
     long long time_of_last_keepalive_ns;
 
     int64_t client_id;
+    const char* client_name;
 
     aeron_error_handler_t error_handler;
     void *error_handler_clientd;

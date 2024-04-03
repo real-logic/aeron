@@ -1492,7 +1492,8 @@ final class ClientConductor implements Agent
                     AeronCounters.appendToLabel(
                         countersReader.metaDataBuffer(),
                         counterId,
-                        " " + AeronCounters.formatVersionInfo(AeronVersion.VERSION, AeronVersion.GIT_SHA));
+                        " name=" + ctx.clientName() + " " +
+                        AeronCounters.formatVersionInfo(AeronVersion.VERSION, AeronVersion.GIT_SHA));
                     timeOfLastKeepAliveNs = nowNs;
                 }
             }

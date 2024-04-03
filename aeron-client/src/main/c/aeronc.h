@@ -119,6 +119,11 @@ int aeron_context_set_idle_sleep_duration_ns(aeron_context_t *context, uint64_t 
 int aeron_context_set_pre_touch_mapped_memory(aeron_context_t *context, bool value);
 bool aeron_context_get_pre_touch_mapped_memory(aeron_context_t *context);
 
+#define AERON_CLIENT_NAME_ENV_VAR "AERON_CLIENT_NAME"
+
+int aeron_context_set_client_name(aeron_context_t *context, const char *value);
+const char *aeron_context_get_client_name(aeron_context_t *context);
+
 /**
  * The error handler to be called when an error occurs.
  */

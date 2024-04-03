@@ -69,7 +69,8 @@ public:
         long driverTimeoutMs,
         long resourceLingerTimeoutMs,
         long long interServiceTimeoutNs,
-        bool preTouchMappedMemory) :
+        bool preTouchMappedMemory,
+        std::string clientName) :
         m_driverProxy(driverProxy),
         m_driverListenerAdapter(broadcastReceiver, *this),
         m_countersReader(counterMetadataBuffer, counterValuesBuffer),
@@ -79,6 +80,7 @@ public:
         m_onNewSubscriptionHandler(newSubscriptionHandler),
         m_errorHandler(errorHandler),
         m_epochClock(std::move(epochClock)),
+        m_clientName(clientName),
         m_driverTimeoutMs(driverTimeoutMs),
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
         m_interServiceTimeoutMs(static_cast<long>(interServiceTimeoutNs / 1000000)),
@@ -413,6 +415,7 @@ private:
     std::vector<std::pair<std::int64_t, on_close_client_t>> m_onCloseClientHandlers;
 
     epoch_clock_t m_epochClock;
+    std::string m_clientName;
     long m_driverTimeoutMs;
     long m_resourceLingerTimeoutMs;
     long m_interServiceTimeoutMs;
@@ -497,12 +500,13 @@ private:
                     index_t labelLengthOffset =
                         CountersReader::metadataOffset(counterId) + CountersReader::LABEL_LENGTH_OFFSET;
                     int32_t labelLength = m_countersReader.metaDataBuffer().getInt32(labelLengthOffset);
-                    std::string versionInfo = std::string(" version=") + AeronVersion::text() +
+                    std::string extendedInfo = std::string(" name=") + m_clientName + " version=" + AeronVersion::text() +
                         " commit=" + AeronVersion::gitSha();
+                    int32_t copyLength = std::min((int32_t)extendedInfo.length(), CountersReader::MAX_LABEL_LENGTH - labelLength);
                     m_countersReader.metaDataBuffer().putStringWithoutLength(
-                        labelLengthOffset + (int32_t)sizeof(int32_t) + labelLength, versionInfo);
+                        labelLengthOffset + (int32_t)sizeof(int32_t) + labelLength, extendedInfo.substr(0, copyLength));
                     m_countersReader.metaDataBuffer().putInt32(
-                        labelLengthOffset, labelLength + (int32_t)versionInfo.length());
+                        labelLengthOffset, labelLength + copyLength);
                     
                     m_heartbeatTimestamp.reset(new AtomicCounter(m_counterValuesBuffer, counterId));
                     m_heartbeatTimestamp->setOrdered(nowMs);

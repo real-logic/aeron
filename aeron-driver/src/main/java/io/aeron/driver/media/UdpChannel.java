@@ -881,6 +881,7 @@ public final class UdpChannel
      *
      * @param uri to check.
      * @return {@code true} if the destination uses multicast address.
+     * @since 1.44.0
      */
     public static boolean isMulticastDestinationAddress(final ChannelUri uri)
     {

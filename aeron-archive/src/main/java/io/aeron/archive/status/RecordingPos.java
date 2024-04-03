@@ -138,26 +138,7 @@ public final class RecordingPos
     @Deprecated
     public static int findCounterIdByRecording(final CountersReader countersReader, final long recordingId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
-
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
-        {
-            final int counterState = countersReader.getCounterState(i);
-            if (RECORD_ALLOCATED == counterState)
-            {
-                if (countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID &&
-                    buffer.getLong(metaDataOffset(i) + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId)
-                {
-                    return i;
-                }
-            }
-            else if (RECORD_UNUSED == counterState)
-            {
-                break;
-            }
-        }
-
-        return NULL_COUNTER_ID;
+        return findCounterIdByRecording(countersReader, recordingId, Aeron.NULL_VALUE);
     }
 
     /**
@@ -167,6 +148,7 @@ public final class RecordingPos
      * @param recordingId    for the active recording.
      * @param archiveId      to target specific Archive. Use {@link Aeron#NULL_VALUE} to emulate old behavior.
      * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
+     * @since 1.44.0
      */
     public static int findCounterIdByRecording(
         final CountersReader countersReader, final long recordingId, final long archiveId)
@@ -212,26 +194,7 @@ public final class RecordingPos
     @Deprecated
     public static int findCounterIdBySession(final CountersReader countersReader, final int sessionId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
-
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
-        {
-            final int counterState = countersReader.getCounterState(i);
-            if (RECORD_ALLOCATED == counterState)
-            {
-                if (countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID &&
-                    buffer.getInt(metaDataOffset(i) + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
-                {
-                    return i;
-                }
-            }
-            else if (RECORD_UNUSED == counterState)
-            {
-                break;
-            }
-        }
-
-        return NULL_COUNTER_ID;
+        return findCounterIdBySession(countersReader, sessionId, Aeron.NULL_VALUE);
     }
 
     /**
@@ -241,6 +204,7 @@ public final class RecordingPos
      * @param sessionId      for the active recording.
      * @param archiveId      to target specific Archive. Use {@link Aeron#NULL_VALUE} to emulate old behavior.
      * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
+     * @since 1.44.0
      */
     public static int findCounterIdBySession(
         final CountersReader countersReader, final int sessionId, final long archiveId)

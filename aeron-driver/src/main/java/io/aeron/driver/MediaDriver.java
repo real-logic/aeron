@@ -2205,6 +2205,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return number of threads.
          * @see Configuration#ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME
+         * @since 1.44.0
          */
         public int asyncTaskExecutorThreads()
         {
@@ -2216,6 +2217,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param asyncTaskExecutorThreads number of async worker threads.
          * @return this for a fluent API.
+         * @since 1.44.0
          */
         public Context asyncTaskExecutorThreads(final int asyncTaskExecutorThreads)
         {
@@ -2228,6 +2230,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return executor service for asynchronous tasks. If not explicitly assigned uses
          * {@link #asyncTaskExecutorThreads()} to size the thread pool.
+         * @since 1.44.0
          */
         public Executor asyncTaskExecutor()
         {
@@ -2239,6 +2242,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param asyncTaskExecutor to be used for asynchronous task execution in the {@link DriverConductor}.
          * @return this for a fluent API.
+         * @since 1.44.0
          */
         public Context asyncTaskExecutor(final Executor asyncTaskExecutor)
         {

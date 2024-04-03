@@ -132,9 +132,17 @@ public class CommonContext implements Cloneable
     public static final String AERON_DIR_PROP_DEFAULT;
 
     /**
-     * Should new/experimental features be enabled.
+     * Should new/experimental features be enabled.\
+     *
+     * @since 1.44.0
      */
     public static final String ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME = "aeron.enable.experimental.features";
+
+    /**
+     * Property name for a fallback {@link PrintStream} based logger when it is not possible to use the error logging
+     * callback. Supported values are stdout, stderr, no_op (stderr is the default).
+     */
+    public static final String FALLBACK_LOGGER_PROP_NAME = "aeron.fallback.logger";
 
     /**
      * Media type used for IPC shared memory from {@link Publication} to {@link Subscription} channels.
@@ -365,21 +373,24 @@ public class CommonContext implements Cloneable
     /**
      * Parameter name for the field that will be used to specify the response endpoint on a subscription and publication
      * used in a response "server".
+     *
+     * @since 1.44.0
      */
     public static final String RESPONSE_ENDPOINT_PARAM_NAME = "response-endpoint";
 
     /**
      * Parameter name for the field that will be used to specify the correlation id used on a publication to connect it
      * to a subscription's image in order to set up a response stream.
+     *
+     * @since 1.44.0
      */
     public static final String RESPONSE_CORRELATION_ID_PARAM_NAME = "response-correlation-id";
 
     /**
-     * Property name for a fallback {@link PrintStream} based logger when it is not possible to use the error logging
-     * callback. Supported values are stdout, stderr, no_op (stderr is the default).
+     * Parameter name to set explicit NAK delay (e.g. {@code nak-delay=200ms}).
+     *
+     * @since 1.44.0
      */
-    public static final String FALLBACK_LOGGER_PROP_NAME = "aeron.fallback.logger";
-
     public static final String NAK_DELAY_PARAM_NAME = "nak-delay";
 
     /**
@@ -680,6 +691,7 @@ public class CommonContext implements Cloneable
      *
      * @return <code>true</code> if enabled, <code>false</code> otherwise.
      * @see #enableExperimentalFeatures(boolean)
+     * @since 1.44.0
      */
     public boolean enableExperimentalFeatures()
     {
@@ -693,6 +705,7 @@ public class CommonContext implements Cloneable
      * @return this for a fluent API
      * @see #ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME
      * @see #enableExperimentalFeatures()
+     * @since 1.44.0
      */
     public CommonContext enableExperimentalFeatures(final boolean enableExperimentalFeatures)
     {

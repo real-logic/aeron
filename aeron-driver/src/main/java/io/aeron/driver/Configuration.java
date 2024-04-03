@@ -782,6 +782,8 @@ public final class Configuration
     /**
      * Property name to configure the number of async executor threads. Defaults to {@code 1}. Negative value or zero
      * means no asynchronous threads should be created, i.e. execution will be done on the conductor thread.
+     *
+     * @since 1.44.0
      */
     public static final String ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME = "aeron.driver.async.executor.threads";
 
@@ -1563,6 +1565,7 @@ public final class Configuration
      *
      * @return number of threads, defaults to one.
      * @see #ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME
+     * @since 1.44.0
      */
     public static int asyncTaskExecutorThreads()
     {

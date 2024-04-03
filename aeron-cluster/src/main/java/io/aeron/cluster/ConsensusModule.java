@@ -865,6 +865,8 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Property name of setting {@link ClusterClock}. Should specify a fully qualified class name.
          * Defaults to {@link MillisecondClusterClock}.
+         *
+         * @since 1.44.0
          */
         public static final String CLUSTER_CLOCK_PROP_NAME = "aeron.cluster.clock";
 
@@ -4046,6 +4048,7 @@ public final class ConsensusModule implements AutoCloseable
          * Get the counter used to track the number of elections on this node.
          *
          * @return the counter for elections.
+         * @since 1.44.0
          */
         public Counter electionCounter()
         {
@@ -4057,6 +4060,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @param electionCounter the counter for elections.
          * @return this for a fluentAPI.
+         * @since 1.44.0
          */
         public Context electionCounter(final Counter electionCounter)
         {
@@ -4068,6 +4072,7 @@ public final class ConsensusModule implements AutoCloseable
          * Get the counter used to track the leadership term id.
          *
          * @return the counter containing the leadership term id.
+         * @since 1.44.0
          */
         public Counter leadershipTermIdCounter()
         {
@@ -4079,6 +4084,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @param leadershipTermId the counter for elections.
          * @return this for a fluentAPI.
+         * @since 1.44.0
          */
         public Context leadershipTermIdCounter(final Counter leadershipTermId)
         {

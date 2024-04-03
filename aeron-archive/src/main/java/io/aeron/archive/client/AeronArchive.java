@@ -1559,6 +1559,7 @@ public final class AeronArchive implements AutoCloseable
      *
      * @param recordingId of the recording that the stop of active recording position is being requested for.
      * @return the length of the recording.
+     * @since 1.44.0
      */
     public long getMaxRecordedPosition(final long recordingId)
     {
@@ -1587,6 +1588,7 @@ public final class AeronArchive implements AutoCloseable
      * Get the id of the Archive.
      *
      * @return the id of the Archive.
+     * @since 1.44.0
      */
     public long archiveId()
     {

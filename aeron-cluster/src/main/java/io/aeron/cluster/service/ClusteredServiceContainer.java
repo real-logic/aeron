@@ -337,11 +337,15 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
         /**
          * Property name for threshold value, which is used for tracking snapshot duration breaches.
+         *
+         * @since 1.44.0
          */
         public static final String SNAPSHOT_DURATION_THRESHOLD_PROP_NAME = "aeron.cluster.service.snapshot.threshold";
 
         /**
          * Default threshold value, which is used for tracking snapshot duration breaches.
+         *
+         * @since 1.44.0
          */
         public static final long SNAPSHOT_DURATION_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
@@ -1822,10 +1826,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Set a threshold for snapshot duration which when exceeded will result in a counter increment.
          *
-         * @param thresholdNs value in nanoseconds
+         * @param thresholdNs value in nanoseconds.
          * @return this for fluent API.
          * @see Configuration#SNAPSHOT_DURATION_THRESHOLD_PROP_NAME
          * @see Configuration#SNAPSHOT_DURATION_THRESHOLD_DEFAULT_NS
+         * @since 1.44.0
          */
         public Context snapshotDurationThresholdNs(final long thresholdNs)
         {
@@ -1837,6 +1842,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Threshold for snapshot duration which when exceeded will result in a counter increment.
          *
          * @return threshold value in nanoseconds.
+         * @since 1.44.0
          */
         public long snapshotDurationThresholdNs()
         {
@@ -1848,6 +1854,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @param snapshotDurationTracker snapshot duration tracker.
          * @return this for fluent API.
+         * @since 1.44.0
          */
         public Context snapshotDurationTracker(final SnapshotDurationTracker snapshotDurationTracker)
         {
@@ -1858,7 +1865,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Get snapshot duration tracker used for monitoring snapshot duration.
          *
-         * @return snapshot duration tracker
+         * @return snapshot duration tracker.
+         * @since 1.44.0
          */
         public SnapshotDurationTracker snapshotDurationTracker()
         {

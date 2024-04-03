@@ -135,6 +135,8 @@ public enum ClusterEventCode implements EventCode
 
     /**
      * Event when a new Election is started.
+     *
+     * @since 1.44.0
      */
     NEW_ELECTION(22, ClusterEventDissector::dissectNewElection);
 

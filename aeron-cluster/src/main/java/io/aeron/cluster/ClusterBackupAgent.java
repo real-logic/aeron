@@ -1092,7 +1092,7 @@ public final class ClusterBackupAgent implements Agent
 
         if (ClusterBackup.Configuration.ReplayStart.BEGINNING == replayStart)
         {
-            return -1;
+            return NULL_POSITION;
         }
 
         long replayStartPosition = NULL_POSITION;

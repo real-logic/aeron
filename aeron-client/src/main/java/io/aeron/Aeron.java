@@ -723,6 +723,11 @@ public class Aeron implements AutoCloseable
         public static final boolean PRE_TOUCH_MAPPED_MEMORY_DEFAULT = false;
 
         /**
+         * Should new/experimental features be enabled.
+         */
+        public static final String ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME = "aeron.enable.experimental.features";
+
+        /**
          * The Default handler for Aeron runtime exceptions.
          * When a {@link DriverTimeoutException} is encountered, this handler will exit the program.
          * <p>
@@ -803,6 +808,15 @@ public class Aeron implements AutoCloseable
             return PRE_TOUCH_MAPPED_MEMORY_DEFAULT;
         }
 
+        /**
+         * Determine if new experimental features should be enabled.
+         *
+         * @return <code>true</code> if experimental features should be enabled, <code>false</code> otherwise.
+         */
+        public static boolean enableExperimentalFeatures()
+        {
+            return Boolean.getBoolean(ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME);
+        }
     }
 
     /**

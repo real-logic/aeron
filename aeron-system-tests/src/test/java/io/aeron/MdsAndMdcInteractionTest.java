@@ -60,11 +60,12 @@ public class MdsAndMdcInteractionTest
     @BeforeEach
     void setUp()
     {
-        driver = TestMediaDriver.launch(new MediaDriver.Context()
-                .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-                .threadingMode(ThreadingMode.SHARED)
-                .enableExperimentalFeatures(true),
-            watcher);
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
+            .threadingMode(ThreadingMode.SHARED);
+        context.enableExperimentalFeatures(true);
+
+        driver = TestMediaDriver.launch(context, watcher);
         watcher.dataCollector().add(driver.context().aeronDirectory());
     }
 

@@ -791,11 +791,6 @@ public final class Configuration
     public static final Executor CALLER_RUNS_TASK_EXECUTOR = Runnable::run;
 
     /**
-     * Should new/experimental features be enabled.
-     */
-    public static final String ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME = "aeron.enable.experimental.features";
-
-    /**
      * Should the driver configuration be printed on start.
      *
      * @return true if the driver configuration be printed on start.
@@ -1930,17 +1925,6 @@ public final class Configuration
         }
 
         return validator;
-    }
-
-
-    /**
-     * Determine if new experimental features should be enabled.
-     *
-     * @return <code>true</code> if experimental features should be enabled, <code>false</code> otherwise.
-     */
-    public static boolean enableExperimentalFeatures()
-    {
-        return Boolean.getBoolean(ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME);
     }
 
     /**

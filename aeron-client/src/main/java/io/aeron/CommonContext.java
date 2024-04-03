@@ -423,6 +423,7 @@ public class CommonContext implements Cloneable
     private File cncFile;
     private UnsafeBuffer countersMetaDataBuffer;
     private UnsafeBuffer countersValuesBuffer;
+    private boolean enableExperimentalFeatures = Aeron.Configuration.enableExperimentalFeatures();
 
     static
     {
@@ -667,6 +668,32 @@ public class CommonContext implements Cloneable
     public long driverTimeoutMs()
     {
         return checkDebugTimeout(driverTimeoutMs, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Should experimental features for the driver be enabled.
+     *
+     * @return <code>true</code> if enabled, <code>false</code> otherwise.
+     * @see #enableExperimentalFeatures(boolean)
+     */
+    public boolean enableExperimentalFeatures()
+    {
+        return enableExperimentalFeatures;
+    }
+
+    /**
+     * Should experimental features for the driver be enabled.
+     *
+     * @param enableExperimentalFeatures indicate whether experimental features for the driver should be enabled.
+     * @return this for a fluent API
+     * @see Aeron.Configuration#enableExperimentalFeatures()
+     * @see Aeron.Configuration#ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME
+     * @see #enableExperimentalFeatures()
+     */
+    public CommonContext enableExperimentalFeatures(final boolean enableExperimentalFeatures)
+    {
+        this.enableExperimentalFeatures = enableExperimentalFeatures;
+        return this;
     }
 
     /**

@@ -39,11 +39,12 @@ public class ExperimentalDriverFeaturesTest
     @BeforeEach
     void setUp()
     {
-        driver = TestMediaDriver.launch(new MediaDriver.Context()
+        final MediaDriver.Context context = new MediaDriver.Context()
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-            .threadingMode(ThreadingMode.SHARED)
-            .enableExperimentalFeatures(false),
-            watcher);
+            .threadingMode(ThreadingMode.SHARED);
+        context.enableExperimentalFeatures(false);
+
+        driver = TestMediaDriver.launch(context, watcher);
         watcher.dataCollector().add(driver.context().aeronDirectory());
         watcher.ignoreErrorsMatching(s -> true);
     }

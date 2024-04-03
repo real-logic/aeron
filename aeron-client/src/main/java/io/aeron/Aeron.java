@@ -726,6 +726,8 @@ public class Aeron implements AutoCloseable
 
         /**
          * System property to name Aeron client. Default to empty string.
+         *
+         * @since 1.44.0
          */
         public static final String CLIENT_NAME_PROP_NAME = "aeron.client.name";
 
@@ -1000,6 +1002,7 @@ public class Aeron implements AutoCloseable
          * @param clientName to use.
          * @return this for a fluent API.
          * @see Configuration#CLIENT_NAME_PROP_NAME
+         * @since 1.44.0
          */
         public Context clientName(final String clientName)
         {
@@ -1012,6 +1015,7 @@ public class Aeron implements AutoCloseable
          *
          * @return name of this client or empty String if not configured.
          * @see Configuration#CLIENT_NAME_PROP_NAME
+         * @since 1.44.0
          */
         public String clientName()
         {

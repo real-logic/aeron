@@ -526,7 +526,7 @@ public final class ClusterBackup implements AutoCloseable
          * Get the initial value for the cluster relay start
          *
          * @return enum to determine where to start replaying the log from.
-         * @see Context#initialReplayStart(ReplayStart)
+         * @see #CLUSTER_INITIAL_REPLAY_START_PROP_NAME
          */
         public static ReplayStart clusterInitialReplayStart()
         {
@@ -1850,7 +1850,8 @@ public final class ClusterBackup implements AutoCloseable
          * Get the place for the cluster replay to start from when no local copy of the log exists.
          *
          * @return the cluster replay start.
-         * @see #initialReplayStart(Configuration.ReplayStart)
+         * @see Configuration.ReplayStart
+         * @see Configuration#CLUSTER_INITIAL_REPLAY_START_DEFAULT
          */
         public Configuration.ReplayStart initialReplayStart()
         {

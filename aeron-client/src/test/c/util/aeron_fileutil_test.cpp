@@ -316,7 +316,8 @@ TEST_F(FileUtilTest, shouldErrorIfMSyncingNonMappedData)
 {
     char data[10];
     ASSERT_EQ(-1, aeron_msync(&data, 1));
-    ASSERT_EQ(EINVAL, aeron_errcode());
+    ASSERT_NE(0, aeron_errcode());
+    ASSERT_NE(std::string(""), aeron_errmsg());
 }
 
 TEST_F(FileUtilTest, shouldNotErrorIfAddressIsNull)

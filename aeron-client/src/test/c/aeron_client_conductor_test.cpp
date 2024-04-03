@@ -1120,7 +1120,7 @@ TEST_F(ClientConductorTest, shouldCreateDriverTimeoutError)
     ASSERT_EQ(AERON_CLIENT_ERROR_DRIVER_TIMEOUT, errorcode);
 }
 
-TEST_F(ClientConductorTest, shouldAddClientVersionInfoToTheHeartbeatCounterLabel)
+TEST_F(ClientConductorTest, shouldAddClientInfoToTheHeartbeatCounterLabel)
 {
     m_conductor.client_id = 0x60001da400;
     m_conductor.client_name = "test client name";
@@ -1150,5 +1150,39 @@ TEST_F(ClientConductorTest, shouldAddClientVersionInfoToTheHeartbeatCounterLabel
         &m_conductor.counters_reader, counter_id, counterLabel, sizeof(counterLabel)), label.length());
     ASSERT_EQ(
         label + " name=test client name version=" + aeron_version_text() + " commit=" + aeron_version_gitsha(),
+        std::string(counterLabel));
+}
+
+TEST_F(ClientConductorTest, shouldAddClientInfoToTheHeartbeatCounterLabelUpToMaxLength)
+{
+    m_conductor.client_id = -4373543;
+    auto clientName = std::string("test").append(1000, 'p');
+    m_conductor.client_name = clientName.c_str();
+    aeron_heartbeat_timestamp_key_layout_t key = {};
+    key.registration_id = m_conductor.client_id;
+    std::string label = std::string("abc");
+
+    int32_t counter_id = aeron_counters_manager_allocate(
+        &m_counters_manager,
+        AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID,
+        (const uint8_t *)&key,
+        sizeof(key),
+        label.c_str(),
+        label.length());
+    ASSERT_GT(counter_id, -1);
+
+    char counterLabel[AERON_COUNTER_MAX_LABEL_LENGTH];
+    memset(counterLabel, '\0', sizeof(counterLabel));
+    ASSERT_EQ(label.length(), aeron_counters_reader_counter_label(
+        &m_conductor.counters_reader, counter_id, counterLabel, sizeof(counterLabel)));
+
+    ASSERT_STREQ(label.c_str(), counterLabel);
+
+    doWorkForNs((int64_t)m_context->keepalive_interval_ns * 2, true);
+
+    ASSERT_GT(aeron_counters_reader_counter_label(
+        &m_conductor.counters_reader, counter_id, counterLabel, sizeof(counterLabel)), label.length());
+    ASSERT_EQ(
+        label + std::string(" name=test").append(365, 'p'),
         std::string(counterLabel));
 }

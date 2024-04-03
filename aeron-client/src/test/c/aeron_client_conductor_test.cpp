@@ -1183,6 +1183,6 @@ TEST_F(ClientConductorTest, shouldAddClientInfoToTheHeartbeatCounterLabelUpToMax
     ASSERT_GT(aeron_counters_reader_counter_label(
         &m_conductor.counters_reader, counter_id, counterLabel, sizeof(counterLabel)), label.length());
     ASSERT_EQ(
-        label + std::string(" name=test").append(365, 'p'),
+        label + std::string(" name=test").append(366, 'p'),
         std::string(counterLabel));
 }

@@ -419,17 +419,24 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
                 aeron_counter_metadata_descriptor_t *counter_metadata = (aeron_counter_metadata_descriptor_t *)(
                     conductor->counters_reader.metadata + AERON_COUNTER_METADATA_OFFSET(id));
 
-                char extended_info[AERON_COUNTER_MAX_LABEL_LENGTH - counter_metadata->label_length];
-                snprintf(extended_info,
-                    sizeof(extended_info) - 1,
+                char *extended_info;
+                size_t available_label_length = AERON_COUNTER_MAX_LABEL_LENGTH - counter_metadata->label_length;
+                if (aeron_alloc((void **)&extended_info, available_label_length) < 0)
+                {
+                    AERON_APPEND_ERR("%s", "");
+                }
+                size_t extended_info_length = snprintf(
+                    extended_info,
+                    available_label_length,
                     " name=%s version=%s commit=%s",
                     conductor->client_name,
                     aeron_version_text(),
                     aeron_version_gitsha());
-                size_t copy_length =  strlen(extended_info);
 
-                memcpy(counter_metadata->label + counter_metadata->label_length, extended_info, copy_length);
-                counter_metadata->label_length += (int32_t)copy_length;
+                memcpy(counter_metadata->label + counter_metadata->label_length, extended_info, extended_info_length);
+                counter_metadata->label_length += (int32_t)extended_info_length;
+
+                aeron_free(extended_info);
 
                 conductor->heartbeat_timestamp.counter_id = id;
                 conductor->heartbeat_timestamp.addr = aeron_counters_reader_addr(

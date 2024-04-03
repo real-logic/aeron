@@ -36,6 +36,7 @@ import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
@@ -50,6 +51,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.stubbing.Answer;
@@ -57,6 +59,7 @@ import org.mockito.stubbing.Answer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -128,7 +131,6 @@ class DriverConductorTest
 
     private final CachedNanoClock nanoClock = new CachedNanoClock();
     private final CachedEpochClock epochClock = new CachedEpochClock();
-    private MappedByteBuffer cncByteBuffer;
 
     private SystemCounters spySystemCounters;
 
@@ -136,7 +138,6 @@ class DriverConductorTest
     private MediaDriver.Context ctx;
     private DriverProxy driverProxy;
     private DriverConductor driverConductor;
-    private boolean isClosed;
 
     private final Answer<Void> closeChannelEndpointAnswer =
         (invocation) ->
@@ -149,10 +150,8 @@ class DriverConductorTest
         };
 
     @BeforeEach
-    void before()
+    void before(@TempDir final Path dir)
     {
-        cncByteBuffer = mock(MappedByteBuffer.class);
-
         counterKeyAndLabel.putInt(COUNTER_KEY_OFFSET, 42);
         counterKeyAndLabel.putStringAscii(COUNTER_LABEL_OFFSET, COUNTER_LABEL);
 
@@ -208,7 +207,7 @@ class DriverConductorTest
             .receiverPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, false))
             .asyncTaskExecutor(CALLER_RUNS_TASK_EXECUTOR)
             .asyncTaskExecutorThreads(0)
-            .cncByteBuffer(cncByteBuffer);
+            .cncByteBuffer(IoUtil.mapNewFile(dir.resolve("test.cnc").toFile(), 1024));
 
         driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);
@@ -221,10 +220,7 @@ class DriverConductorTest
     void after()
     {
         CloseHelper.close(receiveChannelEndpoint);
-        if (!isClosed)
-        {
-            driverConductor.onClose();
-        }
+        driverConductor.onClose();
     }
 
     @Test
@@ -1943,13 +1939,14 @@ class DriverConductorTest
     }
 
     @Test
-    void onCloseMustShutdownAsyncExecutor() throws InterruptedException
+    void onCloseMustShutdownAsyncExecutor(@TempDir final Path dir) throws InterruptedException
     {
         final ExecutorService asyncTaskExecutor = mock(ExecutorService.class);
-        final DriverConductor conductor = new DriverConductor(ctx.asyncTaskExecutor(asyncTaskExecutor));
+        final DriverConductor conductor = new DriverConductor(ctx.clone()
+            .cncByteBuffer(IoUtil.mapNewFile(dir.resolve("some.txt").toFile(), 64))
+            .asyncTaskExecutor(asyncTaskExecutor));
 
         conductor.onClose();
-        isClosed = true;
 
         final InOrder inOrder = inOrder(asyncTaskExecutor);
         inOrder.verify(asyncTaskExecutor).shutdownNow();
@@ -1958,15 +1955,16 @@ class DriverConductorTest
     }
 
     @Test
-    void onCloseHandlesExceptionFromClosingAsyncExecutor()
+    void onCloseHandlesExceptionFromClosingAsyncExecutor(@TempDir final Path dir)
     {
         final ExecutorService asyncTaskExecutor = mock(ExecutorService.class);
         final IllegalStateException closeException = new IllegalStateException("executor failed");
         doThrow(closeException).when(asyncTaskExecutor).shutdownNow();
-        final DriverConductor conductor = new DriverConductor(ctx.asyncTaskExecutor(asyncTaskExecutor));
+        final DriverConductor conductor = new DriverConductor(ctx.clone()
+            .cncByteBuffer(IoUtil.mapNewFile(dir.resolve("some.txt").toFile(), 64))
+            .asyncTaskExecutor(asyncTaskExecutor));
 
         conductor.onClose();
-        isClosed = true;
 
         final InOrder inOrder = inOrder(asyncTaskExecutor, mockErrorHandler);
         inOrder.verify(asyncTaskExecutor).shutdownNow();
@@ -1975,15 +1973,16 @@ class DriverConductorTest
     }
 
     @Test
-    void onCloseHandlesExceptionFromClosingAsyncExecutor2() throws InterruptedException
+    void onCloseHandlesExceptionFromClosingAsyncExecutor2(@TempDir final Path dir) throws InterruptedException
     {
         final ExecutorService asyncTaskExecutor = mock(ExecutorService.class);
         final IllegalStateException closeException = new IllegalStateException("executor failed");
         doThrow(closeException).when(asyncTaskExecutor).awaitTermination(anyLong(), any(TimeUnit.class));
-        final DriverConductor conductor = new DriverConductor(ctx.asyncTaskExecutor(asyncTaskExecutor));
+        final DriverConductor conductor = new DriverConductor(ctx.clone()
+            .cncByteBuffer(IoUtil.mapNewFile(dir.resolve("some.txt").toFile(), 64))
+            .asyncTaskExecutor(asyncTaskExecutor));
 
         conductor.onClose();
-        isClosed = true;
 
         final InOrder inOrder = inOrder(asyncTaskExecutor, mockErrorHandler);
         inOrder.verify(asyncTaskExecutor).shutdownNow();
@@ -1993,13 +1992,14 @@ class DriverConductorTest
     }
 
     @Test
-    void onCloseShouldNotifyIfExecutorDoesNotCloseOnTime() throws InterruptedException
+    void onCloseShouldNotifyIfExecutorDoesNotCloseOnTime(@TempDir final Path dir) throws InterruptedException
     {
         final ExecutorService asyncTaskExecutor = mock(ExecutorService.class);
-        final DriverConductor conductor = new DriverConductor(ctx.asyncTaskExecutor(asyncTaskExecutor));
+        final DriverConductor conductor = new DriverConductor(ctx.clone()
+            .cncByteBuffer(IoUtil.mapNewFile(dir.resolve("some.txt").toFile(), 64))
+            .asyncTaskExecutor(asyncTaskExecutor));
 
         conductor.onClose();
-        isClosed = true;
 
         final InOrder inOrder = inOrder(asyncTaskExecutor, mockErrorHandler);
         inOrder.verify(asyncTaskExecutor).shutdownNow();
@@ -2011,12 +2011,12 @@ class DriverConductorTest
     }
 
     @Test
-    void onCloseShouldCallForceOnTheCncByteBuffer()
+    void onCloseShouldCallForceOnTheCncByteBuffer(@TempDir final Path dir)
     {
-        final DriverConductor conductor = new DriverConductor(ctx);
+        final MappedByteBuffer cncByteBuffer = spy(IoUtil.mapNewFile(dir.resolve("test.cnc").toFile(), 1024));
+        final DriverConductor conductor = new DriverConductor(ctx.clone().cncByteBuffer(cncByteBuffer));
 
         conductor.onClose();
-        isClosed = true;
 
         final InOrder inOrder = inOrder(toDriverCommands, cncByteBuffer);
         inOrder.verify(toDriverCommands).consumerHeartbeatTime(Aeron.NULL_VALUE);

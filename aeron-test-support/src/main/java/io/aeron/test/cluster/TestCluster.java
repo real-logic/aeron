@@ -112,6 +112,7 @@ public final class TestCluster implements AutoCloseable
     static final long CATALOG_CAPACITY = 128 * 1024;
 
     static final String LOG_CHANNEL = "aeron:udp?term-length=512k|alias=raft";
+    static final String REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc";
     static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0|alias=egress";
     static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k|alias=ingress";

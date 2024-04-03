@@ -226,6 +226,28 @@ public:
     }
 
     /**
+     * Set the name for this Aeron client.
+     *
+     * @param clientName to assign.
+     * @return reference to this Context instance.
+     */
+    inline this_t &clientName(const std::string &clientName)
+    {
+        m_clientName = clientName;
+        return *this;
+    }
+
+    /**
+     * Get the name of this Aeron client.
+     *
+     * @return name of the client or empty string.
+     */
+    inline std::string clientName()
+    {
+        return m_clientName;
+    }
+
+    /**
      * Return the path to the CnC file used by the Aeron client for communication with the media driver.
      *
      * @return path of the CnC file
@@ -440,6 +462,7 @@ public:
 
 private:
     std::string m_dirName = defaultAeronPath();
+    std::string m_clientName;
     exception_handler_t m_exceptionHandler = defaultErrorHandler;
     on_new_publication_t m_onNewPublicationHandler = defaultOnNewPublicationHandler;
     on_new_publication_t m_onNewExclusivePublicationHandler = defaultOnNewPublicationHandler;

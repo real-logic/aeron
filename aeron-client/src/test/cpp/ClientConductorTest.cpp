@@ -1132,7 +1132,7 @@ TEST_F(ClientConductorTest, shouldThrowExceptionOnReentrantCallback)
     EXPECT_TRUE(called);
 }
 
-TEST_F(ClientConductorTest, shouldAddClientVersionToTheHeartbeatCounter)
+TEST_F(ClientConductorTest, shouldAddClientInfoToTheHeartbeatCounter)
 {
     int64_t clientId = m_driverProxy.clientId();
 
@@ -1151,8 +1151,53 @@ TEST_F(ClientConductorTest, shouldAddClientVersionToTheHeartbeatCounter)
     m_conductor.doWork();
 
     EXPECT_EQ(
-        std::string("X counter version=") + aeron::AeronVersion::text() + " commit=" +
+        std::string("X counter name=test-conductor version=") + aeron::AeronVersion::text() + " commit=" +
         aeron::AeronVersion::gitSha(),
+        manager.getCounterLabel(counterId));
+
+    EXPECT_EQ(AERON_VERSION_MAJOR, aeron::AeronVersion::major());
+    EXPECT_EQ(AERON_VERSION_MINOR, aeron::AeronVersion::minor());
+    EXPECT_EQ(AERON_VERSION_PATCH, aeron::AeronVersion::patch());
+}
+
+TEST_F(ClientConductorTest, shouldAddClientInfoUpToTheMaxLabelLengthToTheHeartbeatCounter)
+{
+    ClientConductor conductor(
+        [&]() { return m_currentTime; },
+        m_driverProxy,
+        m_copyBroadcastReceiver,
+        m_counterMetadataBuffer,
+        m_counterValuesBuffer,
+        std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewPub, &m_handlers, _1, _2, _3, _4),
+        std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewPub, &m_handlers, _1, _2, _3, _4),
+        std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewSub, &m_handlers, _1, _2, _3),
+        [&](const std::exception& exception) { m_errorHandler(exception); },
+        std::bind(&testing::NiceMock<MockClientConductorHandlers>::onAvailableCounter, &m_handlers, _1, _2, _3),
+        std::bind(&testing::NiceMock<MockClientConductorHandlers>::onUnavailableCounter, &m_handlers, _1, _2, _3),
+        defaultOnCloseClientHandler,
+        DRIVER_TIMEOUT_MS,
+        RESOURCE_LINGER_TIMEOUT_MS,
+        INTER_SERVICE_TIMEOUT_NS,
+        PRE_TOUCH_MAPPED_MEMORY,
+        std::string("A").append(500, 'x'));
+    int64_t clientId = m_driverProxy.clientId();
+
+    CountersManager manager(m_counterMetadataBuffer, m_counterValuesBuffer);
+
+    std::int32_t counterId = manager.allocate("test label prefix",
+        HeartbeatTimestamp::CLIENT_HEARTBEAT_TYPE_ID,
+        [&clientId](AtomicBuffer keyBuffer) -> void
+    {
+        keyBuffer.putInt64(0, clientId);
+    });
+
+    m_currentTime += KEEPALIVE_TIMEOUT_MS + 1;
+    m_manyToOneRingBuffer.consumerHeartbeatTime(m_currentTime);
+
+    conductor.doWork();
+
+    EXPECT_EQ(
+        std::string("test label prefix name=A").append(356, 'x'),
         manager.getCounterLabel(counterId));
 
     EXPECT_EQ(AERON_VERSION_MAJOR, aeron::AeronVersion::major());

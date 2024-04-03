@@ -237,6 +237,31 @@ public:
     }
 
     /**
+     * Set the name for this Aeron client.
+     *
+     * @param clientName to set.
+     * @return reference to this Context instance.
+     */
+    inline this_t &clientName(const std::string &clientName)
+    {
+        if (aeron_context_set_client_name(m_context, clientName.c_str()) < 0)
+        {
+            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
+        }
+        return *this;
+    }
+
+    /**
+     * Get the name of this Aeron client.
+     *
+     * @return client name or empty string.
+     */
+    inline std::string clientName()
+    {
+        return {aeron_context_get_client_name(m_context)};
+    }
+
+    /**
      * Return the path to the CnC file used by the Aeron client for communication with the media driver.
      *
      * @return path of the CnC file

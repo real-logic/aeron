@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.DriverProxy;
 import io.aeron.ErrorCode;
@@ -55,6 +56,7 @@ import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -113,7 +115,7 @@ class DriverConductorTest
     private final ByteBuffer conductorBuffer = ByteBuffer.allocateDirect(CONDUCTOR_BUFFER_LENGTH_DEFAULT);
     private final UnsafeBuffer counterKeyAndLabel = new UnsafeBuffer(new byte[BUFFER_LENGTH]);
 
-    private final RingBuffer toDriverCommands = new ManyToOneRingBuffer(new UnsafeBuffer(conductorBuffer));
+    private final RingBuffer toDriverCommands = spy(new ManyToOneRingBuffer(new UnsafeBuffer(conductorBuffer)));
     private final ClientProxy mockClientProxy = mock(ClientProxy.class);
 
     private final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
@@ -126,6 +128,7 @@ class DriverConductorTest
 
     private final CachedNanoClock nanoClock = new CachedNanoClock();
     private final CachedEpochClock epochClock = new CachedEpochClock();
+    private MappedByteBuffer cncByteBuffer;
 
     private SystemCounters spySystemCounters;
 
@@ -133,6 +136,7 @@ class DriverConductorTest
     private MediaDriver.Context ctx;
     private DriverProxy driverProxy;
     private DriverConductor driverConductor;
+    private boolean isClosed;
 
     private final Answer<Void> closeChannelEndpointAnswer =
         (invocation) ->
@@ -147,6 +151,8 @@ class DriverConductorTest
     @BeforeEach
     void before()
     {
+        cncByteBuffer = mock(MappedByteBuffer.class);
+
         counterKeyAndLabel.putInt(COUNTER_KEY_OFFSET, 42);
         counterKeyAndLabel.putStringAscii(COUNTER_LABEL_OFFSET, COUNTER_LABEL);
 
@@ -201,7 +207,8 @@ class DriverConductorTest
             .senderPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, true))
             .receiverPortManager(new WildcardPortManager(WildcardPortManager.EMPTY_PORT_RANGE, false))
             .asyncTaskExecutor(CALLER_RUNS_TASK_EXECUTOR)
-            .asyncTaskExecutorThreads(0);
+            .asyncTaskExecutorThreads(0)
+            .cncByteBuffer(cncByteBuffer);
 
         driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);
@@ -214,7 +221,10 @@ class DriverConductorTest
     void after()
     {
         CloseHelper.close(receiveChannelEndpoint);
-        driverConductor.onClose();
+        if (!isClosed)
+        {
+            driverConductor.onClose();
+        }
     }
 
     @Test
@@ -1939,6 +1949,7 @@ class DriverConductorTest
         final DriverConductor conductor = new DriverConductor(ctx.asyncTaskExecutor(asyncTaskExecutor));
 
         conductor.onClose();
+        isClosed = true;
 
         final InOrder inOrder = inOrder(asyncTaskExecutor);
         inOrder.verify(asyncTaskExecutor).shutdownNow();
@@ -1955,6 +1966,7 @@ class DriverConductorTest
         final DriverConductor conductor = new DriverConductor(ctx.asyncTaskExecutor(asyncTaskExecutor));
 
         conductor.onClose();
+        isClosed = true;
 
         final InOrder inOrder = inOrder(asyncTaskExecutor, mockErrorHandler);
         inOrder.verify(asyncTaskExecutor).shutdownNow();
@@ -1971,6 +1983,7 @@ class DriverConductorTest
         final DriverConductor conductor = new DriverConductor(ctx.asyncTaskExecutor(asyncTaskExecutor));
 
         conductor.onClose();
+        isClosed = true;
 
         final InOrder inOrder = inOrder(asyncTaskExecutor, mockErrorHandler);
         inOrder.verify(asyncTaskExecutor).shutdownNow();
@@ -1986,6 +1999,7 @@ class DriverConductorTest
         final DriverConductor conductor = new DriverConductor(ctx.asyncTaskExecutor(asyncTaskExecutor));
 
         conductor.onClose();
+        isClosed = true;
 
         final InOrder inOrder = inOrder(asyncTaskExecutor, mockErrorHandler);
         inOrder.verify(asyncTaskExecutor).shutdownNow();
@@ -1994,6 +2008,19 @@ class DriverConductorTest
             arg -> arg instanceof AeronEvent &&
             arg.getMessage().equals("WARN - failed to shutdown async task executor")));
         inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void onCloseShouldCallForceOnTheCncByteBuffer()
+    {
+        final DriverConductor conductor = new DriverConductor(ctx);
+
+        conductor.onClose();
+        isClosed = true;
+
+        final InOrder inOrder = inOrder(toDriverCommands, cncByteBuffer);
+        inOrder.verify(toDriverCommands).consumerHeartbeatTime(Aeron.NULL_VALUE);
+        inOrder.verify(cncByteBuffer).force();
     }
 
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)

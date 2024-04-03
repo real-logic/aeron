@@ -3586,6 +3586,17 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        Context cncByteBuffer(final MappedByteBuffer cncByteBuffer)
+        {
+            this.cncByteBuffer = cncByteBuffer;
+            return this;
+        }
+
+        MappedByteBuffer cncByteBuffer()
+        {
+            return cncByteBuffer;
+        }
+
         LogFactory logFactory()
         {
             return logFactory;

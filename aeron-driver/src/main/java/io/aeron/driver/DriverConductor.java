@@ -231,6 +231,7 @@ public final class DriverConductor implements Agent
         ipcPublications.forEach(IpcPublication::free);
         freeEndOfLifeResources(Integer.MAX_VALUE);
         toDriverCommands.consumerHeartbeatTime(Aeron.NULL_VALUE);
+        ctx.cncByteBuffer().force();
         ctx.close();
     }
 

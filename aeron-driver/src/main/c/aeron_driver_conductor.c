@@ -5276,7 +5276,7 @@ int aeron_driver_conductor_on_remove_receive_network_destination_complete(
     if (NULL == mds_subscription_link)
     {
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        goto error_cleanup;
     }
 
     endpoint = mds_subscription_link->endpoint;
@@ -5285,6 +5285,10 @@ int aeron_driver_conductor_on_remove_receive_network_destination_complete(
     aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
 
     return 0;
+
+error_cleanup:
+    aeron_udp_channel_delete(udp_channel);
+    return -1;
 }
 
 int aeron_driver_conductor_on_remove_receive_network_destination(

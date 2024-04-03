@@ -49,6 +49,7 @@ import java.util.function.Supplier;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.LIVENESS_TIMEOUT_MS;
+import static java.lang.System.getProperty;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getDurationInNanos;
@@ -494,6 +495,49 @@ public final class ClusterBackup implements AutoCloseable
         {
             return System.getProperty(CLUSTER_BACKUP_SOURCE_TYPE_PROP_NAME, CLUSTER_BACKUP_SOURCE_TYPE_DEFAULT);
         }
+
+        /**
+         * Determines what position to start from when backing up the log from the cluster.
+         */
+        public enum ReplayStart
+        {
+            /**
+             * Start from the earliest available position in the cluster log. May not be 0 if the cluster log was
+             * truncated at some point.
+             */
+            BEGINNING,
+            /**
+             * Start backing up from the log position of the most recent snapshot in the log.
+             */
+            LATEST_SNAPSHOT
+        }
+
+        /**
+         * Default value for the initial cluster replay start.
+         */
+        public static final ReplayStart CLUSTER_INITIAL_REPLAY_START_DEFAULT = ReplayStart.BEGINNING;
+
+        /**
+         * Property name for setting the cluster replay start.
+         */
+        public static final String CLUSTER_INITIAL_REPLAY_START_PROP_NAME = "cluster.backup.initial.replay.start";
+
+        /**
+         * Get the initial value for the cluster relay start
+         *
+         * @return enum to determine where to start replaying the log from.
+         * @see Context#initialReplayStart(ReplayStart)
+         */
+        public static ReplayStart clusterInitialReplayStart()
+        {
+            final String propertyValue = getProperty(CLUSTER_INITIAL_REPLAY_START_PROP_NAME);
+            if (null == propertyValue)
+            {
+                return CLUSTER_INITIAL_REPLAY_START_DEFAULT;
+            }
+
+            return ReplayStart.valueOf(propertyValue);
+        }
     }
 
     /**
@@ -552,6 +596,7 @@ public final class ClusterBackup implements AutoCloseable
         private String sourceType = Configuration.clusterBackupSourceType();
         private long replicationProgressTimeoutNs = ConsensusModule.Configuration.replicationProgressTimeoutNs();
         private long replicationProgressIntervalNs = ConsensusModule.Configuration.replicationProgressIntervalNs();
+        private Configuration.ReplayStart initialReplayStart = Configuration.clusterInitialReplayStart();
 
         /**
          * Perform a shallow copy of the object.
@@ -1783,6 +1828,33 @@ public final class ClusterBackup implements AutoCloseable
         public long replicationProgressIntervalNs()
         {
             return replicationProgressIntervalNs;
+        }
+
+        /**
+         * Where to start the replay from the cluster used for the backup. Doesn't set a specific position, but instead
+         * it will use an enum value to derive appropriate place to start. This only applies to the first replay used
+         * for this backup.
+         *
+         * @param replayStart determines the position to be used to start the backup replay from.
+         * @return this for a fluent API.
+         * @see Configuration.ReplayStart
+         * @see Configuration#CLUSTER_INITIAL_REPLAY_START_DEFAULT
+         */
+        public Context initialReplayStart(final Configuration.ReplayStart replayStart)
+        {
+            this.initialReplayStart = replayStart;
+            return this;
+        }
+
+        /**
+         * Get the place for the cluster replay to start from when no local copy of the log exists.
+         *
+         * @return the cluster replay start.
+         * @see #initialReplayStart(Configuration.ReplayStart)
+         */
+        public Configuration.ReplayStart initialReplayStart()
+        {
+            return this.initialReplayStart;
         }
 
         /**

@@ -20,12 +20,16 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ClusterBackup;
 import io.aeron.cluster.ClusterTool;
+import io.aeron.cluster.RecordingLog;
 import io.aeron.driver.MediaDriver;
 import io.aeron.test.DataCollector;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.EpochClock;
+
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
@@ -135,6 +139,22 @@ public class TestBackupNode implements AutoCloseable
     TestMediaDriver mediaDriver()
     {
         return mediaDriver;
+    }
+
+    public long recordingLogStartPosition()
+    {
+        try (RecordingLog recordingLog = new RecordingLog(clusterBackup.context().clusterDir(), false))
+        {
+            final long recordingId = Objects.requireNonNull(recordingLog.findLastTerm()).recordingId;
+
+            final AeronArchive.Context ctx = clusterBackup.context().archiveContext()
+                .clone()
+                .controlResponseStreamId(ThreadLocalRandom.current().nextInt());
+            try (AeronArchive aeronArchive = AeronArchive.connect(ctx))
+            {
+                return aeronArchive.getStartPosition(recordingId);
+            }
+        }
     }
 
     static class Context

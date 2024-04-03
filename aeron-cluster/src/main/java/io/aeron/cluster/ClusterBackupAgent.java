@@ -51,6 +51,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -808,8 +809,7 @@ public final class ClusterBackupAgent implements Agent
             if (NULL_VALUE == correlationId)
             {
                 final RecordingLog.Entry logEntry = recordingLog.findLastTerm();
-                final long startPosition = null == logEntry ?
-                    NULL_POSITION : backupArchive.getStopPosition(logEntry.recordingId);
+                final long startPosition = replayStartPosition(logEntry);
                 final long replayId = ctx.aeron().nextCorrelationId();
 
                 if (clusterArchive.archiveProxy().boundedReplay(
@@ -1072,6 +1072,42 @@ public final class ClusterBackupAgent implements Agent
     private boolean hasProgressStalled(final long nowMs)
     {
         return (NULL_COUNTER_ID == liveLogRecCounterId) && (nowMs > (timeOfLastProgressMs + backupProgressTimeoutMs));
+    }
+
+    private long replayStartPosition(final RecordingLog.Entry lastTerm)
+    {
+        return replayStartPosition(lastTerm, snapshotsRetrieved, ctx.initialReplayStart(), backupArchive);
+    }
+
+    static long replayStartPosition(
+        final RecordingLog.Entry lastTerm,
+        final List<RecordingLog.Snapshot> snapshotsRetrieved,
+        final ClusterBackup.Configuration.ReplayStart replayStart,
+        final AeronArchive backupArchive)
+    {
+        if (null != lastTerm)
+        {
+            return backupArchive.getStopPosition(lastTerm.recordingId);
+        }
+
+        if (ClusterBackup.Configuration.ReplayStart.BEGINNING == replayStart)
+        {
+            return -1;
+        }
+
+        long replayStartPosition = NULL_POSITION;
+        for (final RecordingLog.Snapshot snapshot : snapshotsRetrieved)
+        {
+            if (ConsensusModule.Configuration.SERVICE_ID == snapshot.serviceId)
+            {
+                if (replayStartPosition < snapshot.logPosition)
+                {
+                    replayStartPosition = snapshot.logPosition;
+                }
+            }
+        }
+
+        return replayStartPosition;
     }
 
     private void runTerminationHook(final AgentTerminationException ex)

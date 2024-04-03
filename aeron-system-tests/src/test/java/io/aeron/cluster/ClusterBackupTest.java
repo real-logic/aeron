@@ -38,6 +38,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import static io.aeron.cluster.ClusterBackup.Configuration.ReplayStart.LATEST_SNAPSHOT;
 import static io.aeron.test.SystemTestWatcher.UNKNOWN_HOST_FILTER;
 import static io.aeron.test.cluster.TestCluster.*;
 import static java.util.Collections.singletonList;
@@ -394,6 +395,50 @@ class ClusterBackupTest
 
         cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
         cluster.awaitBackupLiveLogPosition(logPosition);
+        cluster.stopAllNodes();
+
+        final TestNode node = cluster.startStaticNodeFromBackup();
+        cluster.awaitLeader();
+        cluster.awaitServiceMessageCount(node, totalMessageCount);
+
+        assertEquals(totalMessageCount, node.service().messageCount());
+        assertTrue(node.service().wasSnapshotLoaded());
+    }
+
+    @Test
+    @InterruptAfter(30)
+    void shouldBackupClusterWithFromLatestSnapshotLogPosition()
+    {
+        final TestCluster cluster = aCluster()
+            .withStaticNodes(3)
+            .replayStart(LATEST_SNAPSHOT)
+            .start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+
+        final int preSnapshotMessageCount = 10;
+        final int postSnapshotMessageCount = 7;
+        final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
+        cluster.connectClient();
+        cluster.sendAndAwaitMessages(preSnapshotMessageCount);
+
+        cluster.takeSnapshot(leader);
+        cluster.awaitSnapshotCount(1);
+        final long snapshotPosition = leader.service().cluster().logPosition();
+
+        cluster.sendMessages(postSnapshotMessageCount);
+        cluster.awaitResponseMessageCount(totalMessageCount);
+        cluster.awaitServiceMessageCount(leader, totalMessageCount);
+        final long logPosition = leader.service().cluster().logPosition();
+
+        final TestBackupNode testBackupNode = cluster.startClusterBackupNode(true);
+
+        cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+        cluster.awaitBackupLiveLogPosition(logPosition);
+
+        assertEquals(snapshotPosition, testBackupNode.recordingLogStartPosition());
+
         cluster.stopAllNodes();
 
         final TestNode node = cluster.startStaticNodeFromBackup();

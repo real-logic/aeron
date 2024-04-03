@@ -436,7 +436,6 @@ public class ArchiveTool
         }
     }
 
-
     /**
      * Describe the metadata for an entry in the {@link Catalog} identified by recording id.
      *

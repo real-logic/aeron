@@ -156,6 +156,7 @@ public final class TestCluster implements AutoCloseable
     private boolean acceptStandbySnapshots;
     private File markFileBaseDir;
     private String clusterBaseDir;
+    private ClusterBackup.Configuration.ReplayStart replayStart;
 
     private TestCluster(
         final int staticMemberCount,
@@ -399,6 +400,7 @@ public final class TestCluster implements AutoCloseable
             .sourceType(sourceType)
             .deleteDirOnStart(cleanStart)
             .markFileDir(markFileDir)
+            .initialReplayStart(replayStart)
             .eventsListener(new BackupListener());
 
         backupNode = new TestBackupNode(index, context, dataCollector);
@@ -1969,6 +1971,7 @@ public final class TestCluster implements AutoCloseable
         private final IntHashSet byMemberInvalidInitialResolutions = new IntHashSet();
         private int archiveSegmentFileLength = TestCluster.SEGMENT_FILE_LENGTH;
         private boolean acceptStandbySnapshots = false;
+        private ClusterBackup.Configuration.ReplayStart replayStart = ClusterBackup.Configuration.ReplayStart.BEGINNING;
         private File markFileBaseDir = null;
         private String clusterBaseDir = System.getProperty(
             CLUSTER_BASE_DIR_PROP_NAME, CommonContext.getAeronDirectoryName());
@@ -2068,6 +2071,12 @@ public final class TestCluster implements AutoCloseable
             return this;
         }
 
+        public Builder replayStart(final ClusterBackup.Configuration.ReplayStart replayStart)
+        {
+            this.replayStart = replayStart;
+            return this;
+        }
+
         public TestCluster start()
         {
             return start(nodeCount);
@@ -2097,6 +2106,7 @@ public final class TestCluster implements AutoCloseable
             testCluster.acceptStandbySnapshots(acceptStandbySnapshots);
             testCluster.markFileBaseDir(markFileBaseDir);
             testCluster.clusterBaseDir(clusterBaseDir);
+            testCluster.replyStart(replayStart);
 
             try
             {
@@ -2123,6 +2133,11 @@ public final class TestCluster implements AutoCloseable
 
             return testCluster;
         }
+    }
+
+    private void replyStart(final ClusterBackup.Configuration.ReplayStart replayStart)
+    {
+        this.replayStart = replayStart;
     }
 
     private void clusterBaseDir(final String clusterBaseDir)

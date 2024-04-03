@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.NoSuchFileException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -1757,7 +1758,7 @@ public class Aeron implements AutoCloseable
 
                     return fileChannel.map(READ_WRITE, 0, fileSize);
                 }
-                catch (final NoSuchFileException ignore)
+                catch (final NoSuchFileException | AccessDeniedException ignore)
                 {
                 }
                 catch (final IOException ex)

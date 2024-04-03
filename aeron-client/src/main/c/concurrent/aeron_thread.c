@@ -136,33 +136,33 @@ void aeron_thread_once(AERON_INIT_ONCE *s_init_once, void *callback)
 
 int aeron_mutex_init(aeron_mutex_t *mutex, void *attr)
 {
-    *mutex = CreateMutexA(NULL, FALSE, NULL);
-    return *mutex ? 0 : -1;
+    InitializeCriticalSection(mutex);
+    return 0;
 }
 
 int aeron_mutex_lock(aeron_mutex_t *mutex)
 {
-    return WaitForSingleObject(*mutex, INFINITE) == WAIT_OBJECT_0 ? 0 : EINVAL;
+    EnterCriticalSection(mutex);
+    return 0;
 }
 
 int aeron_mutex_unlock(aeron_mutex_t *mutex)
 {
-    return ReleaseMutex(*mutex) ? 0 : EINVAL;
+    LeaveCriticalSection(mutex);
+    return 0;
 }
 
 int aeron_mutex_destroy(aeron_mutex_t *mutex)
 {
-    if (*mutex)
+    if (mutex)
     {
-        CloseHandle(*mutex);
-        *mutex = 0;
-        return 0;
+        DeleteCriticalSection(mutex);
     }
 
-    return EINVAL;
+    return 0;
 }
 
-int aeron_thread_attr_init(pthread_attr_t *attr)
+int aeron_thread_attr_init(aeron_thread_attr_t *attr)
 {
     return 0;
 }
@@ -296,6 +296,30 @@ void *aeron_thread_get_specific(pthread_key_t key)
 int sched_yield(void)
 {
     SwitchToThread();
+    return 0;
+}
+
+int aeron_cond_init(aeron_cond_t *cv, void *attr)
+{
+    InitializeConditionVariable(cv);
+    return 0;
+}
+
+int aeron_cond_destroy(aeron_cond_t *cv)
+{
+    // there's no delete for windows condition variables
+    return 0;
+}
+
+int aeron_cond_wait(aeron_cond_t *cv, aeron_mutex_t *mutex)
+{
+    SleepConditionVariableCS(cv, mutex, INFINITE);
+    return 0;
+}
+
+int aeron_cond_signal(aeron_cond_t *cv)
+{
+    WakeConditionVariable(cv);
     return 0;
 }
 

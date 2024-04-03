@@ -82,6 +82,4 @@ void aeron_driver_sender_proxy_on_add_destination(
 void aeron_driver_sender_proxy_on_remove_destination(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);
 
-void aeron_driver_sender_proxy_on_delete_cmd(aeron_driver_sender_proxy_t *sender_proxy, aeron_command_base_t *cmd);
-
 #endif //AERON_DRIVER_SENDER_PROXY_H

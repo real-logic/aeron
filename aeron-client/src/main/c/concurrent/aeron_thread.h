@@ -36,6 +36,7 @@ typedef pthread_mutex_t aeron_mutex_t;
 #define AERON_INIT_ONCE_VALUE PTHREAD_ONCE_INIT
 
 typedef pthread_t aeron_thread_t;
+typedef pthread_attr_t aeron_thread_attr_t;
 #define aeron_mutex_init pthread_mutex_init
 #define aeron_mutex_lock pthread_mutex_lock
 #define aeron_mutex_unlock pthread_mutex_unlock
@@ -49,9 +50,18 @@ typedef pthread_t aeron_thread_t;
 #define aeron_thread_get_specific pthread_getspecific
 #define aeron_thread_set_specific pthread_setspecific
 
+typedef pthread_cond_t aeron_cond_t;
+#define aeron_cond_init pthread_cond_init
+#define aeron_cond_destroy pthread_cond_destroy
+#define aeron_cond_signal pthread_cond_signal
+#define aeron_cond_wait pthread_cond_wait
+
 #elif defined(AERON_COMPILER_MSVC)
 
-typedef void *aeron_mutex_t;
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
+typedef CRITICAL_SECTION aeron_mutex_t;
 
 struct aeron_thread_stct;
 typedef struct aeron_thread_stct *aeron_thread_t;
@@ -62,8 +72,10 @@ typedef union aeron_init_once_union
 }
 AERON_INIT_ONCE;
 
-typedef unsigned long pthread_attr_t;
+typedef unsigned long aeron_thread_attr_t;
 typedef unsigned long pthread_key_t;
+
+typedef CONDITION_VARIABLE aeron_cond_t;
 
 #define AERON_INIT_ONCE_VALUE {0}
 
@@ -74,7 +86,7 @@ int aeron_mutex_destroy(aeron_mutex_t *mutex);
 int aeron_mutex_lock(aeron_mutex_t *mutex);
 int aeron_mutex_unlock(aeron_mutex_t *mutex);
 
-int aeron_thread_attr_init(pthread_attr_t *attr);
+int aeron_thread_attr_init(aeron_thread_attr_t *attr);
 
 int aeron_thread_create(aeron_thread_t *thread_ptr, void *attr, void *(*callback)(void *), void *arg0);
 
@@ -87,6 +99,14 @@ int aeron_thread_key_delete(pthread_key_t key);
 int aeron_thread_set_specific(pthread_key_t key, const void *pointer);
 
 void *aeron_thread_get_specific(pthread_key_t key);
+
+int aeron_cond_init(aeron_cond_t *cv, void *attr);
+
+int aeron_cond_destroy(aeron_cond_t *cv);
+
+int aeron_cond_wait(aeron_cond_t *cv, aeron_mutex_t *mutex);
+
+int aeron_cond_signal(aeron_cond_t *cv);
 
 #else
 #error Unsupported platform!

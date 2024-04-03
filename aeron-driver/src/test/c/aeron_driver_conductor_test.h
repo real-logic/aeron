@@ -209,6 +209,7 @@ struct TestDriverContext
         }
 
         m_context->threading_mode = AERON_THREADING_MODE_SHARED;
+        m_context->async_executor_threads = 0;
         m_context->cnc_map.length = aeron_cnc_length(m_context);
         m_cnc = std::unique_ptr<uint8_t[]>(new uint8_t[m_context->cnc_map.length]);
         m_context->cnc_map.addr = m_cnc.get();

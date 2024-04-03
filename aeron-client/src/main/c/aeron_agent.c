@@ -418,7 +418,7 @@ int aeron_agent_start(aeron_agent_runner_t *runner)
         return -1;
     }
 
-    pthread_attr_t attr;
+    aeron_thread_attr_t attr;
     int pthread_result;
     if ((pthread_result = aeron_thread_attr_init(&attr)) != 0)
     {

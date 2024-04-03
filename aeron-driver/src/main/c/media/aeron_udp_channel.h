@@ -63,6 +63,22 @@ typedef struct aeron_udp_channel_stct
 }
 aeron_udp_channel_t;
 
+typedef struct aeron_udp_channel_async_parse_stct
+{
+    aeron_udp_channel_t *channel;
+    bool is_destination;
+}
+aeron_udp_channel_async_parse_t;
+
+int aeron_udp_channel_do_initial_parse(
+    size_t uri_length,
+    const char *uri,
+    aeron_udp_channel_async_parse_t *async_parse);
+
+int aeron_udp_channel_finish_parse(
+    aeron_name_resolver_t *resolver,
+    aeron_udp_channel_async_parse_t *async_parse);
+
 int aeron_udp_channel_parse(
     size_t uri_length,
     const char *uri,

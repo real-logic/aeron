@@ -129,13 +129,16 @@ SET(C_CLIENT_SOURCE
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_counter_map.c
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_ptr_hash_map.c
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_tagged_ptr_hash_map.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_linked_queue.c
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_map.c
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_str_to_ptr_hash_map.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_blocking_linked_queue.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_broadcast_receiver.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_broadcast_transmitter.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_counters_manager.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_distinct_error_log.c
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_executor.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_logbuffer_descriptor.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_concurrent_array_queue.c
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_rb.c
@@ -192,10 +195,12 @@ set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_counter_map.h
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_ptr_hash_map.h
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_int64_to_tagged_ptr_hash_map.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_linked_queue.h
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_map.h
     ${AERON_C_CLIENT_SOURCE_PATH}/collections/aeron_str_to_ptr_hash_map.h
     ${AERON_C_CLIENT_SOURCE_PATH}/command/aeron_control_protocol.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_blocking_linked_queue.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic64_gcc_x86_64.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_atomic64_msvc.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_broadcast_descriptor.h
@@ -204,6 +209,7 @@ set(C_CLIENT_HEADERS
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_concurrent_array_queue.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_counters_manager.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_distinct_error_log.h
+    ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_executor.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_logbuffer_descriptor.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_concurrent_array_queue.h
     ${AERON_C_CLIENT_SOURCE_PATH}/concurrent/aeron_mpsc_rb.h

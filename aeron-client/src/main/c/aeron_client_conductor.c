@@ -81,6 +81,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     }
 
     conductor->client_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
+    conductor->client_name = aeron_context_get_client_name(context);
 
     conductor->available_counter_handlers.array = NULL;
     conductor->available_counter_handlers.capacity = 0;
@@ -418,16 +419,17 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
                 aeron_counter_metadata_descriptor_t *counter_metadata = (aeron_counter_metadata_descriptor_t *)(
                     conductor->counters_reader.metadata + AERON_COUNTER_METADATA_OFFSET(id));
 
-                char version_info[AERON_COUNTER_MAX_LABEL_LENGTH];
-                snprintf(version_info,
-                    sizeof(version_info) - 1,
-                    " version=%s commit=%s",
+                char extended_info[AERON_COUNTER_MAX_LABEL_LENGTH];
+                snprintf(extended_info,
+                    sizeof(extended_info) - 1,
+                    " name=%s version=%s commit=%s",
+                    conductor->client_name,
                     aeron_version_text(),
                     aeron_version_gitsha());
-                size_t version_info_length = strlen(version_info);
+                size_t copy_length =  AERON_MIN(strlen(extended_info), AERON_COUNTER_MAX_LABEL_LENGTH - counter_metadata->label_length);
 
-                memcpy(counter_metadata->label + counter_metadata->label_length, version_info, version_info_length);
-                counter_metadata->label_length += (int32_t)version_info_length;
+                memcpy(counter_metadata->label + counter_metadata->label_length, extended_info, copy_length);
+                counter_metadata->label_length += (int32_t)copy_length;
 
                 conductor->heartbeat_timestamp.counter_id = id;
                 conductor->heartbeat_timestamp.addr = aeron_counters_reader_addr(

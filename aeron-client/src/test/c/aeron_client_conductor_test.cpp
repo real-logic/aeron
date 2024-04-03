@@ -1123,6 +1123,7 @@ TEST_F(ClientConductorTest, shouldCreateDriverTimeoutError)
 TEST_F(ClientConductorTest, shouldAddClientVersionInfoToTheHeartbeatCounterLabel)
 {
     m_conductor.client_id = 0x60001da400;
+    m_conductor.client_name = "test client name";
     aeron_heartbeat_timestamp_key_layout_t key = {};
     key.registration_id = m_conductor.client_id;
     std::string label = std::string("test 42 and beyond");
@@ -1148,6 +1149,6 @@ TEST_F(ClientConductorTest, shouldAddClientVersionInfoToTheHeartbeatCounterLabel
     ASSERT_GT(aeron_counters_reader_counter_label(
         &m_conductor.counters_reader, counter_id, counterLabel, sizeof(counterLabel)), label.length());
     ASSERT_EQ(
-        label + " version=" + aeron_version_text() + " commit=" + aeron_version_gitsha(),
+        label + " name=test client name version=" + aeron_version_text() + " commit=" + aeron_version_gitsha(),
         std::string(counterLabel));
 }

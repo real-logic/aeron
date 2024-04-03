@@ -300,7 +300,7 @@ int32_t aeron_heartbeat_timestamp_allocate(
     int64_t registration_id)
 {
     char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
-    int label_length = snprintf(label, sizeof(label), "%s: %" PRId64, name, registration_id);
+    int label_length = snprintf(label, sizeof(label), "%s: id=%" PRId64, name, registration_id);
     aeron_heartbeat_timestamp_key_layout_t layout =
         {
             .registration_id = registration_id

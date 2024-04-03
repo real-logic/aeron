@@ -35,7 +35,7 @@ protected:
 
 TEST_F(DriverConductorCounterTest, shouldBeAbleToAddSingleCounter)
 {
-    int64_t client_id = nextCorrelationId();
+    int64_t client_id = 66;
     int64_t reg_id = nextCorrelationId();
 
     memcpy(m_key, &reg_id, sizeof(reg_id));
@@ -56,7 +56,7 @@ TEST_F(DriverConductorCounterTest, shouldBeAbleToAddSingleCounter)
     EXPECT_CALL(m_mockCallbacks, onCounter(_, COUNTER_TYPE_ID, _, _, _, _)).
         With(IsIdCounter(reg_id, m_label));
     EXPECT_CALL(m_mockCallbacks, onCounter(_, AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID, _, _, _, _)).
-        With(IsIdCounter(client_id, std::string("client-heartbeat: 0")));
+        With(IsIdCounter(client_id, std::string("client-heartbeat: id=66")));
     readCounters(mock_counter_handler);
 }
 

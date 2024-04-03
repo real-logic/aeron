@@ -161,4 +161,45 @@ class ClientContextTest
             }
         }
     }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldAddClientInfoToTheHeartbeatTimestampCounterUpToMaxLabelLength()
+    {
+        final String clientName = Tests.generateStringWithSuffix("x", "X", 1000);
+        try (Aeron aeron = Aeron.connect(new Aeron.Context()
+            .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+            .clientName(clientName)
+            .keepAliveIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))))
+        {
+            // trigger creation of the timestamp counter on the driver side
+            assertNotNull(aeron.addCounter(1000, "test"));
+
+            final long clientId = aeron.clientId();
+            int counterId = Aeron.NULL_VALUE;
+            final CountersReader countersReader = aeron.countersReader();
+            final String baseLabel = ClientHeartbeatTimestamp.NAME + ": id=" + clientId;
+            final String expandedLabel = baseLabel + " name=" + clientName.substring(0, 352);
+            while (true)
+            {
+                if (Aeron.NULL_VALUE == counterId)
+                {
+                    counterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
+                        countersReader, HeartbeatTimestamp.HEARTBEAT_TYPE_ID, clientId);
+                }
+                else
+                {
+                    final int labelLength =
+                        countersReader.metaDataBuffer().getInt(
+                        CountersReader.metaDataOffset(counterId) + CountersReader.LABEL_OFFSET);
+                    if (labelLength > baseLabel.length())
+                    {
+                        assertEquals(expandedLabel, countersReader.getCounterLabel(counterId));
+                        break;
+                    }
+                }
+                Tests.yield();
+            }
+        }
+    }
 }

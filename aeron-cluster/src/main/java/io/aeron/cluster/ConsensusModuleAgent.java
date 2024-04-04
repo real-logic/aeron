@@ -509,12 +509,12 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             {
                 final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
                     ", cluster is " + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
-                session.reject(EventCode.ERROR, detail);
+                session.reject(EventCode.ERROR, detail, ctx.errorLog(), clusterMemberId());
                 rejectedUserSessions.add(session);
             }
             else if (pendingUserSessions.size() + sessions.size() >= ctx.maxConcurrentSessions())
             {
-                session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
+                session.reject(EventCode.ERROR, SESSION_LIMIT_MSG, ctx.errorLog(), clusterMemberId());
                 rejectedUserSessions.add(session);
             }
             else
@@ -1016,7 +1016,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 {
                     final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
                         ", cluster=" + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
-                    session.reject(EventCode.ERROR, detail);
+                    session.reject(EventCode.ERROR, detail, ctx.errorLog(), clusterMemberId());
                     rejectedBackupSessions.add(session);
                 }
             }
@@ -1099,7 +1099,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                 {
                     final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
                         ", cluster=" + SemanticVersion.toString(PROTOCOL_SEMANTIC_VERSION);
-                    session.reject(EventCode.ERROR, detail);
+                    session.reject(EventCode.ERROR, detail, ctx.errorLog(), clusterMemberId());
                     rejectedBackupSessions.add(session);
                 }
             }
@@ -2413,7 +2413,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                             null,
                             session.encodedPrincipal()))
                         {
-                            session.reject(EventCode.AUTHENTICATION_REJECTED, "Not authorised for BackupQuery");
+                            session.reject(
+                                EventCode.AUTHENTICATION_REJECTED,
+                                "Not authorised for BackupQuery",
+                                ctx.errorLog(),
+                                clusterMemberId());
                             break;
                         }
 
@@ -2442,7 +2446,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                             null,
                             session.encodedPrincipal()))
                         {
-                            session.reject(EventCode.AUTHENTICATION_REJECTED, "Not authorised for Heartbeat");
+                            session.reject(
+                                EventCode.AUTHENTICATION_REJECTED,
+                                "Not authorised for Heartbeat",
+                                ctx.errorLog(),
+                                clusterMemberId());
                             break;
                         }
 
@@ -2463,7 +2471,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                             null,
                             session.encodedPrincipal()))
                         {
-                            session.reject(EventCode.AUTHENTICATION_REJECTED, "Not authorised for StandbySnapshot");
+                            session.reject(
+                                EventCode.AUTHENTICATION_REJECTED,
+                                "Not authorised for StandbySnapshot",
+                                ctx.errorLog(),
+                                clusterMemberId());
                             break;
                         }
 

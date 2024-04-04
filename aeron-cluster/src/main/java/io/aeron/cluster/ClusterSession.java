@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
@@ -25,6 +26,7 @@ import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.*;
 import org.agrona.collections.ArrayUtil;
+import org.agrona.concurrent.errors.DistinctErrorLog;
 
 import java.util.Arrays;
 
@@ -271,11 +273,26 @@ final class ClusterSession
         this.correlationId = correlationId;
     }
 
-    void reject(final EventCode code, final String responseDetail)
+    void reject(
+        final EventCode code,
+        final String responseDetail,
+        final DistinctErrorLog errorLog,
+        final int clusterMemberId)
     {
         this.eventCode = code;
         this.responseDetail = responseDetail;
         state(State.REJECTED);
+        if (null != errorLog)
+        {
+            errorLog.record(new ClusterEvent(
+                code + " " +
+                responseDetail + ", clusterMemberId=" + clusterMemberId + ", id=" + id));
+        }
+    }
+
+    void reject(final EventCode code, final String responseDetail)
+    {
+        reject(code, responseDetail, null, Aeron.NULL_VALUE);
     }
 
     EventCode eventCode()

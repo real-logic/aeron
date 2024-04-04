@@ -219,7 +219,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new ClusterException("unexpected publication state: " + result);
+            throw new ClusterException("unexpected publication state: " + Publication.errorString(result));
         }
     }
 }

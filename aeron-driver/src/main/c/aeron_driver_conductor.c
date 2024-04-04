@@ -795,7 +795,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->name_resolver.close_func = aeron_time_tracking_name_resolver_close;
     conductor->name_resolver.state = time_tracking_name_resolver;
 
-    char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
+    char label[AERON_COUNTER_MAX_LABEL_LENGTH];
     const char *driver_name = NULL == context->resolver_name ? "" : context->resolver_name;
 
     int label_length = snprintf(label, sizeof(label), ": driverName=%s hostname=%s", driver_name, host_name);

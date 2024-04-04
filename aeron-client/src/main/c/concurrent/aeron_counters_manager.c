@@ -152,7 +152,7 @@ void aeron_counters_manager_update_label(
     aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)
         (manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
 
-    size_t length = (size_t)fmin((double)sizeof(metadata->label), (double)label_length);
+    size_t length = AERON_MIN(sizeof(metadata->label), label_length);
 
     memcpy(metadata->label, label, length);
     AERON_PUT_ORDERED(metadata->label_length, (int32_t)length);
@@ -166,7 +166,7 @@ void aeron_counters_manager_append_to_label(
 
     size_t current_length = (size_t)metadata->label_length;
     size_t available_length = sizeof(metadata->label) - current_length;
-    size_t copy_length = length > available_length ? available_length : length;
+    size_t copy_length = AERON_MIN(length, available_length);
 
     memcpy(metadata->label + current_length, value, copy_length);
     AERON_PUT_ORDERED(metadata->label_length, (int32_t)(current_length + copy_length));

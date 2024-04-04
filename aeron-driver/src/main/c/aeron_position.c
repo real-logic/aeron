@@ -31,10 +31,11 @@ int32_t aeron_stream_counter_allocate(
     const char *channel,
     const char *suffix)
 {
-    char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
-    int label_length = snprintf(
+    char label[AERON_COUNTER_MAX_LABEL_LENGTH];
+    int total_length = snprintf(
         label, sizeof(label), "%s: %" PRId64 " %" PRId32 " %" PRId32 " %.*s %s",
         name, registration_id, session_id, stream_id, (int)channel_length, channel, suffix);
+    size_t label_length = AERON_MIN(AERON_COUNTER_MAX_LABEL_LENGTH, (size_t)total_length);
 
     aeron_stream_position_counter_key_layout_t layout =
         {
@@ -48,7 +49,7 @@ int32_t aeron_stream_counter_allocate(
     memcpy(layout.channel, channel, key_channel_length);
 
     int32_t counter_id = aeron_counters_manager_allocate(
-        counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, (size_t)label_length);
+        counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, label_length);
 
     if (counter_id >= 0)
     {
@@ -191,8 +192,9 @@ int32_t aeron_channel_endpoint_status_allocate(
     size_t channel_length,
     const char *channel)
 {
-    char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
-    int label_length = snprintf(label, sizeof(label), "%s: %.*s", name, (int)channel_length, channel);
+    char label[AERON_COUNTER_MAX_LABEL_LENGTH];
+    int total_length = snprintf(label, sizeof(label), "%s: %.*s", name, (int)channel_length, channel);
+    size_t label_length = AERON_MIN(AERON_COUNTER_MAX_LABEL_LENGTH, (size_t)total_length);
 
     aeron_channel_endpoint_status_key_layout_t layout;
     size_t key_channel_length = channel_length > sizeof(layout.channel) ? sizeof(layout.channel) : channel_length;
@@ -200,7 +202,7 @@ int32_t aeron_channel_endpoint_status_allocate(
     memcpy(layout.channel, channel, key_channel_length);
 
     int32_t counter_id = aeron_counters_manager_allocate(
-        counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, (size_t)label_length);
+        counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, label_length);
 
     if (counter_id >= 0)
     {
@@ -219,11 +221,12 @@ void aeron_channel_endpoint_status_update_label(
     size_t additional_length,
     const char *additional)
 {
-    char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
-    int label_length = snprintf(
+    char label[AERON_COUNTER_MAX_LABEL_LENGTH];
+    int total_length = snprintf(
         label, sizeof(label), "%s: %.*s %.*s", name, (int)channel_length, channel, (int)additional_length, additional);
+    size_t label_length = AERON_MIN(AERON_COUNTER_MAX_LABEL_LENGTH, (size_t)total_length);
 
-    aeron_counters_manager_update_label(counters_manager, counter_id, (size_t)label_length, label);
+    aeron_counters_manager_update_label(counters_manager, counter_id, label_length, label);
 }
 
 int32_t aeron_counter_send_channel_status_allocate(
@@ -273,9 +276,10 @@ int32_t aeron_counter_local_sockaddr_indicator_allocate(
     memcpy(sockaddr_layout.local_sockaddr, local_sockaddr, sockaddr_layout.local_sockaddr_len);
     sockaddr_layout.local_sockaddr[sockaddr_layout.local_sockaddr_len] = '\0';
 
-    char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
-    int label_length = snprintf(
+    char label[AERON_COUNTER_MAX_LABEL_LENGTH];
+    int total_length = snprintf(
         label, sizeof(label), "%s: %" PRId32 " %s", name, channel_status_counter_id, local_sockaddr);
+    size_t label_length = AERON_MIN(AERON_COUNTER_MAX_LABEL_LENGTH, (size_t)total_length);
 
     int32_t counter_id = aeron_counters_manager_allocate(
         counters_manager,

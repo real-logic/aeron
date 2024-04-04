@@ -425,13 +425,14 @@ int aeron_client_conductor_check_liveness(aeron_client_conductor_t *conductor, l
                 {
                     AERON_APPEND_ERR("%s", "");
                 }
-                size_t extended_info_length = snprintf(
+                size_t total_length = snprintf(
                     extended_info,
                     available_label_length,
                     " name=%s version=%s commit=%s",
                     conductor->client_name,
                     aeron_version_text(),
                     aeron_version_gitsha());
+                size_t extended_info_length = AERON_MIN(total_length, available_label_length);
 
                 memcpy(counter_metadata->label + counter_metadata->label_length, extended_info, extended_info_length);
                 counter_metadata->label_length += (int32_t)extended_info_length;

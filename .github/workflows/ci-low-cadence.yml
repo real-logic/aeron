@@ -198,7 +198,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '17' ]
+        version: [ '18' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}
@@ -364,7 +364,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '17' ]
+        version: [ '18' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}

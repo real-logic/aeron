@@ -155,6 +155,11 @@ if (UNIX)
         message("Set -Ofast for ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
         add_compile_options($<$<CONFIG:Release>:-Ofast>)
     endif ()
+
+    # added last so these option appear after -Ofast option, i.e. this fixes `-Wnan-infinity-disabled` warning
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "18")
+        add_compile_options(-fhonor-nans -fhonor-infinities)
+    endif ()
 endif ()
 
 # platform specific flags

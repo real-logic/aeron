@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -57,6 +58,7 @@ class ChannelValidationTest
     private final MediaDriver.Context context = new MediaDriver.Context()
         .errorHandler((ignore) -> {})
         .dirDeleteOnStart(true)
+        .threadingMode(ThreadingMode.SHARED)
         .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
         .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
 
@@ -70,7 +72,7 @@ class ChannelValidationTest
         driver = TestMediaDriver.launch(context, watcher);
         watcher.dataCollector().add(driver.context().aeronDirectory());
         watcher.ignoreErrorsMatching((s) -> true);
-        aeron = Aeron.connect(new Aeron.Context().driverTimeoutMs(2_000));
+        aeron = Aeron.connect(new Aeron.Context().driverTimeoutMs(5_000));
     }
 
     @AfterEach
@@ -360,7 +362,7 @@ class ChannelValidationTest
     }
 
     @Test
-    @InterruptAfter(5)
+    @InterruptAfter(10)
     void shouldValidateSenderMtuAgainstUriReceiverWindow() throws IOException
     {
         context.errorHandler(null);

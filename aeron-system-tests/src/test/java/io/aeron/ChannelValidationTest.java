@@ -33,6 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -40,6 +41,7 @@ import java.io.IOException;
 import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -55,6 +57,9 @@ class ChannelValidationTest
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();
 
+    @TempDir
+    Path tempDir;
+
     private final MediaDriver.Context context = new MediaDriver.Context()
         .errorHandler((ignore) -> {})
         .dirDeleteOnStart(true)
@@ -69,17 +74,19 @@ class ChannelValidationTest
 
     private void launch()
     {
-        driver = TestMediaDriver.launch(context, watcher);
+        final String aeronDir = tempDir.resolve("driver").toString();
+        driver = TestMediaDriver.launch(context.aeronDirectoryName(aeronDir), watcher);
         watcher.dataCollector().add(driver.context().aeronDirectory());
         watcher.ignoreErrorsMatching((s) -> true);
-        aeron = Aeron.connect(new Aeron.Context().driverTimeoutMs(5_000));
+        aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDir).driverTimeoutMs(5_000));
     }
 
     @AfterEach
     void after()
     {
-        CloseHelper.closeAll(closeables);
-        CloseHelper.closeAll(aeron, driver);
+        CloseHelper.quietCloseAll(closeables);
+        CloseHelper.quietClose(aeron);
+        CloseHelper.quietClose(driver);
     }
 
     @Test

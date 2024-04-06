@@ -57,9 +57,6 @@ class ChannelValidationTest
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();
 
-    @TempDir
-    Path tempDir;
-
     private final MediaDriver.Context context = new MediaDriver.Context()
         .errorHandler((ignore) -> {})
         .dirDeleteOnStart(true)
@@ -74,11 +71,10 @@ class ChannelValidationTest
 
     private void launch()
     {
-        final String aeronDir = tempDir.resolve("driver").toString();
-        driver = TestMediaDriver.launch(context.aeronDirectoryName(aeronDir), watcher);
+        driver = TestMediaDriver.launch(context, watcher);
         watcher.dataCollector().add(driver.context().aeronDirectory());
         watcher.ignoreErrorsMatching((s) -> true);
-        aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDir).driverTimeoutMs(5_000));
+        aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
     }
 
     @AfterEach

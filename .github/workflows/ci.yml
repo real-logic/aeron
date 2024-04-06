@@ -81,8 +81,7 @@ jobs:
           sudo mount -t tmpfs -o size=20M,mode=777 tmpfs /mnt/tmp_aeron_dir
       - name: Setup small temp file system (MacOS)
         if: runner.os == 'macOS'
-        run: |
-          sudo diskutil eraseDisk APFS tmp_aeron_dir $(hdiutil attach -nomount ram://$((2 * 1024 * 20)))
+        run: sudo diskutil eraseDisk APFS tmp_aeron_dir $(hdiutil attach -nomount ram://$((2 * 1024 * 20)))
       - name: Setup small temp file system (Windows)
         if: runner.os == 'Windows'
         run: |
@@ -98,10 +97,12 @@ jobs:
         run: |
           sudo umount /mnt/tmp_aeron_dir
           sudo rm -rf /mnt/tmp_aeron_dir
+      - name: Remove small temp file system (MacOS)
+        if: always() && runner.os == 'macOS'
+        run: sudo diskutil eject tmp_aeron_dir
       - name: Remove small temp file system (Windows)
         if: always() && runner.os == 'Windows'
-        run: |
-          Remove-Partition -DriveLetter T -Confirm:$false
+        run: Remove-Partition -DriveLetter T -Confirm:$false
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -623,10 +624,11 @@ jobs:
           tar xf cmake-${CMAKE_VERSION}-Darwin-x86_64.tar.gz
           echo "cmake-${CMAKE_VERSION}-Darwin-x86_64/CMake.app/Contents/bin" >> $GITHUB_PATH
       - name: Setup small temp file system
-        run: |
-          sudo diskutil eraseDisk APFS tmp_aeron_dir $(hdiutil attach -nomount ram://$((2 * 1024 * 20)))
+        run: sudo diskutil eraseDisk APFS tmp_aeron_dir $(hdiutil attach -nomount ram://$((2 * 1024 * 20)))
       - name: Build
         run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors
+      - name: Remove small temp file system
+        run: sudo diskutil eject tmp_aeron_dir
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -689,8 +691,7 @@ jobs:
       - name: Build
         run: cppbuild/cppbuild
       - name: Remove small temp file system
-        run: |
-          Remove-Partition -DriveLetter T -Confirm:$false
+        run: Remove-Partition -DriveLetter T -Confirm:$false
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

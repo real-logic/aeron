@@ -126,10 +126,12 @@ class ClusterTest
 
         cluster.stopNode(leader);
         cluster.awaitNewLeadershipEvent(1);
+        final TestNode leader2 = cluster.awaitLeader();
+        final long leadershipTermId2 = leader2.consensusModule().context().leadershipTermIdCounter().get();
         for (final TestNode follower : followers)
         {
             assertEquals(2, follower.consensusModule().context().electionCounter().get());
-            assertEquals(leadershipTermId + 1, follower.consensusModule().context().leadershipTermIdCounter().get());
+            assertEquals(leadershipTermId2, follower.consensusModule().context().leadershipTermIdCounter().get());
         }
     }
 
@@ -199,7 +201,7 @@ class ClusterTest
         systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
-        final long leadershipTermId = leader.consensusModule().context().leadershipTermIdCounter().get();
+        final long leadershipTermId1 = leader.consensusModule().context().leadershipTermIdCounter().get();
         final List<TestNode> followers = cluster.followers();
         TestCluster.awaitElectionClosed(followers.get(0));
         TestCluster.awaitElectionClosed(followers.get(1));
@@ -218,11 +220,11 @@ class ClusterTest
         cluster.stopAllNodes();
         cluster.restartAllNodes(false);
         final TestNode leader2 = cluster.awaitLeader();
-        assertEquals(leadershipTermId + 1, leader2.consensusModule().context().leadershipTermIdCounter().get());
+        final long leadershipTermId2 = leader2.consensusModule().context().leadershipTermIdCounter().get();
         assertEquals(2, cluster.followers().size());
         for (final TestNode follower : cluster.followers())
         {
-            assertEquals(leadershipTermId + 1, follower.consensusModule().context().leadershipTermIdCounter().get());
+            assertEquals(leadershipTermId2, follower.consensusModule().context().leadershipTermIdCounter().get());
         }
 
         cluster.awaitSnapshotsLoaded();

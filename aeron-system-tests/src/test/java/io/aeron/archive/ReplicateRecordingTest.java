@@ -122,6 +122,7 @@ class ReplicateRecordingTest
             .spiesSimulateConnection(true)
             .timerIntervalNs(TIMER_INTERVAL_NS)
             .dirDeleteOnStart(true);
+        srcContext.enableExperimentalFeatures(true);
 
         srcArchiveCtx = new Archive.Context()
             .catalogCapacity(CATALOG_CAPACITY)
@@ -134,6 +135,7 @@ class ReplicateRecordingTest
             .archiveDir(new File(SystemUtil.tmpDirName(), "src-archive"))
             .fileSyncLevel(0)
             .threadingMode(ArchiveThreadingMode.SHARED);
+
         final MediaDriver.Context dstContext = new MediaDriver.Context()
             .aeronDirectoryName(dstAeronDirectoryName)
             .termBufferSparseFile(true)
@@ -141,6 +143,8 @@ class ReplicateRecordingTest
             .spiesSimulateConnection(true)
             .timerIntervalNs(TIMER_INTERVAL_NS)
             .dirDeleteOnStart(true);
+        dstContext.enableExperimentalFeatures(true);
+
         final Archive.Context dstArchiveCtx = new Archive.Context()
             .catalogCapacity(CATALOG_CAPACITY)
             .aeronDirectoryName(dstAeronDirectoryName)
@@ -343,7 +347,8 @@ class ReplicateRecordingTest
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
             final CountersReader counters = srcAeron.countersReader();
-            final int counterId = Tests.awaitRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Tests.awaitRecordingCounterId(
+                counters, publication.sessionId(), srcAeronArchive.archiveId());
             srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);
@@ -365,7 +370,7 @@ class ReplicateRecordingTest
         awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
         final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
         resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
-        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, RecordingSignal.SYNC);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, SYNC);
         resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
         resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
     }

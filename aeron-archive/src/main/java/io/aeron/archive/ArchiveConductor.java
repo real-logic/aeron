@@ -47,6 +47,7 @@ import java.security.SecureRandom;
 import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -113,7 +114,7 @@ abstract class ArchiveConductor
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final ControlSessionProxy controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
     private final DutyCycleTracker dutyCycleTracker;
-    private final SecureRandom secureRandom;
+    private final Random random;
     final Archive.Context ctx;
     Recorder recorder;
     Replayer replayer;
@@ -136,14 +137,7 @@ abstract class ArchiveConductor
         dutyCycleTracker = ctx.conductorDutyCycleTracker();
         cachedEpochClock.update(epochClock.time());
 
-        try
-        {
-            secureRandom = SecureRandom.getInstanceStrong();
-        }
-        catch (final NoSuchAlgorithmException ex)
-        {
-            throw new RuntimeException(ex);
-        }
+        random = stronglySeededRandom();
 
         authenticator = ctx.authenticatorSupplier().get();
         if (null == authenticator)
@@ -2429,7 +2423,7 @@ abstract class ArchiveConductor
         long replayToken = NULL_VALUE;
         while (NULL_VALUE == replayToken)
         {
-            replayToken = secureRandom.nextLong();
+            replayToken = random.nextLong();
         }
 
         final SessionForReplay sessionForReplay = new SessionForReplay(
@@ -2588,5 +2582,23 @@ abstract class ArchiveConductor
             this.controlSession = controlSession;
             this.deadlineNs = deadlineNs;
         }
+    }
+
+
+    private static Random stronglySeededRandom()
+    {
+        boolean hasSeed = false;
+        long seed = 0;
+
+        try
+        {
+            seed = SecureRandom.getInstanceStrong().nextLong();
+            hasSeed = true;
+        }
+        catch (final NoSuchAlgorithmException ignore)
+        {
+        }
+
+        return hasSeed ? new Random(seed) : new Random();
     }
 }

@@ -43,7 +43,6 @@ public final class ClusterMember
 
     private boolean isBallotSent;
     private boolean isLeader;
-    private boolean hasRequestedJoin;
     private boolean hasTerminated;
     private int id;
     private long leadershipTermId = Aeron.NULL_VALUE;
@@ -51,7 +50,6 @@ public final class ClusterMember
     private long catchupReplaySessionId = Aeron.NULL_VALUE;
     private long catchupReplayCorrelationId = Aeron.NULL_VALUE;
     private long changeCorrelationId = Aeron.NULL_VALUE;
-    private long removalPosition = NULL_POSITION;
     private long logPosition = NULL_POSITION;
     private long timeOfLastAppendPositionNs = Aeron.NULL_VALUE;
     private ExclusivePublication publication;
@@ -100,7 +98,6 @@ public final class ClusterMember
     {
         isBallotSent = false;
         isLeader = false;
-        hasRequestedJoin = false;
         hasTerminated = false;
         vote = null;
         candidateTermId = Aeron.NULL_VALUE;
@@ -172,39 +169,6 @@ public final class ClusterMember
     public boolean hasTerminated()
     {
         return hasTerminated;
-    }
-
-    /**
-     * Set the log position as of appending the event to be removed from the cluster.
-     *
-     * @param removalPosition as of appending the event to be removed from the cluster.
-     * @return this for a fluent API.
-     */
-    public ClusterMember removalPosition(final long removalPosition)
-    {
-        this.removalPosition = removalPosition;
-        return this;
-    }
-
-    /**
-     * The log position as of appending the event to be removed from the cluster.
-     *
-     * @return the log position as of appending the event to be removed from the cluster,
-     * or {@link io.aeron.archive.client.AeronArchive#NULL_POSITION} if not requested remove.
-     */
-    public long removalPosition()
-    {
-        return removalPosition;
-    }
-
-    /**
-     * Has this member requested to be removed from the cluster.
-     *
-     * @return true if this member requested to be removed from the cluster, otherwise false.
-     */
-    public boolean hasRequestedRemove()
-    {
-        return removalPosition != NULL_POSITION;
     }
 
     /**
@@ -1260,38 +1224,6 @@ public final class ClusterMember
     }
 
     /**
-     * Add a new member to an array of {@link ClusterMember}s.
-     *
-     * @param oldMembers to add to.
-     * @param newMember  to add.
-     * @return a new array containing the old members plus the new member.
-     */
-    public static ClusterMember[] addMember(final ClusterMember[] oldMembers, final ClusterMember newMember)
-    {
-        return ArrayUtil.add(oldMembers, newMember);
-    }
-
-    /**
-     * Remove a member from an array if found, otherwise return the array unmodified.
-     *
-     * @param oldMembers to remove a member from.
-     * @param memberId   of the member to remove.
-     * @return a new array with the member removed or the existing array if not found.
-     */
-    public static ClusterMember[] removeMember(final ClusterMember[] oldMembers, final int memberId)
-    {
-        final int memberIndex = findMemberIndex(oldMembers, memberId);
-        if (ArrayUtil.UNKNOWN_INDEX != memberIndex && 1 == oldMembers.length)
-        {
-            return EMPTY_MEMBERS;
-        }
-        else
-        {
-            return ArrayUtil.remove(oldMembers, memberIndex);
-        }
-    }
-
-    /**
      * Find the highest member id in an array of members.
      *
      * @param clusterMembers to search for the highest id.
@@ -1356,13 +1288,11 @@ public final class ClusterMember
             "id=" + id +
             ", isBallotSent=" + isBallotSent +
             ", isLeader=" + isLeader +
-            ", hasRequestedJoin=" + hasRequestedJoin +
             ", leadershipTermId=" + leadershipTermId +
             ", logPosition=" + logPosition +
             ", candidateTermId=" + candidateTermId +
             ", catchupReplaySessionId=" + catchupReplaySessionId +
             ", correlationId=" + changeCorrelationId +
-            ", removalPosition=" + removalPosition +
             ", timeOfLastAppendPositionNs=" + timeOfLastAppendPositionNs +
             ", ingressEndpoint='" + ingressEndpoint + '\'' +
             ", consensusEndpoint='" + consensusEndpoint + '\'' +

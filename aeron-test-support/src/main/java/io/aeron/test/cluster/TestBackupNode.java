@@ -161,7 +161,6 @@ public class TestBackupNode implements AutoCloseable
     {
         final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
         final Archive.Context archiveContext = new Archive.Context();
-        final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context();
         final ClusterBackup.Context clusterBackupContext = new ClusterBackup.Context();
     }
 }

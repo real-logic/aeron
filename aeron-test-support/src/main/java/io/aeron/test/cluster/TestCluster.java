@@ -359,11 +359,6 @@ public final class TestCluster implements AutoCloseable
         final File markFileDir = null != markFileBaseDir ? new File(markFileBaseDir, "mark-" + index) : null;
         final TestBackupNode.Context context = new TestBackupNode.Context();
 
-        context.aeronArchiveContext
-            .controlRequestChannel(archiveControlRequestChannel(index))
-            .controlResponseChannel(archiveControlResponseChannel(index))
-            .aeronDirectoryName(aeronDirName);
-
         context.mediaDriverContext
             .aeronDirectoryName(aeronDirName)
             .threadingMode(ThreadingMode.SHARED)
@@ -376,10 +371,13 @@ public final class TestCluster implements AutoCloseable
             .nameResolver(new RedirectingNameResolver(nodeNameMappings(index)));
 
         context.archiveContext
+            .archiveId(-492739489482364L)
             .catalogCapacity(CATALOG_CAPACITY)
+            .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDirName, "archive"))
-            .controlChannel(context.aeronArchiveContext.controlRequestChannel())
-            .localControlChannel(ARCHIVE_LOCAL_CONTROL_CHANNEL)
+            .controlChannel(archiveControlRequestChannel(index) + "|alias=backup-control")
+            .localControlChannel("aeron:ipc?alias=backup-local-control")
+            .localControlStreamId(8080808)
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart)
@@ -395,7 +393,16 @@ public final class TestCluster implements AutoCloseable
             .consensusChannel(consensusChannelUri.toString())
             .clusterBackupCoolDownIntervalNs(TimeUnit.SECONDS.toNanos(1))
             .catchupEndpoint(hostname(index) + ":0")
-            .clusterArchiveContext(context.aeronArchiveContext)
+            .archiveContext(new AeronArchive.Context()
+                .aeronDirectoryName(aeronDirName)
+                .controlRequestChannel(context.archiveContext.localControlChannel())
+                .controlRequestStreamId(context.archiveContext.localControlStreamId())
+                .controlResponseChannel("aeron:ipc?alias=backup-archive-local-resp")
+                .controlResponseStreamId(9090909))
+            .clusterArchiveContext(new AeronArchive.Context()
+                .aeronDirectoryName(aeronDirName)
+                .controlRequestChannel(context.archiveContext.controlChannel())
+                .controlResponseChannel(archiveControlResponseChannel(index)))
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .credentialsSupplier(credentialsSupplier)
             .sourceType(sourceType)
@@ -1066,6 +1073,8 @@ public final class TestCluster implements AutoCloseable
             throw new IllegalStateException("no backup node present");
         }
 
+        final Supplier<String> message =
+            () -> "expectedState=" + targetState + " actualState=" + backupNode.backupState();
         while (true)
         {
             final ClusterBackup.State state = backupNode.backupState();
@@ -1079,7 +1088,7 @@ public final class TestCluster implements AutoCloseable
                 throw new IllegalStateException("backup is closed");
             }
 
-            Tests.sleep(10);
+            Tests.sleep(10, message);
         }
     }
 

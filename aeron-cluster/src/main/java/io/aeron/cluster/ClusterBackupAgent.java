@@ -838,7 +838,7 @@ public final class ClusterBackupAgent implements Agent
                 final CountersReader countersReader = aeron.countersReader();
 
                 liveLogRecCounterId = RecordingPos.findCounterIdBySession(
-                    countersReader, (int)liveLogReplaySessionId, clusterArchive.archiveId());
+                    countersReader, (int)liveLogReplaySessionId, backupArchive.archiveId());
                 if (NULL_COUNTER_ID != liveLogRecCounterId)
                 {
                     liveLogPositionCounter.setOrdered(countersReader.getCounterValue(liveLogRecCounterId));

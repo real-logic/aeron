@@ -604,6 +604,29 @@ class ClusterBackupTest
         cluster.awaitBackupLiveLogPosition(logPosition);
     }
 
+    @Test
+    @InterruptAfter(30)
+    void shouldBackupClusterAndJoinLive()
+    {
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        cluster.connectClient();
+        cluster.sendMessages(100);
+
+        cluster.startClusterBackupNode(true);
+
+        cluster.sendMessages(100);
+
+        cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+        cluster.awaitBackupLiveLogPosition(cluster.findLeader().service().cluster().logPosition());
+        cluster.stopAllNodes();
+
+        final TestNode node = cluster.startStaticNodeFromBackup();
+        cluster.awaitLeader();
+        cluster.awaitServiceMessageCount(node, 200);
+    }
+
     private static void awaitErrorLogged(final TestBackupNode testBackupNode, final String expectedErrorMessage)
     {
         final AtomicBuffer atomicBuffer = testBackupNode.clusterBackupErrorLog();

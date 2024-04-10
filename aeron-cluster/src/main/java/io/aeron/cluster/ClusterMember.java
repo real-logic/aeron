@@ -59,6 +59,8 @@ public final class ClusterMember
     private final String logEndpoint;
     private final String catchupEndpoint;
     private final String archiveEndpoint;
+    private final String archiveResponseEndpoint;
+    private final String egressResponseEndpoint;
     private final String endpoints;
     private Boolean vote = null;
 
@@ -82,12 +84,50 @@ public final class ClusterMember
         final String archiveEndpoint,
         final String endpoints)
     {
+        this(
+            id,
+            ingressEndpoint,
+            consensusEndpoint,
+            logEndpoint,
+            catchupEndpoint,
+            archiveEndpoint,
+            null,
+            null,
+            endpoints);
+    }
+
+    /**
+     * Construct a new member of the cluster.
+     *
+     * @param id                        unique id for the member.
+     * @param ingressEndpoint           address and port endpoint to which cluster clients send ingress.
+     * @param consensusEndpoint         address and port endpoint to which other cluster members connect.
+     * @param logEndpoint               address and port endpoint to which the log is replicated.
+     * @param catchupEndpoint           address and port endpoint to which a stream is replayed for catchup to the leader.
+     * @param archiveEndpoint           address and port endpoint to which the archive control channel can be reached.
+     * @param archiveResponseEndpoint   address and port endpoint to which the archive control channel can be reached.
+     * @param egressResponseEndpoint    address and port endpoint to which the archive control channel can be reached.
+     * @param endpoints                 comma separated list of endpoints.
+     */
+    public ClusterMember(
+        final int id,
+        final String ingressEndpoint,
+        final String consensusEndpoint,
+        final String logEndpoint,
+        final String catchupEndpoint,
+        final String archiveEndpoint,
+        final String archiveResponseEndpoint,
+        final String egressResponseEndpoint,
+        final String endpoints)
+    {
         this.id = id;
         this.ingressEndpoint = ingressEndpoint;
         this.consensusEndpoint = consensusEndpoint;
         this.logEndpoint = logEndpoint;
         this.catchupEndpoint = catchupEndpoint;
         this.archiveEndpoint = archiveEndpoint;
+        this.archiveResponseEndpoint = archiveResponseEndpoint;
+        this.egressResponseEndpoint = egressResponseEndpoint;
         this.endpoints = endpoints;
     }
 

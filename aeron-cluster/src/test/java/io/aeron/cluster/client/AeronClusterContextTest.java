@@ -17,6 +17,7 @@ package io.aeron.cluster.client;
 
 import io.aeron.Aeron;
 import io.aeron.exceptions.ConfigurationException;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 
@@ -33,10 +34,37 @@ class AeronClusterContextTest
     {
         final Aeron aeron = mock(Aeron.class);
         final AeronCluster.Context context = new AeronCluster.Context();
-        context.aeron(aeron)
-            .ingressChannel(ingressChannel);
+        context.aeron(aeron).ingressChannel(ingressChannel);
 
         final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
         assertEquals("ERROR - ingressChannel must be specified", exception.getMessage());
+    }
+
+    @Test
+    void concludeThrowsConfigurationExceptionIfIngressChannelIsSetToIpcAndIngressEndpointsSpecified()
+    {
+        final Aeron aeron = mock(Aeron.class);
+        final AeronCluster.Context context = new AeronCluster.Context();
+        context
+            .aeron(aeron)
+            .ingressChannel("aeron:ipc")
+            .ingressEndpoints("0,localhost:1234");
+
+        final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
+        assertEquals(
+            "ERROR - AeronCluster.Context ingressEndpoints must be null when using IPC ingress",
+            exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    void concludeThrowsConfigurationExceptionIfEgressChannelIsNotSet(final String egressChannel)
+    {
+        final Aeron aeron = mock(Aeron.class);
+        final AeronCluster.Context context = new AeronCluster.Context();
+        context.aeron(aeron).ingressChannel("aeron:udp").egressChannel(egressChannel);
+
+        final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
+        assertEquals("ERROR - egressChannel must be specified", exception.getMessage());
     }
 }

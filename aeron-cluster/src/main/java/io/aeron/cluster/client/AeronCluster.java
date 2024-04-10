@@ -1220,6 +1220,11 @@ public final class AeronCluster implements AutoCloseable
                         "AeronCluster.Context ingressEndpoints must be null when using IPC ingress");
                 }
             }
+
+            if (Strings.isEmpty(egressChannel))
+            {
+                throw new ConfigurationException("egressChannel must be specified");
+            }
         }
 
         /**

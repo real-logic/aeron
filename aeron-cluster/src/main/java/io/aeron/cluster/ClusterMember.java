@@ -153,28 +153,6 @@ public final class ClusterMember
     }
 
     /**
-     * Set if this member requested to join the cluster.
-     *
-     * @param hasRequestedJoin the cluster.
-     * @return this for a fluent API.
-     */
-    public ClusterMember hasRequestedJoin(final boolean hasRequestedJoin)
-    {
-        this.hasRequestedJoin = hasRequestedJoin;
-        return this;
-    }
-
-    /**
-     * Has this member requested to join the cluster?
-     *
-     * @return has this member requested to join the cluster?
-     */
-    public boolean hasRequestedJoin()
-    {
-        return hasRequestedJoin;
-    }
-
-    /**
      * Set if this member has terminated.
      *
      * @param hasTerminated in notification to the leader.

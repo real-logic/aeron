@@ -212,7 +212,9 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         assertNotEquals(0, beforeClusterSessionIds.length);
 
         final ConsensusModuleSnapshotPendingServiceMessagesPatch snapshotPatch =
-            new ConsensusModuleSnapshotPendingServiceMessagesPatch();
+            new ConsensusModuleSnapshotPendingServiceMessagesPatch(
+            leader.archive().context().localControlChannel(),
+            leader.archive().context().localControlStreamId());
         assertFalse(snapshotPatch.execute(leaderClusterDir));
 
         mutableNextSessionId.set(NULL_SESSION_ID);
@@ -338,7 +340,9 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
             clusterSessionIdUpperBound);
 
         final ConsensusModuleSnapshotPendingServiceMessagesPatch snapshotPatch =
-            new ConsensusModuleSnapshotPendingServiceMessagesPatch();
+            new ConsensusModuleSnapshotPendingServiceMessagesPatch(
+            leader.archive().context().localControlChannel(),
+            leader.archive().context().localControlStreamId());
         assertTrue(snapshotPatch.execute(leaderClusterDir));
 
         final MutableBoolean hasLoadedConsensusModuleState = new MutableBoolean();
@@ -566,7 +570,8 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
             Aeron aeron = Aeron.connect(new Aeron.Context()
                 .aeronDirectoryName(node.mediaDriver().aeronDirectoryName()));
             AeronArchive archive = AeronArchive.connect(new AeronArchive.Context()
-                .controlRequestChannel(IPC_CHANNEL)
+                .controlRequestChannel(node.archive().context().localControlChannel())
+                .controlRequestStreamId(node.archive().context().localControlStreamId())
                 .controlResponseChannel(IPC_CHANNEL)
                 .aeron(aeron)))
         {
@@ -588,8 +593,9 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
         final String aeronDirectoryName = follower.mediaDriver().aeronDirectoryName();
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
             AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
-                .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
-                .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
+                .controlRequestChannel(follower.archive().context().localControlChannel())
+                .controlRequestStreamId(follower.archive().context().localControlStreamId())
+                .controlResponseChannel(IPC_CHANNEL)
                 .aeron(aeron)
                 .recordingSignalConsumer(new RecordingSignalCapture())))
         {

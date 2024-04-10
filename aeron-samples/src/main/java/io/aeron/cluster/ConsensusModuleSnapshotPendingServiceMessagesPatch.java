@@ -58,6 +58,25 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
     static final int SNAPSHOT_REPLAY_STREAM_ID = 103;
     static final int SNAPSHOT_RECORDING_STREAM_ID = 107;
     static final String PATCH_CHANNEL = "aeron:ipc?alias=consensus-module-snapshot-patch";
+    private final String archiveLocalRequestChannel;
+    private final int archiveLocalRequestStreamId;
+
+    /**
+     * Create new patch instance this default Archive values initialized to
+     * {@link AeronArchive.Configuration#localControlChannel()} and
+     * {@link AeronArchive.Configuration#localControlStreamId()}.
+     */
+    public ConsensusModuleSnapshotPendingServiceMessagesPatch()
+    {
+        this(AeronArchive.Configuration.localControlChannel(), AeronArchive.Configuration.localControlStreamId());
+    }
+
+    ConsensusModuleSnapshotPendingServiceMessagesPatch(
+        final String archiveLocalRequestChannel, final int archiveRequestStreamId)
+    {
+        this.archiveLocalRequestChannel = archiveLocalRequestChannel;
+        this.archiveLocalRequestStreamId = archiveRequestStreamId;
+    }
 
     /**
      * Execute the code to patch the latest snapshot.
@@ -87,7 +106,8 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         final RecordingSignalCapture recordingSignalCapture = new RecordingSignalCapture();
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(properties.aeronDirectoryName));
             AeronArchive archive = AeronArchive.connect(new AeronArchive.Context()
-                .controlRequestChannel(IPC_CHANNEL)
+                .controlRequestChannel(archiveLocalRequestChannel)
+                .controlRequestStreamId(archiveLocalRequestStreamId)
                 .controlResponseChannel(IPC_CHANNEL)
                 .recordingSignalConsumer(recordingSignalCapture)
                 .aeron(aeron)))

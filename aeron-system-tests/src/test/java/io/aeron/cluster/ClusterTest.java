@@ -303,7 +303,7 @@ class ClusterTest
         systemTestWatcher.cluster(cluster);
 
         cluster.awaitLeader();
-        cluster.asyncConnectClient();
+        assertNotNull(cluster.asyncConnectClient());
 
         cluster.sendAndAwaitMessages(10);
         cluster.awaitServiceMessagePredicate(cluster.awaitLeader(), atMost(10));
@@ -1180,7 +1180,7 @@ class ClusterTest
 
         cluster.stopNode(originalLeader);
         final TestNode newLeader = cluster.awaitLeader();
-        cluster.reconnectClient();
+        assertNotNull(cluster.reconnectClient());
 
         cluster.sendMessages(messageCount);
         cluster.awaitResponseMessageCount(messageCount * 2);

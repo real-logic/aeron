@@ -32,6 +32,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 class MultiNodeTest
@@ -126,7 +127,7 @@ class MultiNodeTest
         final TestNode leader = cluster.awaitLeader();
 
         final int numMessages = 10;
-        cluster.connectIpcClient(clientCtx, leader.mediaDriver().aeronDirectoryName());
+        assertNotNull(cluster.connectIpcClient(clientCtx, leader.mediaDriver().aeronDirectoryName()));
         cluster.sendMessages(numMessages);
         cluster.awaitResponseMessageCount(numMessages);
     }

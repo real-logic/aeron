@@ -100,6 +100,8 @@ public final class TestNode implements AutoCloseable
                 .terminationHook(ClusterTests.terminationHook(
                 context.isTerminationExpected, context.hasMemberTerminated));
 
+            final AeronArchive.Context archiveContext = context.consensusModuleContext.archiveContext().clone();
+
             consensusModule = ConsensusModule.launch(context.consensusModuleContext);
             final File baseDir = context.consensusModuleContext.clusterDir().getParentFile();
             dataCollector.addForCleanup(baseDir);
@@ -109,9 +111,7 @@ public final class TestNode implements AutoCloseable
             {
                 final ClusteredServiceContainer.Context ctx = context.serviceContainerContext.clone();
                 ctx.aeronDirectoryName(aeronDirectoryName)
-                    .archiveContext(context.aeronArchiveContext.clone()
-                        .controlRequestChannel("aeron:ipc")
-                        .controlResponseChannel("aeron:ipc"))
+                    .archiveContext(archiveContext.clone())
                     .terminationHook(ClusterTests.terminationHook(
                         context.isTerminationExpected, context.hasServiceTerminated[i]))
                     .clusterDir(context.consensusModuleContext.clusterDir())

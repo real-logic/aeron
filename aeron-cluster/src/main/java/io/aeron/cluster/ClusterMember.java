@@ -103,10 +103,12 @@ public final class ClusterMember
      * @param ingressEndpoint           address and port endpoint to which cluster clients send ingress.
      * @param consensusEndpoint         address and port endpoint to which other cluster members connect.
      * @param logEndpoint               address and port endpoint to which the log is replicated.
-     * @param catchupEndpoint           address and port endpoint to which a stream is replayed for catchup to the leader.
+     * @param catchupEndpoint           address and port endpoint to which a stream is replayed for catchup to the
+     *                                  leader.
      * @param archiveEndpoint           address and port endpoint to which the archive control channel can be reached.
-     * @param archiveResponseEndpoint   address and port endpoint to which the archive control channel can be reached.
-     * @param egressResponseEndpoint    address and port endpoint to which the archive control channel can be reached.
+     * @param archiveResponseEndpoint   address and port endpoint to which the archive control response channel can be
+     *                                  reached.
+     * @param egressResponseEndpoint    address and port endpoint to which the egress response channel can be reached.
      * @param endpoints                 comma separated list of endpoints.
      */
     public ClusterMember(
@@ -465,6 +467,29 @@ public final class ClusterMember
     }
 
     /**
+     * The address:port endpoint for this cluster member to use on the archive to set up a response channel for
+     * control, replay and replication.
+     *
+     * @return the address:port endpoint for the archive response channel to be used by archive clients within the
+     * cluster.
+     */
+    public String archiveResponseEndpoint()
+    {
+        return archiveResponseEndpoint;
+    }
+
+    /**
+     * The address:port endpoint for the cluster member that will serve as the control address for the egress response
+     * channel that client can connect to.
+     *
+     * @return the endpoint used for the egress response channel.
+     */
+    public String egressResponseEndpoint()
+    {
+        return egressResponseEndpoint;
+    }
+
+    /**
      * The string of endpoints for this member in a comma separated list in the same order they are parsed.
      *
      * @return list of endpoints for this member in a comma separated list.
@@ -532,7 +557,7 @@ public final class ClusterMember
             final String idAndEndpoints = memberValues[i];
             final String[] memberAttributes = idAndEndpoints.split(",");
 
-            if (memberAttributes.length != 6)
+            if (memberAttributes.length < 6 || 8 < memberAttributes.length)
             {
                 throw new ClusterException("invalid member value: " + idAndEndpoints + " within: " + value);
             }
@@ -547,13 +572,26 @@ public final class ClusterMember
                 throw new ClusterException("invalid cluster member id, must be an integer value", ex);
             }
 
-            final String endpoints = String.join(
+            final String archiveResponseEndpoint = 6 < memberAttributes.length ? memberAttributes[6] : null;
+            final String egressResponseEndpoint = 7 < memberAttributes.length ? memberAttributes[7] : null;
+
+            String endpoints = String.join(
                 ",",
                 memberAttributes[1],
                 memberAttributes[2],
                 memberAttributes[3],
                 memberAttributes[4],
                 memberAttributes[5]);
+
+            if (null != archiveResponseEndpoint)
+            {
+                endpoints += "," + archiveResponseEndpoint;
+            }
+
+            if (null != egressResponseEndpoint)
+            {
+                endpoints += "," + egressResponseEndpoint;
+            }
 
             members[i] = new ClusterMember(
                 clusterMemberId,
@@ -562,6 +600,8 @@ public final class ClusterMember
                 memberAttributes[3],
                 memberAttributes[4],
                 memberAttributes[5],
+                archiveResponseEndpoint,
+                egressResponseEndpoint,
                 endpoints);
         }
 

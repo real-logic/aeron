@@ -33,7 +33,66 @@ public class ClusterMemberTest
         "1,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint|" +
         "2,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint|");
 
+    private final ClusterMember[] membersWithArchiveResponse = ClusterMember.parse(
+        "0,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint,archiveResponseEndpoint|" +
+        "1,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint,archiveResponseEndpoint|" +
+        "2,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint,archiveResponseEndpoint|");
+
+    private final ClusterMember[] membersWithEgressResponse = ClusterMember.parse(
+        "0,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint,archiveResponseEndpoint," +
+        "egressResponseEndpoint|" +
+        "1,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint,archiveResponseEndpoint," +
+        "egressResponseEndpoint|" +
+        "2,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint,archiveResponseEndpoint," +
+        "egressResponseEndpoint|");
+
     private final long[] rankedPositions = new long[quorumThreshold(members.length)];
+
+    @Test
+    void shouldParseCorrectly()
+    {
+        for (final ClusterMember member : members)
+        {
+            assertEquals("ingressEndpoint", member.ingressEndpoint());
+            assertEquals("consensusEndpoint", member.consensusEndpoint());
+            assertEquals("logEndpoint", member.logEndpoint());
+            assertEquals("catchupEndpoint", member.catchupEndpoint());
+            assertEquals("archiveEndpoint", member.archiveEndpoint());
+            assertNull(member.archiveResponseEndpoint());
+            assertNull(member.egressResponseEndpoint());
+            assertEquals(
+                "ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint", member.endpoints());
+        }
+
+        for (final ClusterMember member : membersWithArchiveResponse)
+        {
+            assertEquals("ingressEndpoint", member.ingressEndpoint());
+            assertEquals("consensusEndpoint", member.consensusEndpoint());
+            assertEquals("logEndpoint", member.logEndpoint());
+            assertEquals("catchupEndpoint", member.catchupEndpoint());
+            assertEquals("archiveEndpoint", member.archiveEndpoint());
+            assertEquals("archiveResponseEndpoint", member.archiveResponseEndpoint());
+            assertNull(member.egressResponseEndpoint());
+            assertEquals(
+                "ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint,archiveResponseEndpoint",
+                member.endpoints());
+        }
+
+        for (final ClusterMember member : membersWithEgressResponse)
+        {
+            assertEquals("ingressEndpoint", member.ingressEndpoint());
+            assertEquals("consensusEndpoint", member.consensusEndpoint());
+            assertEquals("logEndpoint", member.logEndpoint());
+            assertEquals("catchupEndpoint", member.catchupEndpoint());
+            assertEquals("archiveEndpoint", member.archiveEndpoint());
+            assertEquals("archiveResponseEndpoint", member.archiveResponseEndpoint());
+            assertEquals("egressResponseEndpoint", member.egressResponseEndpoint());
+            assertEquals(
+                "ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint," +
+                "archiveResponseEndpoint,egressResponseEndpoint",
+                member.endpoints());
+        }
+    }
 
     @Test
     public void shouldDetermineQuorumSize()

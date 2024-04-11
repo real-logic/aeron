@@ -36,29 +36,31 @@
 
 int aeron_alloc_no_err(void **ptr, size_t size)
 {
-    *ptr = malloc(size);
-
-    if (NULL == *ptr)
+    void *bytes = malloc(size);
+    if (NULL == bytes)
     {
+        *ptr = NULL;
         return -1;
     }
 
-    memset(*ptr, 0, size);
+    memset(bytes, 0, size);
+    *ptr = bytes;
 
     return 0;
 }
 
 int aeron_alloc(void **ptr, size_t size)
 {
-    *ptr = malloc(size);
-
-    if (NULL == *ptr)
+    void *bytes = malloc(size);
+    if (NULL == bytes)
     {
+        *ptr = NULL;
         AERON_SET_ERR(ENOMEM, "Failed to allocate %" PRIu64 " bytes", (uint64_t)size);
         return -1;
     }
 
-    memset(*ptr, 0, size);
+    memset(bytes, 0, size);
+    *ptr = bytes;
 
     return 0;
 }

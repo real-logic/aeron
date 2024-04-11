@@ -31,6 +31,7 @@ import io.aeron.driver.DutyCycleTracker;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
+import io.aeron.logbuffer.Header;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthorisationService;
 import io.aeron.status.LocalSocketAddressStatus;
@@ -404,6 +405,17 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             throw new ClusterException(
                 "incompatible time unit: " + clusterTimeUnit + " snapshot=" + timeUnit, AeronException.Category.FATAL);
         }
+    }
+
+    public void onUnknownMessage(
+        final int schemaId,
+        final int templateId,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header)
+    {
+        throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
     }
 
     public void onLoadEndSnapshot(final DirectBuffer buffer, final int offset, final int length)

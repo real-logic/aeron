@@ -18,7 +18,6 @@ package io.aeron.cluster;
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -73,12 +72,12 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int schemaId = messageHeaderDecoder.schemaId();
+        final int templateId = messageHeaderDecoder.templateId();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+            consensusModuleAgent.onUnknownMessage(schemaId, templateId, buffer, offset, length, header);
         }
 
-        final int templateId = messageHeaderDecoder.templateId();
         if (templateId == SessionMessageHeaderDecoder.TEMPLATE_ID)
         {
             sessionMessageHeaderDecoder.wrap(

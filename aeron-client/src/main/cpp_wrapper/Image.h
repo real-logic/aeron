@@ -81,7 +81,7 @@ static void doPoll(void *clientd, const std::uint8_t *buffer, std::size_t length
 {
     H &handler = *reinterpret_cast<H *>(clientd);
     AtomicBuffer atomicBuffer(const_cast<std::uint8_t *>(buffer), length);
-    Header headerWrapper(header, nullptr);
+    Header headerWrapper{header};
     handler(atomicBuffer, static_cast<util::index_t>(0), static_cast<util::index_t>(length), headerWrapper);
 }
 
@@ -91,7 +91,7 @@ static aeron_controlled_fragment_handler_action_t doControlledPoll(
 {
     H &handler = *reinterpret_cast<H *>(clientd);
     AtomicBuffer atomicBuffer(const_cast<std::uint8_t *>(buffer), length);
-    Header headerWrapper(header, nullptr);
+    Header headerWrapper{header};
 
     ControlledPollAction action = handler(atomicBuffer, 0, static_cast<std::int32_t>(length), headerWrapper);
     return static_cast<aeron_controlled_fragment_handler_action_t>(action);

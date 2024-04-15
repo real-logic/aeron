@@ -592,6 +592,11 @@ int32_t aeron_header_next_term_offset(aeron_header_t *header)
         header->frame->term_offset + term_occupancy_length, AERON_LOGBUFFER_FRAME_ALIGNMENT);
 }
 
+void *aeron_header_context(aeron_header_t *header)
+{
+    return header->context;
+}
+
 int aeron_subscription_local_sockaddrs(
     aeron_subscription_t *subscription, aeron_iovec_t *address_vec, size_t address_vec_len)
 {

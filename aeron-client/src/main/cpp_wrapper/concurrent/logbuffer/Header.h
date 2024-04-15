@@ -35,9 +35,7 @@ using namespace aeron::util;
 class Header
 {
 public:
-    Header(aeron_header_t *header, void *context) :
-        m_header(header),
-        m_context(context)
+    Header(aeron_header_t *header) : m_header(header)
     {
         if (aeron_header_values(m_header, &m_headerValues) < 0)
         {
@@ -166,7 +164,7 @@ public:
      */
     inline void *context() const
     {
-        return m_context;
+        return aeron_header_context(m_header);
     }
 
     aeron_header_t *hdr()
@@ -177,7 +175,6 @@ public:
 private:
     aeron_header_t *m_header = nullptr;
     aeron_header_values_t m_headerValues = {};
-    void *m_context = nullptr;
 };
 
 }}}

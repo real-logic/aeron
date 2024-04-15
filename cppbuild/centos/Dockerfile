@@ -7,10 +7,13 @@ ARG GCC_VERSION
 
 RUN groupadd --gid $GROUP_ID --non-unique --system athena
 RUN adduser --uid $USER_ID --system --gid $GROUP_ID athena
+RUN mkdir -p /home/athena && \
+    printf "PS1=\"CentOS> \"" > /home/athena/.bashrc && \
+    chown -R athena /home/athena
 
 # Install dev tools
 RUN yum install -y centos-release-scl && \
-    yum install -y "devtoolset-${GCC_VERSION}-gcc" "devtoolset-${GCC_VERSION}-gcc-c++" make git
+    yum install -y "devtoolset-${GCC_VERSION}-gcc" "devtoolset-${GCC_VERSION}-gcc-c++" make git libuuid-devel zlib-devel
 
 # Install Java
 RUN yum install -y https://cdn.azul.com/zulu/bin/zulu-repo-1.0.0-1.noarch.rpm && \

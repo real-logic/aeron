@@ -49,9 +49,6 @@ option(AERON_BUILD_SAMPLES "Enable building the sample projects" ${STANDALONE_BU
 option(LINK_SAMPLES_CLIENT_SHARED "Enable shared linking for sample projects" OFF)
 option(AERON_BUILD_DOCUMENTATION "Build Aeron documentation" ${STANDALONE_BUILD})
 option(AERON_INSTALL_TARGETS "Enable installation step" ${STANDALONE_BUILD})
-if (UNIX)
-    option(AERON_ENABLE_NONSTANDARD_OPTIMIZATIONS "Enable Ofast for release builds" ${STANDALONE_BUILD})
-endif ()
 
 unset(STANDALONE_BUILD)
 
@@ -147,19 +144,6 @@ if (UNIX)
         add_compile_options(-fno-inline --coverage)
         SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
     endif (COVERAGE_BUILD)
-
-    if (AERON_ENABLE_NONSTANDARD_OPTIMIZATIONS AND
-        NOT (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" AND
-            ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL "9" AND
-            ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS "10"))
-        message("Set -Ofast for ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
-        add_compile_options($<$<CONFIG:Release>:-Ofast>)
-    endif ()
-
-    # added last so these option appear after -Ofast option, i.e. this fixes `-Wnan-infinity-disabled` warning
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "18")
-        add_compile_options(-fhonor-nans -fhonor-infinities)
-    endif ()
 endif ()
 
 # platform specific flags

@@ -184,14 +184,18 @@ elseif (MSVC)
     endif (CXX_WARNINGS_AS_ERRORS)
 
     if (SANITISE_BUILD)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address /Zi /Oy- /D AERON_SANITIZE_ENABLED")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address /Zi /Oy- /D AERON_SANITIZE_ENABLED")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address /Zi /D AERON_SANITIZE_ENABLED")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address /Zi /D AERON_SANITIZE_ENABLED")
     endif (SANITISE_BUILD)
 
 endif ()
 
 if (DEFINED AERON_COMPILER_OPTIMIZATION_LEVEL)
-    add_compile_options(-O${AERON_COMPILER_OPTIMIZATION_LEVEL})
+    if (MSVC)
+        add_compile_options(/O${AERON_COMPILER_OPTIMIZATION_LEVEL})
+    else ()
+        add_compile_options(-O${AERON_COMPILER_OPTIMIZATION_LEVEL})
+    endif ()
 endif()
 
 ##########################################################

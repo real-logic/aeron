@@ -57,7 +57,7 @@ if not "%1"=="" (
         echo "Enabling release with debug info build"
     ) else if "%1"=="--compiler-optimization-level" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_COMPILER_OPTIMIZATION_LEVEL=%2"
-        echo "Setting compiler optimization level to: %2"
+        echo "Setting compiler optimization level to: /O%2"
     ) else if "%1"=="--sanitise-build" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DSANITISE_BUILD=ON"
         echo "Enabling sanitise build"

@@ -43,7 +43,7 @@ function build_cmake()
     mkdir -p "${BUILD_CMAKE_SRC_DIR}"
     (curl -LJ https://github.com/Kitware/CMake/releases/download/v${BUILD_CMAKE_VERSION}/cmake-${BUILD_CMAKE_VERSION}.tar.gz | tar xzf - -C "${BUILD_CMAKE_SRC_DIR}" --strip-components 1
       cd "${BUILD_CMAKE_SRC_DIR}"
-      ./bootstrap --prefix="${BUILD_CMAKE_INSTALL_DIR}"
+      ./bootstrap --parallel="${ncpus}" --prefix="${BUILD_CMAKE_INSTALL_DIR}"
       make -j "${ncpus}"
       make -j "${ncpus}" install
       echo "${CMAKE_COMPILER_OPTIONS}" > "${CMAKE_COMPILER_OPTIONS_FILE}")

@@ -13,12 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
-cmake_policy(VERSION 3.14)
+cmake_minimum_required(VERSION 3.26 FATAL_ERROR)
+cmake_policy(VERSION 3.26)
+if(COMMAND cmake_policy)
+    cmake_policy(SET CMP0003 NEW)
+endif(COMMAND cmake_policy)
 if(POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
-    set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
 endif()
+
+if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+    message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory)"
+        "and run CMake from there. You may need to remove CMakeCache.txt.")
+endif ()
+
+string(TIMESTAMP DSTAMP "%Y%m%d")
 
 include(FetchContent)
 

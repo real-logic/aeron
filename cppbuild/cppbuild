@@ -9,6 +9,12 @@ EXTRA_CMAKE_ARGS=""
 BUILD_PACKAGE=false
 COVERAGE_BUILD=0
 
+BUILD_DELETE_CMAKE=false
+BUILD_CMAKE_VERSION=3.29.2
+BUILD_CMAKE_DIR="$(dirname "${BUILD_DIR}")/cmake"
+BUILD_CMAKE_SRC_DIR="${BUILD_CMAKE_DIR}/src"
+BUILD_CMAKE_INSTALL_DIR="${BUILD_CMAKE_DIR}/install"
+
 ncpus=1
 case "$(uname)" in
   Darwin* )
@@ -18,6 +24,31 @@ case "$(uname)" in
     ncpus=$(lscpu -p | grep -c -E -v '^#')
     ;;
 esac
+
+function build_cmake()
+{
+  CMAKE_COMPILER_OPTIONS_FILE="${BUILD_CMAKE_DIR}/compiler-options.txt"
+  CMAKE_COMPILER_OPTIONS="${BUILD_CMAKE_VERSION}"
+
+  if [[ true = "${BUILD_DELETE_CMAKE}" ]]
+  then
+    echo "Removing old CMake installation"
+    rm -rf "${CMAKE_DIR}"
+  fi
+
+  if [[ "${CMAKE_COMPILER_OPTIONS}" != "$(cat "${CMAKE_COMPILER_OPTIONS_FILE}")" ]]
+  then
+    echo "Building CMake ${CMAKE_COMPILER_OPTIONS}"
+    rm -rf "${BUILD_CMAKE_DIR}"
+    mkdir -p "${BUILD_CMAKE_SRC_DIR}"
+    (curl -LJ https://github.com/Kitware/CMake/releases/download/v${BUILD_CMAKE_VERSION}/cmake-${BUILD_CMAKE_VERSION}.tar.gz | tar xzf - -C "${BUILD_CMAKE_SRC_DIR}" --strip-components 1
+      cd "${BUILD_CMAKE_SRC_DIR}"
+      ./bootstrap --prefix="${BUILD_CMAKE_INSTALL_DIR}"
+      make -j "${ncpus}"
+      make -j "${ncpus}" install
+      echo "${CMAKE_COMPILER_OPTIONS}" > "${CMAKE_COMPILER_OPTIONS_FILE}")
+  fi
+}
 
 while [[ $# -gt 0 ]]
 do
@@ -117,8 +148,18 @@ do
       BUILD_PACKAGE=true
       shift
       ;;
+    --rebuild-cmake)
+      BUILD_DELETE_CMAKE=true
+      shift
+      ;;
+    --cmake-version)
+      BUILD_CMAKE_VERSION=${2}
+      echo "Setting BUILD_CMAKE_VERSION=${2}"
+      shift
+      shift
+      ;;
     -h|--help)
-      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--relwithdebinfo-build] [--build-aeron-driver] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests] [--gradle-wrapper path_to_gradle] [--package] [--help]"
+      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--relwithdebinfo-build] [--build-aeron-driver] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests] [--gradle-wrapper path_to_gradle] [--package] [--rebuild-cmake] [--cmake-version \$cmake_version] [--help]"
       exit
       ;;
     *)
@@ -138,9 +179,12 @@ fi
 
 mkdir -p "${BUILD_DIR}"
 
+build_cmake
+
 if [[ ${COVERAGE_BUILD} -eq 1 ]] ; then
   cd "${BUILD_DIR}" || exit
-  cmake -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}" && make clean && make -j ${ncpus} all && ctest -C ${BUILD_CONFIG} -j ${ncpus}
+  # shellcheck disable=SC2086
+  "${BUILD_CMAKE_INSTALL_DIR}/bin/cmake" -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}" && make clean && make -j "${ncpus}" all && "${BUILD_CMAKE_INSTALL_DIR}/bin/ctest" -C ${BUILD_CONFIG} --timeout 2000 --output-on-failure
   rm -rf coverage
   mkdir -p coverage
   lcov --directory . --base-directory . --capture -o coverage/cov.info
@@ -150,10 +194,11 @@ else
   EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DDART_TESTING_TIMEOUT=2000"
 
   cd "${BUILD_DIR}" || exit
-  cmake -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}"
+  # shellcheck disable=SC2086
+  "${BUILD_CMAKE_INSTALL_DIR}/bin/cmake" -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}"
   make clean
-  make -j ${ncpus} all
-  ctest -C ${BUILD_CONFIG} --output-on-failure
+  make -j "${ncpus}" all
+  "${BUILD_CMAKE_INSTALL_DIR}/bin/ctest" -C ${BUILD_CONFIG} --timeout 2000 --output-on-failure
 fi
 
 if [ true = "${BUILD_PACKAGE}" ]

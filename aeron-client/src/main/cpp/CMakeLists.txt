@@ -147,9 +147,6 @@ target_include_directories(aeron_client_shared
 
 if (MSVC)
     string(REPLACE "/" "\\\\" NATIVE_PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}")
-    if (${CMAKE_VERSION} VERSION_LESS "3.13.0")
-        string(TOLOWER "${NATIVE_PROJECT_SOURCE_DIR}" NATIVE_PROJECT_SOURCE_DIR)
-    endif ()
 else ()
     set(NATIVE_PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}")
 endif ()

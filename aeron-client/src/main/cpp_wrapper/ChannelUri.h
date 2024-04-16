@@ -68,6 +68,8 @@ static constexpr const char MEDIA_RCV_TIMESTAMP_OFFSET_PARAM_NAME[] = "media-rcv
 static constexpr const char CHANNEL_RCV_TIMESTAMP_OFFSET_PARAM_NAME[] = "channel-rcv-ts-offset";
 static constexpr const char CHANNEL_SND_TIMESTAMP_OFFSET_PARAM_NAME[] = "channel-snd-ts-offset";
 static constexpr const char RESPONSE_CORRELATION_ID_PARAM_NAME[] = "response-correlation-id";
+static constexpr const char UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME[] = "untethered-window-limit-timeout";
+static constexpr const char UNTETHERED_RESTING_TIMEOUT_PARAM_NAME[] = "untethered-window-limit-timeout";
 
 using namespace aeron::util;
 

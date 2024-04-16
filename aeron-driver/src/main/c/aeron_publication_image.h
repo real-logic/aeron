@@ -60,6 +60,8 @@ typedef struct aeron_publication_image_stct
         aeron_subscribable_t subscribable;
         int64_t time_of_last_state_change_ns;
         int64_t liveness_timeout_ns;
+        int64_t untethered_window_limit_timeout_ns;
+        int64_t untethered_resting_timeout_ns;
         int64_t clean_position;
         aeron_receive_channel_endpoint_t *endpoint;
         uint8_t flags;

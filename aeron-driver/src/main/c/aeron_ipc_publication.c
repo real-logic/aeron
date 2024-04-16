@@ -173,6 +173,8 @@ int aeron_ipc_publication_create(
         context->ipc_publication_window_length, params->term_length);
     _pub->trip_gain = _pub->term_window_length / 8;
     _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
+    _pub->untethered_window_limit_timeout_ns = params->untethered_window_limit_timeout_ns;
+    _pub->untethered_resting_timeout_ns = params->untethered_resting_timeout_ns;
     _pub->is_exclusive = is_exclusive;
 
     _pub->conductor_fields.consumer_position = aeron_ipc_publication_producer_position(_pub);
@@ -320,8 +322,8 @@ void aeron_ipc_publication_check_untethered_subscriptions(
         }
         else
         {
-            int64_t window_limit_timeout_ns = (int64_t)conductor->context->untethered_window_limit_timeout_ns;
-            int64_t resting_timeout_ns = (int64_t)conductor->context->untethered_resting_timeout_ns;
+            int64_t window_limit_timeout_ns = publication->untethered_window_limit_timeout_ns;
+            int64_t resting_timeout_ns = publication->untethered_resting_timeout_ns;
 
             switch (tetherable_position->state)
             {

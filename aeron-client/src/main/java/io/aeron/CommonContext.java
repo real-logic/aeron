@@ -394,6 +394,20 @@ public class CommonContext implements Cloneable
     public static final String NAK_DELAY_PARAM_NAME = "nak-delay";
 
     /**
+     * Parameter name to set explicit untethered window limit timeout (e.g. {@code untethered-window-limit-timeout=10s})
+     *
+     * @since 1.45.0
+     */
+    public static final String UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME = "untethered-window-limit-timeout";
+
+    /**
+     * Parameter name to set explicit untethered resting timeout (e.g. {@code untethered-resting-timeout=10s})
+     *
+     * @since 1.45.0
+     */
+    public static final String UNTETHERED_RESTING_TIMEOUT_PARAM_NAME = "untethered-resting-timeout";
+
+    /**
      * Get the current fallback logger based on the supplied property.
      *
      * @return the configured PrintStream.

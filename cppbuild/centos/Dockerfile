@@ -12,7 +12,7 @@ RUN mkdir -p /home/athena && \
 
 # Install dev tools
 RUN yum install -y centos-release-scl && \
-    yum install -y "devtoolset-${GCC_VERSION}-gcc" "devtoolset-${GCC_VERSION}-gcc-c++" make git libuuid-devel zlib-devel
+    yum install -y "devtoolset-${GCC_VERSION}-gcc" "devtoolset-${GCC_VERSION}-gcc-c++" make git libuuid-devel zlib-devel openssl-devel
 
 # Install Java
 RUN yum install -y https://cdn.azul.com/zulu/bin/zulu-repo-1.0.0-1.noarch.rpm && \

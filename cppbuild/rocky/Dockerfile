@@ -11,7 +11,8 @@ RUN mkdir -p /home/athena && \
     chown -R athena /home/athena
 
 # Install dev tools
-RUN yum install -y scl-utils && \
+RUN yum install -y drpm scl-utils && \
+    yum update -y && \
     yum install -y "gcc-toolset-${GCC_VERSION}-gcc" "gcc-toolset-${GCC_VERSION}-gcc-c++" make findutils git libuuid-devel zlib-devel openssl-devel
 
 # Install Java

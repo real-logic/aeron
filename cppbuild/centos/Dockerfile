@@ -11,7 +11,9 @@ RUN mkdir -p /home/athena && \
     chown -R athena /home/athena
 
 # Install dev tools
-RUN yum install -y centos-release-scl && \
+RUN yum install -y deltarpm && \
+    yum update -y && \
+    yum install -y centos-release-scl epel-release && \
     yum install -y "devtoolset-${GCC_VERSION}-gcc" "devtoolset-${GCC_VERSION}-gcc-c++" make git libuuid-devel zlib-devel openssl11
 
 # Install Java

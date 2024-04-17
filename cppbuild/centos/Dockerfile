@@ -14,10 +14,11 @@ RUN mkdir -p /home/athena && \
 RUN yum install -y deltarpm && \
     yum update -y && \
     yum install -y centos-release-scl epel-release && \
-    yum install -y "devtoolset-${GCC_VERSION}-gcc" "devtoolset-${GCC_VERSION}-gcc-c++" make git libuuid-devel zlib-devel openssl11
+    yum install -y "devtoolset-${GCC_VERSION}-gcc" "devtoolset-${GCC_VERSION}-gcc-c++" make git libuuid-devel zlib-devel openssl11 cmake
 
 RUN ldd --version
-RUN find / -name 'libc.so*'
+RUN ldconfig
+RUN cmake --version
 
 # Install Java
 RUN yum install -y https://cdn.azul.com/zulu/bin/zulu-repo-1.0.0-1.noarch.rpm && \

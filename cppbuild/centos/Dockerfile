@@ -14,7 +14,7 @@ RUN mkdir -p /home/athena && \
 RUN yum install -y deltarpm && \
     yum update -y && \
     yum install -y centos-release-scl epel-release && \
-    yum install -y "devtoolset-${GCC_VERSION}-gcc" "devtoolset-${GCC_VERSION}-gcc-c++" make git libuuid-devel zlib-devel openssl11 && \
+    yum install -y "devtoolset-${GCC_VERSION}-gcc" "devtoolset-${GCC_VERSION}-gcc-c++" make git libuuid-devel zlib-devel openssl-devel && \
     ldconfig
 
 RUN ldd --version

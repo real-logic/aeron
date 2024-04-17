@@ -164,7 +164,7 @@ jobs:
       - name: Extract CMake version
         id: extract_cmake_version
         run: |
-          cmake_version=$(grep -P 'BUILD_CMAKE_VERSION=\d.*' cppbuild/cppbuild | cut --delimiter='=' --fields=2)
+          cmake_version=$(grep -e 'BUILD_CMAKE_VERSION=\d.*' cppbuild/cppbuild | cut -d '=' -f 2)
           echo "Output: $cmake_version"
           echo "cmake_version=$cmake_version" >> $GITHUB_OUTPUT
       - name: Cache CMake directory
@@ -233,7 +233,7 @@ jobs:
       - name: Extract CMake version
         id: extract_cmake_version
         run: |
-          cmake_version=$(grep -P 'BUILD_CMAKE_VERSION=\d.*' cppbuild/cppbuild | cut --delimiter='=' --fields=2)
+          cmake_version=$(grep -e 'BUILD_CMAKE_VERSION=\d.*' cppbuild/cppbuild | cut -d '=' -f 2)
           echo "Output: $cmake_version"
           echo "cmake_version=$cmake_version" >> $GITHUB_OUTPUT
       - name: Cache CMake directory
@@ -352,7 +352,7 @@ jobs:
       - name: Extract CMake version
         id: extract_cmake_version
         run: |
-          cmake_version=$(grep -P 'BUILD_CMAKE_VERSION=\d.*' cppbuild/cppbuild | cut --delimiter='=' --fields=2)
+          cmake_version=$(grep -e 'BUILD_CMAKE_VERSION=\d.*' cppbuild/cppbuild | cut -d '=' -f 2)
           echo "Output: $cmake_version"
           echo "cmake_version=$cmake_version" >> $GITHUB_OUTPUT
       - name: Cache CMake directory
@@ -421,7 +421,7 @@ jobs:
       - name: Extract CMake version
         id: extract_cmake_version
         run: |
-          cmake_version=$(grep -P 'BUILD_CMAKE_VERSION=\d.*' cppbuild/cppbuild | cut --delimiter='=' --fields=2)
+          cmake_version=$(grep -e 'BUILD_CMAKE_VERSION=\d.*' cppbuild/cppbuild | cut -d '=' -f 2)
           echo "Output: $cmake_version"
           echo "cmake_version=$cmake_version" >> $GITHUB_OUTPUT
       - name: Cache CMake directory

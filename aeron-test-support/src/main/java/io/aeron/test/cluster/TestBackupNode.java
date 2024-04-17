@@ -143,14 +143,17 @@ public class TestBackupNode implements AutoCloseable
 
     public long recordingLogStartPosition()
     {
-        try (RecordingLog recordingLog = new RecordingLog(clusterBackup.context().clusterDir(), false))
+        try (RecordingLog recordingLog = new RecordingLog(context.clusterBackupContext.clusterDir(), false))
         {
             final long recordingId = Objects.requireNonNull(recordingLog.findLastTerm()).recordingId;
 
-            final AeronArchive.Context ctx = clusterBackup.context().archiveContext()
-                .clone()
-                .controlResponseStreamId(ThreadLocalRandom.current().nextInt());
-            try (AeronArchive aeronArchive = AeronArchive.connect(ctx))
+            final AeronArchive.Context backupArchiveContext = context.clusterBackupContext.archiveContext();
+            try (AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
+                .aeronDirectoryName(backupArchiveContext.aeronDirectoryName())
+                .controlRequestChannel(backupArchiveContext.controlRequestChannel())
+                .controlRequestStreamId(backupArchiveContext.controlRequestStreamId())
+                .controlResponseChannel(backupArchiveContext.controlResponseChannel())
+                .controlResponseStreamId(ThreadLocalRandom.current().nextInt())))
             {
                 return aeronArchive.getStartPosition(recordingId);
             }

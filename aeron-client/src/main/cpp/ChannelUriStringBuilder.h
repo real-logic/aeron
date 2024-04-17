@@ -70,6 +70,9 @@ public:
         m_channelReceiveTimestampOffset.reset(nullptr);
         m_channelSendTimestampOffset.reset(nullptr);
         m_responseCorrelationId.reset(nullptr);
+        m_nakDelay.reset(nullptr);
+        m_untetheredWindowLimitTimeout.reset(nullptr);
+        m_untetheredRestingTimeout.reset(nullptr);
 
         return *this;
     }
@@ -384,6 +387,24 @@ public:
         return *this;
     }
 
+    inline this_t &nakDelay(std::int64_t nakDelay)
+    {
+        m_nakDelay.reset(new Value(nakDelay));
+        return *this;
+    }
+
+    inline this_t &untetheredWindowLimitTimeout(std::int64_t timeout)
+    {
+        m_untetheredWindowLimitTimeout.reset(new Value(timeout));
+        return *this;
+    }
+
+    inline this_t &untetheredRestingTimeout(std::int64_t timeout)
+    {
+        m_untetheredRestingTimeout.reset(new Value(timeout));
+        return *this;
+    }
+
     std::string build()
     {
         std::ostringstream sb;
@@ -550,6 +571,21 @@ public:
             sb << RESPONSE_CORRELATION_ID_PARAM_NAME << '=' << m_responseCorrelationId->value << '|';
         }
 
+        if (m_nakDelay)
+        {
+            sb << NAK_DELAY_PARAM_NAME << '=' << m_nakDelay->value << '|';
+        }
+
+        if (m_untetheredWindowLimitTimeout)
+        {
+            sb << UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME << '=' << m_untetheredWindowLimitTimeout->value << '|';
+        }
+
+        if (m_untetheredRestingTimeout)
+        {
+            sb << UNTETHERED_RESTING_TIMEOUT_PARAM_NAME << '=' << m_untetheredRestingTimeout->value << '|';
+        }
+
         std::string result = sb.str();
         const char lastChar = result.back();
 
@@ -602,6 +638,9 @@ private:
     std::unique_ptr<Value> m_socketRcvbufLength;
     std::unique_ptr<Value> m_receiverWindowLength;
     std::unique_ptr<Value> m_responseCorrelationId;
+    std::unique_ptr<Value> m_nakDelay;
+    std::unique_ptr<Value> m_untetheredWindowLimitTimeout;
+    std::unique_ptr<Value> m_untetheredRestingTimeout;
     std::unique_ptr<std::string> m_mediaReceiveTimestampOffset;
     std::unique_ptr<std::string> m_channelReceiveTimestampOffset;
     std::unique_ptr<std::string> m_channelSendTimestampOffset;

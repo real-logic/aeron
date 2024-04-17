@@ -190,3 +190,54 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateResponseCorrelationId)
     builder.clear().media("ipc");
     ASSERT_EQ(builder.build(), "aeron:ipc");
 }
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateNakDelay)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .nakDelay(INT64_C(3333333333));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|nak-delay=3333333333");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateUntetheredWindowLimitTimeout)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .untetheredWindowLimitTimeout(INT64_C(3333333333));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|untethered-window-limit-timeout=3333333333");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateUntetheredRestingTimeout)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .untetheredRestingTimeout(INT64_C(3333333333));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|untethered-resting-timeout=3333333333");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}

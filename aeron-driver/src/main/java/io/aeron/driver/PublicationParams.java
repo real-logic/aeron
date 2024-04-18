@@ -390,20 +390,22 @@ final class PublicationParams
         spiesSimulateConnection = null != sscStr ? "true".equals(sscStr) : ctx.spiesSimulateConnection();
     }
 
+    private long getTimeoutNs(final ChannelUri channelUri, final String paramName, final long defaultValue)
+    {
+        final String timeoutString = channelUri.get(paramName);
+        return null != timeoutString ? SystemUtil.parseDuration(paramName, timeoutString) : defaultValue;
+    }
+
     private void getUntetheredWindowLimitTimeout(final ChannelUri channelUri, final MediaDriver.Context ctx)
     {
-        final String timeoutString = channelUri.get(UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME);
-        untetheredWindowLimitTimeoutNs = null != timeoutString ?
-            SystemUtil.parseDuration(UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME, timeoutString) :
-            ctx.untetheredWindowLimitTimeoutNs();
+        untetheredWindowLimitTimeoutNs = getTimeoutNs(
+            channelUri, UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME, ctx.untetheredWindowLimitTimeoutNs());
     }
 
     private void getUntetheredRestingTimeout(final ChannelUri channelUri, final MediaDriver.Context ctx)
     {
-        final String timeoutString = channelUri.get(UNTETHERED_RESTING_TIMEOUT_PARAM_NAME);
-        untetheredWindowLimitTimeoutNs = null != timeoutString ?
-            SystemUtil.parseDuration(UNTETHERED_RESTING_TIMEOUT_PARAM_NAME, timeoutString) :
-            ctx.untetheredWindowLimitTimeoutNs();
+        untetheredRestingTimeoutNs = getTimeoutNs(
+            channelUri, UNTETHERED_RESTING_TIMEOUT_PARAM_NAME, ctx.untetheredRestingTimeoutNs());
     }
 
     private static long parseEntityTag(

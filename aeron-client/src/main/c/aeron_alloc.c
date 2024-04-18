@@ -99,11 +99,12 @@ int aeron_alloc_aligned(void **ptr, size_t *offset, size_t size, size_t alignmen
     return 0;
 }
 
+#if defined(__linux__) || defined(AERON_COMPILER_MSVC)
 int aeron_reallocf(void **ptr, size_t size)
 {
-#if defined(__linux__) || defined(AERON_COMPILER_MSVC)
+    void *new_ptr = NULL;
     /* mimic reallocf */
-    if ((*ptr = realloc(*ptr, size)) == NULL)
+    if ((new_ptr = realloc(*ptr, size)) == NULL)
     {
         if (0 == size)
         {
@@ -112,6 +113,7 @@ int aeron_reallocf(void **ptr, size_t size)
         else
         {
             free(*ptr);
+            *ptr = NULL;
             errno = ENOMEM;
 #if defined(AERON_COMPILER_MSVC)
             SetLastError(ERROR_OUTOFMEMORY);
@@ -119,16 +121,24 @@ int aeron_reallocf(void **ptr, size_t size)
             return -1;
         }
     }
+    else
+    {
+        *ptr = new_ptr;
+    }
+
+    return 0;
+}
 #else
+int aeron_reallocf(void **ptr, size_t size)
+{
     if ((*ptr = reallocf(*ptr, size)) == NULL)
     {
         errno = ENOMEM;
         return -1;
     }
-#endif
-
     return 0;
 }
+#endif
 
 void aeron_free(void *ptr)
 {

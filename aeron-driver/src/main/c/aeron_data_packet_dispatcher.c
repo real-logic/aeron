@@ -554,18 +554,31 @@ int aeron_data_packet_dispatcher_on_unconnected_stream(
     size_t length,
     struct sockaddr_storage *addr)
 {
+    return aeron_data_packet_dispatcher_try_connect_stream(
+        dispatcher, endpoint, destination, header->stream_id, header->session_id, addr);
+}
+
+int aeron_data_packet_dispatcher_try_connect_stream(
+    aeron_data_packet_dispatcher_t *dispatcher,
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_receive_destination_t *destination,
+    int32_t stream_id,
+    int32_t session_id,
+    struct sockaddr_storage *addr)
+{
     aeron_data_packet_dispatcher_stream_interest_t *stream_interest =
-        aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, header->stream_id);
+        aeron_int64_to_ptr_hash_map_get(&dispatcher->session_by_stream_id_map, stream_id);
+
     if (NULL == stream_interest)
     {
-        AERON_SET_ERR(EINVAL, "%s", "no stream interest found for streamId=%" PRId32 "", header->stream_id);
+        AERON_SET_ERR(EINVAL, "%s", "no stream interest found for streamId=%" PRId32 "", stream_id);
         return -1;
     }
 
-    if (aeron_data_packet_dispatcher_stream_interest_for_session(stream_interest, header->session_id))
+    if (aeron_data_packet_dispatcher_stream_interest_for_session(stream_interest, session_id))
     {
         if (aeron_data_packet_dispatcher_elicit_setup_from_source(
-            dispatcher, stream_interest, endpoint, destination, addr, header->stream_id, header->session_id) < 0)
+            dispatcher, stream_interest, endpoint, destination, addr, stream_id, session_id) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             return -1;

@@ -495,20 +495,6 @@ void aeron_receive_channel_endpoint_dispatch(
             }
             break;
 
-        case AERON_HDR_TYPE_UNCONNECTED_STREAM:
-            if (length >= sizeof(aeron_unconnected_stream_header_t))
-            {
-                if (aeron_receive_channel_endpoint_on_unconnected_stream(endpoint, destination, buffer, length, addr) < 0)
-                {
-                    AERON_APPEND_ERR("%s", "recevier on_unknown_stream");
-                    aeron_driver_receiver_log_error(receiver);
-                }
-            }
-            else
-            {
-                aeron_counter_increment(receiver->invalid_frames_counter, 1);
-            }
-
         default:
             break;
     }
@@ -601,22 +587,6 @@ int aeron_receive_channel_endpoint_on_rttm(
     }
 
     return result;
-}
-
-int aeron_receive_channel_endpoint_on_unconnected_stream(
-    aeron_receive_channel_endpoint_t *endpoint,
-    aeron_receive_destination_t *destination,
-    uint8_t *buffer,
-    size_t length,
-    struct sockaddr_storage *addr)
-{
-    aeron_unconnected_stream_header_t *unknown_stream_header = (aeron_unconnected_stream_header_t *)buffer;
-
-    aeron_receive_destination_update_last_activity_ns(
-        destination, aeron_clock_cached_nano_time(endpoint->cached_clock));
-
-    return aeron_data_packet_dispatcher_on_unconnected_stream(
-        &endpoint->dispatcher, endpoint, destination, unknown_stream_header, buffer, length, addr);
 }
 
 void aeron_receive_channel_endpoint_try_remove_endpoint(aeron_receive_channel_endpoint_t *endpoint)

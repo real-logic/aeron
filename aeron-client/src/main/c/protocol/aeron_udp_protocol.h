@@ -96,17 +96,6 @@ typedef struct aeron_rttm_header_stct
 }
 aeron_rttm_header_t;
 
-typedef struct aeron_unconnected_stream_header_stct
-{
-    aeron_frame_header_t frame_header;
-    int32_t term_offset;
-    int32_t session_id;
-    int32_t stream_id;
-    int32_t term_id;
-    int64_t reserved_value;
-}
-aeron_unconnected_stream_header_t;
-
 #pragma pack(pop)
 
 #define AERON_RES_HEADER_ADDRESS_LENGTH_IP4 (4u)
@@ -172,7 +161,6 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 #define AERON_HDR_TYPE_ATS_SETUP (INT16_C(0x09))
 #define AERON_HDR_TYPE_ATS_SM (INT16_C(0x0A))
 #define AERON_HDR_TYPE_RSP_SETUP (INT16_C(0x0B))
-#define AERON_HDR_TYPE_UNCONNECTED_STREAM (INT16_C(0xC))
 #define AERON_HDR_TYPE_EXT (INT16_C(-1))
 
 #define AERON_DATA_HEADER_LENGTH (sizeof(aeron_data_header_t))

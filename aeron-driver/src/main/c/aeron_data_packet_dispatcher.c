@@ -545,19 +545,6 @@ int aeron_data_packet_dispatcher_on_rttm(
     return 0;
 }
 
-int aeron_data_packet_dispatcher_on_unconnected_stream(
-    aeron_data_packet_dispatcher_t *dispatcher,
-    aeron_receive_channel_endpoint_t *endpoint,
-    aeron_receive_destination_t *destination,
-    aeron_unconnected_stream_header_t *header,
-    uint8_t *buffer,
-    size_t length,
-    struct sockaddr_storage *addr)
-{
-    return aeron_data_packet_dispatcher_try_connect_stream(
-        dispatcher, endpoint, destination, header->stream_id, header->session_id, addr);
-}
-
 int aeron_data_packet_dispatcher_try_connect_stream(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_receive_channel_endpoint_t *endpoint,

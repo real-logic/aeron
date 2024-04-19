@@ -558,7 +558,7 @@ int aeron_data_packet_dispatcher_try_connect_stream(
 
     if (NULL == stream_interest)
     {
-        AERON_SET_ERR(EINVAL, "%s", "no stream interest found for streamId=%" PRId32 "", stream_id);
+        AERON_SET_ERR(EINVAL, "no stream interest found for streamId=%" PRId32, stream_id);
         return -1;
     }
 

@@ -77,22 +77,7 @@ int aeron_uri_get_mtu_length_param(aeron_uri_params_t *uri_params, aeron_driver_
 
 int aeron_uri_linger_timeout_param(aeron_uri_params_t *uri_params, aeron_driver_uri_publication_params_t *params)
 {
-    const char *value_str;
-
-    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_LINGER_TIMEOUT_KEY)) != NULL)
-    {
-        uint64_t value;
-
-        if (-1 == aeron_parse_duration_ns(value_str, &value))
-        {
-            AERON_SET_ERR(EINVAL, "could not parse %s=%s in URI", AERON_URI_LINGER_TIMEOUT_KEY, value_str);
-            return -1;
-        }
-
-        params->linger_timeout_ns = value;
-    }
-
-    return 0;
+    return aeron_uri_get_timeout(uri_params, AERON_URI_LINGER_TIMEOUT_KEY, &params->linger_timeout_ns);
 }
 
 int aeron_uri_publication_session_id_param(
@@ -160,6 +145,8 @@ int aeron_diver_uri_publication_params(
     aeron_driver_context_t *context = conductor->context;
 
     params->linger_timeout_ns = context->publication_linger_timeout_ns;
+    params->untethered_window_limit_timeout_ns = context->untethered_window_limit_timeout_ns;
+    params->untethered_resting_timeout_ns = context->untethered_resting_timeout_ns;
     params->term_length = AERON_URI_IPC == uri->type ? context->ipc_term_buffer_length : context->term_buffer_length;
     params->has_term_length = false;
     params->mtu_length = AERON_URI_IPC == uri->type ? context->ipc_mtu_length : context->mtu_length;
@@ -324,6 +311,24 @@ int aeron_diver_uri_publication_params(
     if (aeron_uri_get_int64(
         uri_params, AERON_URI_RESPONSE_CORRELATION_ID_KEY, AERON_NULL_VALUE, &params->response_correlation_id) < 0)
     {
+        return -1;
+    }
+
+    if (aeron_uri_get_timeout(
+        uri_params,
+        AERON_URI_UNTETHERED_WINDOW_LIMIT_TIMEOUT_KEY,
+        &params->untethered_window_limit_timeout_ns) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (aeron_uri_get_timeout(
+        uri_params,
+        AERON_URI_UNTETHERED_RESTING_TIMEOUT_KEY,
+        &params->untethered_resting_timeout_ns) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 

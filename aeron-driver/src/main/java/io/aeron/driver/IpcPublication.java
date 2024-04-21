@@ -115,8 +115,8 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         this.publisherLimit = publisherLimit;
         this.rawLog = rawLog;
         this.unblockTimeoutNs = ctx.publicationUnblockTimeoutNs();
-        this.untetheredWindowLimitTimeoutNs = ctx.untetheredWindowLimitTimeoutNs();
-        this.untetheredRestingTimeoutNs = ctx.untetheredRestingTimeoutNs();
+        this.untetheredWindowLimitTimeoutNs = params.untetheredWindowLimitTimeoutNs;
+        this.untetheredRestingTimeoutNs = params.untetheredRestingTimeoutNs;
         this.unblockedPublications = ctx.systemCounters().get(UNBLOCKED_PUBLICATIONS);
         this.metaDataBuffer = rawLog.metaData();
 

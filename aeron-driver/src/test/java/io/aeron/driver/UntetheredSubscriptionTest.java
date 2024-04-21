@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.TestLogFactory;
@@ -47,6 +48,7 @@ class UntetheredSubscriptionTest
     private final MediaDriver.Context ctx = new MediaDriver.Context()
         .cachedNanoClock(new CachedNanoClock())
         .systemCounters(mock(SystemCounters.class));
+    private final DriverConductor conductor = mock(DriverConductor.class);
 
     private IpcPublication ipcPublication;
 
@@ -54,6 +56,8 @@ class UntetheredSubscriptionTest
     void before()
     {
         ctx.cachedNanoClock().update(TIME_NS);
+        final PublicationParams params = PublicationParams.getPublicationParams(
+            ChannelUri.parse("aeron:udp?endpoint=localhost:1010"), ctx, conductor, false);
 
         ipcPublication = new IpcPublication(
             REGISTRATION_ID,
@@ -67,7 +71,7 @@ class UntetheredSubscriptionTest
             rawLog,
             TERM_WINDOW_LENGTH,
             true,
-            new PublicationParams());
+            params);
     }
 
     @Test
@@ -83,7 +87,6 @@ class UntetheredSubscriptionTest
         ipcPublication.addSubscriber(tetheredLink, tetheredPosition, ctx.cachedNanoClock().nanoTime());
         ipcPublication.addSubscriber(untetheredLink, untetheredPosition, ctx.cachedNanoClock().nanoTime());
 
-        final DriverConductor conductor = mock(DriverConductor.class);
         ipcPublication.updatePublisherPositionAndLimit();
 
         final long timeNs = TIME_NS + 1;

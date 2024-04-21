@@ -190,3 +190,258 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateResponseCorrelationId)
     builder.clear().media("ipc");
     ASSERT_EQ(builder.build(), "aeron:ipc");
 }
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateNakDelay)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .nakDelay(INT64_C(3333333333));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|nak-delay=3333333333");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateUntetheredWindowLimitTimeout)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .untetheredWindowLimitTimeout(INT64_C(3333333333));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|untethered-window-limit-timeout=3333333333");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateUntetheredRestingTimeout)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .untetheredRestingTimeout(INT64_C(3333333333));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|untethered-resting-timeout=3333333333");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateGroupTag)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .groupTag(INT64_C(3333333333));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|gtag=3333333333");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateLinger)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .linger(INT64_C(3333333333));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|linger=3333333333");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateTtl)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .ttl(INT8_C(33));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|ttl=33");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateMtu)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .mtu(UINT32_C(1408));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|mtu=1408");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateTermLength)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .termLength(INT32_C(1048576));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|term-length=1048576");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateInitialTermId)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .initialTermId(INT32_C(982374533));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|init-term-id=982374533");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateTermId)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .termId(INT32_C(834753));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|term-id=834753");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateTermOffset)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .termOffset(UINT32_C(8192));
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|term-offset=8192");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateTags)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .tags("1001:1002");
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?tags=1001:1002|endpoint=localhost:9999");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateNetworkInterface)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .networkInterface("eno0");
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|interface=eno0");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateControlEndpoint)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .controlEndpoint("localhost:9998");
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|control=localhost:9998");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}
+
+TEST(ChannelUriStringBuilderTest, shouldGenerateControlMode)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("localhost:9999")
+        .controlMode("response");
+
+    ASSERT_EQ(
+        builder.build(),
+        "aeron:udp?endpoint=localhost:9999|control-mode=response");
+
+    builder.clear().media("ipc");
+    ASSERT_EQ(builder.build(), "aeron:ipc");
+}

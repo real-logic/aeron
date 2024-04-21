@@ -51,7 +51,14 @@ class UntetheredSubscriptionTest
         return asList(
             "aeron:ipc?term-length=64k",
             "aeron:udp?endpoint=localhost:24325|term-length=64k",
-            "aeron-spy:aeron:udp?endpoint=localhost:24325|term-length=64k");
+            "aeron-spy:aeron:udp?endpoint=localhost:24325|term-length=64k",
+
+            "aeron:ipc?term-length=64k|untethered-window-limit-timeout=50ms|untethered-resting-timeout=50ms",
+            "aeron:udp?endpoint=localhost:24325|term-length=64k|" +
+            "untethered-window-limit-timeout=50ms|untethered-resting-timeout=50ms",
+            "aeron-spy:aeron:udp?endpoint=localhost:24325|term-length=64k|" +
+            "untethered-window-limit-timeout=50ms|untethered-resting-timeout=50ms"
+        );
     }
 
     private static final int STREAM_ID = 1001;
@@ -68,19 +75,6 @@ class UntetheredSubscriptionTest
     @BeforeEach
     void setUp()
     {
-        driver = TestMediaDriver.launch(new MediaDriver.Context()
-                .errorHandler(Tests::onError)
-                .spiesSimulateConnection(true)
-                .dirDeleteOnStart(true)
-                .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))
-                .untetheredWindowLimitTimeoutNs(TimeUnit.MILLISECONDS.toNanos(50))
-                .untetheredRestingTimeoutNs(TimeUnit.MILLISECONDS.toNanos(50))
-                .threadingMode(ThreadingMode.SHARED),
-            testWatcher);
-        testWatcher.dataCollector().add(driver.context().aeronDirectory());
-
-        aeron = Aeron.connect(new Aeron.Context()
-            .useConductorAgentInvoker(true));
     }
 
     @AfterEach
@@ -89,11 +83,38 @@ class UntetheredSubscriptionTest
         CloseHelper.closeAll(aeron, driver);
     }
 
+    private void launch(final String channel)
+    {
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .errorHandler(Tests::onError)
+            .spiesSimulateConnection(true)
+            .dirDeleteOnStart(true)
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))
+            .threadingMode(ThreadingMode.SHARED);
+
+        final ChannelUri channelUri = ChannelUri.parse(channel);
+        if (!channelUri.containsKey("untethered-window-limit-timeout"))
+        {
+            context.untetheredWindowLimitTimeoutNs(TimeUnit.MILLISECONDS.toNanos(50));
+        }
+
+        if (!channelUri.containsKey("untethered-resting-timeout"))
+        {
+            context.untetheredRestingTimeoutNs(TimeUnit.MILLISECONDS.toNanos(50));
+        }
+
+        driver = TestMediaDriver.launch(context, testWatcher);
+        testWatcher.dataCollector().add(driver.context().aeronDirectory());
+        aeron = Aeron.connect(new Aeron.Context().useConductorAgentInvoker(true));
+    }
+
     @ParameterizedTest
     @MethodSource("channels")
     @InterruptAfter(10)
     void shouldBecomeUnavailableWhenNotKeepingUp(final String channel)
     {
+        launch(channel);
+
         final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
         final AtomicBoolean unavailableCalled = new AtomicBoolean();
         final UnavailableImageHandler handler = (image) -> unavailableCalled.set(true);
@@ -150,6 +171,8 @@ class UntetheredSubscriptionTest
     @InterruptAfter(10)
     void shouldRejoinAfterResting(final String channel)
     {
+        launch(channel);
+
         final AtomicInteger unavailableImageCount = new AtomicInteger();
         final AtomicInteger availableImageCount = new AtomicInteger();
         final UnavailableImageHandler unavailableHandler = (image) -> unavailableImageCount.incrementAndGet();

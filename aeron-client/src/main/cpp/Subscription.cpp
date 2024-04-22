@@ -38,11 +38,27 @@ Subscription::Subscription(
     static_cast<void>(m_paddingAfter);
 }
 
-Subscription::~Subscription()
+Subscription::~Subscription() noexcept
 {
-    auto imageArrayPair = m_imageArray.load();
+    try
+    {
+        closeAndRemoveImages();
+    }
+    catch(...) {}
+}
 
-    m_conductor.releaseSubscription(m_registrationId, imageArrayPair.first, imageArrayPair.second);
+std::pair<Image::array_t, std::size_t> Subscription::closeAndRemoveImages()
+{
+    if (!m_isClosed.exchange(true))
+    {
+        auto imageArrayPair = m_imageArray.load();
+        m_conductor.releaseSubscription(m_registrationId, imageArrayPair.first, imageArrayPair.second);
+        return m_imageArray.store(new std::shared_ptr<Image>[0], 0);
+    }
+    else
+    {
+        return { nullptr, 0 };
+    }
 }
 
 std::int64_t Subscription::addDestination(const std::string &endpointChannel)

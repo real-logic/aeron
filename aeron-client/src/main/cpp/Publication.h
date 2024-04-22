@@ -91,7 +91,7 @@ public:
         std::shared_ptr<LogBuffers> logBuffers);
     /// @endcond
 
-    ~Publication();
+    ~Publication() noexcept;
 
     /**
      * Media address for delivery to the channel.
@@ -633,10 +633,7 @@ public:
     bool findDestinationResponse(std::int64_t correlationId);
 
     /// @cond HIDDEN_SYMBOLS
-    inline void close()
-    {
-        m_isClosed.store(true, std::memory_order_release);
-    }
+    void close();
     /// @endcond
 
 private:

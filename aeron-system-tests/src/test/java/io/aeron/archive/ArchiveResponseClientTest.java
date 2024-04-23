@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
+import io.aeron.Counter;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ReplayParams;
@@ -108,6 +109,66 @@ public class ArchiveResponseClientTest
             }
         }
     }
+
+    @Test
+    void shouldBoundedReplayUsingResponseChannel()
+    {
+        final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context()
+            .controlRequestChannel(archive.context().controlChannel())
+            .controlResponseChannel("aeron:udp?control-mode=response|control=localhost:10002");
+        try (AeronArchive aeronArchive = AeronArchive.connect(aeronArchiveCtx))
+        {
+            final ArchiveSystemTests.RecordingResult recordingResult = ArchiveSystemTests.recordData(aeronArchive);
+            final Counter testBoundedCounter = aeronArchive.context().aeron().addCounter(10001, "test bounded counter");
+            testBoundedCounter.set(recordingResult.halfwayPosition);
+
+            final ReplayParams replayParams = new ReplayParams();
+            replayParams.boundingLimitCounterId(testBoundedCounter.id());
+
+            final Subscription replay = aeronArchive.replay(
+                recordingResult.recordingId,
+                "aeron:udp?control-mode=response|control=localhost:10002",
+                10001,
+                replayParams);
+
+            final MutableLong replayPosition = new MutableLong();
+            while (replayPosition.get() < recordingResult.halfwayPosition)
+            {
+                if (0 == replay.poll((buffer, offset, length, header) -> replayPosition.set(header.position()), 10))
+                {
+                    Tests.yield();
+                }
+            }
+        }
+    }
+
+//    @Test
+//    void shouldStartReplayUsingResponseChannel()
+//    {
+//        final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context()
+//            .controlRequestChannel(archive.context().controlChannel())
+//            .controlResponseChannel("aeron:udp?control-mode=response|control=localhost:10002");
+//        try (AeronArchive aeronArchive = AeronArchive.connect(aeronArchiveCtx))
+//        {
+//            final ArchiveSystemTests.RecordingResult recordingResult = ArchiveSystemTests.recordData(aeronArchive);
+//
+//            final long replaySessionId = aeronArchive.startReplay(
+//                recordingResult.recordingId, "aeron:udp?control-mode=response|control=localhost:10002", 10001,
+//                new ReplayParams());
+//
+//            final String channel = new ChannelUriStringBuilder(REPLAY_CHANNEL).sessionId((int)replaySessionId)
+//                .build();
+//
+//            final MutableLong replayPosition = new MutableLong();
+//            while (replayPosition.get() < recordingResult.position)
+//            {
+//                if (0 == replay.poll((buffer, offset, length, header) -> replayPosition.set(header.position()), 10))
+//                {
+//                    Tests.yield();
+//                }
+//            }
+//        }
+//    }
 
     @ParameterizedTest
     @ValueSource(strings = {

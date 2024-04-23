@@ -38,6 +38,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
     private static final int FILE_IO_MAX_LENGTH_VERSION = 7;
     private static final int SESSION_ID_VERSION = 8;
     private static final int ENCODED_CREDENTIALS_VERSION = 8;
+    private static final int REPLAY_TOKEN_VERSION = 10;
 
     private final ControlRequestDecoders decoders;
     private final Image image;
@@ -234,26 +235,13 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 final long position = decoder.position();
                 final long replayLength = decoder.length();
                 final int replayStreamId = decoder.replayStreamId();
-                final long replayToken = decoder.replayToken();
+                final long replayToken = REPLAY_TOKEN_VERSION <= headerDecoder.version() ?
+                    decoder.replayToken() : Aeron.NULL_VALUE;
 
                 final String replayChannel = decoder.replayChannel();
-
                 final ChannelUri channelUri = ChannelUri.parse(replayChannel);
-                final ControlSession controlSession;
-                if (channelUri.hasControlModeResponse() && Aeron.NULL_VALUE != replayToken)
-                {
-                    controlSession = conductor.getReplaySession(replayToken, recordingId);
-                    if (null == controlSession)
-                    {
-                        throw new ArchiveException("Unknown session or token timeout for replayToken=" + replayToken);
-                    }
-
-                    channelUri.put(RESPONSE_CORRELATION_ID_PARAM_NAME, Long.toString(image.correlationId()));
-                }
-                else
-                {
-                    controlSession = getControlSession(correlationId, controlSessionId, templateId);
-                }
+                final ControlSession controlSession = setupSessionAndChannelForReplay(
+                    channelUri, replayToken, recordingId, correlationId, controlSessionId, templateId);
 
                 if (null != controlSession)
                 {
@@ -530,22 +518,33 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long controlSessionId = decoder.controlSessionId();
                 final long correlationId = decoder.correlationId();
-                final ControlSession controlSession = getControlSession(correlationId, controlSessionId, templateId);
-
+                final long position = decoder.position();
+                final long replayLength = decoder.length();
+                final long recordingId = decoder.recordingId();
+                final int limitCounterId = decoder.limitCounterId();
+                final int replayStreamId = decoder.replayStreamId();
                 final int fileIoMaxLength = FILE_IO_MAX_LENGTH_VERSION <= headerDecoder.version() ?
                     decoder.fileIoMaxLength() : Aeron.NULL_VALUE;
+                final long replayToken = REPLAY_TOKEN_VERSION <= headerDecoder.version() ?
+                    decoder.replayToken() : Aeron.NULL_VALUE;
+
+                final String replayChannel = decoder.replayChannel();
+
+                final ChannelUri channelUri = ChannelUri.parse(replayChannel);
+                final ControlSession controlSession = setupSessionAndChannelForReplay(
+                    channelUri, replayToken, recordingId, correlationId, controlSessionId, templateId);
 
                 if (null != controlSession)
                 {
                     controlSession.onStartBoundedReplay(
                         correlationId,
-                        decoder.recordingId(),
-                        decoder.position(),
-                        decoder.length(),
-                        decoder.limitCounterId(),
+                        recordingId,
+                        position,
+                        replayLength,
+                        limitCounterId,
                         fileIoMaxLength,
-                        decoder.replayStreamId(),
-                        decoder.replayChannel());
+                        replayStreamId,
+                        channelUri.toString());
                 }
                 break;
             }
@@ -1078,6 +1077,32 @@ class ControlSessionDemuxer implements Session, FragmentHandler
     {
         controlSessionByIdMap.remove(sessionId);
         conductor.removeReplayTokensForSession(sessionId);
+    }
+
+    private ControlSession setupSessionAndChannelForReplay(
+        final ChannelUri channelUri,
+        final long replayToken,
+        final long recordingId,
+        final long correlationId,
+        final long controlSessionId,
+        final int templateId)
+    {
+        final ControlSession controlSession;
+        if (channelUri.hasControlModeResponse() && Aeron.NULL_VALUE != replayToken)
+        {
+            controlSession = conductor.getReplaySession(replayToken, recordingId);
+            if (null == controlSession)
+            {
+                throw new ArchiveException("Unknown session or token timeout for replayToken=" + replayToken);
+            }
+
+            channelUri.put(RESPONSE_CORRELATION_ID_PARAM_NAME, Long.toString(image.correlationId()));
+        }
+        else
+        {
+            controlSession = getControlSession(correlationId, controlSessionId, templateId);
+        }
+        return controlSession;
     }
 
     private ControlSession getControlSession(

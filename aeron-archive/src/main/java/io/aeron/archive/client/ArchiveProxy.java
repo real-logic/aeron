@@ -450,7 +450,8 @@ public final class ArchiveProxy
                 replayStreamId,
                 correlationId,
                 controlSessionId,
-                replayParams.fileIoMaxLength());
+                replayParams.fileIoMaxLength(),
+                replayParams.replayToken());
         }
         else
         {
@@ -532,6 +533,7 @@ public final class ArchiveProxy
             replayStreamId,
             correlationId,
             controlSessionId,
+            Aeron.NULL_VALUE,
             Aeron.NULL_VALUE);
     }
 
@@ -1587,7 +1589,8 @@ public final class ArchiveProxy
         final int replayStreamId,
         final long correlationId,
         final long controlSessionId,
-        final int fileIoMaxLength)
+        final int fileIoMaxLength,
+        final long replayToken)
     {
         if (null == boundedReplayRequest)
         {
@@ -1604,6 +1607,7 @@ public final class ArchiveProxy
             .limitCounterId(limitCounterId)
             .replayStreamId(replayStreamId)
             .fileIoMaxLength(fileIoMaxLength)
+            .replayToken(replayToken)
             .replayChannel(replayChannel);
 
         return offer(boundedReplayRequest.encodedLength());

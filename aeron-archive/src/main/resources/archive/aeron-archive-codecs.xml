@@ -196,7 +196,7 @@
         <field name="length"               id="5" type="int64"/>
         <field name="replayStreamId"       id="6" type="int32"/>
         <field name="fileIoMaxLength"      id="8" type="int32" sinceVersion="7"/>
-        <field name="replayToken"          id="9" type="int64" sinceVersion="9"/>
+        <field name="replayToken"          id="9" type="int64" sinceVersion="10"/>
         <data  name="replayChannel"        id="7" type="varAsciiEncoding"/>
     </sbe:message>
 
@@ -314,6 +314,7 @@
         <field name="limitCounterId"       id="6" type="int32"/>
         <field name="replayStreamId"       id="7" type="int32"/>
         <field name="fileIoMaxLength"      id="9" type="int32" sinceVersion="7"/>
+        <field name="replayToken"          id="10" type="int64" sinceVersion="10"/>
         <data  name="replayChannel"        id="8" type="varAsciiEncoding"/>
     </sbe:message>
 
@@ -562,7 +563,7 @@
         <data  name="liveDestination"      id="10" type="varAsciiEncoding"/>
         <data  name="replicationChannel"   id="11" type="varAsciiEncoding"/>
         <data  name="encodedCredentials"   id="14" type="varDataEncoding" sinceVersion="8"/>
-        <data  name="srcResponseChannel"   id="15" type="varAsciiEncoding" sinceVersion="9"/>
+        <data  name="srcResponseChannel"   id="15" type="varAsciiEncoding" sinceVersion="10"/>
     </sbe:message>
 
     <sbe:message name="MaxRecordedPositionRequest"

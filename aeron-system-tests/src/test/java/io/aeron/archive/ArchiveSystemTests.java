@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Aeron;
 import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
@@ -162,6 +163,7 @@ class ArchiveSystemTests
 
         long recordingId;
         final long position;
+        long halfWayPosition = Aeron.NULL_VALUE;
         try (Publication publication = aeronArchive.addRecordedPublication("aeron:ipc", 10000))
         {
             int messageCount = 1000;
@@ -170,6 +172,10 @@ class ArchiveSystemTests
                 if (0 < publication.offer(message))
                 {
                     --messageCount;
+                    if (Aeron.NULL_VALUE == halfWayPosition && messageCount == messageCount / 2)
+                    {
+                        halfWayPosition = publication.position();
+                    }
                 }
                 else
                 {
@@ -198,17 +204,19 @@ class ArchiveSystemTests
             Tests.yield();
         }
 
-        return new RecordingResult(position, recordingId);
+        return new RecordingResult(position, halfWayPosition, recordingId);
     }
 
     static class RecordingResult
     {
         public final long position;
+        public final long halfwayPosition;
         public final long recordingId;
 
-        RecordingResult(final long position, final long recordingId)
+        RecordingResult(final long position, final long halfwayPosition, final long recordingId)
         {
             this.position = position;
+            this.halfwayPosition = halfwayPosition;
             this.recordingId = recordingId;
         }
     }

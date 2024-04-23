@@ -66,7 +66,7 @@ public:
     void DoSetUp(std::int64_t archiveId = 42)
     {
         std::string sourceArchiveDir = m_archiveDir + AERON_FILE_SEP + "source";
-        m_archive = std::make_shared<TestArchive>(m_context.aeronDirectoryName(), sourceArchiveDir, m_stream, "aeron:udp?endpoint=localhost:8010", "aeron:udp?endpoint=localhost:0", archiveId);
+        m_archive = std::make_shared<TestArchive>(m_context.aeronDirectoryName(), sourceArchiveDir, std::cout, "aeron:udp?endpoint=localhost:8010", "aeron:udp?endpoint=localhost:0", archiveId);
 
         setCredentials(m_context);
     }
@@ -672,7 +672,7 @@ TEST_P(AeronArchiveParamTest, shouldRecordThenReplayThenTruncate)
         std::shared_ptr<Subscription> subscription;
         if (useParams)
         {
-            subscription = aeronArchive->replay(
+            subscription = aeronArchive->replay<BackoffIdleStrategy>(
                 recordingId,
                 m_replayChannel,
                 m_replayStreamId,
@@ -1549,4 +1549,79 @@ TEST_F(AeronArchiveIdTest, shouldResolveArchiveId)
     EXPECT_EQ(archiveId, aeronArchive->archiveId());
 
     DoTearDown();
+}
+
+TEST_F(AeronArchiveTest, shouldConnectToArchiveWithResponseChannels)
+{
+    m_context.controlResponseChannel("aeron:udp?control-mode=response|control=localhost:10002");
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+
+    EXPECT_TRUE(aeronArchive->controlResponsePoller().subscription()->isConnected());
+}
+
+TEST_F(AeronArchiveTest, shouldRecordThenReplayWithResponseChannel)
+{
+    const std::string messagePrefix = "Message ";
+    const std::size_t messageCount = 10;
+    std::int32_t sessionId;
+    std::int64_t recordingId;
+    std::int64_t stopPosition;
+
+    m_context.controlResponseChannel("aeron:udp?control-mode=response|control=localhost:10002");
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+
+    const std::int64_t subscriptionId = aeronArchive->startRecording(
+        m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
+
+    {
+        std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+        std::shared_ptr<Publication> publication = addPublication(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+
+        sessionId = publication->sessionId();
+
+        CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
+        const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
+        recordingId = RecordingPos::getRecordingId(countersReader, counterId);
+        EXPECT_TRUE(RecordingPos::isActive(countersReader, counterId, recordingId));
+        EXPECT_EQ(counterId, RecordingPos::findCounterIdByRecordingId(countersReader, recordingId));
+        EXPECT_EQ("aeron:ipc", RecordingPos::getSourceIdentity(countersReader, counterId));
+
+        offerMessages(*publication, messageCount, messagePrefix);
+        consumeMessages(*subscription, messageCount, messagePrefix);
+
+        stopPosition = publication->position();
+
+        YieldingIdleStrategy idleStrategy;
+        while (countersReader.getCounterValue(counterId) < stopPosition)
+        {
+            idleStrategy.idle();
+        }
+    }
+
+    aeronArchive->stopRecording(subscriptionId);
+
+    YieldingIdleStrategy idleStrategy;
+    while (aeronArchive->getStopPosition(recordingId) != stopPosition)
+    {
+        idleStrategy.idle();
+    }
+
+    {
+        const std::int64_t position = 0L;
+        const std::int64_t length = stopPosition - position;
+        const std::string replayChannel = "aeron:udp?control-mode=response|control=localhost:10002";
+//        std::shared_ptr<Subscription> subscription = addSubscription(
+//            *aeronArchive->context().aeron(), replayChannel, m_replayStreamId);
+
+        const std::shared_ptr<Subscription> subscription = aeronArchive->replay(
+            recordingId,
+            replayChannel,
+            m_replayStreamId,
+            ReplayParams().position(position).length(length).fileIoMaxLength(4096));
+
+        consumeMessages(*subscription, messageCount, messagePrefix);
+        EXPECT_EQ(stopPosition, subscription->imageByIndex(0)->position());
+    }
 }

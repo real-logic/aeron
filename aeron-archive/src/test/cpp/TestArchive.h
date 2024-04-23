@@ -17,6 +17,8 @@
 #ifndef AERON_TESTARCHIVE_H
 #define AERON_TESTARCHIVE_H
 
+#define ENABLE_AGENT_DEBUG_LOGGING 1
+
 using namespace aeron;
 using namespace aeron::util;
 using namespace aeron::concurrent;
@@ -112,6 +114,11 @@ public:
             "--add-opens",
             "java.base/sun.nio.ch=ALL-UNNAMED",
 #endif
+#if ENABLE_AGENT_DEBUG_LOGGING
+            m_aeronAgentJar.c_str(),
+            "-Daeron.event.log=admin",
+            "-Daeron.event.archive.log=all",
+#endif
             "-Daeron.dir.delete.on.start=true",
             "-Daeron.dir.delete.on.shutdown=true",
             "-Daeron.archive.dir.delete.on.start=true",
@@ -127,6 +134,7 @@ public:
             "-Daeron.archive.recording.events.enabled=false",
             "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
             "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
+            "-Daeron.enable.experimental.features=true",
             archiveIdArg.c_str(),
             controlChannelArg.c_str(),
             replicationChannelArg.c_str(),
@@ -173,6 +181,27 @@ public:
                 printErrors(aeronPath, m_stream);
             }
 
+            {
+                std::string archiveDatFilename = m_archiveDir + AERON_FILE_SEP + "archive-mark.dat";
+                const MemoryMappedFile::ptr_t ptr = util::MemoryMappedFile::mapExistingReadOnly(archiveDatFilename.c_str());
+                AtomicBuffer errorBuffer{ptr->getMemoryPtr() + 8192, 1024 * 1024};
+
+                const int count = ErrorLogReader::read(
+                    errorBuffer,
+                    [&](
+                        std::int32_t observationCount,
+                        std::int64_t firstObservationTimestamp,
+                        std::int64_t lastObservationTimestamp,
+                        const std::string &encodedException)
+                    {
+                        m_stream << "***\n" << observationCount
+                                 << " observations for:\n " << encodedException.c_str() << std::endl;
+                    },
+                    0);
+
+                m_stream << currentTimeMillis() << " [TearDown] " << count << " distinct errors observed." << std::endl;
+            }
+
             if (aeron::Context::requestDriverTermination(aeronPath, nullptr, 0))
             {
                 m_stream << currentTimeMillis() << " [TearDown] Waiting for driver termination" << std::endl;
@@ -206,6 +235,8 @@ public:
                     m_stream << currentTimeMillis() << " [TearDown] Failed to delete " << m_archiveDir << std::endl;
                 }
             }
+
+            m_stream.flush();
         }
     }
 
@@ -229,8 +260,9 @@ public:
     }
 
 private:
-    const std::string m_java = JAVA_EXECUTABLE;
-    const std::string m_aeronAllJar = AERON_ALL_JAR;
+    const std::string m_java = JAVA_EXECUTABLE;          // Defined in CMakeLists.txt
+    const std::string m_aeronAllJar = AERON_ALL_JAR;     // Defined in CMakeLists.txt
+    const std::string m_aeronAgentJar = "-javaagent:" AERON_AGENT_JAR; // Defined in CMakeLists.txt
     const std::string m_archiveDir;
     const std::string m_aeronDir;
     std::ostream &m_stream;

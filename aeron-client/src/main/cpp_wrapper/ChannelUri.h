@@ -175,6 +175,12 @@ public:
         return m_params->find(key) != m_params->end();
     }
 
+    inline bool hasControlModeResponse()
+    {
+        const std::string &controlMode = get(MDC_CONTROL_MODE_PARAM_NAME);
+        return !controlMode.empty() && CONTROL_MODE_RESPONSE == controlMode;
+    }
+
     std::string toString()
     {
         std::string sb;

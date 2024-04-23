@@ -17,6 +17,7 @@
 find_package(Java REQUIRED)
 
 add_definitions(-DAERON_ALL_JAR="${AERON_ALL_JAR}")
+add_definitions(-DAERON_AGENT_JAR="${AERON_AGENT_JAR}")
 add_definitions(-DJAVA_EXECUTABLE="${Java_JAVA_EXECUTABLE}")
 add_definitions(-DARCHIVE_DIR="${CMAKE_CURRENT_BINARY_DIR}/archive")
 add_definitions(-DJAVA_MAJOR_VERSION=${Java_VERSION_MAJOR})

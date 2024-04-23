@@ -350,6 +350,10 @@ project(':aeron-annotations') {
     apply plugin: 'signing'
     apply plugin: 'biz.aQute.bnd.builder'
 
+    dependencies {
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
+    }
+
     jar {
         bundle {
             bnd """
@@ -538,6 +542,29 @@ project(':aeron-driver') {
 
     signing {
         sign publishing.publications.aeronDriver
+    }
+
+    tasks.register('validateConfigExpectations', JavaExec) {
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.json'
+        def sourceDir = 'src/main/c'
+
+        inputs.files(configInfoFile)
+
+        mainClass.set('io.aeron.config.validation.ValidateConfigExpectationsTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [configInfoFile, sourceDir]
+    }
+
+    tasks.register('generateConfigDoc', JavaExec) {
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.json'
+        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+
+        inputs.files(configInfoFile)
+        outputs.files(generatedDocFile)
+
+        mainClass.set('io.aeron.config.docgen.GenerateConfigDocTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [configInfoFile, generatedDocFile]
     }
 }
 

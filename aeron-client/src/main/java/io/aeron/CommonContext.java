@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import io.aeron.config.Config;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.DriverTimeoutException;
@@ -98,6 +99,7 @@ public class CommonContext implements Cloneable
     /**
      * Property name for driver timeout after which the driver is considered inactive.
      */
+    @Config(id = "Driver Timeout")
     public static final String DRIVER_TIMEOUT_PROP_NAME = "aeron.driver.timeout";
 
     /**
@@ -109,6 +111,7 @@ public class CommonContext implements Cloneable
     /**
      * Default timeout in which the driver is expected to respond or heartbeat.
      */
+    @Config(id = "Driver Timeout")
     public static final long DEFAULT_DRIVER_TIMEOUT_MS = 10_000;
 
     /**

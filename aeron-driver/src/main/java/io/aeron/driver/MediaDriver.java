@@ -18,6 +18,7 @@ package io.aeron.driver;
 import io.aeron.Aeron;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
+import io.aeron.config.Config;
 import io.aeron.driver.buffer.FileStoreLogFactory;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.exceptions.ActiveDriverException;
@@ -1500,6 +1501,7 @@ public final class MediaDriver implements AutoCloseable
          * @return true if a spy subscription should simulate a connection to a network publication.
          * @see Configuration#SPIES_SIMULATE_CONNECTION_PROP_NAME
          */
+        @Config
         public boolean spiesSimulateConnection()
         {
             return spiesSimulateConnection;
@@ -1529,6 +1531,7 @@ public final class MediaDriver implements AutoCloseable
          * @see Configuration#RELIABLE_STREAM_PROP_NAME
          * @see CommonContext#RELIABLE_STREAM_PARAM_NAME
          */
+        @Config
         public boolean reliableStream()
         {
             return reliableStream;

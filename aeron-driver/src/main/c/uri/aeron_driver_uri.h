@@ -35,6 +35,8 @@ typedef struct aeron_driver_uri_publication_params_stct
     int32_t initial_term_id;
     int32_t term_id;
     uint64_t linger_timeout_ns;
+    uint64_t untethered_window_limit_timeout_ns;
+    uint64_t untethered_resting_timeout_ns;
     bool has_session_id;
     int32_t session_id;
     int64_t entity_tag;

@@ -210,7 +210,8 @@ class ChannelUriStringBuilderTest
             "term-length=1048576|init-term-id=5|term-offset=64|term-id=4353|session-id=2314234|gtag=3|" +
             "linger=100000055000001|sparse=true|eos=true|tether=false|group=false|ssc=true|so-sndbuf=8388608|" +
             "so-rcvbuf=2097152|rcv-wnd=1048576|media-rcv-ts-offset=reserved|channel-rcv-ts-offset=0|" +
-            "channel-snd-ts-offset=8|response-endpoint=127.0.0.3:0|response-correlation-id=12345|nak-delay=100000";
+            "channel-snd-ts-offset=8|response-endpoint=127.0.0.3:0|response-correlation-id=12345|nak-delay=100000|" +
+            "untethered-window-limit-timeout=1000|untethered-resting-timeout=5000";
 
         final ChannelUri fromString = ChannelUri.parse(uri);
         final ChannelUri fromBuilder = ChannelUri.parse(new ChannelUriStringBuilder(uri).build());
@@ -257,4 +258,25 @@ class ChannelUriStringBuilderTest
         assertEquals(1000000L, new ChannelUriStringBuilder().nakDelay("1ms").nakDelay());
     }
 
+    @Test
+    void shouldHandleUntetheredWindowLimitTimeoutWithUnits()
+    {
+        assertEquals(1000L, new ChannelUriStringBuilder()
+            .untetheredWindowLimitTimeout("1us").untetheredWindowLimitTimeoutNs());
+        assertEquals(1L, new ChannelUriStringBuilder()
+            .untetheredWindowLimitTimeout("1ns").untetheredWindowLimitTimeoutNs());
+        assertEquals(1000000L, new ChannelUriStringBuilder()
+            .untetheredWindowLimitTimeout("1ms").untetheredWindowLimitTimeoutNs());
+    }
+
+    @Test
+    void shouldHandleUntetheredRestingTimeoutWithUnits()
+    {
+        assertEquals(1000L, new ChannelUriStringBuilder()
+            .untetheredRestingTimeout("1us").untetheredRestingTimeoutNs());
+        assertEquals(1L, new ChannelUriStringBuilder()
+            .untetheredRestingTimeout("1ns").untetheredRestingTimeoutNs());
+        assertEquals(1000000L, new ChannelUriStringBuilder()
+            .untetheredRestingTimeout("1ms").untetheredRestingTimeoutNs());
+    }
 }

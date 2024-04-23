@@ -241,6 +241,21 @@ int aeron_publication_image_create(
     _image->conductor_fields.state = AERON_PUBLICATION_IMAGE_STATE_ACTIVE;
     _image->conductor_fields.liveness_timeout_ns = (int64_t)context->image_liveness_timeout_ns;
     _image->conductor_fields.flags = flags;
+
+    uint64_t untethered_window_limit_timeout_ns = context->untethered_window_limit_timeout_ns;
+    aeron_uri_get_timeout(
+        &endpoint->conductor_fields.udp_channel->uri.params.udp.additional_params,
+        AERON_URI_UNTETHERED_WINDOW_LIMIT_TIMEOUT_KEY,
+        &untethered_window_limit_timeout_ns);
+    _image->conductor_fields.untethered_window_limit_timeout_ns = (int64_t)untethered_window_limit_timeout_ns;
+
+    uint64_t untethered_resting_timeout_ns = context->untethered_resting_timeout_ns;
+    aeron_uri_get_timeout(
+        &endpoint->conductor_fields.udp_channel->uri.params.udp.additional_params,
+        AERON_URI_UNTETHERED_RESTING_TIMEOUT_KEY,
+        &untethered_resting_timeout_ns);
+    _image->conductor_fields.untethered_resting_timeout_ns = (int64_t)untethered_resting_timeout_ns;
+
     _image->session_id = session_id;
     _image->stream_id = stream_id;
     _image->rcv_hwm_position.counter_id = rcv_hwm_position->counter_id;
@@ -961,8 +976,8 @@ void aeron_publication_image_check_untethered_subscriptions(
         }
         else
         {
-            int64_t window_limit_timeout_ns = (int64_t)conductor->context->untethered_window_limit_timeout_ns;
-            int64_t resting_timeout_ns = (int64_t)conductor->context->untethered_resting_timeout_ns;
+            int64_t window_limit_timeout_ns = image->conductor_fields.untethered_window_limit_timeout_ns;
+            int64_t resting_timeout_ns = image->conductor_fields.untethered_resting_timeout_ns;
 
             switch (tetherable_position->state)
             {

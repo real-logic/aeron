@@ -448,16 +448,21 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
 
     private static void stopConsensusModulesAndServices(final TestCluster cluster)
     {
+        final TestNode leader = cluster.findLeader();
         for (int i = 0; i < 3; i++)
         {
             final TestNode node = cluster.node(i);
-            if (null != node)
+            if (null != node && node != leader)
             {
                 node.isTerminationExpected(true);
                 node.stopServiceContainers();
                 node.consensusModule().close();
             }
         }
+
+        leader.isTerminationExpected(true);
+        leader.stopServiceContainers();
+        leader.consensusModule().close();
     }
 
     private static void modifySnapshot(

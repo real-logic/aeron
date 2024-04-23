@@ -77,6 +77,7 @@ int aeron_data_packet_dispatcher_add_publication_image(
 int aeron_data_packet_dispatcher_remove_publication_image(
     aeron_data_packet_dispatcher_t *dispatcher, aeron_publication_image_t *image);
 
+// Used by ATS
 bool aeron_data_packet_dispatcher_has_interest_in(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id, int32_t session_id);
 
@@ -107,13 +108,13 @@ int aeron_data_packet_dispatcher_on_rttm(
     size_t length,
     struct sockaddr_storage *addr);
 
-int aeron_data_packet_dispatcher_on_unconnected_stream(
+// Used by ATS
+int aeron_data_packet_dispatcher_try_connect_stream(
     aeron_data_packet_dispatcher_t *dispatcher,
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_receive_destination_t *destination,
-    aeron_unconnected_stream_header_t *header,
-    uint8_t *buffer,
-    size_t length,
+    int32_t stream_id,
+    int32_t session_id,
     struct sockaddr_storage *addr);
 
 int aeron_data_packet_dispatcher_elicit_setup_from_source(

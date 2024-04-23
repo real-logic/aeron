@@ -77,6 +77,8 @@ public final class ChannelUriStringBuilder
     private String responseEndpoint;
     private Long responseCorrelationId;
     private Long nakDelay;
+    private Long untetheredWindowLimitTimeoutNs;
+    private Long untetheredRestingTimeoutNs;
 
     /**
      * Default constructor
@@ -140,6 +142,8 @@ public final class ChannelUriStringBuilder
         responseEndpoint(channelUri);
         responseCorrelationId(channelUri);
         nakDelay(channelUri);
+        untetheredWindowLimitTimeout(channelUri);
+        untetheredRestingTimeout(channelUri);
     }
 
     /**
@@ -2022,11 +2026,7 @@ public final class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder nakDelay(final String nakDelay)
     {
-        if (null != nakDelay)
-        {
-            this.nakDelay = parseDuration(NAK_DELAY_PARAM_NAME, nakDelay);
-        }
-
+        this.nakDelay = null != nakDelay ? parseDuration(NAK_DELAY_PARAM_NAME, nakDelay) : null;
         return this;
     }
 
@@ -2049,6 +2049,109 @@ public final class ChannelUriStringBuilder
     public Long nakDelay()
     {
         return nakDelay;
+    }
+
+    /**
+     * The timeout for when an untethered subscription that is outside the window limit will participate in local
+     * flow control.
+     *
+     * @param timeout specified either in nanoseconds or using a units suffix, e.g. 1ms, 1us.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder untetheredWindowLimitTimeout(final String timeout)
+    {
+        this.untetheredWindowLimitTimeoutNs = null != timeout ?
+            parseDuration(UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME, timeout) : null;
+        return this;
+    }
+
+    /**
+     * The timeout for when an untethered subscription that is outside the window limit will participate in local
+     * flow control.
+     *
+     * @param timeout specified either in nanoseconds.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder untetheredWindowLimitTimeoutNs(final Long timeout)
+    {
+        this.untetheredWindowLimitTimeoutNs = timeout;
+        return this;
+    }
+
+    /**
+     * The timeout for when an untethered subscription that is outside the window limit will participate in local
+     * flow control.
+     *
+     * @param channelUri the existing URI to extract the untetheredWindowLimitTimeout from.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder untetheredWindowLimitTimeout(final ChannelUri channelUri)
+    {
+        this.untetheredWindowLimitTimeout(channelUri.get(UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME));
+        return this;
+    }
+
+    /**
+     * The timeout for when an untethered subscription that is outside the window limit will participate in local
+     * flow control.
+     *
+     * @return the timeout in ns.
+     */
+    public Long untetheredWindowLimitTimeoutNs()
+    {
+        return untetheredWindowLimitTimeoutNs;
+    }
+
+
+    /**
+     * The timeout for when an untethered subscription is resting after not being able to keep up before it is allowed
+     * to rejoin a stream.
+     *
+     * @param timeout specified either in nanoseconds or using a units suffix, e.g. 1ms, 1us.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder untetheredRestingTimeout(final String timeout)
+    {
+        this.untetheredRestingTimeoutNs = null != timeout ?
+            parseDuration(UNTETHERED_RESTING_TIMEOUT_PARAM_NAME, timeout) : null;
+        return this;
+    }
+
+    /**
+     * The timeout for when an untethered subscription is resting after not being able to keep up before it is allowed
+     * to rejoin a stream.
+     *
+     * @param timeout specified either in nanoseconds.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder untetheredRestingTimeoutNs(final Long timeout)
+    {
+        this.untetheredRestingTimeoutNs = timeout;
+        return this;
+    }
+
+    /**
+     * The timeout for when an untethered subscription is resting after not being able to keep up before it is allowed
+     * to rejoin a stream.
+     *
+     * @param channelUri the existing URI to extract the untetheredRestingTimeout from.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder untetheredRestingTimeout(final ChannelUri channelUri)
+    {
+        this.untetheredRestingTimeout(channelUri.get(UNTETHERED_RESTING_TIMEOUT_PARAM_NAME));
+        return this;
+    }
+
+    /**
+     * The timeout for when an untethered subscription is resting after not being able to keep up before it is allowed
+     * to rejoin a stream.
+     *
+     * @return the timeout in ns.
+     */
+    public Long untetheredRestingTimeoutNs()
+    {
+        return untetheredRestingTimeoutNs;
     }
 
     /**
@@ -2106,6 +2209,8 @@ public final class ChannelUriStringBuilder
         appendParameter(sb, RESPONSE_ENDPOINT_PARAM_NAME, responseEndpoint);
         appendParameter(sb, RESPONSE_CORRELATION_ID_PARAM_NAME, responseCorrelationId);
         appendParameter(sb, NAK_DELAY_PARAM_NAME, nakDelay);
+        appendParameter(sb, UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME, untetheredWindowLimitTimeoutNs);
+        appendParameter(sb, UNTETHERED_RESTING_TIMEOUT_PARAM_NAME, untetheredRestingTimeoutNs);
 
         final char lastChar = sb.charAt(sb.length() - 1);
         if (lastChar == '|' || lastChar == '?')

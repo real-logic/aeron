@@ -100,11 +100,6 @@ public class HeaderFlyweight extends UnsafeBuffer
     public static final int HDR_TYPE_RSP_SETUP = 0x0B;
 
     /**
-     * Header type for unconnected stream (not used in Java driver)
-     */
-    public static final int HDR_TYPE_UNCONNECTED_STREAM = 0x0C;
-
-    /**
      * header type EXT
      */
     public static final int HDR_TYPE_EXT = 0xFFFF;

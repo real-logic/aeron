@@ -475,6 +475,26 @@ int aeron_uri_get_receiver_window_length(aeron_uri_params_t *uri_params, size_t 
     return aeron_uri_get_size_t(uri_params, AERON_URI_RECEIVER_WINDOW_KEY, receiver_window_length);
 }
 
+int aeron_uri_get_timeout(aeron_uri_params_t *uri_params, const char *param_name, uint64_t *timeout_ns)
+{
+    const char *value_str;
+
+    if ((value_str = aeron_uri_find_param_value(uri_params, param_name)) != NULL)
+    {
+        uint64_t value;
+
+        if (-1 == aeron_parse_duration_ns(value_str, &value))
+        {
+            AERON_SET_ERR(EINVAL, "could not parse %s=%s in URI", param_name, value_str);
+            return -1;
+        }
+
+        *timeout_ns = value;
+    }
+
+    return 0;
+}
+
 int64_t aeron_uri_parse_tag(const char *tag_str)
 {
     errno = 0;

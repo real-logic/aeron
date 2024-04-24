@@ -159,7 +159,7 @@ class ControlSessionDemuxerTest
             .limitCounterId(92734)
             .replayStreamId(9832475)
             .fileIoMaxLength(4096)
-            .replayChannel("replay");
+            .replayChannel("aeron:ipc?alias=replay");
 
         final int replicateRequestLength = replayRequestEncoder.encodedLength();
 

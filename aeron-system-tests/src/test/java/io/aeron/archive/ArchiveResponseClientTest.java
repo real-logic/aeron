@@ -142,33 +142,69 @@ public class ArchiveResponseClientTest
         }
     }
 
-//    @Test
-//    void shouldStartReplayUsingResponseChannel()
-//    {
-//        final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context()
-//            .controlRequestChannel(archive.context().controlChannel())
-//            .controlResponseChannel("aeron:udp?control-mode=response|control=localhost:10002");
-//        try (AeronArchive aeronArchive = AeronArchive.connect(aeronArchiveCtx))
-//        {
-//            final ArchiveSystemTests.RecordingResult recordingResult = ArchiveSystemTests.recordData(aeronArchive);
-//
-//            final long replaySessionId = aeronArchive.startReplay(
-//                recordingResult.recordingId, "aeron:udp?control-mode=response|control=localhost:10002", 10001,
-//                new ReplayParams());
-//
-//            final String channel = new ChannelUriStringBuilder(REPLAY_CHANNEL).sessionId((int)replaySessionId)
-//                .build();
-//
-//            final MutableLong replayPosition = new MutableLong();
-//            while (replayPosition.get() < recordingResult.position)
-//            {
-//                if (0 == replay.poll((buffer, offset, length, header) -> replayPosition.set(header.position()), 10))
-//                {
-//                    Tests.yield();
-//                }
-//            }
-//        }
-//    }
+    @Test
+    void shouldStartReplayUsingResponseChannel()
+    {
+        final String responseChannel = "aeron:udp?control-mode=response|control=localhost:10002";
+        final int replayStreamId = 10001;
+
+        final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context()
+            .controlRequestChannel(archive.context().controlChannel())
+            .controlResponseChannel(responseChannel);
+        try (AeronArchive aeronArchive = AeronArchive.connect(aeronArchiveCtx);
+            Subscription replay = aeronArchive.context().aeron().addSubscription(responseChannel, replayStreamId))
+        {
+            final ArchiveSystemTests.RecordingResult recordingResult = ArchiveSystemTests.recordData(aeronArchive);
+            final ReplayParams replayParams = new ReplayParams();
+            replayParams.subscriptionRegistrationId(replay.registrationId());
+
+            aeronArchive.startReplay(recordingResult.recordingId, responseChannel, replayStreamId, replayParams);
+
+            final MutableLong replayPosition = new MutableLong();
+            while (replayPosition.get() < recordingResult.position)
+            {
+                if (0 == replay.poll((buffer, offset, length, header) -> replayPosition.set(header.position()), 10))
+                {
+                    Tests.yield();
+                }
+            }
+        }
+    }
+
+    @Test
+    void shouldStartBoundedReplayUsingResponseChannel()
+    {
+        final String responseChannel = "aeron:udp?control-mode=response|control=localhost:10002";
+        final int replayStreamId = 10001;
+
+        final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context()
+            .controlRequestChannel(archive.context().controlChannel())
+            .controlResponseChannel(responseChannel);
+
+        try (AeronArchive aeronArchive = AeronArchive.connect(aeronArchiveCtx);
+            Subscription replay = aeronArchive.context().aeron().addSubscription(responseChannel, replayStreamId))
+        {
+            final ArchiveSystemTests.RecordingResult recordingResult = ArchiveSystemTests.recordData(aeronArchive);
+            final Counter testBoundedCounter = aeronArchive.context().aeron().addCounter(10001, "test bounded counter");
+            testBoundedCounter.set(recordingResult.halfwayPosition);
+
+            final ReplayParams replayParams = new ReplayParams();
+            replayParams
+                .boundingLimitCounterId(testBoundedCounter.id())
+                .subscriptionRegistrationId(replay.registrationId());
+
+            aeronArchive.startReplay(recordingResult.recordingId, responseChannel, replayStreamId, replayParams);
+
+            final MutableLong replayPosition = new MutableLong();
+            while (replayPosition.get() < recordingResult.halfwayPosition)
+            {
+                if (0 == replay.poll((buffer, offset, length, header) -> replayPosition.set(header.position()), 10))
+                {
+                    Tests.yield();
+                }
+            }
+        }
+    }
 
     @ParameterizedTest
     @ValueSource(strings = {

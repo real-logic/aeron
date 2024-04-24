@@ -105,6 +105,23 @@ public:
         aeron_counters_reader_foreach_counter(m_countersReader, forEachCounter<handler_type>, handler_ptr);
     }
 
+    inline std::int32_t findByTypeIdAndRegistrationId(
+        const std::int32_t typeId, const std::int64_t registrationId) const
+    {
+        std::int32_t id = NULL_COUNTER_ID;
+
+        forEach(
+            [&](std::int32_t counterId, std::int32_t counterTypeId, const AtomicBuffer &keyBuffer, const std::string &label)
+            {
+                if (typeId == counterTypeId && registrationId == getCounterRegistrationId(counterId))
+                {
+                    id = counterId;
+                }
+            });
+
+        return id;
+    }
+
     inline std::int32_t maxCounterId() const
     {
         return aeron_counters_reader_max_counter_id(m_countersReader);

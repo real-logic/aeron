@@ -729,6 +729,7 @@ public:
                 replayChannel,
                 replayStreamId,
                 replyParams.fileIoMaxLength(),
+                replyParams.replayToken(),
                 correlationId,
                 controlSessionId);
         }
@@ -821,6 +822,7 @@ public:
             limitCounterId,
             replayChannel,
             replayStreamId,
+            NULL_VALUE,
             NULL_VALUE,
             correlationId,
             controlSessionId);
@@ -1647,6 +1649,7 @@ private:
         const std::string &replayChannel,
         std::int32_t replayStreamId,
         std::int32_t fileIoMaxLength,
+        std::int64_t replayToken,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 

@@ -288,6 +288,7 @@ util::index_t ArchiveProxy::boundedReplay(
     const std::string &replayChannel,
     std::int32_t replayStreamId,
     std::int32_t fileIoMaxLength,
+    std::int64_t replayToken,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
@@ -302,6 +303,7 @@ util::index_t ArchiveProxy::boundedReplay(
         .limitCounterId(limitCounterId)
         .replayStreamId(replayStreamId)
         .fileIoMaxLength(fileIoMaxLength)
+        .replayToken(replayToken)
         .putReplayChannel(replayChannel);
 
     return messageAndHeaderLength(request);

@@ -23,7 +23,7 @@
 extern "C"
 {
 #include "util/aeron_fileutil.h"
-};
+}
 
 #ifdef _WIN32
     #include <cstddef>

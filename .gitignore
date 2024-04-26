@@ -46,6 +46,7 @@ cppbuild/aeron-common/
 cppbuild/aeron-samples/
 cppbuild/binaries/
 cppbuild/cmake_install.cmake
+cppbuild/cmake/
 
 # cpp build windows
 cppbuild/*.opensdf

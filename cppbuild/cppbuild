@@ -23,7 +23,7 @@ case "$(uname)" in
   Linux*)
     ncpus=$(lscpu -p | grep -c -E -v '^#')
     BUILD_CMAKE_OS="linux-$(arch)"
-    BUILD_CMAKE_PATH="${BUILD_CMAKE_PATH}"
+    BUILD_CMAKE_PATH="${BUILD_CMAKE_DIR}/bin"
     ;;
 esac
 

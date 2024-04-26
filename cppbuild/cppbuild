@@ -18,10 +18,12 @@ case "$(uname)" in
   Darwin* )
     ncpus=$(sysctl -n hw.ncpu)
     BUILD_CMAKE_OS="macos-universal"
+    BUILD_CMAKE_PATH="${BUILD_CMAKE_DIR}/CMake.app/Contents/bin"
     ;;
   Linux*)
     ncpus=$(lscpu -p | grep -c -E -v '^#')
     BUILD_CMAKE_OS="linux-$(arch)"
+    BUILD_CMAKE_PATH="${BUILD_CMAKE_PATH}"
     ;;
 esac
 
@@ -179,7 +181,7 @@ install_cmake
 if [[ ${COVERAGE_BUILD} -eq 1 ]] ; then
   cd "${BUILD_DIR}" || exit
   # shellcheck disable=SC2086
-  "${BUILD_CMAKE_DIR}/bin/cmake" -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}" && make clean && make -j "${ncpus}" all && "${BUILD_CMAKE_DIR}/bin/ctest" -C ${BUILD_CONFIG} --timeout 2000 --output-on-failure
+  "${BUILD_CMAKE_PATH}/cmake" -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}" && make clean && make -j "${ncpus}" all && "${BUILD_CMAKE_PATH}/ctest" -C ${BUILD_CONFIG} --timeout 2000 --output-on-failure
   rm -rf coverage
   mkdir -p coverage
   lcov --directory . --base-directory . --capture -o coverage/cov.info
@@ -190,10 +192,10 @@ else
 
   cd "${BUILD_DIR}" || exit
   # shellcheck disable=SC2086
-  "${BUILD_CMAKE_DIR}/bin/cmake" -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}"
+  "${BUILD_CMAKE_PATH}/cmake" -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}"
   make clean
   make -j "${ncpus}" all
-  "${BUILD_CMAKE_DIR}/bin/ctest" -C ${BUILD_CONFIG} --timeout 2000 --output-on-failure
+  "${BUILD_CMAKE_PATH}/ctest" -C ${BUILD_CONFIG} --timeout 2000 --output-on-failure
 fi
 
 if [ true = "${BUILD_PACKAGE}" ]

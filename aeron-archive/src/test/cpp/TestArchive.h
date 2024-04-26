@@ -19,6 +19,8 @@
 
 #define ENABLE_AGENT_DEBUG_LOGGING 1
 
+#include "util/MemoryMappedFile.h"
+
 using namespace aeron;
 using namespace aeron::util;
 using namespace aeron::concurrent;
@@ -33,7 +35,7 @@ static bool aeron_file_exists(const char *path)
     return dwAttrib != INVALID_FILE_ATTRIBUTES;
 }
 
-static int aeron_delete_directory(const char *dir)
+static int aeron_test_archive_delete_directory(const char *dir)
 {
     char dir_buffer[1024] = { 0 };
 
@@ -78,7 +80,7 @@ static int aeron_unlink_func(const char *path, const struct stat *sb, int type_f
     return 0;
 }
 
-static int aeron_delete_directory(const char *dirname)
+static int aeron_test_archive_delete_directory(const char *dirname)
 {
     return nftw(dirname, aeron_unlink_func, 64, FTW_DEPTH | FTW_PHYS);
 }
@@ -230,7 +232,7 @@ public:
                 const auto now_ms = currentTimeMillis();
                 m_stream << now_ms << " [TearDown] Failed to send driver terminate command" << std::endl;
                 m_stream << now_ms << " [TearDown] Deleting " << m_archiveDir << std::endl;
-                if (aeron_delete_directory(m_archiveDir.c_str()) != 0)
+                if (aeron_test_archive_delete_directory(m_archiveDir.c_str()) != 0)
                 {
                     m_stream << currentTimeMillis() << " [TearDown] Failed to delete " << m_archiveDir << std::endl;
                 }

@@ -19,6 +19,7 @@
 #include <functional>
 #include "util/BitUtil.h"
 #include "concurrent/AtomicBuffer.h"
+#include "concurrent/errors/ErrorLogDescriptor.h"
 
 namespace aeron { namespace concurrent { namespace errors {
 
@@ -31,6 +32,44 @@ typedef std::function<void(
     std::int64_t firstObservationTimestamp,
     std::int64_t lastObservationTimestamp,
     const std::string &encodedException)> error_consumer_t;
+
+inline static int read(AtomicBuffer &buffer, const error_consumer_t &consumer, std::int64_t sinceTimestamp)
+{
+    int entries = 0;
+    int offset = 0;
+    const int capacity = buffer.capacity();
+
+    while (offset < capacity)
+    {
+        const std::int32_t length = buffer.getInt32Volatile(offset + ErrorLogDescriptor::LENGTH_OFFSET);
+        if (0 == length)
+        {
+            break;
+        }
+
+        const std::int64_t lastObservationTimestamp =
+            buffer.getInt64Volatile(offset + ErrorLogDescriptor::LAST_OBSERVATION_TIMESTAMP_OFFSET);
+
+        if (lastObservationTimestamp >= sinceTimestamp)
+        {
+            auto &entry = buffer.overlayStruct<ErrorLogDescriptor::ErrorLogEntryDefn>(offset);
+
+            ++entries;
+
+            consumer(
+                entry.observationCount,
+                entry.firstObservationTimestamp,
+                lastObservationTimestamp,
+                buffer.getStringWithoutLength(
+                    offset + ErrorLogDescriptor::ENCODED_ERROR_OFFSET,
+                    static_cast<std::size_t>(length - ErrorLogDescriptor::HEADER_LENGTH)));
+        }
+
+        offset += util::BitUtil::align(length, ErrorLogDescriptor::RECORD_ALIGNMENT);
+    }
+
+    return entries;
+}
 
 }}}}
 

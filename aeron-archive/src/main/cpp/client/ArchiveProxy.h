@@ -279,7 +279,8 @@ public:
         m_fileIoMaxLength(NULL_VALUE),
         m_position(NULL_POSITION),
         m_length(NULL_LENGTH),
-        m_replayToken(NULL_VALUE)
+        m_replayToken(NULL_VALUE),
+        m_subscriptionRegistrationId(NULL_VALUE)
     {
     }
 
@@ -399,12 +400,24 @@ public:
         return m_replayToken;
     }
 
+    ReplayParams &subscriptionRegistrationId(std::int64_t registrationId)
+    {
+        m_subscriptionRegistrationId = registrationId;
+        return *this;
+    }
+
+    std::int64_t subscriptionRegistrationId() const
+    {
+        return m_subscriptionRegistrationId;
+    }
+
 private:
     std::int32_t m_boundingLimitCounterId;
     std::int32_t m_fileIoMaxLength;
     std::int64_t m_position;
     std::int64_t m_length;
     std::int64_t m_replayToken;
+    std::int64_t m_subscriptionRegistrationId;
 };
 
 /**

@@ -49,10 +49,7 @@ import java.nio.channels.DatagramChannel;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
@@ -3880,17 +3877,28 @@ public final class MediaDriver implements AutoCloseable
                 }
                 else
                 {
-                    final AtomicInteger id = new AtomicInteger();
-                    asyncTaskExecutor = Executors.newFixedThreadPool(
-                        asyncTaskExecutorThreads,
-                        (r) ->
-                        {
-                            final Thread thread = new Thread(r, "async-task-executor-" + id.getAndIncrement());
-                            thread.setDaemon(true);
-                            return thread;
-                        });
+                    asyncTaskExecutor = newDefaultAsyncTaskExecutor(asyncTaskExecutorThreads);
                 }
             }
+        }
+
+        private static ThreadPoolExecutor newDefaultAsyncTaskExecutor(final int threadCount)
+        {
+            final AtomicInteger id = new AtomicInteger();
+            final ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                threadCount,
+                threadCount,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(),
+                (r) ->
+                {
+                    final Thread thread = new Thread(r, "async-task-executor-" + id.getAndIncrement());
+                    thread.setDaemon(true);
+                    return thread;
+                });
+            executor.prestartAllCoreThreads();
+            return executor;
         }
 
         private void concludeCounters()

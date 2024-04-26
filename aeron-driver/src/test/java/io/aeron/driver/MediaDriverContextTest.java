@@ -18,7 +18,6 @@ package io.aeron.driver;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.exceptions.ConfigurationException;
-import io.aeron.test.Tests;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
@@ -30,11 +29,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.*;
 
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
@@ -180,7 +175,7 @@ class MediaDriverContextTest
 
     @ParameterizedTest
     @ValueSource(ints = { 1, 4 })
-    void shouldCreateFixedThreadPoolExecutor(final int asyncExecutorThreadCount)
+    void shouldCreateFixedThreadPoolExecutor(final int asyncExecutorThreadCount) throws Exception
     {
         assertNull(context.asyncTaskExecutor());
         context.asyncTaskExecutorThreads(asyncExecutorThreadCount);
@@ -193,23 +188,22 @@ class MediaDriverContextTest
 
         final ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor)asyncTaskExecutor;
         assertEquals(asyncExecutorThreadCount, threadPoolExecutor.getCorePoolSize());
-        assertEquals(0, threadPoolExecutor.getPoolSize());
-        assertEquals(0, threadPoolExecutor.getActiveCount());
+        assertEquals(asyncExecutorThreadCount, threadPoolExecutor.getPoolSize());
 
-        final AtomicInteger count = new AtomicInteger();
+        final CyclicBarrier barrier = new CyclicBarrier(asyncExecutorThreadCount + 1);
         final CopyOnWriteArraySet<Thread> threads = new CopyOnWriteArraySet<>();
-        final Runnable task = () ->
+        final Callable<Void> task = () ->
         {
             threads.add(Thread.currentThread());
-            count.incrementAndGet();
+            barrier.await();
+            return null;
         };
-        final int numTasks = asyncExecutorThreadCount * 3;
-        for (int i = 0; i < numTasks; i++)
+        for (int i = 0; i < asyncExecutorThreadCount; i++)
         {
-            asyncTaskExecutor.execute(task);
+            threadPoolExecutor.submit(task);
         }
 
-        Tests.await(() -> numTasks == count.get());
+        barrier.await(10, TimeUnit.SECONDS);
 
         assertEquals(asyncExecutorThreadCount, threads.size());
         assertEquals(asyncExecutorThreadCount, threadPoolExecutor.getPoolSize());

@@ -17,7 +17,8 @@
 #ifndef AERON_TESTARCHIVE_H
 #define AERON_TESTARCHIVE_H
 
-#define ENABLE_AGENT_DEBUG_LOGGING 1
+// Uncomment for logging
+//#define ENABLE_AGENT_DEBUG_LOGGING 1
 
 #include "util/MemoryMappedFile.h"
 

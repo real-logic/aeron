@@ -2460,9 +2460,7 @@ private:
             throw ArchiveException("failed to send replay request", SOURCEINFO);
         }
 
-        pollForResponse<IdleStrategy>("AeronArchiveProxy::replay", m_lastCorrelationId);
-
-        return m_lastCorrelationId;
+        return pollForResponse<IdleStrategy>("AeronArchiveProxy::replay", m_lastCorrelationId);
     }
 
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>

@@ -38,6 +38,7 @@
 #include <cstdio>
 #include <spawn.h>
 #include <pthread.h>
+#include <cstdint>
 #elif defined(_WIN32)
 #include <windows.h>
 typedef intptr_t pid_t;
@@ -1684,7 +1685,7 @@ TEST_F(AeronArchiveTest, shouldStartReplayWithResponseChannel)
     YieldingIdleStrategy idle;
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 1000;
-    const std::string responseChannel = "aeron:udp?control-mode=response|control=localhost:10002";
+    const std::string responseChannel = "aeron:udp?control-mode=response|control=localhost:10003";
 
     m_context.controlResponseChannel(responseChannel);
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
@@ -1707,7 +1708,7 @@ TEST_F(AeronArchiveTest, shouldStartReplayWithResponseChannel)
     const std::int64_t position = 0L;
     const std::int64_t length = stopPosition - position;
 
-    ReplayParams &params = ReplayParams()
+    ReplayParams params = ReplayParams()
         .position(position)
         .length(length)
         .fileIoMaxLength(4096)

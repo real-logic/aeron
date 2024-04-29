@@ -389,23 +389,48 @@ public:
         return NULL_VALUE != boundingLimitCounterId();
     }
 
+    /**
+     * Set a token used for replays when the initiating image is not the one used to create the archive
+     * connection/session.
+     *
+     * @param replayToken token to identify the replay
+     * @return this for a fluent API.
+     */
     ReplayParams &replayToken(std::int64_t replayToken)
     {
         m_replayToken = replayToken;
         return *this;
     }
 
+    /**
+     * Get a token used for replays when the initiating image is not the one used to create the archive
+     * connection/session.
+     *
+     * @return the replay token
+     */
     std::int64_t replayToken() const
     {
         return m_replayToken;
     }
 
+    /**
+     * Get the subscription registration id to be used when doing a start replay using response channels and the
+     * response subscription is already created.
+     *
+     * @return registrationId of the subscription to receive the replay (should be set up with control-mode=response).
+     */
     ReplayParams &subscriptionRegistrationId(std::int64_t registrationId)
     {
         m_subscriptionRegistrationId = registrationId;
         return *this;
     }
 
+    /**
+     * Set the subscription registration id to be used when doing a start replay using response channels and the
+     * response subscription is already created.
+     *
+     * @param registrationId of the subscription to receive the replay (should be set up with control-mode=response).
+     */
     std::int64_t subscriptionRegistrationId() const
     {
         return m_subscriptionRegistrationId;

@@ -63,4 +63,5 @@ class ControlRequestDecoders
     final KeepAliveRequestDecoder keepAliveRequest = new KeepAliveRequestDecoder();
     final TaggedReplicateRequestDecoder taggedReplicateRequest = new TaggedReplicateRequestDecoder();
     final ArchiveIdRequestDecoder archiveIdRequestDecoder = new ArchiveIdRequestDecoder();
+    final ReplayTokenRequestDecoder replayTokenRequestDecoder = new ReplayTokenRequestDecoder();
 }

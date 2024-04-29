@@ -17,6 +17,11 @@
 #ifndef AERON_TESTARCHIVE_H
 #define AERON_TESTARCHIVE_H
 
+// Uncomment for logging
+//#define ENABLE_AGENT_DEBUG_LOGGING 1
+
+#include "util/MemoryMappedFile.h"
+
 using namespace aeron;
 using namespace aeron::util;
 using namespace aeron::concurrent;
@@ -25,13 +30,17 @@ using namespace aeron::archive::client;
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <shellapi.h>
+
 static bool aeron_file_exists(const char *path)
 {
     DWORD dwAttrib = GetFileAttributes(path);
     return dwAttrib != INVALID_FILE_ATTRIBUTES;
 }
 
-static int aeron_delete_directory(const char *dir)
+static int aeron_test_archive_delete_directory(const char *dir)
 {
     char dir_buffer[1024] = { 0 };
 
@@ -76,7 +85,7 @@ static int aeron_unlink_func(const char *path, const struct stat *sb, int type_f
     return 0;
 }
 
-static int aeron_delete_directory(const char *dirname)
+static int aeron_test_archive_delete_directory(const char *dirname)
 {
     return nftw(dirname, aeron_unlink_func, 64, FTW_DEPTH | FTW_PHYS);
 }
@@ -112,6 +121,11 @@ public:
             "--add-opens",
             "java.base/sun.nio.ch=ALL-UNNAMED",
 #endif
+#if ENABLE_AGENT_DEBUG_LOGGING
+            m_aeronAgentJar.c_str(),
+            "-Daeron.event.log=admin",
+            "-Daeron.event.archive.log=all",
+#endif
             "-Daeron.dir.delete.on.start=true",
             "-Daeron.dir.delete.on.shutdown=true",
             "-Daeron.archive.dir.delete.on.start=true",
@@ -127,6 +141,7 @@ public:
             "-Daeron.archive.recording.events.enabled=false",
             "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
             "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
+            "-Daeron.enable.experimental.features=true",
             archiveIdArg.c_str(),
             controlChannelArg.c_str(),
             replicationChannelArg.c_str(),
@@ -173,6 +188,27 @@ public:
                 printErrors(aeronPath, m_stream);
             }
 
+            {
+                std::string archiveDatFilename = m_archiveDir + AERON_FILE_SEP + "archive-mark.dat";
+                const MemoryMappedFile::ptr_t ptr = util::MemoryMappedFile::mapExistingReadOnly(archiveDatFilename.c_str());
+                AtomicBuffer errorBuffer{ptr->getMemoryPtr() + 8192, 1024 * 1024};
+
+                const int count = ErrorLogReader::read(
+                    errorBuffer,
+                    [&](
+                        std::int32_t observationCount,
+                        std::int64_t firstObservationTimestamp,
+                        std::int64_t lastObservationTimestamp,
+                        const std::string &encodedException)
+                    {
+                        m_stream << "***\n" << observationCount
+                                 << " observations for:\n " << encodedException.c_str() << std::endl;
+                    },
+                    0);
+
+                m_stream << currentTimeMillis() << " [TearDown] " << count << " distinct errors observed." << std::endl;
+            }
+
             if (aeron::Context::requestDriverTermination(aeronPath, nullptr, 0))
             {
                 m_stream << currentTimeMillis() << " [TearDown] Waiting for driver termination" << std::endl;
@@ -201,11 +237,13 @@ public:
                 const auto now_ms = currentTimeMillis();
                 m_stream << now_ms << " [TearDown] Failed to send driver terminate command" << std::endl;
                 m_stream << now_ms << " [TearDown] Deleting " << m_archiveDir << std::endl;
-                if (aeron_delete_directory(m_archiveDir.c_str()) != 0)
+                if (aeron_test_archive_delete_directory(m_archiveDir.c_str()) != 0)
                 {
                     m_stream << currentTimeMillis() << " [TearDown] Failed to delete " << m_archiveDir << std::endl;
                 }
             }
+
+            m_stream.flush();
         }
     }
 
@@ -229,8 +267,9 @@ public:
     }
 
 private:
-    const std::string m_java = JAVA_EXECUTABLE;
-    const std::string m_aeronAllJar = AERON_ALL_JAR;
+    const std::string m_java = JAVA_EXECUTABLE;          // Defined in CMakeLists.txt
+    const std::string m_aeronAllJar = AERON_ALL_JAR;     // Defined in CMakeLists.txt
+    const std::string m_aeronAgentJar = "-javaagent:" AERON_AGENT_JAR; // Defined in CMakeLists.txt
     const std::string m_archiveDir;
     const std::string m_aeronDir;
     std::ostream &m_stream;

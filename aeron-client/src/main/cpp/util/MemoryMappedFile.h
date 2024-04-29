@@ -21,10 +21,10 @@
 #include "util/Export.h"
 
 #ifdef _WIN32
-    #include <cstddef>
-    typedef void * HANDLE;
+#include <cstddef>
+typedef void * HANDLE;
 #else
-    #include <sys/types.h>
+#include <sys/types.h>
 #endif
 
 namespace aeron { namespace util

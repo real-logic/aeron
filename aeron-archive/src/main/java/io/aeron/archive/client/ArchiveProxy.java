@@ -76,6 +76,7 @@ public final class ArchiveProxy
     private AttachSegmentsRequestEncoder attachSegmentsRequest;
     private MigrateSegmentsRequestEncoder migrateSegmentsRequest;
     private ArchiveIdRequestEncoder archiveIdRequestEncoder;
+    private ReplayTokenRequestEncoder replayTokenRequestEncoder;
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -449,7 +450,8 @@ public final class ArchiveProxy
                 replayStreamId,
                 correlationId,
                 controlSessionId,
-                replayParams.fileIoMaxLength());
+                replayParams.fileIoMaxLength(),
+                replayParams.replayToken());
         }
         else
         {
@@ -461,7 +463,8 @@ public final class ArchiveProxy
                 replayStreamId,
                 correlationId,
                 controlSessionId,
-                replayParams.fileIoMaxLength());
+                replayParams.fileIoMaxLength(),
+                replayParams.replayToken());
         }
     }
 
@@ -494,6 +497,7 @@ public final class ArchiveProxy
             replayStreamId,
             correlationId,
             controlSessionId,
+            Aeron.NULL_VALUE,
             Aeron.NULL_VALUE);
     }
 
@@ -529,6 +533,7 @@ public final class ArchiveProxy
             replayStreamId,
             correlationId,
             controlSessionId,
+            Aeron.NULL_VALUE,
             Aeron.NULL_VALUE);
     }
 
@@ -1043,7 +1048,8 @@ public final class ArchiveProxy
             controlSessionId,
             Aeron.NULL_VALUE,
             Aeron.NULL_VALUE,
-            NullCredentialsSupplier.NULL_CREDENTIAL);
+            NullCredentialsSupplier.NULL_CREDENTIAL,
+            null);
     }
 
     /**
@@ -1096,7 +1102,8 @@ public final class ArchiveProxy
             controlSessionId,
             Aeron.NULL_VALUE,
             Aeron.NULL_VALUE,
-            NullCredentialsSupplier.NULL_CREDENTIAL);
+            NullCredentialsSupplier.NULL_CREDENTIAL,
+            null);
     }
 
     /**
@@ -1148,7 +1155,8 @@ public final class ArchiveProxy
             controlSessionId,
             Aeron.NULL_VALUE,
             Aeron.NULL_VALUE,
-            NullCredentialsSupplier.NULL_CREDENTIAL);
+            NullCredentialsSupplier.NULL_CREDENTIAL,
+            null);
     }
 
     /**
@@ -1205,7 +1213,8 @@ public final class ArchiveProxy
             controlSessionId,
             Aeron.NULL_VALUE,
             Aeron.NULL_VALUE,
-            NullCredentialsSupplier.NULL_CREDENTIAL);
+            NullCredentialsSupplier.NULL_CREDENTIAL,
+            null);
     }
 
     /**
@@ -1257,7 +1266,8 @@ public final class ArchiveProxy
             controlSessionId,
             replicationParams.fileIoMaxLength(),
             replicationParams.replicationSessionId(),
-            replicationParams.encodedCredentials());
+            replicationParams.encodedCredentials(),
+            replicationParams.srcResponseChannel());
     }
 
     /**
@@ -1439,6 +1449,32 @@ public final class ArchiveProxy
         return offer(migrateSegmentsRequest.encodedLength());
     }
 
+    /**
+     * Request a token for this session that will allow a replay to be initiated from another image without
+     * re-authentication.
+     *
+     * @param lastCorrelationId for the request
+     * @param controlSessionId  for the request
+     * @param recordingId       that will be replayed.
+     * @return true if successfully offered
+     */
+    public boolean requestReplayToken(final long lastCorrelationId, final long controlSessionId, final long recordingId)
+    {
+        if (null == replayTokenRequestEncoder)
+        {
+            replayTokenRequestEncoder = new ReplayTokenRequestEncoder();
+        }
+
+        replayTokenRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeader)
+            .controlSessionId(controlSessionId)
+            .correlationId(lastCorrelationId)
+            .recordingId(recordingId);
+
+        return offer(replayTokenRequestEncoder.encodedLength());
+    }
+
+
     private boolean offer(final int length)
     {
         retryIdleStrategy.reset();
@@ -1521,7 +1557,8 @@ public final class ArchiveProxy
         final int replayStreamId,
         final long correlationId,
         final long controlSessionId,
-        final int fileIoMaxLength)
+        final int fileIoMaxLength,
+        final long replayToken)
     {
         if (null == replayRequest)
         {
@@ -1537,6 +1574,7 @@ public final class ArchiveProxy
             .length(length)
             .replayStreamId(replayStreamId)
             .fileIoMaxLength(fileIoMaxLength)
+            .replayToken(replayToken)
             .replayChannel(replayChannel);
 
         return offer(replayRequest.encodedLength());
@@ -1551,7 +1589,8 @@ public final class ArchiveProxy
         final int replayStreamId,
         final long correlationId,
         final long controlSessionId,
-        final int fileIoMaxLength)
+        final int fileIoMaxLength,
+        final long replayToken)
     {
         if (null == boundedReplayRequest)
         {
@@ -1568,6 +1607,7 @@ public final class ArchiveProxy
             .limitCounterId(limitCounterId)
             .replayStreamId(replayStreamId)
             .fileIoMaxLength(fileIoMaxLength)
+            .replayToken(replayToken)
             .replayChannel(replayChannel);
 
         return offer(boundedReplayRequest.encodedLength());
@@ -1587,7 +1627,8 @@ public final class ArchiveProxy
         final long controlSessionId,
         final int fileIoMaxLength,
         final int replicationSessionId,
-        final byte[] encodedCredentials)
+        final byte[] encodedCredentials,
+        final String srcResponseChannel)
     {
         if (null == replicateRequest)
         {
@@ -1609,7 +1650,8 @@ public final class ArchiveProxy
             .liveDestination(liveDestination)
             .replicationChannel(replicationChannel)
             .replicationSessionId(replicationSessionId)
-            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length)
+            .srcResponseChannel(srcResponseChannel);
 
         return offer(replicateRequest.encodedLength());
     }

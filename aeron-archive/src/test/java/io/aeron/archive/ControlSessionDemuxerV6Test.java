@@ -87,7 +87,8 @@ class ControlSessionDemuxerV6Test
             expected.srcControlChannel(),
             expected.liveDestination(),
             expected.replicationChannel(),
-            encodedCredentials);
+            encodedCredentials,
+            "");
     }
 
     @Test
@@ -111,7 +112,7 @@ class ControlSessionDemuxerV6Test
             .recordingId(9827345897L)
             .position(982374L)
             .replayStreamId(9832475)
-            .replayChannel("replay");
+            .replayChannel("aeron:ipc");
 
         final int replicateRequestLength = replayRequestEncoder.encodedLength();
 
@@ -150,7 +151,7 @@ class ControlSessionDemuxerV6Test
             .position(982374L)
             .limitCounterId(92734)
             .replayStreamId(9832475)
-            .replayChannel("replay");
+            .replayChannel("aeron:ipc?alias=replay");
 
         final int replicateRequestLength = replayRequestEncoder.encodedLength();
 
@@ -183,7 +184,8 @@ class ControlSessionDemuxerV6Test
             .responseChannel("foo");
         final int connectRequestLength = connectRequestEncoder.encodedLength();
 
-        doReturn(mockSession).when(mockConductor).newControlSession(anyLong(), anyInt(), anyInt(), any(), any(), any());
+        doReturn(mockSession).when(mockConductor).newControlSession(
+            anyLong(), anyLong(), anyInt(), anyInt(), any(), any(), any());
         doReturn(CONTROL_SESSION_ID).when(mockSession).sessionId();
         doReturn(true).when(mockAuthorisationService).isAuthorised(anyInt(), anyInt(), any(), any());
 

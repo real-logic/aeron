@@ -52,6 +52,7 @@
 #include "aeron_archive_client/ChallengeResponse.h"
 #include "aeron_archive_client/PurgeRecordingRequest.h"
 #include "aeron_archive_client/MaxRecordedPositionRequest.h"
+#include "aeron_archive_client/ReplayTokenRequest.h"
 
 using namespace aeron;
 using namespace aeron::concurrent;
@@ -258,6 +259,7 @@ index_t ArchiveProxy::replay(
     const std::string &replayChannel,
     std::int32_t replayStreamId,
     std::int32_t fileIoMaxLength,
+    std::int64_t replayToken,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
@@ -271,6 +273,7 @@ index_t ArchiveProxy::replay(
         .length(length)
         .replayStreamId(replayStreamId)
         .fileIoMaxLength(fileIoMaxLength)
+        .replayToken(replayToken)
         .putReplayChannel(replayChannel);
 
     return messageAndHeaderLength(request);
@@ -285,6 +288,7 @@ util::index_t ArchiveProxy::boundedReplay(
     const std::string &replayChannel,
     std::int32_t replayStreamId,
     std::int32_t fileIoMaxLength,
+    std::int64_t replayToken,
     std::int64_t correlationId,
     std::int64_t controlSessionId)
 {
@@ -299,6 +303,7 @@ util::index_t ArchiveProxy::boundedReplay(
         .limitCounterId(limitCounterId)
         .replayStreamId(replayStreamId)
         .fileIoMaxLength(fileIoMaxLength)
+        .replayToken(replayToken)
         .putReplayChannel(replayChannel);
 
     return messageAndHeaderLength(request);
@@ -829,4 +834,20 @@ util::index_t ArchiveProxy::challengeResponse(
         .putEncodedCredentials(encodedCredentials.first, encodedCredentials.second);
 
     return messageAndHeaderLength(response);
+}
+
+util::index_t ArchiveProxy::replayTokenRequest(
+    AtomicBuffer &buffer,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId,
+    std::int64_t recordingId)
+{
+    ReplayTokenRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .recordingId(recordingId);
+
+    return messageAndHeaderLength(request);
 }

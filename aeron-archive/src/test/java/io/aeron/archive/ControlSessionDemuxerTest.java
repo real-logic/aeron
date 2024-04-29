@@ -66,7 +66,8 @@ class ControlSessionDemuxerTest
             .srcControlChannel("src")
             .liveDestination("live")
             .replicationChannel("replication")
-            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length)
+            .srcResponseChannel("response");
         final int replicateRequestLength = replicateRequest2Encoder.encodedLength();
 
         controlSessionDemuxer.onFragment(buffer, 0, replicateRequestLength, mockHeader);
@@ -87,7 +88,15 @@ class ControlSessionDemuxerTest
             expected.srcControlChannel(),
             expected.liveDestination(),
             expected.replicationChannel(),
-            encodedCredentials);
+            encodedCredentials(expected),
+            expected.srcResponseChannel());
+    }
+
+    private static byte[] encodedCredentials(final ReplicateRequest2Decoder decoder)
+    {
+        final byte[] credentials = new byte[decoder.encodedCredentialsLength()];
+        decoder.getEncodedCredentials(credentials, 0, credentials.length);
+        return credentials;
     }
 
     @Test
@@ -110,7 +119,7 @@ class ControlSessionDemuxerTest
             .position(982374L)
             .fileIoMaxLength(4096)
             .replayStreamId(9832475)
-            .replayChannel("replay");
+            .replayChannel("aeron:ipc");
 
         final int replicateRequestLength = replayRequestEncoder.encodedLength();
 
@@ -150,7 +159,7 @@ class ControlSessionDemuxerTest
             .limitCounterId(92734)
             .replayStreamId(9832475)
             .fileIoMaxLength(4096)
-            .replayChannel("replay");
+            .replayChannel("aeron:ipc?alias=replay");
 
         final int replicateRequestLength = replayRequestEncoder.encodedLength();
 
@@ -170,6 +179,31 @@ class ControlSessionDemuxerTest
             expected.replayChannel());
     }
 
+    @Test
+    void shouldHandleReplayTokenRequest()
+    {
+        final ControlSessionDemuxer controlSessionDemuxer = new ControlSessionDemuxer(
+            new ControlRequestDecoders(), mockImage, mockConductor, mockAuthorisationService);
+        setupControlSession(controlSessionDemuxer, CONTROL_SESSION_ID);
+
+        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+        final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+        final ReplayTokenRequestEncoder replayTokenRequestEncoder = new ReplayTokenRequestEncoder();
+
+        replayTokenRequestEncoder.wrapAndApplyHeader(buffer, 0, headerEncoder);
+
+        final long recordingId = 9827345897L;
+
+        replayTokenRequestEncoder
+            .controlSessionId(CONTROL_SESSION_ID)
+            .correlationId(9382475L)
+            .recordingId(recordingId);
+
+        controlSessionDemuxer.onFragment(buffer, 0, replayTokenRequestEncoder.encodedLength(), mockHeader);
+
+        verify(mockConductor).generateReplayToken(mockSession, recordingId);
+    }
+
     private void setupControlSession(final ControlSessionDemuxer controlSessionDemuxer, final long controlSessionId)
     {
         final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
@@ -183,7 +217,8 @@ class ControlSessionDemuxerTest
             .responseChannel("foo");
         final int connectRequestLength = connectRequestEncoder.encodedLength();
 
-        doReturn(mockSession).when(mockConductor).newControlSession(anyLong(), anyInt(), anyInt(), any(), any(), any());
+        doReturn(mockSession).when(mockConductor).newControlSession(
+            anyLong(), anyLong(), anyInt(), anyInt(), any(), any(), any());
         doReturn(controlSessionId).when(mockSession).sessionId();
         doReturn(true).when(mockAuthorisationService).isAuthorised(anyInt(), anyInt(), any(), any());
 

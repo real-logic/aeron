@@ -470,6 +470,17 @@ project(':aeron-client') {
     signing {
         sign publishing.publications.aeronClient
     }
+
+    tasks.register('validateCounterExpectations', JavaExec) {
+        def counterInfoFile = 'build/generated/sources/headers/java/main/counter-info.json'
+        def sourceDir = 'src/main/c'
+
+        inputs.files(counterInfoFile)
+
+        mainClass.set('io.aeron.counter.validation.ValidateCounterExpectationsTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [counterInfoFile, sourceDir]
+    }
 }
 
 project(':aeron-driver') {

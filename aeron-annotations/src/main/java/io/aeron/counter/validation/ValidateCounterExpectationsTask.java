@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.config.validation;
+package io.aeron.counter.validation;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.aeron.config.ConfigInfo;
+import io.aeron.counter.CounterInfo;
 
 import java.nio.file.Paths;
 import java.util.List;
 
 /**
  */
-public class ValidateConfigExpectationsTask
+public class ValidateCounterExpectationsTask
 {
 
     /**
@@ -33,14 +33,14 @@ public class ValidateConfigExpectationsTask
      */
     public static void main(final String[] args) throws Exception
     {
-        Validator.validate(fetchConfig(args[0]), args[1]).printFailuresOn(System.err);
+        Validator.validate(fetchCounter(args[0]), args[1]).printFailuresOn(System.err);
     }
 
-    private static List<ConfigInfo> fetchConfig(final String configInfoFilename) throws Exception
+    private static List<CounterInfo> fetchCounter(final String counterInfoFilename) throws Exception
     {
         return new ObjectMapper().readValue(
-            Paths.get(configInfoFilename).toFile(),
-            new TypeReference<List<ConfigInfo>>()
+            Paths.get(counterInfoFilename).toFile(),
+            new TypeReference<List<CounterInfo>>()
             {
             });
     }

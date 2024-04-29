@@ -1,15 +1,17 @@
-package io.aeron.config.validation;
+package io.aeron.validation;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-final class Grep
+public final class Grep
 {
-    static Grep execute(final String pattern, final String sourceDir)
+    public static Grep execute(final String pattern, final String sourceDir)
     {
         final String[] command = {"grep", "-r", "-n", "-E", "^" + pattern, sourceDir};
         final String commandString = "grep -r -n -E '^" + pattern + "' " + sourceDir;
@@ -68,7 +70,12 @@ final class Grep
         this.e = null;
     }
 
-    boolean success()
+    public boolean success()
+    {
+        return success(true);
+    }
+
+    public boolean success(final boolean expectOneLine)
     {
         if (this.e != null)
         {
@@ -80,27 +87,40 @@ final class Grep
             return false;
         }
 
-        if (this.lines.size() != 1)
-        {
-            return false;
-        }
-
-        return true;
+        return !expectOneLine || this.lines.size() == 1;
     }
 
-    String getCommandString()
+    public String getCommandString()
     {
         return this.commandString;
     }
 
-    String getFilenameAndLine()
+    public String getFilenameAndLine()
     {
-        final String[] pieces = this.lines.get(0).split(":");
+        return getFilenameAndLine(0);
+    }
+
+    public String getFilenameAndLine(final int lineNumber)
+    {
+        final String[] pieces = this.lines.get(lineNumber).split(":");
         return pieces[0] + ":" + pieces[1];
     }
 
-    String getOutput()
+    public String getOutput()
     {
-        return this.lines.get(0).split(":")[2];
+        return getOutput(0);
+    }
+
+    public String getOutput(final int lineNumber)
+    {
+        return this.lines.get(lineNumber).split(":")[2];
+    }
+
+    public void forEach(final BiConsumer<String, String> action)
+    {
+        for (int i = 0; i < lines.size(); i++)
+        {
+            action.accept(getFilenameAndLine(i), getOutput(i));
+        }
     }
 }

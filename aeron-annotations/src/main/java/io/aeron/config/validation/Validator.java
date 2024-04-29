@@ -3,6 +3,7 @@ package io.aeron.config.validation;
 import io.aeron.config.ConfigInfo;
 import io.aeron.config.DefaultType;
 import io.aeron.config.ExpectedCConfig;
+import io.aeron.validation.Grep;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;

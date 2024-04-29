@@ -30,6 +30,10 @@ using namespace aeron::archive::client;
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <shellapi.h>
+
 static bool aeron_file_exists(const char *path)
 {
     DWORD dwAttrib = GetFileAttributes(path);

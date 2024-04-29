@@ -40,7 +40,6 @@
 #include <pthread.h>
 #include <cstdint>
 #elif defined(_WIN32)
-#include <windows.h>
 typedef intptr_t pid_t;
 #else
 #error "must spawn Java Archive per test"

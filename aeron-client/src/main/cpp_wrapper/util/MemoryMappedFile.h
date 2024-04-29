@@ -96,7 +96,7 @@ public:
 
     static std::size_t getPageSize() noexcept
     {
-        return static_cast<std::size_t>(::getpagesize());
+        return 0;
     }
     static std::int64_t getFileSize(const char *filename)
     {
@@ -113,12 +113,8 @@ private:
 #endif
     };
 
-#ifdef _WIN32
-    MemoryMappedFile(FileHandle fd, std::size_t offset, std::size_t length, bool readOnly, bool preTouch);
-#else
     MemoryMappedFile(aeron_mapped_file_t mappedFile, bool readOnly, bool preTouch) : m_mappedFile(mappedFile)
     {}
-#endif
 
     aeron_mapped_file_t m_mappedFile;
 

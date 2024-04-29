@@ -12,41 +12,38 @@ COVERAGE_BUILD=0
 BUILD_DELETE_CMAKE=false
 BUILD_CMAKE_VERSION=3.29.2
 BUILD_CMAKE_DIR="$(dirname "${BUILD_DIR}")/cmake"
-BUILD_CMAKE_SRC_DIR="${BUILD_CMAKE_DIR}/src"
-BUILD_CMAKE_INSTALL_DIR="${BUILD_CMAKE_DIR}/install"
 
 ncpus=1
 case "$(uname)" in
   Darwin* )
     ncpus=$(sysctl -n hw.ncpu)
+    BUILD_CMAKE_OS="macos-universal"
+    BUILD_CMAKE_PATH="${BUILD_CMAKE_DIR}/CMake.app/Contents/bin"
     ;;
   Linux*)
     ncpus=$(lscpu -p | grep -c -E -v '^#')
+    BUILD_CMAKE_OS="linux-$(arch)"
+    BUILD_CMAKE_PATH="${BUILD_CMAKE_DIR}/bin"
     ;;
 esac
 
-function build_cmake()
+function install_cmake()
 {
-  CMAKE_COMPILER_OPTIONS_FILE="${BUILD_CMAKE_DIR}/compiler-options.txt"
-  CMAKE_COMPILER_OPTIONS="${BUILD_CMAKE_VERSION}"
-
   if [[ true = "${BUILD_DELETE_CMAKE}" ]]
   then
     echo "Removing old CMake installation"
-    rm -rf "${CMAKE_DIR}"
+    rm -rf "${BUILD_CMAKE_DIR}"
   fi
 
-  if [[ "${CMAKE_COMPILER_OPTIONS}" != "$(cat "${CMAKE_COMPILER_OPTIONS_FILE}")" ]]
+  local version_file="${BUILD_CMAKE_DIR}/version.txt"
+  local version_info="${BUILD_CMAKE_VERSION}-${BUILD_CMAKE_OS}"
+  if [[ "${version_info}" != "$(cat "${version_file}")" ]]
   then
-    echo "Building CMake ${CMAKE_COMPILER_OPTIONS}"
+    echo "Installing CMake ${version_info}"
     rm -rf "${BUILD_CMAKE_DIR}"
-    mkdir -p "${BUILD_CMAKE_SRC_DIR}"
-    (curl -LJ https://github.com/Kitware/CMake/releases/download/v${BUILD_CMAKE_VERSION}/cmake-${BUILD_CMAKE_VERSION}.tar.gz | tar xzf - -C "${BUILD_CMAKE_SRC_DIR}" --strip-components 1
-      cd "${BUILD_CMAKE_SRC_DIR}"
-      ./bootstrap --parallel="${ncpus}" --prefix="${BUILD_CMAKE_INSTALL_DIR}"
-      make -j "${ncpus}"
-      make -j "${ncpus}" install
-      echo "${CMAKE_COMPILER_OPTIONS}" > "${CMAKE_COMPILER_OPTIONS_FILE}")
+    mkdir -p "${BUILD_CMAKE_DIR}"
+    (curl -LJ "https://github.com/Kitware/CMake/releases/download/v${BUILD_CMAKE_VERSION}/cmake-${BUILD_CMAKE_VERSION}-${BUILD_CMAKE_OS}.tar.gz" | tar xzf - -C "${BUILD_CMAKE_DIR}" --strip-components 1
+      echo "${version_info}" > "${version_file}")
   fi
 }
 
@@ -179,12 +176,12 @@ fi
 
 mkdir -p "${BUILD_DIR}"
 
-build_cmake
+install_cmake
 
 if [[ ${COVERAGE_BUILD} -eq 1 ]] ; then
   cd "${BUILD_DIR}" || exit
   # shellcheck disable=SC2086
-  "${BUILD_CMAKE_INSTALL_DIR}/bin/cmake" -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}" && make clean && make -j "${ncpus}" all && "${BUILD_CMAKE_INSTALL_DIR}/bin/ctest" -C ${BUILD_CONFIG} --timeout 2000 --output-on-failure
+  "${BUILD_CMAKE_PATH}/cmake" -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}" && make clean && make -j "${ncpus}" all && "${BUILD_CMAKE_PATH}/ctest" -C ${BUILD_CONFIG} --timeout 2000 --output-on-failure
   rm -rf coverage
   mkdir -p coverage
   lcov --directory . --base-directory . --capture -o coverage/cov.info
@@ -195,10 +192,10 @@ else
 
   cd "${BUILD_DIR}" || exit
   # shellcheck disable=SC2086
-  "${BUILD_CMAKE_INSTALL_DIR}/bin/cmake" -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}"
+  "${BUILD_CMAKE_PATH}/cmake" -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}"
   make clean
   make -j "${ncpus}" all
-  "${BUILD_CMAKE_INSTALL_DIR}/bin/ctest" -C ${BUILD_CONFIG} --timeout 2000 --output-on-failure
+  "${BUILD_CMAKE_PATH}/ctest" -C ${BUILD_CONFIG} --timeout 2000 --output-on-failure
 fi
 
 if [ true = "${BUILD_PACKAGE}" ]

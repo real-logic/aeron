@@ -52,25 +52,21 @@ final class ServiceAck
 
     static boolean hasReached(final long logPosition, final long ackId, final ArrayDeque<ServiceAck>[] queues)
     {
-        for (final ArrayDeque<ServiceAck> serviceAckQueue : queues)
+        for (int serviceId = 0, serviceCount = queues.length; serviceId < serviceCount; serviceId++)
         {
-            final ServiceAck serviceAck = serviceAckQueue.peek();
+            final ServiceAck serviceAck = queues[serviceId].peek();
 
             if (null == serviceAck)
             {
                 return false;
             }
 
-            if (serviceAck.ackId != ackId)
+            if (serviceAck.ackId != ackId || serviceAck.logPosition != logPosition)
             {
                 throw new ClusterException(
-                    "ack out of sequence, expected=" + ackId + "/" + logPosition + " received=" + serviceAck);
-            }
-
-            if (serviceAck.logPosition != logPosition)
-            {
-                throw new ClusterException(
-                    "logPosition out of sequence, expected=" + ackId + "/" + logPosition + " received=" + serviceAck);
+                    "ack out of sequence: expected [ackId=" + ackId + ", logPosition=" + logPosition + "] vs " +
+                    "received [ackId=" + serviceAck.ackId + ", logPosition=" + serviceAck.logPosition +
+                    ", relevantId=" + serviceAck.relevantId + ", serviceId=" + serviceId + "]");
             }
         }
 
@@ -85,14 +81,14 @@ final class ServiceAck
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     static ArrayDeque<ServiceAck>[] newArrayOfQueues(final int serviceCount)
     {
         final ArrayDeque<ServiceAck>[] queues = new ArrayDeque[serviceCount];
 
-        for (int i = 0; i < serviceCount; i++)
+        for (int serviceId = 0; serviceId < serviceCount; serviceId++)
         {
-            queues[i] = new ArrayDeque<>();
+            queues[serviceId] = new ArrayDeque<>();
         }
 
         return queues;

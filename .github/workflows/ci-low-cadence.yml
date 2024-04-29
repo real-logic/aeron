@@ -161,17 +161,6 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Extract CMake version
-        id: extract_cmake_version
-        run: |
-          cmake_version=$(grep -e 'BUILD_CMAKE_VERSION=\d.*' cppbuild/cppbuild | cut -d '=' -f 2)
-          echo "Output: $cmake_version"
-          echo "cmake_version=$cmake_version" >> $GITHUB_OUTPUT
-      - name: Cache CMake directory
-        uses: actions/cache@v4
-        with:
-          path: cppbuild/cmake
-          key: ${{ runner.os }}-cmake-${{steps.extract_cmake_version.outputs.cmake_version}}
       - name: Setup java 8 to run the Gradle script
         uses: actions/setup-java@v4
         with:
@@ -230,17 +219,6 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Extract CMake version
-        id: extract_cmake_version
-        run: |
-          cmake_version=$(grep -e 'BUILD_CMAKE_VERSION=\d.*' cppbuild/cppbuild | cut -d '=' -f 2)
-          echo "Output: $cmake_version"
-          echo "cmake_version=$cmake_version" >> $GITHUB_OUTPUT
-      - name: Cache CMake directory
-        uses: actions/cache@v4
-        with:
-          path: cppbuild/cmake
-          key: ${{ runner.os }}-cmake-${{steps.extract_cmake_version.outputs.cmake_version}}
       - name: Setup java 8 to run the Gradle script
         uses: actions/setup-java@v4
         with:
@@ -349,17 +327,6 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Extract CMake version
-        id: extract_cmake_version
-        run: |
-          cmake_version=$(grep -e 'BUILD_CMAKE_VERSION=\d.*' cppbuild/cppbuild | cut -d '=' -f 2)
-          echo "Output: $cmake_version"
-          echo "cmake_version=$cmake_version" >> $GITHUB_OUTPUT
-      - name: Cache CMake directory
-        uses: actions/cache@v4
-        with:
-          path: cppbuild/cmake
-          key: ${{ runner.os }}-cmake-${{steps.extract_cmake_version.outputs.cmake_version}}
       - name: Setup java 8 to run the Gradle script
         uses: actions/setup-java@v4
         with:
@@ -418,17 +385,6 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Extract CMake version
-        id: extract_cmake_version
-        run: |
-          cmake_version=$(grep -e 'BUILD_CMAKE_VERSION=\d.*' cppbuild/cppbuild | cut -d '=' -f 2)
-          echo "Output: $cmake_version"
-          echo "cmake_version=$cmake_version" >> $GITHUB_OUTPUT
-      - name: Cache CMake directory
-        uses: actions/cache@v4
-        with:
-          path: cppbuild/cmake
-          key: ${{ runner.os }}-cmake-${{steps.extract_cmake_version.outputs.cmake_version}}
       - name: Setup java 8 to run the Gradle script
         uses: actions/setup-java@v4
         with:

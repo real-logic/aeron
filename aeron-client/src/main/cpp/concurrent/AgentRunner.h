@@ -122,9 +122,9 @@ public:
 #elif defined(Darwin)
                 pthread_setname_np(m_name.c_str());
 #else
-                char thread_name [16UL]{};
-                std::copy( m_name.begin(), m_name.begin() + std::min(m_name.size(), 15UL), thread_name );
-                pthread_setname_np(pthread_self(), thread_name);
+                char threadName[16UL] = {};
+                std::copy(m_name.begin(), m_name.begin() + std::min(m_name.size(), 15UL), threadName);
+                pthread_setname_np(pthread_self(), threadName);
 #endif
                 run();
             });

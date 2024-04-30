@@ -17,7 +17,9 @@ package io.aeron.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@SuppressWarnings("checkstyle:MissingJavadocType")
+/**
+ * A handy class for storing data that gets serialized into json
+ */
 public class ConfigInfo
 {
     @JsonProperty
@@ -25,6 +27,9 @@ public class ConfigInfo
     @JsonProperty
     public final ExpectedConfig expectations;
 
+    /**
+     * @param id the unique identifier for this block o' config information
+     */
     public ConfigInfo(@JsonProperty("id") final String id)
     {
         this.id = id;

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2024 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.config.docgen;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -13,11 +28,23 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
+/**
+ * A gradle task for generating config documentation
+ */
 public class GenerateConfigDocTask
 {
     private static FileWriter writer;
 
+    /**
+     * @param args
+     * Arg 0 should be the location of a config-info.json file with a list of ConfigInfo objects
+     * Arg 1 should be the location of an output file where a .md file is to be written
+     *
+     * @throws Exception
+     * it sure does
+     */
     public static void main(final String[] args) throws Exception
     {
         try (FileWriter writer = new FileWriter(args[1]))
@@ -31,6 +58,8 @@ public class GenerateConfigDocTask
 
             for (final ConfigInfo configInfo: config)
             {
+                final boolean isTime = isTime(configInfo.propertyName);
+
                 writeHeader(toHeaderString(configInfo.id));
                 write("Description", configInfo.propertyNameDescription);
                 write("Type",
@@ -53,12 +82,12 @@ public class GenerateConfigDocTask
                 write("Default", getDefaultString(
                     configInfo.overrideDefaultValue == null ?
                     configInfo.defaultValue.toString() :
-                    configInfo.overrideDefaultValue.toString()));
+                    configInfo.overrideDefaultValue.toString(), isTime));
                 if (configInfo.expectations.c.exists)
                 {
                     writeCode("C Env Var", configInfo.expectations.c.envVar);
                     write("C Default", getDefaultString(
-                        configInfo.expectations.c.defaultValue.toString()));
+                        configInfo.expectations.c.defaultValue.toString(), isTime));
                 }
                 writeLine();
             }
@@ -136,7 +165,13 @@ public class GenerateConfigDocTask
         return builder.toString();
     }
 
-    private static String getDefaultString(final String d)
+    private static boolean isTime(final String propertyName)
+    {
+        return Stream.of("timeout", "backoff", "delay", "linger", "interval")
+            .anyMatch(k -> propertyName.toLowerCase().contains(k));
+    }
+
+    private static String getDefaultString(final String d, final boolean asTime)
     {
         if (d != null && d.length() > 3 && d.chars().allMatch(Character::isDigit))
         {
@@ -164,11 +199,41 @@ public class GenerateConfigDocTask
                 builder.append(")");
             }
 
-            return builder.toString();
+            if (asTime)
+            {
+                int tCount = 0;
+                String remaining = d;
+                while (remaining.endsWith("000") && tCount < 3)
+                {
+                    tCount++;
+                    remaining = remaining.replaceAll("000$", "");
+                }
+                builder.append(" (");
+                builder.append(remaining);
+                switch (tCount)
+                {
+                    case 0:
+                        builder.append(" nano");
+                        break;
+                    case 1:
+                        builder.append(" micro");
+                        break;
+                    case 2:
+                        builder.append(" milli");
+                        break;
+                    case 3:
+                        builder.append(" ");
+                        break;
+                }
+                builder.append("second");
+                if (!remaining.equals("1"))
+                {
+                    builder.append("s");
+                }
+                builder.append(")");
+            }
 
-            /* TODO if there were some way to know that this was a timeout of some sort, we could
-            indicate the number of (milli|micro|nano)seconds
-             */
+            return builder.toString();
         }
         return d;
     }

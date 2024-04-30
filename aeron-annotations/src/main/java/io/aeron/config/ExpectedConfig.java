@@ -17,7 +17,8 @@ package io.aeron.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@SuppressWarnings("checkstyle:MissingJavadocType")
+/**
+ */
 public class ExpectedConfig
 {
     @JsonProperty

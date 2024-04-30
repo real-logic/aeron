@@ -23,13 +23,17 @@ import java.nio.file.Paths;
 import java.util.List;
 
 /**
+ * A gradle task for validating the C code looks as expected, based on the contents of the @Config java annotations
  */
 public class ValidateConfigExpectationsTask
 {
-
     /**
-     * asdf
      * @param args
+     * Arg 0 should be the location of a config-info.json file with a list of ConfigInfo objects
+     * Arg 1 should be the location of the C source code
+     *
+     * @throws Exception
+     * it sure does
      */
     public static void main(final String[] args) throws Exception
     {

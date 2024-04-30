@@ -23,13 +23,18 @@ import java.nio.file.Paths;
 import java.util.List;
 
 /**
+ * A gradle task for validating C counters conform to expectations set by the AeronCounter annotation in java
  */
 public class ValidateCounterExpectationsTask
 {
 
     /**
-     * asdf
      * @param args
+     * Arg 0 should be the location of a counter-info.json file with a list of CounterInfo objects
+     * Arg 1 should be the location of the C source code
+     *
+     * @throws Exception
+     * it sure does
      */
     public static void main(final String[] args) throws Exception
     {

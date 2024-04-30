@@ -22,38 +22,78 @@ import java.lang.annotation.*;
  */
 @Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.SOURCE)
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public @interface Config
 {
-    @SuppressWarnings("checkstyle:MissingJavadocType")
+    /**
+     * Type is used to indicate whether the annotation is marking a property name or a default value
+     */
     enum Type
     {
         UNDEFINED, PROPERTY_NAME, DEFAULT
     }
 
+    /**
+     * @return what type of field is being annotated
+     */
     Type configType() default Type.UNDEFINED;
 
+    /**
+     * @return the unique id that ties together all the usages of the annotation across fields/methods
+     */
     String id() default "";
 
+    /**
+     * @return the uri parameter (if any) associated with this option
+     */
     String uriParam() default "";
 
+    /**
+     * @return whether or not this config option exists in the C code
+     */
     boolean existsInC() default true;
 
+    /**
+     * @return the expected C #define name that will be set with the env variable name for this option
+     */
     String expectedCEnvVarFieldName() default "";
 
+    /**
+     * @return the expected C env variable name for this option
+     */
     String expectedCEnvVar() default "";
 
+    /**
+     * @return the expected C #define name that will be set with the default value for this option
+     */
     String expectedCDefaultFieldName() default "";
 
+    /**
+     * @return the expected C default value for this option
+     */
     String expectedCDefault() default "";
 
+    /**
+     * @return what's the type of default (string, int, etc...)
+     */
     DefaultType defaultType() default DefaultType.UNDEFINED;
 
+    /**
+     * @return specify the default boolean, if defaultType is BOOLEAN
+     */
     boolean defaultBoolean() default false;
 
+    /**
+     * @return specify the default int, if defaultType is INT
+     */
     int defaultInt() default 0;
 
+    /**
+     * @return specify the default long, if defaultType is LONG
+     */
     long defaultLong() default 0;
 
+    /**
+     * @return specify the default string, if defaultType is STRING
+     */
     String defaultString() default "";
 }

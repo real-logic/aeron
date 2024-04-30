@@ -17,12 +17,17 @@ package io.aeron.counter;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@SuppressWarnings("checkstyle:MissingJavadocType")
+/**
+ * A handy class for storing data that gets serialized into json
+ */
 public class CounterInfo
 {
     @JsonProperty
     public final String name;
 
+    /**
+     * @param name the name of the counter
+     */
     public CounterInfo(@JsonProperty("name") final String name)
     {
         this.name = name;

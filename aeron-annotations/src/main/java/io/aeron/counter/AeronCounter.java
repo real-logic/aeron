@@ -27,5 +27,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.SOURCE)
 public @interface AeronCounter
 {
+    /**
+     * @return the name of the #define in C
+     */
     String expectedCName() default "";
 }

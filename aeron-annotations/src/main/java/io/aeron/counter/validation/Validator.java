@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2024 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.counter.validation;
 
 import io.aeron.counter.CounterInfo;
@@ -39,7 +54,8 @@ final class Validator
     private void identifyExtraCCounters(final Collection<CounterInfo> counterInfoCollection)
     {
         final Pattern compiledPattern = Pattern.compile("#define[ \t]+([A-Z_]+)[ \t]+\\([0-9]+\\)");
-        final List<String> expectedCNames = counterInfoCollection.stream().map(counterInfo -> counterInfo.expectedCName).collect(Collectors.toList());
+        final List<String> expectedCNames =
+            counterInfoCollection.stream().map(counterInfo -> counterInfo.expectedCName).collect(Collectors.toList());
 
         final String pattern = "#define[ \t]+AERON_COUNTER_([A-Z_]+)_TYPE_ID[ \t]+\\([0-9]+\\)";
         final Grep grep = Grep.execute(pattern, sourceDir);
@@ -53,7 +69,8 @@ final class Validator
 
                 if (expectedCNames.stream().noneMatch(cName -> cName.equals(name)))
                 {
-                    report.addValidation(false, name, "Found C counter with no matching Java counter - " + fileAndLineNo);
+                    report.addValidation(false, name,
+                        "Found C counter with no matching Java counter - " + fileAndLineNo);
                 }
             }
             else
@@ -78,7 +95,8 @@ final class Validator
         if (grep.success())
         {
 
-            final Matcher matcher = Pattern.compile("#define[ \t]+[A-Z_]+[ \t]+\\(([0-9]+)\\)").matcher(grep.getOutput());
+            final Matcher matcher =
+                Pattern.compile("#define[ \t]+[A-Z_]+[ \t]+\\(([0-9]+)\\)").matcher(grep.getOutput());
             if (matcher.find())
             {
                 final String id = matcher.group(1);

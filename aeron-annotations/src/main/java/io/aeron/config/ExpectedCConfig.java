@@ -17,7 +17,9 @@ package io.aeron.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@SuppressWarnings("checkstyle:MissingJavadocType")
+/**
+ * A handy class for storing expected C config info that can be serialized into json
+ */
 public class ExpectedCConfig
 {
     @JsonProperty

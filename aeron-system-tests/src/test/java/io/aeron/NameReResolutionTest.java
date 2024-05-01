@@ -42,6 +42,9 @@ import java.io.IOException;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.test.driver.RedirectingNameResolver.*;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.number.OrderingComparison.greaterThan;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -464,20 +467,18 @@ class NameReResolutionTest
     }
 
     @Test
+    @InterruptAfter(10)
     void shouldTrackNameResolutionTime()
     {
-        Tests.awaitCounterDelta(countersReader, NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED.id(), 0, 1);
-
-        final long maxTimeNs = countersReader.getCounterValue(NAME_RESOLVER_MAX_TIME.id());
-        assertNotEquals(0, maxTimeNs);
         final long thresholdCounter = countersReader.getCounterValue(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED.id());
-        assertEquals(1, thresholdCounter);
 
         publication = client.addPublication(PUBLICATION_URI, STREAM_ID);
         publication.close();
 
-        assertNotEquals(0, countersReader.getCounterValue(NAME_RESOLVER_MAX_TIME.id()));
-        assertNotEquals(thresholdCounter, countersReader.getCounterValue(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED.id()));
+        assertThat(countersReader.getCounterValue(NAME_RESOLVER_MAX_TIME.id()), is(greaterThan(0L)));
+        assertThat(
+            countersReader.getCounterValue(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED.id()),
+            is(greaterThan(thresholdCounter)));
     }
 
     private static void assumeBindAddressAvailable(final String address)

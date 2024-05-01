@@ -24,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
@@ -235,5 +236,16 @@ class MediaDriverContextTest
         context.close();
 
         verify(asyncTaskExecutor, never()).shutdownNow();
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    void resolverNameIsRequiredWhenDriverNameResolutionIsUsed(final String noName)
+    {
+        context.resolverName(noName)
+            .resolverInterface("127.0.0.1");
+
+        final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
+        assertEquals("ERROR - `resolverName` is required when `resolverInterface` is set", exception.getMessage());
     }
 }

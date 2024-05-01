@@ -27,6 +27,7 @@ import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
+import io.aeron.exceptions.ConfigurationException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.version.Versioned;
@@ -3879,6 +3880,11 @@ public final class MediaDriver implements AutoCloseable
                 {
                     asyncTaskExecutor = newDefaultAsyncTaskExecutor(asyncTaskExecutorThreads);
                 }
+            }
+
+            if (null != resolverInterface && Strings.isEmpty(resolverName))
+            {
+                throw new ConfigurationException("`resolverName` is required when `resolverInterface` is set");
             }
         }
 

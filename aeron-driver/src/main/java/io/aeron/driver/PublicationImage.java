@@ -656,6 +656,11 @@ public final class PublicationImage
             (!isEndOfStream || !isReceiverReleaseTriggered);
     }
 
+    boolean isEndOfStream()
+    {
+        return isEndOfStream;
+    }
+
     /**
      * Check for EOS from publication and switch to {@link State#DRAINING} if at end of stream position.
      *

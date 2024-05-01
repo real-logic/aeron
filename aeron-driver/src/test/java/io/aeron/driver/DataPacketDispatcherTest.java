@@ -18,6 +18,8 @@ package io.aeron.driver;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -166,16 +168,42 @@ class DataPacketDispatcherTest
     }
 
     @Test
-    void shouldIgnoreDataAndSetupAfterImageRemoved()
+    void shouldIgnoreDataAndSetupAfterImageRemovedButHasNotEndedStream()
     {
+        when(mockImage.isEndOfStream()).thenReturn(false);
+
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addPublicationImage(mockImage);
         dispatcher.removePublicationImage(mockImage);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
         dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, SRC_ADDRESS, 0);
 
+        verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt(), anyInt(), any());
+
         verifyNoInteractions(mockConductorProxy);
         verifyNoInteractions(mockReceiver);
+    }
+
+    @Test
+    void shouldIgnoreDataButAllowSetupAfterImageRemovedWhenEndOfStreamReached()
+    {
+        when(mockImage.isEndOfStream()).thenReturn(true);
+
+        dispatcher.addSubscription(STREAM_ID);
+        dispatcher.addPublicationImage(mockImage);
+        dispatcher.removePublicationImage(mockImage);
+
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
+        verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt(), anyInt(), any());
+
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, SRC_ADDRESS, 0);
+        verify(mockConductorProxy).createPublicationImage(
+            anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(),
+            anyShort(), any(), any(), any());
+        verify(mockReceiver).addPendingSetupMessage(anyInt(), anyInt(), anyInt(), any(), anyBoolean(), any());
+
+        verifyNoMoreInteractions(mockConductorProxy);
+        verifyNoMoreInteractions(mockReceiver);
     }
 
     @Test

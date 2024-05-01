@@ -27,6 +27,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
+import org.agrona.Strings;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
@@ -786,6 +787,10 @@ public final class Configuration
      * @since 1.44.0
      */
     public static final String ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME = "aeron.driver.async.executor.threads";
+
+    public static final String STREAM_SESSION_LIMIT_PROP_NAME = "aeron.driver.session.stream.limit";
+
+    public static final int STREAM_SESSION_LIMIT_DEFAULT = Integer.MAX_VALUE;
 
     /**
      * {@link Executor} that run tasks on the caller thread.
@@ -1858,6 +1863,18 @@ public final class Configuration
         }
 
         return supplier;
+    }
+
+    /**
+     * Get the configured limit for the number of streams per session.
+     *
+     * @return configured session limit.
+     */
+    public static int streamSessionLimit()
+    {
+        final String streamSessionLimitString = getProperty(STREAM_SESSION_LIMIT_PROP_NAME);
+        return Strings.isEmpty(streamSessionLimitString) ?
+            STREAM_SESSION_LIMIT_DEFAULT : Integer.parseInt(streamSessionLimitString);
     }
 
     /**

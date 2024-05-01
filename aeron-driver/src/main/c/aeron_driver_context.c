@@ -629,6 +629,15 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->resolver_bootstrap_neighbor = getenv(AERON_DRIVER_RESOLVER_BOOTSTRAP_NEIGHBOR_ENV_VAR);
     _context->name_resolver_init_args = getenv(AERON_NAME_RESOLVER_INIT_ARGS_ENV_VAR);
 
+    if (NULL != _context->resolver_interface)
+    {
+        if (NULL == _context->resolver_name || 0 == strlen(_context->resolver_name))
+        {
+            AERON_SET_ERR(EINVAL, "%s", "`resolverName` is required when `resolverInterface` is set");
+            return -1;
+        }
+    }
+
     _context->dirs_delete_on_start = aeron_parse_bool(
         getenv(AERON_DIR_DELETE_ON_START_ENV_VAR), _context->dirs_delete_on_start);
 

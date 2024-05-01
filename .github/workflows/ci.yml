@@ -629,7 +629,7 @@ jobs:
           New-Partition -DiskNumber 1 -Size 30MB -DriveLetter T | Format-Volume -FileSystem NTFS -Confirm:$false
           mkdir T:/tmp_aeron_dir
       - name: Build
-        run: cppbuild/cppbuild
+        run: cppbuild/cppbuild.ps1
       - name: Remove small temp file system
         run: Remove-Partition -DriveLetter T -Confirm:$false
       - name: Copy test logs

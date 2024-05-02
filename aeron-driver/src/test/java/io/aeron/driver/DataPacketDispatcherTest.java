@@ -18,8 +18,6 @@ package io.aeron.driver;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -43,10 +41,12 @@ class DataPacketDispatcherTest
     private static final int MTU_LENGTH = 1024;
     private static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final InetSocketAddress SRC_ADDRESS = new InetSocketAddress("localhost", 4510);
+    private static final int STREAM_SESSION_LIMIT = 10;
 
     private final DriverConductorProxy mockConductorProxy = mock(DriverConductorProxy.class);
     private final Receiver mockReceiver = mock(Receiver.class);
-    private final DataPacketDispatcher dispatcher = new DataPacketDispatcher(mockConductorProxy, mockReceiver);
+    private final DataPacketDispatcher dispatcher = new DataPacketDispatcher(
+        mockConductorProxy, mockReceiver, STREAM_SESSION_LIMIT);
     private final DataHeaderFlyweight mockHeader = mock(DataHeaderFlyweight.class);
     private final SetupFlyweight mockSetupHeader = mock(SetupFlyweight.class);
     private final UnsafeBuffer mockBuffer = mock(UnsafeBuffer.class);
@@ -287,5 +287,40 @@ class DataPacketDispatcherTest
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
 
         verify(mockImage).insertPacket(ACTIVE_TERM_ID, TERM_OFFSET, mockBuffer, LENGTH, 0, SRC_ADDRESS);
+    }
+
+    @Test
+    void shouldPreventNewSessionsOnceStreamSessionLimitIsExceeded()
+    {
+        final PublicationImage mockImage = mock(PublicationImage.class);
+
+        when(mockImage.streamId()).thenReturn(STREAM_ID);
+        when(mockImage.correlationId()).thenReturn(CORRELATION_ID_1);
+
+        dispatcher.addSubscription(STREAM_ID);
+
+        int sessionId = SESSION_ID;
+        for (int i = 0; i < STREAM_SESSION_LIMIT; i++)
+        {
+            when(mockImage.sessionId()).thenReturn(sessionId);
+            when(mockSetupHeader.sessionId()).thenReturn(sessionId);
+            sessionId++;
+
+            dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, SRC_ADDRESS, 0);
+            dispatcher.addPublicationImage(mockImage);
+        }
+        verify(mockConductorProxy, times(10)).createPublicationImage(
+            anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(),
+            anyShort(), any(), any(), any());
+
+        when(mockSetupHeader.sessionId()).thenReturn(sessionId);
+        try
+        {
+            dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, SRC_ADDRESS, 0);
+        }
+        catch (final Exception ignore)
+        {
+        }
+        verifyNoMoreInteractions(mockConductorProxy);
     }
 }

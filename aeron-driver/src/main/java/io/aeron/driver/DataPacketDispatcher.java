@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.driver.exceptions.UnknownSubscriptionException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.exceptions.AeronEvent;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
@@ -61,6 +62,11 @@ public final class DataPacketDispatcher
             return activeImageByIdMap.get(sessionId);
         }
 
+        public boolean isSessionLimitExceeded(final int sessionLimit)
+        {
+            return sessionLimit <= activeImageByIdMap.size();
+        }
+
         void removeNonSessionSpecificInterest()
         {
             final Int2ObjectHashMap<PublicationImage>.EntryIterator activeIterator =
@@ -97,11 +103,16 @@ public final class DataPacketDispatcher
     private final Int2ObjectHashMap<StreamInterest> streamInterestByIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
     private final Receiver receiver;
+    private final int streamSessionLimit;
 
-    DataPacketDispatcher(final DriverConductorProxy conductorProxy, final Receiver receiver)
+    DataPacketDispatcher(
+        final DriverConductorProxy conductorProxy,
+        final Receiver receiver,
+        final int streamSessionLimit)
     {
         this.conductorProxy = conductorProxy;
         this.receiver = receiver;
+        this.streamSessionLimit = streamSessionLimit;
     }
 
     /**
@@ -343,6 +354,11 @@ public final class DataPacketDispatcher
         if (null != streamInterest)
         {
             final int sessionId = msg.sessionId();
+
+            if (streamInterest.isSessionLimitExceeded(streamSessionLimit))
+            {
+                throw new AeronEvent("exceeded session limit, streamId=" + streamId + " sourceAddress=" + srcAddress);
+            }
 
             final PublicationImage image = streamInterest.findActive(sessionId);
             final SessionState sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);

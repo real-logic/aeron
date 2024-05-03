@@ -161,6 +161,7 @@ public final class NetworkPublication
     private final RawLog rawLog;
     private final AtomicCounter heartbeatsSent;
     private final AtomicCounter retransmitsSent;
+    private final AtomicCounter retransmittedBytes;
     private final AtomicCounter senderFlowControlLimits;
     private final AtomicCounter senderBpe;
     private final AtomicCounter shortSends;
@@ -226,6 +227,7 @@ public final class NetworkPublication
         heartbeatsSent = systemCounters.get(HEARTBEATS_SENT);
         shortSends = systemCounters.get(SHORT_SENDS);
         retransmitsSent = systemCounters.get(RETRANSMITS_SENT);
+        retransmittedBytes = systemCounters.get(RETRANSMITTED_BYTES);
         senderFlowControlLimits = systemCounters.get(SENDER_FLOW_CONTROL_LIMITS);
         unblockedPublications = systemCounters.get(UNBLOCKED_PUBLICATIONS);
         this.senderBpe = senderBpe;
@@ -527,6 +529,7 @@ public final class NetworkPublication
             final ByteBuffer sendBuffer = sendBuffers[activeIndex];
 
             int remainingBytes = length;
+            int totalBytesSent = 0;
             int bytesSent = 0;
             int offset = termOffset;
             do
@@ -550,10 +553,12 @@ public final class NetworkPublication
 
                 bytesSent = available + padding(scanOutcome);
                 remainingBytes -= bytesSent;
+                totalBytesSent += bytesSent;
             }
             while (remainingBytes > 0);
 
             retransmitsSent.incrementOrdered();
+            retransmittedBytes.getAndAddOrdered(totalBytesSent);
         }
     }
 

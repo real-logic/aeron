@@ -985,7 +985,9 @@ class PubAndSubTest
 
             messageIndex.set(0);
             messages.clear();
+            final Image fragmentedImage = subscription.imageAtIndex(0);
             messages.add(new ExpectedFragment(
+                fragmentedImage,
                 firstMessageLength + HEADER_LENGTH,
                 CURRENT_VERSION,
                 expectedFlags,
@@ -1002,6 +1004,7 @@ class PubAndSubTest
                 0,
                 firstMessageLength));
             messages.add(new ExpectedFragment(
+                fragmentedImage,
                 frameLength,
                 CURRENT_VERSION,
                 (byte)BEGIN_AND_END_FLAGS,
@@ -1018,6 +1021,7 @@ class PubAndSubTest
                 0,
                 data.capacity()));
             messages.add(new ExpectedFragment(
+                fragmentedImage,
                 mtu,
                 CURRENT_VERSION,
                 (byte)0xFF,
@@ -1057,7 +1061,9 @@ class PubAndSubTest
 
             messageIndex.set(0);
             messages.clear();
+            final Image unfragmentedImage = unfragmentedSubscription.imageAtIndex(0);
             messages.add(new ExpectedFragment(
+                unfragmentedImage,
                 firstMessageLength + HEADER_LENGTH,
                 CURRENT_VERSION,
                 expectedFlags,
@@ -1074,6 +1080,7 @@ class PubAndSubTest
                 0,
                 firstMessageLength));
             messages.add(new ExpectedFragment(
+                unfragmentedImage,
                 mtu,
                 CURRENT_VERSION,
                 BEGIN_FRAG_FLAG,
@@ -1090,6 +1097,7 @@ class PubAndSubTest
                 0,
                 maxPayloadLength));
             messages.add(new ExpectedFragment(
+                unfragmentedImage,
                 mtu,
                 CURRENT_VERSION,
                 (byte)0,
@@ -1106,6 +1114,7 @@ class PubAndSubTest
                 maxPayloadLength,
                 maxPayloadLength));
             messages.add(new ExpectedFragment(
+                unfragmentedImage,
                 mtu,
                 CURRENT_VERSION,
                 (byte)0,
@@ -1122,6 +1131,7 @@ class PubAndSubTest
                 2 * maxPayloadLength,
                 maxPayloadLength));
             messages.add(new ExpectedFragment(
+                unfragmentedImage,
                 317 + HEADER_LENGTH,
                 CURRENT_VERSION,
                 END_FRAG_FLAG,
@@ -1138,6 +1148,7 @@ class PubAndSubTest
                 3 * maxPayloadLength,
                 317));
             messages.add(new ExpectedFragment(
+                unfragmentedImage,
                 mtu,
                 CURRENT_VERSION,
                 (byte)0xFF,
@@ -1175,6 +1186,7 @@ class PubAndSubTest
         final int index = messageIndex.getAndIncrement();
         final Supplier<String> errorMsg = () -> "index=" + index;
         final ExpectedFragment expectedFragment = messages.get(index);
+        assertSame(expectedFragment.image, header.context(), errorMsg);
         assertEquals(expectedFragment.frameLength, header.frameLength(), errorMsg);
         assertEquals(
             expectedFragment.version,
@@ -1253,6 +1265,7 @@ class PubAndSubTest
 
     private static final class ExpectedFragment
     {
+        private final Image image;
         final int frameLength;
         final byte version;
         final byte flags;
@@ -1268,6 +1281,7 @@ class PubAndSubTest
         final byte[] payload;
 
         private ExpectedFragment(
+            final Image image,
             final int frameLength,
             final byte version,
             final byte flags,
@@ -1284,6 +1298,7 @@ class PubAndSubTest
             final int payloadOffset,
             final int payloadLength)
         {
+            this.image = image;
             this.frameLength = frameLength;
             this.version = version;
             this.flags = flags;

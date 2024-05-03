@@ -176,7 +176,9 @@ public final class BufferBuilder
     {
         limit = 0;
         nextTermOffset = NULL_VALUE;
-        completeHeader.fragmentedFrameLength(NULL_VALUE);
+        completeHeader
+            .context(null)
+            .fragmentedFrameLength(NULL_VALUE);
         return this;
     }
 
@@ -243,7 +245,9 @@ public final class BufferBuilder
     {
         final int firstFrameLength = headerBuffer.getInt(FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
         final int fragmentedFrameLength = computeFragmentedFrameLength(limit, firstFrameLength - HEADER_LENGTH);
-        completeHeader.fragmentedFrameLength(fragmentedFrameLength);
+        completeHeader
+            .context(header.context())
+            .fragmentedFrameLength(fragmentedFrameLength);
 
         headerBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, HEADER_LENGTH + limit, LITTLE_ENDIAN);
         // compute complete flags

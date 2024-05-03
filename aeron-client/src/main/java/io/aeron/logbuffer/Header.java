@@ -32,7 +32,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
  */
 public final class Header
 {
-    private final Object context;
+    private Object context;
     private int positionBitsToShift;
     private int initialTermId;
     private int offset = 0;
@@ -72,6 +72,18 @@ public final class Header
     public Object context()
     {
         return context;
+    }
+
+    /**
+     * Assign context for storing state related to the context of the callback where the header is used.
+     *
+     * @param context for storing state related to the context of the callback where the header is used.
+     * @return this for a fluent API.
+     */
+    public Header context(final Object context)
+    {
+        this.context = context;
+        return this;
     }
 
     /**

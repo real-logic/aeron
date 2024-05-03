@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class DataLossAndRecoverySystemTest
 {
+    private static final int LOSS_LENGTH = 100_000;
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();
 
@@ -50,7 +51,7 @@ public class DataLossAndRecoverySystemTest
     @BeforeEach
     void setUp()
     {
-        TestMediaDriver.enableFixedLoss(context, 5, 102, 100_000);
+        TestMediaDriver.enableFixedLoss(context, 5, 102, LOSS_LENGTH);
     }
 
     private void launch(final MediaDriver.Context context)
@@ -79,8 +80,11 @@ public class DataLossAndRecoverySystemTest
                 .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
             final long nakCount = aeron.countersReader()
                 .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
+            final long retransmittedBytes = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.RETRANSMITTED_BYTES.id());
             assertThat(retransmitCount, oneOf(1L, 2L));
             assertThat(nakCount, oneOf(1L, 2L));
+            assertThat(retransmittedBytes, greaterThanOrEqualTo((long) LOSS_LENGTH));
         }
     }
 
@@ -99,8 +103,11 @@ public class DataLossAndRecoverySystemTest
                 .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
             final long nakCount = aeron.countersReader()
                 .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
+            final long retransmittedBytes = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.RETRANSMITTED_BYTES.id());
             assertThat(retransmitCount, oneOf(1L, 2L));
             assertThat(nakCount, oneOf(1L, 2L));
+            assertThat(retransmittedBytes, greaterThanOrEqualTo((long) LOSS_LENGTH));
         }
     }
 
@@ -119,9 +126,12 @@ public class DataLossAndRecoverySystemTest
                 .getCounterValue(SystemCounterDescriptor.RETRANSMITS_SENT.id());
             final long nakCount = aeron.countersReader()
                 .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
+            final long retransmittedBytes = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.RETRANSMITTED_BYTES.id());
             assertThat(nakCount, greaterThanOrEqualTo(1L));
             // in CI, we occasionally see an extra retransmission
             assertThat(retransmitCount, oneOf(1L, 2L));
+            assertThat(retransmittedBytes, greaterThanOrEqualTo((long) LOSS_LENGTH));
         }
     }
 
@@ -143,8 +153,8 @@ public class DataLossAndRecoverySystemTest
         final MutableInteger outputPosition = new MutableInteger(0);
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            ExclusivePublication pub = aeron.addExclusivePublication(channel, streamId);
-            Subscription sub = aeron.addSubscription(channel, streamId))
+             ExclusivePublication pub = aeron.addExclusivePublication(channel, streamId);
+             Subscription sub = aeron.addSubscription(channel, streamId))
         {
             Tests.awaitConnected(pub);
             Tests.awaitConnected(sub);

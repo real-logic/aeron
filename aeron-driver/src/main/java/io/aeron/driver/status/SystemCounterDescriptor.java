@@ -204,7 +204,12 @@ public enum SystemCounterDescriptor
     /**
      * The total number of bytes currently mapped in log buffers, CnC file, and loss report.
      */
-    BYTES_CURRENTLY_MAPPED(35, "Bytes currently mapped");
+    BYTES_CURRENTLY_MAPPED(35, "Bytes currently mapped"),
+
+    /**
+     * Number of bytes re-transmitted as a result of NAKs.
+     */
+    RETRANSMITTED_BYTES(36, "Retransmitted bytes");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

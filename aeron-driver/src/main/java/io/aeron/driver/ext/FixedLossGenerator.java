@@ -24,7 +24,6 @@ import java.net.InetSocketAddress;
 /**
  * A loss generator implementation that will lose a fixed block of data from a specific term-id/term-offset pair. It
  * will only lose the selected block of data once for a given stream-id/session-id pair.
- *
  */
 public class FixedLossGenerator implements LossGenerator
 {
@@ -69,18 +68,26 @@ public class FixedLossGenerator implements LossGenerator
     {
         if (this.termId == termId)
         {
-            MutableInteger trackingOffset = streamAndSessionIdToOffsetMap.get(streamId, sessionId);
-            if (null == trackingOffset)
+            MutableInteger maximumDroppedOffset = streamAndSessionIdToOffsetMap.get(streamId, sessionId);
+            if (null == maximumDroppedOffset)
             {
-                trackingOffset = new MutableInteger(termOffset);
-                streamAndSessionIdToOffsetMap.put(streamId, sessionId, trackingOffset);
+                maximumDroppedOffset = new MutableInteger(termOffset);
+                streamAndSessionIdToOffsetMap.put(streamId, sessionId, maximumDroppedOffset);
             }
 
-            if (trackingOffset.get() < (this.termOffset + this.length) &&
-                termOffset <= trackingOffset.get() && trackingOffset.get() < (termOffset + length))
+            final boolean isRetransmission = maximumDroppedOffset.get() > termOffset;
+
+            if (!isRetransmission)
             {
-                trackingOffset.set(termOffset + length);
-                return true;
+                final int dropRegionOffset = this.termOffset;
+                final int dropRegionLimit = this.termOffset + this.length;
+                final int frameLimit = termOffset + length;
+                final boolean shouldDrop = frameLimit > dropRegionOffset && termOffset < dropRegionLimit;
+                if (shouldDrop)
+                {
+                    maximumDroppedOffset.set(termOffset + length);
+                    return true;
+                }
             }
         }
 

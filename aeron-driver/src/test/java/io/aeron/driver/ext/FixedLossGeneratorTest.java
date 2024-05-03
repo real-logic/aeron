@@ -66,17 +66,20 @@ class FixedLossGeneratorTest
     @Test
     void shouldOnlyDropInMatchingFrames()
     {
-        final FixedLossGenerator fixedLossGenerator = new FixedLossGenerator(1, 50, 1408);
+        final FixedLossGenerator fixedLossGenerator = new FixedLossGenerator(1, 2000, 1408);
         assertFalse(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 0, 0, 1408));
         assertFalse(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 0, 1408, 1408));
         assertFalse(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 0, 2 * 1408, 1408));
+        assertFalse(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 0, 3 * 1408, 1408));
 
-        assertTrue(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 1, 0, 1408));
+        assertFalse(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 1, 0, 1408));
         assertTrue(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 1, 1408, 1408));
-        assertFalse(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 1, 2 * 1408, 1408));
+        assertTrue(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 1, 2 * 1408, 1408));
+        assertFalse(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 1, 3 * 1408, 1408));
 
         assertFalse(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 2, 0, 1408));
         assertFalse(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 2, 1408, 1408));
         assertFalse(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 2, 2 * 1408, 1408));
+        assertFalse(fixedLossGenerator.shouldDropFrame(null, null, 123, 456, 2, 3 * 1408, 1408));
     }
 }

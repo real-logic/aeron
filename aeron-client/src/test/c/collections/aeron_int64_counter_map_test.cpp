@@ -200,3 +200,38 @@ TEST_F(Int64CounterMapTest, shouldForEachNonEmptyMap)
 
     ASSERT_EQ(called, 1u);
 }
+
+TEST_F(Int64CounterMapTest, shouldRemoveIfValueMatches)
+{
+    const int64_t initialValue = -2;
+    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, initialValue, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
+
+    for (int64_t i = 0; i < 10; i++)
+    {
+        int64_t value = i / 2;
+        aeron_int64_counter_map_put(&m_map, i, value, nullptr);
+    }
+
+    const int64_t value_to_remove = 3;
+    aeron_int64_counter_map_remove_if(
+        &m_map,
+        [](void *clientd, int64_t key, int64_t value)
+        {
+            int64_t client_v = *(int64_t *)clientd;
+            return client_v == value;
+        },
+        (void *)&value_to_remove);
+
+    for (int64_t i = 0; i < 10; i++)
+    {
+        int64_t value = i / 2;
+        if (value_to_remove == value)
+        {
+            EXPECT_EQ(initialValue, aeron_int64_counter_map_get(&m_map, i));
+        }
+        else
+        {
+            EXPECT_EQ(value, aeron_int64_counter_map_get(&m_map, i));
+        }
+    }
+}

@@ -28,6 +28,7 @@ void initHeader(std::uint8_t *buffer, size_t length, Header **header)
     aeronHeader->fragmented_frame_length = NULL_VALUE;
     aeronHeader->initial_term_id = INITIAL_TERM_ID;
     aeronHeader->position_bits_to_shift = POSITION_BITS_TO_SHIFT;
+    aeronHeader->context = (void*)"test context";
 
     *header = new Header{aeronHeader};
 }

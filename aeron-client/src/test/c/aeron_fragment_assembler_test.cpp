@@ -42,6 +42,7 @@ public:
     {
         m_fragment.fill(0);
         m_header.frame = (aeron_data_header_t *)m_fragment.data();
+        m_header.context = (void*)"test";
 
         if (aeron_fragment_assembler_create(&m_assembler, fragment_handler, this) < 0)
         {
@@ -251,6 +252,8 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleFromThreeFragments)
 
         isCalled = true;
         EXPECT_EQ(length, fragmentLength * 2 + lastFragmentLength);
+        EXPECT_NE(nullptr, header->context);
+        EXPECT_EQ(m_header.context, header->context);
         aeron_header_values_t header_values;
         EXPECT_EQ(0, aeron_header_values(header, &header_values));
         EXPECT_EQ(AERON_DATA_HEADER_LENGTH + length, header_values.frame.frame_length);
@@ -336,6 +339,8 @@ TEST_F(CFragmentAssemblerTest, shouldReassembleTwoMessagesFromFourFrames)
     {
         isCalled = true;
         EXPECT_EQ(length, fragmentLength * 2);
+        EXPECT_NE(nullptr, header->context);
+        EXPECT_EQ(m_header.context, header->context);
         aeron_header_values_t header_values;
         EXPECT_EQ(0, aeron_header_values(header, &header_values));
         EXPECT_EQ(SESSION_ID, header_values.frame.session_id);

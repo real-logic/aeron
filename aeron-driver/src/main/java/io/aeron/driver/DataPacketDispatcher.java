@@ -232,9 +232,12 @@ public final class DataPacketDispatcher
     public void addPublicationImage(final PublicationImage image)
     {
         final StreamInterest streamInterest = streamInterestByIdMap.get(image.streamId());
-        streamInterest.sessionInterestByIdMap.remove(image.sessionId());
-        streamInterest.activeImageByIdMap.put(image.sessionId(), image);
-        image.activate();
+        if (null != streamInterest)
+        {
+            streamInterest.sessionInterestByIdMap.remove(image.sessionId());
+            streamInterest.activeImageByIdMap.put(image.sessionId(), image);
+            image.activate();
+        }
     }
 
     /**

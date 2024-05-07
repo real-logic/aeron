@@ -182,23 +182,13 @@ public final class DriverConductor implements Agent
         clockUpdateDeadlineNs = nowNs + CLOCK_UPDATE_INTERNAL_NS;
         timeOfLastToDriverPositionChangeNs = nowNs;
 
-        final DutyCycleTracker nameResolverTimeTracker = ctx.nameResolverTimeTracker();
-        nameResolverTimeTracker.update(nowNs);
-
-        final String hostName = DriverNameResolver.getHostName();
-
-        final long endNs = nanoClock.nanoTime();
-        nameResolverTimeTracker.measureAndUpdate(endNs);
-        TimeTrackingNameResolver.logHostName(endNs - nowNs, hostName);
-
         nameResolver = new TimeTrackingNameResolver(
-            null == ctx.resolverInterface() ? ctx.nameResolver() : new DriverNameResolver(ctx, hostName),
+            null == ctx.resolverInterface() ? ctx.nameResolver() : new DriverNameResolver(ctx),
             nanoClock,
-            nameResolverTimeTracker);
+            ctx.nameResolverTimeTracker());
 
         final SystemCounters systemCounters = ctx.systemCounters();
-        systemCounters.get(RESOLUTION_CHANGES).appendToLabel(
-            ": driverName=" + ctx.resolverName() + " hostname=" + hostName);
+        systemCounters.get(RESOLUTION_CHANGES).appendToLabel(": driverName=" + ctx.resolverName());
         systemCounters.get(CONDUCTOR_MAX_CYCLE_TIME).appendToLabel(": " + ctx.threadingMode().name());
         systemCounters.get(CONDUCTOR_CYCLE_TIME_THRESHOLD_EXCEEDED).appendToLabel(
             ": threshold=" + ctx.conductorCycleThresholdNs() + "ns " + ctx.threadingMode().name());

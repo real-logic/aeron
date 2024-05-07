@@ -540,14 +540,16 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
     private void deleteAllLocations(final Throwable error)
     {
-        if (null != error)
-        {
-            return;
-        }
-
         for (final Path path : dataCollector.cleanupLocations())
         {
-            IoUtil.delete(path.toFile(), true);
+            try
+            {
+                IoUtil.delete(path.toFile(), true);
+            }
+            catch (final Exception e)
+            {
+                System.err.println("Failed to delete: '" + path + "', skipping: " + e.getMessage());
+            }
         }
     }
 

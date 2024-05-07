@@ -24,7 +24,7 @@ extern "C"
 
 void initHeader(std::uint8_t *buffer, size_t length, Header **header)
 {
-    *header = new Header{INITIAL_TERM_ID, POSITION_BITS_TO_SHIFT, nullptr};
+    *header = new Header{INITIAL_TERM_ID, POSITION_BITS_TO_SHIFT, (void*)"test context"};
 
     AtomicBuffer temp{buffer, length};
     (*header)->buffer(temp);

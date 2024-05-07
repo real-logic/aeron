@@ -92,27 +92,38 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
     private long selfResolutionDeadlineMs;
     private long neighborResolutionDeadlineMs;
 
-    DriverNameResolver(final MediaDriver.Context ctx, final String hostName)
+    DriverNameResolver(final MediaDriver.Context ctx)
     {
         mtuLength = ctx.mtuLength();
         invalidPackets = ctx.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
         shortSends = ctx.systemCounters().get(SystemCounterDescriptor.SHORT_SENDS);
         delegateResolver = ctx.nameResolver();
 
-        final long nowMs = ctx.epochClock().time();
+        localDriverName = ctx.resolverName();
+        localName = localDriverName.getBytes(StandardCharsets.US_ASCII);
+        localSocketAddress = UdpNameResolutionTransport.getInterfaceAddress(ctx.resolverInterface());
+        localAddress = localSocketAddress.getAddress().getAddress();
 
         bootstrapNeighbors = null != ctx.resolverBootstrapNeighbor() ?
             ctx.resolverBootstrapNeighbor().split(",") : null;
-        bootstrapNeighborAddress = null != bootstrapNeighbors ? resolveBootstrapNeighbor() : null;
+        if (null != bootstrapNeighbors)
+        {
+            final long nowNs = ctx.nanoClock().nanoTime();
+            final DutyCycleTracker nameResolverTimeTracker = ctx.nameResolverTimeTracker();
+            nameResolverTimeTracker.update(nowNs);
+
+            bootstrapNeighborAddress = resolveBootstrapNeighbor();
+
+            final long endNs = ctx.nanoClock().nanoTime();
+            nameResolverTimeTracker.measureAndUpdate(endNs);
+        }
+        else
+        {
+            bootstrapNeighborAddress = null;
+        }
+
+        final long nowMs = ctx.epochClock().time();
         bootstrapNeighborResolveDeadlineMs = nowMs + TIMEOUT_MS;
-
-        localSocketAddress = null != ctx.resolverInterface() ?
-            UdpNameResolutionTransport.getInterfaceAddress(ctx.resolverInterface()) :
-            new InetSocketAddress("0.0.0.0", 0);
-
-        localDriverName = null != ctx.resolverName() ? ctx.resolverName() : hostName;
-        localName = localDriverName.getBytes(StandardCharsets.US_ASCII);
-        localAddress = localSocketAddress.getAddress().getAddress();
 
         selfResolutionDeadlineMs = 0;
         neighborResolutionDeadlineMs = nowMs + neighborResolutionIntervalMs;

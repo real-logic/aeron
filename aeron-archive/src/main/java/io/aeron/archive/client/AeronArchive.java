@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT_DEFAULT_NS;
 import static io.aeron.archive.client.ArchiveProxy.DEFAULT_RETRY_ATTEMPTS;
 import static io.aeron.driver.Configuration.*;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
@@ -236,6 +237,9 @@ public final class AeronArchive implements AutoCloseable
 
             final Aeron aeron = ctx.aeron();
             subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
+
+            checkAndSetupResponseChannel(ctx, subscription);
+
             publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
             final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(subscription);
 
@@ -1321,6 +1325,11 @@ public final class AeronArchive implements AutoCloseable
             ensureNotReentrant();
 
             final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
+            if (replayChannelUri.hasControlModeResponse())
+            {
+                return replayViaResponseChannel(recordingId, replayChannel, replayStreamId, replayParams);
+            }
+
             lastCorrelationId = aeron.nextCorrelationId();
 
             if (!archiveProxy.replay(
@@ -1342,6 +1351,70 @@ public final class AeronArchive implements AutoCloseable
         finally
         {
             lock.unlock();
+        }
+    }
+
+    private Subscription replayViaResponseChannel(
+        final long recordingId,
+        final String replayChannel,
+        final int replayStreamId,
+        final ReplayParams replayParams)
+    {
+        lastCorrelationId = aeron.nextCorrelationId();
+
+        if (!archiveProxy.requestReplayToken(lastCorrelationId, controlSessionId, recordingId))
+        {
+            throw new ArchiveException("failed to send replay token request");
+        }
+
+        final long replayToken = pollForResponse(lastCorrelationId);
+
+        replayParams.replayToken(replayToken);
+        final Subscription replaySubscription = aeron.addSubscription(replayChannel, replayStreamId);
+        final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder(context.controlRequestChannel())
+            .responseCorrelationId(replaySubscription.registrationId())
+            .termId((Integer)null).initialTermId((Integer)null).termOffset((Integer)null)
+            .termLength(64 * 1024)
+            .spiesSimulateConnection(false);
+
+        final String channel = uriBuilder.build();
+
+        try (Publication publication = aeron.addExclusivePublication(channel, context().controlRequestStreamId()))
+        {
+            final ArchiveProxy responseArchiveProxy = new ArchiveProxy(publication);
+
+            final int pubLmtCounterId = aeron.countersReader().findByTypeIdAndRegistrationId(
+                AeronCounters.DRIVER_PUBLISHER_LIMIT_TYPE_ID, publication.registrationId());
+
+            final long deadlineNs = aeron.context().nanoClock().nanoTime() + context.messageTimeoutNs();
+            while (!publication.isConnected() || 0 == aeron.countersReader().getCounterValue(pubLmtCounterId))
+            {
+                if (deadlineNs <= aeron.context().nanoClock().nanoTime())
+                {
+                    throw new ArchiveException("timed out wait for replay publication to connect");
+                }
+
+                idleStrategy.idle();
+            }
+
+            if (!responseArchiveProxy.replay(
+                recordingId, replayChannel, replayStreamId, replayParams, lastCorrelationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send replay request");
+            }
+
+            pollForResponse(lastCorrelationId);
+            while (!replaySubscription.isConnected())
+            {
+                idleStrategy.idle();
+            }
+
+            return replaySubscription;
+        }
+        catch (final Exception ex)
+        {
+            CloseHelper.close(replaySubscription);
+            throw ex;
         }
     }
 
@@ -3527,8 +3600,11 @@ public final class AeronArchive implements AutoCloseable
             this.ctx = ctx;
 
             final Aeron aeron = ctx.aeron();
+
             controlResponsePoller = new ControlResponsePoller(
                 aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId()));
+
+            checkAndSetupResponseChannel(ctx, controlResponsePoller.subscription());
 
             publicationRegistrationId = aeron.asyncAddExclusivePublication(
                 ctx.controlRequestChannel(), ctx.controlRequestStreamId());
@@ -3813,5 +3889,16 @@ public final class AeronArchive implements AutoCloseable
         }
 
         return resultException;
+    }
+
+    private static void checkAndSetupResponseChannel(final Context ctx, final Subscription subscription)
+    {
+        if (ChannelUri.isControlModeResponse(ctx.controlResponseChannel()))
+        {
+            final String requestChannel = new ChannelUriStringBuilder(ctx.controlRequestChannel())
+                .responseCorrelationId(subscription.registrationId())
+                .toString();
+            ctx.controlRequestChannel(requestChannel);
+        }
     }
 }

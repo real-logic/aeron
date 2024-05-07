@@ -20,6 +20,7 @@ endif ()
 
 SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/Aeron.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AeronCounters.h
     ${CMAKE_CURRENT_SOURCE_DIR}/BufferBuilder.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUri.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ChannelUriStringBuilder.h
@@ -50,6 +51,7 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/atomic/Atomic64_gcc_cpp11.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/atomic/Atomic64_gcc_x86_64.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/atomic/Atomic64_msvc.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/errors/ErrorLogDescriptor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/errors/ErrorLogReader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/BufferClaim.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/DataFrameHeader.h
@@ -67,6 +69,7 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/util/Exceptions.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/LangUtil.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/MacroUtil.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/util/MemoryMappedFile.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/ScopeUtils.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/BitUtil.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/Index.h

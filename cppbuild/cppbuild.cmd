@@ -83,6 +83,9 @@ if not "%1"=="" (
 )
 
 call "%DIR%\vs-helper.cmd"
+set "PATH=%DIR%\cmake\bin;%PATH%"
+cmake --version
+echo "%PATH%"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 if "%AERON_SKIP_RMDIR%" equ "yes" goto :start_build

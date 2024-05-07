@@ -278,7 +278,9 @@ public:
         m_boundingLimitCounterId(NULL_VALUE),
         m_fileIoMaxLength(NULL_VALUE),
         m_position(NULL_POSITION),
-        m_length(NULL_LENGTH)
+        m_length(NULL_LENGTH),
+        m_replayToken(NULL_VALUE),
+        m_subscriptionRegistrationId(NULL_VALUE)
     {
     }
 
@@ -287,7 +289,7 @@ public:
      *
      * @return the counter id to bound the replay.
      */
-    int32_t boundingLimitCounterId() const
+    std::int32_t boundingLimitCounterId() const
     {
         return m_boundingLimitCounterId;
     }
@@ -300,7 +302,7 @@ public:
      * @param boundingLimitCounterId counter to use to bound the replay
      * @return this for a fluent API
      */
-    ReplayParams &boundingLimitCounterId(int32_t mBoundingLimitCounterId)
+    ReplayParams &boundingLimitCounterId(std::int32_t mBoundingLimitCounterId)
     {
         m_boundingLimitCounterId = mBoundingLimitCounterId;
         return *this;
@@ -312,7 +314,7 @@ public:
      *
      * @return maximum file length for IO operations during replay.
      */
-    int32_t fileIoMaxLength() const
+    std::int32_t fileIoMaxLength() const
     {
         return m_fileIoMaxLength;
     }
@@ -325,7 +327,7 @@ public:
      * @param fileIoMaxLength maximum length of a replay file operation
      * @return this for a fluent API
      */
-    ReplayParams &fileIoMaxLength(int32_t mFileIoMaxLength)
+    ReplayParams &fileIoMaxLength(std::int32_t mFileIoMaxLength)
     {
         m_fileIoMaxLength = mFileIoMaxLength;
         return *this;
@@ -336,7 +338,7 @@ public:
      *
      * @return position for the start of the replay.
      */
-    int64_t position() const
+    std::int64_t position() const
     {
         return m_position;
     }
@@ -348,7 +350,7 @@ public:
      * @param position to start the replay from.
      * @return this for a fluent API.
      */
-    ReplayParams &position(int64_t mPosition)
+    ReplayParams &position(std::int64_t mPosition)
     {
         m_position = mPosition;
         return *this;
@@ -359,7 +361,7 @@ public:
      *
      * @return length of the recording to replay.
      */
-    int64_t length() const
+    std::int64_t length() const
     {
         return m_length;
     }
@@ -371,7 +373,7 @@ public:
      * @param length of the recording to be replayed.
      * @return this for a fluent API.
      */
-    ReplayParams &length(int64_t mLength)
+    ReplayParams &length(std::int64_t mLength)
     {
         m_length = mLength;
         return *this;
@@ -387,11 +389,60 @@ public:
         return NULL_VALUE != boundingLimitCounterId();
     }
 
+    /**
+     * Set a token used for replays when the initiating image is not the one used to create the archive
+     * connection/session.
+     *
+     * @param replayToken token to identify the replay
+     * @return this for a fluent API.
+     */
+    ReplayParams &replayToken(std::int64_t replayToken)
+    {
+        m_replayToken = replayToken;
+        return *this;
+    }
+
+    /**
+     * Get a token used for replays when the initiating image is not the one used to create the archive
+     * connection/session.
+     *
+     * @return the replay token
+     */
+    std::int64_t replayToken() const
+    {
+        return m_replayToken;
+    }
+
+    /**
+     * Get the subscription registration id to be used when doing a start replay using response channels and the
+     * response subscription is already created.
+     *
+     * @return registrationId of the subscription to receive the replay (should be set up with control-mode=response).
+     */
+    ReplayParams &subscriptionRegistrationId(std::int64_t registrationId)
+    {
+        m_subscriptionRegistrationId = registrationId;
+        return *this;
+    }
+
+    /**
+     * Set the subscription registration id to be used when doing a start replay using response channels and the
+     * response subscription is already created.
+     *
+     * @param registrationId of the subscription to receive the replay (should be set up with control-mode=response).
+     */
+    std::int64_t subscriptionRegistrationId() const
+    {
+        return m_subscriptionRegistrationId;
+    }
+
 private:
     std::int32_t m_boundingLimitCounterId;
     std::int32_t m_fileIoMaxLength;
     std::int64_t m_position;
     std::int64_t m_length;
+    std::int64_t m_replayToken;
+    std::int64_t m_subscriptionRegistrationId;
 };
 
 /**
@@ -716,6 +767,7 @@ public:
                 replayChannel,
                 replayStreamId,
                 replyParams.fileIoMaxLength(),
+                replyParams.replayToken(),
                 correlationId,
                 controlSessionId);
         }
@@ -729,6 +781,7 @@ public:
                 replayChannel,
                 replayStreamId,
                 replyParams.fileIoMaxLength(),
+                replyParams.replayToken(),
                 correlationId,
                 controlSessionId);
         }
@@ -766,6 +819,7 @@ public:
             length,
             replayChannel,
             replayStreamId,
+            NULL_VALUE,
             NULL_VALUE,
             correlationId,
             controlSessionId);
@@ -806,6 +860,7 @@ public:
             limitCounterId,
             replayChannel,
             replayStreamId,
+            NULL_VALUE,
             NULL_VALUE,
             correlationId,
             controlSessionId);
@@ -1485,6 +1540,22 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * Request a token from the archive to use when doing a replay over a response channel.
+     *
+     * @param correlationId     for this request
+     * @param controlSessionId  for this request
+     * @param recordingId       to be replayed
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool requestReplayToken(std::int64_t correlationId, std::int64_t controlSessionId, std::int64_t recordingId)
+    {
+        const util::index_t length = replayTokenRequest(m_buffer, correlationId, controlSessionId, recordingId);
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
 private:
     std::array<std::uint8_t, PROXY_REQUEST_BUFFER_LENGTH> m_array = {};
     AtomicBuffer m_buffer;
@@ -1603,6 +1674,7 @@ private:
         const std::string &replayChannel,
         std::int32_t replayStreamId,
         std::int32_t fileIoMaxLength,
+        std::int64_t replayToken,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
@@ -1615,6 +1687,7 @@ private:
         const std::string &replayChannel,
         std::int32_t replayStreamId,
         std::int32_t fileIoMaxLength,
+        std::int64_t replayToken,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
@@ -1822,6 +1895,12 @@ private:
         std::pair<const char *, std::uint32_t> encodedCredentials,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
+
+    static util::index_t replayTokenRequest(
+        AtomicBuffer &buffer,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId,
+        std::int64_t recordingId);
 };
 
 }}}

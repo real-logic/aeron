@@ -63,24 +63,29 @@ public class ResponseChannelsTest
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();
 
-    private TestMediaDriver driver;
+    private TestMediaDriver driver1;
+    private TestMediaDriver driver2;
 
     @BeforeEach
     void setUp()
     {
-        final MediaDriver.Context context = new MediaDriver.Context()
+        final MediaDriver.Context context = (MediaDriver.Context)new MediaDriver.Context()
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-            .threadingMode(ThreadingMode.SHARED);
-        context.enableExperimentalFeatures(true);
+            .threadingMode(ThreadingMode.SHARED)
+            .enableExperimentalFeatures(true);
 
-        driver = TestMediaDriver.launch(context, watcher);
-        watcher.dataCollector().add(driver.context().aeronDirectory());
+        driver1 = TestMediaDriver.launch(
+            context.clone().aeronDirectoryName(context.aeronDirectoryName() + "-1"), watcher);
+        driver2 = TestMediaDriver.launch(
+            context.clone().aeronDirectoryName(context.aeronDirectoryName() + "-2"), watcher);
+        watcher.dataCollector().add(driver1.context().aeronDirectory());
+        watcher.dataCollector().add(driver2.context().aeronDirectory());
     }
 
     @AfterEach
     void tearDown()
     {
-        CloseHelper.quietClose(driver);
+        CloseHelper.quietCloseAll(driver1, driver2);
     }
 
     @Test
@@ -99,9 +104,9 @@ public class ResponseChannelsTest
         final FragmentHandler fragmentHandlerB =
             (buffer, offset, length, header) -> responsesB.add(buffer.getStringWithoutLengthUtf8(offset, length));
 
-        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Aeron clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Aeron clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver2.aeronDirectoryName()));
             ResponseServer responseServer = new ResponseServer(
                 server, (image) -> new EchoHandler(), REQUEST_ENDPOINT, REQUEST_STREAM_ID,
                 RESPONSE_CONTROL, RESPONSE_STREAM_ID, null, null);
@@ -146,10 +151,10 @@ public class ResponseChannelsTest
 
     @Test
     @InterruptAfter(15)
-    void shouldConnectResponseChannelUsingConcurrent()
+    void shouldConnectResponsePublicationUsingImage()
     {
-        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
             Subscription subReq = server.addSubscription(
                 "aeron:udp?endpoint=localhost:10001", REQUEST_STREAM_ID);
             Subscription subRsp = client.addSubscription(
@@ -179,8 +184,8 @@ public class ResponseChannelsTest
     void shouldCorrectlyHandleSubscriptionClosesOnPartiallyCreatedResponseSubscriptions()
     {
         final int responseStreamIdB = RESPONSE_STREAM_ID + 1;
-        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
             Subscription subReq = server.addSubscription("aeron:udp?endpoint=localhost:10001", REQUEST_STREAM_ID);
             Subscription subRspB = client.addSubscription(
                 "aeron:udp?control-mode=response|control=localhost:10002|endpoint=localhost:10003",
@@ -250,8 +255,8 @@ public class ResponseChannelsTest
     @InterruptAfter(15)
     void shouldNotConnectSecondResponseSubscriptionUntilMatchingPublicationIsCreated()
     {
-        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
             Subscription subReq = server.addSubscription(
                 "aeron:udp?endpoint=localhost:10001", REQUEST_STREAM_ID);
             Subscription subRsp = client.addSubscription(
@@ -288,7 +293,7 @@ public class ResponseChannelsTest
     @InterruptAfter(10)
     void shouldUseResponseCorrelationIdAsAPublicationMatchingCriteria()
     {
-        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
             Subscription sub = aeron.addSubscription("aeron:udp?endpoint=localhost:10000", 10001);
             Publication pubA = aeron.addPublication("aeron:udp?endpoint=localhost:10000", 10001);
             Publication pubB = aeron.addPublication("aeron:udp?endpoint=localhost:10000", 10001))
@@ -300,7 +305,7 @@ public class ResponseChannelsTest
             assertEquals(pubA.originalRegistrationId(), pubB.originalRegistrationId());
         }
 
-        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
             Subscription sub = aeron.addSubscription("aeron:udp?endpoint=localhost:10000", 10001);
             Subscription rspSub = aeron.addSubscription("aeron:udp?control-mode=response", 10001);
             Publication pubA = aeron.addPublication(
@@ -315,7 +320,7 @@ public class ResponseChannelsTest
             assertEquals(pubA.originalRegistrationId(), pubB.originalRegistrationId());
         }
 
-        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
             Subscription sub = aeron.addSubscription("aeron:udp?endpoint=localhost:10000", 10001);
             Subscription rspSubA = aeron.addSubscription("aeron:udp?control-mode=response", 10001);
             Subscription rspSubB = aeron.addSubscription("aeron:udp?control-mode=response", 10001);
@@ -341,8 +346,35 @@ public class ResponseChannelsTest
         final int reqStreamId = 10001;
         final int rspStreamId = 10002;
 
-        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Subscription subReq = server.addSubscription(
+                "aeron:udp?endpoint=localhost:10001", reqStreamId);
+            Publication pubReq = client.addPublication(
+                "aeron:udp?endpoint=localhost:10001", reqStreamId))
+        {
+            Tests.awaitConnected(subReq);
+            Tests.awaitConnected(pubReq);
+
+            final Image image = subReq.imageAtIndex(0);
+            final String url = "aeron:udp?control-mode=response|control=localhost:10002|response-correlation-id=" +
+                image.correlationId();
+
+            assertThrows(Exception.class, () -> client.addPublication(url, rspStreamId));
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldErrorCreatingResponsePublicationWithMissingPublicationImage()
+    {
+        watcher.ignoreErrorsMatching(s -> s.contains("image.correlationId=") && s.contains(" not found"));
+
+        final int reqStreamId = 10001;
+        final int rspStreamId = 10002;
+
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver2.aeronDirectoryName()));
             Subscription subReq = server.addSubscription(
                 "aeron:udp?endpoint=localhost:10001", reqStreamId);
             Publication pubReq = client.addPublication(
@@ -368,8 +400,8 @@ public class ResponseChannelsTest
         final int reqStreamId = 10001;
         final int rspStreamId = 10002;
 
-        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver2.aeronDirectoryName()));
             Subscription subReq = server.addSubscription(
                 "aeron:udp?endpoint=localhost:10001", reqStreamId);
             Publication pubReq = client.addPublication(
@@ -397,8 +429,8 @@ public class ResponseChannelsTest
         final int reqStreamId = 10001;
         final int rspStreamId = 10002;
 
-        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver2.aeronDirectoryName()));
             Subscription subReq = server.addSubscription(
                 "aeron:udp?endpoint=localhost:10001", reqStreamId);
             Publication pubReq = client.addPublication(
@@ -430,9 +462,9 @@ public class ResponseChannelsTest
         final FragmentHandler recvA = (buffer, offset, length, header) -> subACount.set(header.reservedValue());
         final FragmentHandler recvB = (buffer, offset, length, header) -> subBCount.set(header.reservedValue());
 
-        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Aeron clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Aeron clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Aeron clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver2.aeronDirectoryName()));
             ResponseServer responseServer = new ResponseServer(
                 server, (image) -> new EchoHandler(), REQUEST_ENDPOINT, REQUEST_STREAM_ID,
                 RESPONSE_CONTROL, RESPONSE_STREAM_ID, null, "aeron:udp?term-length=64k");
@@ -513,7 +545,7 @@ public class ResponseChannelsTest
     {
         watcher.ignoreErrorsMatching(s -> s.contains("unable to find response subscription"));
 
-        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
             Subscription rspSub = aeron.addSubscription("aeron:udp?control-mode=response", 10001))
         {
             final long wrongCorrelationId = rspSub.registrationId() + 10;
@@ -526,8 +558,8 @@ public class ResponseChannelsTest
     @InterruptAfter(15)
     void shouldHandleMultipleConnectionsToTheResponseChannel()
     {
-        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
-            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
+        try (Aeron server = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
+            Aeron client = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName()));
             Subscription subReq = server.addSubscription(
                 "aeron:udp?endpoint=localhost:10001", REQUEST_STREAM_ID);
             Subscription subRsp = client.addSubscription(

@@ -92,6 +92,8 @@ TEST_P(ImageControlledFragmentAssemblerParameterisedTest, shouldPassThroughUnfra
             isCalled = true;
             EXPECT_EQ(offset, 0);
             EXPECT_EQ(length, fragmentLength);
+            EXPECT_NE(nullptr, header.context());
+            EXPECT_EQ(m_header->context(), header.context());
             EXPECT_EQ(header.positionBitsToShift(), POSITION_BITS_TO_SHIFT);
             EXPECT_EQ(header.initialTermId(), INITIAL_TERM_ID);
             EXPECT_EQ(header.sessionId(), SESSION_ID);
@@ -128,6 +130,8 @@ TEST_P(ImageControlledFragmentAssemblerParameterisedTest, shouldReassembleFromTw
             isCalled = true;
             EXPECT_EQ(offset, 0);
             EXPECT_EQ(length, fragmentLength * 2);
+            EXPECT_NE(nullptr, header.context());
+            EXPECT_EQ(m_header->context(), header.context());
             EXPECT_EQ(header.sessionId(), SESSION_ID);
             EXPECT_EQ(header.streamId(), STREAM_ID);
             EXPECT_EQ(header.termId(), ACTIVE_TERM_ID);

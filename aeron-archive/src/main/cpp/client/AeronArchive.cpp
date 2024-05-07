@@ -235,6 +235,19 @@ AeronArchive::~AeronArchive()
     }
 }
 
+void AeronArchive::checkAndSetupResponseChannel(AeronArchive::Context_t &ctx, std::int64_t subscriptionId)
+{
+    const std::shared_ptr<ChannelUri> responseChannel = ChannelUri::parse(ctx.controlResponseChannel());
+
+    if (responseChannel->hasControlModeResponse())
+    {
+        std::string correlationId = std::to_string(subscriptionId);
+        const std::shared_ptr<ChannelUri> requestChannel = ChannelUri::parse(ctx.controlRequestChannel());
+        requestChannel->put(RESPONSE_CORRELATION_ID_PARAM_NAME, correlationId);
+        ctx.controlRequestChannel(requestChannel->toString());
+    }
+}
+
 std::shared_ptr<AeronArchive::AsyncConnect> AeronArchive::asyncConnect(AeronArchive::Context_t &ctx)
 {
     ctx.conclude();
@@ -242,6 +255,7 @@ std::shared_ptr<AeronArchive::AsyncConnect> AeronArchive::asyncConnect(AeronArch
     std::shared_ptr<Aeron> aeron = ctx.aeron();
     const std::int64_t subscriptionId = aeron->addSubscription(
         ctx.controlResponseChannel(), ctx.controlResponseStreamId());
+    checkAndSetupResponseChannel(ctx, subscriptionId);
     const std::int64_t publicationId = aeron->addExclusivePublication(
         ctx.controlRequestChannel(), ctx.controlRequestStreamId());
     const long long deadlineNs = systemNanoClock() + ctx.messageTimeoutNs();

@@ -51,6 +51,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -74,6 +75,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 class ReplicateRecordingTest
 {
+    public static final String SRC_RESPONSE_CHANNEL = "aeron:udp?control-mode=response|control=localhost:10000";
     private static final int SRC_CONTROL_STREAM_ID = AeronArchive.Configuration.CONTROL_STREAM_ID_DEFAULT;
     private static final String SRC_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:8090";
     private static final String INVALID_SRC_CONTROL_REQUEST_CHANNEL = "aeron:udp?endpoint=localhost:18090";
@@ -120,6 +122,7 @@ class ReplicateRecordingTest
             .spiesSimulateConnection(true)
             .timerIntervalNs(TIMER_INTERVAL_NS)
             .dirDeleteOnStart(true);
+        srcContext.enableExperimentalFeatures(true);
 
         srcArchiveCtx = new Archive.Context()
             .catalogCapacity(CATALOG_CAPACITY)
@@ -132,6 +135,7 @@ class ReplicateRecordingTest
             .archiveDir(new File(SystemUtil.tmpDirName(), "src-archive"))
             .fileSyncLevel(0)
             .threadingMode(ArchiveThreadingMode.SHARED);
+
         final MediaDriver.Context dstContext = new MediaDriver.Context()
             .aeronDirectoryName(dstAeronDirectoryName)
             .termBufferSparseFile(true)
@@ -139,6 +143,8 @@ class ReplicateRecordingTest
             .spiesSimulateConnection(true)
             .timerIntervalNs(TIMER_INTERVAL_NS)
             .dirDeleteOnStart(true);
+        dstContext.enableExperimentalFeatures(true);
+
         final Archive.Context dstArchiveCtx = new Archive.Context()
             .catalogCapacity(CATALOG_CAPACITY)
             .aeronDirectoryName(dstAeronDirectoryName)
@@ -286,6 +292,80 @@ class ReplicateRecordingTest
             dstAeronArchive.replicate(
                 srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
         }
+
+        awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
+        final long dstRecordingId = dstRecordingSignalConsumer.recordingId;
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, EXTEND);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, SYNC);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, REPLICATE_END);
+        resetAndAwaitSignal(dstAeronArchive, dstRecordingSignalConsumer, dstRecordingId, STOP);
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldThrowExceptionLiveDestinationUsedWithResponseChannels()
+    {
+        final long unknownId = 7L;
+        final ReplicationParams replicationParams = new ReplicationParams()
+            .replicationChannel(SRC_RESPONSE_CHANNEL)
+            .liveDestination(LIVE_CHANNEL);
+
+        final Executable replication = () -> dstAeronArchive.replicate(
+            unknownId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, replicationParams);
+        final ArchiveException archiveException = assertThrows(ArchiveException.class, replication);
+        assertThat(
+            archiveException.getMessage(), containsString("response channels can't be used with live destinations"));
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldThrowExceptionTagsUsedWithResponseChannels()
+    {
+        final long unknownId = 7L;
+        final ReplicationParams replicationParams = new ReplicationParams()
+            .replicationChannel(SRC_RESPONSE_CHANNEL)
+            .channelTagId(1).subscriptionTagId(2);
+
+        final Executable replication = () -> dstAeronArchive.replicate(
+            unknownId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, replicationParams);
+        final ArchiveException archiveException = assertThrows(ArchiveException.class, replication);
+        assertThat(
+            archiveException.getMessage(), containsString("response channels can't be used with tagged replication"));
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldReplicateStoppedRecordingWithResponseChannel()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+        final Aeron srcAeron = srcAeronArchive.context().aeron();
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+        {
+            final CountersReader counters = srcAeron.countersReader();
+            final int counterId = Tests.awaitRecordingCounterId(
+                counters, publication.sessionId(), srcAeronArchive.archiveId());
+            srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            Tests.awaitPosition(counters, counterId, publication.position());
+        }
+
+        srcRecordingSignalConsumer.reset();
+        srcAeronArchive.stopRecording(subscriptionId);
+        awaitSignal(srcAeronArchive, srcRecordingSignalConsumer, srcRecordingId, STOP);
+
+        dstRecordingSignalConsumer.reset();
+        final ReplicationParams replicationParams = new ReplicationParams()
+            .replicationChannel(SRC_RESPONSE_CHANNEL)
+            .srcResponseChannel(SRC_RESPONSE_CHANNEL);
+
+        dstAeronArchive.replicate(
+            srcRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, replicationParams);
 
         awaitSignal(dstAeronArchive, dstRecordingSignalConsumer, REPLICATE);
         final long dstRecordingId = dstRecordingSignalConsumer.recordingId;

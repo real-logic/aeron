@@ -42,9 +42,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -88,6 +91,7 @@ abstract class ArchiveConductor
     private final Int2ObjectHashMap<Counter> counterByIdMap = new Int2ObjectHashMap<>();
     private final Object2ObjectHashMap<String, Subscription> recordingSubscriptionByKeyMap =
         new Object2ObjectHashMap<>();
+    private final Long2ObjectHashMap<SessionForReplay> controlSessionByReplayToken = new Long2ObjectHashMap<>();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final UnsafeBuffer counterMetadataBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
@@ -110,6 +114,7 @@ abstract class ArchiveConductor
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final ControlSessionProxy controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
     private final DutyCycleTracker dutyCycleTracker;
+    private final Random random;
     final Archive.Context ctx;
     Recorder recorder;
     Replayer replayer;
@@ -131,6 +136,8 @@ abstract class ArchiveConductor
         markFile = ctx.archiveMarkFile();
         dutyCycleTracker = ctx.conductorDutyCycleTracker();
         cachedEpochClock.update(epochClock.time());
+
+        random = stronglySeededRandom();
 
         authenticator = ctx.authenticatorSupplier().get();
         if (null == authenticator)
@@ -296,7 +303,7 @@ abstract class ArchiveConductor
                 markFile.updateActivityTimestamp(nowMs);
             }
         }
-
+        workCount += checkReplayTokens(nowNs);
         workCount += invokeDriverConductor();
         workCount += runTasks(taskQueue);
 
@@ -354,6 +361,7 @@ abstract class ArchiveConductor
     }
 
     ControlSession newControlSession(
+        final long imageCorrelationId,
         final long correlationId,
         final int streamId,
         final int version,
@@ -372,13 +380,21 @@ abstract class ArchiveConductor
         final String isSparseStr = channelUri.get(SPARSE_PARAM_NAME);
         final boolean isSparse = null == isSparseStr ?
             ctx.controlTermBufferSparse() : Boolean.parseBoolean(isSparseStr);
+        final boolean usingResponseChannel = CONTROL_MODE_RESPONSE.equals(channelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
 
-        final String responseChannel = strippedChannelBuilder(channelUri)
+
+        final ChannelUriStringBuilder urlBuilder = strippedChannelBuilder(channelUri)
             .ttl(channelUri)
             .termLength(termLength)
             .sparse(isSparse)
-            .mtu(mtuLength)
-            .build();
+            .mtu(mtuLength);
+
+        if (usingResponseChannel)
+        {
+            urlBuilder.responseCorrelationId(imageCorrelationId);
+        }
+
+        final String responseChannel = urlBuilder.build();
 
         String invalidVersionMessage = null;
         if (SemanticVersion.major(version) != AeronArchive.Configuration.PROTOCOL_MAJOR_VERSION)
@@ -1219,8 +1235,28 @@ abstract class ArchiveConductor
         final int fileIoMaxLength,
         final int replicationSessionId,
         final byte[] encodedCredentials,
+        final String srcResponseChannel,
         final ControlSession controlSession)
     {
+        final String replicationChannel0 = Strings.isEmpty(replicationChannel) ?
+            ctx.replicationChannel() : replicationChannel;
+
+        final ChannelUri replicationChannelUri = ChannelUri.parse(replicationChannel0);
+        if (replicationChannelUri.hasControlModeResponse() && !Strings.isEmpty(liveDestination))
+        {
+            final String msg = "response channels can't be used with live destinations";
+            controlSession.sendErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
+            return;
+        }
+
+        if (replicationChannelUri.hasControlModeResponse() &&
+            (NULL_VALUE != channelTagId || NULL_VALUE != subscriptionTagId))
+        {
+            final String msg = "response channels can't be used with tagged replication";
+            controlSession.sendErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
+            return;
+        }
+
         final boolean hasRecording = catalog.hasRecording(dstRecordingId);
         if (NULL_VALUE != dstRecordingId && !hasRecording)
         {
@@ -1250,6 +1286,11 @@ abstract class ArchiveConductor
             remoteArchiveContext.credentialsSupplier(new ReplicationCredentialsSupplier(encodedCredentials));
         }
 
+        if (!Strings.isEmpty(srcResponseChannel))
+        {
+            remoteArchiveContext.controlResponseChannel(srcResponseChannel);
+        }
+
         final long replicationId = nextSessionId++;
         final ReplicationSession replicationSession = new ReplicationSession(
             srcRecordingId,
@@ -1259,7 +1300,7 @@ abstract class ArchiveConductor
             replicationId,
             stopPosition,
             liveDestination,
-            Strings.isEmpty(replicationChannel) ? ctx.replicationChannel() : replicationChannel,
+            replicationChannel0,
             fileIoMaxLength,
             replicationSessionId,
             hasRecording ? recordingSummary : null,
@@ -1683,7 +1724,8 @@ abstract class ArchiveConductor
             .channelReceiveTimestampOffset(channelUri)
             .mediaReceiveTimestampOffset(channelUri)
             .sessionId(channelUri)
-            .alias(channelUri);
+            .alias(channelUri)
+            .responseCorrelationId(channelUri);
     }
 
     private static String makeKey(final int streamId, final ChannelUri channelUri)
@@ -2376,6 +2418,66 @@ abstract class ArchiveConductor
         }
     }
 
+    public long generateReplayToken(final ControlSession session, final long recordingId)
+    {
+        long replayToken = NULL_VALUE;
+        while (NULL_VALUE == replayToken)
+        {
+            replayToken = random.nextLong();
+        }
+
+        final SessionForReplay sessionForReplay = new SessionForReplay(
+            recordingId, session, nanoClock.nanoTime() + TimeUnit.MILLISECONDS.toNanos(connectTimeoutMs));
+        controlSessionByReplayToken.put(replayToken, sessionForReplay);
+
+        return replayToken;
+    }
+
+    public ControlSession getReplaySession(final long replayToken, final long recordingId)
+    {
+        final SessionForReplay sessionForReplay = controlSessionByReplayToken.get(replayToken);
+
+        final long nowNs = nanoClock.nanoTime();
+        if (null != sessionForReplay &&
+            recordingId == sessionForReplay.recordingId &&
+            nowNs < sessionForReplay.deadlineNs)
+        {
+            return sessionForReplay.controlSession;
+        }
+
+        return null;
+    }
+
+    void removeReplayTokensForSession(final long sessionId)
+    {
+        //noinspection Java8CollectionRemoveIf
+        for (Long2ObjectHashMap<SessionForReplay>.ValueIterator it = controlSessionByReplayToken.values().iterator();
+            it.hasNext();)
+        {
+            final SessionForReplay sessionForReplay = it.next();
+            if (sessionForReplay.controlSession.sessionId() == sessionId)
+            {
+                it.remove();
+            }
+        }
+    }
+
+    private int checkReplayTokens(final long nowNs)
+    {
+        //noinspection Java8CollectionRemoveIf
+        for (Long2ObjectHashMap<SessionForReplay>.ValueIterator it = controlSessionByReplayToken.values().iterator();
+            it.hasNext();)
+        {
+            final SessionForReplay sessionForReplay = it.next();
+            if (sessionForReplay.deadlineNs <= nowNs)
+            {
+                it.remove();
+            }
+        }
+
+        return 0;
+    }
+
     abstract static class Recorder extends SessionWorker<RecordingSession>
     {
         private long totalWriteBytes;
@@ -2466,5 +2568,37 @@ abstract class ArchiveConductor
 
             return workCount;
         }
+    }
+
+    private static final class SessionForReplay
+    {
+        private final long recordingId;
+        private final ControlSession controlSession;
+        private final long deadlineNs;
+
+        private SessionForReplay(final long recordingId, final ControlSession controlSession, final long deadlineNs)
+        {
+            this.recordingId = recordingId;
+            this.controlSession = controlSession;
+            this.deadlineNs = deadlineNs;
+        }
+    }
+
+
+    private static Random stronglySeededRandom()
+    {
+        boolean hasSeed = false;
+        long seed = 0;
+
+        try
+        {
+            seed = SecureRandom.getInstanceStrong().nextLong();
+            hasSeed = true;
+        }
+        catch (final NoSuchAlgorithmException ignore)
+        {
+        }
+
+        return hasSeed ? new Random(seed) : new Random();
     }
 }

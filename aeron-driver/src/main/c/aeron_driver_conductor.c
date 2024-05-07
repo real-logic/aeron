@@ -757,22 +757,6 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     context->name_resolver_time_stall_tracker.cycle_time_threshold_exceeded_counter = aeron_counters_manager_addr(
         &conductor->counters_manager, AERON_SYSTEM_COUNTER_NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED);
 
-    context->name_resolver_time_tracker->update(context->name_resolver_time_tracker->state, now_ns);
-
-    char host_name[AERON_MAX_HOSTNAME_LEN];
-    if (gethostname(host_name, AERON_MAX_HOSTNAME_LEN) < 0)
-    {
-        strcpy(host_name, "<unresolved>");
-    }
-
-    int64_t end_ns = context->nano_clock();
-    context->name_resolver_time_tracker->measure_and_update(context->name_resolver_time_tracker->state, end_ns);
-    if (NULL != context->log.on_host_name)
-    {
-        context->log.on_host_name(end_ns - now_ns, host_name);
-    }
-    context->name_resolver_host_name = host_name;
-
     aeron_time_tracking_name_resolver_t *time_tracking_name_resolver = NULL;
     if (aeron_alloc((void **)&time_tracking_name_resolver, sizeof(aeron_time_tracking_name_resolver_t)) < 0)
     {
@@ -798,7 +782,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     char label[AERON_COUNTER_MAX_LABEL_LENGTH];
     const char *driver_name = NULL == context->resolver_name ? "" : context->resolver_name;
 
-    int label_length = snprintf(label, sizeof(label), ": driverName=%s hostname=%s", driver_name, host_name);
+    int label_length = snprintf(label, sizeof(label), ": driverName=%s", driver_name);
     if (label_length > 0)
     {
         aeron_counters_manager_append_to_label(

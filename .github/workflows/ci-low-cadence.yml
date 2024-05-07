@@ -286,7 +286,7 @@ jobs:
           echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Build
-        run: cppbuild/cppbuild --slow-system-tests --no-system-tests --no-unit-tests
+        run: cppbuild/cppbuild.ps1 --slow-system-tests --no-system-tests --no-unit-tests
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

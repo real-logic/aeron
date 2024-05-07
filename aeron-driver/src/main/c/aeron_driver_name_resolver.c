@@ -180,17 +180,16 @@ int aeron_driver_name_resolver_init(
 {
     aeron_driver_name_resolver_t *_driver_resolver = NULL;
 
-    const char *resolver_name = NULL != name ? name : context->name_resolver_host_name;
     if (aeron_alloc((void **)&_driver_resolver, sizeof(aeron_driver_name_resolver_t)) < 0)
     {
-        AERON_APPEND_ERR("Failed to allocate driver resolver for: %s", resolver_name);
+        AERON_APPEND_ERR("Failed to allocate driver resolver for: %s", name);
         goto error_cleanup;
     }
     _driver_resolver->saved_bootstrap_neighbor = NULL;
     _driver_resolver->bootstrap_neighbors = NULL;
     _driver_resolver->aligned_buffer = aeron_cache_line_align_buffer(_driver_resolver->buffer);
-    _driver_resolver->name = resolver_name;
-    _driver_resolver->name_length = strlen(_driver_resolver->name);
+    _driver_resolver->name = name;
+    _driver_resolver->name_length = strlen(name);
 
     if (aeron_find_unicast_interface(
         AF_INET, interface_name, &_driver_resolver->local_socket_addr, &_driver_resolver->interface_index) < 0)

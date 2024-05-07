@@ -207,7 +207,13 @@ public enum SystemCounterDescriptor
     BYTES_CURRENTLY_MAPPED(35, "Bytes currently mapped"),
 
     /**
-     * Number of bytes re-transmitted as a result of NAKs.
+     * A minimum bound on the number of bytes re-transmitted as a result of NAKs.
+     * <p>
+     * MDC retransmits are only counted once; therefore, this is a minimum bound rather than the actual number
+     * of retransmitted bytes. We may change this in the future.
+     * <p>
+     * Note that retransmitted bytes are not included in the {@link SystemCounterDescriptor#BYTES_SENT}
+     * counter value. We may change this in the future.
      */
     RETRANSMITTED_BYTES(36, "Retransmitted bytes");
 

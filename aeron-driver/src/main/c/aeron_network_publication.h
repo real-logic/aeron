@@ -127,6 +127,7 @@ typedef struct aeron_network_publication_stct
     volatile int64_t *heartbeats_sent_counter;
     volatile int64_t *sender_flow_control_limits_counter;
     volatile int64_t *retransmits_sent_counter;
+    volatile int64_t *retransmitted_bytes_counter;
     volatile int64_t *unblocked_publications_counter;
     volatile int64_t *mapped_bytes_counter;
 }

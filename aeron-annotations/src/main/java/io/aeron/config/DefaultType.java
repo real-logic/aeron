@@ -28,6 +28,7 @@ public enum DefaultType
     BOOLEAN("java.lang.Boolean", "Boolean", false),
     INT("java.lang.Integer", "Integer", true),
     LONG("java.lang.Long", "Long", true),
+    DOUBLE("java.lang.Double", "Double", true),
     STRING("java.lang.String", "String", false);
 
     private static final Map<String, DefaultType> BY_CANONICAL_NAME = new HashMap<>();

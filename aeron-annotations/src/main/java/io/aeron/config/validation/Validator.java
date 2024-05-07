@@ -154,7 +154,8 @@ final class Validator
         {
             final String foundDefaultString = originalFoundDefaultString
                 .replaceAll("INT64_C", "")
-                .replaceAll("UINT32_C", "");
+                .replaceAll("UINT32_C", "")
+                .replaceAll("([0-9]+)L", "$1");
 
             try
             {

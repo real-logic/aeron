@@ -26,15 +26,20 @@ import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /**
  * A gradle task for generating config documentation
  */
 public class GenerateConfigDocTask
 {
+    private static String toString(final Object a)
+    {
+        return a == null ? "" : a.toString();
+    }
+
     private static FileWriter writer;
 
     /**
@@ -58,8 +63,6 @@ public class GenerateConfigDocTask
 
             for (final ConfigInfo configInfo: config)
             {
-                final boolean isTime = isTime(configInfo.propertyName);
-
                 writeHeader(toHeaderString(configInfo.id));
                 write("Description", configInfo.propertyNameDescription);
                 write("Type",
@@ -71,23 +74,38 @@ public class GenerateConfigDocTask
                 {
                     writeCode("Context", configInfo.context);
                 }
-                else
+                if (configInfo.contextDescription != null && !configInfo.contextDescription.isEmpty())
                 {
-                    System.err.println("missing context for " + configInfo.id);
+                    write("Context Description", configInfo.contextDescription);
                 }
                 if (configInfo.uriParam != null && !configInfo.uriParam.isEmpty())
                 {
                     writeCode("URI Param", configInfo.uriParam);
                 }
+
+                if (configInfo.defaultDescription != null)
+                {
+                    write("Default Description", configInfo.defaultDescription);
+                }
+                final String defaultValue = configInfo.overrideDefaultValue == null ?
+                    toString(configInfo.defaultValue) :
+                    configInfo.overrideDefaultValue.toString();
                 write("Default", getDefaultString(
-                    configInfo.overrideDefaultValue == null ?
-                    configInfo.defaultValue.toString() :
-                    configInfo.overrideDefaultValue.toString(), isTime));
+                    defaultValue,
+                    configInfo.isTimeValue == Boolean.TRUE,
+                    configInfo.timeUnit));
+                if (configInfo.isTimeValue == Boolean.TRUE)
+                {
+                    write("Time Unit", configInfo.timeUnit.toString());
+                }
+
                 if (configInfo.expectations.c.exists)
                 {
                     writeCode("C Env Var", configInfo.expectations.c.envVar);
                     write("C Default", getDefaultString(
-                        configInfo.expectations.c.defaultValue.toString(), isTime));
+                        toString(configInfo.expectations.c.defaultValue),
+                        configInfo.isTimeValue == Boolean.TRUE,
+                        configInfo.timeUnit));
                 }
                 writeLine();
             }
@@ -165,51 +183,54 @@ public class GenerateConfigDocTask
         return builder.toString();
     }
 
-    private static boolean isTime(final String propertyName)
+    private static String getDefaultString(
+        final String defaultValue,
+        final boolean isTimeValue,
+        final TimeUnit timeUnit)
     {
-        return Stream.of("timeout", "backoff", "delay", "linger", "interval")
-            .anyMatch(k -> propertyName.toLowerCase().contains(k));
-    }
-
-    private static String getDefaultString(final String d, final boolean asTime)
-    {
-        if (d != null && d.length() > 3 && d.chars().allMatch(Character::isDigit))
+        if (defaultValue != null && !defaultValue.isEmpty() && defaultValue.chars().allMatch(Character::isDigit))
         {
-            final long defaultLong = Long.parseLong(d);
-
+            final long defaultLong = Long.parseLong(defaultValue);
             final StringBuilder builder = new StringBuilder();
-            builder.append(d);
-            builder.append(" (");
-            builder.append(DecimalFormat.getNumberInstance().format(defaultLong));
-            builder.append(")");
 
-            int kCount = 0;
-            long remainingValue = defaultLong;
-            while (remainingValue % 1024 == 0)
-            {
-                kCount++;
-                remainingValue = remainingValue / 1024;
-            }
+            builder.append(defaultValue);
 
-            if (kCount > 0 && remainingValue < 1024)
+            if (defaultValue.length() > 3)
             {
                 builder.append(" (");
-                builder.append(remainingValue);
-                IntStream.range(0, kCount).forEach(i -> builder.append(" * 1024"));
+                builder.append(DecimalFormat.getNumberInstance().format(defaultLong));
                 builder.append(")");
+
+                int kCount = 0;
+                long remainingValue = defaultLong;
+                while (remainingValue % 1024 == 0)
+                {
+                    kCount++;
+                    remainingValue = remainingValue / 1024;
+                }
+
+                if (kCount > 0 && remainingValue < 1024)
+                {
+                    builder.append(" (");
+                    builder.append(remainingValue);
+                    IntStream.range(0, kCount).forEach(i -> builder.append(" * 1024"));
+                    builder.append(")");
+                }
             }
 
-            if (asTime)
+            if (isTimeValue)
             {
                 int tCount = 0;
-                String remaining = d;
-                while (remaining.endsWith("000") && tCount < 3)
+
+                long remaining = timeUnit.toNanos(defaultLong);
+                while (remaining % 1000 == 0 && tCount < 3)
                 {
                     tCount++;
-                    remaining = remaining.replaceAll("000$", "");
+                    remaining = remaining / 1000;
                 }
                 builder.append(" (");
                 builder.append(remaining);
+
                 switch (tCount)
                 {
                     case 0:
@@ -226,7 +247,7 @@ public class GenerateConfigDocTask
                         break;
                 }
                 builder.append("second");
-                if (!remaining.equals("1"))
+                if (remaining != 1)
                 {
                     builder.append("s");
                 }
@@ -235,6 +256,6 @@ public class GenerateConfigDocTask
 
             return builder.toString();
         }
-        return d;
+        return defaultValue;
     }
 }

@@ -16,6 +16,7 @@
 package io.aeron.config;
 
 import java.lang.annotation.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Annotation to indicate this is a config option
@@ -93,7 +94,30 @@ public @interface Config
     long defaultLong() default 0;
 
     /**
+     * @return specify the default double, if defaultType is DOUBLE
+     */
+    double defaultDouble() default 0.0;
+
+    /**
      * @return specify the default string, if defaultType is STRING
      */
     String defaultString() default "";
+
+    /**
+     * Used to indicate whether or not the default value is a time value
+     */
+    enum IsTimeValue
+    {
+        UNDEFINED, TRUE, FALSE
+    }
+
+    /**
+     * @return whether or not the default value is a time value
+     */
+    IsTimeValue isTimeValue() default IsTimeValue.UNDEFINED;
+
+    /**
+     * @return the time unit if the default value is a time value of some sort
+     */
+    TimeUnit timeUnit() default TimeUnit.NANOSECONDS;
 }

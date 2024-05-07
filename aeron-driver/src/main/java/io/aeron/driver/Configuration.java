@@ -839,6 +839,7 @@ public final class Configuration
      * Property name of the timeout for when an untethered subscription that is outside the window limit will
      * participate in local flow control.
      */
+    @Config
     public static final String UNTETHERED_WINDOW_LIMIT_TIMEOUT_PROP_NAME = "aeron.untethered.window.limit.timeout";
 
     /**
@@ -851,6 +852,7 @@ public final class Configuration
      * Property name of the timeout for when an untethered subscription is resting after not being able to keep up
      * before it is allowed to rejoin a stream.
      */
+    @Config
     public static final String UNTETHERED_RESTING_TIMEOUT_PROP_NAME = "aeron.untethered.resting.timeout";
 
     /**
@@ -867,45 +869,54 @@ public final class Configuration
     /**
      * Property name for the class used to validate if a driver should terminate based on token.
      */
+    @Config
     public static final String TERMINATION_VALIDATOR_PROP_NAME = "aeron.driver.termination.validator";
 
     /**
      * Property name for default boolean value for if a stream can be rejoined. True to allow stream rejoin.
      */
+    @Config
     public static final String REJOIN_STREAM_PROP_NAME = "aeron.rejoin.stream";
 
     /**
      * Property name for default group tag (gtag) to send in all Status Messages.
      */
+    @Config
     public static final String RECEIVER_GROUP_TAG_PROP_NAME = "aeron.receiver.group.tag";
 
     /**
      * Property name for default group tag (gtag) used by the tagged flow control strategy to group receivers.
      */
+    @Config(defaultType = DefaultType.STRING, defaultString = "")
     public static final String FLOW_CONTROL_GROUP_TAG_PROP_NAME = "aeron.flow.control.group.tag";
 
     /**
      * Property name for default minimum group size used by flow control strategies to determine connectivity.
      */
+    @Config(defaultType = DefaultType.INT, defaultInt = 0)
     public static final String FLOW_CONTROL_GROUP_MIN_SIZE_PROP_NAME = "aeron.flow.control.group.min.size";
 
     /**
      * Default value for the receiver timeout used to determine if the receiver should still be monitored for
      * flow control purposes.
      */
+    @Config(defaultType = DefaultType.LONG, defaultLong = 5_000_000_000L)
     public static final long FLOW_CONTROL_RECEIVER_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
     /**
      * Property name for flow control timeout after which with no status messages the receiver is considered gone.
      */
+    @Config
     public static final String FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME = "aeron.flow.control.receiver.timeout";
 
+    @Config
     private static final String MIN_FLOW_CONTROL_TIMEOUT_OLD_PROP_NAME =
         "aeron.MinMulticastFlowControl.receiverTimeout";
 
     /**
      * Property name for resolver name of the Media Driver used in name resolution.
      */
+    @Config(defaultType = DefaultType.STRING, defaultString = "")
     public static final String RESOLVER_NAME_PROP_NAME = "aeron.driver.resolver.name";
 
     /**
@@ -913,6 +924,7 @@ public final class Configuration
      *
      * @see #RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME
      */
+    @Config(defaultType = DefaultType.STRING, defaultString = "")
     public static final String RESOLVER_INTERFACE_PROP_NAME = "aeron.driver.resolver.interface";
 
     /**
@@ -921,21 +933,25 @@ public final class Configuration
      *
      * @see #RESOLVER_INTERFACE_PROP_NAME
      */
+    @Config
     public static final String RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME = "aeron.driver.resolver.bootstrap.neighbor";
 
     /**
      * Property name for re-resolution check interval for resolving names to IP address.
      */
+    @Config
     public static final String RE_RESOLUTION_CHECK_INTERVAL_PROP_NAME = "aeron.driver.reresolution.check.interval";
 
     /**
      * Default value for the re-resolution check interval.
      */
+    @Config(defaultType = DefaultType.LONG, defaultLong = 1_000_000_000L)
     public static final long RE_RESOLUTION_CHECK_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
     /**
      * Property name for threshold value for the conductor work cycle threshold to track for being exceeded.
      */
+    @Config
     public static final String CONDUCTOR_CYCLE_THRESHOLD_PROP_NAME = "aeron.driver.conductor.cycle.threshold";
 
     /**
@@ -946,26 +962,31 @@ public final class Configuration
     /**
      * Property name for threshold value for the sender work cycle threshold to track for being exceeded.
      */
+    @Config
     public static final String SENDER_CYCLE_THRESHOLD_PROP_NAME = "aeron.driver.sender.cycle.threshold";
 
     /**
      * Default threshold value for the sender work cycle threshold to track for being exceeded.
      */
+    @Config(defaultType = DefaultType.LONG, defaultLong = 1_000_000_000L)
     public static final long SENDER_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
     /**
      * Property name for threshold value for the receiver work cycle threshold to track for being exceeded.
      */
+    @Config
     public static final String RECEIVER_CYCLE_THRESHOLD_PROP_NAME = "aeron.driver.receiver.cycle.threshold";
 
     /**
      * Default threshold value for the receiver work cycle threshold to track for being exceeded.
      */
+    @Config(defaultType = DefaultType.LONG, defaultLong = 1_000_000_000)
     public static final long RECEIVER_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
     /**
      * Property name for threshold value for the name resolution threshold to track for being exceeded.
      */
+    @Config
     public static final String NAME_RESOLVER_THRESHOLD_PROP_NAME = "aeron.name.resolver.threshold";
 
     /**
@@ -976,11 +997,13 @@ public final class Configuration
     /**
      * Property name for wildcard port range for the Sender.
      */
+    @Config(defaultType = DefaultType.STRING, defaultString = "")
     public static final String SENDER_WILDCARD_PORT_RANGE_PROP_NAME = "aeron.sender.wildcard.port.range";
 
     /**
      * Property name for wildcard port range for the Receiver.
      */
+    @Config
     public static final String RECEIVER_WILDCARD_PORT_RANGE_PROP_NAME = "aeron.receiver.wildcard.port.range";
 
     /**
@@ -989,6 +1012,7 @@ public final class Configuration
      *
      * @since 1.44.0
      */
+    @Config(defaultType = DefaultType.INT, defaultInt = 1)
     public static final String ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME = "aeron.driver.async.executor.threads";
 
     /**
@@ -1013,6 +1037,7 @@ public final class Configuration
      * @return true if the high-resolution timer be used when running on Windows.
      * @see #USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME
      */
+    @Config
     public static boolean useWindowsHighResTimer()
     {
         return "true".equals(getProperty(USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME));
@@ -1302,6 +1327,7 @@ public final class Configuration
      * @return Default group tag (gtag) to send in all Status Messages.
      * @see #RECEIVER_GROUP_TAG_PROP_NAME
      */
+    @Config(id = "RECEIVER_GROUP_TAG")
     public static Long groupTag()
     {
         return getLong(RECEIVER_GROUP_TAG_PROP_NAME, null);
@@ -1313,6 +1339,7 @@ public final class Configuration
      * @return group tag (gtag) used by the tagged flow control strategy to group receivers.
      * @see #FLOW_CONTROL_GROUP_TAG_PROP_NAME
      */
+    @Config
     @SuppressWarnings("deprecation")
     public static long flowControlGroupTag()
     {
@@ -1329,6 +1356,7 @@ public final class Configuration
      * @return default minimum group size used by flow control strategies to determine connectivity.
      * @see #FLOW_CONTROL_GROUP_MIN_SIZE_PROP_NAME
      */
+    @Config
     public static int flowControlGroupMinSize()
     {
         return getInteger(FLOW_CONTROL_GROUP_MIN_SIZE_PROP_NAME, 0);
@@ -1340,6 +1368,7 @@ public final class Configuration
      * @return flow control timeout after which with no status messages the receiver is considered gone.
      * @see #FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME
      */
+    @Config
     public static long flowControlReceiverTimeoutNs()
     {
         return getDurationInNanos(
@@ -1610,6 +1639,7 @@ public final class Configuration
      * being drained.
      * @see #IMAGE_LIVENESS_TIMEOUT_PROP_NAME
      */
+    @Config
     public static long imageLivenessTimeoutNs()
     {
         return getDurationInNanos(IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
@@ -1625,6 +1655,7 @@ public final class Configuration
      * @return {@link Publication} unblock timeout due to client crash or untimely commit.
      * @see #PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME
      */
+    @Config
     public static long publicationUnblockTimeoutNs()
     {
         return getDurationInNanos(PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);

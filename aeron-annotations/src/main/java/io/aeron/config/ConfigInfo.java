@@ -17,6 +17,8 @@ package io.aeron.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * A handy class for storing data that gets serialized into json
  */
@@ -64,4 +66,10 @@ public class ConfigInfo
     public String uriParam;
     @JsonProperty
     public String context;
+    @JsonProperty
+    public String contextDescription;
+    @JsonProperty
+    public Boolean isTimeValue;
+    @JsonProperty
+    public TimeUnit timeUnit;
 }

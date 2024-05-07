@@ -27,6 +27,7 @@ import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 import java.io.*;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * ConfigOption processor
@@ -143,7 +144,7 @@ public class ConfigProcessor extends AbstractProcessor
 
                 configInfo.propertyNameFieldName = element.toString();
                 configInfo.propertyNameClassName = element.getEnclosingElement().toString();
-                configInfo.propertyNameDescription = processingEnv.getElementUtils().getDocComment(element).trim();
+                configInfo.propertyNameDescription = getDocComment(element);
 
                 if (constantValue instanceof String)
                 {
@@ -167,7 +168,7 @@ public class ConfigProcessor extends AbstractProcessor
 
                 configInfo.defaultFieldName = element.toString();
                 configInfo.defaultClassName = element.getEnclosingElement().toString();
-                configInfo.defaultDescription = processingEnv.getElementUtils().getDocComment(element).trim();
+                configInfo.defaultDescription = getDocComment(element);
 
                 if (constantValue != null)
                 {
@@ -185,6 +186,30 @@ public class ConfigProcessor extends AbstractProcessor
             configInfo.uriParam = config.uriParam();
         }
 
+        switch (config.isTimeValue())
+        {
+            case TRUE:
+                configInfo.isTimeValue = true;
+                break;
+            case FALSE:
+                configInfo.isTimeValue = false;
+                break;
+            case UNDEFINED:
+                if (configInfo.isTimeValue == null)
+                {
+                    configInfo.isTimeValue =
+                        Stream.of("timeout", "backoff", "delay", "linger", "interval", "duration")
+                            .anyMatch(k -> id.toLowerCase().contains(k));
+                }
+                break;
+        }
+
+        if (configInfo.isTimeValue)
+        {
+            // TODO make sure this is either seconds, milliseconds, microseconds, or nanoseconds
+            configInfo.timeUnit = config.timeUnit();
+        }
+
         if (!DefaultType.isUndefined(config.defaultType()))
         {
             if (DefaultType.isUndefined(configInfo.defaultValueType))
@@ -197,6 +222,9 @@ public class ConfigProcessor extends AbstractProcessor
                         break;
                     case LONG:
                         configInfo.overrideDefaultValue = config.defaultLong();
+                        break;
+                    case DOUBLE:
+                        configInfo.overrideDefaultValue = config.defaultDouble();
                         break;
                     case BOOLEAN:
                         configInfo.overrideDefaultValue = config.defaultBoolean();
@@ -247,6 +275,18 @@ public class ConfigProcessor extends AbstractProcessor
         }
     }
 
+    private String getDocComment(final Element element)
+    {
+        final String description = processingEnv.getElementUtils().getDocComment(element);
+        if (description == null)
+        {
+            error("no javadoc found", element);
+            return "NO DESCRIPTION FOUND";
+        }
+
+        return description.trim();
+    }
+
     private void processExecutableElement(final Map<String, ConfigInfo> configInfoMap, final ExecutableElement element)
     {
         final Config config = element.getAnnotation(Config.class);
@@ -261,6 +301,7 @@ public class ConfigProcessor extends AbstractProcessor
         final ConfigInfo configInfo = configInfoMap.computeIfAbsent(id, ConfigInfo::new);
 
         final String methodName = element.toString();
+        System.out.println("-- " + methodName);
 
         final String enclosingElementName = element.getEnclosingElement().toString();
 
@@ -273,6 +314,7 @@ public class ConfigProcessor extends AbstractProcessor
         final String packageName = e.toString();
 
         configInfo.context = enclosingElementName.substring(packageName.length() + 1) + "." + methodName;
+        configInfo.contextDescription = getDocComment(element);
     }
 
     private Config.Type getConfigType(final VariableElement element, final Config config)
@@ -298,11 +340,6 @@ public class ConfigProcessor extends AbstractProcessor
 
     private String getConfigId(final ExecutableElement element, final String id)
     {
-        if (null != id && !id.isEmpty())
-        {
-            return id;
-        }
-
         final StringBuilder builder = new StringBuilder();
 
         for (final char next: element.toString().toCharArray())
@@ -315,9 +352,24 @@ public class ConfigProcessor extends AbstractProcessor
                 }
                 builder.append(Character.toUpperCase(next));
             }
+            else if (next == '(')
+            {
+                break;
+            }
         }
 
-        return builder.toString();
+        final String calculatedId = builder.toString().replace("_NS", "");
+
+        if (null != id && !id.isEmpty())
+        {
+            if (id.equals(calculatedId))
+            {
+                error("redundant id specified", element);
+            }
+            return id;
+        }
+
+        return calculatedId;
     }
 
     private String getConfigId(final VariableElement element, final String[] suffixes, final String id)
@@ -410,6 +462,11 @@ public class ConfigProcessor extends AbstractProcessor
         if (configInfo.defaultValue == null && configInfo.overrideDefaultValue == null)
         {
             insane(id, "no default value found");
+        }
+
+        if (configInfo.context == null || configInfo.context.isEmpty())
+        {
+            insane(id, "missing context");
         }
     }
 

@@ -900,6 +900,7 @@ public final class MediaDriver implements AutoCloseable
          * @return length of the {@link RingBuffer} for sending commands to the driver conductor from clients.
          * @see Configuration#CONDUCTOR_BUFFER_LENGTH_PROP_NAME
          */
+        @Config
         public int conductorBufferLength()
         {
             return conductorBufferLength;
@@ -924,6 +925,7 @@ public final class MediaDriver implements AutoCloseable
          * @return length of the {@link BroadcastTransmitter} buffer for sending events to the clients.
          * @see Configuration#TO_CLIENTS_BUFFER_LENGTH_PROP_NAME
          */
+        @Config
         public int toClientsBufferLength()
         {
             return toClientsBufferLength;
@@ -972,6 +974,7 @@ public final class MediaDriver implements AutoCloseable
          * @return length of the {@link DistinctErrorLog} buffer for recording exceptions.
          * @see Configuration#ERROR_BUFFER_LENGTH_PROP_NAME
          */
+        @Config
         public int errorBufferLength()
         {
             return errorBufferLength;
@@ -1020,6 +1023,7 @@ public final class MediaDriver implements AutoCloseable
          * @return the threshold below which storage warnings are issued.
          * @see Configuration#LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME
          */
+        @Config(id = "LOW_FILE_STORE_WARNING_THRESHOLD")
         public long lowStorageWarningThreshold()
         {
             return lowStorageWarningThreshold;
@@ -1068,6 +1072,7 @@ public final class MediaDriver implements AutoCloseable
          * @return page size for alignment of all files.
          * @see Configuration#FILE_PAGE_SIZE_PROP_NAME
          */
+        @Config
         public int filePageSize()
         {
             return filePageSize;
@@ -1140,6 +1145,7 @@ public final class MediaDriver implements AutoCloseable
          * @return nanoseconds that a publication will linger once it is drained.
          * @see Configuration#PUBLICATION_LINGER_PROP_NAME
          */
+        @Config(id = "PUBLICATION_LINGER")
         public long publicationLingerTimeoutNs()
         {
             return publicationLingerTimeoutNs;
@@ -1264,6 +1270,7 @@ public final class MediaDriver implements AutoCloseable
          * @return delay before retransmitting after a NAK.
          * @see Configuration#NAK_UNICAST_DELAY_PROP_NAME
          */
+        @Config
         public long nakUnicastDelayNs()
         {
             return nakUnicastDelayNs;
@@ -1340,6 +1347,7 @@ public final class MediaDriver implements AutoCloseable
          * @return estimate of the multicast receiver group size on a stream.
          * @see Configuration#NAK_MULTICAST_GROUP_SIZE_PROP_NAME
          */
+        @Config
         public int nakMulticastGroupSize()
         {
             return nakMulticastGroupSize;
@@ -1364,6 +1372,7 @@ public final class MediaDriver implements AutoCloseable
          * @return time in nanoseconds after which a client is considered dead if a keep alive is not received.
          * @see Configuration#CLIENT_LIVENESS_TIMEOUT_PROP_NAME
          */
+        @Config
         public long clientLivenessTimeoutNs()
         {
             return CommonContext.checkDebugTimeout(clientLivenessTimeoutNs, TimeUnit.NANOSECONDS);
@@ -1388,6 +1397,7 @@ public final class MediaDriver implements AutoCloseable
          * @return time in nanoseconds after which a status message will be sent if data is flowing slowly.
          * @see Configuration#STATUS_MESSAGE_TIMEOUT_PROP_NAME
          */
+        @Config
         public long statusMessageTimeoutNs()
         {
             return statusMessageTimeoutNs;
@@ -1652,6 +1662,7 @@ public final class MediaDriver implements AutoCloseable
          * @return default length for a term buffer on a network publication.
          * @see Configuration#TERM_BUFFER_LENGTH_PROP_NAME
          */
+        @Config(id = "TERM_BUFFER_LENGTH")
         public int publicationTermBufferLength()
         {
             return publicationTermBufferLength;
@@ -1678,6 +1689,7 @@ public final class MediaDriver implements AutoCloseable
          * @return default length for a term buffer on an IPC publication.
          * @see Configuration#IPC_TERM_BUFFER_LENGTH_PROP_NAME
          */
+        @Config
         public int ipcTermBufferLength()
         {
             return ipcTermBufferLength;
@@ -1728,6 +1740,7 @@ public final class MediaDriver implements AutoCloseable
          * @return default length for a term buffer window on an IPC publication.
          * @see Configuration#IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME
          */
+        @Config
         public int ipcPublicationTermWindowLength()
         {
             return ipcPublicationTermWindowLength;
@@ -2052,6 +2065,7 @@ public final class MediaDriver implements AutoCloseable
          * @return {@link ThreadingMode} that should be used for the driver.
          * @see Configuration#THREADING_MODE_PROP_NAME
          */
+        @Config
         public ThreadingMode threadingMode()
         {
             return threadingMode;
@@ -2280,6 +2294,7 @@ public final class MediaDriver implements AutoCloseable
          * @return {@link IdleStrategy} used by the {@link Receiver} when in {@link ThreadingMode#DEDICATED}.
          * @see Configuration#RECEIVER_IDLE_STRATEGY_PROP_NAME
          */
+        @Config
         public IdleStrategy receiverIdleStrategy()
         {
             return receiverIdleStrategy;
@@ -2305,6 +2320,7 @@ public final class MediaDriver implements AutoCloseable
          * @return {@link IdleStrategy} used by the {@link DriverConductor}
          * @see Configuration#CONDUCTOR_IDLE_STRATEGY_PROP_NAME
          */
+        @Config
         public IdleStrategy conductorIdleStrategy()
         {
             return conductorIdleStrategy;
@@ -2331,6 +2347,7 @@ public final class MediaDriver implements AutoCloseable
          * @return {@link IdleStrategy} used by the {@link Sender} and {@link Receiver}.
          * @see Configuration#SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME
          */
+        @Config
         public IdleStrategy sharedNetworkIdleStrategy()
         {
             return sharedNetworkIdleStrategy;
@@ -3091,6 +3108,7 @@ public final class MediaDriver implements AutoCloseable
          * @see Configuration#RESOLVER_INTERFACE_PROP_NAME
          * @see CommonContext#INTERFACE_PARAM_NAME
          */
+        @Config
         public String resolverInterface()
         {
             return resolverInterface;
@@ -3153,6 +3171,7 @@ public final class MediaDriver implements AutoCloseable
          * @see Configuration#RE_RESOLUTION_CHECK_INTERVAL_PROP_NAME
          * @see Configuration#RE_RESOLUTION_CHECK_INTERVAL_DEFAULT_NS
          */
+        @Config
         public long reResolutionCheckIntervalNs()
         {
             return reResolutionCheckIntervalNs;
@@ -3233,6 +3252,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return threshold to track for the sender work cycle time.
          */
+        @Config
         public long senderCycleThresholdNs()
         {
             return senderCycleThresholdNs;
@@ -3259,6 +3279,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return threshold to track for the receiver work cycle time.
          */
+        @Config
         public long receiverCycleThresholdNs()
         {
             return receiverCycleThresholdNs;
@@ -3432,6 +3453,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return port range as a string in the format "low high".
          */
+        @Config
         public String senderWildcardPortRange()
         {
             return senderWildcardPortRange;

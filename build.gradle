@@ -471,6 +471,29 @@ project(':aeron-client') {
         sign publishing.publications.aeronClient
     }
 
+    tasks.register('validateConfigExpectations', JavaExec) {
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.json'
+        def sourceDir = 'src/main/c'
+
+        inputs.files(configInfoFile)
+
+        mainClass.set('io.aeron.config.validation.ValidateConfigExpectationsTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [configInfoFile, sourceDir]
+    }
+
+    tasks.register('generateConfigDoc', JavaExec) {
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.json'
+        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+
+        inputs.files(configInfoFile)
+        outputs.files(generatedDocFile)
+
+        mainClass.set('io.aeron.config.docgen.GenerateConfigDocTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [configInfoFile, generatedDocFile]
+    }
+
     tasks.register('validateCounterExpectations', JavaExec) {
         def counterInfoFile = 'build/generated/sources/headers/java/main/counter-info.json'
         def sourceDir = 'src/main/c'

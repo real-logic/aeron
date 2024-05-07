@@ -40,6 +40,8 @@ int aeron_data_packet_dispatcher_init(
 
     dispatcher->conductor_proxy = conductor_proxy;
     dispatcher->receiver = receiver;
+    dispatcher->stream_session_limit = receiver->context->stream_session_limit;
+
     return 0;
 }
 
@@ -470,6 +472,13 @@ int aeron_data_packet_dispatcher_on_setup(
     if (NULL != stream_interest)
     {
         const int32_t session_id = header->session_id;
+
+        if ((size_t)dispatcher->stream_session_limit <= stream_interest->image_by_session_id_map.size)
+        {
+            AERON_SET_ERR(EINVAL, "exceeded session limit, streamId=" PRId32, header->stream_id);
+            return -1;
+        }
+
         aeron_publication_image_t *image = aeron_int64_to_ptr_hash_map_get(
             &stream_interest->image_by_session_id_map, session_id);
 

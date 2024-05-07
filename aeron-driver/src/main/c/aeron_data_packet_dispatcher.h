@@ -48,6 +48,7 @@ typedef struct aeron_data_packet_dispatcher_stct
 
     aeron_driver_conductor_proxy_t *conductor_proxy;
     aeron_driver_receiver_t *receiver;
+    int32_t stream_session_limit;
 }
 aeron_data_packet_dispatcher_t;
 

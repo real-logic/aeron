@@ -3023,6 +3023,20 @@ int aeron_driver_context_get_enable_experimental_features(aeron_driver_context_t
     return NULL != context ? context->enable_experimental_features : false;
 }
 
+int aeron_driver_set_stream_session_limit(aeron_driver_context_t *context, int32_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->stream_session_limit = value;
+    return 0;
+}
+
+int32_t aeron_driver_context_get_stream_session_limit(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->stream_session_limit : AERON_DRIVER_STREAM_SESSION_LIMIT_DEFAULT;
+}
+
+
 int aeron_driver_context_bindings_clientd_find_first_free_index(aeron_driver_context_t *context)
 {
     for (size_t i = 0; i < context->num_bindings_clientd_entries; i++)

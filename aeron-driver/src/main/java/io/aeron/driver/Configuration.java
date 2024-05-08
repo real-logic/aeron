@@ -889,7 +889,7 @@ public final class Configuration
     /**
      * Property name for default group tag (gtag) used by the tagged flow control strategy to group receivers.
      */
-    @Config(defaultType = DefaultType.STRING, defaultString = "")
+    @Config(defaultType = DefaultType.LONG, defaultLong = -1)
     public static final String FLOW_CONTROL_GROUP_TAG_PROP_NAME = "aeron.flow.control.group.tag";
 
     /**

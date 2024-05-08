@@ -15,28 +15,29 @@
  */
 package io.aeron.counter;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 /**
  * A handy class for storing data that gets serialized into json
  */
 public class CounterInfo
 {
-    @JsonProperty
     public final String name;
+
+    /**
+     */
+    public CounterInfo()
+    {
+        this.name = null;
+    }
 
     /**
      * @param name the name of the counter
      */
-    public CounterInfo(@JsonProperty("name") final String name)
+    public CounterInfo(final String name)
     {
         this.name = name;
     }
 
-    @JsonProperty
     public int id;
-    @JsonProperty
     public String counterDescription;
-    @JsonProperty
     public String expectedCName;
 }

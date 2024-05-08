@@ -15,12 +15,7 @@
  */
 package io.aeron.config.validation;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.aeron.config.ConfigInfo;
-
-import java.nio.file.Paths;
-import java.util.List;
+import io.aeron.utility.ElementIO;
 
 /**
  * A gradle task for validating the C code looks as expected, based on the contents of the @Config java annotations
@@ -29,7 +24,7 @@ public class ValidateConfigExpectationsTask
 {
     /**
      * @param args
-     * Arg 0 should be the location of a config-info.json file with a list of ConfigInfo objects
+     * Arg 0 should be the location of a config-info.xml file with a list of ConfigInfo objects
      * Arg 1 should be the location of the C source code
      *
      * @throws Exception
@@ -37,15 +32,6 @@ public class ValidateConfigExpectationsTask
      */
     public static void main(final String[] args) throws Exception
     {
-        Validator.validate(fetchConfig(args[0]), args[1]).printFailuresOn(System.err);
-    }
-
-    private static List<ConfigInfo> fetchConfig(final String configInfoFilename) throws Exception
-    {
-        return new ObjectMapper().readValue(
-            Paths.get(configInfoFilename).toFile(),
-            new TypeReference<List<ConfigInfo>>()
-            {
-            });
+        Validator.validate(ElementIO.fetch(args[0]), args[1]).printFailuresOn(System.err);
     }
 }

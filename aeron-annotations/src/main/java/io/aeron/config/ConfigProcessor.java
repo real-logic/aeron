@@ -15,7 +15,7 @@
  */
 package io.aeron.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.aeron.utility.ElementIO;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
@@ -25,7 +25,6 @@ import javax.lang.model.element.*;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
-import java.io.*;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -111,14 +110,13 @@ public class ConfigProcessor extends AbstractProcessor
             try
             {
                 final FileObject resourceFile = processingEnv.getFiler()
-                    .createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "config-info.json");
-                try (OutputStream out = resourceFile.openOutputStream())
-                {
-                    new ObjectMapper().writeValue(out, configInfoMap.values());
-                }
+                    .createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "config-info.xml");
+
+                ElementIO.write(resourceFile, configInfoMap);
             }
-            catch (final IOException e)
+            catch (final Exception e)
             {
+                e.printStackTrace(System.err);
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                     "an error occurred while writing output: " + e.getMessage());
             }

@@ -15,13 +15,10 @@
  */
 package io.aeron.config;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 /**
  */
 public class ExpectedConfig
 {
-    @JsonProperty
     public final ExpectedCConfig c;
 
     ExpectedConfig()

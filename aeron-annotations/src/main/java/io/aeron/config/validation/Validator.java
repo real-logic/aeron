@@ -34,9 +34,7 @@ final class Validator
         final Collection<ConfigInfo> configInfoCollection,
         final String sourceDir)
     {
-        final Validator validator = new Validator(sourceDir);
-        validator.validate(configInfoCollection);
-        return validator.report;
+        return new Validator(sourceDir).validate(configInfoCollection).report;
     }
 
     private final String sourceDir;
@@ -50,9 +48,11 @@ final class Validator
         this.report = new ValidationReport();
     }
 
-    private void validate(final Collection<ConfigInfo> configInfoCollection)
+    private Validator validate(final Collection<ConfigInfo> configInfoCollection)
     {
         configInfoCollection.forEach(this::validateCExpectations);
+
+        return this;
     }
 
     private void validateCExpectations(final ConfigInfo configInfo)

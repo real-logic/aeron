@@ -15,23 +15,15 @@
  */
 package io.aeron.config;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 /**
  * A handy class for storing expected C config info that can be serialized into json
  */
 public class ExpectedCConfig
 {
-    @JsonProperty
     public boolean exists = true;
-    @JsonProperty
     public String envVarFieldName;
-    @JsonProperty
     public String envVar;
-    @JsonProperty
     public String defaultFieldName;
-    @JsonProperty
     public Object defaultValue;
-    @JsonProperty
     public DefaultType defaultValueType;
 }

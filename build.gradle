@@ -350,10 +350,6 @@ project(':aeron-annotations') {
     apply plugin: 'signing'
     apply plugin: 'biz.aQute.bnd.builder'
 
-    dependencies {
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
-    }
-
     jar {
         bundle {
             bnd """
@@ -472,7 +468,7 @@ project(':aeron-client') {
     }
 
     tasks.register('validateConfigExpectations', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.json'
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.xml'
         def sourceDir = 'src/main/c'
 
         inputs.files(configInfoFile)
@@ -483,7 +479,7 @@ project(':aeron-client') {
     }
 
     tasks.register('generateConfigDoc', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.json'
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.xml'
         def generatedDocFile = "${buildDir}/generated-doc/out.md"
 
         inputs.files(configInfoFile)
@@ -495,7 +491,7 @@ project(':aeron-client') {
     }
 
     tasks.register('validateCounterExpectations', JavaExec) {
-        def counterInfoFile = 'build/generated/sources/headers/java/main/counter-info.json'
+        def counterInfoFile = 'build/generated/sources/headers/java/main/counter-info.xml'
         def sourceDir = 'src/main/c'
 
         inputs.files(counterInfoFile)
@@ -579,7 +575,7 @@ project(':aeron-driver') {
     }
 
     tasks.register('validateConfigExpectations', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.json'
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.xml'
         def sourceDir = 'src/main/c'
 
         inputs.files(configInfoFile)
@@ -590,7 +586,7 @@ project(':aeron-driver') {
     }
 
     tasks.register('generateConfigDoc', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.json'
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.xml'
         def generatedDocFile = "${buildDir}/generated-doc/out.md"
 
         inputs.files(configInfoFile)

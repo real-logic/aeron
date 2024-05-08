@@ -15,14 +15,12 @@
  */
 package io.aeron.config.docgen;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.aeron.utility.ElementIO;
 import io.aeron.config.ConfigInfo;
 import io.aeron.config.DefaultType;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.Comparator;
 import java.util.List;
@@ -44,7 +42,7 @@ public class GenerateConfigDocTask
 
     /**
      * @param args
-     * Arg 0 should be the location of a config-info.json file with a list of ConfigInfo objects
+     * Arg 0 should be the location of a config-info.xml file with a list of ConfigInfo objects
      * Arg 1 should be the location of an output file where a .md file is to be written
      *
      * @throws Exception
@@ -56,12 +54,7 @@ public class GenerateConfigDocTask
         {
             GenerateConfigDocTask.writer = writer;
 
-            final List<ConfigInfo> config = fetchConfig(args[0])
-                .stream()
-                .sorted(Comparator.comparing(a -> a.id))
-                .collect(Collectors.toList());
-
-            for (final ConfigInfo configInfo: config)
+            for (final ConfigInfo configInfo: sort(ElementIO.fetch(args[0])))
             {
                 writeHeader(toHeaderString(configInfo.id) + (configInfo.deprecated ? " (***deprecated***)" : ""));
                 write("Description", configInfo.propertyNameDescription);
@@ -120,15 +113,13 @@ public class GenerateConfigDocTask
         }
     }
 
-    private static List<ConfigInfo> fetchConfig(final String configInfoFilename) throws Exception
+    private static List<ConfigInfo> sort(final List<ConfigInfo> config)
     {
-        return new ObjectMapper().readValue(
-            Paths.get(configInfoFilename).toFile(),
-            new TypeReference<List<ConfigInfo>>()
-            {
-            });
+        return config
+            .stream()
+            .sorted(Comparator.comparing(a -> a.id))
+            .collect(Collectors.toList());
     }
-
 
     private static void writeHeader(final String t) throws IOException
     {

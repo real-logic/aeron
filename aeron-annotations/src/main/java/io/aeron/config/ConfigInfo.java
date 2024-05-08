@@ -15,8 +15,7 @@
  */
 package io.aeron.config;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
+import javax.xml.bind.annotation.XmlTransient;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -24,56 +23,47 @@ import java.util.concurrent.TimeUnit;
  */
 public class ConfigInfo
 {
-    @JsonProperty
     public final String id;
-    @JsonProperty
     public final ExpectedConfig expectations;
+
+    /**
+     */
+    public ConfigInfo()
+    {
+        this.id = null;
+        expectations = new ExpectedConfig();
+    }
 
     /**
      * @param id the unique identifier for this block o' config information
      */
-    public ConfigInfo(@JsonProperty("id") final String id)
+    public ConfigInfo(final String id)
     {
         this.id = id;
         expectations = new ExpectedConfig();
     }
 
+    @XmlTransient
     public boolean foundPropertyName = false;
+    @XmlTransient
     public boolean foundDefault = false;
-    @JsonProperty
+
     public String propertyNameDescription;
-    @JsonProperty
     public String propertyNameFieldName;
-    @JsonProperty
     public String propertyNameClassName;
-    @JsonProperty
     public String propertyName;
-    @JsonProperty
     public String defaultDescription;
-    @JsonProperty
     public String defaultFieldName;
-    @JsonProperty
     public String defaultClassName;
-    @JsonProperty
     public Object defaultValue;
-    @JsonProperty
     public DefaultType defaultValueType = DefaultType.UNDEFINED;
-    @JsonProperty
     public Object overrideDefaultValue;
-    @JsonProperty
     public DefaultType overrideDefaultValueType = DefaultType.UNDEFINED;
-    @JsonProperty
     public String uriParam;
-    @JsonProperty
     public boolean hasContext = true;
-    @JsonProperty
     public String context;
-    @JsonProperty
     public String contextDescription;
-    @JsonProperty
     public Boolean isTimeValue;
-    @JsonProperty
     public TimeUnit timeUnit;
-    @JsonProperty
     public boolean deprecated = false;
 }

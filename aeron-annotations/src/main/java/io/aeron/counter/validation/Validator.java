@@ -30,9 +30,7 @@ final class Validator
         final Collection<CounterInfo> counterInfoCollection,
         final String sourceDir)
     {
-        final Validator validator = new Validator(sourceDir);
-        validator.validate(counterInfoCollection);
-        return validator.report;
+        return new Validator(sourceDir).validate(counterInfoCollection).report;
     }
 
     private final String sourceDir;
@@ -44,11 +42,13 @@ final class Validator
         this.report = new ValidationReport();
     }
 
-    private void validate(final Collection<CounterInfo> counterInfoCollection)
+    private Validator validate(final Collection<CounterInfo> counterInfoCollection)
     {
         counterInfoCollection.forEach(this::validateCExpectations);
 
         identifyExtraCCounters(counterInfoCollection);
+
+        return this;
     }
 
     private void identifyExtraCCounters(final Collection<CounterInfo> counterInfoCollection)

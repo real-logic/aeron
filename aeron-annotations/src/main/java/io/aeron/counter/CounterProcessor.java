@@ -15,7 +15,7 @@
  */
 package io.aeron.counter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.aeron.utility.ElementIO;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
@@ -25,12 +25,7 @@ import javax.lang.model.element.*;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -86,14 +81,13 @@ public class CounterProcessor extends AbstractProcessor
             try
             {
                 final FileObject resourceFile = processingEnv.getFiler()
-                    .createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "counter-info.json");
-                try (OutputStream out = resourceFile.openOutputStream())
-                {
-                    new ObjectMapper().writeValue(out, counterInfoMap.values());
-                }
+                    .createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "counter-info.xml");
+
+                ElementIO.write(resourceFile, counterInfoMap);
             }
-            catch (final IOException e)
+            catch (final Exception e)
             {
+                e.printStackTrace(System.err);
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                     "an error occurred while writing output: " + e.getMessage());
             }

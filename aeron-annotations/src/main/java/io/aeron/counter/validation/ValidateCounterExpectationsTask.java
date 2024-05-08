@@ -15,12 +15,7 @@
  */
 package io.aeron.counter.validation;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.aeron.counter.CounterInfo;
-
-import java.nio.file.Paths;
-import java.util.List;
+import io.aeron.utility.ElementIO;
 
 /**
  * A gradle task for validating C counters conform to expectations set by the AeronCounter annotation in java
@@ -30,7 +25,7 @@ public class ValidateCounterExpectationsTask
 
     /**
      * @param args
-     * Arg 0 should be the location of a counter-info.json file with a list of CounterInfo objects
+     * Arg 0 should be the location of a counter-info.xml file with a list of CounterInfo objects
      * Arg 1 should be the location of the C source code
      *
      * @throws Exception
@@ -38,15 +33,6 @@ public class ValidateCounterExpectationsTask
      */
     public static void main(final String[] args) throws Exception
     {
-        Validator.validate(fetchCounter(args[0]), args[1]).printFailuresOn(System.err);
-    }
-
-    private static List<CounterInfo> fetchCounter(final String counterInfoFilename) throws Exception
-    {
-        return new ObjectMapper().readValue(
-            Paths.get(counterInfoFilename).toFile(),
-            new TypeReference<List<CounterInfo>>()
-            {
-            });
+        Validator.validate(ElementIO.fetch(args[0]), args[1]).printFailuresOn(System.err);
     }
 }

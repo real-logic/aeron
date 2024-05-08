@@ -63,7 +63,7 @@ public class GenerateConfigDocTask
 
             for (final ConfigInfo configInfo: config)
             {
-                writeHeader(toHeaderString(configInfo.id));
+                writeHeader(toHeaderString(configInfo.id) + (configInfo.deprecated ? " (***deprecated***)" : ""));
                 write("Description", configInfo.propertyNameDescription);
                 write("Type",
                     (DefaultType.isUndefined(configInfo.overrideDefaultValueType) ?

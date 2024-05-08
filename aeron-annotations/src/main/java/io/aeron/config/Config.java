@@ -120,4 +120,9 @@ public @interface Config
      * @return the time unit if the default value is a time value of some sort
      */
     TimeUnit timeUnit() default TimeUnit.NANOSECONDS;
+
+    /**
+     * @return whether or not this config option has a 'context'
+     */
+    boolean hasContext() default true;
 }

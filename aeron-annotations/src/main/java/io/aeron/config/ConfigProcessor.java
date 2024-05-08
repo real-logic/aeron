@@ -64,17 +64,29 @@ public class ConfigProcessor extends AbstractProcessor
             {
                 try
                 {
+                    final ConfigInfo configInfo;
+
                     if (element instanceof VariableElement)
                     {
-                        processElement(configInfoMap, (VariableElement)element);
+                        configInfo = processElement(configInfoMap, (VariableElement)element);
                     }
                     else if (element instanceof ExecutableElement)
                     {
-                        processExecutableElement(configInfoMap, (ExecutableElement)element);
+                        configInfo = processExecutableElement(configInfoMap, (ExecutableElement)element);
                     }
                     else
                     {
+                        configInfo = null;
                     }
+
+                    if (configInfo != null)
+                    {
+                        if (element.getAnnotation(Deprecated.class) != null)
+                        {
+                            configInfo.deprecated = true;
+                        }
+                    }
+
                 }
                 catch (final Exception e)
                 {
@@ -116,14 +128,14 @@ public class ConfigProcessor extends AbstractProcessor
     }
 
     @SuppressWarnings({ "checkstyle:MethodLength", "checkstyle:LineLength" })
-    private void processElement(final Map<String, ConfigInfo> configInfoMap, final VariableElement element)
+    private ConfigInfo processElement(final Map<String, ConfigInfo> configInfoMap, final VariableElement element)
     {
         final Config config = element.getAnnotation(Config.class);
 
         if (Objects.isNull(config))
         {
             error("element found with no expected annotations", element);
-            return;
+            return null;
         }
 
         final String id;
@@ -138,7 +150,7 @@ public class ConfigProcessor extends AbstractProcessor
                 {
                     error("duplicate config option info for id: " + id + ".  Previous definition found at " +
                         configInfo.propertyNameClassName + ":" + configInfo.propertyNameFieldName, element);
-                    return;
+                    return configInfo;
                 }
                 configInfo.foundPropertyName = true;
 
@@ -162,7 +174,7 @@ public class ConfigProcessor extends AbstractProcessor
                 {
                     error("duplicate config default info for id: " + id + ".  Previous definition found at " +
                         configInfo.defaultClassName + ":" + configInfo.defaultFieldName, element);
-                    return;
+                    return configInfo;
                 }
                 configInfo.foundDefault = true;
 
@@ -178,12 +190,17 @@ public class ConfigProcessor extends AbstractProcessor
                 break;
             default:
                 error("unable to determine config type", element);
-                return;
+                return null;
         }
 
         if (!config.uriParam().isEmpty())
         {
             configInfo.uriParam = config.uriParam();
+        }
+
+        if (!config.hasContext())
+        {
+            configInfo.hasContext = false;
         }
 
         switch (config.isTimeValue())
@@ -273,6 +290,8 @@ public class ConfigProcessor extends AbstractProcessor
                 c.defaultValue = config.expectedCDefault();
             }
         }
+
+        return configInfo;
     }
 
     private String getDocComment(final Element element)
@@ -287,22 +306,21 @@ public class ConfigProcessor extends AbstractProcessor
         return description.trim();
     }
 
-    private void processExecutableElement(final Map<String, ConfigInfo> configInfoMap, final ExecutableElement element)
+    private ConfigInfo processExecutableElement(
+        final Map<String, ConfigInfo> configInfoMap, final ExecutableElement element)
     {
         final Config config = element.getAnnotation(Config.class);
 
         if (Objects.isNull(config))
         {
             error("element found with no expected annotations", element);
-            return;
+            return null;
         }
 
         final String id = getConfigId(element, config.id());
         final ConfigInfo configInfo = configInfoMap.computeIfAbsent(id, ConfigInfo::new);
 
         final String methodName = element.toString();
-        System.out.println("-- " + methodName);
-
         final String enclosingElementName = element.getEnclosingElement().toString();
 
         Element e = element.getEnclosingElement();
@@ -315,6 +333,8 @@ public class ConfigProcessor extends AbstractProcessor
 
         configInfo.context = enclosingElementName.substring(packageName.length() + 1) + "." + methodName;
         configInfo.contextDescription = getDocComment(element);
+
+        return configInfo;
     }
 
     private Config.Type getConfigType(final VariableElement element, final Config config)
@@ -464,7 +484,7 @@ public class ConfigProcessor extends AbstractProcessor
             insane(id, "no default value found");
         }
 
-        if (configInfo.context == null || configInfo.context.isEmpty())
+        if (configInfo.hasContext && (configInfo.context == null || configInfo.context.isEmpty()))
         {
             insane(id, "missing context");
         }

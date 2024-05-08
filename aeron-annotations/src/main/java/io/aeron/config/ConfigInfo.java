@@ -65,6 +65,8 @@ public class ConfigInfo
     @JsonProperty
     public String uriParam;
     @JsonProperty
+    public boolean hasContext = true;
+    @JsonProperty
     public String context;
     @JsonProperty
     public String contextDescription;
@@ -72,4 +74,6 @@ public class ConfigInfo
     public Boolean isTimeValue;
     @JsonProperty
     public TimeUnit timeUnit;
+    @JsonProperty
+    public boolean deprecated = false;
 }

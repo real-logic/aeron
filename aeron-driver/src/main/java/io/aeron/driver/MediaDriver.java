@@ -753,6 +753,7 @@ public final class MediaDriver implements AutoCloseable
          * @return true if the configuration should be printed on start.
          * @see Configuration#PRINT_CONFIGURATION_ON_START_PROP_NAME
          */
+        @Config
         public boolean printConfigurationOnStart()
         {
             return printConfigurationOnStart;
@@ -790,6 +791,7 @@ public final class MediaDriver implements AutoCloseable
          * @return true if an attempt be made to use the high resolution timers for waiting on Windows.
          * @see Configuration#USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME
          */
+        @Config
         public boolean useWindowsHighResTimer()
         {
             return useWindowsHighResTimer;
@@ -801,6 +803,7 @@ public final class MediaDriver implements AutoCloseable
          * @return should a warning be issued if the {@link #aeronDirectoryName()} exists?
          * @see Configuration#DIR_WARN_IF_EXISTS_PROP_NAME
          */
+        @Config(id = "DIR_WARN_IF_EXISTS")
         public boolean warnIfDirectoryExists()
         {
             return warnIfDirectoryExists;
@@ -827,6 +830,7 @@ public final class MediaDriver implements AutoCloseable
          * @return true when directory will be recreated without checks, otherwise false.
          * @see Configuration#DIR_DELETE_ON_START_PROP_NAME
          */
+        @Config
         public boolean dirDeleteOnStart()
         {
             return dirDeleteOnStart;
@@ -853,6 +857,7 @@ public final class MediaDriver implements AutoCloseable
          * @return true when directory will be deleted, otherwise false.
          * @see Configuration#DIR_DELETE_ON_SHUTDOWN_PROP_NAME
          */
+        @Config
         public boolean dirDeleteOnShutdown()
         {
             return dirDeleteOnShutdown;
@@ -877,6 +882,7 @@ public final class MediaDriver implements AutoCloseable
          * @return should the term buffers be created with sparse files?
          * @see Configuration#TERM_BUFFER_SPARSE_FILE_PROP_NAME
          */
+        @Config
         public boolean termBufferSparseFile()
         {
             return termBufferSparseFile;
@@ -951,6 +957,7 @@ public final class MediaDriver implements AutoCloseable
          * @return length of the buffer for storing values by the {@link CountersManager}.
          * @see Configuration#COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME
          */
+        @Config(id = "COUNTERS_VALUES_BUFFER_LENGTH")
         public int counterValuesBufferLength()
         {
             return counterValuesBufferLength;
@@ -1000,6 +1007,7 @@ public final class MediaDriver implements AutoCloseable
          * @return true if the driver should perform storage checks when allocating files.
          * @see Configuration#PERFORM_STORAGE_CHECKS_PROP_NAME
          */
+        @Config
         public boolean performStorageChecks()
         {
             return performStorageChecks;
@@ -1049,6 +1057,7 @@ public final class MediaDriver implements AutoCloseable
          * @return the length in bytes of the loss report buffer.
          * @see Configuration#LOSS_REPORT_BUFFER_LENGTH_PROP_NAME
          */
+        @Config
         public int lossReportBufferLength()
         {
             return lossReportBufferLength;
@@ -1098,6 +1107,7 @@ public final class MediaDriver implements AutoCloseable
          * @return nanoseconds between checks for timers and timeouts.
          * @see Configuration#TIMER_INTERVAL_PROP_NAME
          */
+        @Config
         public long timerIntervalNs()
         {
             return timerIntervalNs;
@@ -1122,6 +1132,7 @@ public final class MediaDriver implements AutoCloseable
          * @return nanoseconds that an Image will be kept alive for its subscribers to consume it.
          * @see Configuration#IMAGE_LIVENESS_TIMEOUT_PROP_NAME
          */
+        @Config
         public long imageLivenessTimeoutNs()
         {
             return imageLivenessTimeoutNs;
@@ -1172,6 +1183,7 @@ public final class MediaDriver implements AutoCloseable
          * @return timeout that an untethered subscription outside the window limit will participate in flow control.
          * @see Configuration#UNTETHERED_WINDOW_LIMIT_TIMEOUT_PROP_NAME
          */
+        @Config
         public long untetheredWindowLimitTimeoutNs()
         {
             return untetheredWindowLimitTimeoutNs;
@@ -1198,6 +1210,7 @@ public final class MediaDriver implements AutoCloseable
          * @return timeout that an untethered subscription is resting before being allowed to rejoin a stream.
          * @see Configuration#UNTETHERED_RESTING_TIMEOUT_PROP_NAME
          */
+        @Config
         public long untetheredRestingTimeoutNs()
         {
             return untetheredRestingTimeoutNs;
@@ -1247,6 +1260,7 @@ public final class MediaDriver implements AutoCloseable
          * @return how long to linger after delay on a NAK before responding to another NAK.
          * @see Configuration#RETRANSMIT_UNICAST_LINGER_PROP_NAME
          */
+        @Config
         public long retransmitUnicastLingerNs()
         {
             return retransmitUnicastLingerNs;
@@ -1297,6 +1311,7 @@ public final class MediaDriver implements AutoCloseable
          * @return ratio to apply to the retry delay for unicast
          * @see #nakUnicastRetryDelayRatio(long)
          */
+        @Config
         public long nakUnicastRetryDelayRatio()
         {
             return nakUnicastRetryDelayRatio;
@@ -1324,6 +1339,7 @@ public final class MediaDriver implements AutoCloseable
          * @return maximum time to backoff before sending a NAK on multicast.
          * @see Configuration#NAK_MULTICAST_MAX_BACKOFF_PROP_NAME
          */
+        @Config
         public long nakMulticastMaxBackoffNs()
         {
             return nakMulticastMaxBackoffNs;
@@ -1423,6 +1439,7 @@ public final class MediaDriver implements AutoCloseable
          * @return time in nanoseconds after which a freed counter may be reused.
          * @see Configuration#COUNTER_FREE_TO_REUSE_TIMEOUT_PROP_NAME
          */
+        @Config
         public long counterFreeToReuseTimeoutNs()
         {
             return counterFreeToReuseTimeoutNs;
@@ -1452,6 +1469,7 @@ public final class MediaDriver implements AutoCloseable
          * @return timeout in nanoseconds after which a publication will be unblocked.
          * @see Configuration#PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME
          */
+        @Config
         public long publicationUnblockTimeoutNs()
         {
             return CommonContext.checkDebugTimeout(publicationUnblockTimeoutNs, TimeUnit.NANOSECONDS, 1.5);
@@ -1482,6 +1500,7 @@ public final class MediaDriver implements AutoCloseable
          * @return timeout in nanoseconds after which a publication is considered not connected.
          * @see Configuration#PUBLICATION_CONNECTION_TIMEOUT_PROP_NAME
          */
+        @Config
         public long publicationConnectionTimeoutNs()
         {
             return publicationConnectionTimeoutNs;
@@ -1570,6 +1589,7 @@ public final class MediaDriver implements AutoCloseable
          * @see Configuration#TETHER_SUBSCRIPTIONS_PROP_NAME
          * @see CommonContext#TETHER_PARAM_NAME
          */
+        @Config
         public boolean tetherSubscriptions()
         {
             return tetherSubscriptions;
@@ -1636,6 +1656,7 @@ public final class MediaDriver implements AutoCloseable
          * @see Configuration#REJOIN_STREAM_PROP_NAME
          * @see CommonContext#REJOIN_PARAM_NAME
          */
+        @Config
         public boolean rejoinStream()
         {
             return rejoinStream;
@@ -1717,6 +1738,7 @@ public final class MediaDriver implements AutoCloseable
          * @return default length for a term buffer window on a network publication.
          * @see Configuration#PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME
          */
+        @Config
         public int publicationTermWindowLength()
         {
             return publicationTermWindowLength;
@@ -1768,6 +1790,7 @@ public final class MediaDriver implements AutoCloseable
          * @return The initial window for in flight data on a connection
          * @see Configuration#INITIAL_WINDOW_LENGTH_PROP_NAME
          */
+        @Config
         public int initialWindowLength()
         {
             return initialWindowLength;
@@ -1794,6 +1817,7 @@ public final class MediaDriver implements AutoCloseable
          * @return the socket send buffer length.
          * @see Configuration#SOCKET_SNDBUF_LENGTH_PROP_NAME
          */
+        @Config
         public int socketSndbufLength()
         {
             return socketSndbufLength;
@@ -1818,6 +1842,7 @@ public final class MediaDriver implements AutoCloseable
          * @return the socket send buffer length.
          * @see Configuration#SOCKET_RCVBUF_LENGTH_PROP_NAME
          */
+        @Config
         public int socketRcvbufLength()
         {
             return socketRcvbufLength;
@@ -1842,6 +1867,7 @@ public final class MediaDriver implements AutoCloseable
          * @return TTL value to be used for multicast sockets.
          * @see Configuration#SOCKET_MULTICAST_TTL_PROP_NAME
          */
+        @Config
         public int socketMulticastTtl()
         {
             return socketMulticastTtl;
@@ -1870,6 +1896,7 @@ public final class MediaDriver implements AutoCloseable
          * @return MTU in bytes for datagrams sent to the network.
          * @see Configuration#MTU_LENGTH_PROP_NAME
          */
+        @Config
         public int mtuLength()
         {
             return mtuLength;
@@ -1901,6 +1928,7 @@ public final class MediaDriver implements AutoCloseable
          * @return MTU in bytes for message fragments.
          * @see Configuration#IPC_MTU_LENGTH_PROP_NAME
          */
+        @Config
         public int ipcMtuLength()
         {
             return ipcMtuLength;
@@ -2222,6 +2250,7 @@ public final class MediaDriver implements AutoCloseable
          * @see Configuration#ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME
          * @since 1.44.0
          */
+        @Config
         public int asyncTaskExecutorThreads()
         {
             return asyncTaskExecutorThreads;
@@ -2271,6 +2300,7 @@ public final class MediaDriver implements AutoCloseable
          * @return {@link IdleStrategy} to be used by the {@link Sender} when in {@link ThreadingMode#DEDICATED}.
          * @see Configuration#SENDER_IDLE_STRATEGY_PROP_NAME
          */
+        @Config
         public IdleStrategy senderIdleStrategy()
         {
             return senderIdleStrategy;
@@ -2375,6 +2405,7 @@ public final class MediaDriver implements AutoCloseable
          * @return {@link IdleStrategy} used by the {@link Sender}, {@link Receiver} and {@link DriverConductor}.
          * @see Configuration#SHARED_IDLE_STRATEGY_PROP_NAME
          */
+        @Config
         public IdleStrategy sharedIdleStrategy()
         {
             return sharedIdleStrategy;
@@ -2401,6 +2432,7 @@ public final class MediaDriver implements AutoCloseable
          * @return the supplier of dynamically created {@link SendChannelEndpoint} subclasses.
          * @see Configuration#SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME
          */
+        @Config
         public SendChannelEndpointSupplier sendChannelEndpointSupplier()
         {
             return sendChannelEndpointSupplier;
@@ -2427,6 +2459,7 @@ public final class MediaDriver implements AutoCloseable
          * @return the supplier of dynamically created {@link ReceiveChannelEndpoint} subclasses.
          * @see Configuration#RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME
          */
+        @Config
         public ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier()
         {
             return receiveChannelEndpointSupplier;
@@ -2496,6 +2529,7 @@ public final class MediaDriver implements AutoCloseable
          * @return supplier of dynamically created {@link FlowControl} strategies for unicast connections.
          * @see Configuration#UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME
          */
+        @Config(id = "UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER")
         public FlowControlSupplier unicastFlowControlSupplier()
         {
             return unicastFlowControlSupplier;
@@ -2520,6 +2554,7 @@ public final class MediaDriver implements AutoCloseable
          * @return supplier of dynamically created {@link FlowControl} strategies for multicast connections.
          * @see Configuration#MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME
          */
+        @Config(id = "MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER")
         public FlowControlSupplier multicastFlowControlSupplier()
         {
             return multicastFlowControlSupplier;
@@ -2544,6 +2579,7 @@ public final class MediaDriver implements AutoCloseable
          * @return timeout in ns.
          * @see Configuration#FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME
          */
+        @Config
         public long flowControlReceiverTimeoutNs()
         {
             return flowControlReceiverTimeoutNs;
@@ -2572,6 +2608,7 @@ public final class MediaDriver implements AutoCloseable
          * @see Configuration#SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME
          */
         @Deprecated
+        @Config(id = "SM_APPLICATION_SPECIFIC_FEEDBACK")
         public byte[] applicationSpecificFeedback()
         {
             return applicationSpecificFeedback;
@@ -2600,6 +2637,7 @@ public final class MediaDriver implements AutoCloseable
          * @return supplier of dynamically created {@link CongestionControl} strategies for individual connections.
          * @see Configuration#CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME
          */
+        @Config(id = "CONGESTION_CONTROL_STRATEGY_SUPPLIER")
         public CongestionControlSupplier congestionControlSupplier()
         {
             return congestionControlSupplier;
@@ -2768,6 +2806,7 @@ public final class MediaDriver implements AutoCloseable
          * @see #publicationReservedSessionIdHigh()
          * @see Configuration#PUBLICATION_RESERVED_SESSION_ID_LOW_PROP_NAME
          */
+        @Config
         public int publicationReservedSessionIdLow()
         {
             return publicationReservedSessionIdLow;
@@ -2795,6 +2834,7 @@ public final class MediaDriver implements AutoCloseable
          * @see #publicationReservedSessionIdLow()
          * @see Configuration#PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME
          */
+        @Config
         public int publicationReservedSessionIdHigh()
         {
             return publicationReservedSessionIdHigh;
@@ -2821,6 +2861,7 @@ public final class MediaDriver implements AutoCloseable
          * @return {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit frame.
          * @see Configuration#RETRANSMIT_UNICAST_DELAY_PROP_NAME
          */
+        @Config(id = "RETRANSMIT_UNICAST_DELAY")
         public FeedbackDelayGenerator retransmitUnicastDelayGenerator()
         {
             return retransmitUnicastDelayGenerator;
@@ -2954,6 +2995,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return {@link TerminationValidator} to validate termination requests.
          */
+        @Config
         public TerminationValidator terminationValidator()
         {
             return terminationValidator;
@@ -2964,6 +3006,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return ratio for sending data to polling status messages in the Sender.
          */
+        @Config(id = "SEND_TO_STATUS_POLL_RATIO")
         public int sendToStatusMessagePollRatio()
         {
             return sendToStatusMessagePollRatio;
@@ -2987,6 +3030,7 @@ public final class MediaDriver implements AutoCloseable
          * @return group tag value or null if not set.
          * @see Configuration#RECEIVER_GROUP_TAG_PROP_NAME
          */
+        @Config
         public Long receiverGroupTag()
         {
             return receiverGroupTag;
@@ -3011,6 +3055,7 @@ public final class MediaDriver implements AutoCloseable
          * @return group tag value or null if not set.
          * @see Configuration#FLOW_CONTROL_GROUP_TAG_PROP_NAME
          */
+        @Config
         public long flowControlGroupTag()
         {
             return flowControlGroupTag;
@@ -3035,6 +3080,7 @@ public final class MediaDriver implements AutoCloseable
          * @return required group size.
          * @see Configuration#FLOW_CONTROL_GROUP_MIN_SIZE_PROP_NAME
          */
+        @Config
         public int flowControlGroupMinSize()
         {
             return flowControlGroupMinSize;
@@ -3081,6 +3127,7 @@ public final class MediaDriver implements AutoCloseable
          * @return name of the {@link MediaDriver}.
          * @see Configuration#RESOLVER_NAME_PROP_NAME
          */
+        @Config
         public String resolverName()
         {
             return resolverName;
@@ -3142,6 +3189,7 @@ public final class MediaDriver implements AutoCloseable
          * @see Configuration#RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME
          * @see CommonContext#ENDPOINT_PARAM_NAME
          */
+        @Config
         public String resolverBootstrapNeighbor()
         {
             return resolverBootstrapNeighbor;
@@ -3215,6 +3263,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return threshold to track for the conductor work cycle time.
          */
+        @Config
         public long conductorCycleThresholdNs()
         {
             return conductorCycleThresholdNs;
@@ -3307,6 +3356,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return threshold to track for the name resolution.
          */
+        @Config
         public long nameResolverThresholdNs()
         {
             return nameResolverThresholdNs;
@@ -3334,6 +3384,7 @@ public final class MediaDriver implements AutoCloseable
          * @return limit on the number of resources that can be freed.
          * @since 1.41.0
          */
+        @Config
         public int resourceFreeLimit()
         {
             return resourceFreeLimit;
@@ -3482,6 +3533,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return port range as a string in the format "low high".
          */
+        @Config
         public String receiverWildcardPortRange()
         {
             return receiverWildcardPortRange;

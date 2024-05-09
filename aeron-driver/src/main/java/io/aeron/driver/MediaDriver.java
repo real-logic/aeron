@@ -3529,6 +3529,9 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param sessionLimit the limit of sessions per stream
          * @return this for a fluent API.
+         * @see Configuration#STREAM_SESSION_LIMIT_PROP_NAME
+         * @see Configuration#STREAM_SESSION_LIMIT_DEFAULT
+         * @see Configuration#streamSessionLimit()
          */
         public Context streamSessionLimit(final int sessionLimit)
         {
@@ -3540,6 +3543,7 @@ public final class MediaDriver implements AutoCloseable
          * Get the limit on the number of sessions allow per stream for subscriptions.
          *
          * @return the limit of sessions per stream
+         * @see Context#streamSessionLimit(int)
          */
         public int streamSessionLimit()
         {

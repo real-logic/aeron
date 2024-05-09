@@ -53,6 +53,7 @@ public class StreamSessionLimitsTest
 
         driver = TestMediaDriver.launch(context, watcher);
         watcher.dataCollector().add(driver.context().aeronDirectory());
+        watcher.ignoreErrorsMatching(s -> s.contains("session limit"));
     }
 
     @AfterEach

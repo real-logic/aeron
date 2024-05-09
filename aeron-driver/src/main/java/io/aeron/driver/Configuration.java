@@ -788,7 +788,7 @@ public final class Configuration
      */
     public static final String ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME = "aeron.driver.async.executor.threads";
 
-    public static final String STREAM_SESSION_LIMIT_PROP_NAME = "aeron.driver.session.stream.limit";
+    public static final String STREAM_SESSION_LIMIT_PROP_NAME = "aeron.driver.stream.session.limit";
 
     public static final int STREAM_SESSION_LIMIT_DEFAULT = Integer.MAX_VALUE;
 

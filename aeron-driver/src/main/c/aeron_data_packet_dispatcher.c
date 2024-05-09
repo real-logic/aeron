@@ -473,7 +473,7 @@ int aeron_data_packet_dispatcher_on_setup(
     {
         if ((size_t)dispatcher->stream_session_limit <= stream_interest->image_by_session_id_map.size)
         {
-            AERON_SET_ERR(EINVAL, "exceeded session limit, streamId=" PRId32, header->stream_id);
+            AERON_SET_ERR(EINVAL, "exceeded session limit, stream-id=%" PRId32, header->stream_id);
             return -1;
         }
 

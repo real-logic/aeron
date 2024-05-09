@@ -25,7 +25,6 @@ import javax.lang.model.element.*;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
-import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Stream;
 

@@ -47,9 +47,9 @@ public class ConfigInfo implements Serializable
     public String defaultDescription;
     public String defaultFieldName;
     public String defaultClassName;
-    public Object defaultValue;
+    public Serializable defaultValue;
     public DefaultType defaultValueType = DefaultType.UNDEFINED;
-    public Object overrideDefaultValue;
+    public Serializable overrideDefaultValue;
     public DefaultType overrideDefaultValueType = DefaultType.UNDEFINED;
     public String uriParam;
     public boolean hasContext = true;

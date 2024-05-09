@@ -25,6 +25,7 @@ import javax.lang.model.element.*;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -182,7 +183,7 @@ public class ConfigProcessor extends AbstractProcessor
 
                 if (constantValue != null)
                 {
-                    configInfo.defaultValue = constantValue;
+                    configInfo.defaultValue = (Serializable)constantValue;
                     configInfo.defaultValueType = DefaultType.fromCanonicalName(constantValue.getClass().getCanonicalName());
                 }
                 break;

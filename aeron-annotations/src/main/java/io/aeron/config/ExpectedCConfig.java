@@ -28,6 +28,6 @@ public class ExpectedCConfig implements Serializable
     public String envVarFieldName;
     public String envVar;
     public String defaultFieldName;
-    public Object defaultValue;
+    public Serializable defaultValue;
     public DefaultType defaultValueType;
 }

@@ -85,7 +85,6 @@ public class ConfigProcessor extends AbstractProcessor
                             configInfo.deprecated = true;
                         }
                     }
-
                 }
                 catch (final Exception e)
                 {
@@ -286,6 +285,11 @@ public class ConfigProcessor extends AbstractProcessor
             if (c.defaultValue == null && !config.expectedCDefault().isEmpty())
             {
                 c.defaultValue = config.expectedCDefault();
+            }
+
+            if (config.skipCDefaultValidation())
+            {
+                c.skipDefaultValidation = true;
             }
         }
 

@@ -61,7 +61,10 @@ final class ConfigDocGenerator implements AutoCloseable
     {
         for (final ConfigInfo configInfo: sort(configInfoCollection))
         {
-            writeHeader(toHeaderString(configInfo.id) + (configInfo.deprecated ? " (***deprecated***)" : ""));
+            writeHeader(
+                toHeaderString(configInfo.id) +
+                (configInfo.expectations.c.exists ? "" : " (***JAVA ONLY***)") +
+                (configInfo.deprecated ? " (***DEPRECATED***)" : ""));
             write("Description", configInfo.propertyNameDescription);
             write("Type",
                 (DefaultType.isUndefined(configInfo.overrideDefaultValueType) ?
@@ -88,6 +91,14 @@ final class ConfigDocGenerator implements AutoCloseable
             final String defaultValue = configInfo.overrideDefaultValue == null ?
                 configInfo.defaultValue :
                 configInfo.overrideDefaultValue;
+
+
+            if (defaultValue == null)
+            {
+                System.err.println("!!!!!!!! " + configInfo.id);
+            }
+
+
             write("Default", getDefaultString(
                 defaultValue,
                 configInfo.isTimeValue,
@@ -255,10 +266,5 @@ final class ConfigDocGenerator implements AutoCloseable
             return builder.toString();
         }
         return defaultValue;
-    }
-
-    private String toString(final String a)
-    {
-        return a == null ? "" : a;
     }
 }

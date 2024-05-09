@@ -42,7 +42,15 @@ final class ValidationReport
         if (c.exists)
         {
             validate(validateCEnvVar, entry.envVarValidation, c);
-            validate(validateCDefault, entry.defaultValidation, c);
+
+            if (c.skipDefaultValidation)
+            {
+                entry.defaultValidation.valid("skipped");
+            }
+            else
+            {
+                validate(validateCDefault, entry.defaultValidation, c);
+            }
         }
         entries.add(entry);
     }

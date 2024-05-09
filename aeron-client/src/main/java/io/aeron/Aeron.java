@@ -678,7 +678,7 @@ public class Aeron implements AutoCloseable
         /**
          * Duration to sleep when idle
          */
-        @Config
+        @Config(expectedCDefaultFieldName = "AERON_CONTEXT_IDLE_SLEEP_DURATION_NS_DEFAULT")
         public static final String IDLE_SLEEP_DURATION_PROP_NAME = "aeron.client.idle.sleep.duration";
 
         /**
@@ -696,7 +696,7 @@ public class Aeron implements AutoCloseable
          * Duration to wait while lingering an entity such as an {@link Image} before deleting underlying resources
          * such as memory mapped files.
          */
-        @Config
+        @Config(expectedCDefaultFieldName = "AERON_CONTEXT_RESOURCE_LINGER_DURATION_NS_DEFAULT")
         public static final String RESOURCE_LINGER_DURATION_PROP_NAME = "aeron.client.resource.linger.duration";
 
         /**
@@ -710,7 +710,7 @@ public class Aeron implements AutoCloseable
          * This value can be set to a few seconds if the application is likely to experience CPU starvation or
          * long GC pauses.
          */
-        @Config
+        @Config(existsInC = false)
         public static final String CLOSE_LINGER_DURATION_PROP_NAME = "aeron.client.close.linger.duration";
 
         /**
@@ -725,7 +725,10 @@ public class Aeron implements AutoCloseable
          * Pre-touching files can result in it taking longer for resources to become available in
          * return for avoiding later pauses due to page faults.
          */
-        @Config
+        @Config(
+            expectedCEnvVarFieldName = "AERON_CLIENT_PRE_TOUCH_MAPPED_MEMORY_ENV_VAR",
+            expectedCEnvVar = "AERON_CLIENT_PRE_TOUCH_MAPPED_MEMORY",
+            expectedCDefaultFieldName = "AERON_CONTEXT_PRE_TOUCH_MAPPED_MEMORY_DEFAULT")
         public static final String PRE_TOUCH_MAPPED_MEMORY_PROP_NAME = "aeron.pre.touch.mapped.memory";
 
         /**
@@ -739,7 +742,7 @@ public class Aeron implements AutoCloseable
          *
          * @since 1.44.0
          */
-        @Config(defaultType = DefaultType.STRING, defaultString = "")
+        @Config(defaultType = DefaultType.STRING, defaultString = "", skipCDefaultValidation = true)
         public static final String CLIENT_NAME_PROP_NAME = "aeron.client.name";
 
         /**

@@ -74,6 +74,11 @@ public @interface Config
     String expectedCDefault() default "";
 
     /**
+     * @return whether to skip validation of the default in C
+     */
+    boolean skipCDefaultValidation() default false;
+
+    /**
      * @return what's the type of default (string, int, etc...)
      */
     DefaultType defaultType() default DefaultType.UNDEFINED;

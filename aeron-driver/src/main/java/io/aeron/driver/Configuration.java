@@ -883,7 +883,7 @@ public final class Configuration
     /**
      * Property name for default group tag (gtag) to send in all Status Messages.
      */
-    @Config
+    @Config(defaultType = DefaultType.LONG, defaultLong = 0)
     public static final String RECEIVER_GROUP_TAG_PROP_NAME = "aeron.receiver.group.tag";
 
     /**

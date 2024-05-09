@@ -35,4 +35,6 @@ public class ExpectedCConfig implements Serializable
     public String defaultValue;
 
     public DefaultType defaultValueType;
+
+    public boolean skipDefaultValidation = false;
 }

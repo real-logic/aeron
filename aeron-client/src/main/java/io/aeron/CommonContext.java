@@ -107,7 +107,7 @@ public class CommonContext implements Cloneable
      * Property name for the timeout to use in debug mode. By default, this is not set and the configured
      * timeouts will be used. Setting this value adjusts timeouts to make debugging easier.
      */
-    @Config(defaultType = DefaultType.LONG, defaultLong = 0)
+    @Config(defaultType = DefaultType.LONG, defaultLong = 0, existsInC = false)
     public static final String DEBUG_TIMEOUT_PROP_NAME = "aeron.debug.timeout";
 
     /**
@@ -132,7 +132,7 @@ public class CommonContext implements Cloneable
     /**
      * The top level Aeron directory used for communication between a Media Driver and client.
      */
-    @Config
+    @Config(skipCDefaultValidation = true)
     public static final String AERON_DIR_PROP_NAME = "aeron.dir";
 
     /**
@@ -146,14 +146,14 @@ public class CommonContext implements Cloneable
      *
      * @since 1.44.0
      */
-    @Config(defaultType = DefaultType.BOOLEAN, defaultBoolean = false)
+    @Config(defaultType = DefaultType.BOOLEAN, defaultBoolean = false, existsInC = false)
     public static final String ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME = "aeron.enable.experimental.features";
 
     /**
      * Property name for a fallback {@link PrintStream} based logger when it is not possible to use the error logging
      * callback. Supported values are stdout, stderr, no_op (stderr is the default).
      */
-    @Config(defaultType = DefaultType.STRING, defaultString = "stderr")
+    @Config(defaultType = DefaultType.STRING, defaultString = "stderr", existsInC = false)
     public static final String FALLBACK_LOGGER_PROP_NAME = "aeron.fallback.logger";
 
     /**

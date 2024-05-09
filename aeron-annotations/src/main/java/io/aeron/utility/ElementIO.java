@@ -26,9 +26,14 @@ import java.util.List;
 
 /**
  */
-@SuppressWarnings("checkstyle:MissingJavadocMethod")
 public class ElementIO
 {
+    /**
+     * @param elementsFilename the name of the filename that contains a list of objects
+     * @return a list of elements
+     * @param <T> the type of elements - ConfigInfo or CounterInfo
+     * @throws Exception yup
+     */
     @SuppressWarnings("unchecked")
     public static <T> List<T> read(final String elementsFilename) throws Exception
     {
@@ -38,7 +43,12 @@ public class ElementIO
         }
     }
 
-    public static <T> void write(final FileObject resourceFile, final Collection<T> elements) throws Exception
+    /**
+     * @param resourceFile the destination file to write to
+     * @param elements a Collection of elements
+     * @throws Exception yup
+     */
+    public static void write(final FileObject resourceFile, final Collection<?> elements) throws Exception
     {
         try (ObjectOutputStream out = new ObjectOutputStream(resourceFile.openOutputStream()))
         {

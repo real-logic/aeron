@@ -105,15 +105,16 @@ final class Validator
             validation.invalid("Expected Default NOT found.  `grep` command:\n" + grep.getCommandString());
             return;
         }
+        final String location = grep.getFilenameAndLine();
 
         final Matcher matcher = Pattern.compile(pattern + "(.*)$").matcher(grep.getOutput());
         if (!matcher.find())
         {
-            throw new RuntimeException("asdf"); // TODO
+            validation.invalid("Found Default but the pattern doesn't match at " + location);
+            return;
         }
 
         final String originalFoundDefaultString = matcher.group(1).trim();
-        final String location = grep.getFilenameAndLine();
 
         if (c.defaultValueType == DefaultType.STRING)
         {
@@ -185,6 +186,7 @@ final class Validator
         final String foundDefaultString = originalFoundDefaultString
             .replaceAll("INT64_C", "")
             .replaceAll("UINT32_C", "")
+            .replaceAll("([0-9]+)LL", "$1")
             .replaceAll("([0-9]+)L", "$1");
 
         try
@@ -194,7 +196,7 @@ final class Validator
                 "(" + foundDefaultString + ").toFixed(0)" // avoid scientific notation
             ).toString();
 
-            if (evaluatedFoundDefaultString.equals(c.defaultValue.toString()))
+            if (evaluatedFoundDefaultString.equals(c.defaultValue))
             {
                 validation.valid("Expected Default '" + foundDefaultString + "'" +
                     (foundDefaultString.equals(evaluatedFoundDefaultString) ?

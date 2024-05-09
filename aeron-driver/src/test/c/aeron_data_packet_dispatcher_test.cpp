@@ -31,6 +31,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context);
 #define CAPACITY (32 * 1024)
 #define TERM_BUFFER_SIZE (64 * 1024)
 #define MTU (4096)
+#define STREAM_SESSION_LIMIT (5)
 
 typedef std::array<std::uint8_t, CAPACITY> buffer_t;
 typedef std::array<std::uint8_t, 4 * CAPACITY> buffer_4x_t;
@@ -46,6 +47,7 @@ protected:
     void SetUp() override
     {
         ReceiverTestBase::SetUp();
+        aeron_driver_context_set_stream_session_limit(m_context, STREAM_SESSION_LIMIT);
 
         m_receive_endpoint = createEndpoint("aeron:udp?endpoint=localhost:9090");
         ASSERT_NE(nullptr, m_receive_endpoint) << aeron_errmsg();
@@ -529,4 +531,44 @@ TEST_F(DataPacketDispatcherTest, shouldNotRemoveStreamInterestOnRemovalOfSession
     ASSERT_EQ((int)len, bytes_written);
     ASSERT_EQ((int64_t)len, *image->rcv_hwm_position.value_addr);
     ASSERT_EQ(AERON_PUBLICATION_IMAGE_STATE_ACTIVE, image->conductor_fields.state);
+}
+
+TEST_F(DataPacketDispatcherTest, shouldPreventNewSessionsOnceStreamSessionLimitIsExceeded)
+{
+    AERON_DECL_ALIGNED(buffer_t data_buffer, 16);
+
+    int32_t streamId = 434523;
+    ASSERT_EQ(0, aeron_data_packet_dispatcher_add_subscription(m_dispatcher, streamId));
+
+    for (int i = 0; i < STREAM_SESSION_LIMIT; i++)
+    {
+        int32_t sessionId = 1000 + i;
+
+        aeron_setup_header_t *setup_header = setupPacket(data_buffer, streamId, sessionId);
+
+        ASSERT_EQ(0, aeron_data_packet_dispatcher_on_setup(
+            m_dispatcher,
+            m_receive_endpoint,
+            nullptr,
+            setup_header,
+            data_buffer.data(),
+            sizeof(*setup_header),
+            &m_receive_endpoint->conductor_fields.udp_channel->local_data));
+
+        aeron_publication_image_t *image = createImage(streamId, sessionId, 2000 + i);
+        ASSERT_NE(nullptr, image) << aeron_errmsg();
+
+        ASSERT_EQ(0, aeron_data_packet_dispatcher_add_publication_image(m_dispatcher, image));
+    }
+
+    aeron_setup_header_t *setup_header = setupPacket(data_buffer, streamId, 10000, 20000);
+
+    ASSERT_EQ(-1, aeron_data_packet_dispatcher_on_setup(
+        m_dispatcher,
+        m_receive_endpoint,
+        nullptr,
+        setup_header,
+        data_buffer.data(),
+        sizeof(*setup_header),
+        &m_receive_endpoint->conductor_fields.udp_channel->local_data));
 }

@@ -341,6 +341,8 @@ static void aeron_driver_untethered_subscription_state_change_null(
 #define AERON_CPU_AFFINITY_DEFAULT (-1)
 #define AERON_DRIVER_CONNECT_DEFAULT true
 #define AERON_ENABLE_EXPERIMENTAL_FEATURES_DEFAULT false
+#define AERON_DRIVER_STREAM_SESSION_LIMIT_DEFAULT (INT32_MAX)
+
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -567,6 +569,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->sender_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
     _context->receiver_cpu_affinity_no = AERON_CPU_AFFINITY_DEFAULT;
     _context->enable_experimental_features = AERON_ENABLE_EXPERIMENTAL_FEATURES_DEFAULT;
+    _context->stream_session_limit = AERON_DRIVER_STREAM_SESSION_LIMIT_DEFAULT;
 
     char *value = NULL;
 
@@ -1079,6 +1082,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->enable_experimental_features = aeron_parse_bool(
         getenv(AERON_ENABLE_EXPERIMENTAL_FEATURES_ENV_VAR), _context->enable_experimental_features);
+
+    _context->stream_session_limit = aeron_config_parse_int32(
+        AERON_DRIVER_STREAM_SESSION_LIMIT_ENV_VAR,
+        getenv(AERON_DRIVER_STREAM_SESSION_LIMIT_ENV_VAR),
+        _context->stream_session_limit,
+        1,
+        INT32_MAX);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;
@@ -3023,7 +3033,7 @@ int aeron_driver_context_get_enable_experimental_features(aeron_driver_context_t
     return NULL != context ? context->enable_experimental_features : false;
 }
 
-int aeron_driver_set_stream_session_limit(aeron_driver_context_t *context, int32_t value)
+int aeron_driver_context_set_stream_session_limit(aeron_driver_context_t *context, int32_t value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 

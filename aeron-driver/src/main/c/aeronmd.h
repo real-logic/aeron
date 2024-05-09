@@ -909,9 +909,7 @@ int aeron_driver_context_get_enable_experimental_features(aeron_driver_context_t
  */
 #define AERON_DRIVER_STREAM_SESSION_LIMIT_ENV_VAR "AERON_DRIVER_STREAM_SESSION_LIMIT"
 
-#define AERON_DRIVER_STREAM_SESSION_LIMIT_DEFAULT (INT32_MAX)
-
-int aeron_driver_set_stream_session_limit(aeron_driver_context_t *context, int32_t value);
+int aeron_driver_context_set_stream_session_limit(aeron_driver_context_t *context, int32_t value);
 int32_t aeron_driver_context_get_stream_session_limit(aeron_driver_context_t *context);
 
 

@@ -673,6 +673,8 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
         context->sender_wildcard_port_manager.low_port, context->sender_wildcard_port_manager.high_port);
     fprintf(fpout, "\n    receiver_wildcard_port_range=\"%" PRIu16 " %" PRIu16 "\"",
         context->receiver_wildcard_port_manager.low_port, context->receiver_wildcard_port_manager.high_port);
+    fprintf(fpout, "\n    enable_experimental_features=%s", context->enable_experimental_features ? "true" : "false");
+    fprintf(fpout, "\n    stream_session_limit=%" PRId32, context->stream_session_limit);
 
     const aeron_udp_channel_transport_bindings_t *bindings = context->udp_channel_transport_bindings;
     if (NULL != bindings)

@@ -25,9 +25,14 @@ public class ExpectedCConfig implements Serializable
     private static final long serialVersionUID = -4549394851227986144L;
 
     public boolean exists = true;
+
     public String envVarFieldName;
+
     public String envVar;
+
     public String defaultFieldName;
-    public Serializable defaultValue;
+
+    public String defaultValue;
+
     public DefaultType defaultValueType;
 }

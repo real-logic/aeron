@@ -42,6 +42,8 @@ public class CounterInfo implements Serializable
     }
 
     public int id;
+
     public String counterDescription;
+
     public String expectedCName;
 }

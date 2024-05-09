@@ -183,7 +183,7 @@ public class ConfigProcessor extends AbstractProcessor
 
                 if (constantValue != null)
                 {
-                    configInfo.defaultValue = (Serializable)constantValue;
+                    configInfo.defaultValue = constantValue.toString();
                     configInfo.defaultValueType = DefaultType.fromCanonicalName(constantValue.getClass().getCanonicalName());
                 }
                 break;
@@ -234,16 +234,16 @@ public class ConfigProcessor extends AbstractProcessor
                 switch (config.defaultType())
                 {
                     case INT:
-                        configInfo.overrideDefaultValue = config.defaultInt();
+                        configInfo.overrideDefaultValue = "" + config.defaultInt();
                         break;
                     case LONG:
-                        configInfo.overrideDefaultValue = config.defaultLong();
+                        configInfo.overrideDefaultValue = "" + config.defaultLong();
                         break;
                     case DOUBLE:
-                        configInfo.overrideDefaultValue = config.defaultDouble();
+                        configInfo.overrideDefaultValue = "" + config.defaultDouble();
                         break;
                     case BOOLEAN:
-                        configInfo.overrideDefaultValue = config.defaultBoolean();
+                        configInfo.overrideDefaultValue = "" + config.defaultBoolean();
                         break;
                     case STRING:
                         configInfo.overrideDefaultValue = config.defaultString();

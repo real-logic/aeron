@@ -41,21 +41,38 @@ public class ConfigInfo implements Serializable
     public boolean foundDefault = false;
 
     public String propertyNameDescription;
+
     public String propertyNameFieldName;
+
     public String propertyNameClassName;
+
     public String propertyName;
+
     public String defaultDescription;
+
     public String defaultFieldName;
+
     public String defaultClassName;
-    public Serializable defaultValue;
+
+    public String defaultValue;
+
     public DefaultType defaultValueType = DefaultType.UNDEFINED;
-    public Serializable overrideDefaultValue;
+
+    public String overrideDefaultValue;
+
     public DefaultType overrideDefaultValueType = DefaultType.UNDEFINED;
+
     public String uriParam;
+
     public boolean hasContext = true;
+
     public String context;
+
     public String contextDescription;
+
     public Boolean isTimeValue;
+
     public TimeUnit timeUnit;
+
     public boolean deprecated = false;
 }

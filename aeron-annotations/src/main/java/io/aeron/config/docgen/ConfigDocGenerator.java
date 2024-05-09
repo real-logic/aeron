@@ -86,8 +86,8 @@ final class ConfigDocGenerator implements AutoCloseable
                 write("Default Description", configInfo.defaultDescription);
             }
             final String defaultValue = configInfo.overrideDefaultValue == null ?
-                toString(configInfo.defaultValue) :
-                configInfo.overrideDefaultValue.toString();
+                configInfo.defaultValue :
+                configInfo.overrideDefaultValue;
             write("Default", getDefaultString(
                 defaultValue,
                 configInfo.isTimeValue,
@@ -101,7 +101,7 @@ final class ConfigDocGenerator implements AutoCloseable
             {
                 writeCode("C Env Var", configInfo.expectations.c.envVar);
                 write("C Default", getDefaultString(
-                    toString(configInfo.expectations.c.defaultValue),
+                    configInfo.expectations.c.defaultValue,
                     configInfo.isTimeValue,
                     configInfo.timeUnit));
             }
@@ -173,11 +173,22 @@ final class ConfigDocGenerator implements AutoCloseable
     private String getDefaultString(
         final String defaultValue,
         final boolean isTimeValue,
-        final TimeUnit timeUnit)
+        final TimeUnit timeUnit) throws Exception
     {
         if (defaultValue != null && !defaultValue.isEmpty() && defaultValue.chars().allMatch(Character::isDigit))
         {
-            final long defaultLong = Long.parseLong(defaultValue);
+            final long defaultLong;
+
+            try
+            {
+                defaultLong = Long.parseLong(defaultValue);
+            }
+            catch (final NumberFormatException nfe)
+            {
+                // This shouldn't be possible since we've already validated that every character is a digit
+                throw new Exception(nfe);
+            }
+
             final StringBuilder builder = new StringBuilder();
 
             builder.append(defaultValue);
@@ -246,8 +257,8 @@ final class ConfigDocGenerator implements AutoCloseable
         return defaultValue;
     }
 
-    private String toString(final Object a)
+    private String toString(final String a)
     {
-        return a == null ? "" : a.toString();
+        return a == null ? "" : a;
     }
 }

@@ -32,6 +32,6 @@ public class ValidateConfigExpectationsTask
      */
     public static void main(final String[] args) throws Exception
     {
-        Validator.validate(ElementIO.fetch(args[0]), args[1]).printFailuresOn(System.err);
+        Validator.validate(ElementIO.read(args[0]), args[1]).printFailuresOn(System.err);
     }
 }

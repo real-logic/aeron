@@ -15,10 +15,14 @@
  */
 package io.aeron.config;
 
+import java.io.Serializable;
+
 /**
  */
-public class ExpectedConfig
+public class ExpectedConfig implements Serializable
 {
+    private static final long serialVersionUID = -2025994445988286324L;
+
     public final ExpectedCConfig c;
 
     ExpectedConfig()

@@ -15,11 +15,15 @@
  */
 package io.aeron.config;
 
+import java.io.Serializable;
+
 /**
  * A handy class for storing expected C config info that can be serialized into json
  */
-public class ExpectedCConfig
+public class ExpectedCConfig implements Serializable
 {
+    private static final long serialVersionUID = -4549394851227986144L;
+
     public boolean exists = true;
     public String envVarFieldName;
     public String envVar;

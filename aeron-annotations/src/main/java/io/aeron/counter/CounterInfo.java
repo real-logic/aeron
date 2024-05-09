@@ -15,11 +15,15 @@
  */
 package io.aeron.counter;
 
+import java.io.Serializable;
+
 /**
  * A handy class for storing data that gets serialized into json
  */
-public class CounterInfo
+public class CounterInfo implements Serializable
 {
+    private static final long serialVersionUID = -5863246029522577056L;
+
     public final String name;
 
     /**

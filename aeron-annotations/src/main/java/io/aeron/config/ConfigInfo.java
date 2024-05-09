@@ -15,24 +15,18 @@
  */
 package io.aeron.config;
 
-import javax.xml.bind.annotation.XmlTransient;
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 /**
  * A handy class for storing data that gets serialized into json
  */
-public class ConfigInfo
+public class ConfigInfo implements Serializable
 {
+    private static final long serialVersionUID = 6600224566064248728L;
+
     public final String id;
     public final ExpectedConfig expectations;
-
-    /**
-     */
-    public ConfigInfo()
-    {
-        this.id = null;
-        expectations = new ExpectedConfig();
-    }
 
     /**
      * @param id the unique identifier for this block o' config information
@@ -43,9 +37,7 @@ public class ConfigInfo
         expectations = new ExpectedConfig();
     }
 
-    @XmlTransient
     public boolean foundPropertyName = false;
-    @XmlTransient
     public boolean foundDefault = false;
 
     public String propertyNameDescription;

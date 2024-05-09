@@ -82,7 +82,6 @@ final class Validator
         }
     }
 
-    @SuppressWarnings("checkstyle:MethodLength")
     private void validateCDefault(final Validation validation, final ExpectedCConfig c)
     {
         if (Objects.isNull(c.defaultFieldName))
@@ -110,83 +109,109 @@ final class Validator
         final Matcher matcher = Pattern.compile(pattern + "(.*)$").matcher(grep.getOutput());
         if (!matcher.find())
         {
-            throw new RuntimeException("asdf");
+            throw new RuntimeException("asdf"); // TODO
         }
 
         final String originalFoundDefaultString = matcher.group(1).trim();
+        final String location = grep.getFilenameAndLine();
 
         if (c.defaultValueType == DefaultType.STRING)
         {
-            final String foundDefaultString = originalFoundDefaultString
-                .replaceFirst("^\\(", "")
-                .replaceFirst("\\)$", "")
-                .replaceFirst("^\"", "")
-                .replaceFirst("\"$", "");
-
-            if (foundDefaultString.equals(c.defaultValue))
-            {
-                validation.valid("Expected Default (\"" + foundDefaultString + "\") found in " +
-                    grep.getFilenameAndLine());
-            }
-            else
-            {
-                validation.invalid("Expected Default string doesn't match.  Expected '" + c.defaultValue +
-                    "' but found '" + foundDefaultString + "' in " + grep.getFilenameAndLine());
-            }
+            validateCDefaultString(validation, c, originalFoundDefaultString, location);
         }
         else if (c.defaultValueType == DefaultType.BOOLEAN)
         {
-            final String foundDefaultString = originalFoundDefaultString
-                .replaceFirst("^\\(", "")
-                .replaceFirst("\\)$", "");
-
-            if (foundDefaultString.equals(c.defaultValue.toString()))
-            {
-                validation.valid("Expected Default '" + foundDefaultString + "' found in " +
-                    grep.getFilenameAndLine());
-            }
-            else
-            {
-                validation.invalid("boolean doesn't match");
-            }
+            validateCDefaultBoolean(validation, c, originalFoundDefaultString, location);
         }
         else if (c.defaultValueType.isNumeric())
         {
-            final String foundDefaultString = originalFoundDefaultString
-                .replaceAll("INT64_C", "")
-                .replaceAll("UINT32_C", "")
-                .replaceAll("([0-9]+)L", "$1");
-
-            try
-            {
-                final String evaluatedFoundDefaultString = scriptEngine.eval(
-                    "AERON_TERM_BUFFER_LENGTH_DEFAULT = (16 * 1024 * 1024);\n" + // this feels like a (very) bad idea
-                    "(" + foundDefaultString + ").toFixed(0)" // avoid scientific notation
-                ).toString();
-
-                if (evaluatedFoundDefaultString.equals(c.defaultValue.toString()))
-                {
-                    validation.valid("Expected Default '" + foundDefaultString + "'" +
-                        (foundDefaultString.equals(evaluatedFoundDefaultString) ?
-                        "" : " (" + evaluatedFoundDefaultString + ")") +
-                        " found in " + grep.getFilenameAndLine());
-                }
-                else
-                {
-                    validation.invalid("found " + foundDefaultString +
-                        " (" + evaluatedFoundDefaultString + ") but expected " + c.defaultValue);
-                }
-            }
-            catch (final ScriptException e)
-            {
-                validation.invalid("Expected Default - unable to evaluate expression '" +
-                    originalFoundDefaultString + "' in " + grep.getFilenameAndLine());
-                e.printStackTrace(validation.out());
-            }
+            validateCDefaultNumeric(validation, c, originalFoundDefaultString, location);
         }
         else
         {
             validation.invalid("bad default type");
+        }
+    }
+
+    private void validateCDefaultString(
+        final Validation validation,
+        final ExpectedCConfig c,
+        final String originalFoundDefaultString,
+        final String location)
+    {
+        final String foundDefaultString = originalFoundDefaultString
+            .replaceFirst("^\\(", "")
+            .replaceFirst("\\)$", "")
+            .replaceFirst("^\"", "")
+            .replaceFirst("\"$", "");
+
+        if (foundDefaultString.equals(c.defaultValue))
+        {
+            validation.valid("Expected Default (\"" + foundDefaultString + "\") found in " + location);
+        }
+        else
+        {
+            validation.invalid("Expected Default string doesn't match.  Expected '" + c.defaultValue +
+                "' but found '" + foundDefaultString + "' in " + location);
+        }
+    }
+
+    private void validateCDefaultBoolean(
+        final Validation validation,
+        final ExpectedCConfig c,
+        final String originalFoundDefaultString,
+        final String location)
+    {
+        final String foundDefaultString = originalFoundDefaultString
+            .replaceFirst("^\\(", "")
+            .replaceFirst("\\)$", "");
+
+        if (foundDefaultString.equals(c.defaultValue.toString()))
+        {
+            validation.valid("Expected Default '" + foundDefaultString + "' found in " + location);
+        }
+        else
+        {
+            validation.invalid("boolean doesn't match: " + location);
+        }
+    }
+
+    private void validateCDefaultNumeric(
+        final Validation validation,
+        final ExpectedCConfig c,
+        final String originalFoundDefaultString,
+        final String location)
+    {
+        final String foundDefaultString = originalFoundDefaultString
+            .replaceAll("INT64_C", "")
+            .replaceAll("UINT32_C", "")
+            .replaceAll("([0-9]+)L", "$1");
+
+        try
+        {
+            final String evaluatedFoundDefaultString = scriptEngine.eval(
+                "AERON_TERM_BUFFER_LENGTH_DEFAULT = (16 * 1024 * 1024);\n" + // this feels like a (very) bad idea
+                "(" + foundDefaultString + ").toFixed(0)" // avoid scientific notation
+            ).toString();
+
+            if (evaluatedFoundDefaultString.equals(c.defaultValue.toString()))
+            {
+                validation.valid("Expected Default '" + foundDefaultString + "'" +
+                    (foundDefaultString.equals(evaluatedFoundDefaultString) ?
+                    "" : " (" + evaluatedFoundDefaultString + ")") +
+                    " found in " + location);
+            }
+            else
+            {
+                validation.invalid("found " + foundDefaultString +
+                    " (" + evaluatedFoundDefaultString + ") but expected " + c.defaultValue);
+            }
+        }
+        catch (final ScriptException e)
+        {
+            validation.invalid("Expected Default - unable to evaluate expression '" +
+                originalFoundDefaultString + "' in " + location);
+            e.printStackTrace(validation.out());
         }
     }
 }

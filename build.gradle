@@ -468,7 +468,7 @@ project(':aeron-client') {
     }
 
     tasks.register('validateConfigExpectations', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.xml'
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
         def sourceDir = 'src/main/c'
 
         inputs.files(configInfoFile)
@@ -479,7 +479,7 @@ project(':aeron-client') {
     }
 
     tasks.register('generateConfigDoc', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.xml'
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
         def generatedDocFile = "${buildDir}/generated-doc/out.md"
 
         inputs.files(configInfoFile)
@@ -491,7 +491,7 @@ project(':aeron-client') {
     }
 
     tasks.register('validateCounterExpectations', JavaExec) {
-        def counterInfoFile = 'build/generated/sources/headers/java/main/counter-info.xml'
+        def counterInfoFile = 'build/generated/sources/headers/java/main/counter-info.dat'
         def sourceDir = 'src/main/c'
 
         inputs.files(counterInfoFile)
@@ -575,7 +575,7 @@ project(':aeron-driver') {
     }
 
     tasks.register('validateConfigExpectations', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.xml'
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
         def sourceDir = 'src/main/c'
 
         inputs.files(configInfoFile)
@@ -586,7 +586,7 @@ project(':aeron-driver') {
     }
 
     tasks.register('generateConfigDoc', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.xml'
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
         def generatedDocFile = "${buildDir}/generated-doc/out.md"
 
         inputs.files(configInfoFile)

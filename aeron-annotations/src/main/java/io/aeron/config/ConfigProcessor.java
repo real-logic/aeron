@@ -110,9 +110,9 @@ public class ConfigProcessor extends AbstractProcessor
             try
             {
                 final FileObject resourceFile = processingEnv.getFiler()
-                    .createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "config-info.xml");
+                    .createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "config-info.dat");
 
-                ElementIO.write(resourceFile, configInfoMap);
+                ElementIO.write(resourceFile, configInfoMap.values());
             }
             catch (final Exception e)
             {

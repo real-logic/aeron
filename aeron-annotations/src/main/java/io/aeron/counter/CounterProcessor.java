@@ -81,9 +81,9 @@ public class CounterProcessor extends AbstractProcessor
             try
             {
                 final FileObject resourceFile = processingEnv.getFiler()
-                    .createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "counter-info.xml");
+                    .createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", "counter-info.dat");
 
-                ElementIO.write(resourceFile, counterInfoMap);
+                ElementIO.write(resourceFile, counterInfoMap.values());
             }
             catch (final Exception e)
             {

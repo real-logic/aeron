@@ -15,19 +15,14 @@
  */
 package io.aeron.utility;
 
-import io.aeron.config.ConfigInfo;
-import io.aeron.counter.CounterInfo;
-
 import javax.tools.FileObject;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.annotation.XmlRootElement;
-import java.io.OutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  */
@@ -35,49 +30,19 @@ import java.util.Map;
 public class ElementIO
 {
     @SuppressWarnings("unchecked")
-    public static <T> List<T> fetch(final String elementsFilename) throws Exception
+    public static <T> List<T> read(final String elementsFilename) throws Exception
     {
-        return ((ElementList<T>)acquireContext()
-            .createUnmarshaller()
-            .unmarshal(Paths.get(elementsFilename).toFile())).element;
-    }
-
-    public static <T> void write(final FileObject resourceFile, final Map<String, T> elements) throws Exception
-    {
-        final Marshaller marshaller = acquireContext().createMarshaller();
-        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-
-        try (OutputStream out = resourceFile.openOutputStream())
+        try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(Paths.get(elementsFilename))))
         {
-            marshaller.marshal(new ElementList<>(elements), out);
+            return ((List<T>)in.readObject());
         }
     }
 
-    private static JAXBContext acquireContext() throws JAXBException
+    public static <T> void write(final FileObject resourceFile, final Collection<T> elements) throws Exception
     {
-        return JAXBContext.newInstance(ElementList.class, ConfigInfo.class, CounterInfo.class);
-    }
-
-    /**
-     * @param <T>
-     */
-    @XmlRootElement
-    public static class ElementList<T>
-    {
-        public List<T> element;
-
-        /**
-         */
-        public ElementList()
+        try (ObjectOutputStream out = new ObjectOutputStream(resourceFile.openOutputStream()))
         {
-        }
-
-        /**
-         * @param elementMap
-         */
-        public ElementList(final Map<String, T> elementMap)
-        {
-            this.element = new ArrayList<>(elementMap.values());
+            out.writeObject(new ArrayList<>(elements));
         }
     }
 }

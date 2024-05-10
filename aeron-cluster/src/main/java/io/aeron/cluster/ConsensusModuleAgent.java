@@ -1474,7 +1474,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             {
                 if (member.id() != memberId)
                 {
-                    logPublisher.addDestination(true, member.logEndpoint());
+                    logPublisher.addDestination(member.logEndpoint());
                 }
             }
         }

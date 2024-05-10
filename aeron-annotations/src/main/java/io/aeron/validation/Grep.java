@@ -16,7 +16,6 @@
 package io.aeron.validation;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
@@ -35,37 +34,26 @@ public final class Grep
      */
     public static Grep execute(final String pattern, final String sourceDir)
     {
-        final String[] command = {"grep", "-r", "-n", "-E", "^" + pattern, sourceDir};
         final String commandString = "grep -r -n -E '^" + pattern + "' " + sourceDir;
 
-        final Process process;
         try
         {
-            process = new ProcessBuilder()
+            final Process process = new ProcessBuilder()
                 .redirectErrorStream(true)
-                .command(command)
+                .command(new String[] {"grep", "-r", "-n", "-E", "^" + pattern, sourceDir})
                 .start();
+
+            final int exitCode = process.waitFor();
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream())))
+            {
+                return new Grep(commandString, exitCode, reader.lines().collect(Collectors.toList()));
+            }
         }
-        catch (final IOException e)
+        catch (final Exception e)
         {
             return new Grep(commandString, e);
         }
-
-        final int exitCode;
-        try
-        {
-            exitCode = process.waitFor();
-        }
-        catch (final InterruptedException e)
-        {
-            return new Grep(commandString, e);
-        }
-
-        final List<String> lines = new BufferedReader(new InputStreamReader(process.getInputStream()))
-            .lines()
-            .collect(Collectors.toList());
-
-        return new Grep(commandString, exitCode, lines);
     }
 
     private final String commandString;

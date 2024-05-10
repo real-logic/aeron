@@ -92,13 +92,6 @@ final class ConfigDocGenerator implements AutoCloseable
                 configInfo.defaultValue :
                 configInfo.overrideDefaultValue;
 
-
-            if (defaultValue == null)
-            {
-                System.err.println("!!!!!!!! " + configInfo.id);
-            }
-
-
             write("Default", getDefaultString(
                 defaultValue,
                 configInfo.isTimeValue,

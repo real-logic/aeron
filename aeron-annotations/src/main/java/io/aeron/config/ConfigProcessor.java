@@ -38,7 +38,11 @@ public class ConfigProcessor extends AbstractProcessor
 
     private static final String[] DEFAULT_SUFFIXES = new String[] {"_DEFAULT", "_DEFAULT_NS"};
 
-    private final Diagnostic.Kind kind = Diagnostic.Kind.NOTE;
+    private final boolean printNotes = false; // TODO make this configurable somehow
+
+    private final boolean failOnError = false; // TODO make this configurable somehow
+
+    private final Diagnostic.Kind errorKind = failOnError ? Diagnostic.Kind.ERROR : Diagnostic.Kind.NOTE;
 
     /**
      * {@inheritDoc}
@@ -253,7 +257,7 @@ public class ConfigProcessor extends AbstractProcessor
             }
             else
             {
-                // TODO bad
+                error("defaultType specified twice", element);
             }
         }
 
@@ -266,29 +270,33 @@ public class ConfigProcessor extends AbstractProcessor
 
         if (c.exists)
         {
-            // TODO fix isEmpty - check for NPE
             if (c.envVarFieldName == null && !config.expectedCEnvVarFieldName().isEmpty())
             {
+                note("expectedCEnvVarFieldName is set", element);
                 c.envVarFieldName = config.expectedCEnvVarFieldName();
             }
 
             if (c.envVar == null && !config.expectedCEnvVar().isEmpty())
             {
+                note("expectedCEnvVar is set", element);
                 c.envVar = config.expectedCEnvVar();
             }
 
             if (c.defaultFieldName == null && !config.expectedCDefaultFieldName().isEmpty())
             {
+                note("expectedCDefaultFieldName is set", element);
                 c.defaultFieldName = config.expectedCDefaultFieldName();
             }
 
             if (c.defaultValue == null && !config.expectedCDefault().isEmpty())
             {
+                note("expectedCDefault is set", element);
                 c.defaultValue = config.expectedCDefault();
             }
 
             if (config.skipCDefaultValidation())
             {
+                note("skipCDefaultValidation is set", element);
                 c.skipDefaultValidation = true;
             }
         }
@@ -488,7 +496,7 @@ public class ConfigProcessor extends AbstractProcessor
 
         if (configInfo.hasContext && (configInfo.context == null || configInfo.context.isEmpty()))
         {
-            insane(id, "missing context");
+            note("Configuration (" + id + ") is missing context");
         }
     }
 
@@ -499,11 +507,39 @@ public class ConfigProcessor extends AbstractProcessor
 
     private void error(final String errMsg)
     {
-        processingEnv.getMessager().printMessage(kind, errMsg);
+        printMessage(errorKind, errMsg, null);
     }
 
     private void error(final String errMsg, final Element element)
     {
-        processingEnv.getMessager().printMessage(kind, errMsg, element);
+        printMessage(errorKind, errMsg, element);
+    }
+
+    private void note(final String msg)
+    {
+        if (printNotes)
+        {
+            printMessage(Diagnostic.Kind.NOTE, msg, null);
+        }
+    }
+
+    private void note(final String msg, final Element element)
+    {
+        if (printNotes)
+        {
+            printMessage(Diagnostic.Kind.NOTE, msg, element);
+        }
+    }
+
+    private void printMessage(final Diagnostic.Kind kind, final String msg, final Element element)
+    {
+        if (element == null)
+        {
+            processingEnv.getMessager().printMessage(kind, msg);
+        }
+        else
+        {
+            processingEnv.getMessager().printMessage(kind, msg, element);
+        }
     }
 }

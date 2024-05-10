@@ -52,6 +52,10 @@ final class Validator
     {
         configInfoCollection.forEach(this::validateCExpectations);
 
+        // TODO look through C code in 'sourceDir' and check for anything marked '_ENV_VAR' that hasn't been processed.
+        // These will be 'C only' config options that need to be accounted for...
+        // ... perhaps in the Java code we can add @Config annotations to some static final fields that Java ignores.
+
         return this;
     }
 
@@ -167,7 +171,7 @@ final class Validator
             .replaceFirst("^\\(", "")
             .replaceFirst("\\)$", "");
 
-        if (foundDefaultString.equals(c.defaultValue.toString()))
+        if (foundDefaultString.equals(c.defaultValue))
         {
             validation.valid("Expected Default '" + foundDefaultString + "' found in " + location);
         }

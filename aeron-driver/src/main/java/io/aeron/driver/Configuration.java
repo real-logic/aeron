@@ -178,6 +178,7 @@ public final class Configuration
      */
     @Config(
         expectedCDefaultFieldName = "AERON_TO_CONDUCTOR_BUFFER_LENGTH_DEFAULT",
+        skipCDefaultValidation = true,
         defaultType = DefaultType.INT,
         defaultInt = (1024 * 1024) + 768)
     public static final int CONDUCTOR_BUFFER_LENGTH_DEFAULT = (1024 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
@@ -193,6 +194,7 @@ public final class Configuration
      */
     @Config(
         expectedCDefaultFieldName = "AERON_TO_CLIENTS_BUFFER_LENGTH_DEFAULT",
+        skipCDefaultValidation = true,
         defaultType = DefaultType.INT,
         defaultInt = (1024 * 1024) + 128)
     public static final int TO_CLIENTS_BUFFER_LENGTH_DEFAULT = (1024 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
@@ -472,7 +474,7 @@ public final class Configuration
     /**
      * Property name for {@link IdleStrategy} to be employed by {@link Sender} for {@link ThreadingMode#DEDICATED}.
      */
-    @Config
+    @Config(skipCDefaultValidation = true)
     public static final String SENDER_IDLE_STRATEGY_PROP_NAME = "aeron.sender.idle.strategy";
 
     /**
@@ -484,7 +486,7 @@ public final class Configuration
     /**
      * Property name for {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
      */
-    @Config
+    @Config(skipCDefaultValidation = true)
     public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME = "aeron.receiver.idle.strategy";
 
     /**
@@ -497,7 +499,7 @@ public final class Configuration
      * Property name for {@link IdleStrategy} to be employed by {@link DriverConductor} for
      * {@link ThreadingMode#DEDICATED} and {@link ThreadingMode#SHARED_NETWORK}.
      */
-    @Config
+    @Config(skipCDefaultValidation = true)
     public static final String CONDUCTOR_IDLE_STRATEGY_PROP_NAME = "aeron.conductor.idle.strategy";
 
     /**
@@ -510,7 +512,7 @@ public final class Configuration
      * Property name for {@link IdleStrategy} to be employed by {@link Sender} and {@link Receiver} for
      * {@link ThreadingMode#SHARED_NETWORK}.
      */
-    @Config
+    @Config(skipCDefaultValidation = true)
     public static final String SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME = "aeron.sharednetwork.idle.strategy";
 
     /**
@@ -523,7 +525,7 @@ public final class Configuration
      * Property name for {@link IdleStrategy} to be employed by {@link Sender}, {@link Receiver},
      * and {@link DriverConductor} for {@link ThreadingMode#SHARED}.
      */
-    @Config
+    @Config(skipCDefaultValidation = true)
     public static final String SHARED_IDLE_STRATEGY_PROP_NAME = "aeron.shared.idle.strategy";
 
     /**
@@ -846,7 +848,10 @@ public final class Configuration
      * Default timeout for when an untethered subscription that is outside the window limit will participate in
      * local flow control.
      */
-    @Config(defaultType = DefaultType.LONG, defaultLong = 5_000_000_000L)
+    @Config(
+        defaultType = DefaultType.LONG,
+        defaultLong = 5_000_000_000L,
+        expectedCDefaultFieldName = "AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_DEFAULT")
     public static final long UNTETHERED_WINDOW_LIMIT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
     /**
@@ -860,7 +865,10 @@ public final class Configuration
      * Default timeout for when an untethered subscription is resting after not being able to keep up
      * before it is allowed to rejoin a stream.
      */
-    @Config(defaultType = DefaultType.LONG, defaultLong = 10_000_000_000L)
+    @Config(
+        defaultType = DefaultType.LONG,
+        defaultLong = 10_000_000_000L,
+        expectedCDefaultFieldName = "AERON_UNTETHERED_RESTING_TIMEOUT_NS_DEFAULT")
     public static final long UNTETHERED_RESTING_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
     /**
@@ -871,7 +879,11 @@ public final class Configuration
     /**
      * Property name for the class used to validate if a driver should terminate based on token.
      */
-    @Config(defaultType = DefaultType.STRING, defaultString = "io.aeron.driver.DefaultDenyTerminationValidator")
+    @Config(
+        defaultType = DefaultType.STRING,
+        defaultString = "io.aeron.driver.DefaultDenyTerminationValidator",
+        expectedCDefault = "aeron_driver_termination_validator_default_deny",
+        skipCDefaultValidation = true)
     public static final String TERMINATION_VALIDATOR_PROP_NAME = "aeron.driver.termination.validator";
 
     /**
@@ -883,7 +895,11 @@ public final class Configuration
     /**
      * Property name for default group tag (gtag) to send in all Status Messages.
      */
-    @Config(defaultType = DefaultType.LONG, defaultLong = 0)
+    @Config(
+        defaultType = DefaultType.LONG,
+        defaultLong = 0,
+        expectedCDefaultFieldName = "AERON_RECEIVER_GROUP_TAG_VALUE_DEFAULT",
+        expectedCDefault = "-1")
     public static final String RECEIVER_GROUP_TAG_PROP_NAME = "aeron.receiver.group.tag";
 
     /**
@@ -908,17 +924,23 @@ public final class Configuration
     /**
      * Property name for flow control timeout after which with no status messages the receiver is considered gone.
      */
-    @Config
+    @Config(
+        expectedCEnvVarFieldName = "AERON_MIN_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR",
+        expectedCEnvVar = "AERON_MIN_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT",
+        expectedCDefaultFieldName = "AERON_FLOW_CONTROL_RECEIVER_TIMEOUT_NS_DEFAULT")
     public static final String FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME = "aeron.flow.control.receiver.timeout";
 
-    @Config(defaultType = DefaultType.LONG, defaultLong = 5_000_000_000L, hasContext = false)
+    /**
+     */
+    // TODO is this supposed to be deprecated?
+    @Config(defaultType = DefaultType.LONG, defaultLong = 5_000_000_000L, hasContext = false, existsInC = false)
     private static final String MIN_FLOW_CONTROL_TIMEOUT_OLD_PROP_NAME =
         "aeron.MinMulticastFlowControl.receiverTimeout";
 
     /**
      * Property name for resolver name of the Media Driver used in name resolution.
      */
-    @Config(defaultType = DefaultType.STRING, defaultString = "")
+    @Config(defaultType = DefaultType.STRING, defaultString = "", skipCDefaultValidation = true)
     public static final String RESOLVER_NAME_PROP_NAME = "aeron.driver.resolver.name";
 
     /**
@@ -926,7 +948,7 @@ public final class Configuration
      *
      * @see #RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME
      */
-    @Config(defaultType = DefaultType.STRING, defaultString = "")
+    @Config(defaultType = DefaultType.STRING, defaultString = "", skipCDefaultValidation = true)
     public static final String RESOLVER_INTERFACE_PROP_NAME = "aeron.driver.resolver.interface";
 
     /**
@@ -935,7 +957,7 @@ public final class Configuration
      *
      * @see #RESOLVER_INTERFACE_PROP_NAME
      */
-    @Config(defaultType = DefaultType.STRING, defaultString = "")
+    @Config(defaultType = DefaultType.STRING, defaultString = "", skipCDefaultValidation = true)
     public static final String RESOLVER_BOOTSTRAP_NEIGHBOR_PROP_NAME = "aeron.driver.resolver.bootstrap.neighbor";
 
     /**
@@ -947,7 +969,10 @@ public final class Configuration
     /**
      * Default value for the re-resolution check interval.
      */
-    @Config(defaultType = DefaultType.LONG, defaultLong = 1_000_000_000L)
+    @Config(
+        defaultType = DefaultType.LONG,
+        defaultLong = 1_000_000_000L,
+        expectedCDefaultFieldName = "AERON_DRIVER_RERESOLUTION_CHECK_INTERVAL_NS_DEFAULT")
     public static final long RE_RESOLUTION_CHECK_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
     /**
@@ -959,7 +984,10 @@ public final class Configuration
     /**
      * Default threshold value for the conductor work cycle threshold to track for being exceeded.
      */
-    @Config(defaultType = DefaultType.LONG, defaultLong = 1_000_000_000L)
+    @Config(
+        defaultType = DefaultType.LONG,
+        defaultLong = 1_000_000_000L,
+        expectedCDefaultFieldName = "AERON_DRIVER_CONDUCTOR_CYCLE_THRESHOLD_NS_DEFAULT")
     public static final long CONDUCTOR_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
     /**
@@ -971,7 +999,10 @@ public final class Configuration
     /**
      * Default threshold value for the sender work cycle threshold to track for being exceeded.
      */
-    @Config(defaultType = DefaultType.LONG, defaultLong = 1_000_000_000L)
+    @Config(
+        defaultType = DefaultType.LONG,
+        defaultLong = 1_000_000_000L,
+        expectedCDefaultFieldName = "AERON_DRIVER_SENDER_CYCLE_THRESHOLD_NS_DEFAULT")
     public static final long SENDER_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
     /**
@@ -983,13 +1014,19 @@ public final class Configuration
     /**
      * Default threshold value for the receiver work cycle threshold to track for being exceeded.
      */
-    @Config(defaultType = DefaultType.LONG, defaultLong = 1_000_000_000)
+    @Config(
+        defaultType = DefaultType.LONG,
+        defaultLong = 1_000_000_000,
+        expectedCDefaultFieldName = "AERON_DRIVER_RECEIVER_CYCLE_THRESHOLD_NS_DEFAULT")
     public static final long RECEIVER_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
     /**
      * Property name for threshold value for the name resolution threshold to track for being exceeded.
      */
-    @Config
+    @Config(
+        expectedCEnvVarFieldName = "AERON_DRIVER_NAME_RESOLVER_THRESHOLD_ENV_VAR",
+        expectedCEnvVar = "AERON_DRIVER_NAME_RESOLVER_THRESHOLD",
+        expectedCDefaultFieldName = "AERON_DRIVER_NAME_RESOLVER_THRESHOLD_NS_DEFAULT")
     public static final String NAME_RESOLVER_THRESHOLD_PROP_NAME = "aeron.name.resolver.threshold";
 
     /**
@@ -1001,13 +1038,21 @@ public final class Configuration
     /**
      * Property name for wildcard port range for the Sender.
      */
-    @Config(defaultType = DefaultType.STRING, defaultString = "")
+    @Config(
+        defaultType = DefaultType.STRING,
+        defaultString = "",
+        expectedCEnvVarFieldName = "AERON_DRIVER_SENDER_WILDCARD_PORT_RANGE_ENV_VAR",
+        skipCDefaultValidation = true)
     public static final String SENDER_WILDCARD_PORT_RANGE_PROP_NAME = "aeron.sender.wildcard.port.range";
 
     /**
      * Property name for wildcard port range for the Receiver.
      */
-    @Config(defaultType = DefaultType.STRING, defaultString = "")
+    @Config(
+        defaultType = DefaultType.STRING,
+        defaultString = "",
+        expectedCEnvVarFieldName = "AERON_DRIVER_RECEIVER_WILDCARD_PORT_RANGE_ENV_VAR",
+        skipCDefaultValidation = true)
     public static final String RECEIVER_WILDCARD_PORT_RANGE_PROP_NAME = "aeron.receiver.wildcard.port.range";
 
     /**

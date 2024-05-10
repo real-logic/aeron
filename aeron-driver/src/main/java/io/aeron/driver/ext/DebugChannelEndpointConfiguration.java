@@ -30,49 +30,49 @@ public class DebugChannelEndpointConfiguration
     /**
      * Property name for receiver inbound data loss rate.
      */
-    @Config(defaultType = DefaultType.DOUBLE, defaultDouble = 0.0, hasContext = false)
+    @Config(defaultType = DefaultType.DOUBLE, defaultDouble = 0.0, hasContext = false, existsInC = false)
     public static final String RECEIVE_DATA_LOSS_RATE_PROP_NAME = "aeron.debug.receive.data.loss.rate";
 
     /**
      * Property name for receiver inbound data loss seed.
      */
-    @Config(defaultType = DefaultType.LONG, defaultLong = -1, hasContext = false)
+    @Config(defaultType = DefaultType.LONG, defaultLong = -1, hasContext = false, existsInC = false)
     public static final String RECEIVE_DATA_LOSS_SEED_PROP_NAME = "aeron.debug.receive.data.loss.seed";
 
     /**
      * Property name for receiver outbound control loss rate.
      */
-    @Config(defaultType = DefaultType.DOUBLE, defaultDouble = 0.0, hasContext = false)
+    @Config(defaultType = DefaultType.DOUBLE, defaultDouble = 0.0, hasContext = false, existsInC = false)
     public static final String RECEIVE_CONTROL_LOSS_RATE_PROP_NAME = "aeron.debug.receive.control.loss.rate";
 
     /**
      * Property name for receiver outbound control loss seed.
      */
-    @Config(defaultType = DefaultType.LONG, defaultLong = -1, hasContext = false)
+    @Config(defaultType = DefaultType.LONG, defaultLong = -1, hasContext = false, existsInC = false)
     public static final String RECEIVE_CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.receive.control.loss.seed";
 
     /**
      * Property name for sender outbound data loss rate.
      */
-    @Config(defaultType = DefaultType.DOUBLE, defaultDouble = 0.0, hasContext = false)
+    @Config(defaultType = DefaultType.DOUBLE, defaultDouble = 0.0, hasContext = false, existsInC = false)
     public static final String SEND_DATA_LOSS_RATE_PROP_NAME = "aeron.debug.send.data.loss.rate";
 
     /**
      * Property name for sender outbound data loss seed.
      */
-    @Config(defaultType = DefaultType.LONG, defaultLong = -1, hasContext = false)
+    @Config(defaultType = DefaultType.LONG, defaultLong = -1, hasContext = false, existsInC = false)
     public static final String SEND_DATA_LOSS_SEED_PROP_NAME = "aeron.debug.send.data.loss.seed";
 
     /**
      * Property name for sender inbound control loss rate.
      */
-    @Config(defaultType = DefaultType.DOUBLE, defaultDouble = 0.0, hasContext = false)
+    @Config(defaultType = DefaultType.DOUBLE, defaultDouble = 0.0, hasContext = false, existsInC = false)
     public static final String SEND_CONTROL_LOSS_RATE_PROP_NAME = "aeron.debug.send.control.loss.rate";
 
     /**
      * Property name for sender inbound control loss seed.
      */
-    @Config(defaultType = DefaultType.LONG, defaultLong = -1, hasContext = false)
+    @Config(defaultType = DefaultType.LONG, defaultLong = -1, hasContext = false, existsInC = false)
     public static final String SEND_CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.send.control.loss.seed";
 
     private static final long RECEIVE_DATA_LOSS_SEED = getLong(RECEIVE_DATA_LOSS_SEED_PROP_NAME, -1);

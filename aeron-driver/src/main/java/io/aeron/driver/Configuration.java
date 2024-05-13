@@ -25,6 +25,7 @@ import io.aeron.exceptions.ConfigurationException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.AsciiNumberFormatException;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 import org.agrona.Strings;
@@ -1868,13 +1869,23 @@ public final class Configuration
     /**
      * Get the configured limit for the number of streams per session.
      *
-     * @return configured session limit.
+     * @return configured session limit
+     * @throws AsciiNumberFormatException if the property referenced by {@link #STREAM_SESSION_LIMIT_PROP_NAME} is not
+     * a valid number
      */
     public static int streamSessionLimit()
     {
         final String streamSessionLimitString = getProperty(STREAM_SESSION_LIMIT_PROP_NAME);
-        return Strings.isEmpty(streamSessionLimitString) ?
-            STREAM_SESSION_LIMIT_DEFAULT : Integer.parseInt(streamSessionLimitString);
+        try
+        {
+            return Strings.isEmpty(streamSessionLimitString) ?
+                STREAM_SESSION_LIMIT_DEFAULT : Integer.parseInt(streamSessionLimitString);
+        }
+        catch (final NumberFormatException ex)
+        {
+            throw new AsciiNumberFormatException(
+                "Property " + STREAM_SESSION_LIMIT_PROP_NAME + "=" + streamSessionLimitString + " is not a number");
+        }
     }
 
     /**

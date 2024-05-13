@@ -4260,6 +4260,15 @@ int aeron_driver_conductor_on_add_network_subscription_complete(
         goto error_cleanup;
     }
 
+    if (aeron_subscription_params_validate_initial_window_for_rcvbuf(
+        &params,
+        aeron_udp_channel_socket_so_rcvbuf(udp_channel, conductor->context->socket_rcvbuf),
+        conductor->context->os_buffer_lengths.default_so_rcvbuf) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        goto error_cleanup;
+    }
+
     control_mode = udp_channel->control_mode;
 
     if (NULL == aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id))
@@ -4286,16 +4295,8 @@ int aeron_driver_conductor_on_add_network_subscription_complete(
     {
         aeron_udp_channel_delete(udp_channel);
     }
+    // Ownership is transferred to the channel.
     udp_channel = NULL;
-
-    if (aeron_subscription_params_validate_initial_window_for_rcvbuf(
-        &params,
-        aeron_udp_channel_socket_so_rcvbuf(endpoint->conductor_fields.udp_channel, conductor->context->socket_rcvbuf),
-        conductor->context->os_buffer_lengths.default_so_rcvbuf) < 0)
-    {
-        AERON_APPEND_ERR("%s", "");
-        goto error_cleanup_skip_channel_delete;
-    }
 
     if (aeron_driver_conductor_has_clashing_subscription(conductor, endpoint, command->stream_id, &params))
     {

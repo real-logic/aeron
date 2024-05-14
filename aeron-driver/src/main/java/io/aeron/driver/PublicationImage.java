@@ -449,7 +449,7 @@ public final class PublicationImage
     void activate()
     {
         timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
-        state = State.ACTIVE;
+        state(State.ACTIVE);
     }
 
     /**
@@ -475,7 +475,7 @@ public final class PublicationImage
                 timeOfLastSmNs = nowNs - smTimeoutNs - 1;
             }
 
-            state = State.DRAINING;
+            state(State.DRAINING);
         }
     }
 
@@ -677,7 +677,7 @@ public final class PublicationImage
 
                 isSendingEosSm = true;
                 timeOfLastSmNs = nowNs - smTimeoutNs - 1;
-                state = State.DRAINING;
+                state(State.DRAINING);
             }
         }
     }
@@ -864,7 +864,7 @@ public final class PublicationImage
 
                     timeOfLastStateChangeNs = timeNs;
                     isReceiverReleaseTriggered = true;
-                    state = State.LINGER;
+                    state(State.LINGER);
                 }
                 break;
 
@@ -873,7 +873,7 @@ public final class PublicationImage
                 {
                     conductor.cleanupImage(this);
                     timeOfLastStateChangeNs = timeNs;
-                    state = State.DONE;
+                    state(State.DONE);
                 }
                 break;
 
@@ -889,6 +889,11 @@ public final class PublicationImage
     public boolean hasReachedEndOfLife()
     {
         return hasReceiverReleased && State.DONE == state;
+    }
+
+    private void state(final State state)
+    {
+        this.state = state;
     }
 
     private boolean isDrained()

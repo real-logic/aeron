@@ -561,6 +561,7 @@ public final class MediaDriver implements AutoCloseable
         private DutyCycleTracker nameResolverTimeTracker;
         private PortManager senderPortManager;
         private PortManager receiverPortManager;
+        private int streamSessionLimit = Configuration.streamSessionLimit();
 
         /**
          * Perform a shallow copy of the object.
@@ -3521,6 +3522,32 @@ public final class MediaDriver implements AutoCloseable
         {
             this.receiverPortManager = portManager;
             return this;
+        }
+
+        /**
+         * Set the limit on the number of sessions allow per stream for subscriptions.
+         *
+         * @param sessionLimit the limit of sessions per stream
+         * @return this for a fluent API.
+         * @see Configuration#STREAM_SESSION_LIMIT_PROP_NAME
+         * @see Configuration#STREAM_SESSION_LIMIT_DEFAULT
+         * @see Configuration#streamSessionLimit()
+         */
+        public Context streamSessionLimit(final int sessionLimit)
+        {
+            this.streamSessionLimit = sessionLimit;
+            return this;
+        }
+
+        /**
+         * Get the limit on the number of sessions allow per stream for subscriptions.
+         *
+         * @return the limit of sessions per stream
+         * @see Context#streamSessionLimit(int)
+         */
+        public int streamSessionLimit()
+        {
+            return this.streamSessionLimit;
         }
 
         /**

@@ -48,6 +48,7 @@ typedef struct aeron_data_packet_dispatcher_stct
 
     aeron_driver_conductor_proxy_t *conductor_proxy;
     aeron_driver_receiver_t *receiver;
+    int32_t stream_session_limit;
 }
 aeron_data_packet_dispatcher_t;
 
@@ -60,8 +61,9 @@ int aeron_data_packet_dispatcher_close(aeron_data_packet_dispatcher_t *dispatche
 typedef struct aeron_data_packet_dispatcher_stream_interest_stct
 {
     bool is_all_sessions;
-    aeron_int64_to_tagged_ptr_hash_map_t image_by_session_id_map;
     aeron_int64_to_ptr_hash_map_t subscribed_sessions;
+    aeron_int64_to_ptr_hash_map_t image_by_session_id_map;
+    aeron_int64_counter_map_t state_by_session_id_map;
 }
 aeron_data_packet_dispatcher_stream_interest_t;
 
@@ -138,12 +140,19 @@ inline void aeron_data_packet_dispatcher_remove_matching_state(
 
     if (NULL != stream_interest)
     {
-        uint32_t tag = 0;
-        aeron_int64_to_tagged_ptr_hash_map_get(&stream_interest->image_by_session_id_map, session_id, &tag, NULL);
-        if (image_state == tag)
+        if (AERON_DATA_PACKET_DISPATCHER_IMAGE_ACTIVE == image_state)
         {
-            aeron_int64_to_tagged_ptr_hash_map_remove(
-                &stream_interest->image_by_session_id_map, session_id, NULL, NULL);
+            aeron_int64_to_ptr_hash_map_remove(&stream_interest->image_by_session_id_map, session_id);
+        }
+        else
+        {
+            int64_t state = aeron_int64_counter_map_get(&stream_interest->state_by_session_id_map, session_id);
+
+            // If not found state will be -1 so won't match.
+            if ((int64_t)image_state == state)
+            {
+                aeron_int64_counter_map_remove(&stream_interest->state_by_session_id_map, session_id);
+            }
         }
     }
 }

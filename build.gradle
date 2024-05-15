@@ -244,6 +244,7 @@ subprojects {
             'aeron.term.buffer.sparse.file': 'true',
             'aeron.perform.storage.checks': 'false',
             'agrona.strict.alignment.checks': 'true',
+            'net.bytebuddy.experimental': 'true',
             'java.net.preferIPv4Stack': 'true',
             'aeron.test.system.aeronmd.path': System.getProperty('aeron.test.system.aeronmd.path'),
             'aeron.test.system.binding.remote.host': System.getProperty('aeron.test.system.binding.remote.host'),

@@ -54,8 +54,11 @@ final class Validator
     private void identifyExtraCCounters(final Collection<CounterInfo> counterInfoCollection)
     {
         final Pattern compiledPattern = Pattern.compile("#define[ \t]+([A-Z_]+)[ \t]+\\([0-9]+\\)");
-        final List<String> expectedCNames =
-            counterInfoCollection.stream().map(counterInfo -> counterInfo.expectedCName).collect(Collectors.toList());
+        final List<String> expectedCNames = counterInfoCollection
+            .stream()
+            .filter(counterInfo -> counterInfo.existsInC)
+            .map(counterInfo -> counterInfo.expectedCName)
+            .collect(Collectors.toList());
 
         final String pattern = "#define[ \t]+AERON_COUNTER_([A-Z_]+)_TYPE_ID[ \t]+\\([0-9]+\\)";
         final Grep grep = Grep.execute(pattern, sourceDir);
@@ -82,7 +85,10 @@ final class Validator
 
     private void validateCExpectations(final CounterInfo counterInfo)
     {
-        report.addValidation(counterInfo, this::validate);
+        if (counterInfo.existsInC)
+        {
+            report.addValidation(counterInfo, this::validate);
+        }
     }
 
     private void validate(final Validation validation, final CounterInfo counterInfo)

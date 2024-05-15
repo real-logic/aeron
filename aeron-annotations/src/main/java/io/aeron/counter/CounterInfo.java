@@ -45,5 +45,7 @@ public class CounterInfo implements Serializable
 
     public String counterDescription;
 
+    public boolean existsInC = true;
+
     public String expectedCName;
 }

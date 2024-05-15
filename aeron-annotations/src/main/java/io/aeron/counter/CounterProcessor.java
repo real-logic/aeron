@@ -16,11 +16,10 @@
 package io.aeron.counter;
 
 import io.aeron.utility.ElementIO;
+import io.aeron.utility.Processor;
 
-import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
@@ -30,20 +29,21 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * ConfigOption processor
+ * AeronCounter processor
  */
 @SupportedAnnotationTypes("io.aeron.counter.AeronCounter")
-public class CounterProcessor extends AbstractProcessor
+public class CounterProcessor extends Processor
 {
-
-    private final Diagnostic.Kind kind = Diagnostic.Kind.NOTE;
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public SourceVersion getSupportedSourceVersion()
+    protected String getPrintNotesPropertyName()
     {
-        return SourceVersion.latest();
+        return "aeron.build.counterProcessor.printNotes";
+    }
+
+    @Override
+    protected String getFailOnErrorPropertyName()
+    {
+        return "aeron.build.counterProcessor.failOnError";
     }
 
     /**
@@ -66,6 +66,7 @@ public class CounterProcessor extends AbstractProcessor
                     }
                     else
                     {
+                        // TODO
                     }
                 }
                 catch (final Exception e)
@@ -121,7 +122,7 @@ public class CounterProcessor extends AbstractProcessor
             return;
         }
 
-        counterInfo.counterDescription = processingEnv.getElementUtils().getDocComment(element).trim();
+        counterInfo.counterDescription = getDocComment(element);
 
         final Object constantValue = element.getConstantValue();
         if (constantValue instanceof Integer)
@@ -133,15 +134,32 @@ public class CounterProcessor extends AbstractProcessor
             error("Counter value must be an Integer", element);
         }
 
-        counterInfo.expectedCName = "AERON_COUNTER_" +
-            (counter.expectedCName().isEmpty() ?
-                counterInfo.name.replaceAll("^DRIVER_", "") :
-                counter.expectedCName()) +
-            "_TYPE_ID";
-    }
+        if (!counter.existsInC())
+        {
+            note("Counter isn't expected to exist in C", element);
+            counterInfo.existsInC = false;
+        }
 
-    private void error(final String errMsg, final Element element)
-    {
-        processingEnv.getMessager().printMessage(kind, errMsg, element);
+        if (counterInfo.existsInC)
+        {
+            final StringBuilder builder = new StringBuilder();
+
+            builder.append("AERON_COUNTER_");
+
+            if (counter.expectedCName().isEmpty())
+            {
+                builder.append(counterInfo.name.replaceAll("^DRIVER_", ""));
+            }
+            else
+            {
+                note("Counter's C name is overridden", element);
+
+                builder.append(counter.expectedCName());
+            }
+
+            builder.append("_TYPE_ID");
+
+            counterInfo.expectedCName = builder.toString();
+        }
     }
 }

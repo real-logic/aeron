@@ -127,13 +127,13 @@ public final class AeronCounters
     /**
      * Count of media driver neighbors for name resolution.
      */
-    @AeronCounter
+    @AeronCounter(existsInC = false)
     public static final int NAME_RESOLVER_NEIGHBORS_COUNTER_TYPE_ID = 15;
 
     /**
      * Count of entries in the name resolver cache.
      */
-    @AeronCounter
+    @AeronCounter(existsInC = false)
     public static final int NAME_RESOLVER_CACHE_ENTRIES_COUNTER_TYPE_ID = 16;
 
     /**
@@ -154,7 +154,7 @@ public final class AeronCounters
     /**
      * Count of number of destinations for multi-destination cast channels.
      */
-    @AeronCounter
+    @AeronCounter(expectedCName = "CHANNEL_NUM_DESTINATIONS")
     public static final int MDC_DESTINATIONS_COUNTER_TYPE_ID = 18;
 
     // Archive counters
@@ -234,7 +234,7 @@ public final class AeronCounters
     /**
      * The type id of the {@link Counter} used for tracking the count of active recording sessions.
      */
-    @AeronCounter
+    @AeronCounter(existsInC = false)
     public static final int ARCHIVE_RECORDING_SESSION_COUNT_TYPE_ID = 111;
 
     /**
@@ -284,7 +284,7 @@ public final class AeronCounters
     /**
      * Counter type for count of standby snapshots received.
      */
-    @AeronCounter
+    @AeronCounter(existsInC = false)
     public static final int CLUSTER_STANDBY_SNAPSHOT_COUNTER_TYPE_ID = 232;
 
     /**
@@ -414,7 +414,7 @@ public final class AeronCounters
     /**
      * Counter type id for the transition module error count.
      */
-    @AeronCounter
+    @AeronCounter(expectedCName = "CLUSTER_TRANSITION_MODULE_ERROR_COUNT")
     public static final int TRANSITION_MODULE_ERROR_COUNT_TYPE_ID = 226;
 
     /**
@@ -439,19 +439,19 @@ public final class AeronCounters
      * The type id of the {@link Counter} used for keeping track of the count of cycle time threshold exceeded of
      * the transition module.
      */
-    @AeronCounter
+    @AeronCounter(expectedCName = "CLUSTER_TRANSITION_MODULE_CYCLE_TIME_THRESHOLD_EXCEEDED")
     public static final int TRANSITION_MODULE_CYCLE_TIME_THRESHOLD_EXCEEDED_TYPE_ID = 230;
 
     /**
      * The type of the {@link Counter} used for handling node specific operations.
      */
-    @AeronCounter
+    @AeronCounter(existsInC = false)
     public static final int NODE_CONTROL_TOGGLE_TYPE_ID = 233;
 
     /**
      * The type id of the {@link Counter} used for keeping track of the maximum total snapshot duration.
      */
-    @AeronCounter
+    @AeronCounter(existsInC = false)
     public static final int CLUSTER_TOTAL_MAX_SNAPSHOT_DURATION_TYPE_ID = 234;
 
     /**
@@ -465,7 +465,7 @@ public final class AeronCounters
      * The type id of the {@link Counter} used for keeping track of the maximum snapshot duration
      * for a given clustered service.
      */
-    @AeronCounter
+    @AeronCounter(existsInC = false)
     public static final int CLUSTERED_SERVICE_MAX_SNAPSHOT_DURATION_TYPE_ID = 236;
 
     /**
@@ -484,7 +484,7 @@ public final class AeronCounters
     /**
      * The type id of the {@link Counter} used for keeping track of the Cluster leadership term id.
      */
-    @AeronCounter
+    @AeronCounter(existsInC = false)
     public static final int CLUSTER_LEADERSHIP_TERM_ID_TYPE_ID = 239;
 
     private AeronCounters()

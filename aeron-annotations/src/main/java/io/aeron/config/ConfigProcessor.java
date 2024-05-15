@@ -16,11 +16,10 @@
 package io.aeron.config;
 
 import io.aeron.utility.ElementIO;
+import io.aeron.utility.Processor;
 
-import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
@@ -32,25 +31,22 @@ import java.util.stream.Stream;
  * ConfigOption processor
  */
 @SupportedAnnotationTypes("io.aeron.config.Config")
-public class ConfigProcessor extends AbstractProcessor
+public class ConfigProcessor extends Processor
 {
     private static final String[] PROPERTY_NAME_SUFFIXES = new String[] {"_PROP_NAME"};
 
     private static final String[] DEFAULT_SUFFIXES = new String[] {"_DEFAULT", "_DEFAULT_NS"};
 
-    private final boolean printNotes = false; // TODO make this configurable somehow
-
-    private final boolean failOnError = false; // TODO make this configurable somehow
-
-    private final Diagnostic.Kind errorKind = failOnError ? Diagnostic.Kind.ERROR : Diagnostic.Kind.NOTE;
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public SourceVersion getSupportedSourceVersion()
+    protected String getPrintNotesPropertyName()
     {
-        return SourceVersion.latest();
+        return "aeron.build.configProcessor.printNotes";
+    }
+
+    @Override
+    protected String getFailOnErrorPropertyName()
+    {
+        return "aeron.build.configProcessor.failOnError";
     }
 
     /**
@@ -128,7 +124,6 @@ public class ConfigProcessor extends AbstractProcessor
         return false;
     }
 
-    @SuppressWarnings({ "checkstyle:MethodLength", "checkstyle:LineLength" })
     private ConfigInfo processElement(final Map<String, ConfigInfo> configInfoMap, final VariableElement element)
     {
         final Config config = element.getAnnotation(Config.class);
@@ -186,7 +181,8 @@ public class ConfigProcessor extends AbstractProcessor
                 if (constantValue != null)
                 {
                     configInfo.defaultValue = constantValue.toString();
-                    configInfo.defaultValueType = DefaultType.fromCanonicalName(constantValue.getClass().getCanonicalName());
+                    configInfo.defaultValueType =
+                        DefaultType.fromCanonicalName(constantValue.getClass().getCanonicalName());
                 }
                 break;
             default:
@@ -204,6 +200,17 @@ public class ConfigProcessor extends AbstractProcessor
             configInfo.hasContext = false;
         }
 
+        handleTimeValue(config, configInfo, id);
+
+        handleDefaultTypeOverride(element, config, configInfo);
+
+        handleCExpectations(element, configInfo, config);
+
+        return configInfo;
+    }
+
+    private static void handleTimeValue(final Config config, final ConfigInfo configInfo, final String id)
+    {
         switch (config.isTimeValue())
         {
             case TRUE:
@@ -227,93 +234,90 @@ public class ConfigProcessor extends AbstractProcessor
             // TODO make sure this is either seconds, milliseconds, microseconds, or nanoseconds
             configInfo.timeUnit = config.timeUnit();
         }
+    }
 
-        if (!DefaultType.isUndefined(config.defaultType()))
+    private void handleDefaultTypeOverride(
+        final VariableElement element,
+        final Config config,
+        final ConfigInfo configInfo)
+    {
+        if (DefaultType.isUndefined(config.defaultType()))
         {
-            if (DefaultType.isUndefined(configInfo.defaultValueType))
-            {
-                configInfo.overrideDefaultValueType = config.defaultType();
-                switch (config.defaultType())
-                {
-                    case INT:
-                        configInfo.overrideDefaultValue = "" + config.defaultInt();
-                        break;
-                    case LONG:
-                        configInfo.overrideDefaultValue = "" + config.defaultLong();
-                        break;
-                    case DOUBLE:
-                        configInfo.overrideDefaultValue = "" + config.defaultDouble();
-                        break;
-                    case BOOLEAN:
-                        configInfo.overrideDefaultValue = "" + config.defaultBoolean();
-                        break;
-                    case STRING:
-                        configInfo.overrideDefaultValue = config.defaultString();
-                        break;
-                    default:
-                        error("unhandled default type", element);
-                        break;
-                }
-            }
-            else
-            {
-                error("defaultType specified twice", element);
-            }
+            return;
         }
 
+        if (DefaultType.isUndefined(configInfo.defaultValueType))
+        {
+            note("defaultType is set explicitly, rather than relying on a separately defined field", element);
+
+            configInfo.overrideDefaultValueType = config.defaultType();
+            switch (config.defaultType())
+            {
+                case INT:
+                    configInfo.overrideDefaultValue = "" + config.defaultInt();
+                    break;
+                case LONG:
+                    configInfo.overrideDefaultValue = "" + config.defaultLong();
+                    break;
+                case DOUBLE:
+                    configInfo.overrideDefaultValue = "" + config.defaultDouble();
+                    break;
+                case BOOLEAN:
+                    configInfo.overrideDefaultValue = "" + config.defaultBoolean();
+                    break;
+                case STRING:
+                    configInfo.overrideDefaultValue = config.defaultString();
+                    break;
+                default:
+                    error("unhandled default type", element);
+                    break;
+            }
+        }
+        else
+        {
+            error("defaultType specified twice", element);
+        }
+    }
+
+    private void handleCExpectations(final VariableElement element, final ConfigInfo configInfo, final Config config)
+    {
         final ExpectedCConfig c = configInfo.expectations.c;
 
         if (!config.existsInC())
         {
             c.exists = false;
+            return;
         }
 
-        if (c.exists)
+        if (c.envVarFieldName == null && !config.expectedCEnvVarFieldName().isEmpty())
         {
-            if (c.envVarFieldName == null && !config.expectedCEnvVarFieldName().isEmpty())
-            {
-                note("expectedCEnvVarFieldName is set", element);
-                c.envVarFieldName = config.expectedCEnvVarFieldName();
-            }
-
-            if (c.envVar == null && !config.expectedCEnvVar().isEmpty())
-            {
-                note("expectedCEnvVar is set", element);
-                c.envVar = config.expectedCEnvVar();
-            }
-
-            if (c.defaultFieldName == null && !config.expectedCDefaultFieldName().isEmpty())
-            {
-                note("expectedCDefaultFieldName is set", element);
-                c.defaultFieldName = config.expectedCDefaultFieldName();
-            }
-
-            if (c.defaultValue == null && !config.expectedCDefault().isEmpty())
-            {
-                note("expectedCDefault is set", element);
-                c.defaultValue = config.expectedCDefault();
-            }
-
-            if (config.skipCDefaultValidation())
-            {
-                note("skipCDefaultValidation is set", element);
-                c.skipDefaultValidation = true;
-            }
+            note("expectedCEnvVarFieldName is set", element);
+            c.envVarFieldName = config.expectedCEnvVarFieldName();
         }
 
-        return configInfo;
-    }
-
-    private String getDocComment(final Element element)
-    {
-        final String description = processingEnv.getElementUtils().getDocComment(element);
-        if (description == null)
+        if (c.envVar == null && !config.expectedCEnvVar().isEmpty())
         {
-            error("no javadoc found", element);
-            return "NO DESCRIPTION FOUND";
+            note("expectedCEnvVar is set", element);
+            c.envVar = config.expectedCEnvVar();
         }
 
-        return description.trim();
+        if (c.defaultFieldName == null && !config.expectedCDefaultFieldName().isEmpty())
+        {
+            note("expectedCDefaultFieldName is set", element);
+            c.defaultFieldName = config.expectedCDefaultFieldName();
+        }
+
+        if (c.defaultValue == null && !config.expectedCDefault().isEmpty())
+        {
+            note("expectedCDefault is set", element);
+            c.defaultValue = config.expectedCDefault();
+        }
+
+        if (config.skipCDefaultValidation())
+        {
+            note("skipCDefaultValidation is set", element);
+            c.skipDefaultValidation = true;
+        }
     }
 
     private ConfigInfo processExecutableElement(
@@ -503,43 +507,5 @@ public class ConfigProcessor extends AbstractProcessor
     private void insane(final String id, final String errMsg)
     {
         error("Configuration (" + id + "): " + errMsg);
-    }
-
-    private void error(final String errMsg)
-    {
-        printMessage(errorKind, errMsg, null);
-    }
-
-    private void error(final String errMsg, final Element element)
-    {
-        printMessage(errorKind, errMsg, element);
-    }
-
-    private void note(final String msg)
-    {
-        if (printNotes)
-        {
-            printMessage(Diagnostic.Kind.NOTE, msg, null);
-        }
-    }
-
-    private void note(final String msg, final Element element)
-    {
-        if (printNotes)
-        {
-            printMessage(Diagnostic.Kind.NOTE, msg, element);
-        }
-    }
-
-    private void printMessage(final Diagnostic.Kind kind, final String msg, final Element element)
-    {
-        if (element == null)
-        {
-            processingEnv.getMessager().printMessage(kind, msg);
-        }
-        else
-        {
-            processingEnv.getMessager().printMessage(kind, msg, element);
-        }
     }
 }

@@ -37,6 +37,8 @@ public class ConfigProcessor extends Processor
 
     private static final String[] DEFAULT_SUFFIXES = new String[] {"_DEFAULT", "_DEFAULT_NS"};
 
+    private final Map<String, Config> typeConfigMap = new HashMap<>();
+
     @Override
     protected String getPrintNotesPropertyName()
     {
@@ -73,6 +75,11 @@ public class ConfigProcessor extends Processor
                     {
                         configInfo = processExecutableElement(configInfoMap, (ExecutableElement)element);
                     }
+                    else if (element instanceof TypeElement)
+                    {
+                        processTypeElement((TypeElement)element);
+                        configInfo = null;
+                    }
                     else
                     {
                         configInfo = null;
@@ -98,6 +105,7 @@ public class ConfigProcessor extends Processor
         {
             try
             {
+                configInfoMap.forEach(this::applyTypeDefaults);
                 configInfoMap.forEach(this::deriveCExpectations);
                 configInfoMap.forEach(this::sanityCheck);
             }
@@ -351,6 +359,21 @@ public class ConfigProcessor extends Processor
         return configInfo;
     }
 
+    private void processTypeElement(final TypeElement element)
+    {
+        final Config config = element.getAnnotation(Config.class);
+
+        if (Objects.isNull(config))
+        {
+            error("element found with no expected annotations", element);
+            return;
+        }
+
+        System.out.println("+++ " + element.getQualifiedName());
+
+        typeConfigMap.put(element.getQualifiedName().toString(), config);
+    }
+
     private Config.Type getConfigType(final VariableElement element, final Config config)
     {
         // use an explicitly configured type
@@ -400,6 +423,7 @@ public class ConfigProcessor extends Processor
             {
                 error("redundant id specified", element);
             }
+            note("Config ID is overridden", element);
             return id;
         }
 
@@ -410,6 +434,7 @@ public class ConfigProcessor extends Processor
     {
         if (null != id && !id.isEmpty())
         {
+            note("Config ID is overridden", element);
             return id;
         }
 
@@ -426,6 +451,13 @@ public class ConfigProcessor extends Processor
         error("unable to determine id for: " + fieldName, element);
 
         return fieldName;
+    }
+
+    private void applyTypeDefaults(final String id, final ConfigInfo configInfo)
+    {
+        Optional.ofNullable(typeConfigMap.get(configInfo.propertyNameClassName))
+            .filter(config -> !config.existsInC())
+            .ifPresent(config -> configInfo.expectations.c.exists = false);
     }
 
     private void deriveCExpectations(final String id, final ConfigInfo configInfo)

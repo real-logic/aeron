@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Annotation to indicate this is a config option
  */
-@Target({ElementType.FIELD, ElementType.METHOD})
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.SOURCE)
 public @interface Config
 {

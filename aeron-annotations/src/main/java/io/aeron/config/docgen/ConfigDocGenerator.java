@@ -89,7 +89,7 @@ final class ConfigDocGenerator implements AutoCloseable
                 write("Default Description", configInfo.defaultDescription);
             }
             final String defaultValue = configInfo.overrideDefaultValue == null ?
-                configInfo.defaultValue :
+                (configInfo.defaultValue == null ? "" : configInfo.defaultValue) :
                 configInfo.overrideDefaultValue;
 
             write("Default", getDefaultString(

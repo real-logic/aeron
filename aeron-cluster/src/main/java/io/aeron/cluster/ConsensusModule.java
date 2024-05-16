@@ -28,6 +28,8 @@ import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.StandbySnapshotDecoder;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
+import io.aeron.config.Config;
+import io.aeron.config.DefaultType;
 import io.aeron.driver.DutyCycleTracker;
 import io.aeron.driver.NameResolver;
 import io.aeron.driver.status.DutyCycleStallTracker;
@@ -326,6 +328,7 @@ public final class ConsensusModule implements AutoCloseable
     /**
      * Configuration options for cluster.
      */
+    @Config(existsInC = false)
     public static final class Configuration
     {
         /**
@@ -362,21 +365,25 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Property name for the limit for fragments to be consumed on each poll of ingress.
          */
+        @Config
         public static final String CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME = "aeron.cluster.ingress.fragment.limit";
 
         /**
          * Default for the limit for fragments to be consumed on each poll of ingress.
          */
+        @Config
         public static final int CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT = 50;
 
         /**
          * Property name for whether IPC ingress is allowed or not.
          */
+        @Config
         public static final String CLUSTER_INGRESS_IPC_ALLOWED_PROP_NAME = "aeron.cluster.ingress.ipc.allowed";
 
         /**
          * Default for whether IPC ingress is allowed or not.
          */
+        @Config
         public static final String CLUSTER_INGRESS_IPC_ALLOWED_DEFAULT = "false";
 
         /**
@@ -387,23 +394,27 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Property name for the identity of the cluster member.
          */
+        @Config
         public static final String CLUSTER_MEMBER_ID_PROP_NAME = "aeron.cluster.member.id";
 
         /**
          * Default property for the cluster member identity.
          */
+        @Config
         public static final int CLUSTER_MEMBER_ID_DEFAULT = 0;
 
         /**
          * Property name for the identity of the appointed leader. This is when automated leader elections are
          * not employed.
          */
+        @Config
         public static final String APPOINTED_LEADER_ID_PROP_NAME = "aeron.cluster.appointed.leader.id";
 
         /**
          * Default property for the appointed cluster leader id. A value of {@link Aeron#NULL_VALUE} means no leader
          * has been appointed and thus an automated leader election should occur.
          */
+        @Config
         public static final int APPOINTED_LEADER_ID_DEFAULT = Aeron.NULL_VALUE;
 
         /**
@@ -418,38 +429,45 @@ public final class ConsensusModule implements AutoCloseable
          * {@link io.aeron.cluster.client.AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME} if the endpoint
          * is not provided when unicast.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String CLUSTER_MEMBERS_PROP_NAME = "aeron.cluster.members";
 
         /**
          * Property name for the comma separated list of cluster consensus endpoints used for dynamic join, cluster
          * backup and cluster standby nodes.
          */
+        @Config
         public static final String CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME = "aeron.cluster.consensus.endpoints";
 
         /**
          * Default property for the list of cluster consensus endpoints.
          */
+        @Config
         public static final String CLUSTER_CONSENSUS_ENDPOINTS_DEFAULT = "";
 
         /**
          * Property name for whether cluster member information in snapshots should be ignored on load or not.
          */
+        @Config
         public static final String CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME = "aeron.cluster.members.ignore.snapshot";
 
         /**
          * Default property for whether cluster member information in snapshots should be ignored or not.
          */
+        @Config
         public static final String CLUSTER_MEMBERS_IGNORE_SNAPSHOT_DEFAULT = "false";
 
         /**
          * Channel for the clustered log.
          */
+        @Config
         public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
 
         /**
          * Channel for the clustered log. This channel can exist for a potentially long time given cluster operation
          * so attention should be given to configuration such as term-length and mtu.
          */
+        @Config
         public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?term-length=64m";
 
         /**
@@ -461,21 +479,25 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @see #CLUSTER_MEMBERS_PROP_NAME
          */
+        @Config
         public static final String MEMBER_ENDPOINTS_PROP_NAME = "aeron.cluster.member.endpoints";
 
         /**
          * Default property for member endpoints.
          */
+        @Config
         public static final String MEMBER_ENDPOINTS_DEFAULT = "";
 
         /**
          * Stream id within a channel for the clustered log.
          */
+        @Config
         public static final String LOG_STREAM_ID_PROP_NAME = "aeron.cluster.log.stream.id";
 
         /**
          * Stream id within a channel for the clustered log.
          */
+        @Config
         public static final int LOG_STREAM_ID_DEFAULT = 100;
 
         /**
@@ -507,49 +529,58 @@ public final class ConsensusModule implements AutoCloseable
          * Channel to be used communicating cluster consensus to each other. This can be used for default
          * configuration with the endpoints replaced with those provided by {@link #CLUSTER_MEMBERS_PROP_NAME}.
          */
+        @Config
         public static final String CONSENSUS_CHANNEL_PROP_NAME = "aeron.cluster.consensus.channel";
 
         /**
          * Channel to be used for communicating cluster consensus to each other. This can be used for default
          * configuration with the endpoints replaced with those provided by {@link #CLUSTER_MEMBERS_PROP_NAME}.
          */
+        @Config
         public static final String CONSENSUS_CHANNEL_DEFAULT = "aeron:udp?term-length=64k";
 
         /**
          * Stream id within a channel for communicating consensus messages.
          */
+        @Config
         public static final String CONSENSUS_STREAM_ID_PROP_NAME = "aeron.cluster.consensus.stream.id";
 
         /**
          * Stream id for the archived snapshots within a channel.
          */
+        @Config
         public static final int CONSENSUS_STREAM_ID_DEFAULT = 108;
 
         /**
          * Channel to be used for replicating logs and snapshots from other archives to the local one.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String REPLICATION_CHANNEL_PROP_NAME = "aeron.cluster.replication.channel";
 
         /**
          * Channel template used for replaying logs to a follower using the {@link ClusterMember#catchupEndpoint()}.
          */
+        @Config
         public static final String FOLLOWER_CATCHUP_CHANNEL_PROP_NAME = "aeron.cluster.follower.catchup.channel";
 
         /**
          * Default channel template used for replaying logs to a follower using the
          * {@link ClusterMember#catchupEndpoint()}.
          */
+        @Config
         public static final String FOLLOWER_CATCHUP_CHANNEL_DEFAULT = UDP_CHANNEL;
 
         /**
          * Channel used to build the control request channel for the leader Archive.
          */
+        @Config
         public static final String LEADER_ARCHIVE_CONTROL_CHANNEL_PROP_NAME =
             "aeron.cluster.leader.archive.control.channel";
 
         /**
          * Default channel used to build the control request channel for the leader Archive.
          */
+        @Config
         public static final String LEADER_ARCHIVE_CONTROL_CHANNEL_DEFAULT = "aeron:udp?term-length=64k";
 
         /**
@@ -612,105 +643,125 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
          */
+        @Config
         public static final String SERVICE_COUNT_PROP_NAME = "aeron.cluster.service.count";
 
         /**
          * The number of services in this cluster instance.
          */
+        @Config
         public static final int SERVICE_COUNT_DEFAULT = 1;
 
         /**
          * Maximum number of cluster sessions that can be active concurrently.
          */
+        @Config
         public static final String MAX_CONCURRENT_SESSIONS_PROP_NAME = "aeron.cluster.max.sessions";
 
         /**
          * Maximum number of cluster sessions that can be active concurrently.
          */
+        @Config
         public static final int MAX_CONCURRENT_SESSIONS_DEFAULT = 10;
 
         /**
          * Timeout for a session if no activity is observed.
          */
+        @Config
         public static final String SESSION_TIMEOUT_PROP_NAME = "aeron.cluster.session.timeout";
 
         /**
          * Timeout for a session if no activity is observed.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 10L * 1000 * 1000 * 1000)
         public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Timeout for a leader if no heartbeat is received by another member.
          */
+        @Config
         public static final String LEADER_HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.leader.heartbeat.timeout";
 
         /**
          * Timeout for a leader if no heartbeat is received by another member.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 10L * 1000 * 1000 * 1000)
         public static final long LEADER_HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Interval at which a leader will send heartbeats if the log is not progressing.
          */
+        @Config
         public static final String LEADER_HEARTBEAT_INTERVAL_PROP_NAME = "aeron.cluster.leader.heartbeat.interval";
 
         /**
          * Interval at which a leader will send heartbeats if the log is not progressing.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 200L * 1000 * 1000)
         public static final long LEADER_HEARTBEAT_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
 
         /**
          * Timeout after which an election vote will be attempted after startup while waiting to canvass the status
          * of members if a majority has been heard from.
          */
+        @Config
         public static final String STARTUP_CANVASS_TIMEOUT_PROP_NAME = "aeron.cluster.startup.canvass.timeout";
 
         /**
          * Default timeout after which an election vote will be attempted on startup when waiting to canvass the
          * status of all members before going for a majority if possible.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 60L * 1000 * 1000 * 1000)
         public static final long STARTUP_CANVASS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(60);
 
         /**
          * Timeout after which an election fails if the candidate does not get a majority of votes.
          */
+        @Config
         public static final String ELECTION_TIMEOUT_PROP_NAME = "aeron.cluster.election.timeout";
 
         /**
          * Default timeout after which an election fails if the candidate does not get a majority of votes.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 1000L * 1000 * 1000)
         public static final long ELECTION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
         /**
          * Interval at which a member will send out status updates during election phases.
          */
+        @Config
         public static final String ELECTION_STATUS_INTERVAL_PROP_NAME = "aeron.cluster.election.status.interval";
 
         /**
          * Default interval at which a member will send out status updates during election phases.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 100L * 1000 * 1000)
         public static final long ELECTION_STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
         /**
          * Interval at which a dynamic joining member will send add cluster member and snapshot recording
          * queries.
          */
+        @Config(hasContext = false)
         public static final String DYNAMIC_JOIN_INTERVAL_PROP_NAME = "aeron.cluster.dynamic.join.interval";
 
         /**
          * Default interval at which a dynamic joining member will send add cluster member and snapshot recording
          * queries.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 1000L * 1000 * 1000)
         public static final long DYNAMIC_JOIN_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
         /**
          * Name of the system property for specifying a supplier of {@link Authenticator} for the cluster.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "io.aeron.security.DefaultAuthenticatorSupplier")
         public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.cluster.authenticator.supplier";
 
         /**
          * Name of the system property for specifying a supplier of {@link AuthorisationService} for the cluster.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME =
             "aeron.cluster.authorisation.service.supplier";
 
@@ -727,66 +778,78 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Size in bytes of the error buffer for the cluster.
          */
+        @Config
         public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.cluster.error.buffer.length";
 
         /**
          * Size in bytes of the error buffer for the cluster.
          */
+        @Config
         public static final int ERROR_BUFFER_LENGTH_DEFAULT = ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;
 
         /**
          * Timeout a leader will wait on getting termination ACKs from followers.
          */
+        @Config
         public static final String TERMINATION_TIMEOUT_PROP_NAME = "aeron.cluster.termination.timeout";
 
         /**
          * Property name for threshold value for the consensus module agent work cycle threshold to track
          * for being exceeded.
          */
+        @Config
         public static final String CYCLE_THRESHOLD_PROP_NAME = "aeron.cluster.cycle.threshold";
 
         /**
          * Default threshold value for the consensus module agent work cycle threshold to track for being exceeded.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 1000L * 1000 * 1000)
         public static final long CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
         /**
          * Property name for threshold value, which is used for tracking total snapshot duration breaches.
          */
+        @Config
         public static final String TOTAL_SNAPSHOT_DURATION_THRESHOLD_PROP_NAME =
             "aeron.cluster.total.snapshot.threshold";
 
         /**
          * Default threshold value, which is used for tracking total snapshot duration breaches.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 1000L * 1000 * 1000)
         public static final long TOTAL_SNAPSHOT_DURATION_THRESHOLD_DEFAULT_NS =
             TimeUnit.MILLISECONDS.toNanos(1000);
 
         /**
          * Default timeout a leader will wait on getting termination ACKs from followers.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 10L * 1000 * 1000 * 1000)
         public static final long TERMINATION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Resolution in nanoseconds for each tick of the timer wheel for scheduling deadlines.
          */
+        @Config
         public static final String WHEEL_TICK_RESOLUTION_PROP_NAME = "aeron.cluster.wheel.tick.resolution";
 
         /**
          * Resolution in nanoseconds for each tick of the timer wheel for scheduling deadlines. Defaults to 8ms.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 4L * 1000 * 1000)
         public static final long WHEEL_TICK_RESOLUTION_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(8);
 
         /**
          * Number of ticks, or spokes, on the timer wheel. Higher number of ticks reduces potential conflicts
          * traded off against memory usage.
          */
+        @Config
         public static final String TICKS_PER_WHEEL_PROP_NAME = "aeron.cluster.ticks.per.wheel";
 
         /**
          * Number of ticks, or spokes, on the timer wheel. Higher number of ticks reduces potential conflicts
          * traded off against memory usage. Defaults to 128 per wheel.
          */
+        @Config
         public static final int TICKS_PER_WHEEL_DEFAULT = 128;
 
         /**
@@ -797,16 +860,19 @@ public final class ConsensusModule implements AutoCloseable
          * <li>2 - sync file data + metadata.</li>
          * </ul>
          */
+        @Config
         public static final String FILE_SYNC_LEVEL_PROP_NAME = "aeron.cluster.file.sync.level";
 
         /**
          * Default file sync level of normal writes.
          */
+        @Config
         public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
 
         /**
          * {@link TimerServiceSupplier} to be used for creating the {@link TimerService} used by consensus module.
          */
+        @Config
         public static final String TIMER_SERVICE_SUPPLIER_PROP_NAME = "aeron.cluster.timer.service.supplier";
 
         /**
@@ -825,11 +891,13 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Default {@link TimerServiceSupplier}.
          */
+        @Config
         public static final String TIMER_SERVICE_SUPPLIER_DEFAULT = TIMER_SERVICE_SUPPLIER_WHEEL;
 
         /**
          * Property name for the name returned from {@link Agent#roleName()} for the consensus module.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String CLUSTER_CONSENSUS_MODULE_AGENT_ROLE_NAME_PROP_NAME =
             "aeron.cluster.consensus.module.agent.role.name";
 
@@ -838,6 +906,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @since 1.41.0
          */
+        @Config
         public static final String CLUSTER_REPLICATION_PROGRESS_TIMEOUT_PROP_NAME =
             "aeron.cluster.replication.progress.timeout";
 
@@ -846,6 +915,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @since 1.41.0
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 10L * 1000 * 1000 * 1000)
         public static final long CLUSTER_REPLICATION_PROGRESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
@@ -853,12 +923,14 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @since 1.41.0
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 0)
         public static final String CLUSTER_REPLICATION_PROGRESS_INTERVAL_PROP_NAME =
             "aeron.cluster.replication.progress.interval";
 
         /**
          * Property name of enabling the acceptance of standby snapshots
          */
+        @Config(defaultType = DefaultType.BOOLEAN, defaultBoolean = false)
         public static final String CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME =
             "aeron.cluster.accept.standby.snapshots";
 
@@ -868,6 +940,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @since 1.44.0
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "io.aeron.cluster.MillisecondClusterClock")
         public static final String CLUSTER_CLOCK_PROP_NAME = "aeron.cluster.clock";
 
         /**
@@ -1971,6 +2044,7 @@ public final class ConsensusModule implements AutoCloseable
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_SERVICES_DIR_PROP_NAME
          * @see #clusterServicesDirectoryName(String)
          */
+        @Config(id = "CLUSTER_SERVICES_DIR")
         public String clusterServicesDirectoryName()
         {
             return clusterServicesDirectoryName;
@@ -2113,6 +2187,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the level to be applied for file write.
          * @see Configuration#FILE_SYNC_LEVEL_PROP_NAME
          */
+        @Config
         int fileSyncLevel()
         {
             return fileSyncLevel;
@@ -2179,6 +2254,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return this cluster member identity.
          * @see Configuration#CLUSTER_MEMBER_ID_PROP_NAME
          */
+        @Config
         public int clusterMemberId()
         {
             return clusterMemberId;
@@ -2207,6 +2283,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return cluster member id of the appointed cluster leader.
          * @see Configuration#APPOINTED_LEADER_ID_PROP_NAME
          */
+        @Config
         public int appointedLeaderId()
         {
             return appointedLeaderId;
@@ -2242,6 +2319,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return members of the cluster which are all candidates to be leader.
          * @see Configuration#CLUSTER_MEMBERS_PROP_NAME
          */
+        @Config
         public String clusterMembers()
         {
             return clusterMembers;
@@ -2275,6 +2353,7 @@ public final class ConsensusModule implements AutoCloseable
          * deprecated and will be removed in a later release.
          */
         @Deprecated
+        @Config
         public String clusterConsensusEndpoints()
         {
             return clusterConsensusEndpoints;
@@ -2299,6 +2378,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return ignore or not the cluster members in the snapshot.
          * @see Configuration#CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME
          */
+        @Config
         public boolean clusterMembersIgnoreSnapshot()
         {
             return clusterMembersIgnoreSnapshot;
@@ -2371,6 +2451,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the limit for fragments to be consumed on each poll of ingress.
          * @see Configuration#CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME
          */
+        @Config(id = "CLUSTER_INGRESS_FRAGMENT_LIMIT")
         public int ingressFragmentLimit()
         {
             return ingressFragmentLimit;
@@ -2431,6 +2512,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return whether IPC ingress is allowed or not.
          * @see Configuration#CLUSTER_INGRESS_IPC_ALLOWED_PROP_NAME
          */
+        @Config(id = "CLUSTER_INGRESS_IPC_ALLOWED")
         public boolean isIpcIngressAllowed()
         {
             return isIpcIngressAllowed;
@@ -2455,6 +2537,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the channel parameter for the cluster channel.
          * @see Configuration#LOG_CHANNEL_PROP_NAME
          */
+        @Config
         public String logChannel()
         {
             return logChannel;
@@ -2503,6 +2586,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the endpoints for the cluster node.
          * @see Configuration#MEMBER_ENDPOINTS_PROP_NAME
          */
+        @Config
         public String memberEndpoints()
         {
             return memberEndpoints;
@@ -2695,6 +2779,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the channel parameter for the consensus communication channel.
          * @see Configuration#CONSENSUS_CHANNEL_PROP_NAME
          */
+        @Config
         public String consensusChannel()
         {
             return consensusChannel;
@@ -2719,6 +2804,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the stream id for the consensus channel.
          * @see Configuration#CONSENSUS_STREAM_ID_PROP_NAME
          */
+        @Config
         public int consensusStreamId()
         {
             return consensusStreamId;
@@ -2747,6 +2833,7 @@ public final class ConsensusModule implements AutoCloseable
          * replication  to catch up.
          * @see Configuration#REPLICATION_CHANNEL_PROP_NAME
          */
+        @Config
         public String replicationChannel()
         {
             return replicationChannel;
@@ -2773,6 +2860,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return channel used for replaying older data during a catchup phase.
          * @see Configuration#FOLLOWER_CATCHUP_CHANNEL_PROP_NAME
          */
+        @Config
         public String followerCatchupChannel()
         {
             return followerCatchupChannel;
@@ -2799,6 +2887,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return channel used for replaying older data during a catchup phase.
          * @see Configuration#LEADER_ARCHIVE_CONTROL_CHANNEL_PROP_NAME
          */
+        @Config
         public String leaderArchiveControlChannel()
         {
             return leaderArchiveControlChannel;
@@ -2847,6 +2936,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the resolution in nanoseconds for each tick on the timer wheel.
          * @see Configuration#WHEEL_TICK_RESOLUTION_PROP_NAME
          */
+        @Config
         public long wheelTickResolutionNs()
         {
             return wheelTickResolutionNs;
@@ -2873,6 +2963,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the number of ticks on the timer wheel.
          * @see Configuration#TICKS_PER_WHEEL_PROP_NAME
          */
+        @Config
         public int ticksPerWheel()
         {
             return ticksPerWheel;
@@ -2899,6 +2990,7 @@ public final class ConsensusModule implements AutoCloseable
          * @see Configuration#SERVICE_COUNT_PROP_NAME
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
          */
+        @Config
         public int serviceCount()
         {
             return serviceCount;
@@ -2923,6 +3015,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the limit for the maximum number of concurrent cluster sessions.
          * @see Configuration#MAX_CONCURRENT_SESSIONS_PROP_NAME
          */
+        @Config
         public int maxConcurrentSessions()
         {
             return maxConcurrentSessions;
@@ -2947,6 +3040,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the timeout for a session if no activity is observed.
          * @see Configuration#SESSION_TIMEOUT_PROP_NAME
          */
+        @Config
         public long sessionTimeoutNs()
         {
             return CommonContext.checkDebugTimeout(sessionTimeoutNs, TimeUnit.NANOSECONDS);
@@ -2971,6 +3065,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the timeout for a leader if no heartbeat is received by another member.
          * @see Configuration#LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
          */
+        @Config
         public long leaderHeartbeatTimeoutNs()
         {
             return leaderHeartbeatTimeoutNs;
@@ -2983,6 +3078,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return this for a fluent API.
          * @see Configuration#LEADER_HEARTBEAT_INTERVAL_PROP_NAME
          */
+        @Config
         public Context leaderHeartbeatIntervalNs(final long heartbeatIntervalNs)
         {
             this.leaderHeartbeatIntervalNs = heartbeatIntervalNs;
@@ -3021,6 +3117,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the timeout to wait on startup after recovery before commencing an election.
          * @see Configuration#STARTUP_CANVASS_TIMEOUT_PROP_NAME
          */
+        @Config
         public long startupCanvassTimeoutNs()
         {
             return startupCanvassTimeoutNs;
@@ -3045,6 +3142,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return the timeout to wait for votes in an elections.
          * @see Configuration#ELECTION_TIMEOUT_PROP_NAME
          */
+        @Config
         public long electionTimeoutNs()
         {
             return electionTimeoutNs;
@@ -3071,6 +3169,7 @@ public final class ConsensusModule implements AutoCloseable
          * @see Configuration#ELECTION_STATUS_INTERVAL_PROP_NAME
          * @see Configuration#ELECTION_STATUS_INTERVAL_DEFAULT_NS
          */
+        @Config
         public long electionStatusIntervalNs()
         {
             return electionStatusIntervalNs;
@@ -3097,6 +3196,7 @@ public final class ConsensusModule implements AutoCloseable
          * @see Configuration#TERMINATION_TIMEOUT_PROP_NAME
          * @see Configuration#TERMINATION_TIMEOUT_DEFAULT_NS
          */
+        @Config
         public long terminationTimeoutNs()
         {
             return terminationTimeoutNs;
@@ -3123,6 +3223,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @return threshold to track for the consensus module agent work cycle time.
          */
+        @Config
         public long cycleThresholdNs()
         {
             return cycleThresholdNs;
@@ -3169,6 +3270,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @return threshold value in nanoseconds.
          */
+        @Config
         public long totalSnapshotDurationThresholdNs()
         {
             return totalSnapshotDurationThresholdNs;
@@ -3202,6 +3304,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @return the {@link Agent#roleName()} to be used for the consensus module agent.
          */
+        @Config(id = "CLUSTER_CONSENSUS_MODULE_AGENT_ROLE_NAME")
         public String agentRoleName()
         {
             return agentRoleName;
@@ -3280,6 +3383,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @return the {@link ClusterClock} to used for timestamping messages and timers.
          */
+        @Config
         public ClusterClock clusterClock()
         {
             return clusterClock;
@@ -3700,6 +3804,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @return the {@link AuthenticatorSupplier} to be used for the consensus module.
          */
+        @Config
         public AuthenticatorSupplier authenticatorSupplier()
         {
             return authenticatorSupplier;
@@ -3722,6 +3827,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @return the {@link AuthorisationServiceSupplier} to be used for the consensus module.
          */
+        @Config
         public AuthorisationServiceSupplier authorisationServiceSupplier()
         {
             return authorisationServiceSupplier;
@@ -3900,6 +4006,7 @@ public final class ConsensusModule implements AutoCloseable
          * @return error buffer length in bytes.
          * @see Configuration#ERROR_BUFFER_LENGTH_PROP_NAME
          */
+        @Config
         public int errorBufferLength()
         {
             return errorBufferLength;
@@ -3966,6 +4073,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @return supplier of dynamically created {@link TimerService} instances.
          */
+        @Config
         public TimerServiceSupplier timerServiceSupplier()
         {
             return timerServiceSupplier;
@@ -4002,6 +4110,7 @@ public final class ConsensusModule implements AutoCloseable
          * @see Configuration#CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME
          * @see Configuration#acceptStandbySnapshots()
          */
+        @Config(id = "CLUSTER_ACCEPT_STANDBY_SNAPSHOTS")
         public boolean acceptStandbySnapshots()
         {
             return acceptStandbySnapshots;

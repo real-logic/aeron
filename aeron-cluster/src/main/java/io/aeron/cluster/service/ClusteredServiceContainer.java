@@ -21,6 +21,8 @@ import io.aeron.cluster.AppVersionValidator;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
+import io.aeron.config.Config;
+import io.aeron.config.DefaultType;
 import io.aeron.driver.DutyCycleTracker;
 import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.exceptions.ConcurrentConcludeException;
@@ -143,6 +145,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
     /**
      * Configuration options for the consensus module and service container within a cluster.
      */
+    @Config(existsInC = false)
     public static final class Configuration
     {
         /**
@@ -163,133 +166,159 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Property name for the identity of the cluster instance.
          */
+        @Config
         public static final String CLUSTER_ID_PROP_NAME = "aeron.cluster.id";
 
         /**
          * Default identity for a clustered instance.
          */
+        @Config
         public static final int CLUSTER_ID_DEFAULT = 0;
 
         /**
          * Identity for a clustered service. Services should be numbered from 0 and be contiguous.
          */
+        @Config
         public static final String SERVICE_ID_PROP_NAME = "aeron.cluster.service.id";
 
         /**
          * Default identity for a clustered service.
          */
+        @Config
         public static final int SERVICE_ID_DEFAULT = 0;
 
         /**
          * Name for a clustered service to be the role of the {@link Agent}.
          */
+        @Config
         public static final String SERVICE_NAME_PROP_NAME = "aeron.cluster.service.name";
 
         /**
          * Name for a clustered service to be the role of the {@link Agent}.
          */
+        @Config
         public static final String SERVICE_NAME_DEFAULT = "clustered-service";
 
         /**
          * Class name for dynamically loading a {@link ClusteredService}. This is used if
          * {@link Context#clusteredService()} is not set.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String SERVICE_CLASS_NAME_PROP_NAME = "aeron.cluster.service.class.name";
 
         /**
          * Channel to be used for log or snapshot replay on startup.
          */
+        @Config
         public static final String REPLAY_CHANNEL_PROP_NAME = "aeron.cluster.replay.channel";
 
         /**
          * Default channel to be used for log or snapshot replay on startup.
          */
+        @Config
         public static final String REPLAY_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
 
         /**
          * Stream id within a channel for the clustered log or snapshot replay.
          */
+        @Config
         public static final String REPLAY_STREAM_ID_PROP_NAME = "aeron.cluster.replay.stream.id";
 
         /**
          * Default stream id for the log or snapshot replay within a channel.
          */
+        @Config
         public static final int REPLAY_STREAM_ID_DEFAULT = 103;
 
         /**
          * Channel for control communications between the local consensus module and services.
          */
+        @Config
         public static final String CONTROL_CHANNEL_PROP_NAME = "aeron.cluster.control.channel";
 
         /**
          * Default channel for communications between the local consensus module and services. This should be IPC.
          */
+        @Config
         public static final String CONTROL_CHANNEL_DEFAULT = "aeron:ipc?term-length=128k";
 
         /**
          * Stream id within the control channel for communications from the consensus module to the services.
          */
+        @Config
         public static final String SERVICE_STREAM_ID_PROP_NAME = "aeron.cluster.service.stream.id";
 
         /**
          * Default stream id within the control channel for communications from the consensus module.
          */
+        @Config
         public static final int SERVICE_STREAM_ID_DEFAULT = 104;
 
         /**
          * Stream id within the control channel for communications from the services to the consensus module.
          */
+        @Config
         public static final String CONSENSUS_MODULE_STREAM_ID_PROP_NAME = "aeron.cluster.consensus.module.stream.id";
 
         /**
          * Default stream id within a channel for communications from the services to the consensus module.
          */
+        @Config
         public static final int CONSENSUS_MODULE_STREAM_ID_DEFAULT = 105;
 
         /**
          * Channel to be used for archiving snapshots.
          */
+        @Config
         public static final String SNAPSHOT_CHANNEL_PROP_NAME = "aeron.cluster.snapshot.channel";
 
         /**
          * Default channel to be used for archiving snapshots.
          */
+        @Config
         public static final String SNAPSHOT_CHANNEL_DEFAULT = "aeron:ipc?alias=snapshot";
 
         /**
          * Stream id within a channel for archiving snapshots.
          */
+        @Config
         public static final String SNAPSHOT_STREAM_ID_PROP_NAME = "aeron.cluster.snapshot.stream.id";
 
         /**
          * Default stream id for the archived snapshots within a channel.
          */
+        @Config
         public static final int SNAPSHOT_STREAM_ID_DEFAULT = 106;
 
         /**
          * Directory to use for the aeron cluster.
          */
+        @Config
         public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
+
+        /**
+         * Default directory to use for the aeron cluster.
+         */
+        @Config
+        public static final String CLUSTER_DIR_DEFAULT = "aeron-cluster";
 
         /**
          * Directory to use for the aeron cluster services, will default to {@link #CLUSTER_DIR_PROP_NAME} if not
          * specified.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = CLUSTER_DIR_DEFAULT)
         public static final String CLUSTER_SERVICES_DIR_PROP_NAME = "aeron.cluster.services.dir";
 
         /**
          * Directory to use for the Cluster component's mark file.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String MARK_FILE_DIR_PROP_NAME = "aeron.cluster.mark.file.dir";
-
-        /**
-         * Default directory to use for the aeron cluster.
-         */
-        public static final String CLUSTER_DIR_DEFAULT = "aeron-cluster";
 
         /**
          * Length in bytes of the error buffer for the cluster container.
          */
+        @Config
         public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.cluster.service.error.buffer.length";
 
         /**
@@ -300,27 +329,32 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Is this a responding service to client requests property.
          */
+        @Config
         public static final String RESPONDER_SERVICE_PROP_NAME = "aeron.cluster.service.responder";
 
         /**
          * Default to true that this a responding service to client requests.
          */
+        @Config
         public static final boolean RESPONDER_SERVICE_DEFAULT = true;
 
         /**
          * Fragment limit to use when polling the log.
          */
+        @Config
         public static final String LOG_FRAGMENT_LIMIT_PROP_NAME = "aeron.cluster.log.fragment.limit";
 
         /**
          * Default fragment limit for polling log.
          */
+        @Config
         public static final int LOG_FRAGMENT_LIMIT_DEFAULT = 50;
 
         /**
          * Delegating {@link ErrorHandler} which will be first in the chain before delegating to the
          * {@link Context#errorHandler()}.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String DELEGATING_ERROR_HANDLER_PROP_NAME =
             "aeron.cluster.service.delegating.error.handler";
 
@@ -328,6 +362,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Property name for threshold value for the container work cycle threshold to track
          * for being exceeded.
          */
+        @Config
         public static final String CYCLE_THRESHOLD_PROP_NAME = "aeron.cluster.service.cycle.threshold";
 
         /**
@@ -340,6 +375,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @since 1.44.0
          */
+        @Config
         public static final String SNAPSHOT_DURATION_THRESHOLD_PROP_NAME = "aeron.cluster.service.snapshot.threshold";
 
         /**
@@ -347,6 +383,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @since 1.44.0
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 1000L * 1000 * 1000)
         public static final long SNAPSHOT_DURATION_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
         /**
@@ -477,17 +514,20 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Default {@link IdleStrategy} to be employed for cluster agents.
          */
+        @Config(id = "CLUSTER_IDLE_STRATEGY")
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
         /**
          * {@link IdleStrategy} to be employed for cluster agents.
          */
+        @Config
         public static final String CLUSTER_IDLE_STRATEGY_PROP_NAME = "aeron.cluster.idle.strategy";
 
         /**
          * Property to configure if this node should take standby snapshots. The default for this property is
          * <code>false</code>.
          */
+        @Config(defaultType = DefaultType.BOOLEAN, defaultBoolean = false)
         public static final String STANDBY_SNAPSHOT_ENABLED_PROP_NAME = "aeron.cluster.standby.snapshot.enabled";
 
         /**
@@ -522,7 +562,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public static String clusterServicesDirName()
         {
-            return System.getProperty(CLUSTER_DIR_PROP_NAME);
+            return System.getProperty(CLUSTER_SERVICES_DIR_PROP_NAME, clusterDirName());
         }
 
         /**
@@ -1025,6 +1065,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the id for this cluster instance.
          * @see Configuration#CLUSTER_ID_PROP_NAME
          */
+        @Config
         public int clusterId()
         {
             return clusterId;
@@ -1049,6 +1090,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the id for this clustered service.
          * @see Configuration#SERVICE_ID_PROP_NAME
          */
+        @Config
         public int serviceId()
         {
             return serviceId;
@@ -1073,6 +1115,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the name for a clustered service to be the role of the {@link Agent}.
          * @see Configuration#SERVICE_NAME_PROP_NAME
          */
+        @Config
         public String serviceName()
         {
             return serviceName;
@@ -1097,6 +1140,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the channel parameter for the cluster replay channel.
          * @see Configuration#REPLAY_CHANNEL_PROP_NAME
          */
+        @Config
         public String replayChannel()
         {
             return replayChannel;
@@ -1121,6 +1165,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the stream id for the cluster log replay channel.
          * @see Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
+        @Config
         public int replayStreamId()
         {
             return replayStreamId;
@@ -1145,6 +1190,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the channel parameter for sending messages to the Consensus Module.
          * @see Configuration#CONTROL_CHANNEL_PROP_NAME
          */
+        @Config
         public String controlChannel()
         {
             return controlChannel;
@@ -1169,6 +1215,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the stream id for communications from the consensus module and to the services.
          * @see Configuration#SERVICE_STREAM_ID_PROP_NAME
          */
+        @Config
         public int serviceStreamId()
         {
             return serviceStreamId;
@@ -1193,6 +1240,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the stream id for communications from the services to the consensus module.
          * @see Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
          */
+        @Config
         public int consensusModuleStreamId()
         {
             return consensusModuleStreamId;
@@ -1217,6 +1265,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the channel parameter for snapshot recordings.
          * @see Configuration#SNAPSHOT_CHANNEL_PROP_NAME
          */
+        @Config
         public String snapshotChannel()
         {
             return snapshotChannel;
@@ -1241,6 +1290,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the stream id for snapshot recordings.
          * @see Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
          */
+        @Config
         public int snapshotStreamId()
         {
             return snapshotStreamId;
@@ -1278,6 +1328,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the fragment limit to be used when polling the log {@link Subscription}.
          * @see Configuration#LOG_FRAGMENT_LIMIT_PROP_NAME
          */
+        @Config
         public int logFragmentLimit()
         {
             return logFragmentLimit;
@@ -1289,6 +1340,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return true if this service responds to client requests, otherwise false.
          * @see Configuration#RESPONDER_SERVICE_PROP_NAME
          */
+        @Config(id = "RESPONDER_SERVICE")
         public boolean isRespondingService()
         {
             return isRespondingService;
@@ -1333,6 +1385,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @return a new {@link IdleStrategy} based on configured supplier.
          */
+        @Config(id = "CLUSTER_IDLE_STRATEGY")
         public IdleStrategy idleStrategy()
         {
             return idleStrategySupplier.get();
@@ -1389,6 +1442,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the {@link DelegatingErrorHandler} to be used by the {@link ClusteredServiceContainer}.
          * @see Configuration#DELEGATING_ERROR_HANDLER_PROP_NAME
          */
+        @Config
         public DelegatingErrorHandler delegatingErrorHandler()
         {
             return delegatingErrorHandler;
@@ -1525,6 +1579,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @return service this container holds.
          */
+        @Config(id = "SERVICE_CLASS_NAME")
         public ClusteredService clusteredService()
         {
             return clusteredService;
@@ -1583,6 +1638,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return directory name for the cluster directory.
          * @see Configuration#CLUSTER_DIR_PROP_NAME
          */
+        @Config(id = "CLUSTER_DIR")
         public String clusterDirectoryName()
         {
             return clusterDirectoryName;
@@ -1622,6 +1678,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @see ClusteredServiceContainer.Configuration#MARK_FILE_DIR_PROP_NAME
          * @see #clusterDir()
          */
+        @Config
         public File markFileDir()
         {
             return markFileDir;
@@ -1844,6 +1901,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return threshold value in nanoseconds.
          * @since 1.44.0
          */
+        @Config
         public long snapshotDurationThresholdNs()
         {
             return snapshotDurationThresholdNs;
@@ -1891,6 +1949,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @see ClusteredServiceContainer.Configuration#STANDBY_SNAPSHOT_ENABLED_PROP_NAME
          * @see ClusteredServiceContainer.Configuration#standbySnapshotEnabled()
          */
+        @Config
         public boolean standbySnapshotEnabled()
         {
             return standbySnapshotEnabled;

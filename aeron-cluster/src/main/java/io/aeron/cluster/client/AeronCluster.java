@@ -17,6 +17,8 @@ package io.aeron.cluster.client;
 
 import io.aeron.*;
 import io.aeron.cluster.codecs.*;
+import io.aeron.config.Config;
+import io.aeron.config.DefaultType;
 import io.aeron.exceptions.*;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -941,6 +943,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Configuration options for cluster client.
      */
+    @Config(existsInC = false)
     public static final class Configuration
     {
         /**
@@ -972,11 +975,13 @@ public final class AeronCluster implements AutoCloseable
         /**
          * Timeout when waiting on a message to be sent or received.
          */
+        @Config
         public static final String MESSAGE_TIMEOUT_PROP_NAME = "aeron.cluster.message.timeout";
 
         /**
          * Default timeout when waiting on a message to be sent or received.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 5L * 1000 * 1000 * 1000)
         public static final long MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
@@ -988,11 +993,13 @@ public final class AeronCluster implements AutoCloseable
          * <p>
          * Each member of the list will be substituted for the endpoint in the {@link #INGRESS_CHANNEL_PROP_NAME} value.
          */
+        @Config
         public static final String INGRESS_ENDPOINTS_PROP_NAME = "aeron.cluster.ingress.endpoints";
 
         /**
          * Default comma separated list of cluster ingress endpoints.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String INGRESS_ENDPOINTS_DEFAULT = null;
 
         /**
@@ -1000,21 +1007,25 @@ public final class AeronCluster implements AutoCloseable
          * be required and the {@link #INGRESS_ENDPOINTS_PROP_NAME} is used to substitute the endpoints from the
          * {@link #INGRESS_ENDPOINTS_PROP_NAME} list.
          */
+        @Config
         public static final String INGRESS_CHANNEL_PROP_NAME = "aeron.cluster.ingress.channel";
 
         /**
          * Channel for sending messages to a cluster.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String INGRESS_CHANNEL_DEFAULT = null;
 
         /**
          * Stream id within a channel for sending messages to a cluster.
          */
+        @Config
         public static final String INGRESS_STREAM_ID_PROP_NAME = "aeron.cluster.ingress.stream.id";
 
         /**
          * Default stream id within a channel for sending messages to a cluster.
          */
+        @Config
         public static final int INGRESS_STREAM_ID_DEFAULT = 101;
 
         /**
@@ -1031,21 +1042,25 @@ public final class AeronCluster implements AutoCloseable
          *     <a href="https://en.wikipedia.org/wiki/Ephemeral_port">ephemeral port range</a>.</li>
          * </ul>
          */
+        @Config
         public static final String EGRESS_CHANNEL_PROP_NAME = "aeron.cluster.egress.channel";
 
         /**
          * Channel for receiving response messages from a cluster.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String EGRESS_CHANNEL_DEFAULT = null;
 
         /**
          * Stream id within a channel for receiving messages from a cluster.
          */
+        @Config
         public static final String EGRESS_STREAM_ID_PROP_NAME = "aeron.cluster.egress.stream.id";
 
         /**
          * Default stream id within a channel for receiving messages from a cluster.
          */
+        @Config
         public static final int EGRESS_STREAM_ID_DEFAULT = 102;
 
         /**
@@ -1246,6 +1261,7 @@ public final class AeronCluster implements AutoCloseable
          * @return the message timeout in nanoseconds to wait for sending or receiving a message.
          * @see Configuration#MESSAGE_TIMEOUT_PROP_NAME
          */
+        @Config
         public long messageTimeoutNs()
         {
             return CommonContext.checkDebugTimeout(messageTimeoutNs, TimeUnit.NANOSECONDS);
@@ -1274,6 +1290,7 @@ public final class AeronCluster implements AutoCloseable
          * @return member endpoints of the cluster which are all candidates to be leader.
          * @see Configuration#INGRESS_ENDPOINTS_PROP_NAME
          */
+        @Config
         public String ingressEndpoints()
         {
             return ingressEndpoints;
@@ -1305,6 +1322,7 @@ public final class AeronCluster implements AutoCloseable
          * @return the channel parameter for the ingress channel.
          * @see Configuration#INGRESS_CHANNEL_PROP_NAME
          */
+        @Config
         public String ingressChannel()
         {
             return ingressChannel;
@@ -1329,6 +1347,7 @@ public final class AeronCluster implements AutoCloseable
          * @return the stream id for the ingress channel.
          * @see Configuration#INGRESS_STREAM_ID_PROP_NAME
          */
+        @Config
         public int ingressStreamId()
         {
             return ingressStreamId;
@@ -1353,6 +1372,7 @@ public final class AeronCluster implements AutoCloseable
          * @return the channel parameter for the egress channel.
          * @see Configuration#EGRESS_CHANNEL_PROP_NAME
          */
+        @Config
         public String egressChannel()
         {
             return egressChannel;
@@ -1377,6 +1397,7 @@ public final class AeronCluster implements AutoCloseable
          * @return the stream id for the egress channel.
          * @see Configuration#EGRESS_STREAM_ID_PROP_NAME
          */
+        @Config
         public int egressStreamId()
         {
             return egressStreamId;

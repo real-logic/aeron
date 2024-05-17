@@ -751,6 +751,18 @@ project(':aeron-archive') {
     signing {
         sign publishing.publications.aeronArchive
     }
+
+    tasks.register('generateConfigDoc', JavaExec) {
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
+        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+
+        inputs.files(configInfoFile)
+        outputs.files(generatedDocFile)
+
+        mainClass.set('io.aeron.config.docgen.GenerateConfigDocTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [configInfoFile, generatedDocFile]
+    }
 }
 
 project(':aeron-cluster') {

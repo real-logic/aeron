@@ -56,6 +56,8 @@ public class ConfigInfo implements Serializable
 
     public String defaultValue;
 
+    public String defaultValueString;
+
     public DefaultType defaultValueType = DefaultType.UNDEFINED;
 
     public String overrideDefaultValue;

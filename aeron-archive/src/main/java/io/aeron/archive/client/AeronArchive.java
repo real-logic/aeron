@@ -20,6 +20,8 @@ import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.RecordingSignalEventDecoder;
 import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.config.Config;
+import io.aeron.config.DefaultType;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
@@ -2620,6 +2622,7 @@ public final class AeronArchive implements AutoCloseable
     /**
      * Common configuration properties for communicating with an Aeron archive.
      */
+    @Config(existsInC = false)
     public static final class Configuration
     {
         /**
@@ -2651,46 +2654,55 @@ public final class AeronArchive implements AutoCloseable
         /**
          * Timeout in nanoseconds when waiting on a message to be sent or received.
          */
+        @Config
         public static final String MESSAGE_TIMEOUT_PROP_NAME = "aeron.archive.message.timeout";
 
         /**
          * Timeout when waiting on a message to be sent or received.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 10L * 1000 * 1000 * 1000)
         public static final long MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Channel for sending control messages to an archive.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String CONTROL_CHANNEL_PROP_NAME = "aeron.archive.control.channel";
 
         /**
          * Stream id within a channel for sending control messages to an archive.
          */
+        @Config
         public static final String CONTROL_STREAM_ID_PROP_NAME = "aeron.archive.control.stream.id";
 
         /**
          * Stream id within a channel for sending control messages to an archive.
          */
+        @Config
         public static final int CONTROL_STREAM_ID_DEFAULT = 10;
 
         /**
          * Channel for sending control messages to a driver local archive.
          */
+        @Config(hasContext = false)
         public static final String LOCAL_CONTROL_CHANNEL_PROP_NAME = "aeron.archive.local.control.channel";
 
         /**
          * Channel for sending control messages to a driver local archive. Default to IPC.
          */
+        @Config
         public static final String LOCAL_CONTROL_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
 
         /**
          * Stream id within a channel for sending control messages to a driver local archive.
          */
+        @Config(hasContext = false)
         public static final String LOCAL_CONTROL_STREAM_ID_PROP_NAME = "aeron.archive.local.control.stream.id";
 
         /**
          * Stream id within a channel for sending control messages to a driver local archive.
          */
+        @Config
         public static final int LOCAL_CONTROL_STREAM_ID_DEFAULT = CONTROL_STREAM_ID_DEFAULT;
 
         /**
@@ -2708,21 +2720,25 @@ public final class AeronArchive implements AutoCloseable
          *     <a href="https://en.wikipedia.org/wiki/Ephemeral_port">ephemeral port range</a>.</li>
          * </ul>
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String CONTROL_RESPONSE_CHANNEL_PROP_NAME = "aeron.archive.control.response.channel";
 
         /**
          * Stream id within a channel for receiving control messages from an archive.
          */
+        @Config
         public static final String CONTROL_RESPONSE_STREAM_ID_PROP_NAME = "aeron.archive.control.response.stream.id";
 
         /**
          * Stream id within a channel for receiving control messages from an archive.
          */
+        @Config
         public static final int CONTROL_RESPONSE_STREAM_ID_DEFAULT = 20;
 
         /**
          * Channel for receiving progress events of recordings from an archive.
          */
+        @Config
         public static final String RECORDING_EVENTS_CHANNEL_PROP_NAME = "aeron.archive.recording.events.channel";
 
         /**
@@ -2730,58 +2746,69 @@ public final class AeronArchive implements AutoCloseable
          * For production, it is recommended that multicast or dynamic multi-destination-cast (MDC) is used to allow
          * for dynamic subscribers, an endpoint can be added to the subscription side for controlling port usage.
          */
+        @Config
         public static final String RECORDING_EVENTS_CHANNEL_DEFAULT =
             "aeron:udp?control-mode=dynamic|control=localhost:8030";
 
         /**
          * Stream id within a channel for receiving progress of recordings from an archive.
          */
+        @Config
         public static final String RECORDING_EVENTS_STREAM_ID_PROP_NAME = "aeron.archive.recording.events.stream.id";
 
         /**
          * Stream id within a channel for receiving progress of recordings from an archive.
          */
+        @Config
         public static final int RECORDING_EVENTS_STREAM_ID_DEFAULT = 30;
 
         /**
          * Is channel enabled for recording progress events of recordings from an archive.
          */
+        @Config
         public static final String RECORDING_EVENTS_ENABLED_PROP_NAME = "aeron.archive.recording.events.enabled";
 
         /**
          * Channel enabled for recording progress events of recordings from an archive which defaults to false.
          */
+        @Config
         public static final boolean RECORDING_EVENTS_ENABLED_DEFAULT = false;
 
         /**
          * Sparse term buffer indicator for control streams.
          */
+        @Config
         public static final String CONTROL_TERM_BUFFER_SPARSE_PROP_NAME = "aeron.archive.control.term.buffer.sparse";
 
         /**
          * Overrides {@link io.aeron.driver.Configuration#TERM_BUFFER_SPARSE_FILE_PROP_NAME} for if term buffer files
          * are sparse on the control channel.
          */
+        @Config
         public static final boolean CONTROL_TERM_BUFFER_SPARSE_DEFAULT = true;
 
         /**
          * Term length for control streams.
          */
+        @Config
         public static final String CONTROL_TERM_BUFFER_LENGTH_PROP_NAME = "aeron.archive.control.term.buffer.length";
 
         /**
          * Low term length for control channel reflects expected low bandwidth usage.
          */
+        @Config
         public static final int CONTROL_TERM_BUFFER_LENGTH_DEFAULT = 64 * 1024;
 
         /**
          * MTU length for control streams.
          */
+        @Config
         public static final String CONTROL_MTU_LENGTH_PROP_NAME = "aeron.archive.control.mtu.length";
 
         /**
          * MTU to reflect default for the control streams.
          */
+        @Config(defaultType = DefaultType.INT, defaultValueString = "io.aeron.driver.Configuration.mtuLength()")
         public static final int CONTROL_MTU_LENGTH_DEFAULT = io.aeron.driver.Configuration.mtuLength();
 
         /**
@@ -3060,6 +3087,7 @@ public final class AeronArchive implements AutoCloseable
          * @return the message timeout in nanoseconds to wait for sending or receiving a message.
          * @see Configuration#MESSAGE_TIMEOUT_PROP_NAME
          */
+        @Config
         public long messageTimeoutNs()
         {
             return messageTimeoutNs;
@@ -3070,6 +3098,7 @@ public final class AeronArchive implements AutoCloseable
          *
          * @return the channel URI on which the recording events publication will publish.
          */
+        @Config
         public String recordingEventsChannel()
         {
             return recordingEventsChannel;
@@ -3096,6 +3125,7 @@ public final class AeronArchive implements AutoCloseable
          *
          * @return the stream id on which the recording events publication will publish.
          */
+        @Config
         public int recordingEventsStreamId()
         {
             return recordingEventsStreamId;
@@ -3132,6 +3162,7 @@ public final class AeronArchive implements AutoCloseable
          * @return the channel parameter for the control request channel.
          * @see Configuration#CONTROL_CHANNEL_PROP_NAME
          */
+        @Config(id = "CONTROL_CHANNEL")
         public String controlRequestChannel()
         {
             return controlRequestChannel;
@@ -3156,6 +3187,7 @@ public final class AeronArchive implements AutoCloseable
          * @return the stream id for the control request channel.
          * @see Configuration#CONTROL_STREAM_ID_PROP_NAME
          */
+        @Config(id = "CONTROL_STREAM_ID")
         public int controlRequestStreamId()
         {
             return controlRequestStreamId;
@@ -3180,6 +3212,7 @@ public final class AeronArchive implements AutoCloseable
          * @return the channel parameter for the control response channel.
          * @see Configuration#CONTROL_RESPONSE_CHANNEL_PROP_NAME
          */
+        @Config
         public String controlResponseChannel()
         {
             return controlResponseChannel;
@@ -3204,6 +3237,7 @@ public final class AeronArchive implements AutoCloseable
          * @return the stream id for the control response channel.
          * @see Configuration#CONTROL_RESPONSE_STREAM_ID_PROP_NAME
          */
+        @Config
         public int controlResponseStreamId()
         {
             return controlResponseStreamId;
@@ -3228,6 +3262,7 @@ public final class AeronArchive implements AutoCloseable
          * @return {@code true} if the control stream should use sparse file term buffers.
          * @see Configuration#CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
          */
+        @Config
         public boolean controlTermBufferSparse()
         {
             return controlTermBufferSparse;
@@ -3252,6 +3287,7 @@ public final class AeronArchive implements AutoCloseable
          * @return the term buffer length for the control streams.
          * @see Configuration#CONTROL_TERM_BUFFER_LENGTH_PROP_NAME
          */
+        @Config
         public int controlTermBufferLength()
         {
             return controlTermBufferLength;
@@ -3276,6 +3312,7 @@ public final class AeronArchive implements AutoCloseable
          * @return the MTU length for the control streams.
          * @see Configuration#CONTROL_MTU_LENGTH_PROP_NAME
          */
+        @Config
         public int controlMtuLength()
         {
             return controlMtuLength;

@@ -109,6 +109,11 @@ public @interface Config
     String defaultString() default "";
 
     /**
+     * @return specify a string that acts as a stand-in for the default value when generating documentation
+     */
+    String defaultValueString() default "";
+
+    /**
      * Used to indicate whether or not the default value is a time value
      */
     enum IsTimeValue

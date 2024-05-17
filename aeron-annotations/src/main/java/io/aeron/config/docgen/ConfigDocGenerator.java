@@ -93,7 +93,7 @@ final class ConfigDocGenerator implements AutoCloseable
                 configInfo.overrideDefaultValue;
 
             write("Default", getDefaultString(
-                defaultValue,
+                configInfo.defaultValueString == null ? defaultValue : configInfo.defaultValueString,
                 configInfo.isTimeValue,
                 configInfo.timeUnit));
             if (configInfo.isTimeValue == Boolean.TRUE)

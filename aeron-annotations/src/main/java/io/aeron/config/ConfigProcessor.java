@@ -208,6 +208,11 @@ public class ConfigProcessor extends Processor
             configInfo.hasContext = false;
         }
 
+        if (!config.defaultValueString().isEmpty())
+        {
+            configInfo.defaultValueString = config.defaultValueString();
+        }
+
         handleTimeValue(config, configInfo, id);
 
         handleDefaultTypeOverride(element, config, configInfo);
@@ -369,8 +374,6 @@ public class ConfigProcessor extends Processor
             return;
         }
 
-        System.out.println("+++ " + element.getQualifiedName());
-
         typeConfigMap.put(element.getQualifiedName().toString(), config);
     }
 
@@ -525,7 +528,9 @@ public class ConfigProcessor extends Processor
             insane(id, "no property name found");
         }
 
-        if (configInfo.defaultValue == null && configInfo.overrideDefaultValue == null)
+        if (configInfo.defaultValue == null &&
+            configInfo.overrideDefaultValue == null &&
+            configInfo.defaultValueString == null)
         {
             insane(id, "no default value found");
         }

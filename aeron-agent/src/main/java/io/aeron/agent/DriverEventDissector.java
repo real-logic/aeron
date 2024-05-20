@@ -56,6 +56,7 @@ final class DriverEventDissector
     private static final ClientTimeoutFlyweight CLIENT_TIMEOUT = new ClientTimeoutFlyweight();
     private static final TerminateDriverFlyweight TERMINATE_DRIVER = new TerminateDriverFlyweight();
     private static final DestinationByIdMessageFlyweight DESTINATION_BY_ID = new DestinationByIdMessageFlyweight();
+    private static final InvalidateImageFlyweight INVALIDATE_IMAGE = new InvalidateImageFlyweight();
 
     static final String CONTEXT = "DRIVER";
 
@@ -218,6 +219,11 @@ final class DriverEventDissector
             case CMD_IN_REMOVE_DESTINATION_BY_ID:
                 DESTINATION_BY_ID.wrap(buffer, offset + encodedLength);
                 dissectDestinationById(builder);
+                break;
+
+            case CMD_IN_INVALIDATE_IMAGE:
+                INVALIDATE_IMAGE.wrap(buffer, offset + encodedLength);
+                dissectInvalidateImage(builder);
                 break;
 
             default:

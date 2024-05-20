@@ -44,6 +44,7 @@ final class ClientCommandAdapter implements ControlledMessageHandler
     private final CounterMessageFlyweight counterMsgFlyweight = new CounterMessageFlyweight();
     private final StaticCounterMessageFlyweight staticCounterMessageFlyweight = new StaticCounterMessageFlyweight();
     private final TerminateDriverFlyweight terminateDriverFlyweight = new TerminateDriverFlyweight();
+    private final InvalidateImageFlyweight invalidateImageFlyweight = new InvalidateImageFlyweight();
     private final DestinationByIdMessageFlyweight destinationByIdMessageFlyweight =
         new DestinationByIdMessageFlyweight();
     private final DriverConductor conductor;
@@ -284,6 +285,20 @@ final class ClientCommandAdapter implements ControlledMessageHandler
                         staticCounterMessageFlyweight.registrationId(),
                         correlationId,
                         clientId);
+                    break;
+                }
+
+                case INVALIDATE_IMAGE:
+                {
+                    invalidateImageFlyweight.wrap(buffer, index);
+                    invalidateImageFlyweight.validateLength(msgTypeId, length);
+                    correlationId = invalidateImageFlyweight.correlationId();
+
+                    conductor.onInvalidateImage(
+                        invalidateImageFlyweight.correlationId(),
+                        invalidateImageFlyweight.imageCorrelationId(),
+                        invalidateImageFlyweight.position(),
+                        invalidateImageFlyweight.reason());
                     break;
                 }
 

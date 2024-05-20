@@ -610,6 +610,19 @@ public final class DriverConductor implements Agent
         throw new IllegalArgumentException("image.correlationId=" + params.responseCorrelationId + " not found");
     }
 
+    private PublicationImage findPublicationImage(final long correlationId)
+    {
+        for (final PublicationImage publicationImage : publicationImages)
+        {
+            if (correlationId == publicationImage.correlationId())
+            {
+                return publicationImage;
+            }
+        }
+
+        return null;
+    }
+
     void responseSetup(final long responseCorrelationId, final int responseSessionId)
     {
         for (int i = 0, subscriptionLinksSize = subscriptionLinks.size(); i < subscriptionLinksSize; i++)
@@ -1456,6 +1469,24 @@ public final class DriverConductor implements Agent
         {
             ctx.terminationHook().run();
         }
+    }
+
+    void onInvalidateImage(
+        final long correlationId,
+        final long imageCorrelationId,
+        final long position,
+        final String reason)
+    {
+        final PublicationImage publicationImage = findPublicationImage(imageCorrelationId);
+
+        if (null == publicationImage)
+        {
+            throw new ControlProtocolException(
+                GENERIC_ERROR, "Unable to resolve image for correlationId=" + imageCorrelationId);
+        }
+
+        receiverProxy.invalidateImage(imageCorrelationId, position, reason);
+        clientProxy.operationSucceeded(correlationId);
     }
 
     private void heartbeatAndCheckTimers(final long nowNs)

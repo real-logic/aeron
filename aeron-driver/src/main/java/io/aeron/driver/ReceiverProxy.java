@@ -195,4 +195,16 @@ final class ReceiverProxy extends CommandProxy
             offer(() -> receiver.onRequestSetup(channelEndpoint, streamId, sessionId));
         }
     }
+
+    void invalidateImage(final long imageCorrelationId, final long position, final String reason)
+    {
+        if (notConcurrent())
+        {
+            receiver.onInvalidateImage(imageCorrelationId, position, reason);
+        }
+        else
+        {
+            offer(() -> receiver.onInvalidateImage(imageCorrelationId, position, reason));
+        }
+    }
 }

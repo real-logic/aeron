@@ -92,6 +92,11 @@ public class ControlProtocolEvents
      */
     public static final int TERMINATE_DRIVER = 0x0E;
 
+    /**
+     * Invalidate an image.
+     */
+    public static final int INVALIDATE_IMAGE = 0x0F;
+
     // Media Driver to Clients
 
     /**

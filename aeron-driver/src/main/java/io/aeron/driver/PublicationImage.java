@@ -87,6 +87,7 @@ class PublicationImageReceiverFields extends PublicationImagePadding2
     boolean isSendingEosSm = false;
     long timeOfLastPacketNs;
     ImageConnection[] imageConnections = new ImageConnection[1];
+    String invalidationReason = null;
 }
 
 class PublicationImagePadding3 extends PublicationImageReceiverFields
@@ -586,6 +587,11 @@ public final class PublicationImage
         final int transportIndex,
         final InetSocketAddress srcAddress)
     {
+        if (null != invalidationReason)
+        {
+            return 0;
+        }
+
         final boolean isHeartbeat = DataHeaderFlyweight.isHeartbeat(buffer, length);
         final long packetPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = isHeartbeat ? packetPosition : packetPosition + length;
@@ -690,6 +696,12 @@ public final class PublicationImage
      */
     int sendPendingStatusMessage(final long nowNs)
     {
+        // TODO: Send error frame instead.
+        if (null != invalidationReason)
+        {
+            return 0;
+        }
+
         int workCount = 0;
         final long changeNumber = endSmChange;
         final boolean hasSmTimedOut = (timeOfLastSmNs + smTimeoutNs) - nowNs < 0;
@@ -889,6 +901,11 @@ public final class PublicationImage
     public boolean hasReachedEndOfLife()
     {
         return hasReceiverReleased && State.DONE == state;
+    }
+
+    void invalidate(final String reason)
+    {
+        invalidationReason = reason;
     }
 
     private void state(final State state)

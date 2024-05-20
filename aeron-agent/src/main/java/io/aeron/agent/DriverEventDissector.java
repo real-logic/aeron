@@ -55,6 +55,7 @@ final class DriverEventDissector
     private static final SubscriptionReadyFlyweight SUBSCRIPTION_READY = new SubscriptionReadyFlyweight();
     private static final ClientTimeoutFlyweight CLIENT_TIMEOUT = new ClientTimeoutFlyweight();
     private static final TerminateDriverFlyweight TERMINATE_DRIVER = new TerminateDriverFlyweight();
+    private static final InvalidateImageFlyweight INVALIDATE_IMAGE = new InvalidateImageFlyweight();
 
     static final String CONTEXT = "DRIVER";
 
@@ -212,6 +213,11 @@ final class DriverEventDissector
             case CMD_IN_TERMINATE_DRIVER:
                 TERMINATE_DRIVER.wrap(buffer, offset + encodedLength);
                 dissectTerminateDriver(builder);
+                break;
+
+            case CMD_IN_INVALIDATE_IMAGE:
+                INVALIDATE_IMAGE.wrap(buffer, offset + encodedLength);
+                dissectInvalidateImage(builder);
                 break;
 
             default:
@@ -765,5 +771,15 @@ final class DriverEventDissector
         builder
             .append("clientId=").append(TERMINATE_DRIVER.clientId())
             .append(" tokenBufferLength=").append(TERMINATE_DRIVER.tokenBufferLength());
+    }
+
+    private static void dissectInvalidateImage(final StringBuilder builder)
+    {
+        builder
+            .append("clientId=").append(INVALIDATE_IMAGE.clientId())
+            .append(" correlationId=").append(INVALIDATE_IMAGE.correlationId())
+            .append(" imageCorrelationId=").append(INVALIDATE_IMAGE.imageCorrelationId())
+            .append(" position=").append(INVALIDATE_IMAGE.position())
+            .append(" reason=").append(INVALIDATE_IMAGE.reason());
     }
 }

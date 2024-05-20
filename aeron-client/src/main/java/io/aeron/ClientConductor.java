@@ -1298,6 +1298,25 @@ final class ClientConductor implements Agent
         }
     }
 
+    void invalidateImage(final long correlationId, final long position, final String reason)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            // TODO, check reason length??
+
+            final long registrationId = driverProxy.invalidateImage(correlationId, position, reason);
+            awaitResponse(registrationId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
     private void ensureActive()
     {
         if (isClosed)

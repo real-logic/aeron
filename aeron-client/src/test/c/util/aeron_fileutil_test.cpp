@@ -324,3 +324,37 @@ TEST_F(FileUtilTest, shouldNotErrorIfAddressIsNull)
 {
     ASSERT_EQ(0, aeron_msync(nullptr, 10));
 }
+
+TEST_F(FileUtilTest, simpleMkdir)
+{
+    const char *dirA = "dirA";
+    const char *dirB = "dirA/dirB";
+    const char *dirC = "dirA/dirNOPE/dirC";
+
+    remove("dirA/dirNOPE/dirC");
+    remove("dirA/dirNOPE");
+    remove("dirA/dirB");
+    remove("dirA");
+
+    ASSERT_EQ(0, aeron_mkdir(dirA, S_IRWXU | S_IRWXG | S_IRWXO));
+    ASSERT_EQ(0, aeron_mkdir(dirB, S_IRWXU | S_IRWXG | S_IRWXO));
+    ASSERT_EQ(-1, aeron_mkdir(dirC, S_IRWXU | S_IRWXG | S_IRWXO));
+}
+
+TEST_F(FileUtilTest, recursiveMkdir)
+{
+    const char *dirW = "dirW";
+    const char *dirY = "dirX/dirY";
+    const char *dirZ = "dirW/dirX/dirY/dirZ";
+
+    remove("dirW/dirX/dirY/dirZ");
+    remove("dirW/dirX/dirY");
+    remove("dirW/dirX");
+    remove("dirW");
+    remove("dirX/dirY");
+    remove("dirX");
+
+    ASSERT_EQ(0, aeron_mkdir_recursive(dirW, S_IRWXU | S_IRWXG | S_IRWXO));
+    ASSERT_EQ(0, aeron_mkdir_recursive(dirY, S_IRWXU | S_IRWXG | S_IRWXO));
+    ASSERT_EQ(0, aeron_mkdir_recursive(dirZ, S_IRWXU | S_IRWXG | S_IRWXO));
+}

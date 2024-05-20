@@ -453,6 +453,51 @@ int aeron_open_file_rw(const char *path)
 }
 #endif
 
+int aeron_mkdir_recursive(const char *pathname, mode_t mode)
+{
+    if (aeron_mkdir(pathname, mode) == 0)
+    {
+        return 0;
+    }
+
+    if (errno != ENOENT)
+    {
+        return -1;
+    }
+
+    char *_pathname = strdup(pathname);
+    char *p;
+    int rc = -1;
+
+    for (p = _pathname + strlen(_pathname) - 1; p != _pathname; p--)
+    {
+        if (*p == AERON_FILE_SEP)
+        {
+            *p = '\0';
+            // _pathname is now the parent directory of the original pathname
+            rc = aeron_mkdir_recursive(_pathname, mode);
+            break;
+        }
+    }
+
+    if (p == _pathname)
+    {
+        // after iterating through _pathname, we didn't find a separator
+        rc = -1;
+    }
+
+    free(_pathname);
+
+    if (rc == 0)
+    {
+        // if rc is 0, then we were able to create the parent directory
+        // so retry the original pathname
+        return aeron_mkdir(pathname, mode);
+    }
+
+    return rc;
+}
+
 #include <inttypes.h>
 
 #define AERON_BLOCK_SIZE (4 * 1024)

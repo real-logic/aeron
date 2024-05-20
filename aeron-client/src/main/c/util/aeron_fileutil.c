@@ -453,9 +453,9 @@ int aeron_open_file_rw(const char *path)
 }
 #endif
 
-int aeron_mkdir_recursive(const char *pathname, mode_t mode)
+int aeron_mkdir_recursive(const char *pathname, int permission)
 {
-    if (aeron_mkdir(pathname, mode) == 0)
+    if (aeron_mkdir(pathname, permission) == 0)
     {
         return 0;
     }
@@ -475,7 +475,7 @@ int aeron_mkdir_recursive(const char *pathname, mode_t mode)
         {
             *p = '\0';
             // _pathname is now the parent directory of the original pathname
-            rc = aeron_mkdir_recursive(_pathname, mode);
+            rc = aeron_mkdir_recursive(_pathname, permission);
             break;
         }
     }
@@ -492,7 +492,7 @@ int aeron_mkdir_recursive(const char *pathname, mode_t mode)
     {
         // if rc is 0, then we were able to create the parent directory
         // so retry the original pathname
-        return aeron_mkdir(pathname, mode);
+        return aeron_mkdir(pathname, permission);
     }
 
     return rc;

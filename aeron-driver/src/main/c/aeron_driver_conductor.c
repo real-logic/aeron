@@ -3281,6 +3281,25 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
             break;
         }
 
+        case AERON_COMMAND_INVALIDATE_IMAGE:
+        {
+            aeron_invalidate_image_command_t *command = (aeron_invalidate_image_command_t *)message;
+
+            if (length < sizeof (aeron_invalidate_image_command_t))
+            {
+                goto malformed_command;
+            }
+
+            if (length < sizeof(aeron_invalidate_image_command_t) + command->reason_length)
+            {
+                goto malformed_command;
+            }
+
+            result = aeron_driver_conductor_on_invalidate_image(conductor, command);
+
+            break;
+        }
+
         default:
             AERON_SET_ERR(-AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID, "command=%d unknown", msg_type_id);
             aeron_driver_conductor_log_error(conductor);

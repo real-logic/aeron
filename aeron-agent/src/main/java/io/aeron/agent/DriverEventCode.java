@@ -97,7 +97,9 @@ public enum DriverEventCode implements EventCode
         (code, buffer, offset, builder) -> DriverEventDissector.dissectSendNak(buffer, offset, builder)),
 
     RESEND(55,
-        (code, buffer, offset, builder) -> DriverEventDissector.dissectResend(buffer, offset, builder));
+        (code, buffer, offset, builder) -> DriverEventDissector.dissectResend(buffer, offset, builder)),
+
+    CMD_IN_INVALIDATE_IMAGE(56, DriverEventDissector::dissectCommand);
 
 
     static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();

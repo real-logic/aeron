@@ -38,6 +38,7 @@ public final class DriverProxy
     private final DestinationMessageFlyweight destinationMessage = new DestinationMessageFlyweight();
     private final CounterMessageFlyweight counterMessage = new CounterMessageFlyweight();
     private final StaticCounterMessageFlyweight staticCounterMessageFlyweight = new StaticCounterMessageFlyweight();
+    private final InvalidateImageFlyweight invalidateImage = new InvalidateImageFlyweight();
     private final RingBuffer toDriverCommandBuffer;
 
     /**
@@ -460,6 +461,43 @@ public final class DriverProxy
 
         return false;
     }
+
+    /**
+     * Invalidate a specific image.
+     *
+     * @param imageCorrelationId of the image to be invalidated
+     * @param position      of the image when invalidation occurred
+     * @param reason        user supplied reason for invalidation, reported back to publication
+     * @return              the correlationId of the request for invalidation.
+     */
+    public long invalidateImage(
+        final long imageCorrelationId,
+        final long position,
+        final String reason)
+    {
+        final int length = InvalidateImageFlyweight.computeLength(reason);
+        final int index = toDriverCommandBuffer.tryClaim(INVALIDATE_IMAGE, length);
+
+        if (index < 0)
+        {
+            throw new AeronException("could not write invalidate image command");
+        }
+
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        invalidateImage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .clientId(clientId)
+            .correlationId(correlationId)
+            .imageCorrelationId(imageCorrelationId)
+            .position(position)
+            .reason(reason);
+
+        toDriverCommandBuffer.commit(index);
+
+        return correlationId;
+    }
+
 
     /**
      * {@inheritDoc}

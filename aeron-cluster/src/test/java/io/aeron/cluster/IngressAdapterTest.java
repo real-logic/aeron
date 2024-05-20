@@ -61,7 +61,7 @@ class IngressAdapterTest
     @SuppressWarnings("unused") // name used for test display name
     @ParameterizedTest(name = "{index} {0}")
     @MethodSource
-    public void shouldDelegateToConsensusModuleAgent(
+    void shouldDelegateToConsensusModuleAgent(
         final String name,
         final Consumer<MutableDirectBuffer> encoder,
         final int blockLength,
@@ -76,7 +76,7 @@ class IngressAdapterTest
         expectation.expect(verify(consensusModuleAgent), buffer);
     }
 
-    public static Stream<Arguments> shouldDelegateToConsensusModuleAgent()
+    static Stream<Arguments> shouldDelegateToConsensusModuleAgent()
     {
         return Stream.of(
         Arguments.of(

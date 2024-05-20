@@ -407,7 +407,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    public void onUnknownMessage(
+    public ControlledFragmentHandler.Action onUnknownMessage(
         final int schemaId,
         final int templateId,
         final DirectBuffer buffer,

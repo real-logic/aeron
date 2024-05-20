@@ -5639,31 +5639,6 @@ error_cleanup:
         conductor->context->receiver_proxy, endpoint, command->session_id, command->stream_id);
 }
 
-void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
-{
-    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
-    aeron_command_base_t *command = (aeron_command_base_t *)item;
-    int ensure_capacity_result = 0;
-
-    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->lingering_resources, aeron_linger_resource_entry_t)
-    if (ensure_capacity_result >= 0)
-    {
-        aeron_linger_resource_entry_t *entry =
-            &conductor->lingering_resources.array[conductor->lingering_resources.length++];
-
-        entry->buffer = command->item;
-        entry->has_reached_end_of_life = false;
-        entry->timeout_ns = aeron_clock_cached_nano_time(conductor->context->cached_clock) +
-            AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS;
-    }
-
-    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor->context->threading_mode))
-    {
-        aeron_free(command);
-        /* Do not know where it came from originally, so just free command on the conductor duty cycle */
-    }
-}
-
 void aeron_driver_conductor_on_re_resolve_endpoint_complete(int result, int errcode, const char *errmsg, void *task_clientd, void *executor_clientd)
 {
     aeron_async_re_resolve_t *async_cmd = task_clientd;

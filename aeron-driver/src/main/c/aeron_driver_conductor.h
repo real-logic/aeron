@@ -516,8 +516,6 @@ int aeron_driver_conductor_on_terminate_driver(
 
 void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item);
 
-void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item);
-
 void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item);
 
 void aeron_driver_conductor_on_re_resolve_control(void *clientd, void *item);

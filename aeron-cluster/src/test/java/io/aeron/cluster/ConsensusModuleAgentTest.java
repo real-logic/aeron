@@ -15,27 +15,20 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.ChannelUri;
-import io.aeron.ConcurrentPublication;
-import io.aeron.Counter;
-import io.aeron.ExclusivePublication;
-import io.aeron.Subscription;
-import io.aeron.UnavailableImageHandler;
-import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.codecs.CloseReason;
-import io.aeron.cluster.codecs.ClusterAction;
-import io.aeron.cluster.codecs.EventCode;
-import io.aeron.cluster.service.Cluster;
-import io.aeron.cluster.service.ClusterMarkFile;
-import io.aeron.cluster.service.ClusterTerminationException;
-import io.aeron.driver.DutyCycleTracker;
-import io.aeron.security.AuthorisationService;
-import io.aeron.security.DefaultAuthenticatorSupplier;
-import io.aeron.status.ReadableCounter;
-import io.aeron.test.TestContexts;
-import io.aeron.test.Tests;
-import io.aeron.test.cluster.TestClusterClock;
+import static io.aeron.AeronCounters.*;
+import static io.aeron.cluster.ClusterControl.ToggleState.*;
+import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT;
+import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_LIMIT_MSG;
+import static io.aeron.cluster.ConsensusModuleAgent.SLOW_TICK_INTERVAL_NS;
+import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
+import static java.lang.Boolean.TRUE;
+import static org.agrona.concurrent.status.CountersReader.COUNTER_LENGTH;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.util.concurrent.TimeUnit;
+import java.util.function.LongConsumer;
+
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.CountedErrorHandler;
@@ -50,28 +43,29 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-import java.util.concurrent.TimeUnit;
-import java.util.function.LongConsumer;
-
-import static io.aeron.AeronCounters.CLUSTER_CONSENSUS_MODULE_STATE_TYPE_ID;
-import static io.aeron.AeronCounters.CLUSTER_CONTROL_TOGGLE_TYPE_ID;
-import static io.aeron.cluster.ClusterControl.ToggleState.*;
-import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_LIMIT_MSG;
-import static io.aeron.cluster.ConsensusModule.CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT;
-import static io.aeron.cluster.ConsensusModuleAgent.SLOW_TICK_INTERVAL_NS;
-import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
-import static java.lang.Boolean.TRUE;
-import static org.agrona.concurrent.status.CountersReader.COUNTER_LENGTH;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
+import io.aeron.*;
+import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.codecs.CloseReason;
+import io.aeron.cluster.codecs.ClusterAction;
+import io.aeron.cluster.codecs.EventCode;
+import io.aeron.cluster.service.Cluster;
+import io.aeron.cluster.service.ClusterMarkFile;
+import io.aeron.cluster.service.ClusterTerminationException;
+import io.aeron.driver.DutyCycleTracker;
+import io.aeron.security.AuthorisationService;
+import io.aeron.security.DefaultAuthenticatorSupplier;
+import io.aeron.status.ReadableCounter;
+import io.aeron.test.TestContexts;
+import io.aeron.test.Tests;
+import io.aeron.test.cluster.TestClusterClock;
 
 public class ConsensusModuleAgentTest
 {
     private static final long SLOW_TICK_INTERVAL_MS = TimeUnit.NANOSECONDS.toMillis(SLOW_TICK_INTERVAL_NS);
     private static final String RESPONSE_CHANNEL_ONE = "aeron:udp?endpoint=localhost:11111";
     private static final String RESPONSE_CHANNEL_TWO = "aeron:udp?endpoint=localhost:22222";
+    private static final int SCHEMA_ID = 17;
 
     private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
     private final LogPublisher mockLogPublisher = mock(LogPublisher.class);
@@ -171,7 +165,7 @@ public class ConsensusModuleAgentTest
         Tests.setField(agent, "appendPosition", mock(ReadableCounter.class));
         agent.onSessionConnect(correlationIdOne, 2, PROTOCOL_SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
 
-        clock.update(17, TimeUnit.MILLISECONDS);
+        clock.update(SCHEMA_ID, TimeUnit.MILLISECONDS);
         agent.doWork();
         verify(mockTimeConsumer).accept(clock.time());
 
@@ -459,5 +453,39 @@ public class ConsensusModuleAgentTest
         consensusModuleAgent.onCommitPosition(leadershipTermId, 555, 0);
 
         assertEquals(444, consensusModuleAgent.timeOfLastLeaderUpdateNs());
+    }
+
+    @Test
+    void shouldDelegateHandlingToRegisteredSchemaAdapter()
+    {
+        final SchemaAdapter schemaAdapter = mock(SchemaAdapter.class, "used adapter");
+        final SchemaAdapter otherSchemaAdapter = mock(SchemaAdapter.class, "unused adapter");
+        when(schemaAdapter.supportedSchemaId()).thenReturn(SCHEMA_ID);
+        when(otherSchemaAdapter.supportedSchemaId()).thenReturn(SCHEMA_ID + 1);
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
+        ctx.epochClock(clock)
+            .clusterClock(clock)
+            .registerSchemaAdapter(() -> schemaAdapter)
+            .registerSchemaAdapter(() -> otherSchemaAdapter);
+
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
+        agent.onUnknownMessageSchema(SCHEMA_ID, 1, null, 0, 0, null);
+
+        verify(schemaAdapter)
+            .onFragment(SCHEMA_ID, 1, null, 0, 0, null);
+        verify(otherSchemaAdapter, never())
+            .onFragment(SCHEMA_ID, 1, null, 0, 0, null);
+    }
+
+    @Test
+    void shouldThrowExceptionOnUnknownSchemaAndNoAdapter()
+    {
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
+        ctx.epochClock(clock).clusterClock(clock);
+
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
+
+        assertThrows(ClusterException.class,
+            () -> agent.onUnknownMessageSchema(SCHEMA_ID, 0, null, 0, 0, null));
     }
 }

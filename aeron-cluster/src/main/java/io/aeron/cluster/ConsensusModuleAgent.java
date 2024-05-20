@@ -138,7 +138,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private final ArrayDeque<ClusterSession> uncommittedClosedSessions = new ArrayDeque<>();
     private final LongArrayQueue uncommittedTimers = new LongArrayQueue(Long.MAX_VALUE);
     private final PendingServiceMessageTracker[] pendingServiceMessageTrackers;
-
+    private final Int2ObjectHashMap<SchemaAdapter> schemaAdapterBySchemaIdMap = new Int2ObjectHashMap<>();
     private final Authenticator authenticator;
     private final AuthorisationService authorisationService;
     private final ClusterSessionProxy sessionProxy;
@@ -227,7 +227,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             pendingServiceMessageTrackers[i] = new PendingServiceMessageTracker(
                 i, commitPosition, logPublisher, clusterClock);
         }
-
+        for (final SchemaAdapter schemaAdapter : ctx.schemaAdapters())
+        {
+            schemaAdapterBySchemaIdMap.put(schemaAdapter.supportedSchemaId(), schemaAdapter);
+        }
         responseChannelTemplate = Strings.isEmpty(ctx.egressChannel()) ? null : ChannelUri.parse(ctx.egressChannel());
     }
 
@@ -407,7 +410,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    public ControlledFragmentHandler.Action onUnknownMessage(
+    public ControlledFragmentHandler.Action onUnknownMessageSchema(
         final int schemaId,
         final int templateId,
         final DirectBuffer buffer,
@@ -415,7 +418,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final int length,
         final Header header)
     {
-        throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        try (SchemaAdapter schemaAdapter =
+            schemaAdapterBySchemaIdMap.getOrDefault(schemaId, UnknownSchemaIngressAdapter.INSTANCE))
+        {
+            return schemaAdapter.onFragment(schemaId, templateId, buffer, offset, length, header);
+        }
     }
 
     public void onLoadEndSnapshot(final DirectBuffer buffer, final int offset, final int length)
@@ -3609,5 +3616,32 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return "ConsensusModuleAgent{" +
             "election=" + election +
             '}';
+    }
+
+    private static final class UnknownSchemaIngressAdapter implements SchemaAdapter
+    {
+
+        private static final UnknownSchemaIngressAdapter INSTANCE = new UnknownSchemaIngressAdapter();
+        private UnknownSchemaIngressAdapter()
+        {
+        }
+
+        @Override
+        public int supportedSchemaId()
+        {
+            return 0;
+        }
+
+        @Override
+        public ControlledFragmentHandler.Action onFragment(
+            final int schemaId,
+            final int templateId,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
+        {
+            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
     }
 }

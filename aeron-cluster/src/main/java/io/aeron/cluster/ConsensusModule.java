@@ -48,6 +48,8 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -1434,7 +1436,7 @@ public final class ConsensusModule implements AutoCloseable
         private Random random;
         private TimerServiceSupplier timerServiceSupplier;
         private Function<Context, LongConsumer> clusterTimeConsumerSupplier;
-
+        private final List<SchemaAdapter> schemaAdapters = new ArrayList<>();
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
@@ -3969,6 +3971,28 @@ public final class ConsensusModule implements AutoCloseable
         public TimerServiceSupplier timerServiceSupplier()
         {
             return timerServiceSupplier;
+        }
+
+        /**
+         * Registers a SchemaAdapter to handle specific custom schemas
+         *
+         * @param schemaAdapterSupplier supplier for schema adapter
+         * @return this for a fluent API.
+         */
+        public Context registerSchemaAdapter(final Supplier<SchemaAdapter> schemaAdapterSupplier)
+        {
+            schemaAdapters.add(schemaAdapterSupplier.get());
+            return this;
+        }
+
+        /**
+         * All registered schema adapters
+         *
+         * @return  List of all registered schema adapter instances
+         */
+        public List<SchemaAdapter> schemaAdapters()
+        {
+            return schemaAdapters;
         }
 
         /**

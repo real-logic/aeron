@@ -75,7 +75,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         final int templateId = messageHeaderDecoder.templateId();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            return consensusModuleAgent.onUnknownMessage(schemaId, templateId, buffer, offset, length, header);
+            return consensusModuleAgent.onUnknownMessageSchema(schemaId, templateId, buffer, offset, length, header);
         }
 
         if (templateId == SessionMessageHeaderDecoder.TEMPLATE_ID)

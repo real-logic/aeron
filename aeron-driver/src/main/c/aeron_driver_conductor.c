@@ -3317,6 +3317,25 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
             break;
         }
 
+        case AERON_COMMAND_INVALIDATE_IMAGE:
+        {
+            aeron_invalidate_image_command_t *command = (aeron_invalidate_image_command_t *)message;
+
+            if (length < sizeof (aeron_invalidate_image_command_t))
+            {
+                goto malformed_command;
+            }
+
+            if (length < sizeof(aeron_invalidate_image_command_t) + command->reason_length)
+            {
+                goto malformed_command;
+            }
+
+            result = aeron_driver_conductor_on_invalidate_image(conductor, command);
+
+            break;
+        }
+
         case AERON_COMMAND_REMOVE_DESTINATION_BY_ID:
         {
             aeron_destination_by_id_command_t *command = (aeron_destination_by_id_command_t *)message;

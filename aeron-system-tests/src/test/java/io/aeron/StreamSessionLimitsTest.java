@@ -96,7 +96,7 @@ public class StreamSessionLimitsTest
 
     @Test
     @SlowTest
-    @InterruptAfter(10)
+    @InterruptAfter(5)
     void shouldAllowConnectPublicationAfterImageCountExceedsLimitButPreviousPublicationHasClosed()
     {
         context.streamSessionLimit(2);
@@ -117,11 +117,13 @@ public class StreamSessionLimitsTest
                 Tests.awaitConnected(pub2);
                 final long initialErrorCount = errorCount(aeron);
 
-                final Publication shouldNotConnect = aeron.addExclusivePublication(channel, streamId);
-                while (initialErrorCount == errorCount(aeron))
+                try (Publication shouldNotConnect = aeron.addExclusivePublication(channel, streamId))
                 {
-                    assertFalse(shouldNotConnect.isConnected());
-                    Tests.yield();
+                    while (initialErrorCount == errorCount(aeron))
+                    {
+                        assertFalse(shouldNotConnect.isConnected());
+                        Tests.yield();
+                    }
                 }
             }
 

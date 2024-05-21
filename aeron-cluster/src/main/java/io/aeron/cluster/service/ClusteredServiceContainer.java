@@ -318,12 +318,13 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Length in bytes of the error buffer for the cluster container.
          */
-        @Config
+        @Config(id = "SERVICE_ERROR_BUFFER_LENGTH")
         public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.cluster.service.error.buffer.length";
 
         /**
          * Default length in bytes of the error buffer for the cluster container.
          */
+        @Config(id = "SERVICE_ERROR_BUFFER_LENGTH")
         public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
         /**
@@ -362,12 +363,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Property name for threshold value for the container work cycle threshold to track
          * for being exceeded.
          */
-        @Config
+        @Config(id = "SERVICE_CYCLE_THRESHOLD")
         public static final String CYCLE_THRESHOLD_PROP_NAME = "aeron.cluster.service.cycle.threshold";
 
         /**
          * Default threshold value for the container work cycle threshold to track for being exceeded.
          */
+        @Config(
+            id = "SERVICE_CYCLE_THRESHOLD",
+            defaultType = DefaultType.LONG,
+            defaultLong = 1000L * 1000 * 1000)
         public static final long CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
         /**
@@ -1783,6 +1788,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @return error buffer length in bytes.
          */
+        @Config(id = "SERVICE_ERROR_BUFFER_LENGTH")
         public int errorBufferLength()
         {
             return errorBufferLength;
@@ -1853,6 +1859,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @return threshold to track for the container work cycle time.
          */
+        @Config(id = "SERVICE_CYCLE_THRESHOLD")
         public long cycleThresholdNs()
         {
             return cycleThresholdNs;

@@ -1941,7 +1941,7 @@ public final class Archive implements AutoCloseable
          * @return {@code true} if the recording events channel should be enabled.
          * @see io.aeron.archive.client.AeronArchive.Configuration#RECORDING_EVENTS_ENABLED_PROP_NAME
          */
-        @Config(id = "RECORDING_EVENTS_ENABLED")
+        @Config
         public boolean recordingEventsEnabled()
         {
             return recordingEventsEnabled;

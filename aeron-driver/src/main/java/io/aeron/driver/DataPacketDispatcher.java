@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.driver.exceptions.UnknownSubscriptionException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.exceptions.AeronEvent;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
@@ -44,37 +45,74 @@ public final class DataPacketDispatcher
         NO_INTEREST
     }
 
-    static class SessionInterest
-    {
-        SessionState state;
-        PublicationImage image;
-
-        SessionInterest(final SessionState state)
-        {
-            this.state = state;
-        }
-    }
-
     static class StreamInterest
     {
         boolean isAllSessions;
-        final Int2ObjectHashMap<SessionInterest> sessionInterestByIdMap = new Int2ObjectHashMap<>();
+        final Int2ObjectHashMap<SessionState> sessionInterestByIdMap = new Int2ObjectHashMap<>();
+        final Int2ObjectHashMap<PublicationImage> activeImageByIdMap = new Int2ObjectHashMap<>();
         final IntHashSet subscribedSessionIds = new IntHashSet();
 
         StreamInterest(final boolean isAllSessions)
         {
             this.isAllSessions = isAllSessions;
         }
+
+        PublicationImage findActive(final int sessionId)
+        {
+            return activeImageByIdMap.get(sessionId);
+        }
+
+        public boolean isSessionLimitExceeded(final int sessionLimit)
+        {
+            return sessionLimit <= activeImageByIdMap.size();
+        }
+
+        void removeNonSessionSpecificInterest()
+        {
+            final Int2ObjectHashMap<PublicationImage>.EntryIterator activeIterator =
+                activeImageByIdMap.entrySet().iterator();
+
+            while (activeIterator.hasNext())
+            {
+                activeIterator.next();
+
+                final int sessionId = activeIterator.getIntKey();
+                if (!subscribedSessionIds.contains(sessionId))
+                {
+                    activeIterator.getValue().deactivate();
+                    activeIterator.remove();
+                }
+            }
+
+            final Int2ObjectHashMap<SessionState>.EntryIterator iterator =
+                sessionInterestByIdMap.entrySet().iterator();
+
+            while (iterator.hasNext())
+            {
+                iterator.next();
+
+                final int sessionId = iterator.getIntKey();
+                if (!subscribedSessionIds.contains(sessionId))
+                {
+                    iterator.remove();
+                }
+            }
+        }
     }
 
     private final Int2ObjectHashMap<StreamInterest> streamInterestByIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
     private final Receiver receiver;
+    private final int streamSessionLimit;
 
-    DataPacketDispatcher(final DriverConductorProxy conductorProxy, final Receiver receiver)
+    DataPacketDispatcher(
+        final DriverConductorProxy conductorProxy,
+        final Receiver receiver,
+        final int streamSessionLimit)
     {
         this.conductorProxy = conductorProxy;
         this.receiver = receiver;
+        this.streamSessionLimit = streamSessionLimit;
     }
 
     /**
@@ -94,13 +132,12 @@ public final class DataPacketDispatcher
         {
             streamInterest.isAllSessions = true;
 
-            final Int2ObjectHashMap<SessionInterest>.ValueIterator iterator =
+            final Int2ObjectHashMap<SessionState>.ValueIterator iterator =
                 streamInterest.sessionInterestByIdMap.values().iterator();
 
             while (iterator.hasNext())
             {
-                final SessionInterest sessionInterest = iterator.next();
-                if (NO_INTEREST == sessionInterest.state)
+                if (NO_INTEREST == iterator.next())
                 {
                     iterator.remove();
                 }
@@ -125,8 +162,8 @@ public final class DataPacketDispatcher
 
         streamInterest.subscribedSessionIds.add(sessionId);
 
-        final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
-        if (null != sessionInterest && NO_INTEREST == sessionInterest.state)
+        final SessionState sessionState = streamInterest.sessionInterestByIdMap.get(sessionId);
+        if (NO_INTEREST == sessionState)
         {
             streamInterest.sessionInterestByIdMap.remove(sessionId);
         }
@@ -145,25 +182,7 @@ public final class DataPacketDispatcher
             throw new UnknownSubscriptionException("no subscription for stream " + streamId);
         }
 
-        final Int2ObjectHashMap<SessionInterest>.EntryIterator iterator =
-            streamInterest.sessionInterestByIdMap.entrySet().iterator();
-
-        while (iterator.hasNext())
-        {
-            iterator.next();
-
-            final int sessionId = iterator.getIntKey();
-            if (!streamInterest.subscribedSessionIds.contains(sessionId))
-            {
-                final SessionInterest sessionInterest = iterator.getValue();
-                if (null != sessionInterest.image)
-                {
-                    sessionInterest.image.deactivate();
-                }
-
-                iterator.remove();
-            }
-        }
+        streamInterest.removeNonSessionSpecificInterest();
 
         streamInterest.isAllSessions = false;
 
@@ -189,11 +208,12 @@ public final class DataPacketDispatcher
 
         if (!streamInterest.isAllSessions)
         {
-            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.remove(sessionId);
-            if (null != sessionInterest && null != sessionInterest.image)
+            final PublicationImage publicationImage = streamInterest.activeImageByIdMap.remove(sessionId);
+            if (null != publicationImage)
             {
-                sessionInterest.image.deactivate();
+                publicationImage.deactivate();
             }
+            streamInterest.sessionInterestByIdMap.remove(sessionId);
         }
 
         streamInterest.subscribedSessionIds.remove(sessionId);
@@ -212,20 +232,12 @@ public final class DataPacketDispatcher
     public void addPublicationImage(final PublicationImage image)
     {
         final StreamInterest streamInterest = streamInterestByIdMap.get(image.streamId());
-        SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(image.sessionId());
-
-        if (null == sessionInterest)
+        if (null != streamInterest)
         {
-            sessionInterest = new SessionInterest(ACTIVE);
-            streamInterest.sessionInterestByIdMap.put(image.sessionId(), sessionInterest);
+            streamInterest.sessionInterestByIdMap.remove(image.sessionId());
+            streamInterest.activeImageByIdMap.put(image.sessionId(), image);
+            image.activate();
         }
-        else
-        {
-            sessionInterest.state = ACTIVE;
-        }
-
-        sessionInterest.image = image;
-        image.activate();
     }
 
     /**
@@ -238,20 +250,14 @@ public final class DataPacketDispatcher
         final StreamInterest streamInterest = streamInterestByIdMap.get(image.streamId());
         if (null != streamInterest)
         {
-            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(image.sessionId());
-            if (null != sessionInterest && null != sessionInterest.image)
+            final PublicationImage activeImage = streamInterest.activeImageByIdMap.get(image.sessionId());
+            if (null != activeImage && activeImage.correlationId() == image.correlationId())
             {
-                if (sessionInterest.image.correlationId() == image.correlationId())
+                streamInterest.activeImageByIdMap.remove(image.sessionId());
+
+                if (!image.isEndOfStream())
                 {
-                    if (image.isEndOfStream)
-                    {
-                        streamInterest.sessionInterestByIdMap.remove(image.sessionId());
-                    }
-                    else
-                    {
-                        sessionInterest.state = ON_COOL_DOWN;
-                        sessionInterest.image = null;
-                    }
+                    streamInterest.sessionInterestByIdMap.put(image.sessionId(), ON_COOL_DOWN);
                 }
             }
         }
@@ -306,26 +312,24 @@ public final class DataPacketDispatcher
         if (null != streamInterest)
         {
             final int sessionId = header.sessionId();
-            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
 
-            if (null != sessionInterest)
+            final PublicationImage image = streamInterest.findActive(sessionId);
+            if (null != image)
             {
-                if (null != sessionInterest.image)
-                {
-                    return sessionInterest.image.insertPacket(
-                        header.termId(), header.termOffset(), buffer, length, transportIndex, srcAddress);
-                }
+                return image.insertPacket(
+                    header.termId(), header.termOffset(), buffer, length, transportIndex, srcAddress);
             }
-            else if (!DataHeaderFlyweight.isEndOfStream(buffer))
+            else if (!DataHeaderFlyweight.isEndOfStream(buffer) &&
+                !streamInterest.sessionInterestByIdMap.containsKey(sessionId))
             {
                 if (streamInterest.isAllSessions || streamInterest.subscribedSessionIds.contains(sessionId))
                 {
-                    streamInterest.sessionInterestByIdMap.put(sessionId, new SessionInterest(PENDING_SETUP_FRAME));
+                    streamInterest.sessionInterestByIdMap.put(sessionId, PENDING_SETUP_FRAME);
                     elicitSetupMessageFromSource(channelEndpoint, transportIndex, srcAddress, streamId, sessionId);
                 }
                 else
                 {
-                    streamInterest.sessionInterestByIdMap.put(sessionId, new SessionInterest(NO_INTEREST));
+                    streamInterest.sessionInterestByIdMap.put(sessionId, NO_INTEREST);
                 }
             }
         }
@@ -353,13 +357,24 @@ public final class DataPacketDispatcher
         if (null != streamInterest)
         {
             final int sessionId = msg.sessionId();
-            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
 
-            if (null != sessionInterest)
+            if (streamInterest.isSessionLimitExceeded(streamSessionLimit))
             {
-                if (null == sessionInterest.image && PENDING_SETUP_FRAME == sessionInterest.state)
+                throw new AeronEvent("exceeded session limit, streamId=" + streamId + " sourceAddress=" + srcAddress);
+            }
+
+            final PublicationImage image = streamInterest.findActive(sessionId);
+            final SessionState sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
+
+            if (null != image)
+            {
+                image.addDestinationConnectionIfUnknown(transportIndex, srcAddress);
+            }
+            else if (null != sessionInterest)
+            {
+                if (PENDING_SETUP_FRAME == sessionInterest)
                 {
-                    sessionInterest.state = INIT_IN_PROGRESS;
+                    streamInterest.sessionInterestByIdMap.put(sessionId, INIT_IN_PROGRESS);
 
                     createPublicationImage(
                         channelEndpoint,
@@ -375,31 +390,30 @@ public final class DataPacketDispatcher
                         msg.ttl(),
                         msg.flags());
                 }
-                else if (null != sessionInterest.image)
-                {
-                    sessionInterest.image.addDestinationConnectionIfUnknown(transportIndex, srcAddress);
-                }
-            }
-            else if (streamInterest.isAllSessions || streamInterest.subscribedSessionIds.contains(sessionId))
-            {
-                streamInterest.sessionInterestByIdMap.put(sessionId, new SessionInterest(INIT_IN_PROGRESS));
-                createPublicationImage(
-                    channelEndpoint,
-                    transportIndex,
-                    srcAddress,
-                    streamId,
-                    sessionId,
-                    msg.initialTermId(),
-                    msg.activeTermId(),
-                    msg.termOffset(),
-                    msg.termLength(),
-                    msg.mtuLength(),
-                    msg.ttl(),
-                    msg.flags());
             }
             else
             {
-                streamInterest.sessionInterestByIdMap.put(sessionId, new SessionInterest(NO_INTEREST));
+                if (streamInterest.isAllSessions || streamInterest.subscribedSessionIds.contains(sessionId))
+                {
+                    streamInterest.sessionInterestByIdMap.put(sessionId, INIT_IN_PROGRESS);
+                    createPublicationImage(
+                        channelEndpoint,
+                        transportIndex,
+                        srcAddress,
+                        streamId,
+                        sessionId,
+                        msg.initialTermId(),
+                        msg.activeTermId(),
+                        msg.termOffset(),
+                        msg.termLength(),
+                        msg.mtuLength(),
+                        msg.ttl(),
+                        msg.flags());
+                }
+                else
+                {
+                    streamInterest.sessionInterestByIdMap.put(sessionId, NO_INTEREST);
+                }
             }
         }
     }
@@ -424,9 +438,9 @@ public final class DataPacketDispatcher
         if (null != streamInterest)
         {
             final int sessionId = msg.sessionId();
-            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
 
-            if (null != sessionInterest && null != sessionInterest.image)
+            final PublicationImage image = streamInterest.findActive(sessionId);
+            if (null != image)
             {
                 if (RttMeasurementFlyweight.REPLY_FLAG == (msg.flags() & RttMeasurementFlyweight.REPLY_FLAG))
                 {
@@ -438,7 +452,7 @@ public final class DataPacketDispatcher
                 }
                 else
                 {
-                    sessionInterest.image.onRttMeasurement(msg, transportIndex, srcAddress);
+                    image.onRttMeasurement(msg, transportIndex, srcAddress);
                 }
             }
         }
@@ -459,8 +473,8 @@ public final class DataPacketDispatcher
         final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
         if (null != streamInterest)
         {
-            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
-            if (null != sessionInterest && state == sessionInterest.state)
+            final SessionState sessionState = streamInterest.sessionInterestByIdMap.get(sessionId);
+            if (null != sessionState && state == sessionState)
             {
                 streamInterest.sessionInterestByIdMap.remove(sessionId);
             }

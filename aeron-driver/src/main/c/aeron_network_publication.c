@@ -236,6 +236,8 @@ int aeron_network_publication_create(
     _pub->sender_flow_control_limits_counter = aeron_system_counter_addr(
         system_counters, AERON_SYSTEM_COUNTER_SENDER_FLOW_CONTROL_LIMITS);
     _pub->retransmits_sent_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_RETRANSMITS_SENT);
+    _pub->retransmitted_bytes_counter =
+        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_RETRANSMITTED_BYTES);
     _pub->unblocked_publications_counter = aeron_system_counter_addr(
         system_counters, AERON_SYSTEM_COUNTER_UNBLOCKED_PUBLICATIONS);
 
@@ -594,6 +596,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
         size_t index = aeron_logbuffer_index_by_position(resend_position, publication->position_bits_to_shift);
         size_t remaining_bytes = length;
         int32_t bytes_sent = 0;
+        int32_t total_bytes_sent = 0;
         int32_t offset = term_offset;
 
         do
@@ -633,11 +636,13 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
             }
 
             bytes_sent = available + padding;
+            total_bytes_sent += bytes_sent;
             remaining_bytes -= bytes_sent;
         }
         while (remaining_bytes > 0);
 
         aeron_counter_ordered_increment(publication->retransmits_sent_counter, 1);
+        aeron_counter_add_ordered(publication->retransmitted_bytes_counter, total_bytes_sent);
     }
 
     if (NULL != publication->log.resend)

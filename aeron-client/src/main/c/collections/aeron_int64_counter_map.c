@@ -51,3 +51,7 @@ extern int aeron_int64_counter_map_get_and_dec(aeron_int64_counter_map_t *map, c
 extern void aeron_int64_counter_map_for_each(
     aeron_int64_counter_map_t *map, aeron_int64_counter_map_for_each_func_t func, void *clientd);
 
+extern void aeron_int64_counter_map_remove_if(
+    aeron_int64_counter_map_t *map, aeron_int64_counter_map_predicate_func_t func, void *clientd);
+
+

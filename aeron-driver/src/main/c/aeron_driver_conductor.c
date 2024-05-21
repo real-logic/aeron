@@ -4260,6 +4260,15 @@ int aeron_driver_conductor_on_add_network_subscription_complete(
         goto error_cleanup;
     }
 
+    if (aeron_subscription_params_validate_initial_window_for_rcvbuf(
+        &params,
+        aeron_udp_channel_socket_so_rcvbuf(udp_channel, conductor->context->socket_rcvbuf),
+        conductor->context->os_buffer_lengths.default_so_rcvbuf) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        goto error_cleanup;
+    }
+
     control_mode = udp_channel->control_mode;
 
     if (NULL == aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id))
@@ -4286,16 +4295,8 @@ int aeron_driver_conductor_on_add_network_subscription_complete(
     {
         aeron_udp_channel_delete(udp_channel);
     }
+    // Ownership is transferred to the channel.
     udp_channel = NULL;
-
-    if (aeron_subscription_params_validate_initial_window_for_rcvbuf(
-        &params,
-        aeron_udp_channel_socket_so_rcvbuf(endpoint->conductor_fields.udp_channel, conductor->context->socket_rcvbuf),
-        conductor->context->os_buffer_lengths.default_so_rcvbuf) < 0)
-    {
-        AERON_APPEND_ERR("%s", "");
-        goto error_cleanup_skip_channel_delete;
-    }
 
     if (aeron_driver_conductor_has_clashing_subscription(conductor, endpoint, command->stream_id, &params))
     {
@@ -5636,31 +5637,6 @@ error_cleanup:
     aeron_driver_conductor_log_error(conductor);
     aeron_driver_receiver_proxy_on_remove_init_in_progress(
         conductor->context->receiver_proxy, endpoint, command->session_id, command->stream_id);
-}
-
-void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
-{
-    aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
-    aeron_command_base_t *command = (aeron_command_base_t *)item;
-    int ensure_capacity_result = 0;
-
-    AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->lingering_resources, aeron_linger_resource_entry_t)
-    if (ensure_capacity_result >= 0)
-    {
-        aeron_linger_resource_entry_t *entry =
-            &conductor->lingering_resources.array[conductor->lingering_resources.length++];
-
-        entry->buffer = command->item;
-        entry->has_reached_end_of_life = false;
-        entry->timeout_ns = aeron_clock_cached_nano_time(conductor->context->cached_clock) +
-            AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS;
-    }
-
-    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor->context->threading_mode))
-    {
-        aeron_free(command);
-        /* Do not know where it came from originally, so just free command on the conductor duty cycle */
-    }
 }
 
 void aeron_driver_conductor_on_re_resolve_endpoint_complete(int result, int errcode, const char *errmsg, void *task_clientd, void *executor_clientd)

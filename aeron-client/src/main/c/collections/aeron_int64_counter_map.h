@@ -341,6 +341,7 @@ inline int aeron_int64_counter_map_get_and_dec(aeron_int64_counter_map_t *map, c
 }
 
 typedef void (*aeron_int64_counter_map_for_each_func_t)(void *clientd, int64_t key, int64_t value);
+typedef bool (*aeron_int64_counter_map_predicate_func_t)(void *clientd, int64_t key, int64_t value);
 
 inline void aeron_int64_counter_map_for_each(
     aeron_int64_counter_map_t *map, aeron_int64_counter_map_for_each_func_t func, void *clientd)
@@ -350,6 +351,36 @@ inline void aeron_int64_counter_map_for_each(
         if (map->initial_value != map->entries[i + 1])
         {
             func(clientd, map->entries[i], map->entries[i + 1]);
+        }
+    }
+}
+
+inline void aeron_int64_counter_map_remove_if(
+    aeron_int64_counter_map_t *map, aeron_int64_counter_map_predicate_func_t func, void *clientd)
+{
+    size_t i = 0;
+    size_t remaining = map->size;
+
+    while (i < map->entries_length && remaining > 0)
+    {
+        bool is_removed = false;
+        int64_t key = map->entries[i];
+        int64_t value = map->entries[i + 1];
+        if (map->initial_value != value)
+        {
+            if (func(clientd, key, value))
+            {
+                is_removed = (map->initial_value != aeron_int64_counter_map_remove(map, key));
+            }
+        }
+
+        if (is_removed)
+        {
+            --remaining;
+        }
+        else
+        {
+            i += 2;
         }
     }
 }

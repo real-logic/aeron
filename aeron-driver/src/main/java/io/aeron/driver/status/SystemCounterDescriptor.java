@@ -204,7 +204,18 @@ public enum SystemCounterDescriptor
     /**
      * The total number of bytes currently mapped in log buffers, CnC file, and loss report.
      */
-    BYTES_CURRENTLY_MAPPED(35, "Bytes currently mapped");
+    BYTES_CURRENTLY_MAPPED(35, "Bytes currently mapped"),
+
+    /**
+     * A minimum bound on the number of bytes re-transmitted as a result of NAKs.
+     * <p>
+     * MDC retransmits are only counted once; therefore, this is a minimum bound rather than the actual number
+     * of retransmitted bytes. We may change this in the future.
+     * <p>
+     * Note that retransmitted bytes are not included in the {@link SystemCounterDescriptor#BYTES_SENT}
+     * counter value. We may change this in the future.
+     */
+    RETRANSMITTED_BYTES(36, "Retransmitted bytes");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

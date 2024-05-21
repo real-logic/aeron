@@ -291,6 +291,9 @@ public final class CTestMediaDriver implements TestMediaDriver
         }
 
         environment.put("AERON_ENABLE_EXPERIMENTAL_FEATURES", String.valueOf(context.enableExperimentalFeatures()));
+
+        environment.put("AERON_DRIVER_STREAM_SESSION_LIMIT", String.valueOf(context.streamSessionLimit()));
+
         setFlowControlStrategy(environment, context);
         setLogging(environment);
         setTransportSecurity(environment);
@@ -399,7 +402,7 @@ public final class CTestMediaDriver implements TestMediaDriver
     {
         environment.put("AERON_EVENT_LOG", System.getProperty(
             "aeron.event.log",
-            "all"));
+            "admin"));
         environment.put("AERON_EVENT_LOG_DISABLE", System.getProperty("aeron.event.log.disable", ""));
 
         final String driverAgentPath = System.getProperty(DRIVER_AGENT_PATH_PROP_NAME);

@@ -93,9 +93,9 @@ final class LogPublisher
         return publication.sessionId();
     }
 
-    void addDestination(final boolean isLogChannelMultiDestination, final String followerLogEndpoint)
+    void addDestination(final String followerLogEndpoint)
     {
-        if (isLogChannelMultiDestination && null != publication)
+        if (null != publication)
         {
             publication.asyncAddDestination(ChannelUri.createDestinationUri(destinationChannel, followerLogEndpoint));
         }

@@ -193,9 +193,7 @@ public class ResponseServer implements AutoCloseable, Agent
 
     private void onRequestMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        final ResponseSession session = getOrCreateSession(
-            serverSubscription.imageBySessionId(header.sessionId()));
-
+        final ResponseSession session = getOrCreateSession((Image)header.context());
         session.process(buffer, offset, length, header);
     }
 

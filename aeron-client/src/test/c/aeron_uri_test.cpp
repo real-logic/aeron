@@ -17,10 +17,10 @@
 #include <functional>
 
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
 
 extern "C"
 {
+#include "aeron_alloc.h"
 #include "uri/aeron_uri.h"
 #include "util/aeron_netutil.h"
 }
@@ -137,29 +137,34 @@ public:
     static void add_ifaddr(
         int family, const char *name, const char *addr_str, const char *netmask_str, unsigned int flags)
     {
-        auto *entry = new struct ifaddrs;
-        void *addr, *netmask;
+        void *addr = nullptr, *netmask = nullptr;
+        struct ifaddrs *entry = nullptr;
+        aeron_alloc((void **)&entry, sizeof(struct ifaddrs));
 
         if (family == AF_INET6)
         {
-            auto *a = new struct sockaddr_in6;
+            struct sockaddr_in6 *a = nullptr;
+            aeron_alloc((void **)&a, sizeof(struct sockaddr_in6));
             addr = &a->sin6_addr;
             a->sin6_family = AF_INET6;
-            entry->ifa_addr = reinterpret_cast<struct sockaddr *>(a);
+            entry->ifa_addr = (struct sockaddr *)a;
 
-            auto *b = new struct sockaddr_in6;
+            struct sockaddr_in6 *b = nullptr;
+            aeron_alloc((void **)&b, sizeof(struct sockaddr_in6));
             netmask = &b->sin6_addr;
             b->sin6_family = AF_INET6;
-            entry->ifa_netmask = reinterpret_cast<struct sockaddr *>(b);
+            entry->ifa_netmask = (struct sockaddr *)b;
         }
         else
         {
-            auto *a = new struct sockaddr_in;
+            struct sockaddr_in *a = nullptr;
+            aeron_alloc((void **)&a, sizeof(struct sockaddr_in));
             addr = &a->sin_addr;
             a->sin_family = AF_INET;
-            entry->ifa_addr = reinterpret_cast<struct sockaddr *>(a);
+            entry->ifa_addr = (struct sockaddr *)a;
 
-            auto *b = new struct sockaddr_in;
+            struct sockaddr_in *b = nullptr;
+            aeron_alloc((void **)&b, sizeof(struct sockaddr_in));
             netmask = &b->sin_addr;
             b->sin_family = AF_INET;
             entry->ifa_netmask = reinterpret_cast<struct sockaddr *>(b);
@@ -206,7 +211,7 @@ protected:
 
 TEST_F(UriLookupTest, shouldFindIpv4Loopback)
 {
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_MAX_PATH] = { 0 };
     struct sockaddr_storage addr = {};
     auto *addr_in = (struct sockaddr_in *)&addr;
     unsigned int if_index;
@@ -218,7 +223,7 @@ TEST_F(UriLookupTest, shouldFindIpv4Loopback)
 
 TEST_F(UriLookupTest, shouldFindIpv4LoopbackAsLocalhost)
 {
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_MAX_PATH] = { 0 };
     struct sockaddr_storage addr = {};
     auto *addr_in = (struct sockaddr_in *)&addr;
     unsigned int if_index;
@@ -231,7 +236,7 @@ TEST_F(UriLookupTest, shouldFindIpv4LoopbackAsLocalhost)
 
 TEST_F(UriLookupTest, shouldFindIpv6)
 {
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_MAX_PATH] = { 0 };
     struct sockaddr_storage addr = {};
     auto *addr_in6 = (struct sockaddr_in6 *)&addr;
     unsigned int if_index;

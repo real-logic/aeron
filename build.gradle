@@ -63,7 +63,7 @@ def hamcrestVersion = '2.2'
 def junitVersion = '5.10.2'
 def junitPlatformVersion = '1.10.2'
 def mockitoVersion = '4.11.0'
-def byteBuddyVersion = '1.14.14'
+def byteBuddyVersion = '1.14.1'
 def findbugsAnnotationsVersion = '3.0.1'
 def hdrHistogramVersion = '2.2.1'
 def gitCommitHash = io.aeron.build.GithubUtil.currentGitHash("${projectDir}")
@@ -244,6 +244,8 @@ subprojects {
             'aeron.term.buffer.sparse.file': 'true',
             'aeron.perform.storage.checks': 'false',
             'agrona.strict.alignment.checks': 'true',
+            'net.bytebuddy.experimental': 'true',
+            'io.aeron.shadow.net.bytebuddy.experimental': 'true',
             'java.net.preferIPv4Stack': 'true',
             'aeron.test.system.aeronmd.path': System.getProperty('aeron.test.system.aeronmd.path'),
             'aeron.test.system.binding.remote.host': System.getProperty('aeron.test.system.binding.remote.host'),

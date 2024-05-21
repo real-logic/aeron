@@ -1996,7 +1996,7 @@ public final class DriverConductor implements Agent
                 channelStatus = ReceiveChannelStatus.allocate(tempBuffer, countersManager, registrationId, channel);
 
                 final DataPacketDispatcher dispatcher = new DataPacketDispatcher(
-                    ctx.driverConductorProxy(), receiverProxy.receiver());
+                    ctx.driverConductorProxy(), receiverProxy.receiver(), ctx.streamSessionLimit());
                 channelEndpoint = ctx.receiveChannelEndpointSupplier().newInstance(
                     udpChannel, dispatcher, channelStatus, ctx);
 

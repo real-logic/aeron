@@ -27,8 +27,10 @@ import io.aeron.exceptions.ConfigurationException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.AsciiNumberFormatException;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
+import org.agrona.Strings;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
@@ -1063,6 +1065,10 @@ public final class Configuration
      */
     @Config(defaultType = DefaultType.INT, defaultInt = 1)
     public static final String ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME = "aeron.driver.async.executor.threads";
+
+    public static final String STREAM_SESSION_LIMIT_PROP_NAME = "aeron.driver.stream.session.limit";
+
+    public static final int STREAM_SESSION_LIMIT_DEFAULT = Integer.MAX_VALUE;
 
     /**
      * {@link Executor} that run tasks on the caller thread.
@@ -2135,6 +2141,28 @@ public final class Configuration
         }
 
         return supplier;
+    }
+
+    /**
+     * Get the configured limit for the number of streams per session.
+     *
+     * @return configured session limit
+     * @throws AsciiNumberFormatException if the property referenced by {@link #STREAM_SESSION_LIMIT_PROP_NAME} is not
+     * a valid number
+     */
+    public static int streamSessionLimit()
+    {
+        final String streamSessionLimitString = getProperty(STREAM_SESSION_LIMIT_PROP_NAME);
+        try
+        {
+            return Strings.isEmpty(streamSessionLimitString) ?
+                STREAM_SESSION_LIMIT_DEFAULT : Integer.parseInt(streamSessionLimitString);
+        }
+        catch (final NumberFormatException ex)
+        {
+            throw new AsciiNumberFormatException(
+                "Property " + STREAM_SESSION_LIMIT_PROP_NAME + "=" + streamSessionLimitString + " is not a number");
+        }
     }
 
     /**

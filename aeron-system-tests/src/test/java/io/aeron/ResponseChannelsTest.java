@@ -491,6 +491,7 @@ public class ResponseChannelsTest
 
             final Publication pubA = responseClientA.publication();
             final Publication pubB = responseClientB.publication();
+            final MutableLong timeOfLastSubPositionChange = new MutableLong(System.currentTimeMillis());
 
             final Supplier<String> errorMessage = () ->
             {
@@ -499,8 +500,11 @@ public class ResponseChannelsTest
                     ", pubA.count=" + (pubACount.get() - 1) +
                     ", pubB.position=" + pubB.position() +
                     ", subB.position=" + responseClientB.subscription().imageAtIndex(0).position() +
-                    ", pubB.count=" + (pubBCount.get() - 1);
+                    ", pubB.count=" + (pubBCount.get() - 1) +
+                    ", idleTime=" + (System.currentTimeMillis() - timeOfLastSubPositionChange.get()) + "ms";
             };
+
+            long lastSubAPosition = 0;
 
             while (pubA.position() < stopPosition ||
                 responseClientA.subscription().imageAtIndex(0).position() < subAStopPosition ||
@@ -532,6 +536,13 @@ public class ResponseChannelsTest
                 }
 
                 subBStopPosition = pubB.position();
+
+                final long subAPosition = responseClientA.subscription().imageAtIndex(0).position();
+                if (lastSubAPosition != subAPosition)
+                {
+                    lastSubAPosition = subAPosition;
+                    timeOfLastSubPositionChange.set(System.currentTimeMillis());
+                }
             }
 
             assertEquals(pubACount.get() - 1, subACount.get());
@@ -593,18 +604,15 @@ public class ResponseChannelsTest
 
     private static final class EchoHandler implements ResponseServer.ResponseHandler
     {
-        public void onMessage(
+        public boolean onMessage(
             final DirectBuffer buffer,
             final int offset,
             final int length,
             final Header header,
             final Publication responsePublication)
         {
-            while (0 > responsePublication.offer(
-                buffer, offset, length, (termBuffer, termOffset, frameLength) -> header.reservedValue()))
-            {
-                Tests.yieldingIdle("failed to send response");
-            }
+            return 0 < responsePublication.offer(
+                buffer, offset, length, (termBuffer, termOffset, frameLength) -> header.reservedValue());
         }
     }
 

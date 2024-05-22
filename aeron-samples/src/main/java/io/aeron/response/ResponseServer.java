@@ -16,6 +16,7 @@
 package io.aeron.response;
 
 import io.aeron.*;
+import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -42,13 +43,14 @@ public class ResponseServer implements AutoCloseable, Agent
         /**
          * Called when a message is received via the request subscription.
          *
-         * @param buffer                containing the data.
-         * @param offset                at which the data begins.
-         * @param length                of the data in bytes.
-         * @param header                representing the metadata for the data.
-         * @param responsePublication   to send responses back to the client.
+         * @param buffer              containing the data.
+         * @param offset              at which the data begins.
+         * @param length              of the data in bytes.
+         * @param header              representing the metadata for the data.
+         * @param responsePublication to send responses back to the client.
+         * @return <code>true</code> if the message was processed otherwise.
          */
-        void onMessage(DirectBuffer buffer, int offset, int length, Header header, Publication responsePublication);
+        boolean onMessage(DirectBuffer buffer, int offset, int length, Header header, Publication responsePublication);
     }
 
     private final Aeron aeron;
@@ -62,7 +64,8 @@ public class ResponseServer implements AutoCloseable, Agent
     private final int responseStreamId;
     private final ChannelUriStringBuilder requestUriBuilder;
     private final ChannelUriStringBuilder responseUriBuilder;
-    private final FragmentAssembler requestAssembler = new FragmentAssembler(this::onRequestMessage);
+    private final ControlledFragmentAssembler requestAssembler = new ControlledFragmentAssembler(
+        this::onControlledRequestMessage);
 
     private Subscription serverSubscription;
 
@@ -142,8 +145,7 @@ public class ResponseServer implements AutoCloseable, Agent
             removeSession(image);
         }
 
-        workCount += serverSubscription.poll(requestAssembler, 1);
-
+        workCount += serverSubscription.controlledPoll(requestAssembler, 1);
 
         return workCount;
     }
@@ -191,11 +193,15 @@ public class ResponseServer implements AutoCloseable, Agent
         }
     }
 
-    private void onRequestMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    private ControlledFragmentHandler.Action onControlledRequestMessage(
+        final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final ResponseSession session = getOrCreateSession((Image)header.context());
-        session.process(buffer, offset, length, header);
+        final boolean processed = session.process(buffer, offset, length, header);
+
+        return processed ? ControlledFragmentHandler.Action.CONTINUE : ControlledFragmentHandler.Action.ABORT;
     }
+
 
     private ResponseSession getOrCreateSession(final Image image)
     {
@@ -234,9 +240,9 @@ public class ResponseServer implements AutoCloseable, Agent
             this.handler = handler;
         }
 
-        public void process(final DirectBuffer buffer, final int offset, final int length, final Header header)
+        public boolean process(final DirectBuffer buffer, final int offset, final int length, final Header header)
         {
-            handler.onMessage(buffer, offset, length, header, publication);
+            return handler.onMessage(buffer, offset, length, header, publication);
         }
 
         /**

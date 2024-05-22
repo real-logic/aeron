@@ -493,16 +493,15 @@ public class ResponseChannelsTest
             final Publication pubB = responseClientB.publication();
             final MutableLong timeOfLastSubPositionChange = new MutableLong(System.currentTimeMillis());
 
-            final Supplier<String> errorMessage = () ->
-            {
-                return "pubA.position=" + pubA.position() +
-                    ", subA.position=" + responseClientA.subscription().imageAtIndex(0).position() +
-                    ", pubA.count=" + (pubACount.get() - 1) +
-                    ", pubB.position=" + pubB.position() +
-                    ", subB.position=" + responseClientB.subscription().imageAtIndex(0).position() +
-                    ", pubB.count=" + (pubBCount.get() - 1) +
-                    ", idleTime=" + (System.currentTimeMillis() - timeOfLastSubPositionChange.get()) + "ms";
-            };
+            final Supplier<String> errorMessage =
+                () ->
+                "pubA.position=" + pubA.position() +
+                ", subA.position=" + responseClientA.subscription().imageAtIndex(0).position() +
+                ", pubA.count=" + (pubACount.get() - 1) +
+                ", pubB.position=" + pubB.position() +
+                ", subB.position=" + responseClientB.subscription().imageAtIndex(0).position() +
+                ", pubB.count=" + (pubBCount.get() - 1) +
+                ", idleTime=" + (System.currentTimeMillis() - timeOfLastSubPositionChange.get()) + "ms";
 
             long lastSubAPosition = 0;
 

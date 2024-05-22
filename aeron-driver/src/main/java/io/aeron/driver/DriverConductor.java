@@ -1594,7 +1594,7 @@ public final class DriverConductor implements Agent
                 senderLmt.setOrdered(position);
             }
 
-            final RetransmitHandler retransmitHandler = RetransmitHandler.acquire(
+            final RetransmitHandler retransmitHandler = new RetransmitHandler(
                 ctx.senderCachedNanoClock(),
                 ctx.systemCounters().get(INVALID_PACKETS),
                 ctx.retransmitUnicastDelayGenerator(),

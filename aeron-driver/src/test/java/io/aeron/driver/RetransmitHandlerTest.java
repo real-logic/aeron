@@ -76,7 +76,7 @@ class RetransmitHandlerTest
     private final HeaderWriter headerWriter = HeaderWriter.newInstance(
         DataHeaderFlyweight.createDefaultHeader(0, 0, 0));
 
-    private RetransmitHandler handler = RetransmitHandler.acquire(
+    private RetransmitHandler handler = new RetransmitHandler(
         () -> currentTime, invalidPackets, DELAY_GENERATOR, LINGER_GENERATOR, true);
 
     @BeforeEach
@@ -319,8 +319,7 @@ class RetransmitHandlerTest
 
     private RetransmitHandler newZeroDelayRetransmitHandler()
     {
-        return RetransmitHandler.acquire(
-            () -> currentTime, invalidPackets, ZERO_DELAY_GENERATOR, LINGER_GENERATOR, true);
+        return new RetransmitHandler(() -> currentTime, invalidPackets, ZERO_DELAY_GENERATOR, LINGER_GENERATOR, true);
     }
 
     private void createTermBuffer(final BiConsumer<RetransmitHandlerTest, Integer> creator, final int num)

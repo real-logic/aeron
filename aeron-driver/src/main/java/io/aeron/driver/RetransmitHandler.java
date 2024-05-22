@@ -24,17 +24,22 @@ import static io.aeron.driver.Configuration.MAX_RETRANSMITS_DEFAULT;
 /**
  * Tracking and handling of retransmit request, NAKs, for senders, and receivers.
  * <p>
- * A max number of retransmits is permitted by {@link Configuration#MAX_RETRANSMITS_DEFAULT}. Additional received NAKs
- * will be ignored if this maximum is reached.
+ * When configured for multicast, a max number of retransmits is permitted by
+ * {@link Configuration#MAX_RETRANSMITS_DEFAULT}. Additional received NAKs will be ignored if this maximum is reached.
+ * When configured for unicast, a single outstanding retransmit is permitted, and additional received NAKs
+ * will be ignored iff they overlap the current retransmit - otherwise the previous retransmit is assumed to have
+ * 'worked' and the new NAK will take its place.
  */
-public abstract class RetransmitHandler
+public final class RetransmitHandler
 {
+    private final RetransmitAction[] retransmitActionPool;
     private final NanoClock nanoClock;
     private final FeedbackDelayGenerator delayGenerator;
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
     private final AtomicCounter invalidPackets;
+    private final boolean isMulticast;
 
-    int activeRetransmitCount = 0;
+    private int activeRetransmitCount = 0;
 
     /**
      * Create a handler for the dealing with the reception of frame request a frame to be retransmitted.
@@ -43,36 +48,28 @@ public abstract class RetransmitHandler
      * @param invalidPackets         for recording invalid packets.
      * @param delayGenerator         to use for delay determination.
      * @param lingerTimeoutGenerator to use for linger timeout.
-     * @param isMulticast            returns a multicast or unicast handler.
-     * @return either a Unicast or Multicast RetransmitHandler
+     * @param isMulticast            specify multicast or unicast semantics.
      */
-    public static RetransmitHandler acquire(
+    public RetransmitHandler(
         final NanoClock nanoClock,
         final AtomicCounter invalidPackets,
         final FeedbackDelayGenerator delayGenerator,
         final FeedbackDelayGenerator lingerTimeoutGenerator,
         final boolean isMulticast)
     {
-        if (isMulticast)
-        {
-            return new MulticastRetransmitHandler(nanoClock, invalidPackets, delayGenerator, lingerTimeoutGenerator);
-        }
-        else
-        {
-            return new UnicastRetransmitHandler(nanoClock, invalidPackets, delayGenerator, lingerTimeoutGenerator);
-        }
-    }
-
-    RetransmitHandler(
-        final NanoClock nanoClock,
-        final AtomicCounter invalidPackets,
-        final FeedbackDelayGenerator delayGenerator,
-        final FeedbackDelayGenerator lingerTimeoutGenerator)
-    {
         this.nanoClock = nanoClock;
         this.invalidPackets = invalidPackets;
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
+        this.isMulticast = isMulticast;
+
+        final int maxRetransmits = this.isMulticast ? MAX_RETRANSMITS_DEFAULT : 1;
+
+        retransmitActionPool = new RetransmitAction[maxRetransmits];
+        for (int i = 0; i < maxRetransmits; i++)
+        {
+            retransmitActionPool[i] = new RetransmitAction();
+        }
     }
 
     /**
@@ -143,21 +140,22 @@ public abstract class RetransmitHandler
      * @param nowNs            time in nanoseconds.
      * @param retransmitSender to call on retransmissions.
      */
-    public abstract void processTimeouts(long nowNs, RetransmitSender retransmitSender);
-
-    void processTimeouts(
-        final long nowNs,
-        final RetransmitSender retransmitSender,
-        final RetransmitAction action)
+    public void processTimeouts(final long nowNs, final RetransmitSender retransmitSender)
     {
-        if (RetransmitAction.State.DELAYED == action.state && (action.expiryNs - nowNs < 0))
+        if (activeRetransmitCount > 0)
         {
-            retransmitSender.resend(action.termId, action.termOffset, action.length);
-            action.linger(lingerTimeoutGenerator.generateDelayNs(), nanoClock.nanoTime());
-        }
-        else if (RetransmitAction.State.LINGERING == action.state && (action.expiryNs - nowNs < 0))
-        {
-            removeRetransmit(action);
+            for (final RetransmitAction action : retransmitActionPool)
+            {
+                if (RetransmitAction.State.DELAYED == action.state && (action.expiryNs - nowNs < 0))
+                {
+                    retransmitSender.resend(action.termId, action.termOffset, action.length);
+                    action.linger(lingerTimeoutGenerator.generateDelayNs(), nanoClock.nanoTime());
+                }
+                else if (RetransmitAction.State.LINGERING == action.state && (action.expiryNs - nowNs < 0))
+                {
+                    removeRetransmit(action);
+                }
+            }
         }
     }
 
@@ -173,17 +171,91 @@ public abstract class RetransmitHandler
         return isInvalid;
     }
 
-    abstract RetransmitAction scanForAvailableRetransmit(int termId, int termOffset, int length);
+    private RetransmitAction scanForAvailableRetransmit(final int termId, final int termOffset, final int length)
+    {
+        if (0 == activeRetransmitCount)
+        {
+            return addRetransmit(retransmitActionPool[0]);
+        }
 
-    abstract RetransmitAction scanForExistingRetransmit(int termId, int termOffset);
+        RetransmitAction availableAction = null;
+        for (final RetransmitAction action : retransmitActionPool)
+        {
+            switch (action.state)
+            {
+                case INACTIVE:
+                    if (null == availableAction)
+                    {
+                        availableAction = action;
+                    }
+                    break;
 
-    RetransmitAction addRetransmit(final RetransmitAction retransmitAction)
+                case DELAYED:
+                case LINGERING:
+                    if (action.termId == termId &&
+                        action.termOffset <= termOffset && termOffset < action.termOffset + action.length)
+                    {
+                        return null;
+                    }
+
+                    if (!isMulticast)
+                    {
+                        // this is unicast, and the NAK does NOT overlap the previous one, so just reuse it
+                        availableAction = action;
+                    }
+                    break;
+            }
+        }
+
+        if (isMulticast)
+        {
+            if (null != availableAction)
+            {
+                return addRetransmit(availableAction);
+            }
+
+            throw new IllegalStateException("maximum number of active RetransmitActions reached");
+        }
+        else
+        {
+            return availableAction;
+        }
+    }
+
+    private RetransmitAction scanForExistingRetransmit(final int termId, final int termOffset)
+    {
+        if (0 == activeRetransmitCount)
+        {
+            return null;
+        }
+
+        for (final RetransmitAction action : retransmitActionPool)
+        {
+            switch (action.state)
+            {
+                case DELAYED:
+                case LINGERING:
+                    if (action.termId == termId && action.termOffset == termOffset)
+                    {
+                        return action;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        return null;
+    }
+
+    private RetransmitAction addRetransmit(final RetransmitAction retransmitAction)
     {
         ++activeRetransmitCount;
         return retransmitAction;
     }
 
-    void removeRetransmit(final RetransmitAction action)
+    private void removeRetransmit(final RetransmitAction action)
     {
         --activeRetransmitCount;
         action.cancel();
@@ -220,167 +292,5 @@ public abstract class RetransmitHandler
         {
             state = State.INACTIVE;
         }
-    }
-}
-
-class MulticastRetransmitHandler extends RetransmitHandler
-{
-    private final RetransmitAction[] retransmitActionPool = new RetransmitAction[MAX_RETRANSMITS_DEFAULT];
-
-    MulticastRetransmitHandler(
-        final NanoClock nanoClock,
-        final AtomicCounter invalidPackets,
-        final FeedbackDelayGenerator delayGenerator,
-        final FeedbackDelayGenerator lingerTimeoutGenerator)
-    {
-        super(nanoClock, invalidPackets, delayGenerator, lingerTimeoutGenerator);
-
-        for (int i = 0; i < MAX_RETRANSMITS_DEFAULT; i++)
-        {
-            retransmitActionPool[i] = new RetransmitAction();
-        }
-    }
-
-    @Override
-    public void processTimeouts(final long nowNs, final RetransmitSender retransmitSender)
-    {
-        if (activeRetransmitCount > 0)
-        {
-            for (final RetransmitAction action : retransmitActionPool)
-            {
-                processTimeouts(nowNs, retransmitSender, action);
-            }
-        }
-    }
-
-    @Override
-    RetransmitAction scanForAvailableRetransmit(final int termId, final int termOffset, final int length)
-    {
-        if (0 == activeRetransmitCount)
-        {
-            return addRetransmit(retransmitActionPool[0]);
-        }
-
-        RetransmitAction availableAction = null;
-        for (final RetransmitAction action : retransmitActionPool)
-        {
-            switch (action.state)
-            {
-                case INACTIVE:
-                    if (null == availableAction)
-                    {
-                        availableAction = action;
-                    }
-                    break;
-
-                case DELAYED:
-                case LINGERING:
-                    if (action.termId == termId &&
-                        action.termOffset <= termOffset && termOffset < action.termOffset + action.length)
-                    {
-                        return null;
-                    }
-                    break;
-            }
-        }
-
-        if (null != availableAction)
-        {
-            return addRetransmit(availableAction);
-        }
-
-        throw new IllegalStateException("maximum number of active RetransmitActions reached");
-    }
-
-    @Override
-    RetransmitAction scanForExistingRetransmit(final int termId, final int termOffset)
-    {
-        if (0 == activeRetransmitCount)
-        {
-            return null;
-        }
-
-        for (final RetransmitAction action : retransmitActionPool)
-        {
-            switch (action.state)
-            {
-                case DELAYED:
-                case LINGERING:
-                    if (action.termId == termId && action.termOffset == termOffset)
-                    {
-                        return action;
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-        }
-
-        return null;
-    }
-}
-
-class UnicastRetransmitHandler extends RetransmitHandler
-{
-    private final RetransmitAction retransmitAction = new RetransmitAction();
-
-    UnicastRetransmitHandler(
-        final NanoClock nanoClock,
-        final AtomicCounter invalidPackets,
-        final FeedbackDelayGenerator delayGenerator,
-        final FeedbackDelayGenerator lingerTimeoutGenerator)
-    {
-        super(nanoClock, invalidPackets, delayGenerator, lingerTimeoutGenerator);
-    }
-
-    @Override
-    public void processTimeouts(final long nowNs, final RetransmitSender retransmitSender)
-    {
-        if (activeRetransmitCount > 0)
-        {
-            processTimeouts(nowNs, retransmitSender, retransmitAction);
-        }
-    }
-
-    @Override
-    RetransmitAction scanForAvailableRetransmit(final int termId, final int termOffset, final int length)
-    {
-        if (0 == activeRetransmitCount)
-        {
-            return addRetransmit(retransmitAction);
-        }
-
-        if ((retransmitAction.state == RetransmitAction.State.DELAYED ||
-            retransmitAction.state == RetransmitAction.State.LINGERING) &&
-            retransmitAction.termId == termId &&
-            retransmitAction.termOffset <= termOffset &&
-            termOffset < retransmitAction.termOffset + retransmitAction.length)
-        {
-            // duplicate/overlapping NAK
-            return null;
-        }
-
-        // go ahead and (re)use the only retransmit action
-        return retransmitAction;
-    }
-
-    @Override
-    RetransmitAction scanForExistingRetransmit(final int termId, final int termOffset)
-    {
-        if (0 == activeRetransmitCount)
-        {
-            return null;
-        }
-
-        if ((retransmitAction.state == RetransmitAction.State.DELAYED ||
-            retransmitAction.state == RetransmitAction.State.LINGERING) &&
-            retransmitAction.termId == termId &&
-            retransmitAction.termOffset == termOffset)
-        {
-            return retransmitAction;
-        }
-
-        return null;
     }
 }

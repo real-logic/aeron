@@ -462,40 +462,43 @@ int aeron_mkdir_recursive(const char *pathname, int permission)
 
     if (errno != ENOENT)
     {
+        AERON_SET_ERR(errno, "aeron_mkdir failed for %s", pathname);
         return -1;
     }
 
     char *_pathname = strdup(pathname);
     char *p;
-    int rc = -1;
 
     for (p = _pathname + strlen(_pathname) - 1; p != _pathname; p--)
     {
         if (*p == AERON_FILE_SEP)
         {
             *p = '\0';
-            // _pathname is now the parent directory of the original pathname
-            rc = aeron_mkdir_recursive(_pathname, permission);
-            break;
-        }
-    }
 
-    if (p == _pathname)
-    {
-        // after iterating through _pathname, we didn't find a separator
-        rc = -1;
+            // _pathname is now the parent directory of the original pathname
+            int rc = aeron_mkdir_recursive(_pathname, permission);
+
+            free(_pathname);
+
+            if (0 == rc)
+            {
+                // if rc is 0, then we were able to create the parent directory
+                // so retry the original pathname
+                return aeron_mkdir(pathname, permission);
+            }
+            else
+            {
+                AERON_APPEND_ERR("%s", "");
+                return rc;
+            }
+        }
     }
 
     free(_pathname);
 
-    if (rc == 0)
-    {
-        // if rc is 0, then we were able to create the parent directory
-        // so retry the original pathname
-        return aeron_mkdir(pathname, permission);
-    }
+    AERON_SET_ERR(EINVAL, "aeron_mkdir_recursive failed to find parent directory in %s", pathname);
 
-    return rc;
+    return -1;
 }
 
 #include <inttypes.h>

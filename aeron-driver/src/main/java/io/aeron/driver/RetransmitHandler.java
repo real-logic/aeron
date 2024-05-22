@@ -351,6 +351,16 @@ class UnicastRetransmitHandler extends RetransmitHandler
             return addRetransmit(retransmitAction);
         }
 
+        if ((retransmitAction.state == RetransmitAction.State.DELAYED ||
+            retransmitAction.state == RetransmitAction.State.LINGERING) &&
+            retransmitAction.termId == termId &&
+            retransmitAction.termOffset <= termOffset &&
+            termOffset < retransmitAction.termOffset + retransmitAction.length)
+        {
+            // duplicate/overlapping NAK
+            return null;
+        }
+
         // go ahead and (re)use the only retransmit action
         return retransmitAction;
     }

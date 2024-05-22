@@ -557,7 +557,9 @@ public final class ReplayMerge implements AutoCloseable
     {
         if (nowMs > (timeOfLastProgressMs + mergeProgressTimeoutMs))
         {
-            throw new TimeoutException("ReplayMerge no progress: state=" + state);
+            final int transportCount = null != image ? image.activeTransportCount() : 0;
+            throw new TimeoutException(
+                "ReplayMerge no progress: state=" + state + ", activeTransportCount=" + transportCount);
         }
     }
 

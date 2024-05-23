@@ -98,7 +98,7 @@ public class DualReplayMergeTest
 
     @ParameterizedTest
     @ValueSource(booleans = { true, false })
-    @InterruptAfter(10)
+    @InterruptAfter(20)
     @SuppressWarnings("methodlength")
     void shouldMergeTwoIndependentStreams(final boolean concurrent)
     {

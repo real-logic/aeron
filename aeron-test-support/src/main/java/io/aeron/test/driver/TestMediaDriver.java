@@ -94,7 +94,7 @@ public interface TestMediaDriver extends AutoCloseable
     {
         if (shouldRunCMediaDriver())
         {
-            // TODO
+            CTestMediaDriver.enableMultiGapLossOnReceive(context, termId, gapRadix, gapLength, totalGaps);
         }
         else
         {

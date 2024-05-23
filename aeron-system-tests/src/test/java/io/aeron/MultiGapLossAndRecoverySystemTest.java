@@ -66,8 +66,6 @@ public class MultiGapLossAndRecoverySystemTest
     @Test
     void shouldSendStreamOfDataAndHandleMultipleGaps()
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("unicast retransmit handler not implemented yet");
-
         launch(context);
 
         sendAndReceive(
@@ -85,8 +83,8 @@ public class MultiGapLossAndRecoverySystemTest
             // the max retransmit action limit.  In that case, we'd have to send more than the 100 NAKs required.
             // Now, however, the UnicastRetransmitHandler treats new NAKs as a tacit admission that the previous
             // NAK did its job and the prior gap was filled, so we can immediately handle the new NAK.
-            assertEquals(retransmitCount, 100L);
-            assertEquals(nakCount, 100L);
+            assertEquals(100L, retransmitCount);
+            assertEquals(100L, nakCount);
         }
     }
 

@@ -388,6 +388,27 @@ public final class CTestMediaDriver implements TestMediaDriver
         getAdditionalEnvVarsMap(context).putAll(fixedLossTransportEnv);
     }
 
+    public static void enableMultiGapLossOnReceive(
+        final MediaDriver.Context context,
+        final int termId,
+        final int gapRadix,
+        final int gapLength,
+        final int totalGaps)
+    {
+        final Object2ObjectHashMap<String, String> multiGapLossTransportEnv = new Object2ObjectHashMap<>();
+
+        final String interceptor = "multi-gap-loss";
+        final String multiGapLossArgs = "term-id=" + termId +
+            "|gap-radix=" + gapRadix +
+            "|gap-length=" + gapLength +
+            "|total-gaps=" + totalGaps;
+
+        multiGapLossTransportEnv.put(UDP_CHANNEL_INCOMING_INTERCEPTORS_ENV_VAR, interceptor);
+        multiGapLossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MULTI_GAP_LOSS_ARGS", multiGapLossArgs);
+
+        getAdditionalEnvVarsMap(context).putAll(multiGapLossTransportEnv);
+    }
+
     public static void dontCoalesceNaksOnReceiverByDefault(final MediaDriver.Context context)
     {
         getAdditionalEnvVarsMap(context).put("AERON_NAK_UNICAST_DELAY", "0");

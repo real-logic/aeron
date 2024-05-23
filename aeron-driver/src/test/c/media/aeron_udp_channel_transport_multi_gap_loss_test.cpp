@@ -83,9 +83,8 @@ public:
     {
         uint8_t buffer[1024];
 
-        ((aeron_frame_header_t *)buffer)->type = AERON_HDR_TYPE_DATA;
-
         auto *data_header = (aeron_data_header_t *)buffer;
+        data_header->frame_header.type = AERON_HDR_TYPE_DATA;
         data_header->stream_id = 123;
         data_header->session_id = 456;
         data_header->term_id = 0;

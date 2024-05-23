@@ -38,7 +38,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;

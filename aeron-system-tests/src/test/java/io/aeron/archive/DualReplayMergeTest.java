@@ -38,6 +38,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -52,6 +53,7 @@ import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.ArchiveSystemTests.CATALOG_CAPACITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 public class DualReplayMergeTest
@@ -101,6 +103,8 @@ public class DualReplayMergeTest
     @SuppressWarnings("methodlength")
     void shouldMergeTwoIndependentStreams(final boolean concurrent)
     {
+        assumeTrue(OS.WINDOWS != OS.current() || TestMediaDriver.shouldRunJavaMediaDriver());
+
         launch();
 
         final int sessionIdA = 1111;

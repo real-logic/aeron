@@ -30,8 +30,9 @@ public class MultiGapLossGenerator implements LossGenerator
 {
     private final int termId;
     private final int gapRadixBits;
+    private final int gapRadixMask;
     private final int gapLength;
-    private final int lastGapTermOffset;
+    private final int lastGapLimit;
     private final BiInt2ObjectMap<MutableInteger> streamAndSessionIdToOffsetMap = new BiInt2ObjectMap<>();
 
     /**
@@ -48,15 +49,18 @@ public class MultiGapLossGenerator implements LossGenerator
         final int gapLength,
         final int totalGaps)
     {
-        if (gapLength >= gapRadix)
+        final int actualGapRadix = BitUtil.findNextPositivePowerOfTwo(gapRadix);
+
+        if (gapLength >= actualGapRadix)
         {
             throw new IllegalArgumentException("gapLength must be smaller than gapRadix");
         }
 
         this.termId = termId;
-        this.gapRadixBits = Integer.numberOfTrailingZeros(BitUtil.findNextPositivePowerOfTwo(gapRadix));
+        this.gapRadixBits = Integer.numberOfTrailingZeros(actualGapRadix);
+        this.gapRadixMask = -actualGapRadix;
         this.gapLength = gapLength;
-        this.lastGapTermOffset = totalGaps * gapRadix;
+        this.lastGapLimit = (totalGaps * actualGapRadix) + gapLength;
     }
 
     /**
@@ -84,7 +88,7 @@ public class MultiGapLossGenerator implements LossGenerator
             return false;
         }
 
-        if (termOffset > this.lastGapTermOffset + this.gapLength) // this packet as past the last offset we'll drop
+        if (termOffset > this.lastGapLimit) // this packet is past the last offset we'll drop
         {
             return false;
         }
@@ -101,20 +105,20 @@ public class MultiGapLossGenerator implements LossGenerator
             return false;
         }
 
+        final int frameLimit = termOffset + length;
+
         if (termOffset != 0 && Integer.numberOfTrailingZeros(termOffset) >= this.gapRadixBits)
         {
-            maximumDroppedOffset.set(termOffset + length);
+            maximumDroppedOffset.set(frameLimit);
             return true;
         }
 
-        final int frameLimit = termOffset + length;
-
-        final int previousGapOffset = (termOffset >> this.gapRadixBits) << this.gapRadixBits;
+        final int previousGapOffset = termOffset & this.gapRadixMask;
         final int previousGapLimit = previousGapOffset + this.gapLength;
 
         if (previousGapOffset > 0 && termOffset < previousGapLimit)
         {
-            maximumDroppedOffset.set(termOffset + length);
+            maximumDroppedOffset.set(frameLimit);
             return true;
         }
 
@@ -123,7 +127,7 @@ public class MultiGapLossGenerator implements LossGenerator
 
         if (frameLimit > nextGapOffset && termOffset < nextGapLimit)
         {
-            maximumDroppedOffset.set(termOffset + length);
+            maximumDroppedOffset.set(frameLimit);
             return true;
         }
 

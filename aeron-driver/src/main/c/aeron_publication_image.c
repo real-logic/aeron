@@ -273,6 +273,7 @@ int aeron_publication_image_create(
     _image->is_sending_eos_sm = false;
     _image->has_receiver_released = false;
     _image->sm_timeout_ns = (int64_t)context->status_message_timeout_ns;
+    _image->invalidation_reason = NULL;
 
     memcpy(&_image->source_address, source_address, sizeof(_image->source_address));
     const int source_identity_length = aeron_format_source_identity(
@@ -374,6 +375,7 @@ bool aeron_publication_image_free(aeron_publication_image_t *image)
     aeron_counter_add_ordered(image->mapped_bytes_counter, -((int64_t)image->mapped_raw_log.mapped_file.length));
 
     aeron_free(image->log_file_name);
+    aeron_free((void *)image->invalidation_reason);
     aeron_free(image);
 
     return true;
@@ -620,6 +622,11 @@ int aeron_publication_image_insert_packet(
         return 0;
     }
 
+    if (NULL != image->invalidation_reason)
+    {
+        return 0;
+    }
+
     const bool is_heartbeat = aeron_publication_image_is_heartbeat(buffer, length);
     const int64_t packet_position = aeron_logbuffer_compute_position(
         term_id, term_offset, image->position_bits_to_shift, image->initial_term_id);
@@ -693,6 +700,12 @@ int aeron_publication_image_on_rttm(
 // Called from receiver.
 int aeron_publication_image_send_pending_status_message(aeron_publication_image_t *image, int64_t now_ns)
 {
+    // TODO: Send error frame instead.
+    if (NULL != image->invalidation_reason)
+    {
+        return 0;
+    }
+
     int work_count = 0;
     int64_t change_number;
     int32_t response_session_id = 0;
@@ -1099,6 +1112,12 @@ void aeron_publication_image_on_time_event(
 void aeron_publication_image_receiver_release(aeron_publication_image_t *image)
 {
     AERON_PUT_ORDERED(image->has_receiver_released, true);
+}
+
+void aeron_publication_image_invalidate(aeron_publication_image_t *image, int32_t reason_length, const char *reason)
+{
+    aeron_alloc((void **)&image->invalidation_reason, reason_length + 1);
+    memcpy((void *)image->invalidation_reason, reason, reason_length);
 }
 
 void aeron_publication_image_remove_response_session_id(aeron_publication_image_t *image)

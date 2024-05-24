@@ -1875,6 +1875,22 @@ static int aeron_driver_conductor_find_response_publication_image(
     return -1;
 }
 
+static aeron_publication_image_t * aeron_driver_conductor_find_publication_image(
+    aeron_driver_conductor_t *conductor,
+    int64_t correlation_id)
+{
+    for (size_t i = 0; i < conductor->publication_images.length; i++)
+    {
+        aeron_publication_image_t *image_entry = conductor->publication_images.array[i].image;
+        if (aeron_publication_image_registration_id(image_entry) == correlation_id)
+        {
+            return image_entry;
+        }
+    }
+
+    return NULL;
+}
+
 aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publication(
     aeron_driver_conductor_t *conductor,
     aeron_client_t *client,
@@ -5653,7 +5669,31 @@ int aeron_driver_conductor_on_terminate_driver(
     return 0;
 }
 
-void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item)
+int aeron_driver_conductor_on_invalidate_image(
+    aeron_driver_conductor_t *conductor, aeron_invalidate_image_command_t *command)
+{
+    const int64_t image_correlation_id = command->image_correlation_id;
+    aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
+        conductor, image_correlation_id);
+    
+    if (NULL == image)
+    {
+        AERON_SET_ERR(
+            AERON_ERROR_CODE_GENERIC_ERROR, "Unable to resolve image for correlationId=", image_correlation_id);
+        return -1;
+    }
+
+    const char *reason = (const char *)(command + 1);
+    aeron_driver_receiver_proxy_on_invalidate_image(
+        conductor->context->receiver_proxy, image_correlation_id, command->position, command->reason_length, reason);
+
+    aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+
+    return 0;
+}
+
+
+    void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     aeron_command_create_publication_image_t *command = (aeron_command_create_publication_image_t *)item;

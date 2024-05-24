@@ -351,3 +351,31 @@ void aeron_driver_receiver_proxy_on_resolution_change(
         aeron_driver_receiver_proxy_offer(receiver_proxy, &cmd, sizeof(cmd));
     }
 }
+
+void aeron_driver_receiver_proxy_on_invalidate_image(
+    aeron_driver_receiver_proxy_t *receiver_proxy,
+    int64_t image_correlation_id,
+    int64_t position,
+    int32_t reason_length,
+    const char *reason)
+{
+    // TODO: max reason length...
+    uint8_t message_buffer[sizeof(aeron_command_base_t) + 1024] = { 0 };
+    aeron_command_receiver_invalidate_image_t *cmd = (aeron_command_receiver_invalidate_image_t *)&message_buffer[0];
+
+    cmd->base.func = aeron_driver_receiver_on_invalidate_image;
+    cmd->base.item = NULL;
+    cmd->image_correlation_id = image_correlation_id;
+    cmd->position = position;
+    cmd->reason_length = reason_length;
+    memcpy(cmd + 1, reason, reason_length); // TODO: Ensure validated.
+
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
+    {
+        aeron_driver_receiver_on_invalidate_image(receiver_proxy->receiver, cmd);
+    }
+    else
+    {
+        aeron_driver_receiver_proxy_offer(receiver_proxy, cmd, sizeof(*cmd) + reason_length);
+    }
+}

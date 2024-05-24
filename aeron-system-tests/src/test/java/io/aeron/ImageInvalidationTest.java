@@ -18,7 +18,9 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.test.EventLogExtension;
+import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
+import io.aeron.test.SlowTest;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
@@ -63,6 +65,8 @@ public class ImageInvalidationTest
     }
 
     @Test
+    @InterruptAfter(20)
+    @SlowTest
     void shouldInvalidateAnSubscriptionsImage()
     {
         final TestMediaDriver driver = launch();

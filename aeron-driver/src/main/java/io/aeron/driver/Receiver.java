@@ -341,6 +341,7 @@ public final class Receiver implements Agent
             if (imageCorrelationId == image.correlationId())
             {
                 image.invalidate(reason);
+                break;
             }
         }
     }

@@ -25,6 +25,18 @@ extern "C"
 #include "util/aeron_error.h"
 }
 
+#if defined(AERON_COMPILER_GCC)
+#define removeDir remove
+#elif defined(AERON_COMPILER_MSVC)
+#define removeDir RemoveDirectoryA
+#endif
+
+#ifdef _MSC_VER
+#define AERON_FILE_SEP_STR "\\"
+#else
+#define AERON_FILE_SEP_STR "/"
+#endif
+
 class FileUtilTest : public testing::Test {
 public:
     FileUtilTest() = default;
@@ -328,13 +340,13 @@ TEST_F(FileUtilTest, shouldNotErrorIfAddressIsNull)
 TEST_F(FileUtilTest, simpleMkdir)
 {
     const char *dirA = "dirA";
-    const char *dirB = "dirA/dirB";
-    const char *dirC = "dirA/dirNOPE/dirC";
+    const char *dirB = "dirA" AERON_FILE_SEP_STR "dirB";
+    const char *dirC = "dirA" AERON_FILE_SEP_STR "dirNOPE" AERON_FILE_SEP_STR "dirC";
 
-    remove("dirA/dirNOPE/dirC");
-    remove("dirA/dirNOPE");
-    remove("dirA/dirB");
-    remove("dirA");
+    removeDir("dirA" AERON_FILE_SEP_STR "dirNOPE" AERON_FILE_SEP_STR "dirC");
+    removeDir("dirA" AERON_FILE_SEP_STR "dirNOPE");
+    removeDir("dirA" AERON_FILE_SEP_STR "dirB");
+    removeDir("dirA");
 
     ASSERT_EQ(0, aeron_mkdir(dirA, S_IRWXU | S_IRWXG | S_IRWXO));
     ASSERT_EQ(0, aeron_mkdir(dirB, S_IRWXU | S_IRWXG | S_IRWXO));
@@ -344,15 +356,15 @@ TEST_F(FileUtilTest, simpleMkdir)
 TEST_F(FileUtilTest, recursiveMkdir)
 {
     const char *dirW = "dirW";
-    const char *dirY = "dirX/dirY";
-    const char *dirZ = "dirW/dirX/dirY/dirZ";
+    const char *dirY = "dirX" AERON_FILE_SEP_STR "dirY";
+    const char *dirZ = "dirW" AERON_FILE_SEP_STR "dirX" AERON_FILE_SEP_STR "dirY" AERON_FILE_SEP_STR "dirZ";
 
-    remove("dirW/dirX/dirY/dirZ");
-    remove("dirW/dirX/dirY");
-    remove("dirW/dirX");
-    remove("dirW");
-    remove("dirX/dirY");
-    remove("dirX");
+    removeDir("dirW" AERON_FILE_SEP_STR "dirX" AERON_FILE_SEP_STR "dirY" AERON_FILE_SEP_STR "dirZ");
+    removeDir("dirW" AERON_FILE_SEP_STR "dirX" AERON_FILE_SEP_STR "dirY");
+    removeDir("dirW" AERON_FILE_SEP_STR "dirX");
+    removeDir("dirW");
+    removeDir("dirX" AERON_FILE_SEP_STR "dirY");
+    removeDir("dirX");
 
     ASSERT_EQ(0, aeron_mkdir_recursive(dirW, S_IRWXU | S_IRWXG | S_IRWXO));
     ASSERT_EQ(0, aeron_mkdir_recursive(dirY, S_IRWXU | S_IRWXG | S_IRWXO));

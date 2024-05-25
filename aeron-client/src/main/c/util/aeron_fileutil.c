@@ -488,7 +488,7 @@ int aeron_mkdir_recursive(const char *pathname, int permission)
             }
             else
             {
-                AERON_APPEND_ERR("%s", "");
+                AERON_APPEND_ERR("pathname=%s", pathname);
                 return rc;
             }
         }

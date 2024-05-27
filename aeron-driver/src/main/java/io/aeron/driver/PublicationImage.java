@@ -696,17 +696,21 @@ public final class PublicationImage
      */
     int sendPendingStatusMessage(final long nowNs)
     {
-        // TODO: Send error frame instead.
-        if (null != invalidationReason)
-        {
-            return 0;
-        }
-
         int workCount = 0;
         final long changeNumber = endSmChange;
         final boolean hasSmTimedOut = (timeOfLastSmNs + smTimeoutNs) - nowNs < 0;
-        final Integer responseSessionId;
 
+        // TODO: Send error frame instead.
+        if (null != invalidationReason)
+        {
+            if (hasSmTimedOut)
+            {
+                channelEndpoint.sendErrorFrame(imageConnections, sessionId, streamId, invalidationReason);
+            }
+            return workCount;
+        }
+
+        final Integer responseSessionId;
         if (hasSmTimedOut && null != (responseSessionId = this.responseSessionId))
         {
             channelEndpoint.sendResponseSetup(imageConnections, sessionId, streamId, responseSessionId);

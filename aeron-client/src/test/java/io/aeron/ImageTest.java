@@ -616,7 +616,6 @@ class ImageTest
         final int initialOffset = TERM_BUFFER_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
         final long initialPosition = computePosition(
             INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-        final long maxPosition = (long)Integer.MAX_VALUE + 1000;
         position.setOrdered(initialPosition);
         final Image image = createImage();
 

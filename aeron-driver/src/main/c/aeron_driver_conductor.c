@@ -5675,11 +5675,12 @@ int aeron_driver_conductor_on_invalidate_image(
     const int64_t image_correlation_id = command->image_correlation_id;
     aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
         conductor, image_correlation_id);
-    
+
     if (NULL == image)
     {
         AERON_SET_ERR(
-            AERON_ERROR_CODE_GENERIC_ERROR, "Unable to resolve image for correlationId=", image_correlation_id);
+            AERON_ERROR_CODE_GENERIC_ERROR,
+            "Unable to resolve image for correlationId=%" PRId64, image_correlation_id);
         return -1;
     }
 

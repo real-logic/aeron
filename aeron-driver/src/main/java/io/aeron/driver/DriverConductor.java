@@ -1599,7 +1599,7 @@ public final class DriverConductor implements Agent
                 ctx.systemCounters().get(INVALID_PACKETS),
                 ctx.retransmitUnicastDelayGenerator(),
                 ctx.retransmitUnicastLingerGenerator(),
-                udpChannel.isMulticast());
+                udpChannel.hasGroupSemantics());
 
             final NetworkPublication publication = new NetworkPublication(
                 registrationId,

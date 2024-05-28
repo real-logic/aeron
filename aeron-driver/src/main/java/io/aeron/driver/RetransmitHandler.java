@@ -37,7 +37,7 @@ public final class RetransmitHandler
     private final FeedbackDelayGenerator delayGenerator;
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
     private final AtomicCounter invalidPackets;
-    private final boolean isMulticast;
+    private final boolean hasGroupSemantics;
 
     private int activeRetransmitCount = 0;
 
@@ -48,22 +48,22 @@ public final class RetransmitHandler
      * @param invalidPackets         for recording invalid packets.
      * @param delayGenerator         to use for delay determination.
      * @param lingerTimeoutGenerator to use for linger timeout.
-     * @param isMulticast            specify multicast or unicast semantics.
+     * @param hasGroupSemantics      indicates multicast/MDC semantics.
      */
     public RetransmitHandler(
         final NanoClock nanoClock,
         final AtomicCounter invalidPackets,
         final FeedbackDelayGenerator delayGenerator,
         final FeedbackDelayGenerator lingerTimeoutGenerator,
-        final boolean isMulticast)
+        final boolean hasGroupSemantics)
     {
         this.nanoClock = nanoClock;
         this.invalidPackets = invalidPackets;
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
-        this.isMulticast = isMulticast;
+        this.hasGroupSemantics = hasGroupSemantics;
 
-        final int maxRetransmits = this.isMulticast ? MAX_RETRANSMITS_DEFAULT : 1;
+        final int maxRetransmits = this.hasGroupSemantics ? MAX_RETRANSMITS_DEFAULT : 1;
 
         retransmitActionPool = new RetransmitAction[maxRetransmits];
         for (int i = 0; i < maxRetransmits; i++)
@@ -198,7 +198,7 @@ public final class RetransmitHandler
                         return null;
                     }
 
-                    if (!isMulticast)
+                    if (!hasGroupSemantics)
                     {
                         // this is unicast, and the NAK does NOT overlap the previous one, so just reuse it
                         availableAction = action;
@@ -207,7 +207,7 @@ public final class RetransmitHandler
             }
         }
 
-        if (isMulticast)
+        if (hasGroupSemantics)
         {
             if (null != availableAction)
             {

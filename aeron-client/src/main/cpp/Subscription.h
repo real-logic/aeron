@@ -59,7 +59,7 @@ public:
         std::int32_t channelStatusId);
 
     /// @endcond
-    ~Subscription();
+    ~Subscription() noexcept;
 
     /**
      * Media address for delivery to the channel.
@@ -505,17 +505,7 @@ public:
         return result;
     }
 
-    std::pair<Image::array_t, std::size_t> closeAndRemoveImages()
-    {
-        if (!m_isClosed.exchange(true))
-        {
-            return m_imageArray.store(new std::shared_ptr<Image>[0], 0);
-        }
-        else
-        {
-            return { nullptr, 0 };
-        }
-    }
+    std::pair<Image::array_t, std::size_t> closeAndRemoveImages();
     /// @endcond
 
 private:

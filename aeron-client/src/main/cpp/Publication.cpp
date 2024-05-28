@@ -52,10 +52,20 @@ Publication::Publication(
 {
 }
 
-Publication::~Publication()
+Publication::~Publication() noexcept
 {
-    m_isClosed.store(true, std::memory_order_release);
-    m_conductor.releasePublication(m_registrationId);
+    try 
+    {
+        close();
+    }
+    catch(...) {}
+}
+
+void Publication::close() {
+    if (!isClosed()) {
+        m_isClosed.store(true, std::memory_order_release);
+        m_conductor.releasePublication(m_registrationId);
+    }
 }
 
 std::int64_t Publication::addDestination(const std::string &endpointChannel)

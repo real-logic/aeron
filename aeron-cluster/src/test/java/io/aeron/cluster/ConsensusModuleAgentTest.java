@@ -66,6 +66,7 @@ public class ConsensusModuleAgentTest
     private static final String RESPONSE_CHANNEL_ONE = "aeron:udp?endpoint=localhost:11111";
     private static final String RESPONSE_CHANNEL_TWO = "aeron:udp?endpoint=localhost:22222";
     private static final int SCHEMA_ID = 17;
+    private static final int MILLIS = 19;
 
     private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
     private final LogPublisher mockLogPublisher = mock(LogPublisher.class);
@@ -165,7 +166,7 @@ public class ConsensusModuleAgentTest
         Tests.setField(agent, "appendPosition", mock(ReadableCounter.class));
         agent.onSessionConnect(correlationIdOne, 2, PROTOCOL_SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
 
-        clock.update(SCHEMA_ID, TimeUnit.MILLISECONDS);
+        clock.update(MILLIS, TimeUnit.MILLISECONDS);
         agent.doWork();
         verify(mockTimeConsumer).accept(clock.time());
 

@@ -89,7 +89,7 @@ int aeron_network_publication_create(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS),
         context->retransmit_unicast_delay_ns,
         context->retransmit_unicast_linger_ns,
-        endpoint->conductor_fields.udp_channel->is_multicast) < 0)
+        aeron_udp_channel_has_group_semantics(endpoint->conductor_fields.udp_channel)) < 0)
     {
         aeron_free(_pub->log_file_name);
         aeron_free(_pub);

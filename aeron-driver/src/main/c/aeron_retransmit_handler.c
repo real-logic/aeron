@@ -32,13 +32,13 @@ int aeron_retransmit_handler_init(
     int64_t *invalid_packets_counter,
     uint64_t delay_timeout_ns,
     uint64_t linger_timeout_ns,
-    bool is_multicast)
+    bool has_group_semantics)
 {
     handler->invalid_packets_counter = invalid_packets_counter;
     handler->delay_timeout_ns = delay_timeout_ns;
     handler->linger_timeout_ns = linger_timeout_ns;
-    handler->is_multicast = is_multicast;
-    handler->max_retransmits = is_multicast ? AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS : 1;
+    handler->has_group_semantics = has_group_semantics;
+    handler->max_retransmits = has_group_semantics ? AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS : 1;
 
     if (aeron_alloc((void **)&handler->retransmit_action_pool, sizeof(aeron_retransmit_action_t) * handler->max_retransmits) < 0)
     {
@@ -207,7 +207,7 @@ int aeron_retransmit_handler_scan_for_available_retransmit(
                     return 0;
                 }
 
-                if (!handler->is_multicast)
+                if (!handler->has_group_semantics)
                 {
                     // this is unicast, and the NAK does NOT overlap the previous one, so just reuse it
                     available_action = action;
@@ -216,7 +216,7 @@ int aeron_retransmit_handler_scan_for_available_retransmit(
         }
     }
 
-    if (handler->is_multicast)
+    if (handler->has_group_semantics)
     {
         if (NULL != available_action)
         {

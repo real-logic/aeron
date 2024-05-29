@@ -22,11 +22,12 @@ import io.aeron.logbuffer.Header;
 
 /**
  * Adapter for handling messages from external schemas unknown to core Aeron cluster code
+ * thus providing an extension to the core ingress Consensus module behaviour
  */
-public interface SchemaAdapter extends AutoCloseable
+public interface ConsensusModuleExtension extends AutoCloseable
 {
     /**
-     * schema supported by this adapter
+     * schema supported by this extension
      *
      * @return  schema id
      */

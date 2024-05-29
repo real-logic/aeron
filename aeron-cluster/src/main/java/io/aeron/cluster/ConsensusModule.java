@@ -48,8 +48,6 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -1436,7 +1434,7 @@ public final class ConsensusModule implements AutoCloseable
         private Random random;
         private TimerServiceSupplier timerServiceSupplier;
         private Function<Context, LongConsumer> clusterTimeConsumerSupplier;
-        private final List<SchemaAdapter> schemaAdapters = new ArrayList<>();
+        private ConsensusModuleExtension consensusModuleExtension;
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
@@ -3974,25 +3972,24 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Registers a SchemaAdapter to handle specific custom schemas
+         * Registers a ConsensusModuleExtension to extend beahviour of
+         * consensus module instead of using ClusteredServices
          *
-         * @param schemaAdapterSupplier supplier for schema adapter
+         * @param extensionSupplier supplier for schema adapter
          * @return this for a fluent API.
          */
-        public Context registerSchemaAdapter(final Supplier<SchemaAdapter> schemaAdapterSupplier)
+        public Context consensusModuleExtension(final Supplier<ConsensusModuleExtension> extensionSupplier)
         {
-            schemaAdapters.add(schemaAdapterSupplier.get());
+            consensusModuleExtension = extensionSupplier.get();
             return this;
         }
 
         /**
-         * All registered schema adapters
-         *
-         * @return  List of all registered schema adapter instances
+         * @return   Registered consensus module extension or null
          */
-        public List<SchemaAdapter> schemaAdapters()
+        public ConsensusModuleExtension consensusModuleExtension()
         {
-            return schemaAdapters;
+            return consensusModuleExtension;
         }
 
         /**

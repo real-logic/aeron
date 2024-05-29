@@ -138,7 +138,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private final ArrayDeque<ClusterSession> uncommittedClosedSessions = new ArrayDeque<>();
     private final LongArrayQueue uncommittedTimers = new LongArrayQueue(Long.MAX_VALUE);
     private final PendingServiceMessageTracker[] pendingServiceMessageTrackers;
-    private final Int2ObjectHashMap<SchemaAdapter> schemaAdapterBySchemaIdMap = new Int2ObjectHashMap<>();
+    private final ConsensusModuleExtension consensusModuleExtension;
     private final Authenticator authenticator;
     private final AuthorisationService authorisationService;
     private final ClusterSessionProxy sessionProxy;
@@ -227,10 +227,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             pendingServiceMessageTrackers[i] = new PendingServiceMessageTracker(
                 i, commitPosition, logPublisher, clusterClock);
         }
-        for (final SchemaAdapter schemaAdapter : ctx.schemaAdapters())
-        {
-            schemaAdapterBySchemaIdMap.put(schemaAdapter.supportedSchemaId(), schemaAdapter);
-        }
+        this.consensusModuleExtension = (ctx.consensusModuleExtension() == null) ?
+            UnknownConsensusModuleExtension.INSTANCE : ctx.consensusModuleExtension();
         responseChannelTemplate = Strings.isEmpty(ctx.egressChannel()) ? null : ChannelUri.parse(ctx.egressChannel());
     }
 
@@ -418,11 +416,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final int length,
         final Header header)
     {
-        try (SchemaAdapter schemaAdapter =
-            schemaAdapterBySchemaIdMap.getOrDefault(schemaId, UnknownSchemaIngressAdapter.INSTANCE))
-        {
-            return schemaAdapter.onFragment(schemaId, templateId, buffer, offset, length, header);
-        }
+        return consensusModuleExtension.onFragment(schemaId, templateId, buffer, offset, length, header);
     }
 
     public void onLoadEndSnapshot(final DirectBuffer buffer, final int offset, final int length)
@@ -3618,11 +3612,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             '}';
     }
 
-    private static final class UnknownSchemaIngressAdapter implements SchemaAdapter
+    private static final class UnknownConsensusModuleExtension implements ConsensusModuleExtension
     {
 
-        private static final UnknownSchemaIngressAdapter INSTANCE = new UnknownSchemaIngressAdapter();
-        private UnknownSchemaIngressAdapter()
+        private static final UnknownConsensusModuleExtension INSTANCE = new UnknownConsensusModuleExtension();
+        private UnknownConsensusModuleExtension()
         {
         }
 

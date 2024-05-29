@@ -457,24 +457,19 @@ public class ConsensusModuleAgentTest
     }
 
     @Test
-    void shouldDelegateHandlingToRegisteredSchemaAdapter()
+    void shouldDelegateHandlingToRegisteredExtension()
     {
-        final SchemaAdapter schemaAdapter = mock(SchemaAdapter.class, "used adapter");
-        final SchemaAdapter otherSchemaAdapter = mock(SchemaAdapter.class, "unused adapter");
-        when(schemaAdapter.supportedSchemaId()).thenReturn(SCHEMA_ID);
-        when(otherSchemaAdapter.supportedSchemaId()).thenReturn(SCHEMA_ID + 1);
+        final ConsensusModuleExtension consensusModuleExtension = mock(ConsensusModuleExtension.class, "used adapter");
+        when(consensusModuleExtension.supportedSchemaId()).thenReturn(SCHEMA_ID);
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
         ctx.epochClock(clock)
             .clusterClock(clock)
-            .registerSchemaAdapter(() -> schemaAdapter)
-            .registerSchemaAdapter(() -> otherSchemaAdapter);
+            .consensusModuleExtension(() -> consensusModuleExtension);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
         agent.onUnknownMessageSchema(SCHEMA_ID, 1, null, 0, 0, null);
 
-        verify(schemaAdapter)
-            .onFragment(SCHEMA_ID, 1, null, 0, 0, null);
-        verify(otherSchemaAdapter, never())
+        verify(consensusModuleExtension)
             .onFragment(SCHEMA_ID, 1, null, 0, 0, null);
     }
 

@@ -114,7 +114,7 @@ public class ArchiveMarkFile implements AutoCloseable
             totalFileLength,
             timeoutMs,
             epochClock,
-            ArchiveMarkFile::validateVersion,
+            (version) -> validateVersion(file, version),
             null);
 
         buffer = markFile.buffer();
@@ -168,7 +168,7 @@ public class ArchiveMarkFile implements AutoCloseable
             filename,
             epochClock,
             timeoutMs,
-            ArchiveMarkFile::validateVersion,
+            (version) -> ArchiveMarkFile.validateVersion(new File(directory, filename), version),
             logger);
     }
 
@@ -374,11 +374,12 @@ public class ArchiveMarkFile implements AutoCloseable
             .aeronDirectory(ctx.aeronDirectoryName());
     }
 
-    private static void validateVersion(final int version)
+    private static void validateVersion(final File markFile, final int version)
     {
         if (SemanticVersion.major(version) != MAJOR_VERSION)
         {
-            throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
+            throw new IllegalArgumentException(
+                "mark file (" + markFile.getAbsolutePath() + ") major version " + SemanticVersion.major(version) +
                 " does not match software: " + MAJOR_VERSION);
         }
     }

@@ -453,6 +453,54 @@ int aeron_open_file_rw(const char *path)
 }
 #endif
 
+int aeron_mkdir_recursive(const char *pathname, int permission)
+{
+    if (aeron_mkdir(pathname, permission) == 0)
+    {
+        return 0;
+    }
+
+    if (errno != ENOENT)
+    {
+        AERON_SET_ERR(errno, "aeron_mkdir failed for %s", pathname);
+        return -1;
+    }
+
+    char *_pathname = strdup(pathname);
+    char *p;
+
+    for (p = _pathname + strlen(_pathname) - 1; p != _pathname; p--)
+    {
+        if (*p == AERON_FILE_SEP)
+        {
+            *p = '\0';
+
+            // _pathname is now the parent directory of the original pathname
+            int rc = aeron_mkdir_recursive(_pathname, permission);
+
+            free(_pathname);
+
+            if (0 == rc)
+            {
+                // if rc is 0, then we were able to create the parent directory
+                // so retry the original pathname
+                return aeron_mkdir(pathname, permission);
+            }
+            else
+            {
+                AERON_APPEND_ERR("pathname=%s", pathname);
+                return rc;
+            }
+        }
+    }
+
+    free(_pathname);
+
+    AERON_SET_ERR(EINVAL, "aeron_mkdir_recursive failed to find parent directory in %s", pathname);
+
+    return -1;
+}
+
 #include <inttypes.h>
 
 #define AERON_BLOCK_SIZE (4 * 1024)

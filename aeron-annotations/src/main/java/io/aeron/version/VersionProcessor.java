@@ -37,6 +37,34 @@ import java.util.regex.Pattern;
 @SupportedOptions({"io.aeron.version", "io.aeron.gitsha"})
 public class VersionProcessor extends AbstractProcessor
 {
+    private static final String VERSION_IMPL =
+        "\n" +
+        "    public String version()\n" +
+        "    {\n" +
+        "        return VERSION;\n" +
+        "    }\n" +
+        "\n" +
+        "    public int majorVersion()\n" +
+        "    {\n" +
+        "        return MAJOR_VERSION;\n" +
+        "    }\n" +
+        "\n" +
+        "    public int minorVersion()\n" +
+        "    {\n" +
+        "        return MINOR_VERSION;\n" +
+        "    }\n" +
+        "\n" +
+        "    public int patchVersion()\n" +
+        "    {\n" +
+        "        return PATCH_VERSION;\n" +
+        "    }\n" +
+        "\n" +
+        "    @Override\n" +
+        "    public String gitSha()\n" +
+        "    {\n" +
+        "        return GIT_SHA;\n" +
+        "    }";
+
     /**
      * {@inheritDoc}
      */
@@ -71,13 +99,14 @@ public class VersionProcessor extends AbstractProcessor
 
                         out.printf("package %s;%n", packageName);
                         out.println();
-                        out.printf("public class %s%n", className);
+                        out.printf("public class %s%n implements io.aeron.version.Version%n", className);
                         out.printf("{%n");
                         out.printf("    public static final String VERSION = \"%s\";%n", versionString);
                         out.printf("    public static final int MAJOR_VERSION = %s;%n", info.major);
                         out.printf("    public static final int MINOR_VERSION = %s;%n", info.minor);
                         out.printf("    public static final int PATCH_VERSION = %s;%n", info.patch);
                         out.printf("    public static final String GIT_SHA = \"%s\";%n", gitSha);
+                        out.println(VERSION_IMPL);
                         out.printf("}%n");
                     }
                 }

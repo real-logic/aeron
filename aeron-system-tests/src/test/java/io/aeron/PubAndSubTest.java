@@ -95,7 +95,6 @@ class PubAndSubTest
     {
         context
             .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true)
             .threadingMode(THREADING_MODE)
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));

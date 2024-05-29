@@ -115,7 +115,7 @@ public:
         catch (std::exception &ex)
         {
             state(State::FAILED);
-            throw ex;
+            throw;
         }
 
         return workCount;

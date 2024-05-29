@@ -1439,12 +1439,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
         if (channelUri.isUdp())
         {
-            if (!channelUri.containsKey(FLOW_CONTROL_PARAM_NAME))
-            {
-                final long timeout = TimeUnit.NANOSECONDS.toSeconds(ctx.leaderHeartbeatTimeoutNs());
-                channelUri.put(FLOW_CONTROL_PARAM_NAME, "min,t:" + timeout + "s");
-            }
-
             if (ctx.isLogMdc())
             {
                 channelUri.put(MDC_CONTROL_MODE_PARAM_NAME, MDC_CONTROL_MODE_MANUAL);
@@ -1453,11 +1447,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             channelUri.put(SPIES_SIMULATE_CONNECTION_PARAM_NAME, Boolean.toString(activeMembers.length == 1));
         }
 
-        if (null != recoveryPlan.log)
+        final RecordingLog.Log clusterLog = recoveryPlan.log;
+        if (null != clusterLog)
         {
-            channelUri.initialPosition(
-                appendPosition, recoveryPlan.log.initialTermId, recoveryPlan.log.termBufferLength);
-            channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(recoveryPlan.log.mtuLength));
+            channelUri.initialPosition(appendPosition, clusterLog.initialTermId, clusterLog.termBufferLength);
+            channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(clusterLog.mtuLength));
         }
         else
         {

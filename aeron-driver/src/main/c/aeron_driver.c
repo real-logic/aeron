@@ -244,7 +244,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
         }
     }
 
-    if (aeron_mkdir(context->aeron_dir, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+    if (aeron_mkdir_recursive(context->aeron_dir, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
         AERON_SET_ERR(errno, "Failed to mkdir aeron directory: %s", context->aeron_dir);
         return -1;
@@ -256,7 +256,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
         return -1;
     }
 
-    if (aeron_mkdir(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+    if (aeron_mkdir_recursive(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
         AERON_SET_ERR(errno, "Failed to mkdir publications directory: %s", context->aeron_dir);
         return -1;
@@ -268,7 +268,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
         return -1;
     }
 
-    if (aeron_mkdir(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+    if (aeron_mkdir_recursive(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
         AERON_SET_ERR(errno, "Failed to mkdir images directory: %s", context->aeron_dir);
         return -1;

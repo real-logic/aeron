@@ -78,7 +78,7 @@ public final class ReceiveChannelEndpointThreadLocals
         rttMeasurementFlyweight = new RttMeasurementFlyweight(rttMeasurementBuffer);
 
         final int responseSetupOffset = rttMeasurementOffset + BitUtil.align(
-            ResponseSetupFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
+            RttMeasurementFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
         byteBuffer.limit(responseSetupOffset + ResponseSetupFlyweight.HEADER_LENGTH).position(responseSetupOffset);
         responseSetupBuffer = byteBuffer.slice();
         responseSetupHeader = new ResponseSetupFlyweight(responseSetupBuffer);

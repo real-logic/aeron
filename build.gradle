@@ -134,7 +134,7 @@ def projectPom = {
         }
         developer {
             id = 'vyazelenko'
-            name = 'Dmitry Vyazelenko'
+            name = 'Dmytro Vyazelenko'
             email = 'vyazelenko@protonmail.com '
             url = 'https://github.com/vyazelenko'
         }

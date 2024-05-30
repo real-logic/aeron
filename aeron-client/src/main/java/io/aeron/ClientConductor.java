@@ -1326,7 +1326,7 @@ final class ClientConductor implements Agent
         {
             logBuffers = logBuffersFactory.map(logFileName);
 
-            if (ctx.preTouchMappedMemory() && !channel.contains("sparse=true"))
+            if (ctx.preTouchMappedMemory())
             {
                 logBuffers.preTouch();
             }

@@ -32,6 +32,8 @@ import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -101,6 +103,7 @@ class ClientConductorTest
 
     private final ErrorHandler mockClientErrorHandler = spy(new PrintError());
 
+    private Aeron.Context context;
     private ClientConductor conductor;
     private final DriverProxy driverProxy = mock(DriverProxy.class);
     private final AvailableImageHandler mockAvailableImageHandler = mock(AvailableImageHandler.class);
@@ -114,7 +117,7 @@ class ClientConductorTest
     @BeforeEach
     void setUp()
     {
-        final Aeron.Context ctx = new Aeron.Context()
+        context = new Aeron.Context()
             .clientLock(mockClientLock)
             .epochClock(epochClock)
             .nanoClock(nanoClock)
@@ -130,8 +133,8 @@ class ClientConductorTest
             .driverTimeoutMs(AWAIT_TIMEOUT)
             .interServiceTimeoutNs(TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS));
 
-        ctx.countersMetaDataBuffer(counterMetaDataBuffer);
-        ctx.countersValuesBuffer(counterValuesBuffer);
+        context.countersMetaDataBuffer(counterMetaDataBuffer);
+        context.countersValuesBuffer(counterValuesBuffer);
 
         when(mockClientLock.tryLock()).thenReturn(TRUE);
 
@@ -141,7 +144,7 @@ class ClientConductorTest
         when(driverProxy.addSubscription(anyString(), anyInt())).thenReturn(CORRELATION_ID);
         when(driverProxy.removeSubscription(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
 
-        conductor = new ClientConductor(ctx, mockAeron);
+        conductor = new ClientConductor(context, mockAeron);
 
         publicationReady.wrap(publicationReadyBuffer, 0);
         subscriptionReady.wrap(subscriptionReadyBuffer, 0);
@@ -642,7 +645,194 @@ class ClientConductorTest
         assertEquals("ERROR - registration id is not a Subscription: String", exception.getMessage());
     }
 
-    void whenReceiveBroadcastOnMessage(
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "aeron:udp?endpoint=localhost:5050",
+        "aeron:udp?endpoint=localhost:5050|sparse=true",
+        "aeron:udp?endpoint=localhost:8080|sparse=false"})
+    void shouldPreTouchLogBuffersForNewImage(final String channel)
+    {
+        final int streamId = 42;
+        final long subscriptionId = -472398432L;
+        context.preTouchMappedMemory(true);
+
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_SUBSCRIPTION_READY,
+            subscriptionReadyBuffer,
+            (buffer) ->
+            {
+                subscriptionReady.correlationId(subscriptionId);
+                return SubscriptionReadyFlyweight.LENGTH;
+            });
+        when(driverProxy.addSubscription(channel, streamId)).thenReturn(subscriptionId);
+        final Subscription subscription = conductor.addSubscription(channel, streamId);
+
+        final String logFileName = SESSION_ID_1 + "-log";
+        conductor.onAvailableImage(
+            subscriptionId,
+            SESSION_ID_1,
+            subscription.registrationId(),
+            SUBSCRIPTION_POSITION_ID,
+            logFileName,
+            SOURCE_INFO);
+
+        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
+        assertNotNull(logBuffers);
+        verify(logBuffers, times(1)).preTouch();
+    }
+
+    @Test
+    void shouldNotPreTouchLogBuffersForImageIfDisabled()
+    {
+        final int streamId = 42;
+        final String channel = "aeron:ipc?alias=test";
+        final long subscriptionId = -472398432L;
+        context.preTouchMappedMemory(false);
+
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_SUBSCRIPTION_READY,
+            subscriptionReadyBuffer,
+            (buffer) ->
+            {
+                subscriptionReady.correlationId(subscriptionId);
+                return SubscriptionReadyFlyweight.LENGTH;
+            });
+        when(driverProxy.addSubscription(channel, streamId)).thenReturn(subscriptionId);
+        final Subscription subscription = conductor.addSubscription(channel, streamId);
+
+        final String logFileName = SESSION_ID_1 + "-log";
+        conductor.onAvailableImage(
+            subscriptionId,
+            SESSION_ID_1,
+            subscription.registrationId(),
+            SUBSCRIPTION_POSITION_ID,
+            logFileName,
+            SOURCE_INFO);
+
+        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
+        assertNotNull(logBuffers);
+        verify(logBuffers, never()).preTouch();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "aeron:udp?endpoint=localhost:5050",
+        "aeron:udp?endpoint=localhost:5050|sparse=true",
+        "aeron:udp?endpoint=localhost:8080|sparse=false"})
+    void shouldPreTouchLogBuffersForNewPublication(final String channel)
+    {
+        final int streamId = -53453894;
+        final long publicationId = 113;
+        final String logFileName = SESSION_ID_2 + "-log";
+        context.preTouchMappedMemory(true);
+
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) ->
+            {
+                publicationReady.correlationId(publicationId);
+                publicationReady.registrationId(publicationId);
+                publicationReady.logFileName(logFileName);
+                return publicationReady.length();
+            });
+        when(driverProxy.addPublication(channel, streamId)).thenReturn(publicationId);
+        final ConcurrentPublication publication = conductor.addPublication(channel, streamId);
+        assertNotNull(publication);
+
+        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
+        assertNotNull(logBuffers);
+        verify(logBuffers, times(1)).preTouch();
+    }
+
+    @Test
+    void shouldNotPreTouchLogBuffersForPublicationIfDisabled()
+    {
+        final int streamId = -53453894;
+        final String channel = "aeron:ipc?alias=test";
+        final long publicationId = 113;
+        final String logFileName = SESSION_ID_2 + "-log";
+        context.preTouchMappedMemory(false);
+
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) ->
+            {
+                publicationReady.correlationId(publicationId);
+                publicationReady.registrationId(publicationId);
+                publicationReady.logFileName(logFileName);
+                return publicationReady.length();
+            });
+        when(driverProxy.addPublication(channel, streamId)).thenReturn(publicationId);
+        final ConcurrentPublication publication = conductor.addPublication(channel, streamId);
+        assertNotNull(publication);
+
+        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
+        assertNotNull(logBuffers);
+        verify(logBuffers, never()).preTouch();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "aeron:udp?endpoint=localhost:5050",
+        "aeron:udp?endpoint=localhost:5050|sparse=true",
+        "aeron:udp?endpoint=localhost:8080|sparse=false"})
+    void shouldPreTouchLogBuffersForNewExclusivePublication(final String channel)
+    {
+        final int streamId = -53453894;
+        final long publicationId = 113;
+        final String logFileName = SESSION_ID_2 + "-log";
+        context.preTouchMappedMemory(true);
+
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_EXCLUSIVE_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) ->
+            {
+                publicationReady.correlationId(publicationId);
+                publicationReady.registrationId(publicationId);
+                publicationReady.logFileName(logFileName);
+                return publicationReady.length();
+            });
+        when(driverProxy.addExclusivePublication(channel, streamId)).thenReturn(publicationId);
+        final ExclusivePublication publication = conductor.addExclusivePublication(channel, streamId);
+        assertNotNull(publication);
+
+        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
+        assertNotNull(logBuffers);
+        verify(logBuffers, times(1)).preTouch();
+    }
+
+    @Test
+    void shouldNotPreTouchLogBuffersForExclusivePublicationIfDisabled()
+    {
+        final int streamId = -53453894;
+        final String channel = "aeron:ipc?alias=test";
+        final long publicationId = 113;
+        final String logFileName = SESSION_ID_2 + "-log";
+        context.preTouchMappedMemory(false);
+
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_EXCLUSIVE_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) ->
+            {
+                publicationReady.correlationId(publicationId);
+                publicationReady.registrationId(publicationId);
+                publicationReady.logFileName(logFileName);
+                return publicationReady.length();
+            });
+        when(driverProxy.addExclusivePublication(channel, streamId)).thenReturn(publicationId);
+        final ExclusivePublication publication = conductor.addExclusivePublication(channel, streamId);
+        assertNotNull(publication);
+
+        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
+        assertNotNull(logBuffers);
+        verify(logBuffers, never()).preTouch();
+    }
+
+    private void whenReceiveBroadcastOnMessage(
         final int msgTypeId, final MutableDirectBuffer buffer, final ToIntFunction<MutableDirectBuffer> filler)
     {
         doAnswer(

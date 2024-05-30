@@ -2290,17 +2290,25 @@ class ClusterTest
         {
             assertEquals(1, follower.consensusModule().context().electionCounter().get());
         }
-        TestNode follower1 = followers.get(0);
-        final int follower1Id = follower1.consensusModule().context().clusterMemberId();
-        TestNode follower2 = followers.get(1);
-        final int follower2Id = follower2.consensusModule().context().clusterMemberId();
-        assertNotEquals(leaderId, follower1Id);
-        assertNotEquals(leaderId, follower2Id);
-        assertNotEquals(follower1Id, follower2Id);
 
         cluster.connectClient();
         int messageCount = 1000;
         cluster.sendLargeMessages(messageCount);
+
+        // Choose the slowest node to stop to ensure that there is quorum in the Cluster after follower is stopped
+        TestNode follower1 = followers.get(0);
+        TestNode follower2 = followers.get(1);
+        if (follower1.appendPosition() < follower2.appendPosition())
+        {
+            final TestNode tmp = follower2;
+            follower2 = follower1;
+            follower1 = tmp;
+        }
+        final int follower1Id = follower1.consensusModule().context().clusterMemberId();
+        final int follower2Id = follower2.consensusModule().context().clusterMemberId();
+        assertNotEquals(leaderId, follower1Id);
+        assertNotEquals(leaderId, follower2Id);
+        assertNotEquals(follower1Id, follower2Id);
 
         cluster.stopNode(follower2);
         long startNs = System.nanoTime();
@@ -2341,7 +2349,7 @@ class ClusterTest
         assertThat(
             "unexpected election on follower 1",
             follower1.consensusModule().context().electionCounter().get(),
-            lessThanOrEqualTo(2L /* startup + catchup if drops out of flow control */));
+            equalTo(1L /* startup */));
         assertThat(
             "election loop detected",
             follower2.consensusModule().context().electionCounter().get(),

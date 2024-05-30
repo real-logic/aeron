@@ -2283,15 +2283,21 @@ class ClusterTest
         cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
 
-        final TestNode leader = cluster.awaitLeader();
+        TestNode leader = cluster.awaitLeader();
+        final int leaderId = leader.consensusModule().context().clusterMemberId();
         assertEquals(1, leader.consensusModule().context().electionCounter().get());
         final List<TestNode> followers = cluster.followers();
         for (final TestNode follower : followers)
         {
             assertEquals(1, follower.consensusModule().context().electionCounter().get());
         }
-        final TestNode follower1 = followers.get(0);
+        TestNode follower1 = followers.get(0);
+        final int follower1Id = follower1.consensusModule().context().clusterMemberId();
         TestNode follower2 = followers.get(1);
+        final int follower2Id = follower2.consensusModule().context().clusterMemberId();
+        assertNotEquals(leaderId, follower1Id);
+        assertNotEquals(leaderId, follower2Id);
+        assertNotEquals(follower1Id, follower2Id);
 
         cluster.connectClient();
         int messageCount = 1000;
@@ -2309,7 +2315,14 @@ class ClusterTest
         }
 
         follower2 = cluster.startStaticNode(follower2.index(), false);
-        awaitElectionClosed(follower2);
+        leader = cluster.awaitLeaderAndClosedElection();
+        follower1 = cluster.followers().stream()
+            .filter(f -> follower1Id == f.consensusModule().context().clusterMemberId())
+            .findFirst()
+            .orElse(null);
+        assertEquals(leaderId, leader.consensusModule().context().clusterMemberId(), "leader changed");
+        assertEquals(follower2Id, follower2.consensusModule().context().clusterMemberId(), "wrong follower restarted");
+        assertNotNull(follower1, "first follower not found");
 
         startNs = System.nanoTime();
         endNs = startNs + SECONDS.toNanos(30);

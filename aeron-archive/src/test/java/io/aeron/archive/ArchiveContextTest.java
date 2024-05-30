@@ -541,10 +541,10 @@ class ArchiveContextTest
     void concludeUsesAeronClientIdIfSystemPropertyIsEmpty(@TempDir final Path archiveDir)
     {
         System.setProperty(ARCHIVE_ID_PROP_NAME, "");
+        final long archiveId = 42;
+        final Archive.Context ctx = TestContexts.localhostArchive();
         try
         {
-            final long archiveId = 42;
-            final Archive.Context ctx = TestContexts.localhostArchive();
             init(ctx, archiveDir.toFile());
             when(aeron.clientId()).thenReturn(archiveId);
 
@@ -554,6 +554,7 @@ class ArchiveContextTest
         }
         finally
         {
+            ctx.close();
             System.clearProperty(ARCHIVE_ID_PROP_NAME);
         }
     }
@@ -562,10 +563,10 @@ class ArchiveContextTest
     void concludeUsesAeronClientIdIfSystemPropertyIsSetToNullValue(@TempDir final Path archiveDir)
     {
         System.setProperty(ARCHIVE_ID_PROP_NAME, "-1");
+        final long archiveId = 888;
+        final Archive.Context ctx = TestContexts.localhostArchive();
         try
         {
-            final long archiveId = 888;
-            final Archive.Context ctx = TestContexts.localhostArchive();
             init(ctx, archiveDir.toFile());
             when(aeron.clientId()).thenReturn(archiveId);
 
@@ -575,6 +576,7 @@ class ArchiveContextTest
         }
         finally
         {
+            ctx.close();
             System.clearProperty(ARCHIVE_ID_PROP_NAME);
         }
     }

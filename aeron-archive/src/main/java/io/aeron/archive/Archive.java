@@ -896,6 +896,22 @@ public final class Archive implements AutoCloseable
         {
             return "true".equals(System.getProperty(CONTROL_CHANNEL_ENABLED_PROP_NAME, "true"));
         }
+
+        /**
+         * Return configured id for the Archive.
+         *
+         * @return id for the Archive or {@link Aeron#NULL_VALUE}.
+         * @see #ARCHIVE_ID_PROP_NAME
+         */
+        public static long archiveId()
+        {
+            final String prop = getProperty(Configuration.ARCHIVE_ID_PROP_NAME);
+            if (!Strings.isEmpty(prop))
+            {
+                return AsciiEncoding.parseLongAscii(prop, 0, prop.length());
+            }
+            return NULL_VALUE;
+        }
     }
 
     /**
@@ -953,7 +969,7 @@ public final class Archive implements AutoCloseable
         private int maxConcurrentRecordings = Configuration.maxConcurrentRecordings();
         private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
         private int fileIoMaxLength = Configuration.fileIoMaxLength();
-        private long archiveId = NULL_VALUE;
+        private long archiveId = Configuration.archiveId();
         private ArchiveThreadingMode threadingMode = Configuration.threadingMode();
         private ThreadFactory threadFactory;
         private ThreadFactory recorderThreadFactory;
@@ -1159,7 +1175,8 @@ public final class Archive implements AutoCloseable
                         .useConductorAgentInvoker(true)
                         .subscriberErrorHandler(RethrowingErrorHandler.INSTANCE)
                         .awaitingIdleStrategy(YieldingIdleStrategy.INSTANCE)
-                        .clientLock(NoOpLock.INSTANCE));
+                        .clientLock(NoOpLock.INSTANCE)
+                        .clientName(NULL_VALUE != archiveId ? "archive-" + archiveId : "archive"));
 
                 if (null == errorCounter)
                 {
@@ -3486,12 +3503,7 @@ public final class Archive implements AutoCloseable
         {
             if (NULL_VALUE == archiveId)
             {
-                final String prop = getProperty(Configuration.ARCHIVE_ID_PROP_NAME);
-                if (Strings.isEmpty(prop) ||
-                    NULL_VALUE == (archiveId = AsciiEncoding.parseLongAscii(prop, 0, prop.length())))
-                {
-                    archiveId = aeron.clientId();
-                }
+                archiveId = aeron.clientId();
             }
         }
 

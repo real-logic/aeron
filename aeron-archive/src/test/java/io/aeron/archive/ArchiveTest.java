@@ -36,12 +36,14 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.security.AuthorisationServiceSupplier;
+import io.aeron.status.HeartbeatTimestamp;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.SystemEpochClock;
@@ -49,10 +51,13 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -62,6 +67,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileStore;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -77,8 +83,10 @@ import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static io.aeron.status.HeartbeatTimestamp.HEARTBEAT_TYPE_ID;
 import static io.aeron.test.TestContexts.*;
 import static org.agrona.BitUtil.align;
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.Mockito.mock;
@@ -791,6 +799,52 @@ class ArchiveTest
             }
         }
     }
+
+    @ParameterizedTest
+    @CsvSource({ "-1, archive", "888, archive-888" })
+    @InterruptAfter(10)
+    void shouldAssignClientName(final int archiveId, final String expectedClientName) throws IOException
+    {
+        final Path root = Files.createTempDirectory("test");
+        final String aeronDir = root.resolve("media-driver").toString();
+        try (MediaDriver driver =
+            MediaDriver.launch(new MediaDriver.Context().aeronDirectoryName(aeronDir));
+            Archive archive = Archive.launch(TestContexts.localhostArchive()
+                .archiveId(archiveId)
+                .archiveDir(root.resolve("archive1").toFile())
+                .aeronDirectoryName(aeronDir));
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDir)))
+        {
+            final long archiveClientId = archive.context().aeron().clientId();
+            assertNotEquals(aeron.clientId(), archiveClientId);
+            final CountersReader countersReader = aeron.countersReader();
+            int counterId = NULL_COUNTER_ID;
+            String counterLabel = null;
+            while (true)
+            {
+                if (NULL_COUNTER_ID == counterId)
+                {
+                    counterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
+                        countersReader, HEARTBEAT_TYPE_ID, archiveClientId);
+                }
+                else if (null == counterLabel || !counterLabel.contains("name="))
+                {
+                    counterLabel = countersReader.getCounterLabel(counterId);
+                }
+                else
+                {
+                    MatcherAssert.assertThat(counterLabel, CoreMatchers.containsString(expectedClientName));
+                    break;
+                }
+                Tests.checkInterruptStatus();
+            }
+        }
+        finally
+        {
+            IoUtil.delete(root.toFile(), true);
+        }
+    }
+
 
     private static int calculateFragmentedMessageLength(final Publication publication, final int maxMessageLength)
     {

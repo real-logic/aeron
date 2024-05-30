@@ -95,7 +95,14 @@ class ArchiveContextTest
         when(aeron.context()).thenReturn(aeronContext);
         when(aeron.countersReader()).thenReturn(countersReader);
 
-        context
+        final File archiveDir = tempDir.resolve("archive-test").toFile();
+        init(context, archiveDir);
+    }
+
+    private void init(final Archive.Context context, final File archiveDir)
+    {
+        final CountersReader countersReader = aeron.countersReader();
+        context.archiveDir(archiveDir)
             .aeron(aeron)
             .errorCounter(mock(AtomicCounter.class))
             .controlSessionsCounter(mockCounter(
@@ -108,8 +115,7 @@ class ArchiveContextTest
             .maxWriteTimeCounter(mockCounter(countersReader, ARCHIVE_RECORDER_MAX_WRITE_TIME_TYPE_ID, 333, "label"))
             .totalReadBytesCounter(mockCounter(countersReader, ARCHIVE_REPLAYER_TOTAL_READ_BYTES_TYPE_ID, 77, "label"))
             .totalReadTimeCounter(mockCounter(countersReader, ARCHIVE_REPLAYER_TOTAL_READ_TIME_TYPE_ID, 88, "label"))
-            .maxReadTimeCounter(mockCounter(countersReader, ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID, 99, "label"))
-            .archiveDir(tempDir.resolve("archive-test").toFile());
+            .maxReadTimeCounter(mockCounter(countersReader, ARCHIVE_REPLAYER_MAX_READ_TIME_TYPE_ID, 99, "label"));
     }
 
     @AfterEach
@@ -510,9 +516,9 @@ class ArchiveContextTest
         System.setProperty(ARCHIVE_ID_PROP_NAME, Long.toString(archiveId));
         try
         {
-            context.conclude();
+            final Archive.Context ctx = new Archive.Context();
 
-            assertEquals(archiveId, context.archiveId());
+            assertEquals(archiveId, ctx.archiveId());
         }
         finally
         {
@@ -532,17 +538,19 @@ class ArchiveContextTest
     }
 
     @Test
-    void concludeUsesAeronClientIdIfSystemPropertyIsEmpty()
+    void concludeUsesAeronClientIdIfSystemPropertyIsEmpty(@TempDir final Path archiveDir)
     {
         System.setProperty(ARCHIVE_ID_PROP_NAME, "");
         try
         {
             final long archiveId = 42;
-            when(context.aeron().clientId()).thenReturn(archiveId);
+            final Archive.Context ctx = TestContexts.localhostArchive();
+            init(ctx, archiveDir.toFile());
+            when(aeron.clientId()).thenReturn(archiveId);
 
-            context.conclude();
+            ctx.conclude();
 
-            assertEquals(archiveId, context.archiveId());
+            assertEquals(archiveId, ctx.archiveId());
         }
         finally
         {
@@ -551,17 +559,19 @@ class ArchiveContextTest
     }
 
     @Test
-    void concludeUsesAeronClientIdIfSystemPropertyIsSetToNullValue()
+    void concludeUsesAeronClientIdIfSystemPropertyIsSetToNullValue(@TempDir final Path archiveDir)
     {
         System.setProperty(ARCHIVE_ID_PROP_NAME, "-1");
         try
         {
             final long archiveId = 888;
-            when(context.aeron().clientId()).thenReturn(archiveId);
+            final Archive.Context ctx = TestContexts.localhostArchive();
+            init(ctx, archiveDir.toFile());
+            when(aeron.clientId()).thenReturn(archiveId);
 
-            context.conclude();
+            ctx.conclude();
 
-            assertEquals(archiveId, context.archiveId());
+            assertEquals(archiveId, ctx.archiveId());
         }
         finally
         {
@@ -1034,6 +1044,18 @@ class ArchiveContextTest
             "archive-conductor work cycle time exceeded count: threshold=" + thresholdNs + "ns " +
             threadingMode + " - archiveId=" + context.archiveId(),
             dutyCycleTracker.cycleTimeThresholdExceededCount().label());
+    }
+
+    @Test
+    void shouldNotSetClientNameOnAnExplicitlyAssignedAeronClient()
+    {
+        final Aeron.Context aeronContext = aeron.context();
+        aeronContext.clientName("sample");
+        context.archiveId(42);
+
+        context.conclude();
+
+        assertEquals("sample", aeronContext.clientName());
     }
 
     private Counter mockArchiveCounter(

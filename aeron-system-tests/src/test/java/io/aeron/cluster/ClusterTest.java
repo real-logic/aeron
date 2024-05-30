@@ -2335,8 +2335,9 @@ class ClusterTest
 
         cluster.awaitResponseMessageCount(messageCount);
         cluster.awaitServicesMessageCount(messageCount);
-        assertEquals(1, leader.consensusModule().context().electionCounter().get());
-        assertEquals(1, follower1.consensusModule().context().electionCounter().get());
+        assertEquals(1, leader.consensusModule().context().electionCounter().get(), "unexpected election on leader");
+        assertEquals(
+            1, follower1.consensusModule().context().electionCounter().get(), "unexpected election on follower 1");
         assertEquals(1, follower2.consensusModule().context().electionCounter().get(), "election loop detected");
     }
 

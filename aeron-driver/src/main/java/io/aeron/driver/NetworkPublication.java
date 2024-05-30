@@ -137,7 +137,6 @@ public final class NetworkPublication
     private volatile boolean isConnected;
     private volatile boolean isEndOfStream;
     private volatile boolean hasSenderReleased;
-    private volatile boolean hasReceivedSmEos;
     private State state = State.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
@@ -166,6 +165,7 @@ public final class NetworkPublication
     private final AtomicCounter senderBpe;
     private final AtomicCounter shortSends;
     private final AtomicCounter unblockedPublications;
+    private final ReceiverLivenessTracker livenessTracker = new ReceiverLivenessTracker();
 
     NetworkPublication(
         final long registrationId,
@@ -426,10 +426,29 @@ public final class NetworkPublication
         final InetSocketAddress srcAddress,
         final DriverConductorProxy conductorProxy)
     {
-        if (!hasReceivers)
+        final boolean isEos = END_OF_STREAM_FLAG == (msg.flags() & END_OF_STREAM_FLAG);
+        final long timeNs = cachedNanoClock.nanoTime();
+
+        if (isEos)
         {
-            hasReceivers = true;
+            livenessTracker.onRemoteClose(msg.receiverId());
+        }
+        else
+        {
+            livenessTracker.onStatusMessage(msg.receiverId(), timeNs);
+        }
+
+        final boolean isLive = livenessTracker.hasReceivers();
+        final boolean existingHasReceivers = hasReceivers;
+
+        if (!existingHasReceivers && isLive)
+        {
             conductorProxy.responseConnected(responseCorrelationId);
+        }
+
+        if (existingHasReceivers != isLive)
+        {
+            hasReceivers = isLive;
         }
 
         if (!hasInitialConnection)
@@ -437,14 +456,6 @@ public final class NetworkPublication
             hasInitialConnection = true;
         }
 
-        if (!channelEndpoint.udpChannel().isMulticast() &&
-            !channelEndpoint.udpChannel().isMultiDestination() &&
-            END_OF_STREAM_FLAG == (msg.flags() & END_OF_STREAM_FLAG))
-        {
-            hasReceivedSmEos = true;
-        }
-
-        final long timeNs = cachedNanoClock.nanoTime();
         timeOfLastStatusMessageNs = timeNs;
 
         senderLimit.setOrdered(flowControl.onStatusMessage(
@@ -591,6 +602,7 @@ public final class NetworkPublication
             }
         }
 
+        // TODO, should we move this so that is happens less frequently as it will iterate over all receivers.
         updateHasReceivers(nowNs);
         retransmitHandler.processTimeouts(nowNs, this);
 
@@ -714,9 +726,12 @@ public final class NetworkPublication
 
     void updateHasReceivers(final long timeNs)
     {
-        if (((timeOfLastStatusMessageNs + connectionTimeoutNs) - timeNs < 0) && hasReceivers)
+        livenessTracker.onIdle(timeNs, connectionTimeoutNs);
+        final boolean isLive = livenessTracker.hasReceivers();
+
+        if (hasReceivers != isLive)
         {
-            hasReceivers = false;
+            hasReceivers = isLive;
         }
     }
 
@@ -1036,7 +1051,7 @@ public final class NetworkPublication
             }
 
             case LINGER:
-                if (hasReceivedSmEos || (timeOfLastActivityNs + lingerTimeoutNs) - timeNs < 0)
+                if ((timeOfLastActivityNs + lingerTimeoutNs) - timeNs < 0)
                 {
                     channelEndpoint.decRef();
                     conductor.cleanupPublication(this);

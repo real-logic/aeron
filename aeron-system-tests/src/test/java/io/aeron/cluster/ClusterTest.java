@@ -681,37 +681,46 @@ class ClusterTest
     @InterruptAfter(60)
     void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosExceedsPreviousAppendedPos()
     {
-        cluster = aCluster().withStaticNodes(3).start();
+        cluster = aCluster().withStaticNodes(5).start();
         systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
-        TestNode followerA = followers.get(0), followerB = followers.get(1);
+        TestNode followerA = followers.get(0);
+        TestNode followerB = followers.get(1);
+        TestNode followerC = followers.get(2);
+        TestNode followerD = followers.get(3);
 
         cluster.connectClient();
 
         cluster.stopNode(followerA);
         cluster.stopNode(followerB);
+        cluster.stopNode(followerC);
 
         cluster.sendUnexpectedMessages(10);
 
         final long commitPosition = leader.commitPosition();
         while (leader.appendPosition() <= commitPosition)
         {
-            Tests.yield();
+            Tests.yieldingIdle(
+                "leader.appendPosition=" + leader.appendPosition() + " leader.commitPosition=" + commitPosition);
         }
 
         final long targetPosition = leader.appendPosition();
+
+        cluster.stopNode(followerD);
         cluster.stopNode(leader);
         cluster.closeClient();
 
         followerA = cluster.startStaticNode(followerA.index(), false);
         followerB = cluster.startStaticNode(followerB.index(), false);
+        followerC = cluster.startStaticNode(followerC.index(), false);
 
         cluster.awaitLeader();
 
         awaitElectionClosed(followerA);
         awaitElectionClosed(followerB);
+        awaitElectionClosed(followerC);
 
         cluster.connectClient();
 
@@ -726,27 +735,33 @@ class ClusterTest
         cluster.awaitResponseMessageCount(messageCount);
         cluster.awaitServiceMessageCount(followerA, messageCount);
         cluster.awaitServiceMessageCount(followerB, messageCount);
+        cluster.awaitServiceMessageCount(followerC, messageCount);
 
         final TestNode oldLeader = cluster.startStaticNode(leader.index(), false);
+        followerD = cluster.startStaticNode(followerD.index(), false);
         cluster.awaitServiceMessageCount(oldLeader, messageCount);
+        cluster.awaitServiceMessageCount(followerD, messageCount);
     }
 
     @Test
     @InterruptAfter(50)
     void shouldRecoverWithUncommittedMessagesAfterRestartWhenNewCommitPosIsLessThanPreviousAppendedPos()
     {
-        cluster = aCluster().withStaticNodes(3).start();
+        cluster = aCluster().withStaticNodes(5).start();
         systemTestWatcher.cluster(cluster);
 
         final TestNode leader = cluster.awaitLeader();
         final List<TestNode> followers = cluster.followers();
         final TestNode followerA = followers.get(0);
         final TestNode followerB = followers.get(1);
+        final TestNode followerC = followers.get(2);
+        final TestNode followerD = followers.get(3);
 
         cluster.connectClient();
 
         cluster.stopNode(followerA);
         cluster.stopNode(followerB);
+        cluster.stopNode(followerC);
 
         final int messageCount = 10;
         cluster.sendUnexpectedMessages(messageCount);
@@ -758,13 +773,16 @@ class ClusterTest
         }
 
         cluster.stopNode(leader);
+        cluster.stopNode(followerD);
         cluster.closeClient();
 
         cluster.startStaticNode(followerA.index(), false);
         cluster.startStaticNode(followerB.index(), false);
+        cluster.startStaticNode(followerC.index(), false);
         cluster.awaitLeader();
 
         final TestNode oldLeader = cluster.startStaticNode(leader.index(), false);
+        cluster.startStaticNode(followerD.index(), false);
         awaitElectionClosed(oldLeader);
 
         cluster.connectClient();

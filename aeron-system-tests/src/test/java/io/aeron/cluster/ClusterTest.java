@@ -46,8 +46,6 @@ import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,8 +71,9 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.concurrent.TimeUnit.*;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.number.OrderingComparison.greaterThanOrEqualTo;
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.number.OrderingComparison.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
@@ -2335,10 +2334,18 @@ class ClusterTest
 
         cluster.awaitResponseMessageCount(messageCount);
         cluster.awaitServicesMessageCount(messageCount);
-        assertEquals(1, leader.consensusModule().context().electionCounter().get(), "unexpected election on leader");
-        assertEquals(
-            1, follower1.consensusModule().context().electionCounter().get(), "unexpected election on follower 1");
-        assertEquals(1, follower2.consensusModule().context().electionCounter().get(), "election loop detected");
+        assertThat(
+            "unexpected election on leader",
+            leader.consensusModule().context().electionCounter().get(),
+            equalTo(1L /* startup */));
+        assertThat(
+            "unexpected election on follower 1",
+            follower1.consensusModule().context().electionCounter().get(),
+            lessThanOrEqualTo(2L /* startup + catchup if drops out of flow control */));
+        assertThat(
+            "election loop detected",
+            follower2.consensusModule().context().electionCounter().get(),
+            equalTo(1L /* node restarted */));
     }
 
     @Test
@@ -2379,7 +2386,7 @@ class ClusterTest
             }
             else
             {
-                MatcherAssert.assertThat(counterLabel, CoreMatchers.containsString(expectedClientName));
+                assertThat(counterLabel, containsString(expectedClientName));
                 break;
             }
             Tests.checkInterruptStatus();

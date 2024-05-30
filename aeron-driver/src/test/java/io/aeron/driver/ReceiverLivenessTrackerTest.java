@@ -88,7 +88,6 @@ class ReceiverLivenessTrackerTest
         final long receiverId2 = 10002;
         final long receiverId3 = 10003;
         final long nowNs = 10000000000L;
-        final long timeoutNs = 5000000L;
 
         final ReceiverLivenessTracker receiverLivenessTracker = new ReceiverLivenessTracker();
         receiverLivenessTracker.onStatusMessage(receiverId1, nowNs);

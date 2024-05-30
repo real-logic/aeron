@@ -75,7 +75,7 @@ public class SubscriberEndOfStreamTest
     })
     @InterruptAfter(20)
     @SlowTest
-    void shouldCloseAnSubscriptionsImage(final String channel)
+    void shouldDisconnectPublicationWithEosIfSubscriptionIsClosed(final String channel)
     {
         TestMediaDriver.notSupportedOnCMediaDriver("Not yet implemented");
 
@@ -92,6 +92,65 @@ public class SubscriberEndOfStreamTest
         {
             final Subscription sub = aeron.addSubscription(
                 channel, streamId, image -> {}, image -> imageUnavailable.set(true));
+
+            Tests.awaitConnected(pub);
+            Tests.awaitConnected(sub);
+
+            while (pub.offer(message) < 0)
+            {
+                Tests.yield();
+            }
+
+            while (0 == sub.poll((buffer, offset, length, header) -> {}, 1))
+            {
+                Tests.yield();
+            }
+
+            final Image image = sub.imageAtIndex(0);
+            assertEquals(pub.position(), image.position());
+
+            CloseHelper.close(sub);
+
+            final long t0 = System.nanoTime();
+            while (pub.isConnected())
+            {
+                Tests.yield();
+            }
+            final long t1 = System.nanoTime();
+            assertThat(t1 - t0, lessThan(driver.context().publicationConnectionTimeoutNs()));
+
+            while (!imageUnavailable.get())
+            {
+                Tests.yield();
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "aeron:udp?control-mode=dynamic|control=localhost:10000|fc=min",
+        "aeron:udp?control-mode=dynamic|control=localhost:10000|fc=max",
+    })
+    @InterruptAfter(20)
+    @SlowTest
+    void shouldDisconnectPublicationWithEosIfSubscriptionIsClosedMdc(final String publicationChannel)
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("Not yet implemented");
+
+        final TestMediaDriver driver = launch();
+        final int streamId = 10000;
+        final String subscriptionChannel = "aeron:udp?control=localhost:10000";
+
+        final Aeron.Context ctx = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName());
+
+        final AtomicBoolean imageUnavailable = new AtomicBoolean(false);
+
+        try (Aeron aeron = Aeron.connect(ctx);
+            Publication pub = aeron.addPublication(publicationChannel, streamId))
+        {
+            final Subscription sub = aeron.addSubscription(
+                subscriptionChannel, streamId, image -> {}, image -> imageUnavailable.set(true));
 
             Tests.awaitConnected(pub);
             Tests.awaitConnected(sub);

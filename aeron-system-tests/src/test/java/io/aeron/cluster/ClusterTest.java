@@ -25,12 +25,14 @@ import io.aeron.cluster.client.ControlledEgressListener;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.ClientSession;
+import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.cluster.service.SnapshotDurationTracker;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.security.AuthorisationService;
+import io.aeron.status.HeartbeatTimestamp;
 import io.aeron.test.*;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.TestCluster;
@@ -43,6 +45,9 @@ import org.agrona.collections.Hashing;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,6 +63,7 @@ import static io.aeron.cluster.service.Cluster.Role.FOLLOWER;
 import static io.aeron.cluster.service.Cluster.Role.LEADER;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
+import static io.aeron.status.HeartbeatTimestamp.HEARTBEAT_TYPE_ID;
 import static io.aeron.test.SystemTestWatcher.UNKNOWN_HOST_FILTER;
 import static io.aeron.test.Tests.awaitAvailableWindow;
 import static io.aeron.test.cluster.ClusterTests.*;
@@ -66,6 +72,7 @@ import static io.aeron.test.cluster.TestNode.atMost;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.concurrent.TimeUnit.*;
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.*;
@@ -2318,6 +2325,51 @@ class ClusterTest
         assertEquals(1, leader.consensusModule().context().electionCounter().get());
         assertEquals(1, follower1.consensusModule().context().electionCounter().get());
         assertEquals(1, follower2.consensusModule().context().electionCounter().get(), "election loop detected");
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldSetClientName()
+    {
+        cluster = aCluster().withStaticNodes(1).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+        final ConsensusModule.Context leaderContext = leader.consensusModule().context();
+        try (Aeron aeron = Aeron.connect(new Aeron.Context()
+            .aeronDirectoryName(leaderContext.aeronDirectoryName())))
+        {
+            verifyClientName(aeron, leaderContext.aeron().clientId(), leaderContext.agentRoleName());
+
+            final ClusteredServiceContainer.Context containerContext = leader.container().context();
+            verifyClientName(aeron, containerContext.aeron().clientId(), containerContext.serviceName());
+        }
+    }
+
+    private static void verifyClientName(final Aeron aeron, final long targetClientId, final String expectedClientName)
+    {
+        assertNotEquals(aeron.clientId(), targetClientId);
+        final CountersReader countersReader = aeron.countersReader();
+        int counterId = NULL_COUNTER_ID;
+        String counterLabel = null;
+        while (true)
+        {
+            if (NULL_COUNTER_ID == counterId)
+            {
+                counterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
+                    countersReader, HEARTBEAT_TYPE_ID, targetClientId);
+            }
+            else if (null == counterLabel || !counterLabel.contains("name="))
+            {
+                counterLabel = countersReader.getCounterLabel(counterId);
+            }
+            else
+            {
+                MatcherAssert.assertThat(counterLabel, CoreMatchers.containsString(expectedClientName));
+                break;
+            }
+            Tests.checkInterruptStatus();
+        }
     }
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message)

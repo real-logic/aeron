@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
@@ -41,8 +42,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class ClusteredServiceContainerContextTest
 {
@@ -234,6 +234,58 @@ class ClusteredServiceContainerContextTest
 
             assertEquals(dir.toFile().getCanonicalFile(), context.clusterDir());
             assertEquals(context.clusterDir().getAbsolutePath(), context.clusterDirectoryName());
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
+        }
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    void shouldSetServiceNameIfNotSpecified(final String serviceName)
+    {
+        context.clusterId(7).serviceId(5).serviceName(serviceName);
+
+        try
+        {
+            context.conclude();
+
+            assertEquals("clustered-service-7-5", context.serviceName());
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
+        }
+    }
+
+    @Test
+    void shouldSetServiceNameExplicitly()
+    {
+        context.clusterId(7).serviceId(5).serviceName("test 13");
+
+        try
+        {
+            context.conclude();
+
+            assertEquals("test 13", context.serviceName());
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
+        }
+    }
+
+    @Test
+    void shouldNotSetClientName()
+    {
+        context.clusterId(42).serviceId(0).serviceName("test 13");
+
+        try
+        {
+            context.conclude();
+
+            verify(context.aeron().context(), never()).clientName(anyString());
         }
         finally
         {

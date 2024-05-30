@@ -670,7 +670,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private int appVersion = SemanticVersion.compose(0, 0, 1);
         private int clusterId = Configuration.clusterId();
         private int serviceId = Configuration.serviceId();
-        private String serviceName = Configuration.serviceName();
+        private String serviceName = System.getProperty(SERVICE_NAME_PROP_NAME);
         private String replayChannel = Configuration.replayChannel();
         private int replayStreamId = Configuration.replayStreamId();
         private String controlChannel = Configuration.controlChannel();
@@ -828,6 +828,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 errorHandler = delegatingErrorHandler;
             }
 
+            if (Strings.isEmpty(serviceName))
+            {
+                serviceName = "clustered-service-" + clusterId + "-" + serviceId;
+            }
+
             if (null == aeron)
             {
                 aeron = Aeron.connect(
@@ -836,7 +841,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
                         .errorHandler(errorHandler)
                         .subscriberErrorHandler(RethrowingErrorHandler.INSTANCE)
                         .awaitingIdleStrategy(YieldingIdleStrategy.INSTANCE)
-                        .epochClock(epochClock));
+                        .epochClock(epochClock)
+                        .clientName(serviceName));
 
                 ownsAeronClient = true;
             }

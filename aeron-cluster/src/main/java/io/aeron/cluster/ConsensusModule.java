@@ -1621,6 +1621,11 @@ public final class ConsensusModule implements AutoCloseable
                 recordingLog = new RecordingLog(clusterDir, true);
             }
 
+            if (Strings.isEmpty(agentRoleName))
+            {
+                agentRoleName = "consensus-module-" + clusterId + "-" + clusterMemberId;
+            }
+
             final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
             if (null == aeron)
@@ -1635,7 +1640,8 @@ public final class ConsensusModule implements AutoCloseable
                         .useConductorAgentInvoker(true)
                         .subscriberErrorHandler(RethrowingErrorHandler.INSTANCE)
                         .awaitingIdleStrategy(YieldingIdleStrategy.INSTANCE)
-                        .clientLock(NoOpLock.INSTANCE));
+                        .clientLock(NoOpLock.INSTANCE)
+                        .clientName(agentRoleName));
 
                 if (null == errorCounter)
                 {

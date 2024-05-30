@@ -133,16 +133,6 @@ public class ConsensusModuleAgentTest
     }
 
     @Test
-    public void shouldGenerateRoleNameWhenNotSet()
-    {
-        final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
-        ctx.epochClock(clock).clusterClock(clock);
-
-        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
-        assertEquals("consensus-module_0_0", agent.roleName());
-    }
-
-    @Test
     public void shouldUseAssignedRoleName()
     {
         final String expectedRoleName = "test-role-name";

@@ -46,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
@@ -738,6 +739,37 @@ class ConsensusModuleContextTest
         final Counter counter = context.leadershipTermIdCounter();
         assertNotNull(counter);
         assertEquals(CLUSTER_LEADERSHIP_TERM_ID_TYPE_ID, countersManager.getCounterTypeId(counter.id()));
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    void shouldGenerateAgentRoleNameIfNotSet(final String emptyAgentRoleName)
+    {
+        context.clusterId(19).clusterMemberId(7).agentRoleName(emptyAgentRoleName);
+
+        context.conclude();
+
+        assertEquals("consensus-module-19-7", context.agentRoleName());
+    }
+
+    @Test
+    void shouldUseSpecifiedAgentRoleName()
+    {
+        context.clusterId(42).clusterMemberId(3).agentRoleName("test name");
+
+        context.conclude();
+
+        assertEquals("test name", context.agentRoleName());
+    }
+
+    @Test
+    void shouldNotSetClientNameOnTheExplicitlyAssignedAeronClient()
+    {
+        context.agentRoleName("test");
+
+        context.conclude();
+
+        verify(context.aeron().context(), never()).clientName(anyString());
     }
 
     public static class TestAuthorisationSupplier implements AuthorisationServiceSupplier

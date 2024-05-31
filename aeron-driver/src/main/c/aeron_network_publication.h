@@ -114,7 +114,6 @@ typedef struct aeron_network_publication_stct
     volatile bool is_connected;
     volatile bool is_end_of_stream;
     volatile bool has_sender_released;
-    volatile bool has_received_sm_eos;
     aeron_raw_log_close_func_t raw_log_close_func;
     aeron_raw_log_free_func_t raw_log_free_func;
     struct
@@ -130,6 +129,8 @@ typedef struct aeron_network_publication_stct
     volatile int64_t *retransmitted_bytes_counter;
     volatile int64_t *unblocked_publications_counter;
     volatile int64_t *mapped_bytes_counter;
+
+    aeron_int64_counter_map_t receiver_liveness_tracker;
 }
 aeron_network_publication_t;
 

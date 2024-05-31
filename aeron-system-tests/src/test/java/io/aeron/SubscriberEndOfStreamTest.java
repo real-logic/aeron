@@ -77,8 +77,6 @@ public class SubscriberEndOfStreamTest
     @SlowTest
     void shouldDisconnectPublicationWithEosIfSubscriptionIsClosed(final String channel)
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Not yet implemented");
-
         final TestMediaDriver driver = launch();
         final int streamId = 10000;
 
@@ -135,8 +133,6 @@ public class SubscriberEndOfStreamTest
     @SlowTest
     void shouldDisconnectPublicationWithEosIfSubscriptionIsClosedMdc(final String publicationChannel)
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Not yet implemented");
-
         final TestMediaDriver driver = launch();
         final int streamId = 10000;
         final String subscriptionChannel = "aeron:udp?control=localhost:10000";

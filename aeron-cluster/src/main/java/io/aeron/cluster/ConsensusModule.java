@@ -1435,6 +1435,7 @@ public final class ConsensusModule implements AutoCloseable
         private TimerServiceSupplier timerServiceSupplier;
         private Function<Context, LongConsumer> clusterTimeConsumerSupplier;
         private Supplier<ConsensusModuleExtension> consensusModuleExtensionSupplier;
+        private ConsensusModuleExtension consensusModuleExtension;
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
@@ -3975,7 +3976,7 @@ public final class ConsensusModule implements AutoCloseable
          * Registers a ConsensusModuleExtension to extend beahviour of
          * consensus module instead of using ClusteredServices
          *
-         * @param extensionSupplier supplier for schema adapter
+         * @param extensionSupplier supplier for consensus module extension
          * @return this for a fluent API.
          */
         public Context consensusModuleExtension(final Supplier<ConsensusModuleExtension> extensionSupplier)
@@ -3987,9 +3988,13 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * @return   Supplier for registered consensus module extension or null
          */
-        public Supplier<ConsensusModuleExtension> consensusModuleExtension()
+        public ConsensusModuleExtension consensusModuleExtension()
         {
-            return consensusModuleExtensionSupplier;
+            if (consensusModuleExtensionSupplier != null)
+            {
+                consensusModuleExtension = consensusModuleExtensionSupplier.get();
+            }
+            return consensusModuleExtension;
         }
 
         /**

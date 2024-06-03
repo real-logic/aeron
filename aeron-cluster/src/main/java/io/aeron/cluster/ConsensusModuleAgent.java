@@ -227,8 +227,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             pendingServiceMessageTrackers[i] = new PendingServiceMessageTracker(
                 i, commitPosition, logPublisher, clusterClock);
         }
-        this.consensusModuleExtension =
-            (ctx.consensusModuleExtension() == null) ? null : ctx.consensusModuleExtension().get();
+        this.consensusModuleExtension = ctx.consensusModuleExtension();
         responseChannelTemplate = Strings.isEmpty(ctx.egressChannel()) ? null : ChannelUri.parse(ctx.egressChannel());
     }
 

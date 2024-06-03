@@ -56,16 +56,6 @@ jobs:
           upload: false
           output: sarif-results
 
-      - name: Dismiss alerts
-        if: github.ref == 'refs/heads/main'
-        uses: advanced-security/dismiss-alerts@v1
-        with:
-          # specify a 'sarif-id' and 'sarif-file'
-          sarif-id: ${{ steps.analyze.outputs.sarif-id }}
-          sarif-file: sarif-results/${{ matrix.language }}.sarif
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
       - name: filter-sarif
         uses: advanced-security/filter-sarif@v1
         with:
@@ -82,6 +72,14 @@ jobs:
             -**/*Debug*.java:java/uncaught-number-format-exception
           input: sarif-results/${{ matrix.language }}.sarif
           output: sarif-results/${{ matrix.language }}.sarif
+
+      - name: Dismiss alerts
+        uses: advanced-security/dismiss-alerts@v1
+        with:
+          sarif-id: ${{ steps.analyze.outputs.sarif-id }}
+          sarif-file: sarif-results/${{ matrix.language }}.sarif
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3

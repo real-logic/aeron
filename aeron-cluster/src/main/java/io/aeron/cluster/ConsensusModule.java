@@ -1434,7 +1434,7 @@ public final class ConsensusModule implements AutoCloseable
         private Random random;
         private TimerServiceSupplier timerServiceSupplier;
         private Function<Context, LongConsumer> clusterTimeConsumerSupplier;
-        private ConsensusModuleExtension consensusModuleExtension;
+        private Supplier<ConsensusModuleExtension> consensusModuleExtensionSupplier;
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
@@ -3980,16 +3980,16 @@ public final class ConsensusModule implements AutoCloseable
          */
         public Context consensusModuleExtension(final Supplier<ConsensusModuleExtension> extensionSupplier)
         {
-            consensusModuleExtension = extensionSupplier.get();
+            consensusModuleExtensionSupplier = extensionSupplier;
             return this;
         }
 
         /**
-         * @return   Registered consensus module extension or null
+         * @return   Supplier for registered consensus module extension or null
          */
-        public ConsensusModuleExtension consensusModuleExtension()
+        public Supplier<ConsensusModuleExtension> consensusModuleExtension()
         {
-            return consensusModuleExtension;
+            return consensusModuleExtensionSupplier;
         }
 
         /**

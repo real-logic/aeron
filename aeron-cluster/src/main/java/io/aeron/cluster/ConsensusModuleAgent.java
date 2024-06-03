@@ -227,8 +227,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             pendingServiceMessageTrackers[i] = new PendingServiceMessageTracker(
                 i, commitPosition, logPublisher, clusterClock);
         }
-        this.consensusModuleExtension = (ctx.consensusModuleExtension() == null) ?
-            UnknownConsensusModuleExtension.INSTANCE : ctx.consensusModuleExtension();
+        this.consensusModuleExtension =
+            (ctx.consensusModuleExtension() == null) ? null : ctx.consensusModuleExtension().get();
         responseChannelTemplate = Strings.isEmpty(ctx.egressChannel()) ? null : ChannelUri.parse(ctx.egressChannel());
     }
 
@@ -408,7 +408,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
     }
 
-    public ControlledFragmentHandler.Action onUnknownMessageSchema(
+    public ControlledFragmentHandler.Action onExtensionMessage(
         final int schemaId,
         final int templateId,
         final DirectBuffer buffer,
@@ -416,7 +416,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final int length,
         final Header header)
     {
-        return consensusModuleExtension.onFragment(schemaId, templateId, buffer, offset, length, header);
+        if (consensusModuleExtension == null)
+        {
+            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
+        return consensusModuleExtension.onMessage(schemaId, templateId, buffer, offset, length, header);
     }
 
     public void onLoadEndSnapshot(final DirectBuffer buffer, final int offset, final int length)
@@ -3610,32 +3614,5 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return "ConsensusModuleAgent{" +
             "election=" + election +
             '}';
-    }
-
-    private static final class UnknownConsensusModuleExtension implements ConsensusModuleExtension
-    {
-
-        private static final UnknownConsensusModuleExtension INSTANCE = new UnknownConsensusModuleExtension();
-        private UnknownConsensusModuleExtension()
-        {
-        }
-
-        @Override
-        public int supportedSchemaId()
-        {
-            return 0;
-        }
-
-        @Override
-        public ControlledFragmentHandler.Action onFragment(
-            final int schemaId,
-            final int templateId,
-            final DirectBuffer buffer,
-            final int offset,
-            final int length,
-            final Header header)
-        {
-            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
-        }
     }
 }

@@ -47,7 +47,7 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * @param header representing the metadata for the data.
      * @return The action to be taken with regard to the stream position after the callback.
      */
-    ControlledFragmentHandler.Action onFragment(
+    ControlledFragmentHandler.Action onMessage(
         int schemaId,
         int templateId,
         DirectBuffer buffer,

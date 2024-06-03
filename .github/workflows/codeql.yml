@@ -88,6 +88,7 @@ jobs:
           retention-days: 1
 
       - name: Dismiss alerts
+        if: github.ref == 'refs/heads/main'
         uses: advanced-security/dismiss-alerts@v1
         with:
           sarif-id: ${{ steps.analyze.outputs.sarif-id }}

@@ -497,7 +497,8 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    std::int64_t offer( // codeql[cpp/array-in-interface]
+    // codeql[cpp/array-in-interface]
+    std::int64_t offer(
         const concurrent::AtomicBuffer buffers[],
         std::size_t length,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)

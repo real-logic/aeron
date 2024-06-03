@@ -74,14 +74,6 @@ jobs:
           input: sarif-results/${{ matrix.language }}.sarif
           output: sarif-results/${{ matrix.language }}.sarif
 
-      - name: Dismiss alerts
-        uses: advanced-security/dismiss-alerts@v1
-        with:
-          sarif-id: ${{ steps.analyze.outputs.sarif-id }}
-          sarif-file: sarif-results/${{ matrix.language }}.sarif
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
@@ -94,3 +86,11 @@ jobs:
           name: sarif-results-${{ matrix.language }}
           path: sarif-results
           retention-days: 1
+
+      - name: Dismiss alerts
+        uses: advanced-security/dismiss-alerts@v1
+        with:
+          sarif-id: ${{ steps.analyze.outputs.sarif-id }}
+          sarif-file: sarif-results/${{ matrix.language }}.sarif
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

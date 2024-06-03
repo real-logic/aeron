@@ -119,7 +119,7 @@ int aeron_subscription_close(
     return 0;
 }
 
-int aeron_subscription_alloc_image_list(volatile aeron_image_list_t **image_list, size_t length)
+int aeron_subscription_alloc_image_list(aeron_image_list_t * volatile * image_list, size_t length)
 {
     aeron_image_list_t *_image_list;
 
@@ -142,8 +142,8 @@ int aeron_subscription_alloc_image_list(volatile aeron_image_list_t **image_list
 
 int aeron_client_conductor_subscription_add_image(aeron_subscription_t *subscription, aeron_image_t *image)
 {
-    volatile aeron_image_list_t *current_image_list = subscription->conductor_fields.image_lists_head.next_list;
-    volatile aeron_image_list_t *new_image_list;
+    aeron_image_list_t * volatile current_image_list = subscription->conductor_fields.image_lists_head.next_list;
+    aeron_image_list_t * volatile new_image_list;
     size_t old_length = current_image_list->length;
 
     if (aeron_subscription_alloc_image_list(&new_image_list, old_length + 1) < 0)
@@ -163,8 +163,8 @@ int aeron_client_conductor_subscription_add_image(aeron_subscription_t *subscrip
 
 int aeron_client_conductor_subscription_remove_image(aeron_subscription_t *subscription, aeron_image_t *image)
 {
-    volatile aeron_image_list_t *current_image_list = subscription->conductor_fields.image_lists_head.next_list;
-    volatile aeron_image_list_t *new_image_list;
+    aeron_image_list_t * volatile current_image_list = subscription->conductor_fields.image_lists_head.next_list;
+    aeron_image_list_t * volatile new_image_list;
     size_t old_length = current_image_list->length;
     int image_index = aeron_subscription_find_image_index(current_image_list, image);
 
@@ -193,7 +193,7 @@ int aeron_client_conductor_subscription_remove_image(aeron_subscription_t *subsc
 }
 
 int aeron_client_conductor_subscription_install_new_image_list(
-    aeron_subscription_t *subscription, volatile aeron_image_list_t *image_list)
+    aeron_subscription_t *subscription, aeron_image_list_t * volatile image_list)
 {
     /*
      * Called from the client conductor to add/remove images to the image list. A new image list is passed each time.

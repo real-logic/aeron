@@ -31,6 +31,7 @@ import io.aeron.driver.DutyCycleTracker;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
+import io.aeron.logbuffer.Header;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthorisationService;
 import io.aeron.status.LocalSocketAddressStatus;
@@ -137,7 +138,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private final ArrayDeque<ClusterSession> uncommittedClosedSessions = new ArrayDeque<>();
     private final LongArrayQueue uncommittedTimers = new LongArrayQueue(Long.MAX_VALUE);
     private final PendingServiceMessageTracker[] pendingServiceMessageTrackers;
-
+    private final ConsensusModuleExtension consensusModuleExtension;
     private final Authenticator authenticator;
     private final AuthorisationService authorisationService;
     private final ClusterSessionProxy sessionProxy;
@@ -226,7 +227,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             pendingServiceMessageTrackers[i] = new PendingServiceMessageTracker(
                 i, commitPosition, logPublisher, clusterClock);
         }
-
+        this.consensusModuleExtension = ctx.consensusModuleExtension();
         responseChannelTemplate = Strings.isEmpty(ctx.egressChannel()) ? null : ChannelUri.parse(ctx.egressChannel());
     }
 
@@ -403,6 +404,21 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             throw new ClusterException(
                 "incompatible time unit: " + clusterTimeUnit + " snapshot=" + timeUnit, AeronException.Category.FATAL);
         }
+    }
+
+    public ControlledFragmentHandler.Action onExtensionMessage(
+        final int schemaId,
+        final int templateId,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header)
+    {
+        if (consensusModuleExtension == null)
+        {
+            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
+        return consensusModuleExtension.onMessage(schemaId, templateId, buffer, offset, length, header);
     }
 
     public void onLoadEndSnapshot(final DirectBuffer buffer, final int offset, final int length)

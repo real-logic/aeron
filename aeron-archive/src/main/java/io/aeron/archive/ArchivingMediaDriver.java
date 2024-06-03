@@ -51,9 +51,13 @@ public class ArchivingMediaDriver implements AutoCloseable
         final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .terminationHook(barrier::signalAll);
+        final Archive.Context archiveCtx = new Archive.Context();
 
-        try (ArchivingMediaDriver ignore = launch(ctx, new Archive.Context()))
+        try (ArchivingMediaDriver ignore = launch(ctx, archiveCtx))
         {
+            System.out.println("MediaDriver.Context " + ctx);
+            System.out.println("Archive.Context " + archiveCtx);
+
             barrier.await();
             System.out.println("Shutdown Archive...");
         }

@@ -59,27 +59,6 @@ TEST(BufferBuilderTest, shouldThrowIllegalArgumentExceptionIfInitialCapacityIsOu
     ASSERT_THROW(BufferBuilder builder{std::numeric_limits<std::int32_t>::max() - 7}, IllegalArgumentException);
 }
 
-// It is not possible to get this test to compile without warnings.
-// The static checker finds the out-of-bounds access during compilation.
-//TEST(BufferBuilderTest, shouldThrowIllegateStateExceptionIfDataExceedsMaxCapacity)
-//{
-//    uint32_t initialCapacity = 64;
-//    BufferBuilder builder{ initialCapacity };
-//    buffer_t buf = {};
-//    AtomicBuffer buffer{buf};
-//    builder.append(buffer, 0, (util::index_t)initialCapacity);
-//    ASSERT_EQ(initialCapacity, builder.limit());
-//    ASSERT_EQ(initialCapacity, builder.capacity());
-//
-//    ASSERT_THROW(builder.append(buffer, 0, std::numeric_limits<std::int32_t>::max()), IllegalStateException);
-//    ASSERT_EQ(initialCapacity, builder.limit());
-//    ASSERT_EQ(initialCapacity, builder.capacity());
-//
-//    ASSERT_THROW(builder.append(buffer, 0, std::numeric_limits<std::int32_t>::max() - 23), IllegalStateException);
-//    ASSERT_EQ(initialCapacity, builder.limit());
-//    ASSERT_EQ(initialCapacity, builder.capacity());
-//}
-
 TEST(BufferBuilderTest, shouldAppendNothingForZeroLength)
 {
     BufferBuilder builder{};

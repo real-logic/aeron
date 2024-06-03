@@ -17,15 +17,19 @@ package io.aeron.utility;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
 import javax.tools.Diagnostic;
+import java.util.Set;
 
 /**
  * abstract processor
  */
 public abstract class Processor extends AbstractProcessor
 {
+    private boolean enabled = false;
+
     private boolean printNotes = false;
 
     private Diagnostic.Kind errorKind;
@@ -45,6 +49,7 @@ public abstract class Processor extends AbstractProcessor
     @Override
     public synchronized void init(final ProcessingEnvironment processingEnv)
     {
+        enabled = System.getProperty(getEnabledPropertyName(), "true").equalsIgnoreCase("true");
         printNotes = System.getProperty(getPrintNotesPropertyName(), "false").equalsIgnoreCase("true");
         errorKind =
             System.getProperty(getFailOnErrorPropertyName(), "false").equalsIgnoreCase("true") ?
@@ -53,9 +58,24 @@ public abstract class Processor extends AbstractProcessor
         super.init(processingEnv);
     }
 
+    protected abstract String getEnabledPropertyName();
+
     protected abstract String getPrintNotesPropertyName();
 
     protected abstract String getFailOnErrorPropertyName();
+
+    protected abstract void doProcess(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv);
+
+    @Override
+    public boolean process(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv)
+    {
+        if (enabled)
+        {
+            doProcess(annotations, roundEnv);
+        }
+
+        return false;
+    }
 
     protected String getDocComment(final Element element)
     {

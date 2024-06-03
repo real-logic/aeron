@@ -24,9 +24,9 @@ class Validation
 
     private String message;
 
-    private ByteArrayOutputStream ba_out;
+    private ByteArrayOutputStream baOut;
 
-    private PrintStream ps_out;
+    private PrintStream psOut;
 
     boolean isValid()
     {
@@ -35,9 +35,9 @@ class Validation
 
     void close()
     {
-        if (this.ps_out != null)
+        if (this.psOut != null)
         {
-            this.ps_out.close();
+            this.psOut.close();
         }
     }
 
@@ -55,21 +55,21 @@ class Validation
 
     PrintStream out()
     {
-        if (this.ps_out == null)
+        if (this.psOut == null)
         {
-            this.ba_out = new ByteArrayOutputStream();
-            this.ps_out = new PrintStream(ba_out);
+            this.baOut = new ByteArrayOutputStream();
+            this.psOut = new PrintStream(baOut);
         }
 
-        return ps_out;
+        return psOut;
     }
 
     void printOn(final PrintStream out)
     {
         out.println(" " + (this.valid ? "+" : "-") + " " + this.message);
-        if (this.ps_out != null)
+        if (this.psOut != null)
         {
-            out.println(this.ba_out);
+            out.println(this.baOut);
         }
     }
 }

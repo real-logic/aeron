@@ -40,6 +40,12 @@ public class ConfigProcessor extends Processor
     private final Map<String, Config> typeConfigMap = new HashMap<>();
 
     @Override
+    protected String getEnabledPropertyName()
+    {
+        return "aeron.build.configProcessor.enabled";
+    }
+
+    @Override
     protected String getPrintNotesPropertyName()
     {
         return "aeron.build.configProcessor.printNotes";
@@ -55,7 +61,7 @@ public class ConfigProcessor extends Processor
      * {@inheritDoc}
      */
     @Override
-    public boolean process(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv)
+    public void doProcess(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv)
     {
         final Map<String, ConfigInfo> configInfoMap = new HashMap<>();
 
@@ -112,6 +118,7 @@ public class ConfigProcessor extends Processor
             catch (final Exception e)
             {
                 e.printStackTrace(System.err);
+                return;
             }
 
             try
@@ -128,8 +135,6 @@ public class ConfigProcessor extends Processor
                     "an error occurred while writing output: " + e.getMessage());
             }
         }
-
-        return false;
     }
 
     private ConfigInfo processElement(final Map<String, ConfigInfo> configInfoMap, final VariableElement element)

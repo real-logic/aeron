@@ -35,6 +35,12 @@ import java.util.regex.Pattern;
 public class CounterProcessor extends Processor
 {
     @Override
+    protected String getEnabledPropertyName()
+    {
+        return "aeron.build.counterProcessor.enabled";
+    }
+
+    @Override
     protected String getPrintNotesPropertyName()
     {
         return "aeron.build.counterProcessor.printNotes";
@@ -50,7 +56,7 @@ public class CounterProcessor extends Processor
      * {@inheritDoc}
      */
     @Override
-    public boolean process(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv)
+    public void doProcess(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv)
     {
         final Map<String, CounterInfo> counterInfoMap = new HashMap<>();
 
@@ -93,8 +99,6 @@ public class CounterProcessor extends Processor
                     "an error occurred while writing output: " + e.getMessage());
             }
         }
-
-        return false;
     }
 
     private void processElement(final Map<String, CounterInfo> counterInfoMap, final VariableElement element)

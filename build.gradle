@@ -215,6 +215,11 @@ subprojects {
         }
         testClassesDirs = testing.suites.test.sources.output.classesDirs
         classpath = testing.suites.test.sources.runtimeClasspath
+        maxHeapSize("1g")
+        jvmArgs("-XX:MaxDirectMemorySize=1g",
+                "-XX:+HeapDumpOnOutOfMemoryError",
+                "-XX:+CrashOnOutOfMemoryError",
+                "-XX:HeapDumpPath=" + project.rootDir + "/heap.hprof")
 
         useJUnitPlatform {
             if (test.name != 'slowTest' && test.name != 'bindingsTest' && test.name != 'topologyTest')
@@ -1185,6 +1190,7 @@ tasks.register('testReport', TestReport) {
 tasks.register('copyTestLogs', Copy) {
     from '.'
     include '**/build/test-output/**'
+    include '**/*.hprof'
     include '**/*.log'
     include '**/*.tlog'
     include '**/build/reports/tests/**'

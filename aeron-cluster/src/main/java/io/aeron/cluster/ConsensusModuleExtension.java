@@ -27,7 +27,7 @@ import io.aeron.logbuffer.Header;
 public interface ConsensusModuleExtension extends AutoCloseable
 {
     /**
-     * schema supported by this extension
+     * Schema supported by this extension.
      *
      * @return schema id supported.
      */
@@ -39,8 +39,8 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * Within this callback reentrant calls to the {@link io.aeron.Aeron} client are not permitted and
      * will result in undefined behaviour.
      *
-     * @param schemaId   the schema id
-     * @param templateId the message template id (already parsed from header)
+     * @param schemaId   the schema id.
+     * @param templateId the message template id (already parsed from header).
      * @param buffer     containing the data.
      * @param offset     at which the data begins.
      * @param length     of the data in bytes.

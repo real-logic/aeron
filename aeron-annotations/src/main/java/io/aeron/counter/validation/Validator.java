@@ -107,13 +107,20 @@ final class Validator
             {
                 final String id = matcher.group(1);
 
-                if (counterInfo.id == Integer.parseInt(id))
+                try
                 {
-                    validation.valid("Expected ID found in " + grep.getFilenameAndLine());
+                    if (counterInfo.id == Integer.parseInt(id))
+                    {
+                        validation.valid("Expected ID found in " + grep.getFilenameAndLine());
+                    }
+                    else
+                    {
+                        validation.invalid("Incorrect ID found.  Expected: " + counterInfo.id + " but found: " + id);
+                    }
                 }
-                else
+                catch (final NumberFormatException numberFormatException)
                 {
-                    validation.invalid("Incorrect ID found.  Expected: " + counterInfo.id + " but found: " + id);
+                    validation.invalid("Unable to parse ID.  Expected a number but found: " + id);
                 }
             }
             else

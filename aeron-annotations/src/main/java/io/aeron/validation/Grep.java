@@ -38,14 +38,17 @@ public final class Grep
 
         try
         {
+            // TODO make grep location configurable??
             final Process process = new ProcessBuilder()
                 .redirectErrorStream(true)
-                .command(new String[] {"grep", "-r", "-n", "-E", "^" + pattern, sourceDir})
+                .command(new String[] {"/usr/bin/grep", "-r", "-n", "-E", "^" + pattern, sourceDir})
                 .start();
 
             final int exitCode = process.waitFor();
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream())))
+            try (
+                InputStreamReader inputStreamReader = new InputStreamReader(process.getInputStream());
+                BufferedReader reader = new BufferedReader(inputStreamReader))
             {
                 return new Grep(commandString, exitCode, reader.lines().collect(Collectors.toList()));
             }

@@ -231,12 +231,6 @@ public class ConfigProcessor extends Processor
     {
         switch (config.isTimeValue())
         {
-            case TRUE:
-                configInfo.isTimeValue = true;
-                break;
-            case FALSE:
-                configInfo.isTimeValue = false;
-                break;
             case UNDEFINED:
                 if (configInfo.isTimeValue == null)
                 {
@@ -244,6 +238,14 @@ public class ConfigProcessor extends Processor
                         Stream.of("timeout", "backoff", "delay", "linger", "interval", "duration")
                             .anyMatch(k -> id.toLowerCase().contains(k));
                 }
+                break;
+            case TRUE:
+                configInfo.isTimeValue = true;
+                break;
+            case FALSE:
+                // fall through
+            default:
+                configInfo.isTimeValue = false;
                 break;
         }
 

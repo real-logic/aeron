@@ -24,6 +24,8 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterNodeControlProperties;
 import io.aeron.cluster.service.ConsensusModuleProxy;
+import io.aeron.config.Config;
+import io.aeron.config.DefaultType;
 import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -89,26 +91,31 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  *                        is-leader: returns zero if the cluster node is leader, non-zero if not
  * </pre>
  */
+@Config(existsInC = false)
 public class ClusterTool
 {
     /**
      * Timeout in nanoseconds for the tool to wait while trying to perform an operation.
      */
+    @Config(defaultType = DefaultType.LONG, defaultLong = 0, hasContext = false)
     public static final String AERON_CLUSTER_TOOL_TIMEOUT_PROP_NAME = "aeron.cluster.tool.timeout";
 
     /**
      * Delay in nanoseconds to be applied to an operation such as when the new cluster backup query will occur.
      */
+    @Config(defaultType = DefaultType.LONG, defaultLong = 0, hasContext = false)
     public static final String AERON_CLUSTER_TOOL_DELAY_PROP_NAME = "aeron.cluster.tool.delay";
 
     /**
      * Property name for setting the channel used for archive replays.
      */
+    @Config(hasContext = false)
     public static final String AERON_CLUSTER_TOOL_REPLAY_CHANNEL_PROP_NAME = "aeron.cluster.tool.replay.channel";
 
     /**
      * Default channel used for archive replays.
      */
+    @Config
     public static final String AERON_CLUSTER_TOOL_REPLAY_CHANNEL_DEFAULT = "aeron:ipc";
 
     /**
@@ -120,11 +127,13 @@ public class ClusterTool
     /**
      * Property name for setting the stream id used for archive replays.
      */
+    @Config(hasContext = false)
     public static final String AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_PROP_NAME = "aeron.cluster.tool.replay.stream.id";
 
     /**
      * Default stream id used for archive replays.
      */
+    @Config
     public static final int AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_DEFAULT = 103;
 
     /**

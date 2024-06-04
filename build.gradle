@@ -473,6 +473,40 @@ project(':aeron-client') {
     signing {
         sign publishing.publications.aeronClient
     }
+
+    tasks.register('validateConfigExpectations', JavaExec) {
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
+        def sourceDir = 'src/main/c'
+
+        inputs.files(configInfoFile)
+
+        mainClass.set('io.aeron.config.validation.ValidateConfigExpectationsTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [configInfoFile, sourceDir]
+    }
+
+    tasks.register('generateConfigDoc', JavaExec) {
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
+        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+
+        inputs.files(configInfoFile)
+        outputs.files(generatedDocFile)
+
+        mainClass.set('io.aeron.config.docgen.GenerateConfigDocTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [configInfoFile, generatedDocFile]
+    }
+
+    tasks.register('validateCounterExpectations', JavaExec) {
+        def counterInfoFile = 'build/generated/sources/headers/java/main/counter-info.dat'
+        def sourceDir = 'src/main/c'
+
+        inputs.files(counterInfoFile)
+
+        mainClass.set('io.aeron.counter.validation.ValidateCounterExpectationsTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [counterInfoFile, sourceDir]
+    }
 }
 
 project(':aeron-driver') {
@@ -545,6 +579,29 @@ project(':aeron-driver') {
 
     signing {
         sign publishing.publications.aeronDriver
+    }
+
+    tasks.register('validateConfigExpectations', JavaExec) {
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
+        def sourceDir = 'src/main/c'
+
+        inputs.files(configInfoFile)
+
+        mainClass.set('io.aeron.config.validation.ValidateConfigExpectationsTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [configInfoFile, sourceDir]
+    }
+
+    tasks.register('generateConfigDoc', JavaExec) {
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
+        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+
+        inputs.files(configInfoFile)
+        outputs.files(generatedDocFile)
+
+        mainClass.set('io.aeron.config.docgen.GenerateConfigDocTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [configInfoFile, generatedDocFile]
     }
 }
 
@@ -701,6 +758,18 @@ project(':aeron-archive') {
     signing {
         sign publishing.publications.aeronArchive
     }
+
+    tasks.register('generateConfigDoc', JavaExec) {
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
+        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+
+        inputs.files(configInfoFile)
+        outputs.files(generatedDocFile)
+
+        mainClass.set('io.aeron.config.docgen.GenerateConfigDocTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [configInfoFile, generatedDocFile]
+    }
 }
 
 project(':aeron-cluster') {
@@ -817,6 +886,18 @@ project(':aeron-cluster') {
 
     signing {
         sign publishing.publications.aeronCluster
+    }
+
+    tasks.register('generateConfigDoc', JavaExec) {
+        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
+        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+
+        inputs.files(configInfoFile)
+        outputs.files(generatedDocFile)
+
+        mainClass.set('io.aeron.config.docgen.GenerateConfigDocTask')
+        classpath project(':aeron-annotations').sourceSets.main.runtimeClasspath
+        args = [configInfoFile, generatedDocFile]
     }
 }
 

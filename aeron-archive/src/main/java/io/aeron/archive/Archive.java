@@ -20,6 +20,8 @@ import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.checksum.Checksums;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
+import io.aeron.config.Config;
+import io.aeron.config.DefaultType;
 import io.aeron.driver.DutyCycleTracker;
 import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.exceptions.AeronException;
@@ -205,6 +207,7 @@ public final class Archive implements AutoCloseable
      * <p>
      * Details for the individual parameters can be found in the Javadoc for the {@link Context} setters.
      */
+    @Config(existsInC = false)
     public static final class Configuration
     {
         /**
@@ -220,16 +223,19 @@ public final class Archive implements AutoCloseable
         /**
          * Default block length of data in a single IO operation during a recording or replay.
          */
+        @Config
         public static final int FILE_IO_MAX_LENGTH_DEFAULT = 1024 * 1024;
 
         /**
          * Maximum length of a file IO operation for recording or replay. Must be a power of 2.
          */
+        @Config
         public static final String FILE_IO_MAX_LENGTH_PROP_NAME = "aeron.archive.file.io.max.length";
 
         /**
          * Directory in which the archive stores it files such as the catalog and recordings.
          */
+        @Config
         public static final String ARCHIVE_DIR_PROP_NAME = "aeron.archive.dir";
 
         /**
@@ -237,17 +243,20 @@ public final class Archive implements AutoCloseable
          *
          * @see #ARCHIVE_DIR_PROP_NAME
          */
+        @Config
         public static final String ARCHIVE_DIR_DEFAULT = "aeron-archive";
 
         /**
          * Alternative directory to store mark file (i.e. {@code archive-mark.dat}).
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String MARK_FILE_DIR_PROP_NAME = "aeron.archive.mark.file.dir";
 
         /**
          * Recordings will be segmented on disk in files limited to the segment length which must be a multiple of
          * the term length for each stream. For lots of small recording this value may be reduced.
          */
+        @Config
         public static final String SEGMENT_FILE_LENGTH_PROP_NAME = "aeron.archive.segment.file.length";
 
         /**
@@ -255,11 +264,13 @@ public final class Archive implements AutoCloseable
          *
          * @see #SEGMENT_FILE_LENGTH_PROP_NAME
          */
+        @Config
         public static final int SEGMENT_FILE_LENGTH_DEFAULT = 128 * 1024 * 1024;
 
         /**
          * Threshold below which the archive will reject new recording requests.
          */
+        @Config
         public static final String LOW_STORAGE_SPACE_THRESHOLD_PROP_NAME = "aeron.archive.low.storage.space.threshold";
 
         /**
@@ -267,6 +278,7 @@ public final class Archive implements AutoCloseable
          *
          * @see #LOW_STORAGE_SPACE_THRESHOLD_PROP_NAME
          */
+        @Config
         public static final int LOW_STORAGE_SPACE_THRESHOLD_DEFAULT = SEGMENT_FILE_LENGTH_DEFAULT;
 
         /**
@@ -277,6 +289,7 @@ public final class Archive implements AutoCloseable
          * <li>2 - sync file data + metadata.</li>
          * </ul>
          */
+        @Config
         public static final String FILE_SYNC_LEVEL_PROP_NAME = "aeron.archive.file.sync.level";
 
         /**
@@ -284,6 +297,7 @@ public final class Archive implements AutoCloseable
          *
          * @see #FILE_SYNC_LEVEL_PROP_NAME
          */
+        @Config
         public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
 
         /**
@@ -294,6 +308,7 @@ public final class Archive implements AutoCloseable
          * <li>2 - sync file data + metadata.</li>
          * </ul>
          */
+        @Config
         public static final String CATALOG_FILE_SYNC_LEVEL_PROP_NAME = "aeron.archive.catalog.file.sync.level";
 
         /**
@@ -301,26 +316,31 @@ public final class Archive implements AutoCloseable
          *
          * @see #CATALOG_FILE_SYNC_LEVEL_PROP_NAME
          */
+        @Config
         public static final int CATALOG_FILE_SYNC_LEVEL_DEFAULT = FILE_SYNC_LEVEL_DEFAULT;
 
         /**
          * What {@link ArchiveThreadingMode} should be used.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "DEDICATED")
         public static final String THREADING_MODE_PROP_NAME = "aeron.archive.threading.mode";
 
         /**
          * Default {@link IdleStrategy} to be used for the archive {@link Agent}s when not busy.
          */
+        @Config
         public static final String ARCHIVE_IDLE_STRATEGY_PROP_NAME = "aeron.archive.idle.strategy";
 
         /**
          * The {@link IdleStrategy} to be used for the archive recorder {@link Agent} when not busy.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String ARCHIVE_RECORDER_IDLE_STRATEGY_PROP_NAME = "aeron.archive.recorder.idle.strategy";
 
         /**
          * The {@link IdleStrategy} to be used for the archive replayer {@link Agent} when not busy.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String ARCHIVE_REPLAYER_IDLE_STRATEGY_PROP_NAME = "aeron.archive.replayer.idle.strategy";
 
         /**
@@ -328,6 +348,7 @@ public final class Archive implements AutoCloseable
          *
          * @see #ARCHIVE_IDLE_STRATEGY_PROP_NAME
          */
+        @Config(id = "ARCHIVE_IDLE_STRATEGY")
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
         /**
@@ -336,6 +357,7 @@ public final class Archive implements AutoCloseable
          * multiple images, and thus multiple recordings, then the limit may come later. It is best to
          * use session based subscriptions.
          */
+        @Config
         public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archive.max.concurrent.recordings";
 
         /**
@@ -344,18 +366,21 @@ public final class Archive implements AutoCloseable
          *
          * @see #MAX_CONCURRENT_RECORDINGS_PROP_NAME
          */
+        @Config
         public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 20;
 
         /**
          * Maximum number of concurrent replays. Beyond this maximum an exception will be raised and further replays
          * will be rejected.
          */
+        @Config
         public static final String MAX_CONCURRENT_REPLAYS_PROP_NAME = "aeron.archive.max.concurrent.replays";
 
         /**
          * Default maximum number of concurrent replays. Unless on a fast SSD and having sufficient memory
          * for the page cache then this number should be kept low.
          */
+        @Config
         public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 20;
 
         /**
@@ -366,6 +391,7 @@ public final class Archive implements AutoCloseable
          * @deprecated Use {@link #CATALOG_CAPACITY_PROP_NAME} instead.
          */
         @Deprecated
+        @Config
         public static final String MAX_CATALOG_ENTRIES_PROP_NAME = "aeron.archive.max.catalog.entries";
 
         /**
@@ -374,12 +400,14 @@ public final class Archive implements AutoCloseable
          * @see #MAX_CATALOG_ENTRIES_PROP_NAME
          */
         @Deprecated
+        @Config
         public static final long MAX_CATALOG_ENTRIES_DEFAULT = 8 * 1024;
 
         /**
          * Default capacity in bytes of the archive {@link Catalog}. {@link Catalog} will resize itself when this
          * limit is reached.
          */
+        @Config
         public static final String CATALOG_CAPACITY_PROP_NAME = "aeron.archive.catalog.capacity";
 
         /**
@@ -387,11 +415,13 @@ public final class Archive implements AutoCloseable
          *
          * @see #CATALOG_CAPACITY_PROP_NAME
          */
+        @Config
         public static final long CATALOG_CAPACITY_DEFAULT = Catalog.DEFAULT_CAPACITY;
 
         /**
          * Timeout for making a connection back to a client for a control session or replay.
          */
+        @Config
         public static final String CONNECT_TIMEOUT_PROP_NAME = "aeron.archive.connect.timeout";
 
         /**
@@ -400,11 +430,13 @@ public final class Archive implements AutoCloseable
          *
          * @see #CONNECT_TIMEOUT_PROP_NAME
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 5L * 1000 * 1000 * 1000)
         public static final long CONNECT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
          * How long a replay publication should linger after all data is sent. Longer linger can help avoid tail loss.
          */
+        @Config
         public static final String REPLAY_LINGER_TIMEOUT_PROP_NAME = "aeron.archive.replay.linger.timeout";
 
         /**
@@ -413,63 +445,75 @@ public final class Archive implements AutoCloseable
          *
          * @see #REPLAY_LINGER_TIMEOUT_PROP_NAME
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 5L * 1000 * 1000 * 1000)
         public static final long REPLAY_LINGER_TIMEOUT_DEFAULT_NS =
             io.aeron.driver.Configuration.publicationLingerTimeoutNs();
 
         /**
          * Property name for threshold value for the conductor work cycle threshold to track for being exceeded.
          */
+        @Config
         public static final String CONDUCTOR_CYCLE_THRESHOLD_PROP_NAME = "aeron.archive.conductor.cycle.threshold";
 
         /**
          * Default threshold value for the conductor work cycle threshold to track for being exceeded.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 1000L * 1000 * 1000)
         public static final long CONDUCTOR_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
         /**
          * Property name for threshold value for the recorder work cycle threshold to track for being exceeded.
          */
+        @Config
         public static final String RECORDER_CYCLE_THRESHOLD_PROP_NAME = "aeron.archive.recorder.cycle.threshold";
 
         /**
          * Default threshold value for the recorder work cycle threshold to track for being exceeded.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 1000L * 1000 * 1000)
         public static final long RECORDER_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
         /**
          * Property name for threshold value for the replayer work cycle threshold to track for being exceeded.
          */
+        @Config
         public static final String REPLAYER_CYCLE_THRESHOLD_PROP_NAME = "aeron.archive.replayer.cycle.threshold";
 
         /**
          * Default threshold value for the replayer work cycle threshold to track for being exceeded.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 1000L * 1000 * 1000)
         public static final long REPLAYER_CYCLE_THRESHOLD_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
         /**
          * Should the archive delete existing files on start. Default is false and should only be true for testing.
          */
+        @Config(defaultType = DefaultType.BOOLEAN, defaultBoolean = false)
         public static final String ARCHIVE_DIR_DELETE_ON_START_PROP_NAME = "aeron.archive.dir.delete.on.start";
 
         /**
          * Channel for receiving replication streams replayed from another archive.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String REPLICATION_CHANNEL_PROP_NAME = "aeron.archive.replication.channel";
 
         /**
          * Name of the system property for specifying a supplier of {@link Authenticator} for the archive.
          */
+        @Config
         public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.archive.authenticator.supplier";
 
         /**
          * Name of the class to use as a supplier of {@link Authenticator} for the archive. Default is
          * a non-authenticating option.
          */
+        @Config
         public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.security.DefaultAuthenticatorSupplier";
 
         /**
          * Name of the system property for specifying a supplier of {@link AuthorisationService} for the archive.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String AUTHORISATION_SERVICE_SUPPLIER_PROP_NAME =
             "aeron.archive.authorisation.service.supplier";
 
@@ -493,29 +537,34 @@ public final class Archive implements AutoCloseable
         /**
          * Size in bytes of the error buffer for the archive when not externally provided.
          */
+        @Config
         public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.archive.error.buffer.length";
 
         /**
          * Size in bytes of the error buffer for the archive when not eternally provided.
          */
+        @Config
         public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
         /**
          * Property that specifies fully qualified class name of the {@link io.aeron.archive.checksum.Checksum}
          * to be used for checksum computation during recording.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String RECORD_CHECKSUM_PROP_NAME = "aeron.archive.record.checksum";
 
         /**
          * Property that specifies fully qualified class name of the {@link io.aeron.archive.checksum.Checksum}
          * to be used for checksum validation during replay.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String REPLAY_CHECKSUM_PROP_NAME = "aeron.archive.replay.checksum";
 
         /**
          * Property name for the identity of the Archive instance. If not specified defaults to the
          * {@link Aeron#clientId()} of the assigned {@link Aeron} instance.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = -1)
         public static final String ARCHIVE_ID_PROP_NAME = "aeron.archive.id";
 
         /**
@@ -524,6 +573,7 @@ public final class Archive implements AutoCloseable
          * If set to anything other than {@code true} then control channel is disabled, i.e. the Archive will run in
          * IPC-only mode.
          */
+        @Config(defaultType = DefaultType.BOOLEAN, defaultBoolean = true)
         public static final String CONTROL_CHANNEL_ENABLED_PROP_NAME = "aeron.archive.control.channel.enabled";
 
         /**
@@ -1513,6 +1563,7 @@ public final class Archive implements AutoCloseable
          *
          * @return {@code true} if an existing archive should be deleted on start up.
          */
+        @Config(id = "ARCHIVE_DIR_DELETE_ON_START")
         public boolean deleteArchiveOnStart()
         {
             return deleteArchiveOnStart;
@@ -1537,6 +1588,7 @@ public final class Archive implements AutoCloseable
          *
          * @return the directory name to be used for the archive to store recordings and the {@link Catalog}.
          */
+        @Config(id = "ARCHIVE_DIR")
         public String archiveDirectoryName()
         {
             return archiveDirectoryName;
@@ -1573,6 +1625,7 @@ public final class Archive implements AutoCloseable
          * @see Configuration#MARK_FILE_DIR_PROP_NAME
          * @see #archiveDir()
          */
+        @Config
         public File markFileDir()
         {
             return markFileDir;
@@ -1660,6 +1713,7 @@ public final class Archive implements AutoCloseable
          * @return {@code true} if the UDP control channel should be enabled.
          * @see Configuration#CONTROL_CHANNEL_ENABLED_PROP_NAME
          */
+        @Config
         public boolean controlChannelEnabled()
         {
             return controlChannelEnabled;
@@ -1904,6 +1958,7 @@ public final class Archive implements AutoCloseable
          * @return {@code true} if the recording events channel should be enabled.
          * @see io.aeron.archive.client.AeronArchive.Configuration#RECORDING_EVENTS_ENABLED_PROP_NAME
          */
+        @Config
         public boolean recordingEventsEnabled()
         {
             return recordingEventsEnabled;
@@ -1928,6 +1983,7 @@ public final class Archive implements AutoCloseable
          * @return the channel URI for replicating stream from another archive as replays.
          * @see Archive.Configuration#REPLICATION_CHANNEL_PROP_NAME
          */
+        @Config
         public String replicationChannel()
         {
             return replicationChannel;
@@ -1965,6 +2021,7 @@ public final class Archive implements AutoCloseable
          * @return the message timeout in nanoseconds to wait for a connection to be established.
          * @see Configuration#CONNECT_TIMEOUT_PROP_NAME
          */
+        @Config
         public long connectTimeoutNs()
         {
             return connectTimeoutNs;
@@ -1991,6 +2048,7 @@ public final class Archive implements AutoCloseable
          * @see Configuration#REPLAY_LINGER_TIMEOUT_PROP_NAME
          * @see io.aeron.driver.Configuration#PUBLICATION_LINGER_PROP_NAME
          */
+        @Config
         public long replayLingerTimeoutNs()
         {
             return replayLingerTimeoutNs;
@@ -2017,6 +2075,7 @@ public final class Archive implements AutoCloseable
          *
          * @return threshold to track for the conductor work cycle time.
          */
+        @Config
         public long conductorCycleThresholdNs()
         {
             return conductorCycleThresholdNs;
@@ -2043,6 +2102,7 @@ public final class Archive implements AutoCloseable
          *
          * @return threshold to track for the recorder work cycle time.
          */
+        @Config
         public long recorderCycleThresholdNs()
         {
             return recorderCycleThresholdNs;
@@ -2069,6 +2129,7 @@ public final class Archive implements AutoCloseable
          *
          * @return threshold to track for the replayer work cycle time.
          */
+        @Config
         public long replayerCycleThresholdNs()
         {
             return replayerCycleThresholdNs;
@@ -2164,6 +2225,7 @@ public final class Archive implements AutoCloseable
          * {@code null} if no {@link Checksum} was configured.
          * @see Configuration#RECORD_CHECKSUM_PROP_NAME
          */
+        @Config
         public Checksum recordChecksum()
         {
             return recordChecksum;
@@ -2189,6 +2251,7 @@ public final class Archive implements AutoCloseable
          * {@code null} if no replay {@link Checksum} was configured.
          * @see Configuration#REPLAY_CHECKSUM_PROP_NAME
          */
+        @Config
         public Checksum replayChecksum()
         {
             return replayChecksum;
@@ -2213,6 +2276,7 @@ public final class Archive implements AutoCloseable
          *
          * @return a new {@link IdleStrategy} for idling the conductor or composite {@link Agent}.
          */
+        @Config(id = "ARCHIVE_IDLE_STRATEGY")
         public IdleStrategy idleStrategy()
         {
             return idleStrategySupplier.get();
@@ -2235,6 +2299,7 @@ public final class Archive implements AutoCloseable
          *
          * @return a new {@link IdleStrategy} for idling the recorder {@link Agent}.
          */
+        @Config(id = "ARCHIVE_RECORDER_IDLE_STRATEGY")
         public IdleStrategy recorderIdleStrategy()
         {
             return recorderIdleStrategySupplier.get();
@@ -2257,6 +2322,7 @@ public final class Archive implements AutoCloseable
          *
          * @return a new {@link IdleStrategy} for idling the replayer {@link Agent}.
          */
+        @Config(id = "ARCHIVE_REPLAYER_IDLE_STRATEGY")
         public IdleStrategy replayerIdleStrategy()
         {
             return replayerIdleStrategySupplier.get();
@@ -2312,6 +2378,7 @@ public final class Archive implements AutoCloseable
          * @return the file length used for recording data segment files
          * @see Configuration#SEGMENT_FILE_LENGTH_PROP_NAME
          */
+        @Config
         int segmentFileLength()
         {
             return segmentFileLength;
@@ -2343,6 +2410,7 @@ public final class Archive implements AutoCloseable
          * @see #catalogFileSyncLevel()
          * @see Configuration#FILE_SYNC_LEVEL_PROP_NAME
          */
+        @Config
         int fileSyncLevel()
         {
             return fileSyncLevel;
@@ -2379,6 +2447,7 @@ public final class Archive implements AutoCloseable
          * @see #fileSyncLevel()
          * @see Configuration#CATALOG_FILE_SYNC_LEVEL_PROP_NAME
          */
+        @Config
         int catalogFileSyncLevel()
         {
             return catalogFileSyncLevel;
@@ -2475,6 +2544,7 @@ public final class Archive implements AutoCloseable
          * @return the archive threading mode.
          * @see Configuration#THREADING_MODE_PROP_NAME
          */
+        @Config
         public ArchiveThreadingMode threadingMode()
         {
             return threadingMode;
@@ -2584,6 +2654,7 @@ public final class Archive implements AutoCloseable
          * @return error buffer length in bytes.
          * @see Configuration#ERROR_BUFFER_LENGTH_PROP_NAME
          */
+        @Config
         public int errorBufferLength()
         {
             return errorBufferLength;
@@ -2608,6 +2679,7 @@ public final class Archive implements AutoCloseable
          * @return the id of this Archive instance.
          * @see io.aeron.archive.Archive.Configuration#ARCHIVE_ID_PROP_NAME
          */
+        @Config
         public long archiveId()
         {
             return archiveId;
@@ -2839,6 +2911,7 @@ public final class Archive implements AutoCloseable
          * @return the max number of concurrent recordings.
          * @see Configuration#MAX_CONCURRENT_RECORDINGS_PROP_NAME
          */
+        @Config
         public int maxConcurrentRecordings()
         {
             return maxConcurrentRecordings;
@@ -2863,6 +2936,7 @@ public final class Archive implements AutoCloseable
          * @return the max number of concurrent replays.
          * @see Configuration#MAX_CONCURRENT_REPLAYS_PROP_NAME
          */
+        @Config
         public int maxConcurrentReplays()
         {
             return maxConcurrentReplays;
@@ -2887,6 +2961,7 @@ public final class Archive implements AutoCloseable
          * @return the max length of a file IO operation.
          * @see Configuration#FILE_IO_MAX_LENGTH_PROP_NAME
          */
+        @Config
         public int fileIoMaxLength()
         {
             return fileIoMaxLength;
@@ -2924,6 +2999,7 @@ public final class Archive implements AutoCloseable
          * @return threshold below which the archive will reject new recording requests in bytes.
          * @see Configuration#LOW_STORAGE_SPACE_THRESHOLD_PROP_NAME
          */
+        @Config
         public long lowStorageSpaceThreshold()
         {
             return lowStorageSpaceThreshold;
@@ -3096,6 +3172,7 @@ public final class Archive implements AutoCloseable
          * the {@link Catalog} in bytes rather than in number of entries.
          */
         @Deprecated
+        @Config
         public long maxCatalogEntries()
         {
             return -1;
@@ -3120,6 +3197,7 @@ public final class Archive implements AutoCloseable
          * @return capacity in bytes of the {@link Catalog}.
          * @see Configuration#CATALOG_CAPACITY_PROP_NAME
          */
+        @Config
         public long catalogCapacity()
         {
             return catalogCapacity;
@@ -3130,6 +3208,7 @@ public final class Archive implements AutoCloseable
          *
          * @return the {@link AuthenticatorSupplier} to be used for the Archive.
          */
+        @Config
         public AuthenticatorSupplier authenticatorSupplier()
         {
             return authenticatorSupplier;
@@ -3152,6 +3231,7 @@ public final class Archive implements AutoCloseable
          *
          * @return the {@link AuthorisationServiceSupplier} to be used for the Archive.
          */
+        @Config
         public AuthorisationServiceSupplier authorisationServiceSupplier()
         {
             return authorisationServiceSupplier;

@@ -15,6 +15,8 @@
  */
 package io.aeron;
 
+import io.aeron.config.Config;
+import io.aeron.config.DefaultType;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.DriverTimeoutException;
@@ -98,17 +100,23 @@ public class CommonContext implements Cloneable
     /**
      * Property name for driver timeout after which the driver is considered inactive.
      */
+    @Config
     public static final String DRIVER_TIMEOUT_PROP_NAME = "aeron.driver.timeout";
 
     /**
      * Property name for the timeout to use in debug mode. By default, this is not set and the configured
      * timeouts will be used. Setting this value adjusts timeouts to make debugging easier.
      */
+    @Config(defaultType = DefaultType.LONG, defaultLong = 0, existsInC = false)
     public static final String DEBUG_TIMEOUT_PROP_NAME = "aeron.debug.timeout";
 
     /**
      * Default timeout in which the driver is expected to respond or heartbeat.
      */
+    @Config(
+        id = "DRIVER_TIMEOUT",
+        timeUnit = TimeUnit.MILLISECONDS,
+        expectedCDefaultFieldName = "AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT")
     public static final long DEFAULT_DRIVER_TIMEOUT_MS = 10_000;
 
     /**
@@ -124,11 +132,13 @@ public class CommonContext implements Cloneable
     /**
      * The top level Aeron directory used for communication between a Media Driver and client.
      */
+    @Config(skipCDefaultValidation = true)
     public static final String AERON_DIR_PROP_NAME = "aeron.dir";
 
     /**
      * The value of the top level Aeron directory unless overridden by {@link #aeronDirectoryName(String)}
      */
+    @Config(id = "AERON_DIR", defaultType = DefaultType.STRING, defaultString = "OS specific")
     public static final String AERON_DIR_PROP_DEFAULT;
 
     /**
@@ -136,12 +146,14 @@ public class CommonContext implements Cloneable
      *
      * @since 1.44.0
      */
+    @Config(defaultType = DefaultType.BOOLEAN, defaultBoolean = false, existsInC = false)
     public static final String ENABLE_EXPERIMENTAL_FEATURES_PROP_NAME = "aeron.enable.experimental.features";
 
     /**
      * Property name for a fallback {@link PrintStream} based logger when it is not possible to use the error logging
      * callback. Supported values are stdout, stderr, no_op (stderr is the default).
      */
+    @Config(defaultType = DefaultType.STRING, defaultString = "stderr", existsInC = false)
     public static final String FALLBACK_LOGGER_PROP_NAME = "aeron.fallback.logger";
 
     /**
@@ -412,6 +424,7 @@ public class CommonContext implements Cloneable
      *
      * @return the configured PrintStream.
      */
+    @Config
     public static PrintStream fallbackLogger()
     {
         final String fallbackLoggerName = getProperty(FALLBACK_LOGGER_PROP_NAME, "stderr");
@@ -499,6 +512,7 @@ public class CommonContext implements Cloneable
      *
      * @return the default directory name to be used if {@link #aeronDirectoryName(String)} is not set.
      */
+    @Config(id = "AERON_DIR")
     public static String getAeronDirectoryName()
     {
         return getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT);
@@ -695,6 +709,7 @@ public class CommonContext implements Cloneable
      *
      * @return driver timeout in milliseconds.
      */
+    @Config(id = "DRIVER_TIMEOUT")
     public long driverTimeoutMs()
     {
         return checkDebugTimeout(driverTimeoutMs, TimeUnit.MILLISECONDS);
@@ -707,6 +722,7 @@ public class CommonContext implements Cloneable
      * @see #enableExperimentalFeatures(boolean)
      * @since 1.44.0
      */
+    @Config
     public boolean enableExperimentalFeatures()
     {
         return enableExperimentalFeatures;

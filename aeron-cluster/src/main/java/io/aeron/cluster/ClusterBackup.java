@@ -24,6 +24,8 @@ import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.ClusterCounters;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusteredServiceContainer;
+import io.aeron.config.Config;
+import io.aeron.config.DefaultType;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.CredentialsSupplier;
@@ -302,73 +304,87 @@ public final class ClusterBackup implements AutoCloseable
     /**
      * Configuration options for {@link ClusterBackup} with defaults and constants for system properties lookup.
      */
+    @Config(existsInC = false)
     public static class Configuration
     {
         /**
          * Channel template used for catchup and replication of log and snapshots.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "")
         public static final String CLUSTER_BACKUP_CATCHUP_ENDPOINT_PROP_NAME = "aeron.cluster.backup.catchup.endpoint";
 
         /**
          * Channel template used for catchup and replication of log and snapshots.
          */
+        @Config
         public static final String CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME = "aeron.cluster.backup.catchup.channel";
 
         /**
          * Default channel template used for catchup and replication of log and snapshots.
          */
+        @Config
         public static final String CLUSTER_BACKUP_CATCHUP_CHANNEL_DEFAULT =
             "aeron:udp?alias=backup|cc=cubic|so-sndbuf=512k|so-rcvbuf=512k|rcv-wnd=512k";
 
         /**
          * Interval at which a cluster backup will send backup queries.
          */
+        @Config
         public static final String CLUSTER_BACKUP_INTERVAL_PROP_NAME = "aeron.cluster.backup.interval";
 
         /**
          * Default interval at which a cluster backup will send backup queries.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 60L * 60 * 1000 * 1000 * 1000)
         public static final long CLUSTER_BACKUP_INTERVAL_DEFAULT_NS = TimeUnit.HOURS.toNanos(1);
 
         /**
          * Timeout within which a cluster backup will expect a response from a backup query.
          */
+        @Config
         public static final String CLUSTER_BACKUP_RESPONSE_TIMEOUT_PROP_NAME = "aeron.cluster.backup.response.timeout";
 
         /**
          * Default timeout within which a cluster backup will expect a response from a backup query.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 5L * 1000 * 1000 * 1000)
         public static final long CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
          * Timeout within which a cluster backup will expect progress.
          */
+        @Config
         public static final String CLUSTER_BACKUP_PROGRESS_TIMEOUT_PROP_NAME = "aeron.cluster.backup.progress.timeout";
 
         /**
          * Interval at which the cluster backup is re-initialised after an exception has been thrown.
          */
+        @Config
         public static final String CLUSTER_BACKUP_COOL_DOWN_INTERVAL_PROP_NAME =
             "aeron.cluster.backup.cool.down.interval";
 
         /**
          * Default interval at which the cluster back is re-initialised after an exception has been thrown.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 30L * 1000 * 1000 * 1000)
         public static final long CLUSTER_BACKUP_COOL_DOWN_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(30);
 
         /**
          * Default timeout within which a cluster backup will expect progress.
          */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 10L * 1000 * 1000 * 1000)
         public static final long CLUSTER_BACKUP_PROGRESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * The source type used for the cluster backup. Should match on of the {@link SourceType} enum values.
          */
+        @Config
         public static final String CLUSTER_BACKUP_SOURCE_TYPE_PROP_NAME = "aeron.cluster.backup.source.type";
 
         /**
          * Default source type to receive log traffic from.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "ANY")
         public static final String CLUSTER_BACKUP_SOURCE_TYPE_DEFAULT = SourceType.ANY.name();
 
         /**
@@ -515,11 +531,13 @@ public final class ClusterBackup implements AutoCloseable
         /**
          * Default value for the initial cluster replay start.
          */
+        @Config(defaultType = DefaultType.STRING, defaultString = "BEGINNING")
         public static final ReplayStart CLUSTER_INITIAL_REPLAY_START_DEFAULT = ReplayStart.BEGINNING;
 
         /**
          * Property name for setting the cluster replay start.
          */
+        @Config
         public static final String CLUSTER_INITIAL_REPLAY_START_PROP_NAME = "cluster.backup.initial.replay.start";
 
         /**
@@ -1326,6 +1344,7 @@ public final class ClusterBackup implements AutoCloseable
          * @return the stream id for the cluster log channel.
          * @see ConsensusModule.Configuration#LOG_STREAM_ID_PROP_NAME
          */
+        @Config
         public int logStreamId()
         {
             return logStreamId;
@@ -1350,6 +1369,7 @@ public final class ClusterBackup implements AutoCloseable
          * @return catchup endpoint to use for the log retrieval.
          * @see Configuration#catchupEndpoint()
          */
+        @Config(id = "CLUSTER_BACKUP_CATCHUP_ENDPOINT")
         public String catchupEndpoint()
         {
             return catchupEndpoint;
@@ -1374,6 +1394,7 @@ public final class ClusterBackup implements AutoCloseable
          * @return catchup endpoint to use for the log and snapshot retrieval.
          * @see Configuration#CLUSTER_BACKUP_CATCHUP_CHANNEL_PROP_NAME
          */
+        @Config(id = "CLUSTER_BACKUP_CATCHUP_CHANNEL")
         public String catchupChannel()
         {
             return catchupChannel;
@@ -1400,6 +1421,7 @@ public final class ClusterBackup implements AutoCloseable
          * @see Configuration#CLUSTER_BACKUP_INTERVAL_PROP_NAME
          * @see Configuration#CLUSTER_BACKUP_INTERVAL_DEFAULT_NS
          */
+        @Config
         public long clusterBackupIntervalNs()
         {
             return clusterBackupIntervalNs;
@@ -1426,6 +1448,7 @@ public final class ClusterBackup implements AutoCloseable
          * @see Configuration#CLUSTER_BACKUP_RESPONSE_TIMEOUT_PROP_NAME
          * @see Configuration#CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS
          */
+        @Config
         public long clusterBackupResponseTimeoutNs()
         {
             return clusterBackupResponseTimeoutNs;
@@ -1452,6 +1475,7 @@ public final class ClusterBackup implements AutoCloseable
          * @see Configuration#CLUSTER_BACKUP_PROGRESS_TIMEOUT_PROP_NAME
          * @see Configuration#CLUSTER_BACKUP_PROGRESS_TIMEOUT_DEFAULT_NS
          */
+        @Config
         public long clusterBackupProgressTimeoutNs()
         {
             return clusterBackupProgressTimeoutNs;
@@ -1478,6 +1502,7 @@ public final class ClusterBackup implements AutoCloseable
          * @see Configuration#CLUSTER_BACKUP_COOL_DOWN_INTERVAL_PROP_NAME
          * @see Configuration#CLUSTER_BACKUP_COOL_DOWN_INTERVAL_DEFAULT_NS
          */
+        @Config
         public long clusterBackupCoolDownIntervalNs()
         {
             return clusterBackupCoolDownIntervalNs;
@@ -1776,6 +1801,7 @@ public final class ClusterBackup implements AutoCloseable
          * @return source type for this backup instance.
          * @throws IllegalArgumentException if the configured source type is not one of {@link SourceType}
          */
+        @Config(id = "CLUSTER_BACKUP_SOURCE_TYPE")
         public SourceType sourceType()
         {
             return SourceType.valueOf(sourceType);
@@ -1800,6 +1826,7 @@ public final class ClusterBackup implements AutoCloseable
          * @return timeout in nanoseconds.
          * @see ConsensusModule.Configuration#replicationProgressTimeoutNs()
          */
+        @Config(id = "CLUSTER_REPLICATION_PROGRESS_TIMEOUT")
         public long replicationProgressTimeoutNs()
         {
             return replicationProgressTimeoutNs;
@@ -1825,6 +1852,7 @@ public final class ClusterBackup implements AutoCloseable
          * @return timeout in nanoseconds.
          * @see ConsensusModule.Configuration#replicationProgressIntervalNs()
          */
+        @Config(id = "CLUSTER_REPLICATION_PROGRESS_INTERVAL")
         public long replicationProgressIntervalNs()
         {
             return replicationProgressIntervalNs;
@@ -1853,6 +1881,7 @@ public final class ClusterBackup implements AutoCloseable
          * @see Configuration.ReplayStart
          * @see Configuration#CLUSTER_INITIAL_REPLAY_START_DEFAULT
          */
+        @Config(id = "CLUSTER_INITIAL_REPLAY_START")
         public Configuration.ReplayStart initialReplayStart()
         {
             return this.initialReplayStart;

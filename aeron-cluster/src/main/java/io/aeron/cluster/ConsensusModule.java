@@ -1937,6 +1937,11 @@ public final class ConsensusModule implements AutoCloseable
                 consensusModuleExtension = Configuration.newConsensusModuleExtension();
             }
 
+            if (null != consensusModuleExtension && 0 != serviceCount)
+            {
+                throw new ClusterException("Service count must be zero when ConsensusModuleExtension installed");
+            }
+
             concludeMarkFile();
 
             if (io.aeron.driver.Configuration.printConfigurationOnStart())

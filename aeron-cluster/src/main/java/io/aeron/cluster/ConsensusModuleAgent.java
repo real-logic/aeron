@@ -2233,8 +2233,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                         if (isEos || logAdapter.isImageClosed())
                         {
                             enterElection(isEos, "log disconnected from leader: eos=" + isEos);
+                            return 1;
                         }
-                        return 1;
                     }
 
                     commitPosition.proposeMaxOrdered(logAdapter.position());

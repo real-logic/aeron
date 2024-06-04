@@ -24,16 +24,20 @@ import static io.aeron.driver.Configuration.MAX_RETRANSMITS_DEFAULT;
 /**
  * Tracking and handling of retransmit request, NAKs, for senders, and receivers.
  * <p>
- * A max number of retransmits is permitted by {@link Configuration#MAX_RETRANSMITS_DEFAULT}. Additional received NAKs
- * will be ignored if this maximum is reached.
+ * When configured for multicast, a max number of retransmits is permitted by
+ * {@link Configuration#MAX_RETRANSMITS_DEFAULT}. Additional received NAKs will be ignored if this maximum is reached.
+ * When configured for unicast, a single outstanding retransmit is permitted, and additional received NAKs
+ * will be ignored iff they overlap the current retransmit - otherwise the previous retransmit is assumed to have
+ * 'worked' and the new NAK will take its place.
  */
 public final class RetransmitHandler
 {
-    private final RetransmitAction[] retransmitActionPool = new RetransmitAction[MAX_RETRANSMITS_DEFAULT];
+    private final RetransmitAction[] retransmitActionPool;
     private final NanoClock nanoClock;
     private final FeedbackDelayGenerator delayGenerator;
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
     private final AtomicCounter invalidPackets;
+    private final boolean hasGroupSemantics;
 
     private int activeRetransmitCount = 0;
 
@@ -44,19 +48,25 @@ public final class RetransmitHandler
      * @param invalidPackets         for recording invalid packets.
      * @param delayGenerator         to use for delay determination.
      * @param lingerTimeoutGenerator to use for linger timeout.
+     * @param hasGroupSemantics      indicates multicast/MDC semantics.
      */
     public RetransmitHandler(
         final NanoClock nanoClock,
         final AtomicCounter invalidPackets,
         final FeedbackDelayGenerator delayGenerator,
-        final FeedbackDelayGenerator lingerTimeoutGenerator)
+        final FeedbackDelayGenerator lingerTimeoutGenerator,
+        final boolean hasGroupSemantics)
     {
         this.nanoClock = nanoClock;
         this.invalidPackets = invalidPackets;
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
+        this.hasGroupSemantics = hasGroupSemantics;
 
-        for (int i = 0; i < MAX_RETRANSMITS_DEFAULT; i++)
+        final int maxRetransmits = this.hasGroupSemantics ? MAX_RETRANSMITS_DEFAULT : 1;
+
+        retransmitActionPool = new RetransmitAction[maxRetransmits];
+        for (int i = 0; i < maxRetransmits; i++)
         {
             retransmitActionPool[i] = new RetransmitAction();
         }
@@ -187,16 +197,29 @@ public final class RetransmitHandler
                     {
                         return null;
                     }
+
+                    if (!hasGroupSemantics)
+                    {
+                        // this is unicast, and the NAK does NOT overlap the previous one, so just reuse it
+                        availableAction = action;
+                    }
                     break;
             }
         }
 
-        if (null != availableAction)
+        if (hasGroupSemantics)
         {
-            return addRetransmit(availableAction);
-        }
+            if (null != availableAction)
+            {
+                return addRetransmit(availableAction);
+            }
 
-        throw new IllegalStateException("maximum number of active RetransmitActions reached");
+            throw new IllegalStateException("maximum number of active RetransmitActions reached");
+        }
+        else
+        {
+            return availableAction;
+        }
     }
 
     private RetransmitAction scanForExistingRetransmit(final int termId, final int termOffset)

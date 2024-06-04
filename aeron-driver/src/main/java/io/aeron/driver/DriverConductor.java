@@ -1598,7 +1598,8 @@ public final class DriverConductor implements Agent
                 ctx.senderCachedNanoClock(),
                 ctx.systemCounters().get(INVALID_PACKETS),
                 ctx.retransmitUnicastDelayGenerator(),
-                ctx.retransmitUnicastLingerGenerator());
+                ctx.retransmitUnicastLingerGenerator(),
+                udpChannel.hasGroupSemantics());
 
             final NetworkPublication publication = new NetworkPublication(
                 registrationId,

@@ -689,6 +689,16 @@ public final class UdpChannel
     }
 
     /**
+     * Does the channel have group semantics (multicast or MDC).
+     *
+     * @return true if the channel has group semantics.
+     */
+    public boolean hasGroupSemantics()
+    {
+        return isMulticast || isMultiDestination();
+    }
+
+    /**
      * Get the socket receive buffer length.
      *
      * @return socket receive buffer length or 0 if not specified.

@@ -85,6 +85,23 @@ public interface TestMediaDriver extends AutoCloseable
         }
     }
 
+    static void enableMultiGapLoss(
+        final MediaDriver.Context context,
+        final int termId,
+        final int gapRadix,
+        final int gapLength,
+        final int totalGaps)
+    {
+        if (shouldRunCMediaDriver())
+        {
+            CTestMediaDriver.enableMultiGapLossOnReceive(context, termId, gapRadix, gapLength, totalGaps);
+        }
+        else
+        {
+            JavaTestMediaDriver.enableMultiGapLossOnReceive(context, termId, gapRadix, gapLength, totalGaps);
+        }
+    }
+
     static void dontCoalesceNaksOnReceiverByDefault(final MediaDriver.Context context)
     {
         if (shouldRunCMediaDriver())

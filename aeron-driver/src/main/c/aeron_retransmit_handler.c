@@ -31,13 +31,22 @@ int aeron_retransmit_handler_init(
     aeron_retransmit_handler_t *handler,
     int64_t *invalid_packets_counter,
     uint64_t delay_timeout_ns,
-    uint64_t linger_timeout_ns)
+    uint64_t linger_timeout_ns,
+    bool is_multicast)
 {
     handler->invalid_packets_counter = invalid_packets_counter;
     handler->delay_timeout_ns = delay_timeout_ns;
     handler->linger_timeout_ns = linger_timeout_ns;
+    handler->is_multicast = is_multicast;
+    handler->max_retransmits = is_multicast ? AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS : 1;
 
-    for (size_t i = 0; i < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS; i++)
+    if (aeron_alloc((void **)&handler->retransmit_action_pool, sizeof(aeron_retransmit_action_t) * handler->max_retransmits) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Could not allocate retransmit_action_pool");
+        return -1;
+    }
+
+    for (size_t i = 0; i < handler->max_retransmits; i++)
     {
         handler->retransmit_action_pool[i].state = AERON_RETRANSMIT_ACTION_STATE_INACTIVE;
     }
@@ -49,6 +58,7 @@ int aeron_retransmit_handler_init(
 
 void aeron_retransmit_handler_close(aeron_retransmit_handler_t *handler)
 {
+    aeron_free(handler->retransmit_action_pool);
 }
 
 aeron_retransmit_action_t *aeron_retransmit_handler_add_retransmit(aeron_retransmit_handler_t *handler, aeron_retransmit_action_t *action)
@@ -132,7 +142,7 @@ int aeron_retransmit_handler_process_timeouts(
 
     if (handler->active_retransmit_count > 0)
     {
-        for (size_t i = 0; i < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS; i++)
+        for (size_t i = 0; i < handler->max_retransmits; i++)
         {
             aeron_retransmit_action_t *action = &handler->retransmit_action_pool[i];
 
@@ -174,7 +184,7 @@ int aeron_retransmit_handler_scan_for_available_retransmit(
    }
 
     aeron_retransmit_action_t *available_action = NULL;
-    for (size_t i = 0; i < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS; i++)
+    for (size_t i = 0; i < handler->max_retransmits; i++)
     {
         aeron_retransmit_action_t *action = &handler->retransmit_action_pool[i];
 
@@ -196,17 +206,31 @@ int aeron_retransmit_handler_scan_for_available_retransmit(
                     *actionp = NULL;
                     return 0;
                 }
+
+                if (!handler->is_multicast)
+                {
+                    // this is unicast, and the NAK does NOT overlap the previous one, so just reuse it
+                    available_action = action;
+                }
                 break;
         }
     }
 
-    if (NULL != available_action)
+    if (handler->is_multicast)
     {
-        *actionp = aeron_retransmit_handler_add_retransmit(handler, available_action);
+        if (NULL != available_action)
+        {
+            *actionp = aeron_retransmit_handler_add_retransmit(handler, available_action);
+            return 0;
+        }
+
+        AERON_SET_ERR(EINVAL, "%s", "maximum number of active RetransmitActions reached");
+        *actionp = NULL;
+        return -1;
+    }
+    else
+    {
+        *actionp = available_action;
         return 0;
     }
-
-    AERON_SET_ERR(EINVAL, "%s", "maximum number of active RetransmitActions reached");
-    *actionp = NULL;
-    return -1;
 }

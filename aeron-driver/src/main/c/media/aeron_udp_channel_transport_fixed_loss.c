@@ -160,7 +160,7 @@ static bool aeron_udp_channel_interceptor_fixed_loss_should_drop_frame(
 
             if (tracking_offset == STREAM_AND_SESSION_ID_NULL_OFFSET)
             {
-                tracking_offset = term_offset;
+                tracking_offset = data_header->term_offset;
                 if (aeron_int64_counter_map_put(&stream_and_session_id_to_offset_map, key, tracking_offset, NULL) != 0)
                 {
                     return false;

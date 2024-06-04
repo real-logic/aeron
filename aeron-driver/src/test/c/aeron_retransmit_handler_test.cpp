@@ -85,7 +85,7 @@ protected:
 
 TEST_F(RetransmitHandlerTest, shouldImmediateRetransmitOnNak)
 {
-    ASSERT_EQ(aeron_retransmit_handler_init(&m_handler, &m_invalid_packet_counter, 0, LINGER_TIMEOUT_20MS), 0);
+    ASSERT_EQ(aeron_retransmit_handler_init(&m_handler, &m_invalid_packet_counter, 0, LINGER_TIMEOUT_20MS, true), 0);
 
     const int32_t nak_offset = (ALIGNED_FRAME_LENGTH * 2);
     const size_t nak_length = ALIGNED_FRAME_LENGTH;
@@ -108,7 +108,7 @@ TEST_F(RetransmitHandlerTest, shouldImmediateRetransmitOnNak)
 
 TEST_F(RetransmitHandlerTest, shouldNotRetransmitOnNakWhileInLinger)
 {
-    ASSERT_EQ(aeron_retransmit_handler_init(&m_handler, &m_invalid_packet_counter, 0, LINGER_TIMEOUT_20MS), 0);
+    ASSERT_EQ(aeron_retransmit_handler_init(&m_handler, &m_invalid_packet_counter, 0, LINGER_TIMEOUT_20MS, true), 0);
 
     const int32_t nak_offset = (ALIGNED_FRAME_LENGTH * 2);
     const size_t nak_length = ALIGNED_FRAME_LENGTH;
@@ -137,7 +137,7 @@ TEST_F(RetransmitHandlerTest, shouldNotRetransmitOnNakWhileInLinger)
 
 TEST_F(RetransmitHandlerTest, shouldRetransmitOnNakAfterLinger)
 {
-    ASSERT_EQ(aeron_retransmit_handler_init(&m_handler, &m_invalid_packet_counter, 0, LINGER_TIMEOUT_20MS), 0);
+    ASSERT_EQ(aeron_retransmit_handler_init(&m_handler, &m_invalid_packet_counter, 0, LINGER_TIMEOUT_20MS, true), 0);
 
     const int32_t nak_offset = (ALIGNED_FRAME_LENGTH * 2);
     const size_t nak_length = ALIGNED_FRAME_LENGTH;
@@ -166,7 +166,7 @@ TEST_F(RetransmitHandlerTest, shouldRetransmitOnNakAfterLinger)
 
 TEST_F(RetransmitHandlerTest, shouldRetransmitOnMultipleNaks)
 {
-    ASSERT_EQ(aeron_retransmit_handler_init(&m_handler, &m_invalid_packet_counter, 0, LINGER_TIMEOUT_20MS), 0);
+    ASSERT_EQ(aeron_retransmit_handler_init(&m_handler, &m_invalid_packet_counter, 0, LINGER_TIMEOUT_20MS, true), 0);
 
     const int32_t nak_offset_1 = (ALIGNED_FRAME_LENGTH * 2);
     const size_t nak_length_1 = ALIGNED_FRAME_LENGTH;
@@ -203,7 +203,7 @@ TEST_F(RetransmitHandlerTest, shouldRetransmitOnMultipleNaks)
 
 TEST_F(RetransmitHandlerTest, errorOnRetransmitOverflow)
 {
-    ASSERT_EQ(aeron_retransmit_handler_init(&m_handler, &m_invalid_packet_counter, DELAY_TIMEOUT_20MS, LINGER_TIMEOUT_20MS), 0);
+    ASSERT_EQ(aeron_retransmit_handler_init(&m_handler, &m_invalid_packet_counter, DELAY_TIMEOUT_20MS, LINGER_TIMEOUT_20MS, true), 0);
 
     EXPECT_EQ(m_handler.active_retransmit_count, 0);
 

@@ -60,8 +60,6 @@ public class ReplayedBasicSubscriber
 
         try (AeronArchive archive = AeronArchive.connect(archiveCtx))
         {
-            System.out.println("AeronArchive.Context " + archiveCtx);
-
             final long recordingId = findLatestRecording(archive);
             final long position = 0L;
             final long length = Long.MAX_VALUE;

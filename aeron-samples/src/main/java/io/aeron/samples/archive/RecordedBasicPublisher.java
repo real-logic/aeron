@@ -63,8 +63,6 @@ public class RecordedBasicPublisher
 
         try (AeronArchive archive = AeronArchive.connect(archiveCtx))
         {
-            System.out.println("AeronArchive.Context " + archiveCtx);
-
             archive.startRecording(CHANNEL, STREAM_ID, SourceLocation.LOCAL);
 
             try (Publication publication = archive.context().aeron().addPublication(CHANNEL, STREAM_ID))

@@ -21,30 +21,30 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 
 /**
- * Adapter for handling messages from external schemas unknown to core Aeron cluster code
- * thus providing an extension to the core ingress Consensus module behaviour
+ * Extension for handling messages from external schemas unknown to core Aeron cluster code
+ * thus providing an extension to the core ingress consensus module behaviour.
  */
 public interface ConsensusModuleExtension extends AutoCloseable
 {
     /**
      * schema supported by this extension
      *
-     * @return  schema id
+     * @return schema id supported.
      */
     int supportedSchemaId();
 
     /**
-     * Callback for handling fragments of data being read from a log.
+     * Callback for handling messages received as ingress to a cluster.
      * <p>
      * Within this callback reentrant calls to the {@link io.aeron.Aeron} client are not permitted and
      * will result in undefined behaviour.
      *
-     * @param schemaId the schema id
+     * @param schemaId   the schema id
      * @param templateId the message template id (already parsed from header)
-     * @param buffer containing the data.
-     * @param offset at which the data begins.
-     * @param length of the data in bytes.
-     * @param header representing the metadata for the data.
+     * @param buffer     containing the data.
+     * @param offset     at which the data begins.
+     * @param length     of the data in bytes.
+     * @param header     representing the metadata for the data.
      * @return The action to be taken with regard to the stream position after the callback.
      */
     ControlledFragmentHandler.Action onMessage(
@@ -55,7 +55,9 @@ public interface ConsensusModuleExtension extends AutoCloseable
         int length,
         Header header);
 
-    @Override
+    /**
+     * {@inheritDoc}
+     */
     default void close()
     {
     }

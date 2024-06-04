@@ -871,6 +871,14 @@ public final class ConsensusModule implements AutoCloseable
         public static final String CLUSTER_CLOCK_PROP_NAME = "aeron.cluster.clock";
 
         /**
+         * Property name of setting {@link ConsensusModuleExtension}. Should specify a fully qualified class name.
+         *
+         * @since 1.45.0
+         */
+        public static final String CONSENSUS_MODULE_EXTENSION_CLASS_NAME_PROP_NAME =
+            "aeron.cluster.consensus.module.extension";
+
+        /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
          * {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME} if set.
          *
@@ -1351,6 +1359,31 @@ public final class ConsensusModule implements AutoCloseable
         {
             return Boolean.getBoolean(CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME);
         }
+
+        /**
+         * Create a new {@link ConsensusModuleExtension} based on the configured
+         * {@link #CONSENSUS_MODULE_EXTENSION_CLASS_NAME_PROP_NAME}.
+         *
+         * @return a new {@link ConsensusModuleExtension} based on the configured
+         * {@link #CONSENSUS_MODULE_EXTENSION_CLASS_NAME_PROP_NAME}.
+         */
+        public static ConsensusModuleExtension newConsensusModuleExtension()
+        {
+            final String className = System.getProperty(Configuration.CONSENSUS_MODULE_EXTENSION_CLASS_NAME_PROP_NAME);
+            if (null != className)
+            {
+                try
+                {
+                    return (ConsensusModuleExtension)Class.forName(className).getConstructor().newInstance();
+                }
+                catch (final Exception ex)
+                {
+                    LangUtil.rethrowUnchecked(ex);
+                }
+            }
+
+            return null;
+        }
     }
 
     /**
@@ -1434,7 +1467,6 @@ public final class ConsensusModule implements AutoCloseable
         private Random random;
         private TimerServiceSupplier timerServiceSupplier;
         private Function<Context, LongConsumer> clusterTimeConsumerSupplier;
-        private Supplier<ConsensusModuleExtension> consensusModuleExtensionSupplier;
         private ConsensusModuleExtension consensusModuleExtension;
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
@@ -1524,9 +1556,9 @@ public final class ConsensusModule implements AutoCloseable
                     clusterServicesDirectoryName = new File(clusterServicesDirectoryName).getCanonicalPath();
                 }
             }
-            catch (final IOException e)
+            catch (final IOException ex)
             {
-                throw new UncheckedIOException(e);
+                throw new UncheckedIOException(ex);
             }
 
             if (null == clusterMembers)
@@ -1899,6 +1931,11 @@ public final class ConsensusModule implements AutoCloseable
 
             final ChannelUri channelUri = ChannelUri.parse(logChannel());
             isLogMdc = channelUri.isUdp() && null == channelUri.get(ENDPOINT_PARAM_NAME);
+
+            if (null == consensusModuleExtension)
+            {
+                consensusModuleExtension = Configuration.newConsensusModuleExtension();
+            }
 
             concludeMarkFile();
 
@@ -3979,27 +4016,25 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Registers a ConsensusModuleExtension to extend beahviour of
-         * consensus module instead of using ClusteredServices
+         * Register a ConsensusModuleExtension to extend the behaviour of the
+         * consensus module instead of using ClusteredServices.
          *
-         * @param extensionSupplier supplier for consensus module extension
+         * @param consensusModuleExtension supplier for consensus module extension
          * @return this for a fluent API.
          */
-        public Context consensusModuleExtension(final Supplier<ConsensusModuleExtension> extensionSupplier)
+        public Context consensusModuleExtension(final ConsensusModuleExtension consensusModuleExtension)
         {
-            consensusModuleExtensionSupplier = extensionSupplier;
+            this.consensusModuleExtension = consensusModuleExtension;
             return this;
         }
 
         /**
-         * @return   Supplier for registered consensus module extension or null
+         * Registered consensus module extension.
+         *
+         * @return Registered consensus module extension or null.
          */
         public ConsensusModuleExtension consensusModuleExtension()
         {
-            if (consensusModuleExtensionSupplier != null)
-            {
-                consensusModuleExtension = consensusModuleExtensionSupplier.get();
-            }
             return consensusModuleExtension;
         }
 
@@ -4017,7 +4052,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Deprecated for removal.
          *
-         * @param ignore as deprected.
+         * @param ignore as deprecated.
          * @return this for fluent API.
          */
         @Deprecated

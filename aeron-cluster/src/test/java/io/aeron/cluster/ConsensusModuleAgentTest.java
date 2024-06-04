@@ -66,7 +66,7 @@ public class ConsensusModuleAgentTest
     private static final String RESPONSE_CHANNEL_ONE = "aeron:udp?endpoint=localhost:11111";
     private static final String RESPONSE_CHANNEL_TWO = "aeron:udp?endpoint=localhost:22222";
     private static final int SCHEMA_ID = 17;
-    private static final int MILLIS = 19;
+    private static final int UPDATE_INTERVAL_MS = 19;
 
     private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
     private final LogPublisher mockLogPublisher = mock(LogPublisher.class);
@@ -156,7 +156,7 @@ public class ConsensusModuleAgentTest
         Tests.setField(agent, "appendPosition", mock(ReadableCounter.class));
         agent.onSessionConnect(correlationIdOne, 2, PROTOCOL_SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
 
-        clock.update(MILLIS, TimeUnit.MILLISECONDS);
+        clock.update(UPDATE_INTERVAL_MS, TimeUnit.MILLISECONDS);
         agent.doWork();
         verify(mockTimeConsumer).accept(clock.time());
 
@@ -260,9 +260,10 @@ public class ConsensusModuleAgentTest
 
         controlToggle.set(NEUTRAL.code());
 
-        ctx.moduleStateCounter(stateCounter);
-        ctx.controlToggleCounter(controlToggle);
-        ctx.epochClock(clock).clusterClock(clock);
+        ctx.moduleStateCounter(stateCounter)
+            .controlToggleCounter(controlToggle)
+            .epochClock(clock)
+            .clusterClock(clock);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
         Tests.setField(agent, "appendPosition", mock(ReadableCounter.class));
@@ -340,7 +341,10 @@ public class ConsensusModuleAgentTest
         final String expectedResponseChannel)
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
-        ctx.epochClock(clock).clusterClock(clock).egressChannel(egressChannel).isIpcIngressAllowed(isIpcIngressAllowed);
+        ctx.epochClock(clock)
+            .clusterClock(clock)
+            .egressChannel(egressChannel)
+            .isIpcIngressAllowed(isIpcIngressAllowed);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
         agent.state(ConsensusModule.State.ACTIVE);
@@ -366,9 +370,10 @@ public class ConsensusModuleAgentTest
 
         controlToggle.set(NEUTRAL.code());
 
-        ctx.moduleStateCounter(stateCounter);
-        ctx.controlToggleCounter(controlToggle);
-        ctx.epochClock(clock).clusterClock(clock);
+        ctx.moduleStateCounter(stateCounter)
+            .controlToggleCounter(controlToggle)
+            .epochClock(clock)
+            .clusterClock(clock);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
         Tests.setField(agent, "appendPosition", mock(ReadableCounter.class));
@@ -428,7 +433,7 @@ public class ConsensusModuleAgentTest
     }
 
     @Test
-    void onCommmitPositionShouldUpdateTimeOfLastLeaderMessageReceived()
+    void onCommitPositionShouldUpdateTimeOfLastLeaderMessageReceived()
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.NANOSECONDS);
         ctx.clusterClock(clock)
@@ -454,7 +459,7 @@ public class ConsensusModuleAgentTest
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
         ctx.epochClock(clock)
             .clusterClock(clock)
-            .consensusModuleExtension(() -> consensusModuleExtension);
+            .consensusModuleExtension(consensusModuleExtension);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
         agent.onExtensionMessage(SCHEMA_ID, 1, null, 0, 0, null);

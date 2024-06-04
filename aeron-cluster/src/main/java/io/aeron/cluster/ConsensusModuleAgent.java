@@ -414,10 +414,11 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final int length,
         final Header header)
     {
-        if (consensusModuleExtension == null)
+        if (null == consensusModuleExtension)
         {
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
+
         return consensusModuleExtension.onMessage(schemaId, templateId, buffer, offset, length, header);
     }
 

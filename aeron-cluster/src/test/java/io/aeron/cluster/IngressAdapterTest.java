@@ -51,7 +51,7 @@ class IngressAdapterTest
     private ExpandableArrayBuffer buffer;
 
     @BeforeEach
-    public void setup()
+    void setup()
     {
         buffer = new ExpandableArrayBuffer();
         consensusModuleAgent = mock(ConsensusModuleAgent.class);
@@ -81,7 +81,7 @@ class IngressAdapterTest
         return Stream.of(
         Arguments.of(
             "UnknownSchema",
-            (Consumer<MutableDirectBuffer>)buffer ->
+            (Consumer<MutableDirectBuffer>)(buffer) ->
             {
                 new MessageHeaderEncoder().wrap(buffer, 0)
                     .blockLength(0)
@@ -93,7 +93,7 @@ class IngressAdapterTest
                 a.onExtensionMessage(17, 19, buffer, 0, MessageHeaderDecoder.ENCODED_LENGTH, null)),
         Arguments.of(
             "SessionMessageHeaderDecoder",
-            (Consumer<MutableDirectBuffer>)buffer ->
+            (Consumer<MutableDirectBuffer>)(buffer) ->
             {
                 new SessionMessageHeaderEncoder().wrapAndApplyHeader(buffer, 0, new MessageHeaderEncoder())
                     .leadershipTermId(17)
@@ -105,7 +105,7 @@ class IngressAdapterTest
                     buffer, MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH, 0)),
         Arguments.of(
             "SessionConnectRequestDecoder",
-            (Consumer<MutableDirectBuffer>)buffer ->
+            (Consumer<MutableDirectBuffer>)(buffer) ->
             {
                 new SessionConnectRequestEncoder().wrapAndApplyHeader(buffer, 0, new MessageHeaderEncoder())
                     .correlationId(17)
@@ -117,7 +117,7 @@ class IngressAdapterTest
                 a.onSessionConnect(17, 19, 23, "x", new byte[0])),
         Arguments.of(
             "SessionCloseRequestDecoder",
-            (Consumer<MutableDirectBuffer>)buffer ->
+            (Consumer<MutableDirectBuffer>)(buffer) ->
             {
                 new SessionCloseRequestEncoder().wrapAndApplyHeader(buffer, 0, new MessageHeaderEncoder())
                     .leadershipTermId(17)
@@ -126,7 +126,7 @@ class IngressAdapterTest
             (ConsensusModuleAgentExpectation)(a, buffer) -> a.onSessionClose(17, 19)),
         Arguments.of(
             "SessionKeepAliveDecoder",
-            (Consumer<MutableDirectBuffer>)buffer ->
+            (Consumer<MutableDirectBuffer>)(buffer) ->
             {
                 new SessionKeepAliveEncoder().wrapAndApplyHeader(buffer, 0, new MessageHeaderEncoder())
                     .leadershipTermId(17)
@@ -135,7 +135,7 @@ class IngressAdapterTest
             (ConsensusModuleAgentExpectation)(a, buffer) -> a.onSessionKeepAlive(17, 19)),
         Arguments.of(
             "ChallengeResponseDecoder",
-            (Consumer<MutableDirectBuffer>)buffer ->
+            (Consumer<MutableDirectBuffer>)(buffer) ->
             {
                 final byte[] challenge = "foo".getBytes();
                 new ChallengeResponseEncoder().wrapAndApplyHeader(buffer, 0, new MessageHeaderEncoder())
@@ -147,7 +147,7 @@ class IngressAdapterTest
                 a.onIngressChallengeResponse(17, 19, "foo".getBytes())),
         Arguments.of(
             "AdminRequestDecoder",
-            (Consumer<MutableDirectBuffer>)buffer ->
+            (Consumer<MutableDirectBuffer>)(buffer) ->
             {
                 final byte[] payload = "foo".getBytes();
                 new AdminRequestEncoder().wrapAndApplyHeader(buffer, 0, new MessageHeaderEncoder())

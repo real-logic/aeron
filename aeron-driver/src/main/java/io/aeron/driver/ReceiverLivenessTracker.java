@@ -35,7 +35,6 @@ class ReceiverLivenessTracker
 
     public void onRemoteClose(final long receiverId)
     {
-//        System.out.println("Close from receiverId=" + receiverId);
         liveMap.remove(receiverId);
     }
 

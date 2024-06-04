@@ -84,6 +84,7 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
     long timeOfLastDataOrHeartbeatNs;
     long timeOfLastSetupNs;
     long timeOfLastStatusMessageNs;
+    long timeOfLastUpdateReceivers;
     boolean trackSenderLimits = false;
     boolean isSetupElicited = false;
     boolean hasInitialConnection = false;
@@ -600,10 +601,10 @@ public final class NetworkPublication
             {
                 senderLimit.setOrdered(flowControl.onIdle(nowNs, senderLimit.get(), senderPosition, isEndOfStream));
             }
+
+            updateHasReceivers(nowNs);
         }
 
-        // TODO, should we move this so that is happens less frequently as it will iterate over all receivers.
-        updateHasReceivers(nowNs);
         retransmitHandler.processTimeouts(nowNs, this);
 
         return bytesSent;
@@ -733,6 +734,8 @@ public final class NetworkPublication
         {
             hasReceivers = isLive;
         }
+
+        timeOfLastUpdateReceivers = timeNs;
     }
 
     private int sendData(final long nowNs, final long senderPosition, final int termOffset)

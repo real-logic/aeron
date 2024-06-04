@@ -2230,7 +2230,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                     if (0 == count)
                     {
                         final boolean isEos = logAdapter.isLogEndOfStream();
-                        if(isEos || logAdapter.isImageClosed())
+                        if (isEos || logAdapter.isImageClosed())
                         {
                             enterElection(isEos, "log disconnected from leader: eos=" + isEos);
                         }

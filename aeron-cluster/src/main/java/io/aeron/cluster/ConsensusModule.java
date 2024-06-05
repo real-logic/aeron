@@ -546,7 +546,7 @@ public final class ConsensusModule implements AutoCloseable
         public static final String CONSENSUS_STREAM_ID_PROP_NAME = "aeron.cluster.consensus.stream.id";
 
         /**
-         * Stream id for the archived snapshots within a channel.
+         * Stream id for the communicating consensus messages.
          */
         @Config
         public static final int CONSENSUS_STREAM_ID_DEFAULT = 108;

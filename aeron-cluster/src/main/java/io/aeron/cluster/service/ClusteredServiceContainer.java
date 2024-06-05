@@ -303,10 +303,10 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String CLUSTER_DIR_DEFAULT = "aeron-cluster";
 
         /**
-         * Directory to use for the aeron cluster services, will default to {@link #CLUSTER_DIR_PROP_NAME} if not
-         * specified.
+         * Directory to use for the aeron cluster services, will default to
+         * {@link io.aeron.cluster.ConsensusModule.Context#clusterDir()} if not specified.
          */
-        @Config(defaultType = DefaultType.STRING, defaultString = CLUSTER_DIR_DEFAULT)
+        @Config(defaultType = DefaultType.STRING)
         public static final String CLUSTER_SERVICES_DIR_PROP_NAME = "aeron.cluster.services.dir";
 
         /**
@@ -567,7 +567,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public static String clusterServicesDirName()
         {
-            return System.getProperty(CLUSTER_SERVICES_DIR_PROP_NAME, clusterDirName());
+            return System.getProperty(CLUSTER_SERVICES_DIR_PROP_NAME);
         }
 
         /**

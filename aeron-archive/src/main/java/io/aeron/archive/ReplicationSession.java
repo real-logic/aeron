@@ -614,9 +614,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             return workCount;
         }
 
-        final int pubLmtCounterId = aeron.countersReader().findByTypeIdAndRegistrationId(
-            AeronCounters.DRIVER_PUBLISHER_LIMIT_TYPE_ID, responsePublication.registrationId());
-        if (0 != aeron.countersReader().getCounterValue(pubLmtCounterId))
+        if (0 < responsePublication.availableWindow())
         {
             ++workCount;
         }

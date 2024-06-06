@@ -40,14 +40,14 @@ struct mmsghdr
 };
 #endif
 
-void aeron_network_publication_liveness_on_remote_close(
+static inline void aeron_network_publication_liveness_on_remote_close(
     aeron_network_publication_t *publication,
     int64_t receiver_id)
 {
     aeron_int64_counter_map_remove(&publication->receiver_liveness_tracker, receiver_id);
 }
 
-int aeron_network_publication_liveness_on_status_message(
+static inline int aeron_network_publication_liveness_on_status_message(
     aeron_network_publication_t *publication,
     int64_t receiver_id,
     int64_t time_ns)
@@ -61,13 +61,16 @@ int aeron_network_publication_liveness_on_status_message(
     return 0;
 }
 
-bool aeron_network_publication_liveness_is_expired(void *clientd, int64_t receiver_id, int64_t last_sm_time_ns)
+static inline bool aeron_network_publication_liveness_is_expired(
+    void *clientd,
+    int64_t receiver_id,
+    int64_t last_sm_time_ns)
 {
     int64_t *expiry_time_ns = (int64_t *)clientd;
     return last_sm_time_ns <= *expiry_time_ns;
 }
 
-void aeron_network_publication_liveness_on_idle(
+static inline void aeron_network_publication_liveness_on_idle(
     aeron_network_publication_t *publication,
     int64_t time_ns,
     int64_t timeout_ns)
@@ -77,6 +80,21 @@ void aeron_network_publication_liveness_on_idle(
         &publication->receiver_liveness_tracker,
         aeron_network_publication_liveness_is_expired,
         (void *)&expiry_time_ns);
+}
+
+static void aeron_network_publication_update_has_receivers(
+    aeron_network_publication_t *publication,
+    const int64_t now_ns)
+{
+    aeron_network_publication_liveness_on_idle(publication, now_ns, publication->connection_timeout_ns);
+    const bool is_live = 0 != publication->receiver_liveness_tracker.size;
+
+    bool has_receivers;
+    AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
+    if (is_live != has_receivers)
+    {
+        AERON_PUT_ORDERED(publication->has_receivers, is_live);
+    }
 }
 
 int aeron_network_publication_create(
@@ -314,6 +332,7 @@ void aeron_network_publication_close(
 
         aeron_free(subscribable->array);
         publication->conductor_fields.managed_resource.clientd = NULL;
+        aeron_int64_counter_map_delete(&publication->receiver_liveness_tracker);
 
         aeron_retransmit_handler_close(&publication->retransmit_handler);
         publication->flow_control->fini(publication->flow_control);
@@ -608,17 +627,8 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
                 publication->flow_control->state, now_ns, snd_lmt, snd_pos, is_end_of_stream);
             aeron_counter_set_ordered(publication->snd_lmt_position.value_addr, flow_control_position);
         }
-    }
 
-    // TODO: should we move this so that is happens less frequently as it will iterate over all receivers.
-    aeron_network_publication_liveness_on_idle(publication, now_ns, publication->connection_timeout_ns);
-    const bool is_live = 0 != publication->receiver_liveness_tracker.size;
-
-    bool has_receivers;
-    AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
-    if (is_live != has_receivers)
-    {
-        AERON_PUT_ORDERED(publication->has_receivers, is_live);
+        aeron_network_publication_update_has_receivers(publication, now_ns);
     }
 
     aeron_retransmit_handler_process_timeouts(

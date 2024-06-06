@@ -65,6 +65,7 @@ class ClusterNodeRestartTest
     private static final int MESSAGE_VALUE_OFFSET = 0;
     private static final int TIMER_MESSAGE_ID_OFFSET = MESSAGE_VALUE_OFFSET + SIZE_OF_INT;
     private static final int TIMER_MESSAGE_DELAY_OFFSET = TIMER_MESSAGE_ID_OFFSET + SIZE_OF_LONG;
+    public static final long TIMER_CORRELATION_ID = 777;
 
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
@@ -280,7 +281,7 @@ class ClusterNodeRestartTest
         sendNumberedMessageIntoCluster(0);
         sendNumberedMessageIntoCluster(1);
         sendNumberedMessageIntoCluster(2);
-        sendTimerMessageIntoCluster(3, 1, TimeUnit.HOURS.toMillis(10));
+        sendTimerMessageIntoCluster(3, TimeUnit.HOURS.toMillis(10));
 
         Tests.awaitValue(serviceMsgCount, 4);
 
@@ -442,10 +443,10 @@ class ClusterNodeRestartTest
         sendMessageIntoCluster(aeronCluster, msgBuffer, MESSAGE_LENGTH);
     }
 
-    private void sendTimerMessageIntoCluster(final int value, final long timerCorrelationId, final long delay)
+    private void sendTimerMessageIntoCluster(final int value, final long delay)
     {
         msgBuffer.putInt(MESSAGE_VALUE_OFFSET, value);
-        msgBuffer.putLong(TIMER_MESSAGE_ID_OFFSET, timerCorrelationId);
+        msgBuffer.putLong(TIMER_MESSAGE_ID_OFFSET, TIMER_CORRELATION_ID);
         msgBuffer.putLong(TIMER_MESSAGE_DELAY_OFFSET, delay);
 
         sendMessageIntoCluster(aeronCluster, msgBuffer, TIMER_MESSAGE_LENGTH);

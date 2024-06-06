@@ -160,8 +160,8 @@ class IngressAdapterTest
                 a.onAdminRequest(17, 19, 23,
                     AdminRequestType.SNAPSHOT, buffer,
                     AdminRequestDecoder.BLOCK_LENGTH +
-                                    MessageHeaderDecoder.ENCODED_LENGTH +
-                                    AdminRequestDecoder.payloadHeaderLength(),
+                            MessageHeaderDecoder.ENCODED_LENGTH +
+                            AdminRequestDecoder.payloadHeaderLength(),
                     "foo".getBytes().length)));
     }
 

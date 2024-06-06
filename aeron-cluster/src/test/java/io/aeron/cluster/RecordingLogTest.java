@@ -106,8 +106,8 @@ class RecordingLogTest
             assertEquals(3, recordingLog.entries().size());
 
             final AeronArchive mockArchive = mock(AeronArchive.class);
-            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount,
-                Aeron.NULL_VALUE);
+            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(
+                mockArchive, serviceCount, Aeron.NULL_VALUE);
             assertEquals(2, recoveryPlan.snapshots.size());
             assertEquals(SERVICE_ID, recoveryPlan.snapshots.get(0).serviceId);
             assertEquals(2L, recoveryPlan.snapshots.get(0).recordingId);
@@ -137,8 +137,8 @@ class RecordingLogTest
         try (RecordingLog recordingLog = new RecordingLog(tempDir, true))
         {
             final AeronArchive mockArchive = mock(AeronArchive.class);
-            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount,
-                Aeron.NULL_VALUE);
+            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(
+                mockArchive, serviceCount, Aeron.NULL_VALUE);
             assertEquals(2, recoveryPlan.snapshots.size());
             assertEquals(SERVICE_ID, recoveryPlan.snapshots.get(0).serviceId);
             assertEquals(6L, recoveryPlan.snapshots.get(0).recordingId);
@@ -176,8 +176,8 @@ class RecordingLogTest
             final AeronArchive mockArchive = mock(AeronArchive.class);
             when(mockArchive.listRecording(anyLong(), any())).thenReturn(1);
 
-            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount,
-                Aeron.NULL_VALUE);
+            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(
+                mockArchive, serviceCount, Aeron.NULL_VALUE);
             assertEquals(0L, recoveryPlan.log.recordingId);
             assertEquals(10L, recoveryPlan.log.leadershipTermId);
             assertEquals(666, recoveryPlan.log.termBaseLogPosition);
@@ -1062,7 +1062,7 @@ class RecordingLogTest
     }
 
     @Test
-    void shouldRejectSnapshotEntryIfEndointIsTooLong(@TempDir final File tempDir)
+    void shouldRejectSnapshotEntryIfEndpointIsTooLong(@TempDir final File tempDir)
     {
         final String endpoint = Tests.generateStringWithSuffix("a", "x", 5000);
         try (RecordingLog log = new RecordingLog(tempDir, true))

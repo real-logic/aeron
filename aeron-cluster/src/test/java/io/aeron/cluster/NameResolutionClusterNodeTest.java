@@ -17,7 +17,6 @@ package io.aeron.cluster;
 
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
@@ -106,7 +105,7 @@ class NameResolutionClusterNodeTest
     void shouldConnectAndSendKeepAliveWithBadName()
     {
         container = launchEchoService();
-        aeronCluster = connectToCluster(null);
+        aeronCluster = connectToCluster();
 
         assertTrue(aeronCluster.sendKeepAlive());
 
@@ -141,17 +140,18 @@ class NameResolutionClusterNodeTest
                 .errorHandler(Tests::onError));
     }
 
-    private AeronCluster connectToCluster(final EgressListener egressListener)
+    private AeronCluster connectToCluster()
     {
+        final ErrorHandler errorHandler =
+            (t) ->
+            {
+                System.err.println("** MY HANDLER **");
+                t.printStackTrace();
+            };
+
         return AeronCluster.connect(
             new AeronCluster.Context()
-                .egressListener(egressListener)
-                .errorHandler(
-                    (t) ->
-                    {
-                        System.err.println("** MY HANDLER **");
-                        t.printStackTrace();
-                    })
+                .errorHandler(errorHandler)
                 .ingressChannel("aeron:udp")
                 .ingressEndpoints(INGRESS_ENDPOINTS + ",1=badname:9011")
                 .egressChannel("aeron:udp?endpoint=localhost:0"));

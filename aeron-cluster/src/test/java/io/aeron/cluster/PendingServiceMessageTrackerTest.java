@@ -224,7 +224,7 @@ class PendingServiceMessageTrackerTest
     private static void loadSnapshot(final PendingServiceMessageTracker tracker, final Snapshot snapshot)
     {
         tracker.loadState(snapshot.nextServiceSessionId, snapshot.logServiceSessionId, snapshot.size);
-        snapshot.messages.forEach(msg -> tracker.appendMessage(msg, 0, msg.capacity()));
+        snapshot.messages.forEach((msg) -> tracker.appendMessage(msg, 0, msg.capacity()));
     }
 
     private static final class Snapshot

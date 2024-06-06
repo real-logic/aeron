@@ -27,8 +27,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class PublicationGroupTest
-
-
 {
     private final String channelTemplate = "aeron:udp?term-length=64k";
     private final int streamId = 10000;

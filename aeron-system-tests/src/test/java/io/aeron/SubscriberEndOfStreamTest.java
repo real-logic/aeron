@@ -28,15 +28,18 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -178,6 +181,86 @@ public class SubscriberEndOfStreamTest
             {
                 Tests.yield();
             }
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldDropReceiverOutOfFlowControlOnEndOfStream()
+    {
+        final TestMediaDriver driver = launch();
+        final int streamId = 10000;
+        final String subscriptionChannel1 = "aeron:udp?control=localhost:10000|endpoint=localhost:10001";
+        final String subscriptionChannel2 = "aeron:udp?control=localhost:10000|endpoint=localhost:10002";
+        final String publicationChannel =
+            "aeron:udp?control-mode=dynamic|control=localhost:10000|fc=min|term-length=64k";
+
+        final Aeron.Context ctx = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName());
+
+        try (Aeron aeron = Aeron.connect(ctx);
+            Publication pub = aeron.addPublication(publicationChannel, streamId);
+            Subscription sub1 = aeron.addSubscription(subscriptionChannel1, streamId))
+        {
+            final Subscription sub2 = aeron.addSubscription(subscriptionChannel2, streamId);
+
+            Tests.awaitConnected(pub);
+            Tests.awaitConnected(sub1);
+            Tests.awaitConnected(sub2);
+            final DirectBuffer message = new UnsafeBuffer(new byte[pub.maxPayloadLength()]);
+            final int fcReceiversCounterId = aeron.countersReader().findByTypeIdAndRegistrationId(
+                AeronCounters.FLOW_CONTROL_RECEIVERS_COUNTER_TYPE_ID, pub.registrationId());
+
+            while (aeron.countersReader().getCounterValue(fcReceiversCounterId) < 2)
+            {
+                Tests.yield();
+            }
+
+            final Image image = sub1.imageAtIndex(0);
+            final Supplier<String> errorMsg =
+                () -> "Image.position=" + image.position() + " Publication.position=" + pub.position();
+
+            int messageCount = 0;
+            do
+            {
+                final long position = pub.offer(message);
+                if (position == Publication.BACK_PRESSURED && messageCount != 0)
+                {
+                    break;
+                }
+                else
+                {
+                    Tests.yield();
+                }
+
+                final int fragments = sub1.poll((buffer, offset, length, header) -> {}, 10);
+                if (0 == fragments)
+                {
+                    Tests.yieldingIdle(errorMsg);
+                }
+                else
+                {
+                    messageCount += fragments;
+                }
+            }
+            while (true);
+
+            CloseHelper.close(sub2);
+            final long t0 = System.nanoTime();
+            while (2 == aeron.countersReader().getCounterValue(fcReceiversCounterId))
+            {
+                Tests.yield();
+            }
+            final long t1 = System.nanoTime();
+            assertThat(t1 - t0, lessThan(driver.context().publicationConnectionTimeoutNs()));
+
+            final long t2 = System.nanoTime();
+            while (0 < pub.offer(message))
+            {
+                Tests.yield();
+            }
+            final long t3 = System.nanoTime();
+            assertThat(t3 - t2, lessThan(driver.context().publicationConnectionTimeoutNs()));
         }
     }
 }

@@ -70,15 +70,15 @@ def gitCommitHash = io.aeron.build.GithubUtil.currentGitHash("${projectDir}")
 
 ext {
     isReleaseVersion = !aeronVersion.endsWith('-SNAPSHOT')
-    releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-    snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
+    releasesRepoUrl = 'http://192.168.4.159:8081/artifactory/test-maven-repo/'
+    snapshotsRepoUrl = 'http://192.168.4.159:8081/artifactory/test-maven-repo/'
 
     if (!project.hasProperty('ossrhUsername')) {
-        ossrhUsername = ''
+        ossrhUsername = 'admin'
     }
 
     if (!project.hasProperty('ossrhPassword')) {
-        ossrhPassword = ''
+        ossrhPassword = 'Welcome1234!'
     }
 }
 
@@ -354,7 +354,7 @@ subprojects {
 
 project(':aeron-annotations') {
     apply plugin: 'maven-publish'
-    apply plugin: 'signing'
+//    apply plugin: 'signing'
     apply plugin: 'biz.aQute.bnd.builder'
 
     jar {
@@ -392,6 +392,7 @@ project(':aeron-annotations') {
         repositories {
             maven {
                 url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                allowInsecureProtocol = true
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -400,14 +401,14 @@ project(':aeron-annotations') {
         }
     }
 
-    signing {
-        sign publishing.publications.aeronAnnotations
-    }
+//    signing {
+//        sign publishing.publications.aeronAnnotations
+//    }
 }
 
 project(':aeron-client') {
     apply plugin: 'maven-publish'
-    apply plugin: 'signing'
+    //apply plugin: 'signing'
     apply plugin: 'biz.aQute.bnd.builder'
 
     dependencies {
@@ -462,6 +463,7 @@ project(':aeron-client') {
         repositories {
             maven {
                 url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                allowInsecureProtocol = true
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -470,14 +472,14 @@ project(':aeron-client') {
         }
     }
 
-    signing {
-        sign publishing.publications.aeronClient
-    }
+//    signing {
+//        sign publishing.publications.aeronClient
+//    }
 }
 
 project(':aeron-driver') {
     apply plugin: 'maven-publish'
-    apply plugin: 'signing'
+//    apply plugin: 'signing'
     apply plugin: 'application'
     apply plugin: 'biz.aQute.bnd.builder'
 
@@ -535,6 +537,7 @@ project(':aeron-driver') {
         repositories {
             maven {
                 url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                allowInsecureProtocol = true
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -543,14 +546,14 @@ project(':aeron-driver') {
         }
     }
 
-    signing {
-        sign publishing.publications.aeronDriver
-    }
+//    signing {
+//        sign publishing.publications.aeronDriver
+//    }
 }
 
 project(':aeron-archive') {
     apply plugin: 'maven-publish'
-    apply plugin: 'signing'
+//    apply plugin: 'signing'
     apply plugin: 'biz.aQute.bnd.builder'
 
     configurations{
@@ -690,6 +693,7 @@ project(':aeron-archive') {
         repositories {
             maven {
                 url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                allowInsecureProtocol = true
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -698,14 +702,14 @@ project(':aeron-archive') {
         }
     }
 
-    signing {
-        sign publishing.publications.aeronArchive
-    }
+//    signing {
+//        sign publishing.publications.aeronArchive
+//    }
 }
 
 project(':aeron-cluster') {
     apply plugin: 'maven-publish'
-    apply plugin: 'signing'
+//    apply plugin: 'signing'
     apply plugin: 'biz.aQute.bnd.builder'
 
     configurations{
@@ -807,6 +811,7 @@ project(':aeron-cluster') {
         repositories {
             maven {
                 url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                allowInsecureProtocol = true
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -815,14 +820,14 @@ project(':aeron-cluster') {
         }
     }
 
-    signing {
-        sign publishing.publications.aeronCluster
-    }
+//    signing {
+//        sign publishing.publications.aeronCluster
+//    }
 }
 
 project(':aeron-agent') {
     apply plugin: 'maven-publish'
-    apply plugin: 'signing'
+//    apply plugin: 'signing'
     apply plugin: 'com.github.johnrengelman.shadow'
 
     def aeronClientProject = project(':aeron-client')
@@ -906,6 +911,7 @@ project(':aeron-agent') {
         repositories {
             maven {
                 url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                allowInsecureProtocol = true
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -914,14 +920,14 @@ project(':aeron-agent') {
         }
     }
 
-    signing {
-        sign publishing.publications.aeronAgent
-    }
+//    signing {
+//        sign publishing.publications.aeronAgent
+//    }
 }
 
 project(':aeron-samples') {
     apply plugin: 'maven-publish'
-    apply plugin: 'signing'
+//    apply plugin: 'signing'
 
     dependencies {
         api project(':aeron-cluster')
@@ -945,6 +951,7 @@ project(':aeron-samples') {
         repositories {
             maven {
                 url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                allowInsecureProtocol = true
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -961,9 +968,9 @@ project(':aeron-samples') {
         source += project(':aeron-archive').sourceSets.generated.allJava
     }
 
-    signing {
-        sign publishing.publications.aeronSamples
-    }
+//    signing {
+//        sign publishing.publications.aeronSamples
+//    }
 
     tasks.named('test').configure {
         dependsOn ':aeron-agent:jar'
@@ -1047,7 +1054,7 @@ project(':aeron-system-tests') {
 
 project(':aeron-test-support') {
     apply plugin: 'maven-publish'
-    apply plugin: 'signing'
+//    apply plugin: 'signing'
 
     dependencies {
         implementation project(':aeron-client')
@@ -1074,6 +1081,7 @@ project(':aeron-test-support') {
         repositories {
             maven {
                 url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                allowInsecureProtocol = true
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -1082,14 +1090,14 @@ project(':aeron-test-support') {
         }
     }
 
-    signing {
-        sign publishing.publications.aeronTestSupport
-    }
+//    signing {
+//        sign publishing.publications.aeronTestSupport
+//    }
 }
 
 project(':aeron-all') {
     apply plugin: 'maven-publish'
-    apply plugin: 'signing'
+//    apply plugin: 'signing'
     apply plugin: 'com.github.johnrengelman.shadow'
 
     def aeronClientProject = project(':aeron-client')
@@ -1168,6 +1176,7 @@ project(':aeron-all') {
         repositories {
             maven {
                 url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                allowInsecureProtocol = true
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -1176,9 +1185,9 @@ project(':aeron-all') {
         }
     }
 
-    signing {
-        sign publishing.publications.aeronAll
-    }
+//    signing {
+//        sign publishing.publications.aeronAll
+//    }
 }
 
 tasks.register('testReport', TestReport) {

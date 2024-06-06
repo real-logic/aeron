@@ -43,4 +43,6 @@ jobs:
           distribution: 'zulu'
           java-version: ${{ matrix.java }}
       - name: Build with Gradle
-        run: ./gradlew tutorialPublish -Paeron.ci.apiKey=${{ secrets.WIKI_PAGE_TOKEN }} --stacktrace
+        run: |
+          ./gradlew publish
+                    tutorialPublish -Paeron.ci.apiKey=${{ secrets.WIKI_PAGE_TOKEN }} --stacktrace

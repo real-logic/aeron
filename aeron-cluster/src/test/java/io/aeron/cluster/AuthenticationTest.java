@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.spy;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class AuthenticationTest
+class AuthenticationTest
 {
     private static final long CATALOG_CAPACITY = 1024 * 1024;
     private static final String CREDENTIALS_STRING = "username=\"admin\"|password=\"secret\"";
@@ -67,7 +67,7 @@ public class AuthenticationTest
     private final byte[] encodedChallenge = CHALLENGE_STRING.getBytes();
 
     @AfterEach
-    public void after()
+    void after()
     {
         final ConsensusModule consensusModule = null == clusteredMediaDriver ?
             null : clusteredMediaDriver.consensusModule();
@@ -84,7 +84,7 @@ public class AuthenticationTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldAuthenticateOnConnectRequestWithEmptyCredentials()
+    void shouldAuthenticateOnConnectRequestWithEmptyCredentials()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
         final MutableLong serviceSessionId = new MutableLong(-1L);
@@ -146,7 +146,7 @@ public class AuthenticationTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldAuthenticateOnConnectRequestWithCredentials()
+    void shouldAuthenticateOnConnectRequestWithCredentials()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
         final MutableLong serviceSessionId = new MutableLong(-1L);
@@ -208,7 +208,7 @@ public class AuthenticationTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldAuthenticateOnChallengeResponse()
+    void shouldAuthenticateOnChallengeResponse()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
         final MutableLong serviceSessionId = new MutableLong(-1L);
@@ -278,7 +278,7 @@ public class AuthenticationTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldRejectOnConnectRequest()
+    void shouldRejectOnConnectRequest()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
         final MutableLong serviceSessionId = new MutableLong(-1L);
@@ -344,7 +344,7 @@ public class AuthenticationTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldRejectOnChallengeResponse()
+    void shouldRejectOnChallengeResponse()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
         final MutableLong serviceSessionId = new MutableLong(-1L);

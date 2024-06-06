@@ -15,7 +15,7 @@
  */
 package io.aeron.cluster;
 
-public class ClusterTestConstants
+class ClusterTestConstants
 {
     static final String INGRESS_ENDPOINT = "localhost:20000";
     static final String INGRESS_ENDPOINTS = "0=" + INGRESS_ENDPOINT;

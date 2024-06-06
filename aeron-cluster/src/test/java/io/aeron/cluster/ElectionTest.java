@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-public class ElectionTest
+class ElectionTest
 {
     private static final long RECORDING_ID = 600L;
     private static final int LOG_SESSION_ID = 777;
@@ -75,7 +75,7 @@ public class ElectionTest
         .countedErrorHandler(countedErrorHandler);
 
     @BeforeEach
-    public void before()
+    void before()
     {
         when(aeron.addCounter(anyInt(), anyString())).thenReturn(electionStateCounter);
         when(aeron.addSubscription(anyString(), anyInt())).thenReturn(subscription);
@@ -102,7 +102,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldElectSingleNodeClusterLeader()
+    void shouldElectSingleNodeClusterLeader()
     {
         final long leadershipTermId = NULL_VALUE;
         final long logPosition = 0;
@@ -136,7 +136,7 @@ public class ElectionTest
 
     @Test
     @SuppressWarnings("MethodLength")
-    public void shouldElectAppointedLeader()
+    void shouldElectAppointedLeader()
     {
         final long leadershipTermId = NULL_VALUE;
         final long logPosition = 0;
@@ -261,7 +261,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldVoteForAppointedLeader()
+    void shouldVoteForAppointedLeader()
     {
         final long leadershipTermId = NULL_VALUE;
         final long logPosition = 0;
@@ -333,7 +333,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldCanvassMembersInSuccessfulLeadershipBid()
+    void shouldCanvassMembersInSuccessfulLeadershipBid()
     {
         final long logPosition = 0;
         final long leadershipTermId = NULL_VALUE;
@@ -361,7 +361,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldVoteForCandidateDuringNomination()
+    void shouldVoteForCandidateDuringNomination()
     {
         final long logPosition = 0;
         final long leadershipTermId = NULL_VALUE;
@@ -392,7 +392,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldTimeoutCanvassWithMajority()
+    void shouldTimeoutCanvassWithMajority()
     {
         final long leadershipTermId = NULL_VALUE;
         final long logPosition = 0;
@@ -416,7 +416,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldWinCandidateBallotWithMajority()
+    void shouldWinCandidateBallotWithMajority()
     {
         final long leadershipTermId = NULL_VALUE;
         final long logPosition = 0;
@@ -451,7 +451,7 @@ public class ElectionTest
 
     @ParameterizedTest
     @CsvSource(value = {"true,true", "true,false", "false,false", "false,true"})
-    public void shouldBaseStartupValueOnLeader(final boolean isLeaderStart, final boolean isNodeStart)
+    void shouldBaseStartupValueOnLeader(final boolean isLeaderStart, final boolean isNodeStart)
     {
         final long leadershipTermId = 0;
         final long logPosition = 0;
@@ -495,7 +495,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldElectCandidateWithFullVote()
+    void shouldElectCandidateWithFullVote()
     {
         final long leadershipTermId = NULL_VALUE;
         final long logPosition = 0;
@@ -531,7 +531,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldTimeoutCandidateBallotWithoutMajority()
+    void shouldTimeoutCandidateBallotWithoutMajority()
     {
         final long leadershipTermId = NULL_VALUE;
         final long logPosition = 0;
@@ -563,7 +563,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldTimeoutFailedCandidateBallotOnSplitVoteThenSucceedOnRetry()
+    void shouldTimeoutFailedCandidateBallotOnSplitVoteThenSucceedOnRetry()
     {
         final long leadershipTermId = NULL_VALUE;
         final long logPosition = 0;
@@ -625,7 +625,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldTimeoutFollowerBallotWithoutLeaderEmerging()
+    void shouldTimeoutFollowerBallotWithoutLeaderEmerging()
     {
         final long leadershipTermId = NULL_VALUE;
         final long logPosition = 0L;
@@ -653,7 +653,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldBecomeFollowerIfEnteringNewElection()
+    void shouldBecomeFollowerIfEnteringNewElection()
     {
         final long leadershipTermId = 1;
         final long logPosition = 120;

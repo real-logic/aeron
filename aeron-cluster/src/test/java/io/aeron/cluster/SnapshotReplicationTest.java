@@ -32,7 +32,6 @@ import static org.mockito.Mockito.*;
 class SnapshotReplicationTest
 {
     private final AeronArchive archive = mock(AeronArchive.class);
-    private final AeronArchive.Context context = new AeronArchive.Context().controlRequestChannel("aeron:ipc");
     private final String srcChannel = "aeron:udp?endpoint=coming_from:8888";
     private final String replicationChannel = "aeron:udp?endpoint=going_to:8888";
     private final int srcStreamId = 892374;

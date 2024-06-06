@@ -1841,7 +1841,6 @@ public final class ConsensusModule implements AutoCloseable
             }
             validateCounterTypeId(aeron, clusterNodeRoleCounter, CLUSTER_NODE_ROLE_TYPE_ID);
 
-
             if (null == commitPosition)
             {
                 commitPosition = ClusterCounters.allocate(

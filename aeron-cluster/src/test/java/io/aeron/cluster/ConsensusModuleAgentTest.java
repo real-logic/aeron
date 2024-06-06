@@ -60,7 +60,7 @@ import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
 import io.aeron.test.cluster.TestClusterClock;
 
-public class ConsensusModuleAgentTest
+class ConsensusModuleAgentTest
 {
     private static final long SLOW_TICK_INTERVAL_MS = TimeUnit.NANOSECONDS.toMillis(SLOW_TICK_INTERVAL_NS);
     private static final String RESPONSE_CHANNEL_ONE = "aeron:udp?endpoint=localhost:11111";
@@ -110,7 +110,7 @@ public class ConsensusModuleAgentTest
     }
 
     @BeforeEach
-    public void before()
+    void before()
     {
         when(mockAeron.conductorAgentInvoker()).thenReturn(mock(AgentInvoker.class));
         when(mockEgressPublisher.sendEvent(any(), anyLong(), anyInt(), any(), any())).thenReturn(TRUE);
@@ -128,7 +128,7 @@ public class ConsensusModuleAgentTest
     }
 
     @Test
-    public void shouldUseAssignedRoleName()
+    void shouldUseAssignedRoleName()
     {
         final String expectedRoleName = "test-role-name";
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
@@ -141,7 +141,7 @@ public class ConsensusModuleAgentTest
     }
 
     @Test
-    public void shouldLimitActiveSessions()
+    void shouldLimitActiveSessions()
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
         ctx.maxConcurrentSessions(1)
@@ -173,7 +173,7 @@ public class ConsensusModuleAgentTest
     }
 
     @Test
-    public void shouldCloseInactiveSession()
+    void shouldCloseInactiveSession()
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
         final long startMs = SLOW_TICK_INTERVAL_MS;
@@ -212,7 +212,7 @@ public class ConsensusModuleAgentTest
     }
 
     @Test
-    public void shouldCloseTerminatedSession()
+    void shouldCloseTerminatedSession()
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
         final long startMs = SLOW_TICK_INTERVAL_MS;
@@ -252,7 +252,7 @@ public class ConsensusModuleAgentTest
     }
 
     @Test
-    public void shouldSuspendThenResume()
+    void shouldSuspendThenResume()
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
         final Counter stateCounter = newCounter("state counter", CLUSTER_CONSENSUS_MODULE_STATE_TYPE_ID);
@@ -294,7 +294,7 @@ public class ConsensusModuleAgentTest
     }
 
     @Test
-    public void shouldThrowClusterTerminationExceptionUponShutdown()
+    void shouldThrowClusterTerminationExceptionUponShutdown()
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
         final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
@@ -362,7 +362,7 @@ public class ConsensusModuleAgentTest
     }
 
     @Test
-    public void shouldPublishLogMessageButNotSnapshotOnStandbySnapshot()
+    void shouldPublishLogMessageButNotSnapshotOnStandbySnapshot()
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
         final Counter stateCounter = newCounter("state counter", CLUSTER_CONSENSUS_MODULE_STATE_TYPE_ID);

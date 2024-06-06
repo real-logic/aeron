@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ClusterNodeTest
+class ClusterNodeTest
 {
     private static final long CATALOG_CAPACITY = 1024 * 1024;
 
@@ -55,7 +55,7 @@ public class ClusterNodeTest
     private AeronCluster aeronCluster;
 
     @BeforeEach
-    public void before()
+    void before()
     {
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
@@ -79,7 +79,7 @@ public class ClusterNodeTest
     }
 
     @AfterEach
-    public void after()
+    void after()
     {
         final ConsensusModule consensusModule = null == clusteredMediaDriver ?
             null : clusteredMediaDriver.consensusModule();
@@ -97,7 +97,7 @@ public class ClusterNodeTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldConnectAndSendKeepAlive()
+    void shouldConnectAndSendKeepAlive()
     {
         container = launchEchoService();
         aeronCluster = connectToCluster(null);
@@ -109,7 +109,7 @@ public class ClusterNodeTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldEchoMessageViaServiceUsingDirectOffer()
+    void shouldEchoMessageViaServiceUsingDirectOffer()
     {
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         final String msg = "Hello World!";
@@ -135,7 +135,7 @@ public class ClusterNodeTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldEchoMessageViaServiceUsingTryClaim()
+    void shouldEchoMessageViaServiceUsingTryClaim()
     {
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         final String msg = "Hello World!";
@@ -179,7 +179,7 @@ public class ClusterNodeTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldScheduleEventInService()
+    void shouldScheduleEventInService()
     {
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         final String msg = "Hello World!";
@@ -206,7 +206,7 @@ public class ClusterNodeTest
 
     @Test
     @InterruptAfter(10)
-    public void shouldSendResponseAfterServiceMessage()
+    void shouldSendResponseAfterServiceMessage()
     {
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         final String msg = "Hello World!";

@@ -26,7 +26,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ClusterMemberTest
+class ClusterMemberTest
 {
     private final ClusterMember[] members = ClusterMember.parse(
         "0,ingressEndpoint,consensusEndpoint,logEndpoint,catchupEndpoint,archiveEndpoint|" +
@@ -95,7 +95,7 @@ public class ClusterMemberTest
     }
 
     @Test
-    public void shouldDetermineQuorumSize()
+    void shouldDetermineQuorumSize()
     {
         final int[] clusterSizes = new int[]{ 1, 2, 3, 4, 5, 6, 7 };
         final int[] quorumValues = new int[]{ 1, 2, 2, 3, 3, 4, 4 };
@@ -108,13 +108,13 @@ public class ClusterMemberTest
     }
 
     @Test
-    public void shouldRankClusterStart()
+    void shouldRankClusterStart()
     {
         assertThat(quorumPosition(members, rankedPositions), is(0L));
     }
 
     @Test
-    public void shouldDetermineQuorumPosition()
+    void shouldDetermineQuorumPosition()
     {
         final long[][] positions = new long[][]
         {

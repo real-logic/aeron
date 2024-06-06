@@ -3207,7 +3207,9 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final ConsensusModuleSnapshotTaker snapshotTaker = new ConsensusModuleSnapshotTaker(
             publication, idleStrategy, aeronClientInvoker);
 
-        snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, clusterTimeUnit, ctx.appVersion());
+        final SnapshotMarkData snapshotMarkData = new SnapshotMarkData(
+            SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, clusterTimeUnit, ctx.appVersion());
+        snapshotTaker.markBegin(snapshotMarkData);
 
         final PendingServiceMessageTracker trackerOne = pendingServiceMessageTrackers[0];
         snapshotTaker.snapshotConsensusModuleState(
@@ -3230,8 +3232,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         {
             snapshotTaker.snapshot(tracker, ctx.errorHandler());
         }
-
-        snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, clusterTimeUnit, ctx.appVersion());
+        snapshotTaker.markEnd(snapshotMarkData);
     }
 
     private void onUnavailableIngressImage(final Image image)

@@ -1000,14 +1000,16 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
         final ServiceSnapshotTaker snapshotTaker = new ServiceSnapshotTaker(
             publication, idleStrategy, aeronAgentInvoker);
 
-        snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, timeUnit, ctx.appVersion());
+        final SnapshotMarkData snapshotMarkData = new SnapshotMarkData(
+            SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, timeUnit, ctx.appVersion());
+        snapshotTaker.markBegin(snapshotMarkData);
 
         for (int i = 0, size = sessions.size(); i < size; i++)
         {
             snapshotTaker.snapshotSession(sessions.get(i));
         }
 
-        snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, timeUnit, ctx.appVersion());
+        snapshotTaker.markEnd(snapshotMarkData);
     }
 
     private void executeAction(

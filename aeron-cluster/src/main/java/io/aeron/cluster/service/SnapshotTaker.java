@@ -27,8 +27,6 @@ import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * Base class of common functions required to take a snapshot of cluster state.
  */
@@ -76,67 +74,37 @@ public class SnapshotTaker
 
     /**
      * Mark the beginning of the encoded snapshot.
+    /**
+     * Mark the beginning of the encoded snapshot.
      *
-     * @param snapshotTypeId   type to identify snapshot within a cluster.
-     * @param logPosition      at which the snapshot was taken.
-     * @param leadershipTermId at which the snapshot was taken.
-     * @param snapshotIndex    so the snapshot can be sectioned.
-     * @param timeUnit         of the cluster timestamps stored in the snapshot.
-     * @param appVersion       associated with the snapshot from {@link ClusteredServiceContainer.Context#appVersion()}.
+     * @param snapshotMarkData data containing snapshot metadata.
      */
-    public void markBegin(
-        final long snapshotTypeId,
-        final long logPosition,
-        final long leadershipTermId,
-        final int snapshotIndex,
-        final TimeUnit timeUnit,
-        final int appVersion)
+    public void markBegin(final SnapshotMarkData snapshotMarkData)
     {
-        markSnapshot(
-            snapshotTypeId, logPosition, leadershipTermId, snapshotIndex, SnapshotMark.BEGIN, timeUnit, appVersion);
+        markSnapshot(snapshotMarkData, SnapshotMark.BEGIN);
     }
 
     /**
      * Mark the end of the encoded snapshot.
+    /**
+     * Mark the end of the encoded snapshot.
      *
-     * @param snapshotTypeId   type to identify snapshot within a cluster.
-     * @param logPosition      at which the snapshot was taken.
-     * @param leadershipTermId at which the snapshot was taken.
-     * @param snapshotIndex    so the snapshot can be sectioned.
-     * @param timeUnit         of the cluster timestamps stored in the snapshot.
-     * @param appVersion       associated with the snapshot from {@link ClusteredServiceContainer.Context#appVersion()}.
+     * @param snapshotMarkData data containing snapshot metadata.
      */
-    public void markEnd(
-        final long snapshotTypeId,
-        final long logPosition,
-        final long leadershipTermId,
-        final int snapshotIndex,
-        final TimeUnit timeUnit,
-        final int appVersion)
+    public void markEnd(final SnapshotMarkData snapshotMarkData)
     {
-        markSnapshot(
-            snapshotTypeId, logPosition, leadershipTermId, snapshotIndex, SnapshotMark.END, timeUnit, appVersion);
+        markSnapshot(snapshotMarkData, SnapshotMark.END);
     }
 
     /**
      * Generically {@link SnapshotMark} a snapshot.
+    /**
+     * Generically {@link SnapshotMark} a snapshot.
      *
-     * @param snapshotTypeId   type to identify snapshot within a cluster.
-     * @param logPosition      at which the snapshot was taken.
-     * @param leadershipTermId at which the snapshot was taken.
-     * @param snapshotIndex    so the snapshot can be sectioned.
+     * @param snapshotMarkData data containing snapshot metadata.
      * @param snapshotMark     which specifies the type of snapshot mark.
-     * @param timeUnit         of the cluster timestamps stored in the snapshot.
-     * @param appVersion       associated with the snapshot from {@link ClusteredServiceContainer.Context#appVersion()}.
      */
-    public void markSnapshot(
-        final long snapshotTypeId,
-        final long logPosition,
-        final long leadershipTermId,
-        final int snapshotIndex,
-        final SnapshotMark snapshotMark,
-        final TimeUnit timeUnit,
-        final int appVersion)
+    public void markSnapshot(final SnapshotMarkData snapshotMarkData, final SnapshotMark snapshotMark)
     {
         idleStrategy.reset();
         while (true)
@@ -146,13 +114,13 @@ public class SnapshotTaker
             {
                 snapshotMarkerEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .typeId(snapshotTypeId)
-                    .logPosition(logPosition)
-                    .leadershipTermId(leadershipTermId)
-                    .index(snapshotIndex)
+                    .typeId(snapshotMarkData.getSnapshotTypeId())
+                    .logPosition(snapshotMarkData.getLogPosition())
+                    .leadershipTermId(snapshotMarkData.getLeadershipTermId())
+                    .index(snapshotMarkData.getSnapshotIndex())
                     .mark(snapshotMark)
-                    .timeUnit(ClusterClock.map(timeUnit))
-                    .appVersion(appVersion);
+                    .timeUnit(ClusterClock.map(snapshotMarkData.getTimeUnit()))
+                    .appVersion(snapshotMarkData.getAppVersion());
 
                 bufferClaim.commit();
                 break;

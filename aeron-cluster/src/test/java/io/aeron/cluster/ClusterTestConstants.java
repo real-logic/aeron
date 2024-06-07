@@ -21,4 +21,5 @@ class ClusterTestConstants
     static final String INGRESS_ENDPOINTS = "0=" + INGRESS_ENDPOINT;
     static final String CLUSTER_MEMBERS =
         "0," + INGRESS_ENDPOINT + ",localhost:20001,localhost:20002,localhost:0,localhost:8010";
+    static final long CATALOG_CAPACITY = 1024 * 1024;
 }

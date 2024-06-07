@@ -51,8 +51,6 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(InterruptingTestCallback.class)
 class NameResolutionClusterNodeTest
 {
-    private static final long CATALOG_CAPACITY = 1024 * 1024;
-
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
     private AeronCluster aeronCluster;
@@ -69,7 +67,7 @@ class NameResolutionClusterNodeTest
                 .errorHandler(mockErrorHandler)
                 .dirDeleteOnStart(true),
             TestContexts.localhostArchive()
-                .catalogCapacity(CATALOG_CAPACITY)
+                .catalogCapacity(ClusterTestConstants.CATALOG_CAPACITY)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .recordingEventsEnabled(false)
                 .deleteArchiveOnStart(true),

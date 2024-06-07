@@ -52,7 +52,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(InterruptingTestCallback.class)
 abstract class ClusterTimerTest
 {
-    private static final long CATALOG_CAPACITY = 128 * 1024;
     private static final int INTERVAL_MS = 20;
 
     private ClusteredMediaDriver clusteredMediaDriver;
@@ -309,7 +308,7 @@ abstract class ClusterTimerTest
                 .errorHandler(ClusterTests.errorHandler(0))
                 .dirDeleteOnStart(true),
             TestContexts.localhostArchive()
-                .catalogCapacity(CATALOG_CAPACITY)
+                .catalogCapacity(ClusterTestConstants.CATALOG_CAPACITY)
                 .errorHandler(ClusterTests.errorHandler(0))
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .recordingEventsEnabled(false)

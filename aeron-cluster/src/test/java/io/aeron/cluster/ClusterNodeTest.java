@@ -48,8 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(InterruptingTestCallback.class)
 class ClusterNodeTest
 {
-    private static final long CATALOG_CAPACITY = 1024 * 1024;
-
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
     private AeronCluster aeronCluster;
@@ -64,7 +62,7 @@ class ClusterNodeTest
                 .errorHandler(ClusterTests.errorHandler(0))
                 .dirDeleteOnStart(true),
             TestContexts.localhostArchive()
-                .catalogCapacity(CATALOG_CAPACITY)
+                .catalogCapacity(ClusterTestConstants.CATALOG_CAPACITY)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .recordingEventsEnabled(false)
                 .deleteArchiveOnStart(true),

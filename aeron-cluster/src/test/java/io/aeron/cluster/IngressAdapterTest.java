@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,17 +45,9 @@ import io.aeron.cluster.codecs.SessionMessageHeaderEncoder;
 
 class IngressAdapterTest
 {
-    private IngressAdapter adapter;
-    private ConsensusModuleAgent consensusModuleAgent;
-    private ExpandableArrayBuffer buffer;
-
-    @BeforeEach
-    void setup()
-    {
-        buffer = new ExpandableArrayBuffer();
-        consensusModuleAgent = mock(ConsensusModuleAgent.class);
-        adapter = new IngressAdapter(0, consensusModuleAgent);
-    }
+    private final ConsensusModuleAgent consensusModuleAgent = mock(ConsensusModuleAgent.class);
+    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+    private final IngressAdapter adapter = new IngressAdapter(0, consensusModuleAgent);
 
     @SuppressWarnings("unused") // name used for test display name
     @ParameterizedTest(name = "{index} {0}")

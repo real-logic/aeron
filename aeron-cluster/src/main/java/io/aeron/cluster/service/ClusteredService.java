@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 public interface ClusteredService
 {
     /**
-     * Start event for the service where the service can perform any initialisation required and load snapshot state.
+     * Start event where the service can perform any initialisation required and load snapshot state.
      * The snapshot image can be null if no previous snapshot exists.
      * <p>
      * <b>Note:</b> As this is a potentially long-running operation the implementation should use

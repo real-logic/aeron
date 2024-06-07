@@ -68,7 +68,8 @@ import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANT
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
 import static io.aeron.exceptions.AeronException.Category.WARN;
 
-final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, ConsensusModuleSnapshotListener
+final class ConsensusModuleAgent
+    implements Agent, IdleStrategy, TimerService.TimerHandler, ConsensusModuleSnapshotListener, ConsensusModuleControl
 {
     static final long SLOW_TICK_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(10);
     static final short APPEND_POSITION_FLAG_NONE = 0;
@@ -97,6 +98,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private final ClusterMember thisMember;
     private final long[] rankedPositions;
     private final long[] serviceClientIds;
+    private final int serviceCount;
     private final int memberId;
     private final Counter commitPosition;
 
@@ -188,7 +190,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         this.recordingLog = ctx.recordingLog();
         this.serviceClientIds = new long[ctx.serviceCount()];
         Arrays.fill(serviceClientIds, NULL_VALUE);
-        this.serviceAckQueues = ServiceAck.newArrayOfQueues(ctx.serviceCount());
+        this.serviceCount = ctx.serviceCount();
+        this.serviceAckQueues = ServiceAck.newArrayOfQueues(serviceCount);
         this.dutyCycleTracker = ctx.dutyCycleTracker();
         this.totalSnapshotDurationTracker = ctx.totalSnapshotDurationTracker();
 
@@ -239,6 +242,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         if (!aeron.isClosed())
         {
             aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
+            CloseHelper.close(consensusModuleExtension);
 
             final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
             logPublisher.disconnect(errorHandler);
@@ -380,12 +384,84 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         return workCount;
     }
 
+    public ConsensusModule.Context context()
+    {
+        return ctx;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int memberId()
+    {
+        return memberId;
+    }
+
     /**
      * {@inheritDoc}
      */
     public String roleName()
     {
         return ctx.agentRoleName();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long time()
+    {
+        return clusterClock.time();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public TimeUnit timeUnit()
+    {
+        return clusterClock.timeUnit();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public IdleStrategy idleStrategy()
+    {
+        return this;
+    }
+
+    public void idle()
+    {
+        checkInterruptStatus();
+        aeronClientInvoker.invoke();
+        if (aeron.isClosed())
+        {
+            throw new AgentTerminationException("unexpected Aeron close");
+        }
+
+        idleStrategy.idle();
+        pollArchiveEvents();
+    }
+
+    public void idle(final int workCount)
+    {
+        checkInterruptStatus();
+        aeronClientInvoker.invoke();
+        if (aeron.isClosed())
+        {
+            throw new AgentTerminationException("unexpected Aeron close");
+        }
+
+        idleStrategy.idle(workCount);
+
+        if (0 == workCount)
+        {
+            pollArchiveEvents();
+        }
+    }
+
+    public void reset()
+    {
+        idleStrategy.reset();
     }
 
     public void onLoadBeginSnapshot(
@@ -1196,7 +1272,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         {
             lastAppendPosition = getLastAppendedPosition();
             timeOfLastAppendPositionUpdateNs = nowNs;
-            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
+            recoveryPlan = recordingLog.createRecoveryPlan(archive, serviceCount, logRecordingId);
 
             clearSessionsAfter(logPosition);
             for (int i = 0, size = sessions.size(); i < size; i++)
@@ -1274,9 +1350,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     void onServiceAck(
         final long logPosition, final long timestamp, final long ackId, final long relevantId, final int serviceId)
     {
-        logOnServiceAck(
-            this.memberId, logPosition, timestamp, clusterClock.timeUnit(), ackId, relevantId, serviceId);
-
+        logOnServiceAck(memberId, logPosition, timestamp, clusterClock.timeUnit(), ackId, relevantId, serviceId);
         captureServiceAck(logPosition, ackId, relevantId, serviceId);
 
         if (ServiceAck.hasReached(logPosition, serviceAckId, serviceAckQueues))
@@ -1575,25 +1649,28 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         final boolean isStartup,
         final Cluster.Role role)
     {
-        serviceProxy.joinLog(
-            logPosition,
-            maxLogPosition,
-            memberId,
-            logSessionId,
-            streamId,
-            isStartup,
-            role,
-            logChannel);
-
-        expectedAckPosition = logPosition;
-
-        while (!ServiceAck.hasReached(logPosition, serviceAckId, serviceAckQueues))
+        if (serviceCount > 0)
         {
-            idle(consensusModuleAdapter.poll());
-        }
+            serviceProxy.joinLog(
+                logPosition,
+                maxLogPosition,
+                memberId,
+                logSessionId,
+                streamId,
+                isStartup,
+                role,
+                logChannel);
 
-        ServiceAck.removeHead(serviceAckQueues);
-        ++serviceAckId;
+            expectedAckPosition = logPosition;
+
+            while (!ServiceAck.hasReached(logPosition, serviceAckId, serviceAckQueues))
+            {
+                idle(consensusModuleAdapter.poll());
+            }
+
+            ServiceAck.removeHead(serviceAckQueues);
+            ++serviceAckId;
+        }
     }
 
     LogReplay newLogReplay(final long logPosition, final long appendPosition)
@@ -1689,7 +1766,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         }
         NodeControl.ToggleState.activate(nodeControlToggle);
 
-        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), logRecordingId);
+        recoveryPlan = recordingLog.createRecoveryPlan(archive, serviceCount, logRecordingId);
 
         final long logPosition = election.logPosition();
         notifiedCommitPosition = logPosition;
@@ -2325,13 +2402,13 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         switch (NodeControl.ToggleState.get(nodeControlToggle))
         {
             case REPLICATE_STANDBY_SNAPSHOT:
-                if (null == this.standbySnapshotReplicator)
+                if (null == standbySnapshotReplicator)
                 {
-                    this.standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
+                    standbySnapshotReplicator = StandbySnapshotReplicator.newInstance(
                         ctx.clusterMemberId(),
                         ctx.archiveContext(),
                         recordingLog,
-                        ctx.serviceCount(),
+                        serviceCount,
                         ctx.leaderArchiveControlChannel(),
                         ctx.archiveContext().controlRequestStreamId(),
                         ctx.replicationChannel());
@@ -3070,36 +3147,6 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
         election.doWork(clusterClock.timeNanos());
     }
 
-    private void idle()
-    {
-        checkInterruptStatus();
-        aeronClientInvoker.invoke();
-        if (aeron.isClosed())
-        {
-            throw new AgentTerminationException("unexpected Aeron close");
-        }
-
-        idleStrategy.idle();
-        pollArchiveEvents();
-    }
-
-    private void idle(final int workCount)
-    {
-        checkInterruptStatus();
-        aeronClientInvoker.invoke();
-        if (aeron.isClosed())
-        {
-            throw new AgentTerminationException("unexpected Aeron close");
-        }
-
-        idleStrategy.idle(workCount);
-
-        if (0 == workCount)
-        {
-            pollArchiveEvents();
-        }
-    }
-
     private static void checkInterruptStatus()
     {
         if (Thread.currentThread().isInterrupted())
@@ -3163,7 +3210,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
 
         recordingLog.force(ctx.fileSyncLevel());
-        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), Aeron.NULL_VALUE);
+        recoveryPlan = recordingLog.createRecoveryPlan(archive, serviceCount, Aeron.NULL_VALUE);
         ctx.snapshotCounter().incrementOrdered();
 
         final long nowNs = clusterClock.timeNanos();
@@ -3455,7 +3502,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
     private RecordingLog.RecoveryPlan recoverFromSnapshotAndLog()
     {
         final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(
-            archive, ctx.serviceCount(), logRecordingId);
+            archive, serviceCount, logRecordingId);
         if (null != recoveryPlan.log)
         {
             logRecordingId(recoveryPlan.log.recordingId);
@@ -3466,6 +3513,10 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             if (!recoveryPlan.snapshots.isEmpty())
             {
                 loadSnapshot(recoveryPlan.snapshots.get(0), archive);
+            }
+            else if (null != consensusModuleExtension)
+            {
+                consensusModuleExtension.onStart(this, null);
             }
 
             while (!ServiceAck.hasReached(expectedAckPosition, serviceAckId, serviceAckQueues))
@@ -3486,7 +3537,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
         logRecordingId(boostrapState.logRecordingId);
         final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(
-            archive, ctx.serviceCount(), logRecordingId);
+            archive, serviceCount, logRecordingId);
 
         expectedAckPosition = boostrapState.expectedAckPosition;
         serviceAckId = boostrapState.serviceAckId;
@@ -3556,7 +3607,7 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             ctx.clusterMemberId(),
             ctx.archiveContext(),
             recordingLog,
-            ctx.serviceCount(),
+            serviceCount,
             ctx.leaderArchiveControlChannel(),
             ctx.archiveContext().controlRequestStreamId(),
             ctx.replicationChannel()))

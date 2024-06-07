@@ -15,6 +15,8 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Image;
+import io.aeron.cluster.service.Cluster;
 import org.agrona.DirectBuffer;
 
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -32,6 +34,19 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * @return schema id supported.
      */
     int supportedSchemaId();
+
+    /**
+     * Start event where the extension can perform any initialisation required and load snapshot state.
+     * The snapshot image can be null if no previous snapshot exists.
+     * <p>
+     * <b>Note:</b> As this is a potentially long-running operation the implementation should use
+     * {@link Cluster#idleStrategy()} and then occasionally call {@link org.agrona.concurrent.IdleStrategy#idle()} or
+     * {@link org.agrona.concurrent.IdleStrategy#idle(int)}, especially when polling the {@link Image} returns 0.
+     *
+     * @param consensusModuleControl with which the extension can interact.
+     * @param snapshotImage          from which the extension can load its state which can be null when no snapshot.
+     */
+    void onStart(ConsensusModuleControl consensusModuleControl, Image snapshotImage);
 
     /**
      * Callback for handling messages received as ingress to a cluster.
@@ -58,7 +73,5 @@ public interface ConsensusModuleExtension extends AutoCloseable
     /**
      * {@inheritDoc}
      */
-    default void close()
-    {
-    }
+    void close();
 }

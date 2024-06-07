@@ -138,6 +138,7 @@ public final class NetworkPublication
     private volatile boolean isConnected;
     private volatile boolean isEndOfStream;
     private volatile boolean hasSenderReleased;
+    private volatile boolean hasReceivedUnicastEos;
     private State state = State.ACTIVE;
 
     private final UnsafeBuffer[] termBuffers;
@@ -433,6 +434,12 @@ public final class NetworkPublication
         if (isEos)
         {
             livenessTracker.onRemoteClose(msg.receiverId());
+
+            if (!channelEndpoint.udpChannel().isMulticast() &&
+                !channelEndpoint.udpChannel().isMultiDestination())
+            {
+                hasReceivedUnicastEos = true;
+            }
         }
         else
         {
@@ -1054,7 +1061,7 @@ public final class NetworkPublication
             }
 
             case LINGER:
-                if ((timeOfLastActivityNs + lingerTimeoutNs) - timeNs < 0)
+                if (hasReceivedUnicastEos || (timeOfLastActivityNs + lingerTimeoutNs) - timeNs < 0)
                 {
                     channelEndpoint.decRef();
                     conductor.cleanupPublication(this);

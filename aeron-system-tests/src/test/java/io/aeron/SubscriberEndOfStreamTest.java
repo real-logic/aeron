@@ -17,6 +17,8 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.status.ChannelEndpointStatus;
+import io.aeron.status.LocalSocketAddressStatus;
 import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
@@ -260,6 +262,50 @@ public class SubscriberEndOfStreamTest
             }
             final long t3 = System.nanoTime();
             assertThat(t3 - t2, lessThan(driver.context().publicationConnectionTimeoutNs()));
+        }
+    }
+
+    @Test
+    void shouldNotLingerUnicastPublicationWhenReceivingEndOfStream()
+    {
+        final String addressAlreadyInUseMessage = "Address already in use";
+        systemTestWatcher.ignoreErrorsMatching((s) -> s.contains(addressAlreadyInUseMessage));
+        final long lingerTimeoutMs = 5000;
+
+        final TestMediaDriver driver = launch();
+        final int streamId = 10000;
+        final String subscriptionChannel1 = "aeron:udp?endpoint=localhost:10000";
+        final String pubChannel1 =
+            "aeron:udp?endpoint=localhost:10000|control=localhost:10001|linger=" + lingerTimeoutMs + "ms";
+
+        final Aeron.Context ctx = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName());
+
+        try (Aeron aeron = Aeron.connect(ctx))
+        {
+            final Publication pub1 = aeron.addPublication(pubChannel1, streamId);
+            final Subscription sub1 = aeron.addSubscription(subscriptionChannel1, streamId);
+
+            Tests.awaitConnected(sub1);
+            Tests.awaitConnected(pub1);
+
+            while (pub1.offer(message) < 0)
+            {
+                Tests.yield();
+            }
+
+            final int channelStatusId = pub1.channelStatusId();
+            CloseHelper.close(pub1);
+
+            final long t0 = System.currentTimeMillis();
+            while (null != LocalSocketAddressStatus.findAddress(
+                aeron.countersReader(), ChannelEndpointStatus.ACTIVE, channelStatusId))
+            {
+                Tests.yield();
+            }
+            final long t1 = System.currentTimeMillis();
+
+            assertThat((t1 - t0), lessThan(lingerTimeoutMs));
         }
     }
 }

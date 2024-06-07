@@ -287,6 +287,7 @@ int aeron_network_publication_create(
     _pub->is_end_of_stream = false;
     _pub->track_sender_limits = false;
     _pub->has_sender_released = false;
+    _pub->has_received_unicast_eos = false;
 
     _pub->short_sends_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
     _pub->heartbeats_sent_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_HEARTBEATS_SENT);
@@ -777,6 +778,11 @@ void aeron_network_publication_on_status_message(
     if (is_eos)
     {
         aeron_network_publication_liveness_on_remote_close(publication, sm->receiver_id);
+
+        if (aeron_send_channel_is_unicast(publication->endpoint))
+        {
+            AERON_PUT_VOLATILE(publication->has_received_unicast_eos, true);
+        }
     }
     else
     {
@@ -1183,7 +1189,11 @@ void aeron_network_publication_on_time_event(
 
         case AERON_NETWORK_PUBLICATION_STATE_LINGER:
         {
-            if (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->linger_timeout_ns))
+            bool has_received_unicast_eos = false;
+            AERON_GET_VOLATILE(has_received_unicast_eos, publication->has_received_unicast_eos);
+
+            if (has_received_unicast_eos ||
+                now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->linger_timeout_ns))
             {
                 aeron_driver_conductor_cleanup_network_publication(conductor, publication);
                 publication->conductor_fields.state = AERON_NETWORK_PUBLICATION_STATE_DONE;

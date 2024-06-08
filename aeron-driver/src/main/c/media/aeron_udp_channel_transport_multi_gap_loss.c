@@ -149,6 +149,8 @@ int aeron_udp_channel_interceptor_multi_gap_loss_init_incoming(
 
 int aeron_udp_channel_interceptor_multi_gap_loss_close_incoming(void *interceptor_state)
 {
+    aeron_int64_counter_map_delete((aeron_int64_counter_map_t *)interceptor_state);
+
     aeron_free(interceptor_state);
 
     return 0;

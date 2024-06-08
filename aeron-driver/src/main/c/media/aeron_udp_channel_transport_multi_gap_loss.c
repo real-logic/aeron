@@ -44,7 +44,7 @@ struct mmsghdr
 
 static AERON_INIT_ONCE env_is_initialized = AERON_INIT_ONCE_VALUE;
 
-static const aeron_udp_channel_interceptor_multi_gap_loss_params_t *aeron_udp_channel_interceptor_multi_gap_loss_params = NULL;
+static aeron_udp_channel_interceptor_multi_gap_loss_params_t aeron_udp_channel_interceptor_multi_gap_loss_params;
 
 #define STREAM_AND_SESSION_ID_NULL_OFFSET (-1)
 
@@ -79,14 +79,13 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_multi_ga
 
 int aeron_udp_channel_interceptor_multi_gap_loss_configure(const aeron_udp_channel_interceptor_multi_gap_loss_params_t *multi_gap_loss_params)
 {
-    aeron_udp_channel_interceptor_multi_gap_loss_params = multi_gap_loss_params;
+    memcpy(&aeron_udp_channel_interceptor_multi_gap_loss_params, multi_gap_loss_params, sizeof(aeron_udp_channel_interceptor_multi_gap_loss_params_t));
 
     return 0;
 }
 
 void aeron_udp_channel_transport_multi_gap_loss_load_env(void)
 {
-    aeron_udp_channel_interceptor_multi_gap_loss_params_t *multi_gap_loss_params;
     const char *args = AERON_CONFIG_GETENV_OR_DEFAULT(AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MULTI_GAP_LOSS_ARGS_ENV_VAR, "");
     char *args_dup = strdup(args);
     if (NULL == args_dup)
@@ -95,23 +94,7 @@ void aeron_udp_channel_transport_multi_gap_loss_load_env(void)
         return;
     }
 
-    if (aeron_alloc((void **)&multi_gap_loss_params, sizeof(aeron_udp_channel_interceptor_multi_gap_loss_params_t)) < 0)
-    {
-        AERON_APPEND_ERR("%s", "");
-        return;
-    }
-
-    if (aeron_udp_channel_interceptor_multi_gap_loss_parse_params(args_dup, multi_gap_loss_params) >= 0)
-    {
-        if (aeron_udp_channel_interceptor_multi_gap_loss_configure(multi_gap_loss_params) != 0)
-        {
-            AERON_APPEND_ERR("%s", "");
-        }
-    }
-    else
-    {
-        aeron_free(multi_gap_loss_params);
-    }
+    aeron_udp_channel_interceptor_multi_gap_loss_parse_params(args_dup, &aeron_udp_channel_interceptor_multi_gap_loss_params);
 
     aeron_free(args_dup);
 }
@@ -120,12 +103,6 @@ int aeron_udp_channel_interceptor_multi_gap_loss_init_incoming(
     void **interceptor_state, aeron_driver_context_t *context, aeron_udp_channel_transport_affinity_t affinity)
 {
     (void)aeron_thread_once(&env_is_initialized, aeron_udp_channel_transport_multi_gap_loss_load_env);
-
-    if (NULL == aeron_udp_channel_interceptor_multi_gap_loss_params)
-    {
-        AERON_SET_ERR(errno, "%s", "multi gap loss params not set");
-        return -1;
-    }
 
     aeron_int64_counter_map_t *stream_and_session_id_to_offset_map;
 
@@ -249,11 +226,11 @@ void aeron_udp_channel_interceptor_multi_gap_loss_incoming(
         (aeron_int64_counter_map_t *)interceptor_state,
         buffer,
         length,
-        aeron_udp_channel_interceptor_multi_gap_loss_params->term_id,
-        aeron_udp_channel_interceptor_multi_gap_loss_params->gap_radix_bits,
-        aeron_udp_channel_interceptor_multi_gap_loss_params->gap_radix_mask,
-        aeron_udp_channel_interceptor_multi_gap_loss_params->gap_length,
-        aeron_udp_channel_interceptor_multi_gap_loss_params->last_gap_limit))
+        aeron_udp_channel_interceptor_multi_gap_loss_params.term_id,
+        aeron_udp_channel_interceptor_multi_gap_loss_params.gap_radix_bits,
+        aeron_udp_channel_interceptor_multi_gap_loss_params.gap_radix_mask,
+        aeron_udp_channel_interceptor_multi_gap_loss_params.gap_length,
+        aeron_udp_channel_interceptor_multi_gap_loss_params.last_gap_limit))
     {
         delegate->incoming_func(
             delegate->interceptor_state,

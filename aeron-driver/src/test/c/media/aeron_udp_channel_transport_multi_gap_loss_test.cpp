@@ -80,7 +80,7 @@ public:
 
     static void parse_params(aeron_udp_channel_interceptor_multi_gap_loss_params_t *params, const char *const_uri)
     {
-        char uri[TEMP_URL_LEN];
+        char uri[TEMP_URL_LEN + 1];
         strncpy(uri, const_uri, TEMP_URL_LEN);
 
         EXPECT_EQ(aeron_udp_channel_interceptor_multi_gap_loss_parse_params(uri, params), 0);

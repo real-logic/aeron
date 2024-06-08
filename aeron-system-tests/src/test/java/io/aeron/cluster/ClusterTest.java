@@ -2169,6 +2169,54 @@ class ClusterTest
     }
 
     @Test
+    @InterruptAfter(45)
+    void shouldCatchupFollowerWithSlowService()
+    {
+        cluster = aCluster().withStaticNodes(3)
+            .withServiceSupplier((i) -> new TestNode.TestService[]
+            {
+                new TestNode.TestService().index(i),
+                new TestNode.TestService()
+                {
+                    public void onSessionMessage(
+                        final ClientSession session,
+                        final long timestamp,
+                        final DirectBuffer buffer,
+                        final int offset,
+                        final int length,
+                        final Header header)
+                    {
+                        Tests.sleep(100);
+                        echoMessage(session, buffer, offset, length);
+                        messageCount.incrementAndGet();
+                    }
+                }.index(i)
+            })
+            .start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+        TestNode followerA = cluster.followers().get(0);
+        final TestNode followerB = cluster.followers().get(1);
+
+        cluster.connectClient();
+        cluster.sendMessages(50);
+        cluster.awaitServicesMessageCount(50);
+
+        cluster.stopNode(followerA);
+
+        cluster.sendMessages(70);
+        cluster.awaitServiceMessageCount(leader, 120);
+        cluster.awaitServiceMessageCount(followerB, 120);
+
+        followerA = cluster.startStaticNode(followerA.index(), false);
+
+        cluster.sendMessages(30);
+        awaitElectionClosed(followerA);
+        cluster.awaitServicesMessageCount(150);
+    }
+
+    @Test
     @InterruptAfter(10)
     @SuppressWarnings("MethodLength")
     void shouldAssembleFragmentedSessionMessages()

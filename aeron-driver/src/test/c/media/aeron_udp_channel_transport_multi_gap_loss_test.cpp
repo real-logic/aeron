@@ -63,12 +63,19 @@ public:
 
         m_delegate.incoming_func = aeron_udp_channel_interceptor_multi_gap_loss_incoming_delegate;
         m_delegate.interceptor_state = &m_delegate_recv_state;
+        m_interceptor_state = nullptr;
     }
 
     void init(const char *const_uri)
     {
+        aeron_udp_channel_interceptor_multi_gap_loss_init_incoming(&m_interceptor_state, nullptr, AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER);
         parse_params(&m_params, const_uri);
         aeron_udp_channel_interceptor_multi_gap_loss_configure(&m_params);
+    }
+
+    void close() const
+    {
+        aeron_udp_channel_interceptor_multi_gap_loss_close_incoming(m_interceptor_state);
     }
 
     static void parse_params(aeron_udp_channel_interceptor_multi_gap_loss_params_t *params, const char *const_uri)
@@ -92,13 +99,14 @@ public:
 
         int expected_messages_received = m_delegate_recv_state.messages_received + (should_drop ? 0 : 1);
         aeron_udp_channel_interceptor_multi_gap_loss_incoming(
-            nullptr, &m_delegate, nullptr, nullptr, nullptr, nullptr, buffer, length, nullptr, nullptr);
+            m_interceptor_state, &m_delegate, nullptr, nullptr, nullptr, nullptr, buffer, length, nullptr, nullptr);
         EXPECT_EQ(expected_messages_received, m_delegate_recv_state.messages_received);
     }
 
     aeron_udp_channel_interceptor_multi_gap_loss_params_t m_params = {};
     aeron_udp_channel_incoming_interceptor_t m_delegate = {};
     delegate_recv_state_t m_delegate_recv_state = {};
+    void *m_interceptor_state;
 };
 
 TEST_F(UdpChannelTransportMultiGapLossTest, singleSmallGap)
@@ -109,6 +117,8 @@ TEST_F(UdpChannelTransportMultiGapLossTest, singleSmallGap)
     incoming(8, 8, true);
     incoming(16, 8, false);
     incoming(24, 8, false);
+
+    close();
 }
 
 TEST_F(UdpChannelTransportMultiGapLossTest, singleSmallGapRx)
@@ -120,6 +130,8 @@ TEST_F(UdpChannelTransportMultiGapLossTest, singleSmallGapRx)
     incoming(16, 8, false);
 
     incoming(8, 8, false);
+
+    close();
 }
 
 TEST_F(UdpChannelTransportMultiGapLossTest, multiSmallGap)
@@ -136,6 +148,8 @@ TEST_F(UdpChannelTransportMultiGapLossTest, multiSmallGap)
     incoming(52, 8, true);
     incoming(60, 2, false);
     incoming(62, 10, true);
+
+    close();
 }
 
 TEST_F(UdpChannelTransportMultiGapLossTest, shouldParseAllParams)

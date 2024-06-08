@@ -47,10 +47,6 @@ static AERON_INIT_ONCE env_is_initialized = AERON_INIT_ONCE_VALUE;
 static const aeron_udp_channel_interceptor_multi_gap_loss_params_t *aeron_udp_channel_interceptor_multi_gap_loss_params = NULL;
 
 #define STREAM_AND_SESSION_ID_NULL_OFFSET (-1)
-static aeron_int64_counter_map_t stream_and_session_id_to_offset_map;
-
-int aeron_udp_channel_interceptor_multi_gap_loss_init_incoming(
-    void **interceptor_state, aeron_driver_context_t *context, aeron_udp_channel_transport_affinity_t affinity);
 
 aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_multi_gap_loss_load(
     aeron_udp_channel_interceptor_bindings_t *delegate_bindings)
@@ -66,7 +62,7 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_multi_ga
     interceptor_bindings->outgoing_send_func = NULL;
     interceptor_bindings->incoming_func = aeron_udp_channel_interceptor_multi_gap_loss_incoming;
     interceptor_bindings->outgoing_close_func = NULL;
-    interceptor_bindings->incoming_close_func = NULL;
+    interceptor_bindings->incoming_close_func = aeron_udp_channel_interceptor_multi_gap_loss_close_incoming;
     interceptor_bindings->outgoing_transport_notification_func = NULL;
     interceptor_bindings->outgoing_publication_notification_func = NULL;
     interceptor_bindings->outgoing_image_notification_func = NULL;
@@ -84,12 +80,6 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_multi_ga
 int aeron_udp_channel_interceptor_multi_gap_loss_configure(const aeron_udp_channel_interceptor_multi_gap_loss_params_t *multi_gap_loss_params)
 {
     aeron_udp_channel_interceptor_multi_gap_loss_params = multi_gap_loss_params;
-
-    if (aeron_int64_counter_map_init(&stream_and_session_id_to_offset_map, STREAM_AND_SESSION_ID_NULL_OFFSET, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
-    {
-        AERON_SET_ERR(errno, "%s", "Unable to init stream_and_session_id_to_offset_map");
-        return -1;
-    }
 
     return 0;
 }
@@ -137,12 +127,35 @@ int aeron_udp_channel_interceptor_multi_gap_loss_init_incoming(
         return -1;
     }
 
-    *interceptor_state = NULL;
+    aeron_int64_counter_map_t *stream_and_session_id_to_offset_map;
+
+    if (aeron_alloc((void **)&stream_and_session_id_to_offset_map, sizeof(aeron_int64_counter_map_t)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (aeron_int64_counter_map_init(stream_and_session_id_to_offset_map, STREAM_AND_SESSION_ID_NULL_OFFSET, 16, AERON_MAP_DEFAULT_LOAD_FACTOR) < 0)
+    {
+        AERON_SET_ERR(errno, "%s", "Unable to init stream_and_session_id_to_offset_map");
+        aeron_free(stream_and_session_id_to_offset_map);
+        return -1;
+    }
+
+    *interceptor_state = stream_and_session_id_to_offset_map;
+
+    return 0;
+}
+
+int aeron_udp_channel_interceptor_multi_gap_loss_close_incoming(void *interceptor_state)
+{
+    aeron_free(interceptor_state);
 
     return 0;
 }
 
 static bool aeron_udp_channel_interceptor_multi_gap_loss_should_drop_frame(
+    aeron_int64_counter_map_t *stream_and_session_id_to_offset_map,
     const uint8_t *buffer, size_t buffer_length, const int32_t term_id, const int gap_radix_bits,
     const uint32_t gap_radix_mask, const size_t gap_length, const int32_t last_gap_limit)
 {
@@ -168,12 +181,12 @@ static bool aeron_udp_channel_interceptor_multi_gap_loss_should_drop_frame(
 
     const int64_t key = aeron_map_compound_key(data_header->stream_id, data_header->session_id);
 
-    int64_t tracking_offset = aeron_int64_counter_map_get(&stream_and_session_id_to_offset_map, key);
+    int64_t tracking_offset = aeron_int64_counter_map_get(stream_and_session_id_to_offset_map, key);
 
     if (tracking_offset == STREAM_AND_SESSION_ID_NULL_OFFSET)
     {
         tracking_offset = data_header->term_offset;
-        if (aeron_int64_counter_map_put(&stream_and_session_id_to_offset_map, key, tracking_offset, NULL) != 0)
+        if (aeron_int64_counter_map_put(stream_and_session_id_to_offset_map, key, tracking_offset, NULL) != 0)
         {
             return false;
         }
@@ -210,7 +223,7 @@ static bool aeron_udp_channel_interceptor_multi_gap_loss_should_drop_frame(
     return false;
 
 drop_frame:
-    if (aeron_int64_counter_map_put(&stream_and_session_id_to_offset_map, key, frame_limit, NULL) != 0)
+    if (aeron_int64_counter_map_put(stream_and_session_id_to_offset_map, key, frame_limit, NULL) != 0)
     {
         return false;
     }
@@ -231,6 +244,7 @@ void aeron_udp_channel_interceptor_multi_gap_loss_incoming(
     struct timespec *media_timestamp)
 {
     if (!aeron_udp_channel_interceptor_multi_gap_loss_should_drop_frame(
+        (aeron_int64_counter_map_t *)interceptor_state,
         buffer,
         length,
         aeron_udp_channel_interceptor_multi_gap_loss_params->term_id,

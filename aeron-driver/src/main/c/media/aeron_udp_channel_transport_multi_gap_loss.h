@@ -34,6 +34,10 @@ aeron_udp_channel_interceptor_multi_gap_loss_params_t;
 aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_multi_gap_loss_load(
     aeron_udp_channel_interceptor_bindings_t *delegate_bindings);
 
+int aeron_udp_channel_interceptor_multi_gap_loss_init_incoming(
+    void **interceptor_state, aeron_driver_context_t *context, aeron_udp_channel_transport_affinity_t affinity);
+int aeron_udp_channel_interceptor_multi_gap_loss_close_incoming(void *interceptor_state);
+
 void aeron_udp_channel_interceptor_multi_gap_loss_incoming(
     void *interceptor_state,
     aeron_udp_channel_incoming_interceptor_t *delegate,

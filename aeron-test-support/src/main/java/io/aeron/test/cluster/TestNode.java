@@ -355,7 +355,8 @@ public final class TestNode implements AutoCloseable
         private volatile boolean hasReceivedUnexpectedMessage = false;
         private volatile Cluster.Role roleChangedTo = null;
         private final AtomicInteger activeSessionCount = new AtomicInteger();
-        final AtomicInteger messageCount = new AtomicInteger();
+        protected final AtomicInteger messageCount = new AtomicInteger();
+
         final AtomicInteger liveMessageCount = new AtomicInteger();
         final AtomicInteger snapshotMessageCount = new AtomicInteger();
         final AtomicInteger timerCount = new AtomicInteger();

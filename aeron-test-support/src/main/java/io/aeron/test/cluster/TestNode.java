@@ -683,6 +683,23 @@ public final class TestNode implements AutoCloseable
         {
             this.failNextSnapshot = failNextSnapshot;
         }
+
+        public String toString()
+        {
+            return "TestService{" +
+                "wasSnapshotTaken=" + wasSnapshotTaken +
+                ", wasSnapshotLoaded=" + wasSnapshotLoaded +
+                ", failNextSnapshot=" + failNextSnapshot +
+                ", index=" + index +
+                ", hasReceivedUnexpectedMessage=" + hasReceivedUnexpectedMessage +
+                ", roleChangedTo=" + roleChangedTo +
+                ", activeSessionCount=" + activeSessionCount +
+                ", messageCount=" + messageCount +
+                ", liveMessageCount=" + liveMessageCount +
+                ", snapshotMessageCount=" + snapshotMessageCount +
+                ", timerCount=" + timerCount +
+                '}';
+        }
     }
 
     public static class SleepOnSnapshotTestService extends TestNode.TestService

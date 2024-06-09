@@ -50,6 +50,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -2168,11 +2170,14 @@ class ClusterTest
         awaitElectionClosed(restartedFollower);
     }
 
-    @Test
-    @InterruptAfter(45)
-    void shouldCatchupFollowerWithSlowService()
+    @ParameterizedTest
+    @ValueSource(ints = { 1, 1000 })
+    @InterruptAfter(60)
+    void shouldCatchupFollowerWithSlowService(final int sleepTimeMs)
     {
-        cluster = aCluster().withStaticNodes(3)
+        cluster = aCluster()
+            .withLogChannel("aeron:udp?term-length=1m|alias=raft")
+            .withStaticNodes(3)
             .withServiceSupplier((i) -> new TestNode.TestService[]
             {
                 new TestNode.TestService().index(i),
@@ -2186,8 +2191,7 @@ class ClusterTest
                         final int length,
                         final Header header)
                     {
-                        Tests.sleep(100);
-                        echoMessage(session, buffer, offset, length);
+                        Tests.sleep(sleepTimeMs);
                         messageCount.incrementAndGet();
                     }
                 }.index(i)
@@ -2200,20 +2204,27 @@ class ClusterTest
         final TestNode followerB = cluster.followers().get(1);
 
         cluster.connectClient();
-        cluster.sendMessages(50);
-        cluster.awaitServicesMessageCount(50);
+
+        final int firstBatch = (int)(SECONDS.toMillis(5) / sleepTimeMs);
+        cluster.sendMessages(firstBatch);
+        cluster.awaitResponseMessageCount(firstBatch);
+        cluster.awaitServicesMessageCount(firstBatch);
 
         cluster.stopNode(followerA);
 
-        cluster.sendMessages(70);
-        cluster.awaitServiceMessageCount(leader, 120);
-        cluster.awaitServiceMessageCount(followerB, 120);
+        final int secondBatch = (int)(SECONDS.toMillis(7) / sleepTimeMs);
+        cluster.sendMessages(secondBatch);
+        cluster.awaitResponseMessageCount(firstBatch + secondBatch);
+        cluster.awaitServiceMessageCount(leader, firstBatch + secondBatch);
+        cluster.awaitServiceMessageCount(followerB, firstBatch + secondBatch);
 
         followerA = cluster.startStaticNode(followerA.index(), false);
+        assertNotNull(followerA);
 
-        cluster.sendMessages(30);
-        awaitElectionClosed(followerA);
-        cluster.awaitServicesMessageCount(150);
+        final int thirdBatch = (int)(SECONDS.toMillis(3) / sleepTimeMs);
+        cluster.sendMessages(thirdBatch);
+        cluster.awaitResponseMessageCount(firstBatch + secondBatch + thirdBatch);
+        cluster.awaitServicesMessageCount(firstBatch + secondBatch + thirdBatch);
     }
 
     @Test

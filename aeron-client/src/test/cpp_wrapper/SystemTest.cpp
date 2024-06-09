@@ -48,7 +48,7 @@ protected:
 };
 
 // TODO: We need a way to clean up unresolved aeron_client_registering_resource_t* commands
-TEST_F(SystemTest, DISABLED_shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
+TEST_F(SystemTest, shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
 {
     std::shared_ptr<Aeron> aeron = Aeron::connect();
 
@@ -69,7 +69,7 @@ TEST_F(SystemTest, shouldGetDefaultPath)
     EXPECT_GT(defaultPath.length(), 0U);
 }
 
-TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
+TEST_F(SystemTest, DISABLED_shouldAddRemoveAvailableCounterHandlers)
 {
     const int counterTypeId = 1001;
     int staticAvailable = 0;

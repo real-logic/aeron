@@ -69,7 +69,7 @@ TEST_F(SystemTest, shouldGetDefaultPath)
     EXPECT_GT(defaultPath.length(), 0U);
 }
 
-TEST_F(SystemTest, DISABLED_shouldAddRemoveAvailableCounterHandlers)
+TEST_F(SystemTest, shouldAddRemoveAvailableCounterHandlers)
 {
     const int counterTypeId = 1001;
     int staticAvailable = 0;

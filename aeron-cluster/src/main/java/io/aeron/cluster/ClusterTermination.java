@@ -35,11 +35,22 @@ class ClusterTermination
         this.deadlineNs = deadlineNs;
     }
 
-    boolean canTerminate(final ClusterMember[] members, final long terminationPosition, final long nowNs)
+    boolean canTerminate(final ClusterMember[] members, final long nowNs)
     {
         if (haveServicesTerminated)
         {
-            return haveFollowersTerminated(members, terminationPosition) || nowNs >= deadlineNs;
+            boolean result = true;
+
+            for (final ClusterMember member : members)
+            {
+                if (!member.isLeader() && !member.hasTerminated())
+                {
+                    result = false;
+                    break;
+                }
+            }
+
+            return result || nowNs >= deadlineNs;
         }
 
         return false;
@@ -71,21 +82,5 @@ class ClusterTermination
                 }
             }
         }
-    }
-
-    private static boolean haveFollowersTerminated(final ClusterMember[] members, final long terminationPosition)
-    {
-        boolean result = true;
-
-        for (final ClusterMember member : members)
-        {
-            if (!member.isLeader() && !member.hasTerminated())
-            {
-                result = false;
-                break;
-            }
-        }
-
-        return result;
     }
 }

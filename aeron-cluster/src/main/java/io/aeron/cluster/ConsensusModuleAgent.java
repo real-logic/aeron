@@ -1069,7 +1069,7 @@ final class ConsensusModuleAgent
             {
                 member.hasTerminated(true);
 
-                if (clusterTermination.canTerminate(activeMembers, terminationPosition, clusterClock.timeNanos()))
+                if (clusterTermination.canTerminate(activeMembers, clusterClock.timeNanos()))
                 {
                     recordingLog.commitLogPosition(leadershipTermId, terminationPosition);
                     closeAndTerminate();
@@ -1393,7 +1393,7 @@ final class ConsensusModuleAgent
                 else
                 {
                     clusterTermination.onServicesTerminated();
-                    if (clusterTermination.canTerminate(activeMembers, terminationPosition, clusterClock.timeNanos()))
+                    if (clusterTermination.canTerminate(activeMembers, clusterClock.timeNanos()))
                     {
                         recordingLog.commitLogPosition(leadershipTermId, logPosition);
                         closeAndTerminate();
@@ -2240,7 +2240,7 @@ final class ConsensusModuleAgent
                 }
                 else if (ConsensusModule.State.TERMINATING == state)
                 {
-                    if (clusterTermination.canTerminate(activeMembers, terminationPosition, nowNs))
+                    if (clusterTermination.canTerminate(activeMembers, nowNs))
                     {
                         recordingLog.commitLogPosition(leadershipTermId, terminationPosition);
                         closeAndTerminate();

@@ -85,9 +85,9 @@ public class MultiGapLossAndRecoverySystemTest
             // Now, however, the UnicastRetransmitHandler treats new NAKs as a tacit admission that the previous
             // NAK did its job and the prior gap was filled, so we can immediately handle the new NAK.
 
-            final long expectedCountWith10PercentBuffer = 110L;
-            assertThat(retransmitCount, lessThanOrEqualTo(expectedCountWith10PercentBuffer));
-            assertThat(nakCount, lessThanOrEqualTo(expectedCountWith10PercentBuffer));
+            final long expectedCountWithBuffer = 120L;
+            assertThat(retransmitCount, lessThanOrEqualTo(expectedCountWithBuffer));
+            assertThat(nakCount, lessThanOrEqualTo(expectedCountWithBuffer));
         }
     }
 

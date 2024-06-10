@@ -64,8 +64,7 @@ public class DualReplayMergeTest
     private static final int STREAM_ID = 10000;
 
     private final MediaDriver.Context driverCtx = new MediaDriver.Context();
-    private final String liveEndpointA = "239.192.12.87:20123";
-    private final String liveEndpointB = "239.192.12.91:20123";
+    private final String liveEndpoint = "239.192.12.87:20123";
     private final String replayEndpointA = "localhost:0";
     private final String replayEndpointB = "localhost:0";
 
@@ -113,13 +112,13 @@ public class DualReplayMergeTest
 
         final String publicationChannelA = new ChannelUriStringBuilder()
             .media(UDP_MEDIA)
-            .endpoint(liveEndpointA)
+            .endpoint(liveEndpoint)
             .sessionId(sessionIdA)
             .spiesSimulateConnection(true)
             .build();
         final String publicationChannelB = new ChannelUriStringBuilder()
             .media(UDP_MEDIA)
-            .endpoint(liveEndpointB)
+            .endpoint(liveEndpoint)
             .sessionId(sessionIdB)
             .spiesSimulateConnection(true)
             .build();
@@ -137,7 +136,7 @@ public class DualReplayMergeTest
             .build();
         final String recordingChannel = new ChannelUriStringBuilder()
             .media(UDP_MEDIA)
-            .endpoint(liveEndpointA)
+            .endpoint(liveEndpoint)
             .build();
         final String replayChannelA = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
@@ -149,7 +148,7 @@ public class DualReplayMergeTest
             .build();
         final String liveDestination = new ChannelUriStringBuilder()
             .media(UDP_MEDIA)
-            .endpoint(liveEndpointA)
+            .endpoint(liveEndpoint)
             .build();
         final String replayDestinationA = new ChannelUriStringBuilder()
             .media(UDP_MEDIA)

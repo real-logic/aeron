@@ -262,13 +262,10 @@ if (AERON_TESTS)
     set(INSTALL_GMOCK OFF CACHE INTERNAL "Install Googletest's GMock?")
     set(INSTALL_GTEST OFF CACHE INTERNAL "Install Googletest's GTest?" )
 
-#    FetchContent_Declare(
-#        gmock
-#        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-1.14.0.zip
-#        URL_MD5 b4911e882c51cba34bebfb5df500a650)
     FetchContent_Declare(
-            gmock
-            URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip)
+        gmock
+        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-1.14.0.zip
+        URL_MD5 b4911e882c51cba34bebfb5df500a650)
 
     FetchContent_MakeAvailable(gmock)
 endif ()

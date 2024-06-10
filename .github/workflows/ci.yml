@@ -589,7 +589,7 @@ jobs:
           path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-msvc-build:
-    name: C++ MSVC (Windows)
+    name: C++ MSVC (Windows) (test 1)
     runs-on: windows-latest
     env:
       CC: cl

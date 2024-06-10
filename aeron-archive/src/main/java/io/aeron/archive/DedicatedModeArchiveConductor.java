@@ -55,7 +55,8 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
      */
     public int doWork()
     {
-        return processCloseQueue() + super.doWork();
+        final int workCount = processCloseQueue();
+        return workCount + super.doWork();
     }
 
     /**

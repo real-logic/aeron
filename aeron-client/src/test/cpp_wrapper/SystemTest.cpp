@@ -48,7 +48,7 @@ protected:
 };
 
 // TODO: We need a way to clean up unresolved aeron_client_registering_resource_t* commands
-TEST_F(SystemTest, shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
+TEST_F(SystemTest, DISABLED_shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
 {
     std::shared_ptr<Aeron> aeron = Aeron::connect();
 

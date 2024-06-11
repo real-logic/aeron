@@ -26,7 +26,7 @@ typedef struct aeron_image_list_stct
 {
     int64_t change_number;
     uint32_t length;
-    struct aeron_image_list_stct * volatile next_list;
+    struct aeron_image_list_stct *volatile next_list;
     aeron_image_t **array;
 }
 aeron_image_list_t;

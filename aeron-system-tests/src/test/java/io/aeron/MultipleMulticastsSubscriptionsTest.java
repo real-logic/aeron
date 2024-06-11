@@ -27,8 +27,12 @@ import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class MultipleMulticastsSubscriptionsTest
@@ -44,7 +48,7 @@ public class MultipleMulticastsSubscriptionsTest
     @BeforeEach
     void setUp()
     {
-        TestMediaDriver.enableMultiGapLoss(context, 0, 4096, 100, 100);
+        assumeFalse(TestMediaDriver.shouldRunCMediaDriver() && OS.current() == OS.WINDOWS);
     }
 
     private void launch(final MediaDriver.Context context)

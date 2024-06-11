@@ -15,6 +15,8 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
+import io.aeron.archive.client.AeronArchive;
 import org.agrona.concurrent.IdleStrategy;
 
 import java.util.concurrent.TimeUnit;
@@ -46,10 +48,11 @@ public interface ConsensusModuleControl
     TimeUnit timeUnit();
 
     /**
-     * {@link IdleStrategy} which should be used by the extension when it experiences back-pressure on egress,
-     * closing sessions, making timer requests, or any long-running actions.
+     * {@link IdleStrategy} which should be used by the extension when it experiences back-pressure or is taking any
+     * long-running actions.
      *
-     * @return the {@link IdleStrategy} which should be used by the extension when it experiences back-pressure.
+     * @return the {@link IdleStrategy} which should be used by the extension when it experiences back-pressure or is
+     * taking any long-running actions.
      */
     IdleStrategy idleStrategy();
 
@@ -59,4 +62,18 @@ public interface ConsensusModuleControl
      * @return the {@link ConsensusModule.Context} under which the extension is running.
      */
     ConsensusModule.Context context();
+
+    /**
+     * Get the {@link Aeron} client used by the extension.
+     *
+     * @return the {@link Aeron} client used by the extension.
+     */
+    Aeron aeron();
+
+    /**
+     * Get the {@link AeronArchive} client used by the extension.
+     *
+     * @return the {@link AeronArchive} client used by the extension.
+     */
+    AeronArchive archive();
 }

@@ -464,6 +464,22 @@ final class ConsensusModuleAgent
         idleStrategy.reset();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public Aeron aeron()
+    {
+        return aeron;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public AeronArchive archive()
+    {
+        return archive;
+    }
+
     public void onLoadBeginSnapshot(
         final int appVersion, final TimeUnit timeUnit, final DirectBuffer buffer, final int offset, final int length)
     {

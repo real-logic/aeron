@@ -76,11 +76,11 @@ int aeron_subscription_create(
 
 int aeron_subscription_delete(aeron_subscription_t *subscription)
 {
-    volatile aeron_image_list_t *prune_lists_head = &subscription->conductor_fields.image_lists_head;
+    aeron_image_list_t *volatile prune_lists_head = &subscription->conductor_fields.image_lists_head;
 
     while (NULL != prune_lists_head->next_list)
     {
-        volatile aeron_image_list_t *prune_list = prune_lists_head->next_list;
+        aeron_image_list_t *volatile prune_list = prune_lists_head->next_list;
 
         prune_lists_head->next_list = prune_list->next_list;
         aeron_free((void *)prune_list);
@@ -119,7 +119,7 @@ int aeron_subscription_close(
     return 0;
 }
 
-int aeron_subscription_alloc_image_list(aeron_image_list_t * volatile * image_list, size_t length)
+int aeron_subscription_alloc_image_list(aeron_image_list_t *volatile *image_list, size_t length)
 {
     aeron_image_list_t *_image_list;
 
@@ -142,8 +142,8 @@ int aeron_subscription_alloc_image_list(aeron_image_list_t * volatile * image_li
 
 int aeron_client_conductor_subscription_add_image(aeron_subscription_t *subscription, aeron_image_t *image)
 {
-    aeron_image_list_t * volatile current_image_list = subscription->conductor_fields.image_lists_head.next_list;
-    aeron_image_list_t * volatile new_image_list;
+    aeron_image_list_t *volatile current_image_list = subscription->conductor_fields.image_lists_head.next_list;
+    aeron_image_list_t *volatile new_image_list;
     size_t old_length = current_image_list->length;
 
     if (aeron_subscription_alloc_image_list(&new_image_list, old_length + 1) < 0)
@@ -163,8 +163,8 @@ int aeron_client_conductor_subscription_add_image(aeron_subscription_t *subscrip
 
 int aeron_client_conductor_subscription_remove_image(aeron_subscription_t *subscription, aeron_image_t *image)
 {
-    aeron_image_list_t * volatile current_image_list = subscription->conductor_fields.image_lists_head.next_list;
-    aeron_image_list_t * volatile new_image_list;
+    aeron_image_list_t *volatile current_image_list = subscription->conductor_fields.image_lists_head.next_list;
+    aeron_image_list_t *volatile new_image_list;
     size_t old_length = current_image_list->length;
     int image_index = aeron_subscription_find_image_index(current_image_list, image);
 
@@ -193,7 +193,7 @@ int aeron_client_conductor_subscription_remove_image(aeron_subscription_t *subsc
 }
 
 int aeron_client_conductor_subscription_install_new_image_list(
-    aeron_subscription_t *subscription, aeron_image_list_t * volatile image_list)
+    aeron_subscription_t *subscription, aeron_image_list_t *volatile image_list)
 {
     /*
      * Called from the client conductor to add/remove images to the image list. A new image list is passed each time.
@@ -211,7 +211,7 @@ int aeron_client_conductor_subscription_prune_image_lists(aeron_subscription_t *
     /*
      * Called from the client conductor to prune old image lists and free them up. Does not free Images.
      */
-    volatile aeron_image_list_t *prune_lists_head = &subscription->conductor_fields.image_lists_head;
+    aeron_image_list_t *volatile prune_lists_head = &subscription->conductor_fields.image_lists_head;
     int64_t last_change_number;
     int pruned_lists_count = 0;
 
@@ -225,7 +225,7 @@ int aeron_client_conductor_subscription_prune_image_lists(aeron_subscription_t *
         }
         else
         {
-            volatile aeron_image_list_t *prune_list = prune_lists_head->next_list;
+            aeron_image_list_t *volatile prune_list = prune_lists_head->next_list;
 
             prune_lists_head->next_list = prune_list->next_list;
             aeron_free((void *)prune_list);
@@ -238,7 +238,7 @@ int aeron_client_conductor_subscription_prune_image_lists(aeron_subscription_t *
 
 bool aeron_subscription_is_connected(aeron_subscription_t *subscription)
 {
-    volatile aeron_image_list_t *image_list;
+    aeron_image_list_t *volatile image_list;
     bool result = false;
 
     AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
@@ -281,7 +281,7 @@ int aeron_subscription_constants(aeron_subscription_t *subscription, aeron_subsc
 
 int aeron_subscription_image_count(aeron_subscription_t *subscription)
 {
-    volatile aeron_image_list_t *image_list;
+    aeron_image_list_t *volatile image_list;
 
     AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
 
@@ -290,7 +290,7 @@ int aeron_subscription_image_count(aeron_subscription_t *subscription)
 
 aeron_image_t *aeron_subscription_image_by_session_id(aeron_subscription_t *subscription, int32_t session_id)
 {
-    volatile aeron_image_list_t *image_list;
+    aeron_image_list_t *volatile image_list;
     aeron_image_t *result = NULL;
 
     AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
@@ -316,7 +316,7 @@ aeron_image_t *aeron_subscription_image_by_session_id(aeron_subscription_t *subs
 
 aeron_image_t *aeron_subscription_image_at_index(aeron_subscription_t *subscription, size_t index)
 {
-    volatile aeron_image_list_t *image_list;
+    aeron_image_list_t *volatile image_list;
     aeron_image_t *result = NULL;
 
     AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
@@ -335,7 +335,7 @@ aeron_image_t *aeron_subscription_image_at_index(aeron_subscription_t *subscript
 void aeron_subscription_for_each_image(
     aeron_subscription_t *subscription, void (*handler)(aeron_image_t *image, void *clientd), void *clientd)
 {
-    volatile aeron_image_list_t *image_list;
+    aeron_image_list_t *volatile image_list;
 
     AERON_GET_VOLATILE(image_list, subscription->conductor_fields.image_lists_head.next_list);
 
@@ -428,7 +428,7 @@ int64_t aeron_subscription_channel_status(aeron_subscription_t *subscription)
 int aeron_subscription_poll(
     aeron_subscription_t *subscription, aeron_fragment_handler_t handler, void *clientd, size_t fragment_limit)
 {
-    volatile aeron_image_list_t *image_list;
+    aeron_image_list_t *volatile image_list;
 
     if (NULL == handler)
     {
@@ -478,7 +478,7 @@ int aeron_subscription_controlled_poll(
     void *clientd,
     size_t fragment_limit)
 {
-    volatile aeron_image_list_t *image_list;
+    aeron_image_list_t *volatile image_list;
 
     if (NULL == handler)
     {
@@ -525,7 +525,7 @@ int aeron_subscription_controlled_poll(
 long aeron_subscription_block_poll(
     aeron_subscription_t *subscription, aeron_block_handler_t handler, void *clientd, size_t block_length_limit)
 {
-    volatile aeron_image_list_t *image_list;
+    aeron_image_list_t *volatile image_list;
     long bytes_consumed = 0;
 
     if (NULL == handler)
@@ -734,7 +734,7 @@ int aeron_subscription_try_resolve_channel_endpoint_port(
     return result;
 }
 
-extern int aeron_subscription_find_image_index(volatile aeron_image_list_t *image_list, aeron_image_t *image);
+extern int aeron_subscription_find_image_index(aeron_image_list_t *volatile image_list, aeron_image_t *image);
 extern int64_t aeron_subscription_last_image_list_change_number(aeron_subscription_t *subscription);
 extern void aeron_subscription_propose_last_image_change_number(
     aeron_subscription_t *subscription, int64_t change_number);

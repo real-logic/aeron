@@ -21,27 +21,27 @@ class ReceiverLivenessTracker
 {
     private static final int MISSING_VALUE = -1;
 
-    private final Long2LongHashMap liveMap = new Long2LongHashMap(MISSING_VALUE);
+    private final Long2LongHashMap lastSmTimestampNsByReceiverIdMap = new Long2LongHashMap(MISSING_VALUE);
 
     public boolean hasReceivers()
     {
-        return !liveMap.isEmpty();
+        return !lastSmTimestampNsByReceiverIdMap.isEmpty();
     }
 
     public void onStatusMessage(final long receiverId, final long nowNs)
     {
-        liveMap.put(receiverId, nowNs);
+        lastSmTimestampNsByReceiverIdMap.put(receiverId, nowNs);
     }
 
     public void onRemoteClose(final long receiverId)
     {
-        liveMap.remove(receiverId);
+        lastSmTimestampNsByReceiverIdMap.remove(receiverId);
     }
 
     public void onIdle(final long nowNs, final long timeoutNs)
     {
         final long timeoutThresholdNs = nowNs - timeoutNs;
-        final Long2LongHashMap.EntryIterator iterator = liveMap.entrySet().iterator();
+        final Long2LongHashMap.EntryIterator iterator = lastSmTimestampNsByReceiverIdMap.entrySet().iterator();
         while (iterator.hasNext())
         {
             iterator.next();

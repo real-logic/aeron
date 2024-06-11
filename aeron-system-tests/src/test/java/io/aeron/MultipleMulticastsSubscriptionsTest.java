@@ -32,10 +32,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class MultipleMulticastsSubscriptionsTest
+class MultipleMulticastsSubscriptionsTest
 {
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();

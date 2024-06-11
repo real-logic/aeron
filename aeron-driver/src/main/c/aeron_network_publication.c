@@ -40,6 +40,63 @@ struct mmsghdr
 };
 #endif
 
+static inline void aeron_network_publication_liveness_on_remote_close(
+    aeron_network_publication_t *publication,
+    int64_t receiver_id)
+{
+    aeron_int64_counter_map_remove(&publication->receiver_liveness_tracker, receiver_id);
+}
+
+static inline int aeron_network_publication_liveness_on_status_message(
+    aeron_network_publication_t *publication,
+    int64_t receiver_id,
+    int64_t time_ns)
+{
+    if (aeron_int64_counter_map_put(&publication->receiver_liveness_tracker, receiver_id, time_ns, NULL) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    return 0;
+}
+
+static inline bool aeron_network_publication_liveness_is_expired(
+    void *clientd,
+    int64_t receiver_id,
+    int64_t last_sm_time_ns)
+{
+    int64_t *expiry_time_ns = (int64_t *)clientd;
+    return last_sm_time_ns <= *expiry_time_ns;
+}
+
+static inline void aeron_network_publication_liveness_on_idle(
+    aeron_network_publication_t *publication,
+    int64_t time_ns,
+    int64_t timeout_ns)
+{
+    const int64_t expiry_time_ns = time_ns - timeout_ns;
+    aeron_int64_counter_map_remove_if(
+        &publication->receiver_liveness_tracker,
+        aeron_network_publication_liveness_is_expired,
+        (void *)&expiry_time_ns);
+}
+
+static void aeron_network_publication_update_has_receivers(
+    aeron_network_publication_t *publication,
+    const int64_t now_ns)
+{
+    aeron_network_publication_liveness_on_idle(publication, now_ns, publication->connection_timeout_ns);
+    const bool is_live = 0 != publication->receiver_liveness_tracker.size;
+
+    bool has_receivers;
+    AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
+    if (is_live != has_receivers)
+    {
+        AERON_PUT_ORDERED(publication->has_receivers, is_live);
+    }
+}
+
 int aeron_network_publication_create(
     aeron_network_publication_t **publication,
     aeron_send_channel_endpoint_t *endpoint,
@@ -230,7 +287,7 @@ int aeron_network_publication_create(
     _pub->is_end_of_stream = false;
     _pub->track_sender_limits = false;
     _pub->has_sender_released = false;
-    _pub->has_received_sm_eos = false;
+    _pub->has_received_unicast_eos = false;
 
     _pub->short_sends_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
     _pub->heartbeats_sent_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_HEARTBEATS_SENT);
@@ -248,6 +305,8 @@ int aeron_network_publication_create(
     _pub->endpoint_address.ss_family = AF_UNSPEC;
     _pub->is_response = AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE == endpoint->conductor_fields.udp_channel->control_mode;
     _pub->response_correlation_id = params->response_correlation_id;
+
+    aeron_int64_counter_map_init(&_pub->receiver_liveness_tracker, AERON_NULL_VALUE, 16, 0.6);
 
     *publication = _pub;
 
@@ -274,6 +333,7 @@ void aeron_network_publication_close(
 
         aeron_free(subscribable->array);
         publication->conductor_fields.managed_resource.clientd = NULL;
+        aeron_int64_counter_map_delete(&publication->receiver_liveness_tracker);
 
         aeron_retransmit_handler_close(&publication->retransmit_handler);
         publication->flow_control->fini(publication->flow_control);
@@ -568,11 +628,8 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
                 publication->flow_control->state, now_ns, snd_lmt, snd_pos, is_end_of_stream);
             aeron_counter_set_ordered(publication->snd_lmt_position.value_addr, flow_control_position);
         }
-    }
 
-    if (now_ns > publication->status_message_deadline_ns && publication->has_receivers)
-    {
-        AERON_PUT_ORDERED(publication->has_receivers, false);
+        aeron_network_publication_update_has_receivers(publication, now_ns);
     }
 
     aeron_retransmit_handler_process_timeouts(
@@ -715,24 +772,40 @@ void aeron_network_publication_on_status_message(
 {
     const int64_t time_ns = aeron_clock_cached_nano_time(publication->cached_clock);
     const aeron_status_message_header_t *sm = (aeron_status_message_header_t *)buffer;
+    const bool is_eos = sm->frame_header.flags & AERON_STATUS_MESSAGE_HEADER_EOS_FLAG;
     publication->status_message_deadline_ns = time_ns + publication->connection_timeout_ns;
 
-    if (!publication->has_receivers)
+    if (is_eos)
     {
-        AERON_PUT_ORDERED(publication->has_receivers, true);
+        aeron_network_publication_liveness_on_remote_close(publication, sm->receiver_id);
+
+        if (aeron_send_channel_is_unicast(publication->endpoint))
+        {
+            AERON_PUT_VOLATILE(publication->has_received_unicast_eos, true);
+        }
+    }
+    else
+    {
+        aeron_network_publication_liveness_on_status_message(publication, sm->receiver_id, time_ns);
+    }
+
+    const bool is_live = 0 != publication->receiver_liveness_tracker.size;
+    bool existing_has_receivers;
+    AERON_GET_VOLATILE(existing_has_receivers, publication->has_receivers);
+
+    if (!existing_has_receivers && is_live)
+    {
         aeron_driver_conductor_proxy_on_response_connected(conductor_proxy, publication->response_correlation_id);
+    }
+
+    if (existing_has_receivers != is_live)
+    {
+        AERON_PUT_ORDERED(publication->has_receivers, is_live);
     }
 
     if (!publication->has_initial_connection)
     {
         publication->has_initial_connection = true;
-    }
-
-    if (!publication->has_received_sm_eos &&
-        aeron_send_channel_is_unicast(publication->endpoint) &&
-        sm->frame_header.flags & AERON_STATUS_MESSAGE_HEADER_EOS_FLAG)
-    {
-        AERON_PUT_ORDERED(publication->has_received_sm_eos, true);
     }
 
     aeron_counter_set_ordered(
@@ -1116,10 +1189,10 @@ void aeron_network_publication_on_time_event(
 
         case AERON_NETWORK_PUBLICATION_STATE_LINGER:
         {
-            bool has_received_sm_eos;
-            AERON_GET_VOLATILE(has_received_sm_eos, publication->has_received_sm_eos);
+            bool has_received_unicast_eos = false;
+            AERON_GET_VOLATILE(has_received_unicast_eos, publication->has_received_unicast_eos);
 
-            if (has_received_sm_eos ||
+            if (has_received_unicast_eos ||
                 now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->linger_timeout_ns))
             {
                 aeron_driver_conductor_cleanup_network_publication(conductor, publication);

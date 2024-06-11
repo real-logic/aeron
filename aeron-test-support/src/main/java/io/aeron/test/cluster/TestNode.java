@@ -20,6 +20,7 @@ import io.aeron.ExclusivePublication;
 import io.aeron.FragmentAssembler;
 import io.aeron.Image;
 import io.aeron.archive.Archive;
+import io.aeron.archive.ArchiveTool;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.ClusterMembership;
@@ -266,6 +267,7 @@ public final class TestNode implements AutoCloseable
             RecordingPos.findCounterIdByRecording(countersReader, recordingId, archive.context().archiveId());
         if (NULL_VALUE == counterId)
         {
+            ArchiveTool.describeRecording(System.out, archive().context().archiveDir(), recordingId);
             fail("recording not active " + recordingId);
         }
 

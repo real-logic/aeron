@@ -65,7 +65,6 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
 
     /**
      * Create new feedback delay generator based on estimates. Pre-calculating some parameters upfront.
-     * <p>
      *
      * @param maxBackoffT of the delay interval
      * @param groupSize   estimate

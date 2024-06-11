@@ -3242,7 +3242,8 @@ public final class Archive implements AutoCloseable
          * <p>When using an authorisation service for the ConsensusModule, then the following values for protocolId,
          * actionId, and type should be considered.</p>
          *
-         * <table summary="Parameters for authorisation service queries from the Archive">
+         * <table>
+         *     <caption>Parameters for authorisation service queries from the Archive</caption>
          *     <thead>
          *         <tr><td>Description</td><td>protocolId</td><td>actionId</td><td>type(s)</td></tr>
          *     </thead>

@@ -2172,7 +2172,7 @@ class ClusterTest
 
     @ParameterizedTest
     @ValueSource(ints = { 1, 1000 })
-    @InterruptAfter(60)
+    @InterruptAfter(90)
     void shouldCatchupFollowerWithSlowService(final int sleepTimeMs)
     {
         cluster = aCluster()

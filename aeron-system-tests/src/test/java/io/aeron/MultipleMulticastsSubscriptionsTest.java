@@ -18,15 +18,20 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.InterruptAfter;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+@ExtendWith(InterruptingTestCallback.class)
 public class MultipleMulticastsSubscriptionsTest
 {
     @RegisterExtension
@@ -56,6 +61,7 @@ public class MultipleMulticastsSubscriptionsTest
     }
 
     @Test
+    @InterruptAfter(5)
     void shouldBindToMultipleMulticastAddressOnTheSamePort()
     {
         launch(context);
@@ -77,6 +83,7 @@ public class MultipleMulticastsSubscriptionsTest
     }
 
     @Test
+    @InterruptAfter(5)
     void shouldBindToMultipleMulticastAddressOnTheSamePortAsMdsDestinations()
     {
         launch(context);
@@ -102,6 +109,7 @@ public class MultipleMulticastsSubscriptionsTest
     }
 
     @Test
+    @InterruptAfter(5)
     void shouldBindToMultipleMulticastAddressOnTheSamePortMixingMdsAndSubscriptions()
     {
         launch(context);

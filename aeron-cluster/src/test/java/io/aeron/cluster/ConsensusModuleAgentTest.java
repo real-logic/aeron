@@ -125,6 +125,7 @@ class ConsensusModuleAgentTest
         when(mockAeron.addSubscription(anyString(), anyInt(), eq(null), any(UnavailableImageHandler.class)))
             .thenReturn(mock(Subscription.class));
         when(mockResponsePublication.isConnected()).thenReturn(TRUE);
+        when(mockResponsePublication.availableWindow()).thenReturn(Long.MAX_VALUE);
     }
 
     @Test

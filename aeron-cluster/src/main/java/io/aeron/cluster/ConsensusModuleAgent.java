@@ -518,6 +518,7 @@ final class ConsensusModuleAgent
     {
     }
 
+
     public void onLoadClusterSession(
         final long clusterSessionId,
         final long correlationId,
@@ -530,20 +531,34 @@ final class ConsensusModuleAgent
         final int offset,
         final int length)
     {
-        final ClusterSession session = new ClusterSession(
-            clusterSessionId,
-            correlationId,
-            openedPosition,
-            timeOfLastActivity,
-            responseStreamId,
-            refineResponseChannel(responseChannel),
-            closeReason);
+        final ClusterSession session = newClusterSession(clusterSessionId, responseStreamId, responseChannel);
+
+        session.loadSnapshotState(correlationId, openedPosition, timeOfLastActivity, closeReason);
 
         addSession(session);
 
         if (clusterSessionId >= nextSessionId)
         {
             nextSessionId = clusterSessionId + 1;
+        }
+    }
+
+    private ClusterSession newClusterSession(
+        final long clusterSessionId,
+        final int responseStreamId,
+        final String responseChannel)
+    {
+        if (null == consensusModuleExtension)
+        {
+            return new ClusterSession(
+                clusterSessionId,
+                responseStreamId,
+                refineResponseChannel(responseChannel));
+        }
+        else
+        {
+            return consensusModuleExtension.newClusterSession(
+                clusterSessionId, responseStreamId, refineResponseChannel(responseChannel));
         }
     }
 
@@ -600,8 +615,7 @@ final class ConsensusModuleAgent
         final byte[] encodedCredentials)
     {
         final long clusterSessionId = Cluster.Role.LEADER == role ? nextSessionId++ : NULL_VALUE;
-        final ClusterSession session = new ClusterSession(
-            clusterSessionId, responseStreamId, refineResponseChannel(responseChannel));
+        final ClusterSession session = newClusterSession(clusterSessionId, responseStreamId, responseChannel);
 
         session.asyncConnect(aeron);
         final long now = clusterClock.time();
@@ -1105,8 +1119,7 @@ final class ConsensusModuleAgent
         {
             if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
-                final ClusterSession session = new ClusterSession(
-                    NULL_VALUE, responseStreamId, refineResponseChannel(responseChannel));
+                final ClusterSession session = newClusterSession(NULL_VALUE, responseStreamId, responseChannel);
 
                 final long timestamp = clusterClock.time();
 
@@ -1141,8 +1154,7 @@ final class ConsensusModuleAgent
         {
             if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
-                final ClusterSession session = new ClusterSession(
-                    NULL_VALUE, responseStreamId, refineResponseChannel(responseChannel));
+                final ClusterSession session = newClusterSession(NULL_VALUE, responseStreamId, responseChannel);
 
                 session.action(ClusterSession.Action.HEARTBEAT);
                 session.asyncConnect(aeron);
@@ -1187,8 +1199,7 @@ final class ConsensusModuleAgent
         {
             if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
-                final ClusterSession session = new ClusterSession(
-                    NULL_VALUE, responseStreamId, refineResponseChannel(responseChannel));
+                final ClusterSession session = newClusterSession(NULL_VALUE, responseStreamId, responseChannel);
 
                 final long timestamp = clusterClock.time();
 
@@ -1449,8 +1460,7 @@ final class ConsensusModuleAgent
         final int responseStreamId,
         final String responseChannel)
     {
-        final ClusterSession session = new ClusterSession(
-            clusterSessionId, responseStreamId, refineResponseChannel(responseChannel));
+        final ClusterSession session = newClusterSession(clusterSessionId, responseStreamId, responseChannel);
         session.open(logPosition);
         session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
 
@@ -2499,7 +2509,8 @@ final class ConsensusModuleAgent
                 {
                     case CLIENT:
                     {
-                        if (session.responsePublication().isConnected() && appendSessionAndOpen(session, nowNs))
+                        if (session.appendSessionToLogAndSendOpen(
+                            logPublisher, egressPublisher, leadershipTermId, memberId, nowNs, clusterClock.time()))
                         {
                             ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                             addSession(session);
@@ -2731,7 +2742,7 @@ final class ConsensusModuleAgent
             }
             else if (session.hasOpenEventPending())
             {
-                workCount += sendSessionOpenEvent(session);
+                workCount += session.sendSessionOpenEvent(egressPublisher, leadershipTermId, memberId);
             }
             else if (session.hasNewLeaderEventPending())
             {
@@ -2780,31 +2791,6 @@ final class ConsensusModuleAgent
         }
 
         return 0;
-    }
-
-    private int sendSessionOpenEvent(final ClusterSession session)
-    {
-        if (egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.OK, ""))
-        {
-            session.clearOpenEventPending();
-            return 1;
-        }
-
-        return 0;
-    }
-
-    private boolean appendSessionAndOpen(final ClusterSession session, final long nowNs)
-    {
-        final long resultingPosition = logPublisher.appendSessionOpen(session, leadershipTermId, clusterClock.time());
-        if (resultingPosition > 0)
-        {
-            session.open(resultingPosition);
-            session.timeOfLastActivityNs(nowNs);
-            sendSessionOpenEvent(session);
-            return true;
-        }
-
-        return false;
     }
 
     private boolean tryCreateAppendPosition(final int logSessionId)

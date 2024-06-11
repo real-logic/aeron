@@ -13,17 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.aeron.cluster;
 
+import io.aeron.Image;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.ControlledFragmentHandler;
+import io.aeron.logbuffer.Header;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.TestContexts;
 import io.aeron.test.cluster.ClusterTests;
+
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,15 +37,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
 class ClusterWithNoServicesTest
 {
     private ClusteredMediaDriver clusteredMediaDriver;
     private AeronCluster aeronCluster;
-    private final ConsensusModuleExtension mockConsensusModuleExtension = mock(ConsensusModuleExtension.class);
+    private final ConsensusModuleExtension consensusModuleExtensionSpy = spy(new TestConsensusModuleExtension());
 
     @AfterEach
     void after()
@@ -65,7 +70,7 @@ class ClusterWithNoServicesTest
         aeronCluster = connectClient();
 
         assertTrue(aeronCluster.sendKeepAlive());
-        verify(mockConsensusModuleExtension).onStart(any(ConsensusModuleControl.class), isNull());
+        verify(consensusModuleExtensionSpy).onStart(any(ConsensusModuleControl.class), isNull());
 
         ClusterTests.failOnClusterError();
     }
@@ -89,7 +94,7 @@ class ClusterWithNoServicesTest
                 .clusterMembers(ClusterTestConstants.CLUSTER_MEMBERS)
                 .ingressChannel("aeron:udp")
                 .serviceCount(0)
-                .consensusModuleExtension(mockConsensusModuleExtension)
+                .consensusModuleExtension(consensusModuleExtensionSpy)
                 .logChannel("aeron:ipc")
                 .replicationChannel("aeron:udp?endpoint=localhost:0")
                 .deleteDirOnStart(true));
@@ -102,5 +107,42 @@ class ClusterWithNoServicesTest
                 .ingressChannel("aeron:udp")
                 .ingressEndpoints(ClusterTestConstants.INGRESS_ENDPOINTS)
                 .egressChannel("aeron:udp?endpoint=localhost:0"));
+    }
+
+    private static final class TestConsensusModuleExtension implements ConsensusModuleExtension
+    {
+        public int supportedSchemaId()
+        {
+            return 0;
+        }
+
+        public void onStart(final ConsensusModuleControl consensusModuleControl, final Image snapshotImage)
+        {
+
+        }
+
+        public ControlledFragmentHandler.Action onMessage(
+            final int schemaId,
+            final int templateId,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
+        {
+            return null;
+        }
+
+        public void close()
+        {
+
+        }
+
+        public ClusterSession newClusterSession(
+            final long clusterSessionId,
+            final int responseStreamId,
+            final String responseChannel)
+        {
+            return new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
+        }
     }
 }

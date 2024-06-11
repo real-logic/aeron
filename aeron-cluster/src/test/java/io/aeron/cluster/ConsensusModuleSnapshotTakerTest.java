@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
@@ -21,6 +22,7 @@ import io.aeron.ExclusivePublication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.ClusterClock;
 import io.aeron.logbuffer.BufferClaim;
+
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.AtomicBuffer;
@@ -183,8 +185,9 @@ class ConsensusModuleSnapshotTakerTest
         final String responseChannel = "aeron:ipc";
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterSessionEncoder.BLOCK_LENGTH +
             ClusterSessionEncoder.responseChannelHeaderLength() + responseChannel.length();
-        final ClusterSession clusterSession = new ClusterSession(
-            556, 13, 1024, 800, 42, responseChannel, CloseReason.CLIENT_ACTION);
+        final ClusterSession clusterSession = new ClusterSession(556, 42, responseChannel);
+        clusterSession.loadSnapshotState(
+            13, 1024, 800, CloseReason.CLIENT_ACTION);
         when(publication.maxPayloadLength()).thenReturn(length);
         when(publication.tryClaim(eq(length), any()))
             .thenReturn(BACK_PRESSURED, ADMIN_ACTION)
@@ -218,8 +221,10 @@ class ConsensusModuleSnapshotTakerTest
         final String responseChannel = "aeron:ipc?alias=very very very long string|mtu=4444";
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterSessionEncoder.BLOCK_LENGTH +
             ClusterSessionEncoder.responseChannelHeaderLength() + responseChannel.length();
-        final ClusterSession clusterSession = new ClusterSession(
-            42, -1, 76, 98, 4, responseChannel, CloseReason.TIMEOUT);
+        final ClusterSession clusterSession = new ClusterSession(42, 4, responseChannel);
+        clusterSession.loadSnapshotState(
+            -1, 76, 98, CloseReason.TIMEOUT);
+
         when(publication.maxPayloadLength()).thenReturn(length - 1);
         when(publication.offer(any(), eq(0), eq(length)))
             .thenReturn(BACK_PRESSURED, ADMIN_ACTION)

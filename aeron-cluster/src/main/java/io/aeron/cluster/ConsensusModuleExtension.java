@@ -74,4 +74,14 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * {@inheritDoc}
      */
     void close();
+
+    /**
+     * Create a cluster session applicable for this extension
+     *
+     * @param clusterSessionId  sessionId
+     * @param responseStreamId  response stream id
+     * @param responseChannel   response channel
+     * @return new cluster session
+     */
+    ClusterSession newClusterSession(long clusterSessionId, int responseStreamId, String responseChannel);
 }

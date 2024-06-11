@@ -30,7 +30,7 @@ import org.agrona.concurrent.errors.DistinctErrorLog;
 
 import java.util.Arrays;
 
-final class ClusterSession
+class ClusterSession
 {
     static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
     static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;
@@ -73,33 +73,6 @@ final class ClusterSession
         state(State.INIT);
     }
 
-    ClusterSession(
-        final long id,
-        final long correlationId,
-        final long openedLogPosition,
-        final long timeOfLastActivityNs,
-        final int responseStreamId,
-        final String responseChannel,
-        final CloseReason closeReason)
-    {
-        this.id = id;
-        this.responseStreamId = responseStreamId;
-        this.responseChannel = responseChannel;
-        this.openedLogPosition = openedLogPosition;
-        this.timeOfLastActivityNs = timeOfLastActivityNs;
-        this.correlationId = correlationId;
-        this.closeReason = closeReason;
-
-        if (CloseReason.NULL_VAL != closeReason)
-        {
-            state(State.CLOSING);
-        }
-        else
-        {
-            state(State.OPEN);
-        }
-    }
-
     public void close(final Aeron aeron, final ErrorHandler errorHandler)
     {
         if (null == responsePublication)
@@ -113,6 +86,27 @@ final class ClusterSession
         }
 
         state(State.CLOSED);
+    }
+
+    void loadSnapshotState(
+        final long correlationId,
+        final long openedLogPosition,
+        final long timeOfLastActivityNs,
+        final CloseReason closeReason)
+    {
+        this.openedLogPosition = openedLogPosition;
+        this.timeOfLastActivityNs = timeOfLastActivityNs;
+        this.correlationId = correlationId;
+        this.closeReason = closeReason;
+
+        if (CloseReason.NULL_VAL != closeReason)
+        {
+            state(State.CLOSING);
+        }
+        else
+        {
+            state(State.OPEN);
+        }
     }
 
     long id()
@@ -260,6 +254,43 @@ final class ClusterSession
         this.openedLogPosition = openedLogPosition;
         encodedPrincipal = null;
         state(State.OPEN);
+    }
+
+    boolean appendSessionToLogAndSendOpen(
+        final LogPublisher logPublisher,
+        final EgressPublisher egressPublisher,
+        final long leadershipTermId,
+        final int memberId,
+        final long nowNs,
+        final long clusterTimestamp)
+    {
+        if (responsePublication.availableWindow() > 0)
+        {
+            final long resultingPosition = logPublisher.appendSessionOpen(this, leadershipTermId, clusterTimestamp);
+            if (resultingPosition > 0)
+            {
+                open(resultingPosition);
+                timeOfLastActivityNs(nowNs);
+                sendSessionOpenEvent(egressPublisher, leadershipTermId, memberId);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    int sendSessionOpenEvent(
+        final EgressPublisher egressPublisher,
+        final long leadershipTermId,
+        final int memberId)
+    {
+        if (egressPublisher.sendEvent(this, leadershipTermId, memberId, EventCode.OK, ""))
+        {
+            clearOpenEventPending();
+            return 1;
+        }
+
+        return 0;
     }
 
     byte[] encodedPrincipal()

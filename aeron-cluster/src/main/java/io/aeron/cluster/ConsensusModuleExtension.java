@@ -76,12 +76,25 @@ public interface ConsensusModuleExtension extends AutoCloseable
     void close();
 
     /**
-     * Create a cluster session applicable for this extension
-     *
-     * @param clusterSessionId  sessionId
-     * @param responseStreamId  response stream id
-     * @param responseChannel   response channel
-     * @return new cluster session
+     * Session state relevant to extension
      */
-    ClusterSession newClusterSession(long clusterSessionId, int responseStreamId, String responseChannel);
+    enum ExtensionSessionState
+    {
+        INIT,
+        OPEN,
+        CLOSED,
+        REJECTED
+    }
+
+    /**
+     * Callback when a session state changed
+     *
+     * @param sessionId closed session id
+     * @param oldState state transitioned from
+     * @param newState state transitioned to
+     */
+    void onSessionStateChange(
+        long sessionId,
+        ExtensionSessionState oldState,
+        ExtensionSessionState newState);
 }

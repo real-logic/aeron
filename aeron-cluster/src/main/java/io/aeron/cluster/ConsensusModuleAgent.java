@@ -21,6 +21,7 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.RecordingSignalPoller;
 import io.aeron.archive.codecs.*;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.cluster.ConsensusModuleExtension.ExtensionSessionState;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
@@ -531,7 +532,11 @@ final class ConsensusModuleAgent
         final int offset,
         final int length)
     {
-        final ClusterSession session = newClusterSession(clusterSessionId, responseStreamId, responseChannel);
+
+        final ClusterSession session = new ClusterSession(
+            clusterSessionId,
+            responseStreamId,
+            refineResponseChannel(responseChannel));
 
         session.loadSnapshotState(correlationId, openedPosition, timeOfLastActivity, closeReason);
 
@@ -540,25 +545,6 @@ final class ConsensusModuleAgent
         if (clusterSessionId >= nextSessionId)
         {
             nextSessionId = clusterSessionId + 1;
-        }
-    }
-
-    private ClusterSession newClusterSession(
-        final long clusterSessionId,
-        final int responseStreamId,
-        final String responseChannel)
-    {
-        if (null == consensusModuleExtension)
-        {
-            return new ClusterSession(
-                clusterSessionId,
-                responseStreamId,
-                refineResponseChannel(responseChannel));
-        }
-        else
-        {
-            return consensusModuleExtension.newClusterSession(
-                clusterSessionId, responseStreamId, refineResponseChannel(responseChannel));
         }
     }
 
@@ -607,7 +593,7 @@ final class ConsensusModuleAgent
         onScheduleTimer(correlationId, deadline);
     }
 
-    void onSessionConnect(
+    public long onSessionConnect(
         final long correlationId,
         final int responseStreamId,
         final int version,
@@ -615,7 +601,11 @@ final class ConsensusModuleAgent
         final byte[] encodedCredentials)
     {
         final long clusterSessionId = Cluster.Role.LEADER == role ? nextSessionId++ : NULL_VALUE;
-        final ClusterSession session = newClusterSession(clusterSessionId, responseStreamId, responseChannel);
+
+        final ClusterSession session = new ClusterSession(
+            clusterSessionId,
+            responseStreamId,
+            refineResponseChannel(responseChannel));
 
         session.asyncConnect(aeron);
         final long now = clusterClock.time();
@@ -645,6 +635,7 @@ final class ConsensusModuleAgent
                 pendingUserSessions.add(session);
             }
         }
+        return session.id();
     }
 
     void onSessionClose(final long leadershipTermId, final long clusterSessionId)
@@ -652,7 +643,7 @@ final class ConsensusModuleAgent
         if (leadershipTermId == this.leadershipTermId && Cluster.Role.LEADER == role)
         {
             final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-            if (null != session && session.state() == OPEN)
+            if (null != session && session.state() == ClusterSession.State.OPEN)
             {
                 session.closing(CloseReason.CLIENT_ACTION);
                 session.disconnect(aeron, ctx.countedErrorHandler());
@@ -665,6 +656,11 @@ final class ConsensusModuleAgent
                     sessionByIdMap.remove(clusterSessionId);
                     removeSession(sessions, clusterSessionId);
                     session.close(aeron, ctx.countedErrorHandler());
+                    if (null != consensusModuleExtension)
+                    {
+                        consensusModuleExtension.onSessionStateChange(
+                            session.id(), ExtensionSessionState.OPEN, ExtensionSessionState.CLOSED);
+                    }
                 }
             }
         }
@@ -685,7 +681,7 @@ final class ConsensusModuleAgent
         }
 
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null == session || session.state() != OPEN)
+        if (null == session || session.state() != ClusterSession.State.OPEN)
         {
             return;
         }
@@ -736,7 +732,7 @@ final class ConsensusModuleAgent
         if (leadershipTermId == this.leadershipTermId && Cluster.Role.LEADER == role)
         {
             final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-            if (null != session && session.state() == OPEN)
+            if (null != session && session.state() == ClusterSession.State.OPEN)
             {
                 final long timestamp = clusterClock.time();
                 if (logPublisher.appendMessage(
@@ -760,7 +756,7 @@ final class ConsensusModuleAgent
         if (leadershipTermId == this.leadershipTermId && Cluster.Role.LEADER == role)
         {
             final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-            if (null != session && session.state() == OPEN)
+            if (null != session && session.state() == ClusterSession.State.OPEN)
             {
                 session.timeOfLastActivityNs(clusterClock.timeNanos());
             }
@@ -1119,7 +1115,11 @@ final class ConsensusModuleAgent
         {
             if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
-                final ClusterSession session = newClusterSession(NULL_VALUE, responseStreamId, responseChannel);
+
+                final ClusterSession session = new ClusterSession(
+                    NULL_VALUE,
+                    responseStreamId,
+                    refineResponseChannel(responseChannel));
 
                 final long timestamp = clusterClock.time();
 
@@ -1154,7 +1154,11 @@ final class ConsensusModuleAgent
         {
             if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
-                final ClusterSession session = newClusterSession(NULL_VALUE, responseStreamId, responseChannel);
+
+                final ClusterSession session = new ClusterSession(
+                    NULL_VALUE,
+                    responseStreamId,
+                    refineResponseChannel(responseChannel));
 
                 session.action(ClusterSession.Action.HEARTBEAT);
                 session.asyncConnect(aeron);
@@ -1199,7 +1203,11 @@ final class ConsensusModuleAgent
         {
             if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
-                final ClusterSession session = newClusterSession(NULL_VALUE, responseStreamId, responseChannel);
+
+                final ClusterSession session = new ClusterSession(
+                    NULL_VALUE,
+                    responseStreamId,
+                    refineResponseChannel(responseChannel));
 
                 final long timestamp = clusterClock.time();
 
@@ -1460,7 +1468,11 @@ final class ConsensusModuleAgent
         final int responseStreamId,
         final String responseChannel)
     {
-        final ClusterSession session = newClusterSession(clusterSessionId, responseStreamId, responseChannel);
+
+        final ClusterSession session = new ClusterSession(
+            clusterSessionId,
+            responseStreamId,
+            refineResponseChannel(responseChannel));
         session.open(logPosition);
         session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
 
@@ -2173,7 +2185,7 @@ final class ConsensusModuleAgent
             for (int i = 0, size = sessions.size(); i < size; i++)
             {
                 final ClusterSession session = sessions.get(i);
-                if (session.state() == OPEN)
+                if (session.state() == ClusterSession.State.OPEN)
                 {
                     session.closing(CloseReason.TIMEOUT);
                 }
@@ -2188,10 +2200,10 @@ final class ConsensusModuleAgent
                 if (session.closeReason() == CloseReason.TIMEOUT)
                 {
                     session.resetCloseReason();
-                    session.state(OPEN);
+                    session.state(ClusterSession.State.OPEN);
                 }
 
-                if (session.state() == OPEN)
+                if (session.state() == ClusterSession.State.OPEN)
                 {
                     session.connect(ctx.countedErrorHandler(), aeron);
                 }
@@ -2201,7 +2213,7 @@ final class ConsensusModuleAgent
             for (int i = 0, size = sessions.size(); i < size; i++)
             {
                 final ClusterSession session = sessions.get(i);
-                if (session.state() == OPEN)
+                if (session.state() == ClusterSession.State.OPEN)
                 {
                     session.timeOfLastActivityNs(nowNs);
                     session.hasNewLeaderEventPending(true);
@@ -2515,6 +2527,13 @@ final class ConsensusModuleAgent
                             ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                             addSession(session);
                             workCount += 1;
+                            if (null != consensusModuleExtension)
+                            {
+                                consensusModuleExtension.onSessionStateChange(
+                                    session.id(),
+                                    ExtensionSessionState.INIT,
+                                    ExtensionSessionState.OPEN);
+                            }
                         }
                         break;
                     }
@@ -2631,6 +2650,13 @@ final class ConsensusModuleAgent
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                 rejectedSessions.add(session);
+                if (null != consensusModuleExtension)
+                {
+                    consensusModuleExtension.onSessionStateChange(
+                        session.id(),
+                        ExtensionSessionState.INIT,
+                        ExtensionSessionState.REJECTED);
+                }
             }
         }
 
@@ -2695,7 +2721,7 @@ final class ConsensusModuleAgent
 
             if (nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
             {
-                if (session.state() == OPEN)
+                if (session.state() == ClusterSession.State.OPEN)
                 {
                     session.closing(CloseReason.TIMEOUT);
 
@@ -3100,7 +3126,7 @@ final class ConsensusModuleAgent
                 if (CloseReason.TIMEOUT == session.closeReason())
                 {
                     session.resetCloseReason();
-                    session.state(OPEN);
+                    session.state(ClusterSession.State.OPEN);
                 }
                 else
                 {
@@ -3267,7 +3293,7 @@ final class ConsensusModuleAgent
             final ClusterSession session = sessions.get(i);
             final ClusterSession.State sessionState = session.state();
 
-            if (sessionState == OPEN || sessionState == CLOSING)
+            if (sessionState == ClusterSession.State.OPEN || sessionState == CLOSING)
             {
                 snapshotTaker.snapshotSession(session);
             }

@@ -18,6 +18,7 @@ package io.aeron.cluster;
 
 import io.aeron.Image;
 import io.aeron.archive.ArchiveThreadingMode;
+import io.aeron.cluster.ConsensusModuleExtension.ExtensionSessionState;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -33,6 +34,7 @@ import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,7 +72,12 @@ class ClusterWithNoServicesTest
         aeronCluster = connectClient();
 
         assertTrue(aeronCluster.sendKeepAlive());
-        verify(consensusModuleExtensionSpy).onStart(any(ConsensusModuleControl.class), isNull());
+        final InOrder order = inOrder(consensusModuleExtensionSpy);
+        order.verify(consensusModuleExtensionSpy).onStart(any(ConsensusModuleControl.class), isNull());
+        order.verify(consensusModuleExtensionSpy).onSessionStateChange(
+            anyLong(),
+            eq(ExtensionSessionState.INIT),
+            eq(ExtensionSessionState.OPEN));
 
         ClusterTests.failOnClusterError();
     }
@@ -137,12 +144,12 @@ class ClusterWithNoServicesTest
 
         }
 
-        public ClusterSession newClusterSession(
-            final long clusterSessionId,
-            final int responseStreamId,
-            final String responseChannel)
+        public void onSessionStateChange(
+            final long sessionId,
+            final ExtensionSessionState oldState,
+            final ExtensionSessionState newState)
         {
-            return new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
+
         }
     }
 }

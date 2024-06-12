@@ -414,6 +414,19 @@ void aeron_send_channel_endpoint_dispatch(
             }
             break;
 
+        case AERON_HDR_TYPE_ERR:
+            if (length >= sizeof(aeron_error_t) && length >= (size_t)frame_header->frame_length)
+            {
+                result = aeron_send_channel_endpoint_on_error(endpoint, conductor_proxy, buffer, length, addr);
+                // TODO: error messages counter.
+//                aeron_counter_ordered_increment(sender->error_messages_received_counter, 1);
+            }
+            else
+            {
+                aeron_counter_increment(sender->invalid_frames_counter, 1);
+            }
+            break;
+
         case AERON_HDR_TYPE_RSP_SETUP:
             if (length >= sizeof(aeron_response_setup_header_t))
             {
@@ -507,6 +520,30 @@ int aeron_send_channel_endpoint_on_status_message(
         }
 
         endpoint->time_of_last_sm_ns = aeron_clock_cached_nano_time(endpoint->cached_clock);
+    }
+
+    return result;
+}
+
+int aeron_send_channel_endpoint_on_error(
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
+{
+    aeron_error_t *error = (aeron_error_t *)buffer;
+
+    // TODO: handle multi-destination messages
+
+    int64_t key_value = aeron_map_compound_key(error->stream_id, error->session_id);
+    aeron_network_publication_t *publication = aeron_int64_to_ptr_hash_map_get(
+        &endpoint->publication_dispatch_map, key_value);
+    int result = 0;
+
+    if (NULL != publication)
+    {
+        aeron_network_publication_on_error(publication, buffer, length, addr);
     }
 
     return result;

@@ -181,6 +181,12 @@ void aeron_network_publication_on_status_message(
     size_t length,
     struct sockaddr_storage *addr);
 
+void aeron_network_publication_on_error(
+    aeron_network_publication_t *publication,
+    const uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
+
 void aeron_network_publication_on_rttm(
     aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 

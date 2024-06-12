@@ -700,18 +700,33 @@ int aeron_publication_image_on_rttm(
 // Called from receiver.
 int aeron_publication_image_send_pending_status_message(aeron_publication_image_t *image, int64_t now_ns)
 {
-    // TODO: Send error frame instead.
-    if (NULL != image->invalidation_reason)
-    {
-        return 0;
-    }
-
     int work_count = 0;
     int64_t change_number;
-    int32_t response_session_id = 0;
     AERON_GET_VOLATILE(change_number, image->end_sm_change);
     const bool has_sm_timed_out = now_ns > (image->time_of_last_sm_ns + image->sm_timeout_ns);
 
+    // TODO: Send error frame instead.
+    if (NULL != image->invalidation_reason)
+    {
+        if (has_sm_timed_out)
+        {
+            for (size_t i = 0, len = image->connections.length; i < len; i++)
+            {
+                aeron_publication_image_connection_t *connection = &image->connections.array[i];
+                aeron_receiver_channel_endpoint_send_error_frame(
+                    image->endpoint,
+                    connection->destination,
+                    connection->control_addr,
+                    image->session_id,
+                    image->stream_id,
+                    AERON_ERROR_CODE_GENERIC_ERROR,
+                    image->invalidation_reason);
+            }
+        }
+        return 0;
+    }
+
+    int32_t response_session_id = 0;
     if (has_sm_timed_out && aeron_publication_image_check_and_get_response_session_id(image, &response_session_id))
     {
         for (size_t i = 0, len = image->connections.length; i < len; i++)

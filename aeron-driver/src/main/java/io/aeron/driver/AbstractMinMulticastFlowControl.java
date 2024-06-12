@@ -18,6 +18,7 @@ package io.aeron.driver;
 import io.aeron.CommonContext;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.FlowControlReceivers;
+import io.aeron.protocol.ErrorFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.CloseHelper;
@@ -309,6 +310,23 @@ public abstract class AbstractMinMulticastFlowControl
         if (!hasTaggedStatusMessageTriggeredSetup)
         {
             hasTaggedStatusMessageTriggeredSetup = hasMatchingTag;
+        }
+    }
+
+    protected void processError(
+        final ErrorFlyweight error,
+        final InetSocketAddress receiverAddress,
+        final long timeNs,
+        final boolean matchesTag)
+    {
+        final long receiverId = error.receiverId();
+
+        for (final Receiver receiver : receivers)
+        {
+            if (matchesTag && receiverId == receiver.receiverId)
+            {
+                receiver.eosFlagged = true;
+            }
         }
     }
 

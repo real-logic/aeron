@@ -15,7 +15,6 @@
  */
 package io.aeron.protocol;
 
-import io.aeron.command.ErrorResponseFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
@@ -36,11 +35,17 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  *    +---------------------------------------------------------------+
  * 12 |                           Stream ID                           |
  *    +---------------------------------------------------------------+
- * 16 |                          Error Code                           |
+ * 16 |                          Receiver ID                          |
+ *    |                                                               |
  *    +---------------------------------------------------------------+
- * 20 |                     Error String Length                       |
+ * 24 |                           Group Tag                           |
+ *    |                                                               |
  *    +---------------------------------------------------------------+
- * 24 |                         Error String                        ...
+ * 32 |                          Error Code                           |
+ *    +---------------------------------------------------------------+
+ * 36 |                     Error String Length                       |
+ *    +---------------------------------------------------------------+
+ * 40 |                         Error String                        ...
  *    +---------------------------------------------------------------+
  *    ...                                                             |
  *    +---------------------------------------------------------------+
@@ -51,7 +56,7 @@ public class ErrorFlyweight extends HeaderFlyweight
     /**
      * Length of the Error Header.
      */
-    public static final int HEADER_LENGTH = 24;
+    public static final int HEADER_LENGTH = 40;
 
     /**
      * Offset in the frame at which the session-id field begins.
@@ -64,19 +69,38 @@ public class ErrorFlyweight extends HeaderFlyweight
     public static final int STREAM_ID_FIELD_OFFSET = 12;
 
     /**
+     * Offset in the frame at which the receiver-id field begins.
+     */
+    public static final int RECEIVER_ID_FIELD_OFFSET = 16;
+
+    /**
+     * Offset in the frame at which the group-tag field begins.
+     */
+    public static final int GROUP_TAG_FIELD_OFFSET = 24;
+
+    /**
      * Offset in the frame at which the error code field begins.
      */
-    public static final int ERROR_CODE_FIELD_OFFSET = 16;
+    public static final int ERROR_CODE_FIELD_OFFSET = 32;
 
     /**
      * Offset in the frame at which the error string field begins. Specifically this will be the length of the string
      * using the Agrona buffer standard of using 4 bytes for the length. Followed by the variable bytes for the string.
      */
-    public static final int ERROR_STRING_FIELD_OFFSET = 20;
+    public static final int ERROR_STRING_FIELD_OFFSET = 36;
 
+    /**
+     * Maximum length that an error message can be. Can be short that this if configuration options have made the MTU
+     * smaller. The error message should be truncated to fit within a single MTU.
+     */
     public static final int MAX_ERROR_MESSAGE_LENGTH = 1023;
 
     public static final int MAX_ERROR_FRAME_LENGTH = HEADER_LENGTH + MAX_ERROR_MESSAGE_LENGTH;
+
+    /**
+     * Flag to indicate that the group tag field is relevant, if not set the value should be ignored.
+     */
+    public static final int HAS_GROUP_ID_FLAG = 0x08;
 
     /**
      * Default constructor for the ErrorFlyweight so that it can be wrapped over a buffer later.
@@ -153,6 +177,71 @@ public class ErrorFlyweight extends HeaderFlyweight
     }
 
     /**
+     * The receiver-id for the stream.
+     *
+     * @return receiver-id for the stream.
+     */
+    public long receiverId()
+    {
+        return getLong(RECEIVER_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Set receiver-id for the stream.
+     *
+     * @param receiverId receiver-id for the stream.
+     * @return this for a fluent API.
+     */
+    public ErrorFlyweight receiverId(final long receiverId)
+    {
+        putLong(RECEIVER_ID_FIELD_OFFSET, receiverId, LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
+     * Get the group tag for the message.
+     *
+     * @return group tag for the message.
+     */
+    public long groupTag()
+    {
+        return getLong(GROUP_TAG_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Determines if this message has the group tag flag set.
+     *
+     * @return <code>true</code> if the flag is set false otherwise.
+     */
+    public boolean hasGroupTag()
+    {
+        return HAS_GROUP_ID_FLAG == (HAS_GROUP_ID_FLAG & flags());
+    }
+
+    /**
+     * Set an optional group tag, null indicates the value should not be set. If non-null will set HAS_GROUP_TAG flag
+     * on the header. A null value will clear this flag and use a value of 0.
+     *
+     * @param groupTag optional group tag to be applied to this message.
+     * @return this for a fluent API.
+     */
+    public ErrorFlyweight groupTag(final Long groupTag)
+    {
+        if (null == groupTag)
+        {
+            flags((short)(~HAS_GROUP_ID_FLAG & flags()));
+        }
+        else
+        {
+            putLong(GROUP_TAG_FIELD_OFFSET, groupTag);
+            flags((short)(HAS_GROUP_ID_FLAG | flags()));
+        }
+
+        return this;
+    }
+
+    /**
      * The error-code for the message.
      *
      * @return error-code for the message.
@@ -188,12 +277,13 @@ public class ErrorFlyweight extends HeaderFlyweight
     /**
      * Set the error string for the message.
      *
-     * @param errorString the error string in UTF-8.
+     * @param errorMessage the error string in UTF-8.
      * @return this for a fluent API.
      */
-    public ErrorFlyweight errorMessage(final String errorString)
+    public ErrorFlyweight errorMessage(final String errorMessage)
     {
-        putStringUtf8(ERROR_STRING_FIELD_OFFSET, errorString, LITTLE_ENDIAN);
+        final int headerAndMessageLength = putStringUtf8(ERROR_STRING_FIELD_OFFSET, errorMessage, LITTLE_ENDIAN);
+        frameLength(HEADER_LENGTH + (headerAndMessageLength - STR_HEADER_LEN));
         return this;
     }
 

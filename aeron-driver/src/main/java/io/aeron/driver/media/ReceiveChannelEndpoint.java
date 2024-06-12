@@ -17,7 +17,6 @@ package io.aeron.driver.media;
 
 import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
-import io.aeron.command.ErrorResponseFlyweight;
 import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
@@ -115,6 +114,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     private final RttMeasurementFlyweight rttMeasurementFlyweight;
     private final ByteBuffer responseSetupBuffer;
     private final ResponseSetupFlyweight responseSetupHeader;
+    private final ByteBuffer errorBuffer;
     private final ErrorFlyweight errorFlyweight;
     private final AtomicCounter shortSends;
     private final AtomicCounter possibleTtlAsymmetry;
@@ -164,6 +164,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
         rttMeasurementFlyweight = threadLocals.rttMeasurementFlyweight();
         responseSetupBuffer = threadLocals.responseSetupBuffer();
         responseSetupHeader = threadLocals.responseSetupHeader();
+        errorBuffer = threadLocals.errorBuffer();
         errorFlyweight = threadLocals.errorFlyweight();
         cachedNanoClock = context.receiverCachedNanoClock();
         timeOfLastActivityNs = cachedNanoClock.nanoTime();
@@ -944,18 +945,30 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     /**
      * Send an error frame back to the source publications to indicate this image has errored.
      *
-     * @param controlAddresses      of the sources.
-     * @param sessionId             for the image.
-     * @param streamId              for the image.
-     * @param invalidationReason    to be sent back to the publication.
+     * @param controlAddresses  of the sources.
+     * @param sessionId         for the image.
+     * @param streamId          for the image.
+     * @param errorCode         for the error being sent.
+     * @param errorMessage      to be sent back to the publication.
      */
     public void sendErrorFrame(
         final ImageConnection[] controlAddresses,
         final int sessionId,
         final int streamId,
-        final String invalidationReason)
+        final int errorCode,
+        final String errorMessage)
     {
+        errorBuffer.clear();
+        errorFlyweight
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .receiverId(receiverId)
+            .groupTag(groupTag)
+            .errorCode(errorCode)
+            .errorMessage(errorMessage);
+        errorBuffer.limit(errorFlyweight.frameLength());
 
+        send(errorBuffer, errorFlyweight.frameLength(), controlAddresses);
     }
 
     /**

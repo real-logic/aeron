@@ -16,6 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.UdpChannel;
+import io.aeron.protocol.ErrorFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.concurrent.status.CountersManager;
@@ -99,6 +100,15 @@ public interface FlowControl extends AutoCloseable
         long senderPosition,
         int positionBitsToShift,
         long timeNs);
+
+    /**
+     * Update the sender flow control strategy if an error comes from one of the receivers.
+     *
+     * @param errorFlyweight    over the error received.
+     * @param receiverAddress   the address of the receiver.
+     * @param timeNs            current time in nanoseconds
+     */
+    void onError(ErrorFlyweight errorFlyweight, InetSocketAddress receiverAddress, long timeNs);
 
     /**
      * Initialize the flow control strategy for a stream.

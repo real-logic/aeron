@@ -21,7 +21,6 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.RecordingSignalPoller;
 import io.aeron.archive.codecs.*;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.cluster.ConsensusModuleExtension.ExtensionSessionState;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
@@ -481,6 +480,18 @@ final class ConsensusModuleAgent
         return archive;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public void updateLastActivityNs(final long clusterSessionId, final long timeNs)
+    {
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
+        if (null != session)
+        {
+            session.timeOfLastActivityNs(timeNs);
+        }
+    }
+
     public void onLoadBeginSnapshot(
         final int appVersion, final TimeUnit timeUnit, final DirectBuffer buffer, final int offset, final int length)
     {
@@ -658,8 +669,7 @@ final class ConsensusModuleAgent
                     session.close(aeron, ctx.countedErrorHandler());
                     if (null != consensusModuleExtension)
                     {
-                        consensusModuleExtension.onSessionStateChange(
-                            session.id(), ExtensionSessionState.OPEN, ExtensionSessionState.CLOSED);
+                        consensusModuleExtension.onSessionClosed(session.id());
                     }
                 }
             }
@@ -1512,6 +1522,8 @@ final class ConsensusModuleAgent
             }
         }
     }
+
+
 
     void onReplayNewLeadershipTermEvent(
         final long leadershipTermId,
@@ -2529,10 +2541,7 @@ final class ConsensusModuleAgent
                             workCount += 1;
                             if (null != consensusModuleExtension)
                             {
-                                consensusModuleExtension.onSessionStateChange(
-                                    session.id(),
-                                    ExtensionSessionState.INIT,
-                                    ExtensionSessionState.OPEN);
+                                consensusModuleExtension.onSessionOpen(session.id());
                             }
                         }
                         break;
@@ -2650,13 +2659,6 @@ final class ConsensusModuleAgent
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                 rejectedSessions.add(session);
-                if (null != consensusModuleExtension)
-                {
-                    consensusModuleExtension.onSessionStateChange(
-                        session.id(),
-                        ExtensionSessionState.INIT,
-                        ExtensionSessionState.REJECTED);
-                }
             }
         }
 

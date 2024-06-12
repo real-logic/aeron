@@ -76,25 +76,16 @@ public interface ConsensusModuleExtension extends AutoCloseable
     void close();
 
     /**
-     * Session state relevant to extension
+     * cluster session is open
+     *
+     * @param clusterSessionId  session id
      */
-    enum ExtensionSessionState
-    {
-        INIT,
-        OPEN,
-        CLOSED,
-        REJECTED
-    }
+    void onSessionOpen(long clusterSessionId);
 
     /**
-     * Callback when a session state changed
+     * cluster session is closed
      *
-     * @param sessionId closed session id
-     * @param oldState state transitioned from
-     * @param newState state transitioned to
+     * @param clusterSessionId  session id
      */
-    void onSessionStateChange(
-        long sessionId,
-        ExtensionSessionState oldState,
-        ExtensionSessionState newState);
+    void onSessionClosed(long clusterSessionId);
 }

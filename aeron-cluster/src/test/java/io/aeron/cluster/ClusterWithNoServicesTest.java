@@ -18,7 +18,6 @@ package io.aeron.cluster;
 
 import io.aeron.Image;
 import io.aeron.archive.ArchiveThreadingMode;
-import io.aeron.cluster.ConsensusModuleExtension.ExtensionSessionState;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -74,10 +73,7 @@ class ClusterWithNoServicesTest
         assertTrue(aeronCluster.sendKeepAlive());
         final InOrder order = inOrder(consensusModuleExtensionSpy);
         order.verify(consensusModuleExtensionSpy).onStart(any(ConsensusModuleControl.class), isNull());
-        order.verify(consensusModuleExtensionSpy).onSessionStateChange(
-            anyLong(),
-            eq(ExtensionSessionState.INIT),
-            eq(ExtensionSessionState.OPEN));
+        order.verify(consensusModuleExtensionSpy).onSessionOpen(anyLong());
 
         ClusterTests.failOnClusterError();
     }
@@ -141,15 +137,14 @@ class ClusterWithNoServicesTest
 
         public void close()
         {
-
         }
 
-        public void onSessionStateChange(
-            final long sessionId,
-            final ExtensionSessionState oldState,
-            final ExtensionSessionState newState)
+        public void onSessionOpen(final long clusterSessionId)
         {
+        }
 
+        public void onSessionClosed(final long clusterSessionId)
+        {
         }
     }
 }

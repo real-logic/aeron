@@ -76,4 +76,13 @@ public interface ConsensusModuleControl
      * @return the {@link AeronArchive} client used by the extension.
      */
     AeronArchive archive();
+
+    /**
+     * update activity for that session (external to the consensus module itself)
+     *
+     * @param clusterSessionId  session id
+     * @param timeNs            time of last activity
+     */
+    void updateLastActivityNs(long clusterSessionId, long timeNs);
+
 }

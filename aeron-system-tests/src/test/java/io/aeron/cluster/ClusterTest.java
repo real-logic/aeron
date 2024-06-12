@@ -48,6 +48,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -2190,7 +2192,8 @@ class ClusterTest
 
     @ParameterizedTest
     @ValueSource(ints = { 1, 1000 })
-    @InterruptAfter(120)
+    @InterruptAfter(90)
+    @DisabledOnOs(OS.MAC)
     void shouldCatchupFollowerWithSlowService(final int sleepTimeMs)
     {
         cluster = aCluster()

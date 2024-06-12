@@ -831,6 +831,18 @@ void aeron_network_publication_on_status_message(
         aeron_network_publication_has_required_receivers(publication));
 }
 
+void aeron_network_publication_on_error(
+    aeron_network_publication_t *publication,
+    const uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
+{
+    aeron_error_t *error = (aeron_error_t *)buffer;
+    const int64_t time_ns = aeron_clock_cached_nano_time(publication->cached_clock);
+    aeron_network_publication_liveness_on_remote_close(publication, error->receiver_id);
+    publication->flow_control->on_error(publication->flow_control->state, buffer, length, addr, time_ns);
+}
+
 void aeron_network_publication_on_rttm(
     aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {

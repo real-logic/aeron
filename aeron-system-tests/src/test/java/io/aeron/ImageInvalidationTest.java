@@ -32,9 +32,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
@@ -67,8 +70,10 @@ public class ImageInvalidationTest
     @Test
     @InterruptAfter(20)
     @SlowTest
-    void shouldInvalidateAnSubscriptionsImage()
+    void shouldInvalidateSubscriptionsImage()
     {
+        context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
+
         final TestMediaDriver driver = launch();
 
         final Aeron.Context ctx = new Aeron.Context()
@@ -78,8 +83,7 @@ public class ImageInvalidationTest
 
         try (Aeron aeron = Aeron.connect(ctx);
             Publication pub = aeron.addPublication(channel, streamId);
-            Subscription sub = aeron.addSubscription(
-                channel, streamId, image -> {}, image -> imageUnavailable.set(true)))
+            Subscription sub = aeron.addSubscription(channel, streamId, null, image -> imageUnavailable.set(true)))
         {
             Tests.awaitConnected(pub);
             Tests.awaitConnected(sub);
@@ -100,10 +104,14 @@ public class ImageInvalidationTest
             final String reason = "Needs to be closed";
             image.invalidate(reason);
 
+            final long t0 = System.nanoTime();
             while (pub.isConnected())
             {
                 Tests.yield();
             }
+            final long t1 = System.nanoTime();
+            final long value = driver.context().publicationConnectionTimeoutNs();
+            assertThat(t1 - t0, lessThan(value));
 
             while (!imageUnavailable.get())
             {

@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import static io.aeron.CommonContext.UNTETHERED_RESTING_TIMEOUT_PARAM_NAME;
 import static io.aeron.CommonContext.UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME;
+import static io.aeron.ErrorCode.GENERIC_ERROR;
 import static io.aeron.driver.LossDetector.lossFound;
 import static io.aeron.driver.LossDetector.rebuildOffset;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
@@ -587,8 +588,14 @@ public final class PublicationImage
         final int transportIndex,
         final InetSocketAddress srcAddress)
     {
+        final boolean isEndOfStream = DataHeaderFlyweight.isEndOfStream(buffer);
+
         if (null != invalidationReason)
         {
+            if (isEndOfStream)
+            {
+                System.out.println("Invalidated end of stream");
+            }
             return 0;
         }
 
@@ -609,15 +616,15 @@ public final class PublicationImage
                     timeOfLastPacketNs = nowNs;
                     trackConnection(transportIndex, srcAddress, nowNs);
 
-                    if (DataHeaderFlyweight.isEndOfStream(buffer))
+                    if (isEndOfStream)
                     {
                         imageConnections[transportIndex].eosPosition = packetPosition;
                         imageConnections[transportIndex].isEos = true;
 
-                        if (!isEndOfStream && isAllConnectedEos())
+                        if (!this.isEndOfStream && isAllConnectedEos())
                         {
                             LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), findEosPosition());
-                            isEndOfStream = true;
+                            this.isEndOfStream = true;
                         }
                     }
 
@@ -700,13 +707,15 @@ public final class PublicationImage
         final long changeNumber = endSmChange;
         final boolean hasSmTimedOut = (timeOfLastSmNs + smTimeoutNs) - nowNs < 0;
 
-        // TODO: Send error frame instead.
         if (null != invalidationReason)
         {
             if (hasSmTimedOut)
             {
-                channelEndpoint.sendErrorFrame(imageConnections, sessionId, streamId, invalidationReason);
+                channelEndpoint.sendErrorFrame(
+                    imageConnections, sessionId, streamId, GENERIC_ERROR.value(), invalidationReason);
+                workCount++;
             }
+
             return workCount;
         }
 

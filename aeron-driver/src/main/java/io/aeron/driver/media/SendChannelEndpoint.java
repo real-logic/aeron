@@ -26,6 +26,7 @@ import io.aeron.driver.Sender;
 import io.aeron.driver.status.MdcDestinations;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.ErrorFlyweight;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.ResponseSetupFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
@@ -397,6 +398,42 @@ public class SendChannelEndpoint extends UdpChannelTransport
             {
                 publication.onStatusMessage(msg, srcAddress, conductorProxy);
             }
+        }
+    }
+
+
+    /**
+     * Callback back handler for received error messages.
+     *
+     * @param msg            flyweight over the status message.
+     * @param buffer         containing the message.
+     * @param length         of the message.
+     * @param srcAddress     of the message.
+     * @param conductorProxy to send messages back to the conductor.
+     */
+    public void onError(
+        final ErrorFlyweight msg,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress,
+        final DriverConductorProxy conductorProxy)
+    {
+        final int sessionId = msg.sessionId();
+        final int streamId = msg.streamId();
+
+        // TODO: Error message counter.
+        statusMessagesReceived.incrementOrdered();
+
+        if (null != multiSndDestination)
+        {
+            // TODO: What do we need to do here???
+//            multiSndDestination.onStatusMessage(msg, srcAddress);
+        }
+
+        final NetworkPublication publication = publicationBySessionAndStreamId.get(compoundKey(sessionId, streamId));
+        if (null != publication)
+        {
+            publication.onError(msg, srcAddress, conductorProxy);
         }
     }
 

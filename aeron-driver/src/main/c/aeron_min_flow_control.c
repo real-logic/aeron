@@ -295,6 +295,27 @@ int64_t aeron_min_flow_control_strategy_on_setup(
     return snd_lmt;
 }
 
+void aeron_min_flow_control_strategy_on_error(
+    void *state,
+    const uint8_t *error,
+    size_t length,
+    struct sockaddr_storage *recv_addr,
+    int64_t now_ns)
+{
+    aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
+    aeron_error_t *error_header = (aeron_error_t *)error;
+
+    for (size_t i = 0; i < strategy_state->receivers.length; i++)
+    {
+        aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[i];
+
+        if (error_header->receiver_id == receiver->receiver_id)
+        {
+            receiver->eos_flagged = true;
+        }
+    }
+}
+
 int64_t aeron_tagged_flow_control_strategy_on_sm(
     void *state,
     const uint8_t *sm,
@@ -513,6 +534,7 @@ int aeron_tagged_flow_control_strategy_supplier_init(
         aeron_tagged_flow_control_strategy_on_sm : aeron_min_flow_control_strategy_on_sm;
     _strategy->on_setup = is_group_tag_aware ?
         aeron_tagged_flow_control_strategy_on_setup : aeron_min_flow_control_strategy_on_setup;
+    _strategy->on_error = aeron_min_flow_control_strategy_on_error;
     _strategy->fini = aeron_min_flow_control_strategy_fini;
     _strategy->has_required_receivers = aeron_min_flow_control_strategy_has_required_receivers;
     _strategy->on_trigger_send_setup = is_group_tag_aware ?

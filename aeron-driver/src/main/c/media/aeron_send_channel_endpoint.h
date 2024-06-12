@@ -123,6 +123,13 @@ int aeron_send_channel_endpoint_on_status_message(
     size_t length,
     struct sockaddr_storage *addr);
 
+int aeron_send_channel_endpoint_on_error(
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
+
 void aeron_send_channel_endpoint_on_rttm(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 

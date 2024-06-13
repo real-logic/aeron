@@ -212,6 +212,7 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 #define AERON_OPT_HDR_ALIGNMENT (4u)
 
 #define AERON_ERROR_MAX_MESSAGE_LENGTH (1023)
+#define AERON_ERROR_MAX_FRAME_LENGTH (sizeof(aeron_error_t) + AERON_ERROR_MAX_MESSAGE_LENGTH)
 #define AERON_ERROR_HAS_GROUP_TAG_FLAG (0x08)
 
 inline size_t aeron_res_header_address_length(int8_t res_type)

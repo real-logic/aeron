@@ -1825,6 +1825,10 @@ final class ConsensusModuleAgent
         election = null;
 
         connectIngress();
+        if (null != consensusModuleExtension)
+        {
+            consensusModuleExtension.onElectionComplete(logPublisher.publication());
+        }
     }
 
     void trackCatchupCompletion(

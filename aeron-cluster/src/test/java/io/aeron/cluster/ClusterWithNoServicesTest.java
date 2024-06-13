@@ -16,6 +16,7 @@
 
 package io.aeron.cluster;
 
+import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
@@ -43,9 +44,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(InterruptingTestCallback.class)
 class ClusterWithNoServicesTest
 {
+    private final ConsensusModuleExtension consensusModuleExtensionSpy = spy(new TestConsensusModuleExtension());
     private ClusteredMediaDriver clusteredMediaDriver;
     private AeronCluster aeronCluster;
-    private final ConsensusModuleExtension consensusModuleExtensionSpy = spy(new TestConsensusModuleExtension());
 
     @AfterEach
     void after()
@@ -71,9 +72,10 @@ class ClusterWithNoServicesTest
         aeronCluster = connectClient();
 
         assertTrue(aeronCluster.sendKeepAlive());
-        final InOrder order = inOrder(consensusModuleExtensionSpy);
-        order.verify(consensusModuleExtensionSpy).onStart(any(ConsensusModuleControl.class), isNull());
-        order.verify(consensusModuleExtensionSpy).onSessionOpen(anyLong());
+        final InOrder inOrder = inOrder(consensusModuleExtensionSpy);
+        inOrder.verify(consensusModuleExtensionSpy).onStart(any(ConsensusModuleControl.class), isNull());
+        inOrder.verify(consensusModuleExtensionSpy).onElectionComplete(any(ExclusivePublication.class));
+        inOrder.verify(consensusModuleExtensionSpy).onSessionOpen(anyLong());
 
         ClusterTests.failOnClusterError();
     }
@@ -112,7 +114,7 @@ class ClusterWithNoServicesTest
                 .egressChannel("aeron:udp?endpoint=localhost:0"));
     }
 
-    private static final class TestConsensusModuleExtension implements ConsensusModuleExtension
+    static final class TestConsensusModuleExtension implements ConsensusModuleExtension
     {
         public int supportedSchemaId()
         {
@@ -121,7 +123,10 @@ class ClusterWithNoServicesTest
 
         public void onStart(final ConsensusModuleControl consensusModuleControl, final Image snapshotImage)
         {
+        }
 
+        public void onElectionComplete(final ExclusivePublication logPublication)
+        {
         }
 
         public ControlledFragmentHandler.Action onMessage(

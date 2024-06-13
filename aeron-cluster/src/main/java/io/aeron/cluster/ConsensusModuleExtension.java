@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.DirectBuffer;
@@ -23,7 +24,7 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 
 /**
- * Extension for handling messages from external schemas unknown to core Aeron cluster code
+ * Extension for handling messages from external schemas unknown to core Aeron Cluster code
  * thus providing an extension to the core ingress consensus module behaviour.
  */
 public interface ConsensusModuleExtension extends AutoCloseable
@@ -47,6 +48,14 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * @param snapshotImage          from which the extension can load its state which can be null when no snapshot.
      */
     void onStart(ConsensusModuleControl consensusModuleControl, Image snapshotImage);
+
+    /**
+     * Cluster election is complete and new publication is added for the leadership term. If the node is a follower
+     * then the publication will be null.
+     *
+     * @param logPublication to which messages can be appended.
+     */
+    void onElectionComplete(ExclusivePublication logPublication);
 
     /**
      * Callback for handling messages received as ingress to a cluster.
@@ -76,16 +85,16 @@ public interface ConsensusModuleExtension extends AutoCloseable
     void close();
 
     /**
-     * cluster session is open
+     * Callback indicating a cluster session has opened.
      *
-     * @param clusterSessionId  session id
+     * @param clusterSessionId of the opened session which is unique and not reused.
      */
     void onSessionOpen(long clusterSessionId);
 
     /**
-     * cluster session is closed
+     * Callback indicating a cluster session has closed.
      *
-     * @param clusterSessionId  session id
+     * @param clusterSessionId of the opened session which is unique and not reused.
      */
     void onSessionClosed(long clusterSessionId);
 }

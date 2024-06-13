@@ -51,7 +51,6 @@ final class LogPublisher
     private final BufferClaim bufferClaim = new BufferClaim();
 
     private final String destinationChannel;
-
     private ExclusivePublication publication;
 
     LogPublisher(final String destinationChannel)
@@ -67,6 +66,11 @@ final class LogPublisher
             this.publication.close();
         }
         this.publication = publication;
+    }
+
+    ExclusivePublication publication()
+    {
+        return publication;
     }
 
     void disconnect(final ErrorHandler errorHandler)

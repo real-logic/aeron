@@ -713,6 +713,8 @@ public final class PublicationImage
             {
                 channelEndpoint.sendErrorFrame(
                     imageConnections, sessionId, streamId, GENERIC_ERROR.value(), invalidationReason);
+
+                timeOfLastSmNs = nowNs;
                 workCount++;
             }
 

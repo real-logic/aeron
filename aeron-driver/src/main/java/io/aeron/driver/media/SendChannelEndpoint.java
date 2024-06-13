@@ -53,6 +53,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.media.SendChannelEndpoint.DESTINATION_TIMEOUT;
 import static io.aeron.driver.media.UdpChannelTransport.sendError;
+import static io.aeron.driver.status.SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED;
 import static io.aeron.driver.status.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
 import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
@@ -77,6 +78,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
+    private final AtomicCounter errorMessagesReceived;
     private final boolean isChannelSendTimestampEnabled;
     private final EpochNanoClock sendTimestampClock;
     private final UnsafeBuffer bufferForTimestamping = new UnsafeBuffer();
@@ -103,6 +105,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
+        errorMessagesReceived = context.systemCounters().get(ERROR_MESSAGES_RECEIVED);
         this.statusIndicator = statusIndicator;
 
         MultiSndDestination multiSndDestination = null;
@@ -421,8 +424,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         final int sessionId = msg.sessionId();
         final int streamId = msg.streamId();
 
-        // TODO: Error message counter.
-        statusMessagesReceived.incrementOrdered();
+        errorMessagesReceived.incrementOrdered();
 
         if (null != multiSndDestination)
         {

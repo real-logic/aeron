@@ -420,8 +420,8 @@ public final class AeronCluster implements AutoCloseable
 
         while (true)
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 sessionKeepAliveEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -433,9 +433,9 @@ public final class AeronCluster implements AutoCloseable
                 return true;
             }
 
-            if (result == Publication.MAX_POSITION_EXCEEDED)
+            if (position == Publication.MAX_POSITION_EXCEEDED)
             {
-                throw new ClusterException("max position exceeded");
+                throw new ClusterException("max position exceeded: term-length=" + publication.termBufferLength());
             }
 
             if (--attempts <= 0)
@@ -470,8 +470,8 @@ public final class AeronCluster implements AutoCloseable
 
         while (true)
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 adminRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -486,14 +486,14 @@ public final class AeronCluster implements AutoCloseable
                 return true;
             }
 
-            if (result == Publication.CLOSED)
+            if (position == Publication.CLOSED)
             {
                 throw new ClusterException("ingress publication is closed");
             }
 
-            if (result == Publication.MAX_POSITION_EXCEEDED)
+            if (position == Publication.MAX_POSITION_EXCEEDED)
             {
-                throw new ClusterException("max position exceeded");
+                throw new ClusterException("max position exceeded: term-length=" + publication.termBufferLength());
             }
 
             if (--attempts <= 0)

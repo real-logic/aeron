@@ -858,18 +858,18 @@ public final class TestCluster implements AutoCloseable
         {
             requireNonNull(client, "Client is not connected").pollEgress();
 
-            final long result = client.offer(msgBuffer, 0, messageLength);
-            if (result > 0)
+            final long position = client.offer(msgBuffer, 0, messageLength);
+            if (position > 0)
             {
                 return;
             }
 
-            if (Publication.ADMIN_ACTION == result)
+            if (Publication.ADMIN_ACTION == position)
             {
                 continue;
             }
 
-            if (Publication.MAX_POSITION_EXCEEDED == result)
+            if (Publication.MAX_POSITION_EXCEEDED == position)
             {
                 throw new ClusterException("max position exceeded");
             }

@@ -61,28 +61,28 @@ public class EchoPair implements ControlledFragmentHandler, AutoCloseable
      */
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        final long offer = publication.offer(buffer, offset, length);
-        if (Publication.NOT_CONNECTED == offer)
+        final long offerPosition = publication.offer(buffer, offset, length);
+        if (Publication.NOT_CONNECTED == offerPosition)
         {
             notConnectedCount++;
             return Action.ABORT;
         }
-        else if (Publication.BACK_PRESSURED == offer)
+        else if (Publication.BACK_PRESSURED == offerPosition)
         {
             backPressureCount++;
             return Action.ABORT;
         }
-        else if (Publication.ADMIN_ACTION == offer)
+        else if (Publication.ADMIN_ACTION == offerPosition)
         {
             adminActionCount++;
             return Action.ABORT;
         }
-        else if (Publication.CLOSED == offer)
+        else if (Publication.CLOSED == offerPosition)
         {
             closedCount++;
             return Action.CONTINUE;
         }
-        else if (Publication.MAX_POSITION_EXCEEDED == offer)
+        else if (Publication.MAX_POSITION_EXCEEDED == offerPosition)
         {
             maxSessionExceededCount++;
             return Action.CONTINUE;

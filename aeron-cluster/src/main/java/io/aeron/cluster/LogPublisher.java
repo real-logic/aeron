@@ -18,9 +18,9 @@ package io.aeron.cluster;
 import io.aeron.ChannelUri;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.ClusterClock;
-import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
@@ -119,26 +119,26 @@ final class LogPublisher
             .timestamp(timestamp);
 
         int attempts = SEND_ATTEMPTS;
-        long result;
+        long position;
         do
         {
-            result = publication.offer(sessionHeaderBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length, null);
+            position = publication.offer(sessionHeaderBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length, null);
 
-            if (result > 0)
+            if (position > 0)
             {
                 break;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
 
-        return result;
+        return position;
     }
 
     long appendSessionOpen(final ClusterSession session, final long leadershipTermId, final long timestamp)
     {
-        long result;
+        long position;
         final byte[] encodedPrincipal = session.encodedPrincipal();
         final String channel = session.responseChannel();
 
@@ -157,17 +157,17 @@ final class LogPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            result = publication.offer(expandableArrayBuffer, 0, length, null);
-            if (result > 0)
+            position = publication.offer(expandableArrayBuffer, 0, length, null);
+            if (position > 0)
             {
                 break;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
 
-        return result;
+        return position;
     }
 
     boolean appendSessionClose(
@@ -184,8 +184,8 @@ final class LogPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 sessionCloseEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -198,7 +198,7 @@ final class LogPublisher
                 return true;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
 
@@ -210,11 +210,11 @@ final class LogPublisher
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TimerEventEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
-        long result;
+        long position;
         do
         {
-            result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 timerEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -226,11 +226,11 @@ final class LogPublisher
                 break;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
 
-        return result;
+        return position;
     }
 
     boolean appendClusterAction(
@@ -247,9 +247,9 @@ final class LogPublisher
         do
         {
             final long logPosition = publication.position() + alignedFragmentLength;
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long position = publication.tryClaim(length, bufferClaim);
 
-            if (result > 0)
+            if (position > 0)
             {
                 clusterActionRequestEncoder.wrapAndApplyHeader(
                     bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -263,7 +263,7 @@ final class LogPublisher
                 return true;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
 
@@ -287,9 +287,9 @@ final class LogPublisher
         do
         {
             final long logPosition = publication.position() + alignedFragmentLength;
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long position = publication.tryClaim(length, bufferClaim);
 
-            if (result > 0)
+            if (position > 0)
             {
                 newLeadershipTermEventEncoder.wrapAndApplyHeader(
                     bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -306,18 +306,24 @@ final class LogPublisher
                 return true;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
 
         return false;
     }
 
-    private static void checkResult(final long result)
+    private static void checkResult(final long position, final Publication publication)
     {
-        if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED)
+        if (Publication.CLOSED == position)
         {
-            throw new AeronException("unexpected publication state: " + result);
+            throw new ClusterException("log publication is closed");
+        }
+
+        if (Publication.MAX_POSITION_EXCEEDED == position)
+        {
+            throw new ClusterException(
+                "log publication at max position: term-length=" + publication.termBufferLength());
         }
     }
 

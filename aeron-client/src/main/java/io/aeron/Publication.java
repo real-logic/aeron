@@ -701,8 +701,8 @@ public abstract class Publication implements AutoCloseable
     }
 
     /**
-     * Returns a string representation of a position.  Generally used for errors.  If the position is a valid error then
-     * String name of the error will be returned.  If the value is 0 or greater the text will be "NONE". If the position
+     * Returns a string representation of a position. Generally used for errors. If the position is a valid error then
+     * String name of the error will be returned. If the value is 0 or greater the text will be "NONE". If the position
      * is negative, but not a known error code then "UNKNOWN" will be returned.
      *
      * @param position position value returned from a call to offer.

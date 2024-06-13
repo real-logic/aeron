@@ -15,11 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.ChannelUri;
-import io.aeron.ExclusivePublication;
-import io.aeron.Image;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
@@ -500,14 +496,14 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
 
         private void writeToSnapshot(final DirectBuffer buffer, final int offset, final int length)
         {
-            long result;
-            while ((result = snapshotPublication.offer(buffer, offset, length)) < 0)
+            long position;
+            while ((position = snapshotPublication.offer(buffer, offset, length)) < 0)
             {
-                if (result == CLOSED ||
-                    result == NOT_CONNECTED ||
-                    result == MAX_POSITION_EXCEEDED)
+                if (position == CLOSED ||
+                    position == NOT_CONNECTED ||
+                    position == MAX_POSITION_EXCEEDED)
                 {
-                    throw new ClusterException("can't offer into a snapshot: " + result);
+                    throw new ClusterException("cannot offer into a snapshot: " + Publication.errorString(position));
                 }
 
                 Thread.yield();

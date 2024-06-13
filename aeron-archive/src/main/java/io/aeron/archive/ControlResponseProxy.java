@@ -67,19 +67,19 @@ class ControlResponseProxy
         final Publication publication = session.controlPublication();
         do
         {
-            final long result = publication.offer(
+            final long position = publication.offer(
                 buffer,
                 0,
                 DESCRIPTOR_PREFIX_LENGTH,
                 descriptorBuffer,
                 DESCRIPTOR_CONTENT_OFFSET,
                 contentLength);
-            if (result > 0)
+            if (position > 0)
             {
                 return messageLength;
             }
 
-            checkResult(session, result);
+            checkResult(session, position);
         }
         while (--attempts > 0);
 
@@ -127,14 +127,14 @@ class ControlResponseProxy
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = session.controlPublication().offer(buffer, offset, length);
-            if (result > 0)
+            final long position = session.controlPublication().offer(buffer, offset, length);
+            if (position > 0)
             {
                 logSendResponse(buffer, offset, length);
                 return true;
             }
 
-            checkResult(session, result);
+            checkResult(session, position);
         }
         while (--attempts > 0);
 
@@ -201,13 +201,13 @@ class ControlResponseProxy
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = session.controlPublication().offer(buffer, 0, length);
-            if (result > 0)
+            final long position = session.controlPublication().offer(buffer, 0, length);
+            if (position > 0)
             {
                 return true;
             }
 
-            checkResult(session, result);
+            checkResult(session, position);
         }
         while (--attempts > 0);
 

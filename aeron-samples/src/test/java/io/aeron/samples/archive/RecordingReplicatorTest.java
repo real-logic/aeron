@@ -217,14 +217,14 @@ class RecordingReplicatorTest
             for (int i = 0; i < numMessages; i++)
             {
                 final int messageSize = ThreadLocalRandom.current().nextInt(8, 500);
-                long result;
-                while ((result = publication.tryClaim(messageSize, bufferClaim)) < 0)
+                long position;
+                while ((position = publication.tryClaim(messageSize, bufferClaim)) < 0)
                 {
-                    if (result == Publication.CLOSED ||
-                        result == Publication.NOT_CONNECTED ||
-                        result == Publication.MAX_POSITION_EXCEEDED)
+                    if (position == Publication.CLOSED ||
+                        position == Publication.NOT_CONNECTED ||
+                        position == Publication.MAX_POSITION_EXCEEDED)
                     {
-                        fail("tryClaim failed: " + result);
+                        fail("tryClaim failed: " + Publication.errorString(position));
                     }
                     Tests.yield();
                 }

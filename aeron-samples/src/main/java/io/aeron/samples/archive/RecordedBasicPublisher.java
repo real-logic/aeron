@@ -94,8 +94,8 @@ public class RecordedBasicPublisher
 
                     System.out.print("Offering " + i + "/" + NUMBER_OF_MESSAGES + " - ");
 
-                    final long result = publication.offer(BUFFER, 0, messageBytes.length);
-                    checkResult(result);
+                    final long position = publication.offer(BUFFER, 0, messageBytes.length);
+                    checkResult(position);
 
                     final String errorMessage = archive.pollForErrorResponse();
                     if (null != errorMessage)
@@ -125,35 +125,35 @@ public class RecordedBasicPublisher
         }
     }
 
-    private static void checkResult(final long result)
+    private static void checkResult(final long position)
     {
-        if (result > 0)
+        if (position > 0)
         {
             System.out.println("yay!");
         }
-        else if (result == Publication.BACK_PRESSURED)
+        else if (position == Publication.BACK_PRESSURED)
         {
             System.out.println("Offer failed due to back pressure");
         }
-        else if (result == Publication.ADMIN_ACTION)
+        else if (position == Publication.ADMIN_ACTION)
         {
             System.out.println("Offer failed because of an administration action in the system");
         }
-        else if (result == Publication.NOT_CONNECTED)
+        else if (position == Publication.NOT_CONNECTED)
         {
             System.out.println("Offer failed because publisher is not connected to subscriber");
         }
-        else if (result == Publication.CLOSED)
+        else if (position == Publication.CLOSED)
         {
             System.out.println("Offer failed publication is closed");
         }
-        else if (result == Publication.MAX_POSITION_EXCEEDED)
+        else if (position == Publication.MAX_POSITION_EXCEEDED)
         {
             throw new IllegalStateException("Offer failed due to publication reaching max position");
         }
         else
         {
-            System.out.println("Offer failed due to unknown result code: " + result);
+            System.out.println("Offer failed due to unknown result code: " + position);
         }
     }
 }

@@ -20,7 +20,6 @@ import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
-import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.ExpandableArrayBuffer;
 
@@ -67,8 +66,8 @@ final class ConsensusPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 canvassPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -83,7 +82,7 @@ final class ConsensusPublisher
                 return;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
     }
@@ -105,8 +104,8 @@ final class ConsensusPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 requestVoteEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -121,7 +120,7 @@ final class ConsensusPublisher
                 return true;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
 
@@ -147,8 +146,8 @@ final class ConsensusPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 voteEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -164,7 +163,7 @@ final class ConsensusPublisher
                 return;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
     }
@@ -199,8 +198,8 @@ final class ConsensusPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 newLeadershipTermEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -222,7 +221,7 @@ final class ConsensusPublisher
                 return;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
     }
@@ -244,8 +243,8 @@ final class ConsensusPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 appendPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -259,7 +258,7 @@ final class ConsensusPublisher
                 return true;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
 
@@ -282,8 +281,8 @@ final class ConsensusPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 commitPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -296,7 +295,7 @@ final class ConsensusPublisher
                 return;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
     }
@@ -322,8 +321,8 @@ final class ConsensusPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 catchupPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -337,7 +336,7 @@ final class ConsensusPublisher
                 return true;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
 
@@ -356,8 +355,8 @@ final class ConsensusPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 stopCatchupEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -369,7 +368,7 @@ final class ConsensusPublisher
                 return true;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
 
@@ -389,8 +388,8 @@ final class ConsensusPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 terminationPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -402,7 +401,7 @@ final class ConsensusPublisher
                 return true;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
             Thread.yield();
         }
         while (--attempts > 0);
@@ -423,8 +422,8 @@ final class ConsensusPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 terminationAckEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -437,7 +436,7 @@ final class ConsensusPublisher
                 return true;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
             Thread.yield();
         }
         while (--attempts > 0);
@@ -606,11 +605,16 @@ final class ConsensusPublisher
         return sendPublication(publication, buffer, encodedLength);
     }
 
-    private static void checkResult(final long result)
+    private static void checkResult(final long position, final Publication publication)
     {
-        if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED)
+        if (Publication.CLOSED == position)
         {
-            throw new AeronException("unexpected publication state: " + result);
+            throw new ClusterException("publication is closed");
+        }
+
+        if (Publication.MAX_POSITION_EXCEEDED == position)
+        {
+            throw new ClusterException("publication at max position: term-length=" + publication.termBufferLength());
         }
     }
 
@@ -622,13 +626,13 @@ final class ConsensusPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.offer(buffer, 0, length);
-            if (result > 0)
+            final long position = publication.offer(buffer, 0, length);
+            if (position > 0)
             {
                 return true;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
 
@@ -641,15 +645,16 @@ final class ConsensusPublisher
         final int length)
     {
         int attempts = SEND_ATTEMPTS;
+        final Publication publication = session.responsePublication();
         do
         {
-            final long result = session.responsePublication().offer(buffer, 0, length);
-            if (result > 0)
+            final long position = publication.offer(buffer, 0, length);
+            if (position > 0)
             {
                 return true;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
 

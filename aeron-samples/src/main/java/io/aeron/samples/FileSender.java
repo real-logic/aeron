@@ -128,10 +128,10 @@ public class FileSender
 
         final int msgLength = FILE_NAME_OFFSET + buffer.putStringUtf8(FILE_NAME_OFFSET, filename);
 
-        long result;
-        while ((result = publication.offer(buffer, 0, msgLength)) < 0)
+        long position;
+        while ((position = publication.offer(buffer, 0, msgLength)) < 0)
         {
-            checkResult(result);
+            checkResult(position);
             Thread.yield();
         }
     }
@@ -159,10 +159,10 @@ public class FileSender
         final int chunkOffset,
         final int chunkLength)
     {
-        long result;
-        while ((result = publication.tryClaim(CHUNK_PAYLOAD_OFFSET + chunkLength, bufferClaim)) < 0)
+        long position;
+        while ((position = publication.tryClaim(CHUNK_PAYLOAD_OFFSET + chunkLength, bufferClaim)) < 0)
         {
-            checkResult(result);
+            checkResult(position);
             Thread.yield();
         }
 
@@ -179,19 +179,19 @@ public class FileSender
         bufferClaim.commit();
     }
 
-    private static void checkResult(final long result)
+    private static void checkResult(final long position)
     {
-        if (result == Publication.CLOSED)
+        if (position == Publication.CLOSED)
         {
             throw new IllegalStateException("Connection has been closed");
         }
 
-        if (result == Publication.NOT_CONNECTED)
+        if (position == Publication.NOT_CONNECTED)
         {
             throw new IllegalStateException("Connection is no longer available");
         }
 
-        if (result == Publication.MAX_POSITION_EXCEEDED)
+        if (position == Publication.MAX_POSITION_EXCEEDED)
         {
             throw new IllegalStateException("Publication failed due to max position being reached");
         }

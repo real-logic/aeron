@@ -61,13 +61,13 @@ final class ServiceProxy implements AutoCloseable
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinLogEncoder.BLOCK_LENGTH +
             JoinLogEncoder.logChannelHeaderLength() + channel.length();
-        long result;
+        long position;
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 joinLogEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -85,15 +85,15 @@ final class ServiceProxy implements AutoCloseable
                 return;
             }
 
-            checkResult(result);
-            if (Publication.BACK_PRESSURED == result)
+            checkResult(position, publication);
+            if (Publication.BACK_PRESSURED == position)
             {
                 Thread.yield();
             }
         }
         while (--attempts > 0);
 
-        throw new ClusterException("failed to send join log request: result=" + result);
+        throw new ClusterException("failed to send join log request: " + Publication.errorString(position));
     }
 
     void clusterMembersResponse(
@@ -251,13 +251,21 @@ final class ServiceProxy implements AutoCloseable
         throw new ClusterException("failed to send request for service ack: result=" + Publication.errorString(result));
     }
 
-    private static void checkResult(final long result)
+    private static void checkResult(final long position, final Publication publication)
     {
-        if (result == Publication.NOT_CONNECTED ||
-            result == Publication.CLOSED ||
-            result == Publication.MAX_POSITION_EXCEEDED)
+        if (Publication.NOT_CONNECTED == position)
         {
-            throw new ClusterException("unexpected publication state: " + result);
+            throw new ClusterException("publication is not connected");
+        }
+
+        if (Publication.CLOSED == position)
+        {
+            throw new ClusterException("publication is closed");
+        }
+
+        if (Publication.MAX_POSITION_EXCEEDED == position)
+        {
+            throw new ClusterException("publication at max position: term-length=" + publication.termBufferLength());
         }
     }
 }

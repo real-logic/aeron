@@ -61,8 +61,8 @@ public final class ConsensusModuleProxy implements AutoCloseable
     boolean scheduleTimer(final long correlationId, final long deadline)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerEncoder.BLOCK_LENGTH;
-        final long result = publication.tryClaim(length, bufferClaim);
-        if (result > 0)
+        final long position = publication.tryClaim(length, bufferClaim);
+        if (position > 0)
         {
             scheduleTimerEncoder
                 .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -74,7 +74,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
             return true;
         }
 
-        checkResult(result);
+        checkResult(position, publication);
 
         return false;
     }
@@ -82,8 +82,8 @@ public final class ConsensusModuleProxy implements AutoCloseable
     boolean cancelTimer(final long correlationId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerEncoder.BLOCK_LENGTH;
-        final long result = publication.tryClaim(length, bufferClaim);
-        if (result > 0)
+        final long position = publication.tryClaim(length, bufferClaim);
+        if (position > 0)
         {
             cancelTimerEncoder
                 .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -94,7 +94,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
             return true;
         }
 
-        checkResult(result);
+        checkResult(position, publication);
 
         return false;
     }
@@ -107,46 +107,48 @@ public final class ConsensusModuleProxy implements AutoCloseable
         final int messageOffset,
         final int messageLength)
     {
-        final long result =
-            publication.offer(headerBuffer, headerOffset, headerLength, messageBuffer, messageOffset, messageLength);
-        if (result < 0)
+        final long position = publication.offer(
+            headerBuffer, headerOffset, headerLength, messageBuffer, messageOffset, messageLength);
+        if (position < 0)
         {
-            checkResult(result);
+            checkResult(position, publication);
         }
-        return result;
+
+        return position;
     }
 
     long offer(final DirectBufferVector[] vectors)
     {
-        final long result = publication.offer(vectors, null);
-        if (result < 0)
+        final long position = publication.offer(vectors, null);
+        if (position < 0)
         {
-            checkResult(result);
+            checkResult(position, publication);
         }
-        return result;
+
+        return position;
     }
 
     long tryClaim(final int length, final BufferClaim bufferClaim, final DirectBuffer sessionHeader)
     {
-        final long result = publication.tryClaim(length, bufferClaim);
-        if (result > 0)
+        final long position = publication.tryClaim(length, bufferClaim);
+        if (position > 0)
         {
             bufferClaim.putBytes(sessionHeader, 0, AeronCluster.SESSION_HEADER_LENGTH);
         }
         else
         {
-            checkResult(result);
+            checkResult(position, publication);
         }
 
-        return result;
+        return position;
     }
 
     boolean ack(
         final long logPosition, final long timestamp, final long ackId, final long relevantId, final int serviceId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceAckEncoder.BLOCK_LENGTH;
-        final long result = publication.tryClaim(length, bufferClaim);
-        if (result > 0)
+        final long position = publication.tryClaim(length, bufferClaim);
+        if (position > 0)
         {
             serviceAckEncoder
                 .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -161,7 +163,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
             return true;
         }
 
-        checkResult(result);
+        checkResult(position, publication);
 
         return false;
     }
@@ -169,8 +171,8 @@ public final class ConsensusModuleProxy implements AutoCloseable
     boolean closeSession(final long clusterSessionId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CloseSessionEncoder.BLOCK_LENGTH;
-        final long result = publication.tryClaim(length, bufferClaim);
-        if (result > 0)
+        final long position = publication.tryClaim(length, bufferClaim);
+        if (position > 0)
         {
             closeSessionEncoder
                 .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -181,7 +183,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
             return true;
         }
 
-        checkResult(result);
+        checkResult(position, publication);
 
         return false;
     }
@@ -195,8 +197,8 @@ public final class ConsensusModuleProxy implements AutoCloseable
     public boolean clusterMembersQuery(final long correlationId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersQueryEncoder.BLOCK_LENGTH;
-        final long result = publication.tryClaim(length, bufferClaim);
-        if (result > 0)
+        final long position = publication.tryClaim(length, bufferClaim);
+        if (position > 0)
         {
             clusterMembersQueryEncoder
                 .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -208,18 +210,26 @@ public final class ConsensusModuleProxy implements AutoCloseable
             return true;
         }
 
-        checkResult(result);
+        checkResult(position, publication);
 
         return false;
     }
 
-    private static void checkResult(final long result)
+    private static void checkResult(final long position, final Publication publication)
     {
-        if (result == Publication.NOT_CONNECTED ||
-            result == Publication.CLOSED ||
-            result == Publication.MAX_POSITION_EXCEEDED)
+        if (Publication.NOT_CONNECTED == position)
         {
-            throw new ClusterException("unexpected publication state: " + Publication.errorString(result));
+            throw new ClusterException("publication is not connected");
+        }
+
+        if (Publication.CLOSED == position)
+        {
+            throw new ClusterException("publication is closed");
+        }
+
+        if (Publication.MAX_POSITION_EXCEEDED == position)
+        {
+            throw new ClusterException("publication at max position: term-length=" + publication.termBufferLength());
         }
     }
 }

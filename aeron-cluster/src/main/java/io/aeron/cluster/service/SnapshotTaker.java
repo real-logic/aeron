@@ -176,15 +176,24 @@ public class SnapshotTaker
     /**
      * Check the result of offering to a publication when writing a snapshot.
      *
-     * @param result of an offer or try claim to a publication.
+     * @param position    of an offer or try claim to a publication.
+     * @param publication on which the offer or try claim was attempted.
      */
-    protected static void checkResult(final long result)
+    protected static void checkResult(final long position, final Publication publication)
     {
-        if (result == Publication.NOT_CONNECTED ||
-            result == Publication.CLOSED ||
-            result == Publication.MAX_POSITION_EXCEEDED)
+        if (Publication.NOT_CONNECTED == position)
         {
-            throw new ClusterException("unexpected publication state: " + result);
+            throw new ClusterException("publication is not connected");
+        }
+
+        if (Publication.CLOSED == position)
+        {
+            throw new ClusterException("publication is closed");
+        }
+
+        if (Publication.MAX_POSITION_EXCEEDED == position)
+        {
+            throw new ClusterException("publication at max position: term-length=" + publication.termBufferLength());
         }
     }
 
@@ -192,11 +201,11 @@ public class SnapshotTaker
      * Check the result of offering to a publication when writing a snapshot and then idle after invoking the client
      * agent if necessary.
      *
-     * @param result of an offer or try claim to a publication.
+     * @param position of an offer or try claim to a publication.
      */
-    protected void checkResultAndIdle(final long result)
+    protected void checkResultAndIdle(final long position)
     {
-        checkResult(result);
+        checkResult(position, publication);
         checkInterruptStatus();
         invokeAgentClient();
         idleStrategy.idle();

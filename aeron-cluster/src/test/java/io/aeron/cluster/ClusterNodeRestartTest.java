@@ -670,13 +670,13 @@ class ClusterNodeRestartTest
                 .replicationChannel("aeron:udp?endpoint=localhost:0"));
     }
 
-    private static void checkResult(final long result)
+    private static void checkResult(final long position)
     {
-        if (result == Publication.NOT_CONNECTED ||
-            result == Publication.CLOSED ||
-            result == Publication.MAX_POSITION_EXCEEDED)
+        if (position == Publication.NOT_CONNECTED ||
+            position == Publication.CLOSED ||
+            position == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("unexpected publication state: " + result);
+            throw new IllegalStateException("unexpected publication state: " + Publication.errorString(position));
         }
     }
 }

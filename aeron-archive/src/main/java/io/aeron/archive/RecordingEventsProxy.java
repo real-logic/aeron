@@ -71,13 +71,13 @@ class RecordingEventsProxy implements AutoCloseable
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.offer(buffer, 0, length);
-            if (result > 0 || Publication.NOT_CONNECTED == result)
+            final long position = publication.offer(buffer, 0, length);
+            if (position > 0 || Publication.NOT_CONNECTED == position)
             {
                 break;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
     }
@@ -100,7 +100,7 @@ class RecordingEventsProxy implements AutoCloseable
         }
         else
         {
-            checkResult(result);
+            checkResult(result, publication);
         }
 
         return false;
@@ -113,8 +113,8 @@ class RecordingEventsProxy implements AutoCloseable
 
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 recordingStoppedEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -125,26 +125,27 @@ class RecordingEventsProxy implements AutoCloseable
                 bufferClaim.commit();
                 break;
             }
-            else if (Publication.NOT_CONNECTED == result)
+            else if (Publication.NOT_CONNECTED == position)
             {
                 break;
             }
 
-            checkResult(result);
+            checkResult(position, publication);
         }
         while (--attempts > 0);
     }
 
-    private static void checkResult(final long result)
+    private static void checkResult(final long position, final Publication publication)
     {
-        if (result == Publication.CLOSED)
+        if (position == Publication.CLOSED)
         {
             throw new ArchiveException("recording events publication is closed");
         }
 
-        if (result == Publication.MAX_POSITION_EXCEEDED)
+        if (position == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new ArchiveException("recording events publication at max position");
+            throw new ArchiveException(
+                "recording events publication at max position, term-length=" + publication.termBufferLength());
         }
     }
 }

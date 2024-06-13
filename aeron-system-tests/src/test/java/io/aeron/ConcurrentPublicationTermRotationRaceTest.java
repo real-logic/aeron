@@ -179,14 +179,14 @@ class ConcurrentPublicationTermRotationRaceTest
 
                 for (int i = 0; i < numMessages; i++)
                 {
-                    long result;
-                    while ((result = publish(publication, publisherId, messageSize)) < 0)
+                    long position;
+                    while ((position = publish(publication, publisherId, messageSize)) < 0)
                     {
-                        if (Publication.CLOSED == result ||
-                            Publication.MAX_POSITION_EXCEEDED == result ||
-                            Publication.NOT_CONNECTED == result)
+                        if (Publication.CLOSED == position ||
+                            Publication.MAX_POSITION_EXCEEDED == position ||
+                            Publication.NOT_CONNECTED == position)
                         {
-                            fail("failed to publish: " + result);
+                            fail("failed to publish: " + Publication.errorString(position));
                         }
                         Tests.yield();
                     }
@@ -194,11 +194,11 @@ class ConcurrentPublicationTermRotationRaceTest
                     sendCount++;
                 }
             }
-            catch (final Throwable e)
+            catch (final Throwable t)
             {
-                if (!errors.compareAndSet(null, e))
+                if (!errors.compareAndSet(null, t))
                 {
-                    errors.get().addSuppressed(e);
+                    errors.get().addSuppressed(t);
                 }
             }
         }
@@ -244,14 +244,14 @@ class ConcurrentPublicationTermRotationRaceTest
 
         long publish(final ConcurrentPublication publication, final long payload, final int size)
         {
-            final long result = publication.tryClaim(size, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(size, bufferClaim);
+            if (position > 0)
             {
                 bufferClaim.buffer().putLong(bufferClaim.offset(), payload, LITTLE_ENDIAN);
                 bufferClaim.commit();
             }
 
-            return result;
+            return position;
         }
     }
 }

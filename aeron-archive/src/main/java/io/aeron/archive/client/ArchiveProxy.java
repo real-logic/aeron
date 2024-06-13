@@ -1482,25 +1482,26 @@ public final class ArchiveProxy
         int attempts = retryAttempts;
         while (true)
         {
-            final long result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length);
-            if (result > 0)
+            final long position = this.publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length);
+            if (position > 0)
             {
                 return true;
             }
 
-            if (result == Publication.CLOSED)
+            if (position == Publication.CLOSED)
             {
                 throw new ArchiveException("connection to the archive has been closed");
             }
 
-            if (result == Publication.NOT_CONNECTED)
+            if (position == Publication.NOT_CONNECTED)
             {
                 throw new ArchiveException("connection to the archive is no longer available");
             }
 
-            if (result == Publication.MAX_POSITION_EXCEEDED)
+            if (position == Publication.MAX_POSITION_EXCEEDED)
             {
-                throw new ArchiveException("offer failed due to max position being reached");
+                throw new ArchiveException(
+                    "offer failed due to max position being reached: term-length=" + publication.termBufferLength());
             }
 
             if (--attempts <= 0)
@@ -1519,20 +1520,21 @@ public final class ArchiveProxy
         final long deadlineNs = nanoClock.nanoTime() + connectTimeoutNs;
         while (true)
         {
-            final long result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length);
-            if (result > 0)
+            final long position = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length);
+            if (position > 0)
             {
                 return true;
             }
 
-            if (result == Publication.CLOSED)
+            if (position == Publication.CLOSED)
             {
                 throw new ArchiveException("connection to the archive has been closed");
             }
 
-            if (result == Publication.MAX_POSITION_EXCEEDED)
+            if (position == Publication.MAX_POSITION_EXCEEDED)
             {
-                throw new ArchiveException("offer failed due to max position being reached");
+                throw new ArchiveException(
+                    "offer failed due to max position being reached: term-length=" + publication.termBufferLength());
             }
 
             if (deadlineNs - nanoClock.nanoTime() < 0)

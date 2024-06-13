@@ -77,37 +77,37 @@ public class BasicPublisher
                 System.out.print("Offering " + i + "/" + NUMBER_OF_MESSAGES + " - ");
 
                 final int length = buffer.putStringWithoutLengthAscii(0, "Hello World! " + i);
-                final long result = publication.offer(buffer, 0, length);
+                final long position = publication.offer(buffer, 0, length);
 
-                if (result > 0)
+                if (position > 0)
                 {
                     System.out.println("yay!");
                 }
-                else if (result == Publication.BACK_PRESSURED)
+                else if (position == Publication.BACK_PRESSURED)
                 {
                     System.out.println("Offer failed due to back pressure");
                 }
-                else if (result == Publication.NOT_CONNECTED)
+                else if (position == Publication.NOT_CONNECTED)
                 {
                     System.out.println("Offer failed because publisher is not connected to a subscriber");
                 }
-                else if (result == Publication.ADMIN_ACTION)
+                else if (position == Publication.ADMIN_ACTION)
                 {
                     System.out.println("Offer failed because of an administration action in the system");
                 }
-                else if (result == Publication.CLOSED)
+                else if (position == Publication.CLOSED)
                 {
                     System.out.println("Offer failed because publication is closed");
                     break;
                 }
-                else if (result == Publication.MAX_POSITION_EXCEEDED)
+                else if (position == Publication.MAX_POSITION_EXCEEDED)
                 {
                     System.out.println("Offer failed due to publication reaching its max position");
                     break;
                 }
                 else
                 {
-                    System.out.println("Offer failed due to unknown reason: " + result);
+                    System.out.println("Offer failed due to unknown reason: " + position);
                 }
 
                 if (!publication.isConnected())

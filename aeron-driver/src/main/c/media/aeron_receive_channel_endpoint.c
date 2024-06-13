@@ -433,12 +433,12 @@ int aeron_receiver_channel_endpoint_send_error_frame(
     int32_t error_code,
     const char *invalidation_reason)
 {
-    size_t frame_length = sizeof(aeron_error_t) + AERON_ERROR_MAX_MESSAGE_LENGTH;
-    uint8_t buffer[frame_length];
+    uint8_t buffer[AERON_ERROR_MAX_FRAME_LENGTH];
     aeron_error_t *error = (aeron_error_t *)buffer;
-    size_t error_length = strnlen(invalidation_reason, AERON_ERROR_MAX_MESSAGE_LENGTH);
     struct iovec iov;
 
+    const size_t error_message_length = strnlen(invalidation_reason, AERON_ERROR_MAX_MESSAGE_LENGTH);
+    const size_t frame_length = sizeof(aeron_error_t) + error_message_length;
     error->frame_header.frame_length = (int32_t)frame_length;
     error->frame_header.version = AERON_FRAME_HEADER_VERSION;
     error->frame_header.flags = channel_endpoint->group_tag.is_present ? AERON_ERROR_HAS_GROUP_TAG_FLAG : UINT8_C(0);
@@ -448,11 +448,11 @@ int aeron_receiver_channel_endpoint_send_error_frame(
     error->receiver_id = channel_endpoint->receiver_id;
     error->group_tag = channel_endpoint->group_tag.value;
     error->error_code = error_code;
-    error->error_length = (int32_t)error_length;
-    memcpy(&buffer[sizeof(aeron_error_t)], invalidation_reason, error_length);
+    error->error_length = (int32_t)error_message_length;
+    memcpy(&buffer[sizeof(aeron_error_t)], invalidation_reason, error_message_length);
 
     iov.iov_base = buffer;
-    iov.iov_len = frame_length;
+    iov.iov_len = (unsigned long)frame_length;
     int bytes_sent = aeron_receive_channel_endpoint_send(channel_endpoint, destination, control_addr, &iov);
     if (bytes_sent != (int)iov.iov_len)
     {

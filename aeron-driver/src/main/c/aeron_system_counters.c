@@ -61,6 +61,7 @@ static aeron_system_counter_t system_counters[] =
         { "Bytes currently mapped", AERON_SYSTEM_COUNTER_BYTES_CURRENTLY_MAPPED },
         { "Retransmitted bytes", AERON_SYSTEM_COUNTER_RETRANSMITTED_BYTES },
         { "Retransmit Pool Overflow count", AERON_SYSTEM_COUNTER_RETRANSMIT_OVERFLOW }
+        { "Error Messages received", AERON_SYSTEM_COUNTER_ERROR_MESSAGES_RECEIVED },
     };
 
 static size_t num_system_counters = sizeof(system_counters) / sizeof(aeron_system_counter_t);

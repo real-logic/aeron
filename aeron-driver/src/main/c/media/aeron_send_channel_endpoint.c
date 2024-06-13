@@ -418,8 +418,7 @@ void aeron_send_channel_endpoint_dispatch(
             if (length >= sizeof(aeron_error_t) && length >= (size_t)frame_header->frame_length)
             {
                 result = aeron_send_channel_endpoint_on_error(endpoint, conductor_proxy, buffer, length, addr);
-                // TODO: error messages counter.
-//                aeron_counter_ordered_increment(sender->error_messages_received_counter, 1);
+                aeron_counter_ordered_increment(sender->error_messages_received_counter, 1);
             }
             else
             {

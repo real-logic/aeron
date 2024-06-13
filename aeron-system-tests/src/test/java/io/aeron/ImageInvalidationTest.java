@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
@@ -43,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 public class ImageInvalidationTest
 {
+    public static final long A_VALUE_THAT_SHOWS_WE_ARENT_SPAMMING_ERROR_MESSAGES = 1000L;
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
@@ -68,7 +70,7 @@ public class ImageInvalidationTest
     }
 
     @Test
-    @InterruptAfter(20)
+    @InterruptAfter(10)
     @SlowTest
     void shouldInvalidateSubscriptionsImage()
     {
@@ -87,6 +89,9 @@ public class ImageInvalidationTest
         {
             Tests.awaitConnected(pub);
             Tests.awaitConnected(sub);
+
+            final long initialErrorMessagesReceived = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id());
 
             while (pub.offer(message) < 0)
             {
@@ -113,10 +118,20 @@ public class ImageInvalidationTest
             final long value = driver.context().publicationConnectionTimeoutNs();
             assertThat(t1 - t0, lessThan(value));
 
+            while (initialErrorMessagesReceived == aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id()))
+            {
+                Tests.yield();
+            }
+
             while (!imageUnavailable.get())
             {
                 Tests.yield();
             }
+
+            assertThat(
+                aeron.countersReader().getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id()),
+                lessThan(A_VALUE_THAT_SHOWS_WE_ARENT_SPAMMING_ERROR_MESSAGES));
         }
     }
 }

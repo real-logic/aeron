@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
+import io.aeron.exceptions.AeronException;
 import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
@@ -33,6 +34,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,6 +44,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 public class ImageInvalidationTest
@@ -214,6 +218,33 @@ public class ImageInvalidationTest
             {
                 Tests.yield();
             }
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldRejectInvalidationReasonThatIsTooLong()
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
+
+        context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
+        final byte[] bytes = new byte[1024];
+        Arrays.fill(bytes, (byte)'x');
+        final String tooLongReason = new String(bytes, US_ASCII);
+
+        final TestMediaDriver driver = launch();
+
+        final Aeron.Context ctx = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName());
+
+        try (Aeron aeron = Aeron.connect(ctx);
+            Publication pub = aeron.addPublication(channel, streamId);
+            Subscription sub = aeron.addSubscription(channel, streamId))
+        {
+            Tests.awaitConnected(pub);
+            Tests.awaitConnected(sub);
+
+            assertThrows(AeronException.class, () -> sub.imageAtIndex(0).invalidate(tooLongReason));
         }
     }
 }

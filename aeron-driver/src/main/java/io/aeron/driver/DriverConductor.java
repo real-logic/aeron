@@ -32,6 +32,7 @@ import io.aeron.exceptions.AeronEvent;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.ErrorFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -54,6 +55,7 @@ import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -1410,6 +1412,11 @@ public final class DriverConductor implements Agent
         final long position,
         final String reason)
     {
+        if (ErrorFlyweight.MAX_ERROR_MESSAGE_LENGTH < reason.getBytes(StandardCharsets.UTF_8).length)
+        {
+            throw new ControlProtocolException(GENERIC_ERROR, "Invalidation reason must be 1023 bytes or less");
+        }
+
         final PublicationImage publicationImage = findPublicationImage(imageCorrelationId);
 
         if (null == publicationImage)

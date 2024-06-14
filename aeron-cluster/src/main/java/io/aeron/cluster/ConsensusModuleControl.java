@@ -54,7 +54,7 @@ public interface ConsensusModuleControl
      * any long-running actions.
      *
      * @return the {@link IdleStrategy} which should be used by the extension when it experiences back-pressure or is
-     * taking any long-running actions.
+     * undertaking any long-running actions.
      */
     IdleStrategy idleStrategy();
 

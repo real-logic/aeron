@@ -3336,6 +3336,7 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
         case AERON_COMMAND_INVALIDATE_IMAGE:
         {
             aeron_invalidate_image_command_t *command = (aeron_invalidate_image_command_t *)message;
+            correlation_id = command->correlated.correlation_id;
 
             if (length < sizeof (aeron_invalidate_image_command_t))
             {
@@ -5675,6 +5676,12 @@ int aeron_driver_conductor_on_invalidate_image(
     const int64_t image_correlation_id = command->image_correlation_id;
     aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
         conductor, image_correlation_id);
+
+    if (AERON_ERROR_MAX_MESSAGE_LENGTH < command->reason_length)
+    {
+        AERON_SET_ERR(AERON_ERROR_CODE_GENERIC_ERROR, "%s", "Invalidation reason must be 1023 bytes or less");
+        return -1;
+    }
 
     if (NULL == image)
     {

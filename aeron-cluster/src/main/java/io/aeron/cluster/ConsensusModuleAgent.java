@@ -2545,7 +2545,7 @@ final class ConsensusModuleAgent
                             workCount += 1;
                             if (null != consensusModuleExtension)
                             {
-                                consensusModuleExtension.onSessionOpen(session.id());
+                                consensusModuleExtension.onSessionOpened(session.id());
                             }
                         }
                         break;

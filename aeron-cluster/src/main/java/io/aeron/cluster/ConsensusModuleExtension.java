@@ -89,7 +89,7 @@ public interface ConsensusModuleExtension extends AutoCloseable
      *
      * @param clusterSessionId of the opened session which is unique and not reused.
      */
-    void onSessionOpen(long clusterSessionId);
+    void onSessionOpened(long clusterSessionId);
 
     /**
      * Callback indicating a cluster session has closed.

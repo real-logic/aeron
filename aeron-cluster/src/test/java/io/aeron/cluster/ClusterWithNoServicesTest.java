@@ -75,7 +75,7 @@ class ClusterWithNoServicesTest
         final InOrder inOrder = inOrder(consensusModuleExtensionSpy);
         inOrder.verify(consensusModuleExtensionSpy).onStart(any(ConsensusModuleControl.class), isNull());
         inOrder.verify(consensusModuleExtensionSpy).onElectionComplete(any(ExclusivePublication.class));
-        inOrder.verify(consensusModuleExtensionSpy).onSessionOpen(anyLong());
+        inOrder.verify(consensusModuleExtensionSpy).onSessionOpened(anyLong());
 
         ClusterTests.failOnClusterError();
     }
@@ -144,7 +144,7 @@ class ClusterWithNoServicesTest
         {
         }
 
-        public void onSessionOpen(final long clusterSessionId)
+        public void onSessionOpened(final long clusterSessionId)
         {
         }
 

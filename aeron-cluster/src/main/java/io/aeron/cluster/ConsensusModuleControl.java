@@ -37,6 +37,7 @@ public interface ConsensusModuleControl
      * Cluster time as {@link #timeUnit()}s since 1 Jan 1970 UTC.
      *
      * @return time as {@link #timeUnit()}s since 1 Jan 1970 UTC.
+     * @see #timeUnit()
      */
     long time();
 
@@ -44,12 +45,13 @@ public interface ConsensusModuleControl
      * The unit of time applied when timestamping and {@link #time()} operations.
      *
      * @return the unit of time applied when timestamping and {@link #time()} operations.
+     * @see #time()
      */
     TimeUnit timeUnit();
 
     /**
-     * {@link IdleStrategy} which should be used by the extension when it experiences back-pressure or is taking any
-     * long-running actions.
+     * {@link IdleStrategy} which should be used by the extension when it experiences back-pressure or is undertaking
+     * any long-running actions.
      *
      * @return the {@link IdleStrategy} which should be used by the extension when it experiences back-pressure or is
      * taking any long-running actions.
@@ -57,32 +59,31 @@ public interface ConsensusModuleControl
     IdleStrategy idleStrategy();
 
     /**
-     * Get the {@link ConsensusModule.Context} under which the extension is running.
+     * The {@link ConsensusModule.Context} under which the extension is running.
      *
      * @return the {@link ConsensusModule.Context} under which the extension is running.
      */
     ConsensusModule.Context context();
 
     /**
-     * Get the {@link Aeron} client used by the extension.
+     * The {@link Aeron} client to be used by the extension.
      *
      * @return the {@link Aeron} client used by the extension.
      */
     Aeron aeron();
 
     /**
-     * Get the {@link AeronArchive} client used by the extension.
+     * The {@link AeronArchive} client to be used by the extension.
      *
      * @return the {@link AeronArchive} client used by the extension.
      */
     AeronArchive archive();
 
     /**
-     * update activity for that session (external to the consensus module itself)
+     * Update activity timestamp for a cluster session which is also an extension session.
      *
-     * @param clusterSessionId  session id
-     * @param timeNs            time of last activity
+     * @param clusterSessionId  session id allocated on connect.
+     * @param timeNs            time of last activity in nanoseconds.
      */
     void updateLastActivityNs(long clusterSessionId, long timeNs);
-
 }

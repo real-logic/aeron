@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 public interface ConsensusModuleControl
 {
     /**
-     * The unique id for the hosting member of the cluster. Useful only for debugging purposes.
+     * The unique id for the hosting member of the cluster.
      *
      * @return unique id for the hosting member of the cluster.
      */
@@ -42,9 +42,9 @@ public interface ConsensusModuleControl
     long time();
 
     /**
-     * The unit of time applied when timestamping and {@link #time()} operations.
+     * The unit of time applied when timestamping and invoking {@link #time()} operations.
      *
-     * @return the unit of time applied when timestamping and {@link #time()} operations.
+     * @return the unit of time applied when timestamping and invoking {@link #time()} operations.
      * @see #time()
      */
     TimeUnit timeUnit();
@@ -68,19 +68,19 @@ public interface ConsensusModuleControl
     /**
      * The {@link Aeron} client to be used by the extension.
      *
-     * @return the {@link Aeron} client used by the extension.
+     * @return the {@link Aeron} client to be used by the extension.
      */
     Aeron aeron();
 
     /**
      * The {@link AeronArchive} client to be used by the extension.
      *
-     * @return the {@link AeronArchive} client used by the extension.
+     * @return the {@link AeronArchive} client to be used by the extension.
      */
     AeronArchive archive();
 
     /**
-     * Update activity timestamp for a cluster session which is also an extension session.
+     * Update activity timestamp for a cluster session which corresponds to an extension session.
      *
      * @param clusterSessionId  session id allocated on connect.
      * @param timeNs            time of last activity in nanoseconds.

@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -132,6 +133,87 @@ public class ImageInvalidationTest
             assertThat(
                 aeron.countersReader().getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id()),
                 lessThan(A_VALUE_THAT_SHOWS_WE_ARENT_SPAMMING_ERROR_MESSAGES));
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    @SlowTest
+    void shouldInvalidateSubscriptionsImageManualMdc()
+    {
+        context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
+
+        final TestMediaDriver driver = launch();
+
+        final Aeron.Context ctx = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName());
+
+        final AtomicInteger imageAvailable = new AtomicInteger(0);
+        final AtomicInteger imageUnavailable = new AtomicInteger(0);
+        final String mdc = "aeron:udp?control-mode=manual";
+        final String channel = "aeron:udp?endpoint=localhost:10000";
+
+        try (Aeron aeron = Aeron.connect(ctx);
+            Publication pub = aeron.addPublication(mdc, streamId);
+            Subscription sub = aeron.addSubscription(
+                channel,
+                streamId,
+                (image) -> imageAvailable.incrementAndGet(),
+                (image) -> imageUnavailable.incrementAndGet()))
+        {
+            pub.addDestination(channel);
+
+            Tests.awaitConnected(pub);
+            Tests.awaitConnected(sub);
+
+            final long initialErrorMessagesReceived = aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id());
+
+            while (pub.offer(message) < 0)
+            {
+                Tests.yield();
+            }
+
+            while (0 == sub.poll((buffer, offset, length, header) -> {}, 1))
+            {
+                Tests.yield();
+            }
+
+            final Image image = sub.imageAtIndex(0);
+            assertEquals(pub.position(), image.position());
+
+            final int initialAvailable = imageAvailable.get();
+            final String reason = "Needs to be closed";
+            image.invalidate(reason);
+
+            final long t0 = System.nanoTime();
+            while (pub.isConnected())
+            {
+                Tests.yield();
+            }
+            final long t1 = System.nanoTime();
+            final long value = driver.context().publicationConnectionTimeoutNs();
+            assertThat(t1 - t0, lessThan(value));
+
+            while (initialErrorMessagesReceived == aeron.countersReader()
+                .getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id()))
+            {
+                Tests.yield();
+            }
+
+            while (0 == imageUnavailable.get())
+            {
+                Tests.yield();
+            }
+
+            assertThat(
+                aeron.countersReader().getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id()),
+                lessThan(A_VALUE_THAT_SHOWS_WE_ARENT_SPAMMING_ERROR_MESSAGES));
+
+            while (initialAvailable != imageAvailable.get())
+            {
+                Tests.yield();
+            }
         }
     }
 }

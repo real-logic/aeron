@@ -192,6 +192,7 @@ public:
             add_ifaddr(AF_INET6, "eth1:3", "fe80:1:abcd:0:0:0:0:1", "FFFF:FFFF:FFFF::", IFF_MULTICAST | IFF_UP);
             add_ifaddr(AF_INET6, "eth1:1", "fe80:0:0:0:0:0:0:1", "FFFF::", IFF_MULTICAST | IFF_UP);
             add_ifaddr(AF_INET6, "eth1:2", "fe80:1:0:0:0:0:0:1", "FFFF:FFFF::", IFF_MULTICAST | IFF_UP);
+            add_ifaddr(AF_INET, "vlan.13", "172.18.13.5", "255.255.255.224", IFF_MULTICAST | IFF_UP);
         }
     }
 
@@ -255,6 +256,21 @@ TEST_F(UriLookupTest, shouldNotFindUnknown)
     ASSERT_EQ(aeron_find_interface("127.0.0.10/32", (struct sockaddr_storage *)&addr, &if_index), -1);
     ASSERT_EQ(aeron_find_interface("172.16.1.20/12", (struct sockaddr_storage *)&addr, &if_index), -1);
     ASSERT_EQ(aeron_find_interface("192.168.2.20/24", (struct sockaddr_storage *)&addr, &if_index), -1);
+}
+
+TEST_F(UriLookupTest, shouldFindIPv4Multicast)
+{
+    char buffer[AERON_MAX_PATH] = { 0 };
+    struct sockaddr_storage addr = {};
+    auto *addr_in = (struct sockaddr_in *)&addr;
+    unsigned int if_index = 0;
+
+    ASSERT_EQ(aeron_find_interface("172.18.13.0/27", (struct sockaddr_storage *)&addr, &if_index), 0);
+    EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "172.18.13.5");
+    ASSERT_EQ(aeron_find_interface("172.18.13.5", (struct sockaddr_storage *)&addr, &if_index), 0);
+    EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "172.18.13.5");
+    ASSERT_EQ(aeron_find_interface("172.18.13.5/32", (struct sockaddr_storage *)&addr, &if_index), 0);
+    EXPECT_STREQ(inet_ntop(AF_INET, &addr_in->sin_addr, buffer, sizeof(buffer)), "172.18.13.5");
 }
 
 class UriPrintTest : public testing::TestWithParam<const char *>

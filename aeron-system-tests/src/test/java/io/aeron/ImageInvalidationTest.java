@@ -225,8 +225,6 @@ public class ImageInvalidationTest
     @InterruptAfter(10)
     void shouldRejectInvalidationReasonThatIsTooLong()
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
-
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
         final byte[] bytes = new byte[1024];
         Arrays.fill(bytes, (byte)'x');

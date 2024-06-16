@@ -254,7 +254,7 @@ TEST_F(UriLookupTest, shouldNotFindUnknown)
 
     ASSERT_EQ(aeron_find_interface("[fe80:ffff:0:0:0:0:0:0]/32", (struct sockaddr_storage *)&addr, &if_index), -1);
     ASSERT_EQ(aeron_find_interface("127.0.0.10/32", (struct sockaddr_storage *)&addr, &if_index), -1);
-    ASSERT_EQ(aeron_find_interface("172.16.1.20/12", (struct sockaddr_storage *)&addr, &if_index), -1);
+    ASSERT_EQ(aeron_find_interface("172.116.1.20/12", (struct sockaddr_storage *)&addr, &if_index), -1);
     ASSERT_EQ(aeron_find_interface("192.168.2.20/24", (struct sockaddr_storage *)&addr, &if_index), -1);
 }
 

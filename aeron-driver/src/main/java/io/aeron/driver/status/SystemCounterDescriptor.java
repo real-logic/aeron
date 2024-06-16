@@ -226,7 +226,7 @@ public enum SystemCounterDescriptor
     /**
      * A count of the number of error messages received from a remote archive.
      */
-    ERROR_MESSAGES_RECEIVED(38, "Error Messages received");
+    ERROR_FRAMES_RECEIVED(38, "Error Frames received");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

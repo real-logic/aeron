@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -96,7 +95,7 @@ public class ImageInvalidationTest
             Tests.awaitConnected(sub);
 
             final long initialErrorMessagesReceived = aeron.countersReader()
-                .getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id());
+                .getCounterValue(SystemCounterDescriptor.ERROR_FRAMES_RECEIVED.id());
 
             while (pub.offer(message) < 0)
             {
@@ -124,7 +123,7 @@ public class ImageInvalidationTest
             assertThat(t1 - t0, lessThan(value));
 
             while (initialErrorMessagesReceived == aeron.countersReader()
-                .getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id()))
+                .getCounterValue(SystemCounterDescriptor.ERROR_FRAMES_RECEIVED.id()))
             {
                 Tests.yield();
             }
@@ -135,7 +134,7 @@ public class ImageInvalidationTest
             }
 
             assertThat(
-                aeron.countersReader().getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id()),
+                aeron.countersReader().getCounterValue(SystemCounterDescriptor.ERROR_FRAMES_RECEIVED.id()),
                 lessThan(A_VALUE_THAT_SHOWS_WE_ARENT_SPAMMING_ERROR_MESSAGES));
         }
     }
@@ -171,7 +170,7 @@ public class ImageInvalidationTest
             Tests.awaitConnected(sub);
 
             final long initialErrorMessagesReceived = aeron.countersReader()
-                .getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id());
+                .getCounterValue(SystemCounterDescriptor.ERROR_FRAMES_RECEIVED.id());
 
             while (pub.offer(message) < 0)
             {
@@ -200,7 +199,7 @@ public class ImageInvalidationTest
             assertThat(t1 - t0, lessThan(value));
 
             while (initialErrorMessagesReceived == aeron.countersReader()
-                .getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id()))
+                .getCounterValue(SystemCounterDescriptor.ERROR_FRAMES_RECEIVED.id()))
             {
                 Tests.yield();
             }
@@ -211,7 +210,7 @@ public class ImageInvalidationTest
             }
 
             assertThat(
-                aeron.countersReader().getCounterValue(SystemCounterDescriptor.ERROR_MESSAGES_RECEIVED.id()),
+                aeron.countersReader().getCounterValue(SystemCounterDescriptor.ERROR_FRAMES_RECEIVED.id()),
                 lessThan(A_VALUE_THAT_SHOWS_WE_ARENT_SPAMMING_ERROR_MESSAGES));
 
             while (initialAvailable != imageAvailable.get())

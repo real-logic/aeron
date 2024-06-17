@@ -240,7 +240,7 @@ void aeron_driver_conductor_proxy_on_release_resource(
     void *managed_resource,
     aeron_driver_conductor_resource_type_t resource_type)
 {
-    aeron_command_release_resource_t cmd =
+   aeron_command_release_resource_t cmd =
         {
             .base =
                 {
@@ -259,3 +259,33 @@ void aeron_driver_conductor_proxy_on_release_resource(
         aeron_driver_conductor_proxy_offer(conductor_proxy, &cmd, sizeof(cmd));
     }
 }
+
+void aeron_driver_conductor_proxy_on_publication_error(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    const int64_t registration_id,
+    int32_t error_code,
+    int32_t error_length,
+    const uint8_t *error_text)
+{
+    uint8_t buffer[sizeof(aeron_command_publication_error_t) + AERON_ERROR_MAX_MESSAGE_LENGTH + 1];
+    aeron_command_publication_error_t *error = (aeron_command_publication_error_t *)buffer;
+    error_length = error_length <= AERON_ERROR_MAX_MESSAGE_LENGTH ? error_length : AERON_ERROR_MAX_MESSAGE_LENGTH;
+
+    error->base.func = aeron_driver_conductor_on_publication_error;
+    error->base.item = NULL;
+    error->registration_id = registration_id;
+    error->error_code = error_code;
+    memcpy(error->error_text, error_text, (size_t)error_length);
+    error->error_text[error_length] = '\0';
+    size_t cmd_length = sizeof(aeron_command_publication_error_t) + error_length + 1;
+
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
+    {
+        aeron_driver_conductor_on_publication_error(conductor_proxy->conductor, error);
+    }
+    else
+    {
+        aeron_driver_conductor_proxy_offer(conductor_proxy, (void *)error, cmd_length);
+    }
+}
+

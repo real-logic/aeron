@@ -106,7 +106,7 @@ struct aeron_command_publication_error_stct
     int64_t registration_id;
     int32_t error_code;
     int32_t error_length;
-    uint8_t error_text[];
+    uint8_t error_text[1];
 };
 typedef struct aeron_command_publication_error_stct aeron_command_publication_error_t;
 

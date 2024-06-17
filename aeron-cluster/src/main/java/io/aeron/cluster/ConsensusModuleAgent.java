@@ -518,18 +518,17 @@ final class ConsensusModuleAgent
         final int length,
         final Header header)
     {
-        if (null == consensusModuleExtension)
+        if (null != consensusModuleExtension)
         {
-            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+            return consensusModuleExtension.onMessage(schemaId, templateId, buffer, offset, length, header);
         }
 
-        return consensusModuleExtension.onMessage(schemaId, templateId, buffer, offset, length, header);
+        throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
     }
 
     public void onLoadEndSnapshot(final DirectBuffer buffer, final int offset, final int length)
     {
     }
-
 
     public void onLoadClusterSession(
         final long clusterSessionId,
@@ -543,7 +542,6 @@ final class ConsensusModuleAgent
         final int offset,
         final int length)
     {
-
         final ClusterSession session = new ClusterSession(
             clusterSessionId,
             responseStreamId,
@@ -774,9 +772,7 @@ final class ConsensusModuleAgent
     }
 
     void onIngressChallengeResponse(
-        final long correlationId,
-        final long clusterSessionId,
-        final byte[] encodedCredentials)
+        final long correlationId, final long clusterSessionId, final byte[] encodedCredentials)
     {
         if (Cluster.Role.LEADER == role)
         {
@@ -790,9 +786,7 @@ final class ConsensusModuleAgent
     }
 
     void onConsensusChallengeResponse(
-        final long correlationId,
-        final long clusterSessionId,
-        final byte[] encodedCredentials)
+        final long correlationId, final long clusterSessionId, final byte[] encodedCredentials)
     {
         onChallengeResponseForSession(pendingBackupSessions, correlationId, clusterSessionId, encodedCredentials);
     }
@@ -1196,8 +1190,7 @@ final class ConsensusModuleAgent
             serviceProxy.clusterMembersResponse(
                 correlationId,
                 leaderMember.id(),
-                ClusterMember.encodeAsString(activeMembers)
-            );
+                ClusterMember.encodeAsString(activeMembers));
         }
     }
 
@@ -1213,7 +1206,6 @@ final class ConsensusModuleAgent
         {
             if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
-
                 final ClusterSession session = new ClusterSession(
                     NULL_VALUE,
                     responseStreamId,
@@ -1460,6 +1452,22 @@ final class ConsensusModuleAgent
             final int i = PendingServiceMessageTracker.serviceId(clusterSessionId);
             pendingServiceMessageTrackers[i].sweepFollowerMessages(clusterSessionId);
         }
+    }
+
+    public ControlledFragmentHandler.Action onReplayExtensionMessage(
+        final int schemaId,
+        final int templateId,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header)
+    {
+        if (null != consensusModuleExtension)
+        {
+            return consensusModuleExtension.onMessage(schemaId, templateId, buffer, offset, length, header);
+        }
+
+        throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
     }
 
     void onReplayTimerEvent(final long correlationId)
@@ -3600,7 +3608,9 @@ final class ConsensusModuleAgent
                 sessionExport.closeReason,
                 sessionExport.responseStreamId,
                 sessionExport.responseChannel,
-                null, 0, 0);
+                null,
+                0,
+                0);
         }
 
         final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();

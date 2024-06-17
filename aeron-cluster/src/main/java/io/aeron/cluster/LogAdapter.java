@@ -19,7 +19,6 @@ import io.aeron.Aeron;
 import io.aeron.BufferBuilder;
 import io.aeron.Image;
 import io.aeron.Subscription;
-import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.ClusterClock;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -149,7 +148,7 @@ final class LogAdapter implements ControlledFragmentHandler
 
         if ((flags & UNFRAGMENTED) == UNFRAGMENTED)
         {
-            action = onMessage(buffer, offset, header);
+            action = onMessage(buffer, offset, length, header);
         }
         else if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
         {
@@ -166,7 +165,7 @@ final class LogAdapter implements ControlledFragmentHandler
 
             if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
             {
-                action = onMessage(builder.buffer(), 0, builder.completeHeader(header));
+                action = onMessage(builder.buffer(), 0, builder.limit(), builder.completeHeader(header));
 
                 if (Action.ABORT == action)
                 {
@@ -191,17 +190,17 @@ final class LogAdapter implements ControlledFragmentHandler
     }
 
     @SuppressWarnings("MethodLength")
-    private Action onMessage(final DirectBuffer buffer, final int offset, final Header header)
+    private Action onMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int schemaId = messageHeaderDecoder.schemaId();
+        final int templateId = messageHeaderDecoder.templateId();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+            return consensusModuleAgent.onReplayExtensionMessage(schemaId, templateId, buffer, offset, length, header);
         }
 
-        final int templateId = messageHeaderDecoder.templateId();
         if (templateId == SessionMessageHeaderDecoder.TEMPLATE_ID)
         {
             sessionHeaderDecoder.wrap(

@@ -1478,7 +1478,6 @@ final class ConsensusModuleAgent
         final int responseStreamId,
         final String responseChannel)
     {
-
         final ClusterSession session = new ClusterSession(
             clusterSessionId,
             responseStreamId,
@@ -1491,6 +1490,11 @@ final class ConsensusModuleAgent
         {
             nextSessionId = clusterSessionId + 1;
         }
+
+        if (null != consensusModuleExtension)
+        {
+            consensusModuleExtension.onSessionOpened(clusterSessionId);
+        }
     }
 
     void onReplaySessionClose(final long clusterSessionId, final CloseReason closeReason)
@@ -1501,6 +1505,11 @@ final class ConsensusModuleAgent
             removeSession(sessions, clusterSessionId);
             session.closing(closeReason);
             session.close(aeron, ctx.countedErrorHandler());
+
+            if (null != consensusModuleExtension)
+            {
+                consensusModuleExtension.onSessionClosed(clusterSessionId);
+            }
         }
     }
 
@@ -1522,8 +1531,6 @@ final class ConsensusModuleAgent
             }
         }
     }
-
-
 
     void onReplayNewLeadershipTermEvent(
         final long leadershipTermId,

@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.DirectBuffer;
@@ -53,9 +52,16 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * Cluster election is complete and new publication is added for the leadership term. If the node is a follower
      * then the publication will be null.
      *
-     * @param logPublication to which messages can be appended.
+     * @param consensusControlState state to allow extension to control the consensus module
      */
-    void onElectionComplete(ExclusivePublication logPublication);
+    void onElectionComplete(ConsensusControlState consensusControlState);
+
+    /**
+     * New Leadership term and the consensus control state has changed
+     *
+     * @param consensusControlState state to allow extension to control the consensus module
+     */
+    void onNewLeadershipTerm(ConsensusControlState consensusControlState);
 
     /**
      * Callback for handling messages received as ingress to a cluster.

@@ -16,7 +16,6 @@
 
 package io.aeron.cluster;
 
-import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
@@ -74,7 +73,7 @@ class ClusterWithNoServicesTest
         assertTrue(aeronCluster.sendKeepAlive());
         final InOrder inOrder = inOrder(consensusModuleExtensionSpy);
         inOrder.verify(consensusModuleExtensionSpy).onStart(any(ConsensusModuleControl.class), isNull());
-        inOrder.verify(consensusModuleExtensionSpy).onElectionComplete(any(ExclusivePublication.class));
+        inOrder.verify(consensusModuleExtensionSpy).onElectionComplete(any(ConsensusControlState.class));
         inOrder.verify(consensusModuleExtensionSpy).onSessionOpened(anyLong());
 
         ClusterTests.failOnClusterError();
@@ -125,7 +124,11 @@ class ClusterWithNoServicesTest
         {
         }
 
-        public void onElectionComplete(final ExclusivePublication logPublication)
+        public void onElectionComplete(final ConsensusControlState consensusControlState)
+        {
+        }
+
+        public void onNewLeadershipTerm(final ConsensusControlState consensusControlState)
         {
         }
 

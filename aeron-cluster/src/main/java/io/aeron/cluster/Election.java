@@ -143,6 +143,11 @@ class Election
         return leaderMember;
     }
 
+    int logSessionId()
+    {
+        return logSessionId;
+    }
+
     long leadershipTermId()
     {
         return leadershipTermId;

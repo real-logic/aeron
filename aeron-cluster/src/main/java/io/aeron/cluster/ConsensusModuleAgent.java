@@ -1581,6 +1581,11 @@ final class ConsensusModuleAgent
         {
             election.onReplayNewLeadershipTermEvent(leadershipTermId, logPosition, timestamp, termBaseLogPosition);
         }
+        if (null != consensusModuleExtension)
+        {
+            consensusModuleExtension.onNewLeadershipTerm(
+                new ConsensusControlState(null, logRecordingId, leadershipTermId));
+        }
     }
 
     int addLogPublication(final long appendPosition)
@@ -1837,13 +1842,15 @@ final class ConsensusModuleAgent
         notifiedCommitPosition = logPosition;
         commitPosition.setOrdered(logPosition);
         updateMemberDetails(election.leader());
-        election = null;
 
         connectIngress();
         if (null != consensusModuleExtension)
         {
-            consensusModuleExtension.onElectionComplete(logPublisher.publication());
+            consensusModuleExtension.onElectionComplete(new ConsensusControlState(
+                logPublisher.publication(), logRecordingId, leadershipTermId));
         }
+        election = null;
+
     }
 
     void trackCatchupCompletion(

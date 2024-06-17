@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.AeronException;
+import io.aeron.samples.ErrorStat;
 import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
@@ -29,11 +30,13 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,6 +46,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERROR_FRAMES_RECEIVED;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -78,10 +82,8 @@ public class ImageInvalidationTest
     @Test
     @InterruptAfter(10)
     @SlowTest
-    void shouldInvalidateSubscriptionsImage()
+    void shouldInvalidateSubscriptionsImage() throws IOException
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Not implemented yet");
-
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 
         final TestMediaDriver driver = launch();
@@ -151,6 +153,8 @@ public class ImageInvalidationTest
                 lessThan(A_VALUE_THAT_SHOWS_WE_ARENT_SPAMMING_ERROR_MESSAGES));
 
             assertEquals(1, countersReader.getCounterValue(ERRORS.id()) - initialErrors);
+
+            SystemTests.waitForErrorToOccur(driver.aeronDirectoryName(), containsString(reason), Tests.SLEEP_1_MS);
         }
     }
 

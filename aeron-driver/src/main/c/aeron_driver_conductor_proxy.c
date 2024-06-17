@@ -267,7 +267,7 @@ void aeron_driver_conductor_proxy_on_publication_error(
     int32_t error_length,
     const uint8_t *error_text)
 {
-    uint8_t buffer[sizeof(aeron_command_publication_error_t) + AERON_ERROR_MAX_MESSAGE_LENGTH + 1];
+    uint8_t buffer[offsetof(aeron_command_publication_error_t, error_text[AERON_ERROR_MAX_MESSAGE_LENGTH + 1])];
     aeron_command_publication_error_t *error = (aeron_command_publication_error_t *)buffer;
     error_length = error_length <= AERON_ERROR_MAX_MESSAGE_LENGTH ? error_length : AERON_ERROR_MAX_MESSAGE_LENGTH;
 

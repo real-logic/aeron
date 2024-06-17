@@ -493,8 +493,11 @@ public final class NetworkPublication
         final InetSocketAddress srcAddress,
         final DriverConductorProxy conductorProxy)
     {
-        livenessTracker.onRemoteClose(msg.receiverId());
         flowControl.onError(msg, srcAddress, cachedNanoClock.nanoTime());
+        if (livenessTracker.onRemoteClose(msg.receiverId()))
+        {
+            conductorProxy.onPublicationError(registrationId, msg.errorCode(), msg.errorMessage());
+        }
     }
 
     /**

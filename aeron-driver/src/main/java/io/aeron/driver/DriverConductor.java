@@ -29,6 +29,7 @@ import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
 import io.aeron.exceptions.AeronEvent;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -386,6 +387,11 @@ public final class DriverConductor implements Agent
         clientProxy.onError(statusIndicatorId, CHANNEL_ENDPOINT_ERROR, errorMessage);
     }
 
+    void onPublicationError(final long registrationId, final int errorCode, final String errorMessage)
+    {
+        recordError(new AeronException(errorMessage, AeronException.Category.WARN));
+    }
+
     void onReResolveEndpoint(
         final String endpoint, final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
     {
@@ -398,8 +404,7 @@ public final class DriverConductor implements Agent
                     final InetSocketAddress newAddress = asyncResult.get();
                     if (newAddress.isUnresolved())
                     {
-                        ctx.errorHandler().onError(new AeronEvent("could not re-resolve: endpoint=" + endpoint));
-                        errorCounter.increment();
+                        recordError(new AeronEvent("could not re-resolve: endpoint=" + endpoint));
                     }
                     else if (!address.equals(newAddress))
                     {
@@ -408,8 +413,7 @@ public final class DriverConductor implements Agent
                 }
                 catch (final Exception ex)
                 {
-                    ctx.errorHandler().onError(ex);
-                    errorCounter.increment();
+                    recordError(ex);
                 }
             });
     }
@@ -429,8 +433,7 @@ public final class DriverConductor implements Agent
                     final InetSocketAddress newAddress = asyncResult.get();
                     if (newAddress.isUnresolved())
                     {
-                        ctx.errorHandler().onError(new AeronEvent("could not re-resolve: control=" + control));
-                        errorCounter.increment();
+                        recordError(new AeronEvent("could not re-resolve: control=" + control));
                     }
                     else if (!address.equals(newAddress))
                     {
@@ -439,8 +442,7 @@ public final class DriverConductor implements Agent
                 }
                 catch (final Exception ex)
                 {
-                    ctx.errorHandler().onError(ex);
-                    errorCounter.increment();
+                    recordError(ex);
                 }
             });
     }
@@ -2688,5 +2690,11 @@ public final class DriverConductor implements Agent
                 };
             }
         }
+    }
+
+    private void recordError(final Exception ex)
+    {
+        ctx.errorHandler().onError(ex);
+        errorCounter.increment();
     }
 }

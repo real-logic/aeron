@@ -312,7 +312,7 @@ int aeron_network_publication_create(
     _pub->is_response = AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE == endpoint->conductor_fields.udp_channel->control_mode;
     _pub->response_correlation_id = params->response_correlation_id;
 
-    aeron_int64_counter_map_init(&_pub->receiver_liveness_tracker, AERON_NULL_VALUE, 16, 0.6);
+    aeron_int64_counter_map_init(&_pub->receiver_liveness_tracker, AERON_NULL_VALUE, 16, 0.6f);
 
     *publication = _pub;
 

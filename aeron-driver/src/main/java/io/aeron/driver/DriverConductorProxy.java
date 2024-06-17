@@ -247,6 +247,14 @@ public final class DriverConductorProxy
         }
     }
 
+    void onPublicationError(final long registrationId, final int errorCode, final String errorMessage)
+    {
+        if (notConcurrent())
+        {
+            driverConductor.onPublicationError(registrationId, errorCode, errorMessage);
+        }
+    }
+
     private void offer(final Runnable cmd)
     {
         if (!commandQueue.offer(cmd))

@@ -537,6 +537,8 @@ void aeron_driver_conductor_on_response_setup(void *clientd, void *item);
 
 void aeron_driver_conductor_on_response_connected(void *clientd, void *item);
 
+void aeron_driver_conductor_on_publication_error(void *clientd, void *item);
+
 void aeron_driver_conductor_on_release_resource(void *clientd, void *item);
 
 aeron_send_channel_endpoint_t *aeron_driver_conductor_find_send_channel_endpoint_by_tag(

@@ -542,7 +542,7 @@ int aeron_send_channel_endpoint_on_error(
 
     if (NULL != publication)
     {
-        aeron_network_publication_on_error(publication, buffer, length, addr);
+        aeron_network_publication_on_error(publication, buffer, length, addr, conductor_proxy);
     }
 
     return result;

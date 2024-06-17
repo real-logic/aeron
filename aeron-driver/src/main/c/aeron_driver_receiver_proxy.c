@@ -360,15 +360,15 @@ void aeron_driver_receiver_proxy_on_invalidate_image(
     const char *reason)
 {
     // TODO: max reason length...
-    uint8_t message_buffer[sizeof(aeron_command_base_t) + 1024] = { 0 };
-    aeron_command_receiver_invalidate_image_t *cmd = (aeron_command_receiver_invalidate_image_t *)&message_buffer[0];
+    uint8_t message_buffer[sizeof(aeron_command_base_t) + AERON_ERROR_MAX_MESSAGE_LENGTH + 1] = { 0 };
+    aeron_command_receiver_invalidate_image_t *cmd = (aeron_command_receiver_invalidate_image_t *)message_buffer;
 
     cmd->base.func = aeron_driver_receiver_on_invalidate_image;
     cmd->base.item = NULL;
     cmd->image_correlation_id = image_correlation_id;
     cmd->position = position;
     cmd->reason_length = reason_length;
-    memcpy(cmd + 1, reason, reason_length); // TODO: Ensure validated.
+    memcpy((cmd + 1), reason, reason_length); // TODO: Ensure validated.
 
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {

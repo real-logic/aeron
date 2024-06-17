@@ -6067,6 +6067,13 @@ void aeron_driver_conductor_on_response_connected(void *clientd, void *item)
     }
 }
 
+void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
+{
+    aeron_driver_conductor_t *conductor = clientd;
+    aeron_command_publication_error_t *error = item;
+    aeron_driver_conductor_log_explicit_error(conductor, error->error_code, (const char *)error->error_text);
+}
+
 void aeron_driver_conductor_on_release_resource(void *clientd, void *item)
 {
     aeron_command_release_resource_t *cmd = item;

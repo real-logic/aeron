@@ -40,11 +40,12 @@ struct mmsghdr
 };
 #endif
 
-static inline void aeron_network_publication_liveness_on_remote_close(
+static inline bool aeron_network_publication_liveness_on_remote_close(
     aeron_network_publication_t *publication,
     int64_t receiver_id)
 {
-    aeron_int64_counter_map_remove(&publication->receiver_liveness_tracker, receiver_id);
+    int64_t missing_value = publication->receiver_liveness_tracker.initial_value;
+    return missing_value != aeron_int64_counter_map_remove(&publication->receiver_liveness_tracker, receiver_id);
 }
 
 static inline int aeron_network_publication_liveness_on_status_message(
@@ -835,12 +836,19 @@ void aeron_network_publication_on_error(
     aeron_network_publication_t *publication,
     const uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr)
+    struct sockaddr_storage *addr,
+    aeron_driver_conductor_proxy_t *conductor_proxy)
 {
     aeron_error_t *error = (aeron_error_t *)buffer;
+    const uint8_t *error_text = (const uint8_t *)(error + 1);
     const int64_t time_ns = aeron_clock_cached_nano_time(publication->cached_clock);
-    aeron_network_publication_liveness_on_remote_close(publication, error->receiver_id);
     publication->flow_control->on_error(publication->flow_control->state, buffer, length, addr, time_ns);
+    if (aeron_network_publication_liveness_on_remote_close(publication, error->receiver_id))
+    {
+        const int64_t registration_id = aeron_network_publication_registration_id(publication);
+        aeron_driver_conductor_proxy_on_publication_error(
+            conductor_proxy, registration_id, error->error_code, error->error_length, error_text);
+    }
 }
 
 void aeron_network_publication_on_rttm(
@@ -1245,3 +1253,5 @@ extern bool aeron_network_publication_has_sender_released(aeron_network_publicat
 extern int64_t aeron_network_publication_max_spy_position(aeron_network_publication_t *publication, int64_t snd_pos);
 
 extern bool aeron_network_publication_is_accepting_subscriptions(aeron_network_publication_t *publication);
+
+extern inline int64_t aeron_network_publication_registration_id(aeron_network_publication_t *publication);

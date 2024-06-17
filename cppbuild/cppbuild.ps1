@@ -190,6 +190,12 @@ try
 
     cmake $CmakeExtraArgs $SourceDir
     cmake --build . --config $BuildConfig --parallel $CmakeBuildParallelLevel
+    if (-not $?)
+    {
+        Write-Host "Compile Failed"
+        Exit 1
+    }
+
     ctest -C $BuildConfig --output-on-failure --timeout 2000
 }
 finally

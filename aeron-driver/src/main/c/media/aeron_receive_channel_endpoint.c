@@ -437,7 +437,7 @@ int aeron_receiver_channel_endpoint_send_error_frame(
     aeron_error_t *error = (aeron_error_t *)buffer;
     struct iovec iov;
 
-    const size_t error_message_length = strnlen(invalidation_reason, AERON_ERROR_MAX_MESSAGE_LENGTH);
+    const size_t error_message_length = strnlen(invalidation_reason, AERON_ERROR_MAX_TEXT_LENGTH);
     const size_t frame_length = sizeof(aeron_error_t) + error_message_length;
     error->frame_header.frame_length = (int32_t)frame_length;
     error->frame_header.version = AERON_FRAME_HEADER_VERSION;

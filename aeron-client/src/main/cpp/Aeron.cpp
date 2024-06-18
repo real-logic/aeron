@@ -25,7 +25,7 @@ static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_16(16);
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_100(100);
 
-static const char *AGENT_NAME = "client-conductor";
+static const char *AGENT_NAME = "aeron-client-conductor";
 
 Aeron::Aeron(Context &context) :
     m_context(context.conclude()),

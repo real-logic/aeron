@@ -20,12 +20,6 @@ package io.aeron.version;
  */
 public interface Version
 {
-
-     /**
-      * @return     version string
-      */
-    String version();
-
      /**
       * @return     major version portion
       */

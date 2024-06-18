@@ -39,7 +39,8 @@ public class VersionProcessor extends AbstractProcessor
 {
     private static final String VERSION_IMPL =
         "\n" +
-        "    public String version()\n" +
+        "    @Override\n" +
+        "    public String toString()\n" +
         "    {\n" +
         "        return VERSION;\n" +
         "    }\n" +
@@ -59,7 +60,6 @@ public class VersionProcessor extends AbstractProcessor
         "        return PATCH_VERSION;\n" +
         "    }\n" +
         "\n" +
-        "    @Override\n" +
         "    public String gitSha()\n" +
         "    {\n" +
         "        return GIT_SHA;\n" +

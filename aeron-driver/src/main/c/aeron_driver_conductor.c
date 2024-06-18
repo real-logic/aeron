@@ -3343,7 +3343,7 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
                 goto malformed_command;
             }
 
-            if (length < sizeof(aeron_invalidate_image_command_t) + command->reason_length)
+            if (length < offsetof(aeron_invalidate_image_command_t, reason_text) + command->reason_length)
             {
                 goto malformed_command;
             }
@@ -5677,9 +5677,9 @@ int aeron_driver_conductor_on_invalidate_image(
     aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
         conductor, image_correlation_id);
 
-    if (AERON_ERROR_MAX_MESSAGE_LENGTH < command->reason_length)
+    if (AERON_ERROR_MAX_TEXT_LENGTH < command->reason_length)
     {
-        AERON_SET_ERR(AERON_ERROR_CODE_GENERIC_ERROR, "%s", "Invalidation reason must be 1023 bytes or less");
+        AERON_SET_ERR(AERON_ERROR_CODE_GENERIC_ERROR, "%s", "Invalidation reason_text must be 1023 bytes or less");
         return -1;
     }
 
@@ -5691,9 +5691,9 @@ int aeron_driver_conductor_on_invalidate_image(
         return -1;
     }
 
-    const char *reason = (const char *)(command + 1);
+    const char *reason_text = (const char *)command->reason_text;
     aeron_driver_receiver_proxy_on_invalidate_image(
-        conductor->context->receiver_proxy, image_correlation_id, command->position, command->reason_length, reason);
+        conductor->context->receiver_proxy, image_correlation_id, command->position, command->reason_length, reason_text);
 
     aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
 

@@ -588,7 +588,7 @@ void aeron_driver_receiver_on_invalidate_image(void *clientd, void *item)
     aeron_command_receiver_invalidate_image_t *cmd = item;
     const int64_t correlation_id = cmd->image_correlation_id;
     const int32_t reason_length = cmd->reason_length;
-    const char *reason = (const char *)(cmd + 1);
+    const char *reason = (const char *)cmd->reason_text;
 
     for (size_t i = 0, size = receiver->images.length; i < size; i++)
     {

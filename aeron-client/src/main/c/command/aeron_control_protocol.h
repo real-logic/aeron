@@ -215,6 +215,7 @@ typedef struct aeron_invalidate_image_command_stct
     int64_t image_correlation_id;
     int64_t position;
     int32_t reason_length;
+    uint8_t reason_text[1];
 }
 aeron_invalidate_image_command_t;
 

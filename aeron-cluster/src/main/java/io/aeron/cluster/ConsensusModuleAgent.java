@@ -749,7 +749,6 @@ final class ConsensusModuleAgent
                     leadershipTermId, clusterSessionId, timestamp, buffer, offset, length) > 0)
                 {
                     session.timeOfLastActivityNs(clusterTimeUnit.toNanos(timestamp));
-                    return ControlledFragmentHandler.Action.CONTINUE;
                 }
                 else
                 {

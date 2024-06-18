@@ -463,10 +463,10 @@ class ConsensusModuleAgentTest
             .consensusModuleExtension(consensusModuleExtension);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
-        agent.onExtensionMessage(SCHEMA_ID, 1, null, 0, 0, null);
+        agent.onExtensionMessage(SCHEMA_ID, 1, null, 0, 0, 0, null);
 
         verify(consensusModuleExtension)
-            .onMessage(SCHEMA_ID, 1, null, 0, 0, null);
+            .onMessage(SCHEMA_ID, 1, null, 0, 0, 0, null);
     }
 
     @Test
@@ -478,6 +478,6 @@ class ConsensusModuleAgentTest
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
 
         assertThrows(ClusterException.class,
-            () -> agent.onExtensionMessage(SCHEMA_ID, 0, null, 0, 0, null));
+            () -> agent.onExtensionMessage(SCHEMA_ID, 0, null, 0, 0, 0, null));
     }
 }

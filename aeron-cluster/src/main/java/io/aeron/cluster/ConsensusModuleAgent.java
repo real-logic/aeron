@@ -516,11 +516,13 @@ final class ConsensusModuleAgent
         final DirectBuffer buffer,
         final int offset,
         final int length,
+        final int actingVersion,
         final Header header)
     {
         if (null != consensusModuleExtension)
         {
-            return consensusModuleExtension.onMessage(schemaId, templateId, buffer, offset, length, header);
+            return consensusModuleExtension.onMessage(
+                schemaId, templateId, buffer, offset, length, actingVersion, header);
         }
 
         throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
@@ -1460,11 +1462,13 @@ final class ConsensusModuleAgent
         final DirectBuffer buffer,
         final int offset,
         final int length,
+        final int actingVersion,
         final Header header)
     {
         if (null != consensusModuleExtension)
         {
-            return consensusModuleExtension.onMessage(schemaId, templateId, buffer, offset, length, header);
+            return consensusModuleExtension.onMessage(
+                schemaId, templateId, buffer, offset, length, actingVersion, header);
         }
 
         throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);

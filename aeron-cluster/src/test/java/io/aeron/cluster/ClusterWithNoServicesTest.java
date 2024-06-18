@@ -138,6 +138,7 @@ class ClusterWithNoServicesTest
             final DirectBuffer buffer,
             final int offset,
             final int length,
+            final int actingVersion,
             final Header header)
         {
             return null;

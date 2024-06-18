@@ -73,9 +73,11 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 
         final int schemaId = messageHeaderDecoder.schemaId();
         final int templateId = messageHeaderDecoder.templateId();
+        final int actingVersion = messageHeaderDecoder.version();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            return consensusModuleAgent.onExtensionMessage(schemaId, templateId, buffer, offset, length, header);
+            return consensusModuleAgent.onExtensionMessage(
+                schemaId, templateId, buffer, offset, length, actingVersion, header);
         }
 
         if (templateId == SessionMessageHeaderDecoder.TEMPLATE_ID)
@@ -84,7 +86,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                 buffer,
                 offset + MessageHeaderDecoder.ENCODED_LENGTH,
                 messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
+                actingVersion);
 
             return consensusModuleAgent.onIngressMessage(
                 sessionMessageHeaderDecoder.leadershipTermId(),
@@ -102,7 +104,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+                    actingVersion);
 
                 final String responseChannel = connectRequestDecoder.responseChannel();
                 final int credentialsLength = connectRequestDecoder.encodedCredentialsLength();
@@ -128,7 +130,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+                    actingVersion);
 
                 consensusModuleAgent.onSessionClose(
                     closeRequestDecoder.leadershipTermId(),
@@ -142,7 +144,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+                    actingVersion);
 
                 consensusModuleAgent.onSessionKeepAlive(
                     sessionKeepAliveDecoder.leadershipTermId(),
@@ -156,7 +158,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+                    actingVersion);
 
                 final byte[] credentials = new byte[challengeResponseDecoder.encodedCredentialsLength()];
                 challengeResponseDecoder.getEncodedCredentials(credentials, 0, credentials.length);
@@ -174,7 +176,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+                    actingVersion);
 
                 final int payloadOffset = adminRequestDecoder.offset() +
                     adminRequestDecoder.encodedLength() +

@@ -81,7 +81,8 @@ class IngressAdapterTest
                     .version(0);
             }, 0,  // no wrapping
             (ConsensusModuleAgentExpectation)(a, buffer) ->
-                a.onExtensionMessage(17, 19, buffer, 0, MessageHeaderDecoder.ENCODED_LENGTH, null)),
+                a.onExtensionMessage(
+                    17, 19, buffer, 0, MessageHeaderDecoder.ENCODED_LENGTH, 0, null)),
         Arguments.of(
             "SessionMessageHeaderDecoder",
             (Consumer<MutableDirectBuffer>)(buffer) ->

@@ -196,9 +196,11 @@ final class LogAdapter implements ControlledFragmentHandler
 
         final int schemaId = messageHeaderDecoder.schemaId();
         final int templateId = messageHeaderDecoder.templateId();
+        final int actingVersion = messageHeaderDecoder.version();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            return consensusModuleAgent.onReplayExtensionMessage(schemaId, templateId, buffer, offset, length, header);
+            return consensusModuleAgent.onReplayExtensionMessage(
+                schemaId, templateId, buffer, offset, length, actingVersion, header);
         }
 
         if (templateId == SessionMessageHeaderDecoder.TEMPLATE_ID)
@@ -207,7 +209,7 @@ final class LogAdapter implements ControlledFragmentHandler
                 buffer,
                 offset + MessageHeaderDecoder.ENCODED_LENGTH,
                 messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
+                actingVersion);
 
             consensusModuleAgent.onReplaySessionMessage(
                 sessionHeaderDecoder.clusterSessionId(),
@@ -223,7 +225,7 @@ final class LogAdapter implements ControlledFragmentHandler
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+                    actingVersion);
 
                 consensusModuleAgent.onReplayTimerEvent(
                     timerEventDecoder.correlationId());
@@ -234,7 +236,7 @@ final class LogAdapter implements ControlledFragmentHandler
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+                    actingVersion);
 
                 consensusModuleAgent.onReplaySessionOpen(
                     header.position(),
@@ -250,7 +252,7 @@ final class LogAdapter implements ControlledFragmentHandler
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+                    actingVersion);
 
                 consensusModuleAgent.onReplaySessionClose(
                     sessionCloseEventDecoder.clusterSessionId(),
@@ -262,7 +264,7 @@ final class LogAdapter implements ControlledFragmentHandler
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+                    actingVersion);
 
                 final int flags = ClusterActionRequestDecoder.flagsNullValue() != clusterActionRequestDecoder.flags() ?
                     clusterActionRequestDecoder.flags() : ConsensusModule.CLUSTER_ACTION_FLAGS_DEFAULT;
@@ -276,7 +278,7 @@ final class LogAdapter implements ControlledFragmentHandler
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+                    actingVersion);
 
                 consensusModuleAgent.onReplayNewLeadershipTermEvent(
                     newLeadershipTermEventDecoder.leadershipTermId(),

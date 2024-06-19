@@ -18,6 +18,7 @@ package io.aeron.cluster.client;
 import io.aeron.Subscription;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.Header;
+
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -36,14 +37,44 @@ class EgressAdapterTest
     private final AdminResponseEncoder adminResponseEncoder = new AdminResponseEncoder();
 
     @Test
-    void onFragmentShouldThrowClusterExceptionOnInvalidSchemaId()
+    void onFragmentShouldDelegateToEgressListenerOnUnknownSchemaId()
     {
-        final EgressAdapter adapter = new EgressAdapter(mock(EgressListener.class), 42, mock(Subscription.class), 5);
+        final int schemaId = 17;
+        final int templateId = 19;
+        messageHeaderEncoder
+            .wrap(buffer, 0)
+            .schemaId(schemaId)
+            .templateId(templateId);
 
+        final EgressListener egressListener = mock(EgressListener.class);
+        final Header header = new Header(0, 0);
+        final EgressAdapter adapter = new EgressAdapter(egressListener, 0, mock(Subscription.class), 3);
+
+        adapter.onFragment(buffer, 0, MessageHeaderDecoder.ENCODED_LENGTH, header);
+
+        verify(egressListener).onExtensionMessage(
+            schemaId,
+            templateId,
+            0,
+            buffer,
+            0,
+            MessageHeaderDecoder.ENCODED_LENGTH);
+        verifyNoMoreInteractions(egressListener);
+    }
+
+    @Test
+    void defaultEgressListenerBeahviourShouldThrowClusterExceptionOnUnknownSchemaId()
+    {
+        final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
+        {
+        };
+        final EgressAdapter adapter =
+            new EgressAdapter(listener, 42, mock(Subscription.class), 5);
         final ClusterException exception = assertThrows(ClusterException.class,
             () -> adapter.onFragment(buffer, 0, 64, new Header(0, 0)));
         assertEquals("ERROR - expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=0",
             exception.getMessage());
+
     }
 
     @Test

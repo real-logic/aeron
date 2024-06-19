@@ -18,6 +18,7 @@ package io.aeron.cluster.client;
 import io.aeron.cluster.codecs.AdminRequestType;
 import io.aeron.cluster.codecs.AdminResponseCode;
 import io.aeron.cluster.codecs.EventCode;
+import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
@@ -99,5 +100,26 @@ public interface EgressListener
         int payloadOffset,
         int payloadLength)
     {
+    }
+
+    /**
+     * Message of unknown schema to Egress adapter that can be handled by specific listener impl
+     *
+     * @param schemaId          schema id
+     * @param templateId        template id
+     * @param actingVersion     acting version
+     * @param buffer            message buffer
+     * @param offset            message offset
+     * @param length            message length
+     */
+    default void onExtensionMessage(
+        final int schemaId,
+        final int templateId,
+        final int actingVersion,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
+    {
+        throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
     }
 }

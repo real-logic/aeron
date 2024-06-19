@@ -82,7 +82,9 @@ public final class EgressAdapter implements FragmentHandler
         final int schemaId = messageHeaderDecoder.schemaId();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+            final int templateId = messageHeaderDecoder.templateId();
+            final int actingVersion = messageHeaderDecoder.version();
+            listener.onExtensionMessage(schemaId, templateId, actingVersion, buffer, offset, length);
         }
 
         final int templateId = messageHeaderDecoder.templateId();

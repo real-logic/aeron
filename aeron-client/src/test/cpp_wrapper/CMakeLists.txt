@@ -39,6 +39,7 @@ endfunction()
 
 if (AERON_UNIT_TESTS)
     aeron_client_wrapper_test(systemTest SystemTest.cpp)
+    aeron_client_wrapper_test(wrapperSystemTest WrapperSystemTest.cpp)
     aeron_client_native_test(systemTest SystemTest.cpp)
 
     aeron_client_wrapper_test(pubSubTest PubSubTest.cpp)

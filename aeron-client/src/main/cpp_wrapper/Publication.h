@@ -439,7 +439,7 @@ public:
             {
                 throw aeron::util::IllegalStateException(
                     "length overflow: " + std::to_string(length) + " + " + std::to_string(it->capacity()) +
-                    " > " + std::to_string(length + it->capacity()),
+                        " > " + std::to_string(length + it->capacity()),
                     SOURCEINFO);
             }
 
@@ -486,11 +486,32 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    template<std::size_t N> std::int64_t offer(
+    template<std::size_t N>
+    std::int64_t offer(
         const std::array<concurrent::AtomicBuffer, N> &buffers,
         const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
     {
         return offer(buffers.begin(), buffers.end(), reservedValueSupplier);
+    }
+
+    std::int64_t offer(
+        const std::uint8_t *buffer,
+        std::size_t length,
+        const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
+    {
+        std::int64_t position = aeron_publication_offer(
+            m_publication,
+            buffer,
+            static_cast<std::size_t>(length),
+            reservedValueSupplierCallback,
+            (void *)&reservedValueSupplier);
+
+        if (AERON_PUBLICATION_ERROR == position)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return position;
     }
 
     /**

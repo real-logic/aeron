@@ -277,6 +277,7 @@ void aeron_driver_conductor_proxy_on_publication_error(
     error->base.item = NULL;
     error->registration_id = registration_id;
     error->error_code = error_code;
+    error->error_length = error_length;
     memcpy(error->error_text, error_text, (size_t)error_length);
     aeron_str_null_terminate(error->error_text, error_length);
 

@@ -494,6 +494,15 @@ public:
         return offer(buffers.begin(), buffers.end(), reservedValueSupplier);
     }
 
+    /**
+     * Non-blocking publish of a simple const data buffer and length containing a message
+     *
+     * @param buffer contain the message.
+     * @param length of the message.
+     * @param reservedValueSupplier for the frame.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     */
     std::int64_t offer(
         const std::uint8_t *buffer,
         std::size_t length,

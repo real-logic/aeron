@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.concurrent.IdleStrategy;
 
@@ -86,4 +87,14 @@ public interface ConsensusModuleControl
      * @param timeNs            time of last activity in nanoseconds.
      */
     void updateLastActivityNs(long clusterSessionId, long timeNs);
+
+    /**
+     * Get the response {@link Publication} for a given cluster session id. This is the stream to which responses
+     * for sessions are sent.
+     *
+     * @param clusterSessionId of the cluster session for which the response {@link Publication is required}.
+     *
+     * @return the response {@link Publication} for a given cluster session id, null if not active.
+     */
+    Publication responsePublication(long clusterSessionId);
 }

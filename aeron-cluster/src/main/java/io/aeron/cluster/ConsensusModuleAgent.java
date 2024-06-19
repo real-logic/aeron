@@ -486,10 +486,24 @@ final class ConsensusModuleAgent
     public void updateLastActivityNs(final long clusterSessionId, final long timeNs)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session)
+        if (null != session && session.state() == ClusterSession.State.OPEN)
         {
             session.timeOfLastActivityNs(timeNs);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Publication responsePublication(final long clusterSessionId)
+    {
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
+        if (null != session)
+        {
+            return session.responsePublication();
+        }
+
+        return null;
     }
 
     public void onLoadBeginSnapshot(
@@ -604,7 +618,7 @@ final class ConsensusModuleAgent
         onScheduleTimer(correlationId, deadline);
     }
 
-    public long onSessionConnect(
+    public void onSessionConnect(
         final long correlationId,
         final int responseStreamId,
         final int version,
@@ -612,11 +626,8 @@ final class ConsensusModuleAgent
         final byte[] encodedCredentials)
     {
         final long clusterSessionId = Cluster.Role.LEADER == role ? nextSessionId++ : NULL_VALUE;
-
         final ClusterSession session = new ClusterSession(
-            clusterSessionId,
-            responseStreamId,
-            refineResponseChannel(responseChannel));
+            clusterSessionId, responseStreamId, refineResponseChannel(responseChannel));
 
         session.asyncConnect(aeron);
         final long now = clusterClock.time();
@@ -646,7 +657,6 @@ final class ConsensusModuleAgent
                 pendingUserSessions.add(session);
             }
         }
-        return session.id();
     }
 
     void onSessionClose(final long leadershipTermId, final long clusterSessionId)

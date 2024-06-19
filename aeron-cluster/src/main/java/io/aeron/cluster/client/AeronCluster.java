@@ -686,103 +686,130 @@ public final class AeronCluster implements AutoCloseable
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
+        final int schemaId = messageHeaderDecoder.schemaId();
         final int templateId = messageHeaderDecoder.templateId();
-        if (SessionMessageHeaderDecoder.TEMPLATE_ID == templateId)
+
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            sessionMessageHeaderDecoder.wrap(
+            egressListener.onExtensionMessage(
+                schemaId,
+                templateId,
+                messageHeaderDecoder.version(),
                 buffer,
                 offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
+                length - MessageHeaderDecoder.ENCODED_LENGTH);
+        }
 
-            final long sessionId = sessionMessageHeaderDecoder.clusterSessionId();
-            if (sessionId == clusterSessionId)
+        switch (templateId)
+        {
+            case SessionMessageHeaderDecoder.TEMPLATE_ID:
             {
-                egressListener.onMessage(
-                    sessionId,
-                    sessionMessageHeaderDecoder.timestamp(),
+                sessionMessageHeaderDecoder.wrap(
                     buffer,
-                    offset + SESSION_HEADER_LENGTH,
-                    length - SESSION_HEADER_LENGTH,
-                    header);
-            }
-        }
-        else if (NewLeaderEventDecoder.TEMPLATE_ID == templateId)
-        {
-            newLeaderEventDecoder.wrap(
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
 
-            final long sessionId = newLeaderEventDecoder.clusterSessionId();
-            if (sessionId == clusterSessionId)
-            {
-                egressImage = (Image)header.context();
-                onNewLeader(
-                    sessionId,
-                    newLeaderEventDecoder.leadershipTermId(),
-                    newLeaderEventDecoder.leaderMemberId(),
-                    newLeaderEventDecoder.ingressEndpoints());
-            }
-        }
-        else if (SessionEventDecoder.TEMPLATE_ID == templateId)
-        {
-            sessionEventDecoder.wrap(
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
-
-            final long sessionId = sessionEventDecoder.clusterSessionId();
-            if (sessionId == clusterSessionId)
-            {
-                final EventCode code = sessionEventDecoder.code();
-                if (EventCode.CLOSED == code)
+                final long sessionId = sessionMessageHeaderDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
                 {
-                    isClosed = true;
+                    egressListener.onMessage(
+                        sessionId,
+                        sessionMessageHeaderDecoder.timestamp(),
+                        buffer,
+                        offset + SESSION_HEADER_LENGTH,
+                        length - SESSION_HEADER_LENGTH,
+                        header);
                 }
-
-                egressListener.onSessionEvent(
-                    sessionEventDecoder.correlationId(),
-                    sessionId,
-                    sessionEventDecoder.leadershipTermId(),
-                    sessionEventDecoder.leaderMemberId(),
-                    code,
-                    sessionEventDecoder.detail());
+                break;
             }
-        }
-        else if (AdminResponseDecoder.TEMPLATE_ID == templateId)
-        {
-            adminResponseDecoder.wrap(
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
 
-            final long sessionId = adminResponseDecoder.clusterSessionId();
-            if (sessionId == clusterSessionId)
+            case SessionEventDecoder.TEMPLATE_ID:
             {
-                final long correlationId = adminResponseDecoder.correlationId();
-                final AdminRequestType requestType = adminResponseDecoder.requestType();
-                final AdminResponseCode responseCode = adminResponseDecoder.responseCode();
-                final String message = adminResponseDecoder.message();
-                final int payloadOffset = adminResponseDecoder.offset() +
-                    AdminResponseDecoder.BLOCK_LENGTH +
-                    AdminResponseDecoder.messageHeaderLength() +
-                    message.length() +
-                    AdminResponseDecoder.payloadHeaderLength();
-                final int payloadLength = adminResponseDecoder.payloadLength();
-                egressListener.onAdminResponse(
-                    sessionId,
-                    correlationId,
-                    requestType,
-                    responseCode,
-                    message,
+                sessionEventDecoder.wrap(
                     buffer,
-                    payloadOffset,
-                    payloadLength);
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final long sessionId = sessionEventDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
+                {
+                    final EventCode code = sessionEventDecoder.code();
+                    if (EventCode.CLOSED == code)
+                    {
+                        isClosed = true;
+                    }
+
+                    egressListener.onSessionEvent(
+                        sessionEventDecoder.correlationId(),
+                        sessionId,
+                        sessionEventDecoder.leadershipTermId(),
+                        sessionEventDecoder.leaderMemberId(),
+                        code,
+                        sessionEventDecoder.detail());
+                }
+                break;
             }
+
+            case NewLeaderEventDecoder.TEMPLATE_ID:
+            {
+                newLeaderEventDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final long sessionId = newLeaderEventDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
+                {
+                    egressImage = (Image)header.context();
+                    onNewLeader(
+                        sessionId,
+                        newLeaderEventDecoder.leadershipTermId(),
+                        newLeaderEventDecoder.leaderMemberId(),
+                        newLeaderEventDecoder.ingressEndpoints());
+                }
+                break;
+            }
+
+            case AdminResponseDecoder.TEMPLATE_ID:
+            {
+                adminResponseDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final long sessionId = adminResponseDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
+                {
+                    final long correlationId = adminResponseDecoder.correlationId();
+                    final AdminRequestType requestType = adminResponseDecoder.requestType();
+                    final AdminResponseCode responseCode = adminResponseDecoder.responseCode();
+                    final String message = adminResponseDecoder.message();
+                    final int payloadOffset = adminResponseDecoder.offset() +
+                        AdminResponseDecoder.BLOCK_LENGTH +
+                        AdminResponseDecoder.messageHeaderLength() +
+                        message.length() +
+                        AdminResponseDecoder.payloadHeaderLength();
+                    final int payloadLength = adminResponseDecoder.payloadLength();
+
+                    egressListener.onAdminResponse(
+                        sessionId,
+                        correlationId,
+                        requestType,
+                        responseCode,
+                        message,
+                        buffer,
+                        payloadOffset,
+                        payloadLength);
+                }
+                break;
+            }
+
+            default:
+                break;
         }
     }
 
@@ -792,105 +819,132 @@ public final class AeronCluster implements AutoCloseable
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
+        final int schemaId = messageHeaderDecoder.schemaId();
         final int templateId = messageHeaderDecoder.templateId();
-        if (SessionMessageHeaderDecoder.TEMPLATE_ID == templateId)
+
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            sessionMessageHeaderDecoder.wrap(
+            return controlledEgressListener.onExtensionMessage(
+                schemaId,
+                templateId,
+                messageHeaderDecoder.version(),
                 buffer,
                 offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
+                length - MessageHeaderDecoder.ENCODED_LENGTH);
+        }
 
-            final long sessionId = sessionMessageHeaderDecoder.clusterSessionId();
-            if (sessionId == clusterSessionId)
+        switch (templateId)
+        {
+            case SessionMessageHeaderDecoder.TEMPLATE_ID:
             {
-                return controlledEgressListener.onMessage(
-                    sessionId,
-                    sessionMessageHeaderDecoder.timestamp(),
+                sessionMessageHeaderDecoder.wrap(
                     buffer,
-                    offset + SESSION_HEADER_LENGTH,
-                    length - SESSION_HEADER_LENGTH,
-                    header);
-            }
-        }
-        else if (NewLeaderEventDecoder.TEMPLATE_ID == templateId)
-        {
-            newLeaderEventDecoder.wrap(
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
 
-            final long sessionId = newLeaderEventDecoder.clusterSessionId();
-            if (sessionId == clusterSessionId)
-            {
-                egressImage = (Image)header.context();
-                onNewLeader(
-                    sessionId,
-                    newLeaderEventDecoder.leadershipTermId(),
-                    newLeaderEventDecoder.leaderMemberId(),
-                    newLeaderEventDecoder.ingressEndpoints());
-
-                return ControlledFragmentHandler.Action.COMMIT;
-            }
-        }
-        else if (SessionEventDecoder.TEMPLATE_ID == templateId)
-        {
-            sessionEventDecoder.wrap(
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
-
-            final long sessionId = sessionEventDecoder.clusterSessionId();
-            if (sessionId == clusterSessionId)
-            {
-                final EventCode code = sessionEventDecoder.code();
-                if (EventCode.CLOSED == code)
+                final long sessionId = sessionMessageHeaderDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
                 {
-                    isClosed = true;
+                    return controlledEgressListener.onMessage(
+                        sessionId,
+                        sessionMessageHeaderDecoder.timestamp(),
+                        buffer,
+                        offset + SESSION_HEADER_LENGTH,
+                        length - SESSION_HEADER_LENGTH,
+                        header);
                 }
-
-                controlledEgressListener.onSessionEvent(
-                    sessionEventDecoder.correlationId(),
-                    sessionId,
-                    sessionEventDecoder.leadershipTermId(),
-                    sessionEventDecoder.leaderMemberId(),
-                    code,
-                    sessionEventDecoder.detail());
+                break;
             }
-        }
-        else if (AdminResponseDecoder.TEMPLATE_ID == templateId)
-        {
-            adminResponseDecoder.wrap(
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
 
-            final long sessionId = adminResponseDecoder.clusterSessionId();
-            if (sessionId == clusterSessionId)
+            case SessionEventDecoder.TEMPLATE_ID:
             {
-                final long correlationId = adminResponseDecoder.correlationId();
-                final AdminRequestType requestType = adminResponseDecoder.requestType();
-                final AdminResponseCode responseCode = adminResponseDecoder.responseCode();
-                final String message = adminResponseDecoder.message();
-                final int payloadOffset = adminResponseDecoder.offset() +
-                    AdminResponseDecoder.BLOCK_LENGTH +
-                    AdminResponseDecoder.messageHeaderLength() +
-                    message.length() +
-                    AdminResponseDecoder.payloadHeaderLength();
-                final int payloadLength = adminResponseDecoder.payloadLength();
-                controlledEgressListener.onAdminResponse(
-                    sessionId,
-                    correlationId,
-                    requestType,
-                    responseCode,
-                    message,
+                sessionEventDecoder.wrap(
                     buffer,
-                    payloadOffset,
-                    payloadLength);
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final long sessionId = sessionEventDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
+                {
+                    final EventCode code = sessionEventDecoder.code();
+                    if (EventCode.CLOSED == code)
+                    {
+                        isClosed = true;
+                    }
+
+                    controlledEgressListener.onSessionEvent(
+                        sessionEventDecoder.correlationId(),
+                        sessionId,
+                        sessionEventDecoder.leadershipTermId(),
+                        sessionEventDecoder.leaderMemberId(),
+                        code,
+                        sessionEventDecoder.detail());
+                }
+                break;
             }
+
+            case NewLeaderEventDecoder.TEMPLATE_ID:
+            {
+                newLeaderEventDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final long sessionId = newLeaderEventDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
+                {
+                    egressImage = (Image)header.context();
+                    onNewLeader(
+                        sessionId,
+                        newLeaderEventDecoder.leadershipTermId(),
+                        newLeaderEventDecoder.leaderMemberId(),
+                        newLeaderEventDecoder.ingressEndpoints());
+
+                    return ControlledFragmentHandler.Action.COMMIT;
+                }
+                break;
+            }
+
+            case AdminResponseDecoder.TEMPLATE_ID:
+            {
+                adminResponseDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final long sessionId = adminResponseDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
+                {
+                    final long correlationId = adminResponseDecoder.correlationId();
+                    final AdminRequestType requestType = adminResponseDecoder.requestType();
+                    final AdminResponseCode responseCode = adminResponseDecoder.responseCode();
+                    final String message = adminResponseDecoder.message();
+                    final int payloadOffset = adminResponseDecoder.offset() +
+                        AdminResponseDecoder.BLOCK_LENGTH +
+                        AdminResponseDecoder.messageHeaderLength() +
+                        message.length() +
+                        AdminResponseDecoder.payloadHeaderLength();
+                    final int payloadLength = adminResponseDecoder.payloadLength();
+
+                    controlledEgressListener.onAdminResponse(
+                        sessionId,
+                        correlationId,
+                        requestType,
+                        responseCode,
+                        message,
+                        buffer,
+                        payloadOffset,
+                        payloadLength);
+                }
+                break;
+            }
+
+            default:
+                break;
         }
 
         return ControlledFragmentHandler.Action.CONTINUE;
@@ -1896,8 +1950,8 @@ public final class AeronCluster implements AutoCloseable
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
                 final boolean isConnected = null != egressSubscription && egressSubscription.isConnected();
-                final String endpointPort =
-                    null != egressSubscription ? egressSubscription.tryResolveChannelEndpointPort() : "<unknown>";
+                final String endpointPort = null != egressSubscription ?
+                    egressSubscription.tryResolveChannelEndpointPort() : "<unknown>";
                 final TimeoutException ex = new TimeoutException(
                     "cluster connect timeout: state=" + state +
                     " messageTimeout=" + ctx.messageTimeoutNs() + "ns" +

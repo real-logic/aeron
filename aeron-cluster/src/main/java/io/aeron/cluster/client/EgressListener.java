@@ -103,14 +103,14 @@ public interface EgressListener
     }
 
     /**
-     * Message of unknown schema to Egress adapter that can be handled by specific listener impl
+     * Message of unknown schema to egress that can be handled by specific listener implementation.
      *
-     * @param schemaId          schema id
-     * @param templateId        template id
-     * @param actingVersion     acting version
-     * @param buffer            message buffer
-     * @param offset            message offset
-     * @param length            message length
+     * @param schemaId      schema id
+     * @param templateId    template id
+     * @param actingVersion acting version
+     * @param buffer        message buffer
+     * @param offset        message offset
+     * @param length        message length
      */
     default void onExtensionMessage(
         final int schemaId,

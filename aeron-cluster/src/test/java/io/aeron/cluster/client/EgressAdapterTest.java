@@ -50,20 +50,20 @@ class EgressAdapterTest
         final Header header = new Header(0, 0);
         final EgressAdapter adapter = new EgressAdapter(egressListener, 0, mock(Subscription.class), 3);
 
-        adapter.onFragment(buffer, 0, MessageHeaderDecoder.ENCODED_LENGTH, header);
+        adapter.onFragment(buffer, 0, MessageHeaderDecoder.ENCODED_LENGTH * 2, header);
 
         verify(egressListener).onExtensionMessage(
             schemaId,
             templateId,
             0,
             buffer,
-            0,
+            MessageHeaderDecoder.ENCODED_LENGTH,
             MessageHeaderDecoder.ENCODED_LENGTH);
         verifyNoMoreInteractions(egressListener);
     }
 
     @Test
-    void defaultEgressListenerBeahviourShouldThrowClusterExceptionOnUnknownSchemaId()
+    void defaultEgressListenerBehaviourShouldThrowClusterExceptionOnUnknownSchemaId()
     {
         final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
         {

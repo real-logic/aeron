@@ -79,40 +79,45 @@ public final class EgressAdapter implements FragmentHandler
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
+        final int templateId = messageHeaderDecoder.templateId();
         final int schemaId = messageHeaderDecoder.schemaId();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            final int templateId = messageHeaderDecoder.templateId();
-            final int actingVersion = messageHeaderDecoder.version();
-            listener.onExtensionMessage(schemaId, templateId, actingVersion, buffer, offset, length);
-        }
-
-        final int templateId = messageHeaderDecoder.templateId();
-        if (SessionMessageHeaderDecoder.TEMPLATE_ID == templateId)
-        {
-            sessionMessageHeaderDecoder.wrap(
+            listener.onExtensionMessage(
+                schemaId,
+                templateId,
+                messageHeaderDecoder.version(),
                 buffer,
                 offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
-
-            final long sessionId = sessionMessageHeaderDecoder.clusterSessionId();
-            if (sessionId == clusterSessionId)
-            {
-                listener.onMessage(
-                    sessionId,
-                    sessionMessageHeaderDecoder.timestamp(),
-                    buffer,
-                    offset + SESSION_HEADER_LENGTH,
-                    length - SESSION_HEADER_LENGTH,
-                    header);
-            }
+                length - MessageHeaderDecoder.ENCODED_LENGTH);
 
             return;
         }
 
         switch (templateId)
         {
+            case SessionMessageHeaderDecoder.TEMPLATE_ID:
+            {
+                sessionMessageHeaderDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final long sessionId = sessionMessageHeaderDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
+                {
+                    listener.onMessage(
+                        sessionId,
+                        sessionMessageHeaderDecoder.timestamp(),
+                        buffer,
+                        offset + SESSION_HEADER_LENGTH,
+                        length - SESSION_HEADER_LENGTH,
+                        header);
+                }
+                break;
+            }
+
             case SessionEventDecoder.TEMPLATE_ID:
             {
                 sessionEventDecoder.wrap(
@@ -186,9 +191,11 @@ public final class EgressAdapter implements FragmentHandler
                         payloadOffset,
                         payloadLength);
                 }
-
                 break;
             }
+
+            default:
+                break;
         }
     }
 }

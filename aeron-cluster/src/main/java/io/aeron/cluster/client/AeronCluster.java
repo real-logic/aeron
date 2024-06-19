@@ -959,8 +959,8 @@ public final class AeronCluster implements AutoCloseable
 
         while (true)
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 sessionCloseRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -2112,12 +2112,12 @@ public final class AeronCluster implements AutoCloseable
 
         private void sendMessage()
         {
-            final long result = ingressPublication.offer(buffer, 0, messageLength);
-            if (result > 0)
+            final long position = ingressPublication.offer(buffer, 0, messageLength);
+            if (position > 0)
             {
                 state(State.POLL_RESPONSE);
             }
-            else if (Publication.CLOSED == result || Publication.NOT_CONNECTED == result)
+            else if (Publication.CLOSED == position || Publication.NOT_CONNECTED == position)
             {
                 throw new ClusterException("unexpected loss of connection to cluster");
             }

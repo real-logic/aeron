@@ -269,6 +269,11 @@ final class ClientConductor implements Agent
         }
     }
 
+    void onPublicationError(final long registrationId, final ErrorCode errorCode, final String errorText)
+    {
+        ctx.errorFrameHandler().onPublicationError(registrationId, errorCode.value(), errorText);
+    }
+
     void onNewPublication(
         final long correlationId,
         final long registrationId,

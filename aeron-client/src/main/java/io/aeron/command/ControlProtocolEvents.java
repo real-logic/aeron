@@ -168,4 +168,9 @@ public class ControlProtocolEvents
      * @since 1.45.0
      */
     public static final int ON_STATIC_COUNTER = 0x0F0B;
+
+    /**
+     * Inform clients of error frame received by publication
+     */
+    public static final int ON_PUBLICATION_ERROR = 0x0F0C;
 }

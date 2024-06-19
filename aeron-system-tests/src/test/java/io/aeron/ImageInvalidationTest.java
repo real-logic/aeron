@@ -27,6 +27,7 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -77,17 +78,51 @@ public class ImageInvalidationTest
         return driver;
     }
 
+    private static final class ErrorFrame
+    {
+        private final long registrationId;
+        private final int errorCode;
+        private final String errorText;
+
+        private ErrorFrame(final long registrationId, final int errorCode, final String errorText)
+        {
+            this.registrationId = registrationId;
+            this.errorCode = errorCode;
+            this.errorText = errorText;
+        }
+    }
+
+    private static final class QueuedErrorFrameHandler implements ErrorFrameHandler
+    {
+        private final OneToOneConcurrentArrayQueue<ErrorFrame> errorFrameQueue =
+            new OneToOneConcurrentArrayQueue<>(512);
+
+        public void onPublicationError(final long registrationId, final int errorCode, final String errorText)
+        {
+            errorFrameQueue.offer(new ErrorFrame(registrationId, errorCode, errorText));
+        }
+
+        ErrorFrame poll()
+        {
+            return errorFrameQueue.poll();
+        }
+    }
+
     @Test
     @InterruptAfter(10)
     @SlowTest
     void shouldInvalidateSubscriptionsImage() throws IOException
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("Not yet implemented");
+
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 
         final TestMediaDriver driver = launch();
+        final QueuedErrorFrameHandler errorFrameHandler = new QueuedErrorFrameHandler();
 
         final Aeron.Context ctx = new Aeron.Context()
-            .aeronDirectoryName(driver.aeronDirectoryName());
+            .aeronDirectoryName(driver.aeronDirectoryName())
+            .errorFrameHandler(errorFrameHandler);
 
         final AtomicBoolean imageUnavailable = new AtomicBoolean(false);
 
@@ -140,6 +175,15 @@ public class ImageInvalidationTest
             {
                 Tests.yield();
             }
+
+            ErrorFrame errorFrame;
+            while (null == (errorFrame = errorFrameHandler.poll()))
+            {
+                Tests.yield();
+            }
+
+            assertEquals(reason, errorFrame.errorText);
+            assertEquals(pub.registrationId(), errorFrame.registrationId);
 
             while (!imageUnavailable.get())
             {

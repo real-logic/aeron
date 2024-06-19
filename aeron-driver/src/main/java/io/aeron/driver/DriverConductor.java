@@ -390,6 +390,7 @@ public final class DriverConductor implements Agent
     void onPublicationError(final long registrationId, final int errorCode, final String errorMessage)
     {
         recordError(new AeronException(errorMessage, AeronException.Category.WARN));
+        clientProxy.onPublicationErrorFrame(registrationId, errorCode, errorMessage);
     }
 
     void onReResolveEndpoint(

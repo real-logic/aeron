@@ -253,6 +253,10 @@ public final class DriverConductorProxy
         {
             driverConductor.onPublicationError(registrationId, errorCode, errorMessage);
         }
+        else
+        {
+            offer(() -> driverConductor.onPublicationError(registrationId, errorCode, errorMessage));
+        }
     }
 
     private void offer(final Runnable cmd)

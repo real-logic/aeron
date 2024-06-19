@@ -2568,6 +2568,23 @@ void on_error(
     aeron_driver_conductor_client_transmit(conductor, AERON_RESPONSE_ON_ERROR, response, response_length);
 }
 
+void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
+{
+    uint8_t buffer[sizeof(aeron_publication_error_response_t) + (AERON_ERROR_MAX_TEXT_LENGTH - 1)];
+    aeron_driver_conductor_t *conductor = clientd;
+    aeron_command_publication_error_t *error = item;
+    aeron_driver_conductor_log_explicit_error(conductor, error->error_code, (const char *)error->error_text);
+
+    aeron_publication_error_response_t *response = (aeron_publication_error_response_t *)buffer;
+    response->error_code = error->error_code;
+    response->registration_id = error->registration_id;
+    response->error_message_length = error->error_length;
+    memcpy(response->error_message, error->error_text, error->error_length);
+    size_t response_length = offsetof(aeron_publication_error_response_t, error_message) + response->error_message_length;
+
+    aeron_driver_conductor_client_transmit(conductor, AERON_RESPONSE_ON_PUBLICATION_ERROR, response, response_length);
+}
+
 void aeron_driver_conductor_on_error(
     aeron_driver_conductor_t *conductor,
     int32_t errcode,
@@ -6065,13 +6082,6 @@ void aeron_driver_conductor_on_response_connected(void *clientd, void *item)
             aeron_publication_image_remove_response_session_id(publication_image);
         }
     }
-}
-
-void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
-{
-    aeron_driver_conductor_t *conductor = clientd;
-    aeron_command_publication_error_t *error = item;
-    aeron_driver_conductor_log_explicit_error(conductor, error->error_code, (const char *)error->error_text);
 }
 
 void aeron_driver_conductor_on_release_resource(void *clientd, void *item)

@@ -49,6 +49,7 @@
 #define AERON_RESPONSE_ON_UNAVAILABLE_COUNTER (0x0F09)
 #define AERON_RESPONSE_ON_CLIENT_TIMEOUT (0x0F0A)
 #define AERON_RESPONSE_ON_STATIC_COUNTER (0x0F0B)
+#define AERON_RESPONSE_ON_PUBLICATION_ERROR (0x0F0C)
 
 /* error codes */
 #define AERON_ERROR_CODE_UNKNOWN_CODE_VALUE (-1)
@@ -218,6 +219,15 @@ typedef struct aeron_invalidate_image_command_stct
     uint8_t reason_text[1];
 }
 aeron_invalidate_image_command_t;
+
+struct aeron_publication_error_response_stct
+{
+    int64_t registration_id;
+    int32_t error_code;
+    int32_t error_message_length;
+    uint8_t error_message[1];
+};
+typedef struct aeron_publication_error_response_stct aeron_publication_error_response_t;
 
 #pragma pack(pop)
 

@@ -50,8 +50,8 @@ class EgressPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = session.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = session.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 sessionEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -86,8 +86,8 @@ class EgressPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = session.offer(buffer, 0, length);
-            if (result > 0)
+            final long position = session.offer(buffer, 0, length);
+            if (position > 0)
             {
                 return true;
             }
@@ -111,8 +111,8 @@ class EgressPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = session.tryClaim(length, bufferClaim);
-            if (result > 0)
+            final long position = session.tryClaim(length, bufferClaim);
+            if (position > 0)
             {
                 newLeaderEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -152,8 +152,8 @@ class EgressPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = session.offer(buffer, 0, length);
-            if (result > 0)
+            final long position = session.offer(buffer, 0, length);
+            if (position > 0)
             {
                 return true;
             }

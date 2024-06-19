@@ -148,4 +148,9 @@ public class ControlProtocolEvents
      * Inform clients of client timeout.
      */
     public static final int ON_CLIENT_TIMEOUT = 0x0F0A;
+
+    /**
+     * Inform clients of error frame received by publication
+     */
+    public static final int ON_PUBLICATION_ERROR = 0x0F0B;
 }

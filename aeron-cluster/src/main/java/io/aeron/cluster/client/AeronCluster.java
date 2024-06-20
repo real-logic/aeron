@@ -717,8 +717,9 @@ public final class AeronCluster implements AutoCloseable
             if (egressListenerExtension != null)
             {
                 egressListenerExtension.onExtensionMessage(
-                    schemaId,
+                    messageHeaderDecoder.blockLength(),
                     templateId,
+                    schemaId,
                     messageHeaderDecoder.version(),
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -856,8 +857,9 @@ public final class AeronCluster implements AutoCloseable
             if (controlledEgressListenerExtension != null)
             {
                 return controlledEgressListenerExtension.onExtensionMessage(
-                    schemaId,
+                    messageHeaderDecoder.blockLength(),
                     templateId,
+                    schemaId,
                     messageHeaderDecoder.version(),
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,

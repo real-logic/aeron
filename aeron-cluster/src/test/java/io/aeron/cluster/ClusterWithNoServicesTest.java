@@ -133,12 +133,13 @@ class ClusterWithNoServicesTest
         }
 
         public ControlledFragmentHandler.Action onMessage(
-            final int schemaId,
+            final int actingBlockLength,
             final int templateId,
+            final int schemaId,
+            final int actingVersion,
             final DirectBuffer buffer,
             final int offset,
             final int length,
-            final int actingVersion,
             final Header header)
         {
             return null;

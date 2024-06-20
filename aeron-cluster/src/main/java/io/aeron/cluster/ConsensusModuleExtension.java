@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.aeron.cluster;
 
 import io.aeron.Image;
 import io.aeron.cluster.service.Cluster;
+
 import org.agrona.DirectBuffer;
 
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -69,22 +71,24 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * Within this callback reentrant calls to the {@link io.aeron.Aeron} client are not permitted and
      * will result in undefined behaviour.
      *
-     * @param schemaId       the schema id.
-     * @param templateId     the message template id (already parsed from header).
-     * @param buffer         containing the data.
-     * @param offset         at which the data begins.
-     * @param length         of the data in bytes.
-     * @param actingVersion  acting version from header
-     * @param header         representing the metadata for the data.
+     * @param actingBlockLength acting block length.
+     * @param templateId        the message template id (already parsed from header).
+     * @param schemaId          the schema id.
+     * @param actingVersion     acting version from header
+     * @param buffer            containing the data.
+     * @param offset            at which the data begins.
+     * @param length            of the data in bytes.
+     * @param header            representing the metadata for the data.
      * @return The action to be taken with regard to the stream position after the callback.
      */
     ControlledFragmentHandler.Action onMessage(
-        int schemaId,
+        int actingBlockLength,
         int templateId,
+        int schemaId,
+        int actingVersion,
         DirectBuffer buffer,
         int offset,
         int length,
-        int actingVersion,
         Header header);
 
     /**

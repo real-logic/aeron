@@ -54,12 +54,13 @@ class EgressAdapterTest
         adapter.onFragment(buffer, 0, MessageHeaderDecoder.ENCODED_LENGTH * 2, header);
 
         verify(listenerExtension).onExtensionMessage(
-            schemaId,
-            templateId,
-            0,
-            buffer,
-            MessageHeaderDecoder.ENCODED_LENGTH,
-            MessageHeaderDecoder.ENCODED_LENGTH);
+            anyInt(),
+            eq(templateId),
+            eq(schemaId),
+            eq(0),
+            eq(buffer),
+            eq(MessageHeaderDecoder.ENCODED_LENGTH),
+            eq(MessageHeaderDecoder.ENCODED_LENGTH));
         verifyNoMoreInteractions(listenerExtension);
     }
 

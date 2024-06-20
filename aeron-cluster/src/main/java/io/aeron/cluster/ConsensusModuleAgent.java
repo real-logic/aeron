@@ -525,18 +525,19 @@ final class ConsensusModuleAgent
     }
 
     public ControlledFragmentHandler.Action onExtensionMessage(
-        final int schemaId,
+        final int actingBlockLength,
         final int templateId,
+        final int schemaId,
+        final int actingVersion,
         final DirectBuffer buffer,
         final int offset,
         final int length,
-        final int actingVersion,
         final Header header)
     {
         if (null != consensusModuleExtension)
         {
             return consensusModuleExtension.onMessage(
-                schemaId, templateId, buffer, offset, length, actingVersion, header);
+                actingBlockLength, templateId, schemaId, actingVersion, buffer, offset, length, header);
         }
 
         throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
@@ -1466,18 +1467,19 @@ final class ConsensusModuleAgent
     }
 
     public ControlledFragmentHandler.Action onReplayExtensionMessage(
-        final int schemaId,
+        final int actingBlockLength,
         final int templateId,
+        final int schemaId,
+        final int actingVersion,
         final DirectBuffer buffer,
         final int offset,
         final int length,
-        final int actingVersion,
         final Header header)
     {
         if (null != consensusModuleExtension)
         {
             return consensusModuleExtension.onMessage(
-                schemaId, templateId, buffer, offset, length, actingVersion, header);
+                actingBlockLength, templateId, schemaId, actingVersion, buffer, offset, length, header);
         }
 
         throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);

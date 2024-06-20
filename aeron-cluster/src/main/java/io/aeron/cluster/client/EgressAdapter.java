@@ -108,8 +108,9 @@ public final class EgressAdapter implements FragmentHandler
             if (listenerExtension != null)
             {
                 listenerExtension.onExtensionMessage(
-                    schemaId,
+                    messageHeaderDecoder.blockLength(),
                     templateId,
+                    schemaId,
                     messageHeaderDecoder.version(),
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,

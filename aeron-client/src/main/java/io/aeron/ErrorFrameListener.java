@@ -18,9 +18,9 @@ package io.aeron;
 /**
  * Interface for handling various error frame messages from different components in the client.
  */
-public interface ErrorFrameHandler
+public interface ErrorFrameListener
 {
-    ErrorFrameHandler NO_OP = new ErrorFrameHandler()
+    ErrorFrameListener NO_OP = new ErrorFrameListener()
     {
     };
 

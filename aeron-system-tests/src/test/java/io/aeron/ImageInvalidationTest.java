@@ -48,6 +48,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
@@ -92,7 +94,7 @@ public class ImageInvalidationTest
         }
     }
 
-    private static final class QueuedErrorFrameHandler implements ErrorFrameHandler
+    private static final class QueuedErrorFrameHandler implements ErrorFrameListener
     {
         private final OneToOneConcurrentArrayQueue<ErrorFrame> errorFrameQueue =
             new OneToOneConcurrentArrayQueue<>(512);
@@ -195,6 +197,64 @@ public class ImageInvalidationTest
             assertEquals(1, countersReader.getCounterValue(ERRORS.id()) - initialErrors);
 
             SystemTests.waitForErrorToOccur(driver.aeronDirectoryName(), containsString(reason), Tests.SLEEP_1_MS);
+        }
+    }
+
+    @Test
+    @InterruptAfter(10)
+    @SlowTest
+    void shouldOnlyReceivePublicationErrorFrameOnRelevantClient() throws IOException
+    {
+        context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
+
+        final TestMediaDriver driver = launch();
+        final QueuedErrorFrameHandler errorFrameHandler1 = new QueuedErrorFrameHandler();
+        final QueuedErrorFrameHandler errorFrameHandler2 = new QueuedErrorFrameHandler();
+
+        final Aeron.Context ctx1 = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName())
+            .errorFrameHandler(errorFrameHandler1);
+
+        final Aeron.Context ctx2 = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName())
+            .errorFrameHandler(errorFrameHandler2);
+
+        final AtomicBoolean imageUnavailable = new AtomicBoolean(false);
+
+        try (Aeron aeron1 = Aeron.connect(ctx1);
+            Aeron aeron2 = Aeron.connect(ctx2);
+            Publication pub = aeron1.addPublication(channel, streamId);
+            Subscription sub = aeron1.addSubscription(channel, streamId, null, image -> imageUnavailable.set(true)))
+        {
+            assertNotNull(aeron2);
+            Tests.awaitConnected(pub);
+            Tests.awaitConnected(sub);
+
+            while (pub.offer(message) < 0)
+            {
+                Tests.yield();
+            }
+
+            while (0 == sub.poll((buffer, offset, length, header) -> {}, 1))
+            {
+                Tests.yield();
+            }
+
+            final Image image = sub.imageAtIndex(0);
+            final String reason = "Needs to be closed";
+            image.invalidate(reason);
+
+            while (null == errorFrameHandler1.poll())
+            {
+                Tests.yield();
+            }
+
+            final long deadlineMs = System.currentTimeMillis() + 1_000;
+            while (System.currentTimeMillis() < deadlineMs)
+            {
+                assertNull(errorFrameHandler2.poll(), "Aeron client without publication should not report error");
+                Tests.yield();
+            }
         }
     }
 

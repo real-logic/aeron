@@ -113,8 +113,6 @@ public class ImageInvalidationTest
     @SlowTest
     void shouldInvalidateSubscriptionsImage() throws IOException
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Not yet implemented");
-
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 
         final TestMediaDriver driver = launch();

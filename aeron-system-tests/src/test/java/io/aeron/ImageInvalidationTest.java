@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.AeronException;
+import io.aeron.status.PublicationErrorFrame;
 import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
@@ -96,15 +97,15 @@ public class ImageInvalidationTest
 
     private static final class QueuedErrorFrameHandler implements ErrorFrameListener
     {
-        private final OneToOneConcurrentArrayQueue<ErrorFrame> errorFrameQueue =
+        private final OneToOneConcurrentArrayQueue<PublicationErrorFrame> errorFrameQueue =
             new OneToOneConcurrentArrayQueue<>(512);
 
-        public void onPublicationError(final long registrationId, final int errorCode, final String errorText)
+        public void onPublicationError(final PublicationErrorFrame errorFrame)
         {
-            errorFrameQueue.offer(new ErrorFrame(registrationId, errorCode, errorText));
+            errorFrameQueue.offer(errorFrame.clone());
         }
 
-        ErrorFrame poll()
+        PublicationErrorFrame poll()
         {
             return errorFrameQueue.poll();
         }
@@ -176,14 +177,14 @@ public class ImageInvalidationTest
                 Tests.yield();
             }
 
-            ErrorFrame errorFrame;
+            PublicationErrorFrame errorFrame;
             while (null == (errorFrame = errorFrameHandler.poll()))
             {
                 Tests.yield();
             }
 
-            assertEquals(reason, errorFrame.errorText);
-            assertEquals(pub.registrationId(), errorFrame.registrationId);
+            assertEquals(reason, errorFrame.errorMessage());
+            assertEquals(pub.registrationId(), errorFrame.registrationId());
 
             while (!imageUnavailable.get())
             {
@@ -219,12 +220,10 @@ public class ImageInvalidationTest
             .aeronDirectoryName(driver.aeronDirectoryName())
             .errorFrameHandler(errorFrameHandler2);
 
-        final AtomicBoolean imageUnavailable = new AtomicBoolean(false);
-
         try (Aeron aeron1 = Aeron.connect(ctx1);
             Aeron aeron2 = Aeron.connect(ctx2);
             Publication pub = aeron1.addPublication(channel, streamId);
-            Subscription sub = aeron1.addSubscription(channel, streamId, null, image -> imageUnavailable.set(true)))
+            Subscription sub = aeron1.addSubscription(channel, streamId))
         {
             assertNotNull(aeron2);
             Tests.awaitConnected(pub);

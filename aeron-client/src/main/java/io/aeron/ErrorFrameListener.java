@@ -15,6 +15,8 @@
  */
 package io.aeron;
 
+import io.aeron.status.PublicationErrorFrame;
+
 /**
  * Interface for handling various error frame messages from different components in the client.
  */
@@ -25,13 +27,14 @@ public interface ErrorFrameListener
     };
 
     /**
-     * Called when an error frame is received by the local driver. E.g. when an image is invalidated.
+     * Called when an error frame is received by the local driver. E.g. when an image is invalidated. This callback will
+     * reuse the {@link PublicationErrorFrame} instance, so data is only valid for the lifetime of the callback. If the
+     * user needs to pass the data onto another thread or hold in another location for use later, then the user needs to
+     * make use of the {@link PublicationErrorFrame#clone()} method to create a copy for their own use.
      *
-     * @param registrationId    for the publication.
-     * @param errorCode         for the error received
-     * @param errorText         description of the error that occurred.
+     * @param errorFrame contain the data from the error frame received by the publication.
      */
-    default void onPublicationError(final long registrationId, final int errorCode, final String errorText)
+    default void onPublicationError(final PublicationErrorFrame errorFrame)
     {
     }
 }

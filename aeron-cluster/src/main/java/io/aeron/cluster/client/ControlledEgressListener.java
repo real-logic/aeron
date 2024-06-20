@@ -18,14 +18,13 @@ package io.aeron.cluster.client;
 import io.aeron.cluster.codecs.AdminRequestType;
 import io.aeron.cluster.codecs.AdminResponseCode;
 import io.aeron.cluster.codecs.EventCode;
-import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
 /**
  * Interface for consuming messages coming from the cluster that also include administrative events in a controlled
- * fashion like {@link io.aeron.logbuffer.ControlledFragmentHandler}. Only session and extension messages may be
+ * fashion like {@link io.aeron.logbuffer.ControlledFragmentHandler}. Only session messages may be
  * controlled in consumption, other are consumed via {@link io.aeron.logbuffer.ControlledFragmentHandler.Action#COMMIT}.
  */
 @FunctionalInterface
@@ -104,27 +103,5 @@ public interface ControlledEgressListener
         int payloadOffset,
         int payloadLength)
     {
-    }
-
-    /**
-     * Message of unknown schema to egress that can be handled by specific listener implementation.
-     *
-     * @param schemaId      schema id
-     * @param templateId    template id
-     * @param actingVersion acting version
-     * @param buffer        message buffer
-     * @param offset        message offset
-     * @param length        message length
-     * @return action to be taken after processing the message.
-     */
-    default ControlledFragmentHandler.Action onExtensionMessage(
-        final int schemaId,
-        final int templateId,
-        final int actingVersion,
-        final DirectBuffer buffer,
-        final int offset,
-        final int length)
-    {
-        throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
     }
 }

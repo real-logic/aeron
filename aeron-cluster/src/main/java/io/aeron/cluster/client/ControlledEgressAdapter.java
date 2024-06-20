@@ -1,33 +1,36 @@
 /*
- * Copyright 2014-2024 Real Logic Limited.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *  * Copyright 2014-2024 Real Logic Limited.
+ *  *
+ *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  * you may not use this file except in compliance with the License.
+ *  * You may obtain a copy of the License at
+ *  *
+ *  * https://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  * See the License for the specific language governing permissions and
+ *  * limitations under the License.
  *
- * https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 package io.aeron.cluster.client;
 
-import io.aeron.FragmentAssembler;
-import io.aeron.Subscription;
-import io.aeron.cluster.codecs.*;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
-import org.agrona.DirectBuffer;
-
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 
+import org.agrona.DirectBuffer;
+
+import io.aeron.ControlledFragmentAssembler;
+import io.aeron.Subscription;
+import io.aeron.cluster.codecs.*;
+import io.aeron.logbuffer.ControlledFragmentHandler;
+import io.aeron.logbuffer.Header;
+
 /**
- * Adapter for dispatching egress messages from a cluster to a {@link EgressListener}.
+ * Adapter for dispatching egress messages from a cluster to a {@link ControlledEgressListener}.
  */
-public final class EgressAdapter implements FragmentHandler
+public final class ControlledEgressAdapter implements ControlledFragmentHandler
 {
     private final long clusterSessionId;
     private final int fragmentLimit;
@@ -36,22 +39,22 @@ public final class EgressAdapter implements FragmentHandler
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final AdminResponseDecoder adminResponseDecoder = new AdminResponseDecoder();
     private final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
-    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
-    private final EgressListener listener;
-    private final EgressListenerExtension listenerExtension;
+    private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
+    private final ControlledEgressListener listener;
+    private final ControlledEgressListenerExtension listenerExtension;
     private final Subscription subscription;
 
     /**
      * Construct an adapter for cluster egress which consumes from the subscription and dispatches to the
-     * {@link EgressListener}.
+     * {@link ControlledEgressListener}.
      *
      * @param listener         to dispatch events to.
      * @param clusterSessionId for the egress.
      * @param subscription     over the egress stream.
      * @param fragmentLimit    to poll on each {@link #poll()} operation.
      */
-    public EgressAdapter(
-        final EgressListener listener,
+    public ControlledEgressAdapter(
+        final ControlledEgressListener listener,
         final long clusterSessionId,
         final Subscription subscription,
         final int fragmentLimit)
@@ -61,7 +64,7 @@ public final class EgressAdapter implements FragmentHandler
 
     /**
      * Construct an adapter for cluster egress which consumes from the subscription and dispatches to the
-     * {@link EgressListener} or extension messages to {@link EgressListenerExtension}.
+     * {@link ControlledEgressListener} or extension messages to {@link ControlledEgressListenerExtension}.
      *
      * @param listener          to dispatch events to.
      * @param listenerExtension to dispatch extension messages to
@@ -69,9 +72,9 @@ public final class EgressAdapter implements FragmentHandler
      * @param subscription      over the egress stream.
      * @param fragmentLimit     to poll on each {@link #poll()} operation.
      */
-    public EgressAdapter(
-        final EgressListener listener,
-        final EgressListenerExtension listenerExtension,
+    public ControlledEgressAdapter(
+        final ControlledEgressListener listener,
+        final ControlledEgressListenerExtension listenerExtension,
         final long clusterSessionId,
         final Subscription subscription,
         final int fragmentLimit)
@@ -84,20 +87,20 @@ public final class EgressAdapter implements FragmentHandler
     }
 
     /**
-     * Poll the egress subscription and dispatch assembled events to the {@link EgressListener}.
+     * Poll the egress subscription and dispatch assembled events to the {@link ControlledEgressListener}.
      *
      * @return the number of fragments consumed.
      */
     public int poll()
     {
-        return subscription.poll(fragmentAssembler, fragmentLimit);
+        return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
     }
 
     /**
      * {@inheritDoc}
      */
     @SuppressWarnings("MethodLength")
-    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
@@ -107,14 +110,13 @@ public final class EgressAdapter implements FragmentHandler
         {
             if (listenerExtension != null)
             {
-                listenerExtension.onExtensionMessage(
+                return listenerExtension.onExtensionMessage(
                     schemaId,
                     templateId,
                     messageHeaderDecoder.version(),
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     length - MessageHeaderDecoder.ENCODED_LENGTH);
-                return;
             }
             throw new ClusterException("expected schemaId=" +
                 MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
@@ -133,7 +135,7 @@ public final class EgressAdapter implements FragmentHandler
                 final long sessionId = sessionMessageHeaderDecoder.clusterSessionId();
                 if (sessionId == clusterSessionId)
                 {
-                    listener.onMessage(
+                    return listener.onMessage(
                         sessionId,
                         sessionMessageHeaderDecoder.timestamp(),
                         buffer,
@@ -223,5 +225,6 @@ public final class EgressAdapter implements FragmentHandler
             default:
                 break;
         }
+        return Action.CONTINUE;
     }
 }

@@ -46,20 +46,21 @@ class EgressAdapterTest
             .schemaId(schemaId)
             .templateId(templateId);
 
-        final EgressListener egressListener = mock(EgressListener.class);
+        final EgressListenerExtension listenerExtension = mock(EgressListenerExtension.class);
         final Header header = new Header(0, 0);
-        final EgressAdapter adapter = new EgressAdapter(egressListener, 0, mock(Subscription.class), 3);
+        final EgressAdapter adapter = new EgressAdapter(
+            mock(EgressListener.class), listenerExtension, 0, mock(Subscription.class), 3);
 
         adapter.onFragment(buffer, 0, MessageHeaderDecoder.ENCODED_LENGTH * 2, header);
 
-        verify(egressListener).onExtensionMessage(
+        verify(listenerExtension).onExtensionMessage(
             schemaId,
             templateId,
             0,
             buffer,
             MessageHeaderDecoder.ENCODED_LENGTH,
             MessageHeaderDecoder.ENCODED_LENGTH);
-        verifyNoMoreInteractions(egressListener);
+        verifyNoMoreInteractions(listenerExtension);
     }
 
     @Test

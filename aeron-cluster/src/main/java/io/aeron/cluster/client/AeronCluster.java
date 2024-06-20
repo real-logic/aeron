@@ -84,6 +84,8 @@ public final class AeronCluster implements AutoCloseable
     private final EgressListener egressListener;
     private final ControlledFragmentAssembler controlledFragmentAssembler;
     private final ControlledEgressListener controlledEgressListener;
+    private EgressListenerExtension egressListenerExtension;
+    private ControlledEgressListenerExtension controlledEgressListenerExtension;
     private Int2ObjectHashMap<MemberIngress> endpointByIdMap;
 
     /**
@@ -229,6 +231,27 @@ public final class AeronCluster implements AutoCloseable
             .clusterSessionId(clusterSessionId)
             .leadershipTermId(leadershipTermId);
     }
+
+    /**
+     * an EgressListener for extension schemas
+     *
+     * @param listenerExtension listener extension
+     */
+    public void extendEgressListener(final EgressListenerExtension listenerExtension)
+    {
+        this.egressListenerExtension = listenerExtension;
+    }
+
+    /**
+     * a ControlledEgressListener for extension schemas
+     *
+     * @param listenerExtension listener extension
+     */
+    public void extendControlledEgressListener(final ControlledEgressListenerExtension listenerExtension)
+    {
+        this.controlledEgressListenerExtension = listenerExtension;
+    }
+
 
     /**
      * Close session and release associated resources.
@@ -691,13 +714,19 @@ public final class AeronCluster implements AutoCloseable
 
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            egressListener.onExtensionMessage(
-                schemaId,
-                templateId,
-                messageHeaderDecoder.version(),
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                length - MessageHeaderDecoder.ENCODED_LENGTH);
+            if (egressListenerExtension != null)
+            {
+                egressListenerExtension.onExtensionMessage(
+                    schemaId,
+                    templateId,
+                    messageHeaderDecoder.version(),
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    length - MessageHeaderDecoder.ENCODED_LENGTH);
+                return;
+            }
+            throw new ClusterException("expected schemaId=" +
+                MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
         switch (templateId)
@@ -824,13 +853,18 @@ public final class AeronCluster implements AutoCloseable
 
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            return controlledEgressListener.onExtensionMessage(
-                schemaId,
-                templateId,
-                messageHeaderDecoder.version(),
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                length - MessageHeaderDecoder.ENCODED_LENGTH);
+            if (controlledEgressListenerExtension != null)
+            {
+                return controlledEgressListenerExtension.onExtensionMessage(
+                    schemaId,
+                    templateId,
+                    messageHeaderDecoder.version(),
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    length - MessageHeaderDecoder.ENCODED_LENGTH);
+            }
+            throw new ClusterException("expected schemaId=" +
+                MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
         switch (templateId)

@@ -15,9 +15,11 @@
  */
 package io.aeron;
 
+import io.aeron.command.PublicationErrorFrameFlyweight;
 import io.aeron.exceptions.*;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.status.HeartbeatTimestamp;
+import io.aeron.status.PublicationErrorFrame;
 import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -84,6 +86,7 @@ final class ClientConductor implements Agent
     private final AgentInvoker driverAgentInvoker;
     private final UnsafeBuffer counterValuesBuffer;
     private final CountersReader countersReader;
+    private final PublicationErrorFrame publicationErrorFrame = new PublicationErrorFrame();
     private AtomicCounter heartbeatTimestamp;
 
     ClientConductor(final Aeron.Context ctx, final Aeron aeron)
@@ -269,11 +272,12 @@ final class ClientConductor implements Agent
         }
     }
 
-    void onPublicationError(final long registrationId, final ErrorCode errorCode, final String errorText)
+    void onPublicationError(final PublicationErrorFrameFlyweight errorFrameFlyweight)
     {
-        if (resourceByRegIdMap.containsKey(registrationId))
+        if (resourceByRegIdMap.containsKey(errorFrameFlyweight.registrationId()))
         {
-            ctx.errorFrameHandler().onPublicationError(registrationId, errorCode.value(), errorText);
+            publicationErrorFrame.set(errorFrameFlyweight);
+            ctx.errorFrameHandler().onPublicationError(publicationErrorFrame);
         }
     }
 

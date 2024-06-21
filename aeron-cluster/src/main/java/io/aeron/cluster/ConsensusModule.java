@@ -1655,8 +1655,8 @@ public final class ConsensusModule implements AutoCloseable
 
             if (null == clusterClock)
             {
-                final String clockClassName =
-                    System.getProperty(CLUSTER_CLOCK_PROP_NAME, MillisecondClusterClock.class.getName());
+                final String clockClassName = System.getProperty(
+                    CLUSTER_CLOCK_PROP_NAME, MillisecondClusterClock.class.getName());
                 try
                 {
                     clusterClock = (ClusterClock)Class.forName(clockClassName).getConstructor().newInstance();

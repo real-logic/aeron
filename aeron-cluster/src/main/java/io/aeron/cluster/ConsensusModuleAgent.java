@@ -153,6 +153,7 @@ final class ConsensusModuleAgent
     private final ChannelUri responseChannelTemplate;
     private RecordingLog.RecoveryPlan recoveryPlan;
     private AeronArchive archive;
+    private AeronArchive extensionArchive;
     private RecordingSignalPoller recordingSignalPoller;
     private Election election;
     private ClusterTermination clusterTermination;
@@ -327,8 +328,12 @@ final class ConsensusModuleAgent
         election.doWork(clusterClock.timeNanos());
         state(ConsensusModule.State.ACTIVE);
 
-        unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this::onUnavailableCounter);
+        if (null != consensusModuleExtension)
+        {
+            extensionArchive = AeronArchive.connect(ctx.archiveContext().clone());
+        }
 
+        unavailableCounterHandlerRegistrationId = aeron.addUnavailableCounterHandler(this::onUnavailableCounter);
         dutyCycleTracker.update(clusterClock.timeNanos());
     }
 
@@ -477,7 +482,7 @@ final class ConsensusModuleAgent
      */
     public AeronArchive archive()
     {
-        return archive;
+        return extensionArchive;
     }
 
     /**

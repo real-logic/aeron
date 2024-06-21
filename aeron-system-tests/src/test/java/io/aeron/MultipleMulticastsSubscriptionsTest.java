@@ -68,8 +68,8 @@ class MultipleMulticastsSubscriptionsTest
     {
         launch(context);
 
-        final String uriA = "aeron:udp?endpoint=239.192.11.87:20123";
-        final String uriB = "aeron:udp?endpoint=239.192.11.91:20123";
+        final String uriA = "aeron:udp?endpoint=239.192.11.87:20123|interface=127.0.0.1";
+        final String uriB = "aeron:udp?endpoint=239.192.11.91:20123|interface=127.0.0.1";
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
             Publication pubA = aeron.addPublication(uriA, 10000);
@@ -90,8 +90,8 @@ class MultipleMulticastsSubscriptionsTest
     {
         launch(context);
 
-        final String uriA = "aeron:udp?endpoint=239.192.11.87:20123";
-        final String uriB = "aeron:udp?endpoint=239.192.11.91:20123";
+        final String uriA = "aeron:udp?endpoint=239.192.11.87:20123|interface=127.0.0.1";
+        final String uriB = "aeron:udp?endpoint=239.192.11.91:20123|interface=127.0.0.1";
         final String mdsSubscription = "aeron:udp?control-mode=manual";
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
@@ -116,8 +116,8 @@ class MultipleMulticastsSubscriptionsTest
     {
         launch(context);
 
-        final String uriA = "aeron:udp?endpoint=239.192.11.87:20123";
-        final String uriB = "aeron:udp?endpoint=239.192.11.91:20123";
+        final String uriA = "aeron:udp?endpoint=239.192.11.87:20123|interface=127.0.0.1";
+        final String uriB = "aeron:udp?endpoint=239.192.11.91:20123|interface=127.0.0.1";
         final String mdsSubscription = "aeron:udp?control-mode=manual";
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));

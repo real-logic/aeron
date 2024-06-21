@@ -45,14 +45,14 @@ import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.util.Collections.synchronizedSet;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ArchiveLoggingAgentTest
+class ArchiveLoggingAgentTest
 {
     private static final Set<ArchiveEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(ArchiveEventCode.class));
 
     private File testDir;
 
     @AfterEach
-    public void after()
+    void after()
     {
         AgentTests.stopLogging();
 
@@ -64,14 +64,14 @@ public class ArchiveLoggingAgentTest
 
     @Test
     @InterruptAfter(10)
-    public void logAll()
+    void logAll()
     {
         testArchiveLogging("all", EnumSet.of(CMD_OUT_RESPONSE, CMD_IN_AUTH_CONNECT, CMD_IN_KEEP_ALIVE));
     }
 
     @Test
     @InterruptAfter(10)
-    public void logControlSessionDemuxerOnFragment()
+    void logControlSessionDemuxerOnFragment()
     {
         testArchiveLogging(CMD_IN_KEEP_ALIVE.name() + "," + CMD_IN_AUTH_CONNECT.id(),
             EnumSet.of(CMD_IN_AUTH_CONNECT, CMD_IN_KEEP_ALIVE));
@@ -79,7 +79,7 @@ public class ArchiveLoggingAgentTest
 
     @Test
     @InterruptAfter(10)
-    public void logControlResponseProxySendResponseHook()
+    void logControlResponseProxySendResponseHook()
     {
         testArchiveLogging(CMD_OUT_RESPONSE.name(), EnumSet.of(CMD_OUT_RESPONSE));
     }

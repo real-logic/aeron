@@ -22,7 +22,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static io.aeron.agent.ClusterEventCode.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ClusterEventCodeTest
+class ClusterEventCodeTest
 {
     @ParameterizedTest
     @EnumSource(ClusterEventCode.class)

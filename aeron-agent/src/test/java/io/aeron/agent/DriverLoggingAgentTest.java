@@ -50,23 +50,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class DriverLoggingAgentTest
+class DriverLoggingAgentTest
 {
     private static final String NETWORK_CHANNEL =
-        "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=min,t:1ns";
+        "aeron:udp?control-mode=dynamic|control=localhost:20550|fc=min,t:1ns";
     private static final int STREAM_ID = 1777;
 
     private static final Set<DriverEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(DriverEventCode.class));
 
     @AfterEach
-    public void after()
+    void after()
     {
         AgentTests.stopLogging();
     }
 
     @Test
     @InterruptAfter(10)
-    public void logAllNetworkChannel()
+    void logAllNetworkChannel()
     {
         testLogMediaDriverEvents(NETWORK_CHANNEL, "all", EnumSet.of(
             FRAME_IN,
@@ -94,7 +94,7 @@ public class DriverLoggingAgentTest
 
     @Test
     @InterruptAfter(10)
-    public void logAllIpcChannel()
+    void logAllIpcChannel()
     {
         testLogMediaDriverEvents(IPC_CHANNEL, "all", EnumSet.of(
             CMD_IN_ADD_PUBLICATION,
@@ -125,7 +125,7 @@ public class DriverLoggingAgentTest
         "CMD_OUT_AVAILABLE_IMAGE"
     })
     @InterruptAfter(10)
-    public void logIndividualEvents(final DriverEventCode eventCode)
+    void logIndividualEvents(final DriverEventCode eventCode)
     {
         try
         {

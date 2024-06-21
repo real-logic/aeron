@@ -22,7 +22,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static io.aeron.agent.ArchiveEventCode.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ArchiveEventCodeTest
+class ArchiveEventCodeTest
 {
     @ParameterizedTest
     @EnumSource(ArchiveEventCode.class)

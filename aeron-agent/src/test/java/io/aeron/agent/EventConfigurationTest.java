@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class EventConfigurationTest
 {
     @Test
-    public void nullValueMeansNoEventsEnabled()
+    void nullValueMeansNoEventsEnabled()
     {
         final EnumSet<TestEvent> parsedEvents = parseEventCodes(
             TestEvent.class, null, Collections.emptyMap(), i -> TestEvent.values()[i], TestEvent::valueOf);
@@ -43,7 +43,7 @@ public class EventConfigurationTest
     }
 
     @Test
-    public void parseEventCodesShouldIgnoreInvalidEventCodes()
+    void parseEventCodesShouldIgnoreInvalidEventCodes()
     {
         final PrintStream err = System.err;
         final ByteArrayOutputStream stderr = new ByteArrayOutputStream();

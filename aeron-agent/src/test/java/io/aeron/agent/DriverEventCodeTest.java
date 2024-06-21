@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-public class DriverEventCodeTest
+class DriverEventCodeTest
 {
     @ParameterizedTest
     @EnumSource(DriverEventCode.class)

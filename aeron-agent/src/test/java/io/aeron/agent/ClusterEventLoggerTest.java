@@ -102,8 +102,7 @@ class ClusterEventLoggerTest
         index += SIZE_OF_LONG;
         assertEquals(nextLeadershipTermId, logBuffer.getLong(index, LITTLE_ENDIAN));
         index += SIZE_OF_LONG;
-        assertEquals(
-            nextTermBaseLogPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
+        assertEquals(nextTermBaseLogPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
         index += SIZE_OF_LONG;
         assertEquals(nextLogPosition, logBuffer.getLong(index, LITTLE_ENDIAN));
         index += SIZE_OF_LONG;

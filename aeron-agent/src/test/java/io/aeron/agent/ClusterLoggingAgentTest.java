@@ -57,7 +57,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(InterruptingTestCallback.class)
-public class ClusterLoggingAgentTest
+class ClusterLoggingAgentTest
 {
     private static final Set<ClusterEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(ClusterEventCode.class));
 
@@ -66,7 +66,7 @@ public class ClusterLoggingAgentTest
     private ClusteredServiceContainer container;
 
     @AfterEach
-    public void after()
+    void after()
     {
         CloseHelper.closeAll(clusteredMediaDriver.consensusModule(), container, clusteredMediaDriver);
         AgentTests.stopLogging();
@@ -79,28 +79,28 @@ public class ClusterLoggingAgentTest
 
     @Test
     @InterruptAfter(20)
-    public void logAll()
+    void logAll()
     {
         testClusterEventsLogging("all", EnumSet.of(ROLE_CHANGE, STATE_CHANGE, ELECTION_STATE_CHANGE));
     }
 
     @Test
     @InterruptAfter(20)
-    public void logRoleChange()
+    void logRoleChange()
     {
         testClusterEventsLogging(ROLE_CHANGE.name(), EnumSet.of(ROLE_CHANGE));
     }
 
     @Test
     @InterruptAfter(20)
-    public void logStateChange()
+    void logStateChange()
     {
         testClusterEventsLogging(STATE_CHANGE.name(), EnumSet.of(STATE_CHANGE));
     }
 
     @Test
     @InterruptAfter(20)
-    public void logElectionStateChange()
+    void logElectionStateChange()
     {
         testClusterEventsLogging(ELECTION_STATE_CHANGE.name(), EnumSet.of(ELECTION_STATE_CHANGE));
     }

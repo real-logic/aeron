@@ -137,8 +137,8 @@ class ConfigOptionTest
         final Map<String, String> expectedOptions = new HashMap<>();
         expectedOptions.put(ENABLED_ARCHIVE_EVENT_CODES, "REPLICATION_SESSION_STATE_CHANGE,CMD_IN_START_RECORDING");
 
-        final Map<String, String> configOptions =
-            parseAgentArgs("aeron.event.archive.log=REPLICATION_SESSION_STATE_CHANGE,CMD_IN_START_RECORDING||||");
+        final Map<String, String> configOptions = parseAgentArgs(
+            "aeron.event.archive.log=REPLICATION_SESSION_STATE_CHANGE,CMD_IN_START_RECORDING||||");
 
         assertEquals(expectedOptions, configOptions);
     }

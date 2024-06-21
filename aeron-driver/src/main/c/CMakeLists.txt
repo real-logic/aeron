@@ -425,7 +425,7 @@ target_compile_definitions(aeron_driver_static PRIVATE -DAERON_DRIVER)
 
 if (AERON_INSTALL_TARGETS)
     if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
-        set_target_properties(aeronmd PROPERTIES INSTALL_RPATH "\\\$ORIGIN/../lib")
+        set_target_properties(aeronmd PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
     endif ()
     install(
         TARGETS aeron_driver aeron_driver_static

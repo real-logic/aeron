@@ -104,6 +104,11 @@ struct aeron_command_publication_error_stct
 {
     aeron_command_base_t base;
     int64_t registration_id;
+    int32_t session_id;
+    int32_t stream_id;
+    int64_t receiver_id;
+    int64_t group_tag;
+    struct sockaddr_storage src_address;
     int32_t error_code;
     int32_t error_length;
     uint8_t error_text[1];
@@ -169,6 +174,11 @@ void aeron_driver_conductor_proxy_on_release_resource(
 void aeron_driver_conductor_proxy_on_publication_error(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     const int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    int64_t receiver_id,
+    int64_t group_tag,
+    struct sockaddr_storage *src_address,
     int32_t error_code,
     int32_t error_length,
     const uint8_t *error_text);

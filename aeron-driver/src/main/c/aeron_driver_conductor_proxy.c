@@ -265,6 +265,11 @@ void aeron_driver_conductor_proxy_on_release_resource(
 void aeron_driver_conductor_proxy_on_publication_error(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     const int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    int64_t receiver_id,
+    int64_t group_tag,
+    struct sockaddr_storage *src_address,
     int32_t error_code,
     int32_t error_length,
     const uint8_t *error_text)
@@ -276,6 +281,12 @@ void aeron_driver_conductor_proxy_on_publication_error(
     error->base.func = aeron_driver_conductor_on_publication_error;
     error->base.item = NULL;
     error->registration_id = registration_id;
+    error->session_id = session_id;
+    error->stream_id = stream_id;
+    error->receiver_id = receiver_id;
+    error->group_tag = group_tag;
+    memset(&error->src_address, 0, sizeof(struct sockaddr_storage));
+    memcpy(&error->src_address, src_address, AERON_ADDR_LEN(src_address));
     error->error_code = error_code;
     error->error_length = error_length;
     memcpy(error->error_text, error_text, (size_t)error_length);

@@ -2588,14 +2588,14 @@ void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
     {
         struct sockaddr_in *src_addr_in = (struct sockaddr_in *)&error->src_address;
         response->address_type = AERON_RESPONSE_ADDRESS_TYPE_IPV4;
-        response->address_port = be16toh(src_addr_in->sin_port);
+        response->address_port = ntohs(src_addr_in->sin_port);
         memcpy(&response->address[0], &src_addr_in->sin_addr, sizeof(src_addr_in->sin_addr));
     }
     else if (AF_INET6)
     {
         struct sockaddr_in6 *src_addr_in6 = (struct sockaddr_in6 *)&error->src_address;
         response->address_type = AERON_RESPONSE_ADDRESS_TYPE_IPV6;
-        response->address_port = be16toh(src_addr_in6->sin6_port);
+        response->address_port = ntohs(src_addr_in6->sin6_port);
         memcpy(&response->address[0], &src_addr_in6->sin6_addr, sizeof(src_addr_in6->sin6_addr));
     }
     else

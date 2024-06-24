@@ -55,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 public class ImageInvalidationTest
@@ -357,7 +358,7 @@ public class ImageInvalidationTest
     @InterruptAfter(5)
     void shouldReturnAllParametersToApi(final String addressStr)
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("Not yet implemented");
+        assumeTrue(System.getProperty("java.net.preferIPv4Stack") == null);
 
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 
@@ -406,7 +407,6 @@ public class ImageInvalidationTest
 
             assertEquals(reason, errorFrame.errorMessage());
             assertEquals(pub.registrationId(), errorFrame.registrationId());
-            System.out.printf("pub.streamId()=%d errorFrame.streamId()=%d%n", pub.streamId(), errorFrame.streamId());
             assertEquals(pub.streamId(), errorFrame.streamId());
             assertEquals(pub.sessionId(), errorFrame.sessionId());
             assertEquals(groupTag, errorFrame.groupTag());

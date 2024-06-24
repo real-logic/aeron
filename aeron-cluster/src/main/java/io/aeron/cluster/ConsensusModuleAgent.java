@@ -2419,6 +2419,10 @@ final class ConsensusModuleAgent
 
         workCount += consensusModuleAdapter.poll();
         workCount += pollStandbySnapshotReplication(nowNs);
+        if (null != consensusModuleExtension)
+        {
+            workCount += consensusModuleExtension.doWork(nowNs);
+        }
 
         return workCount;
     }

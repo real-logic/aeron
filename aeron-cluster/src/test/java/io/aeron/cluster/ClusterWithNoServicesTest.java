@@ -71,10 +71,13 @@ class ClusterWithNoServicesTest
         aeronCluster = connectClient();
 
         assertTrue(aeronCluster.sendKeepAlive());
+
         final InOrder inOrder = inOrder(consensusModuleExtensionSpy);
         inOrder.verify(consensusModuleExtensionSpy).onStart(any(ConsensusModuleControl.class), isNull());
         inOrder.verify(consensusModuleExtensionSpy).onElectionComplete(any(ConsensusControlState.class));
-        inOrder.verify(consensusModuleExtensionSpy).onSessionOpened(anyLong());
+        inOrder.verify(consensusModuleExtensionSpy, atLeastOnce()).doWork(anyLong());
+
+        verify(consensusModuleExtensionSpy).onSessionOpened(anyLong());
 
         ClusterTests.failOnClusterError();
     }
@@ -122,6 +125,11 @@ class ClusterWithNoServicesTest
 
         public void onStart(final ConsensusModuleControl consensusModuleControl, final Image snapshotImage)
         {
+        }
+
+        public int doWork(final long nowNs)
+        {
+            return 0;
         }
 
         public void onElectionComplete(final ConsensusControlState consensusControlState)

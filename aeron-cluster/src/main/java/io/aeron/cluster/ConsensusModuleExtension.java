@@ -23,6 +23,7 @@ import org.agrona.DirectBuffer;
 
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.concurrent.AgentTerminationException;
 
 /**
  * Extension for handling messages from external schemas unknown to core Aeron Cluster code
@@ -49,6 +50,19 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * @param snapshotImage          from which the extension can load its state which can be null when no snapshot.
      */
     void onStart(ConsensusModuleControl consensusModuleControl, Image snapshotImage);
+
+    /**
+     * An extension should implement this method to do its work. Long-running operations should be decomposed.
+     * <p>
+     * The return value is used for implementing an idle strategy that can be employed when no work is
+     * currently available for the extension to process.
+     * <p>
+     * If the extension wished to terminate and close then a {@link AgentTerminationException} can be thrown.
+     *
+     * @param nowNs is cluster time in nanoseconds.
+     * @return 0 to indicate no work was currently available, a positive value otherwise.
+     */
+    int doWork(long nowNs);
 
     /**
      * Cluster election is complete and new publication is added for the leadership term. If the node is a follower

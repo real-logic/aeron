@@ -387,10 +387,19 @@ public final class DriverConductor implements Agent
         clientProxy.onError(statusIndicatorId, CHANNEL_ENDPOINT_ERROR, errorMessage);
     }
 
-    void onPublicationError(final long registrationId, final int errorCode, final String errorMessage)
+    void onPublicationError(
+        final long registrationId,
+        final int sessionId,
+        final int streamId,
+        final long receiverId,
+        final Long groupId,
+        final InetSocketAddress srcAddress,
+        final int errorCode,
+        final String errorMessage)
     {
         recordError(new AeronException(errorMessage, AeronException.Category.WARN));
-        clientProxy.onPublicationErrorFrame(registrationId, errorCode, errorMessage);
+        clientProxy.onPublicationErrorFrame(
+            registrationId, sessionId, streamId, receiverId, groupId, srcAddress, errorCode, errorMessage);
     }
 
     void onReResolveEndpoint(

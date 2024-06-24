@@ -15,10 +15,10 @@
  */
 package io.aeron.status;
 
-import io.aeron.CommonContext;
 import io.aeron.command.PublicationErrorFrameFlyweight;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 /**
  * Encapsulates the data received when a publication receives an error frame.
@@ -32,7 +32,7 @@ public class PublicationErrorFrame implements Cloneable
     private Long groupTag;
     private int errorCode;
     private String errorMessage;
-    private InetAddress sourceAddress;
+    private InetSocketAddress sourceAddress;
 
     /**
      * Registration id of the publication that received the error frame.
@@ -110,7 +110,7 @@ public class PublicationErrorFrame implements Cloneable
      *
      * @return address of the remote source.
      */
-    public InetAddress sourceAddress()
+    public InetSocketAddress sourceAddress()
     {
         return sourceAddress;
     }
@@ -124,6 +124,11 @@ public class PublicationErrorFrame implements Cloneable
     public PublicationErrorFrame set(final PublicationErrorFrameFlyweight frameFlyweight)
     {
         registrationId = frameFlyweight.registrationId();
+        sessionId = frameFlyweight.sessionId();
+        streamId = frameFlyweight.streamId();
+        receiverId = frameFlyweight.receiverId();
+        groupTag = frameFlyweight.groupTag();
+        sourceAddress = frameFlyweight.sourceAddress();
         errorCode = frameFlyweight.errorCode().value();
         errorMessage = frameFlyweight.errorMessage();
 

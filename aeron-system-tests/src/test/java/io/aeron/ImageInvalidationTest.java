@@ -35,8 +35,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,21 +84,7 @@ public class ImageInvalidationTest
         return driver;
     }
 
-    private static final class ErrorFrame
-    {
-        private final long registrationId;
-        private final int errorCode;
-        private final String errorText;
-
-        private ErrorFrame(final long registrationId, final int errorCode, final String errorText)
-        {
-            this.registrationId = registrationId;
-            this.errorCode = errorCode;
-            this.errorText = errorText;
-        }
-    }
-
-    private static final class QueuedErrorFrameHandler implements ErrorFrameListener
+    private static final class QueuedErrorFrameListener implements ErrorFrameListener
     {
         private final OneToOneConcurrentArrayQueue<PublicationErrorFrame> errorFrameQueue =
             new OneToOneConcurrentArrayQueue<>(512);
@@ -119,7 +108,7 @@ public class ImageInvalidationTest
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 
         final TestMediaDriver driver = launch();
-        final QueuedErrorFrameHandler errorFrameHandler = new QueuedErrorFrameHandler();
+        final QueuedErrorFrameListener errorFrameHandler = new QueuedErrorFrameListener();
 
         final Aeron.Context ctx = new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())
@@ -209,8 +198,8 @@ public class ImageInvalidationTest
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 
         final TestMediaDriver driver = launch();
-        final QueuedErrorFrameHandler errorFrameHandler1 = new QueuedErrorFrameHandler();
-        final QueuedErrorFrameHandler errorFrameHandler2 = new QueuedErrorFrameHandler();
+        final QueuedErrorFrameListener errorFrameHandler1 = new QueuedErrorFrameListener();
+        final QueuedErrorFrameListener errorFrameHandler2 = new QueuedErrorFrameListener();
 
         final Aeron.Context ctx1 = new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())
@@ -360,6 +349,69 @@ public class ImageInvalidationTest
             Tests.awaitConnected(sub);
 
             assertThrows(AeronException.class, () -> sub.imageAtIndex(0).invalidate(tooLongReason));
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "127.0.0.1", "[::1]" })
+    @InterruptAfter(5)
+    void shouldReturnAllParametersToApi(final String addressStr)
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("Not yet implemented");
+
+        context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
+
+        final TestMediaDriver driver = launch();
+        final QueuedErrorFrameListener errorFrameHandler = new QueuedErrorFrameListener();
+
+        final Aeron.Context ctx = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName())
+            .errorFrameHandler(errorFrameHandler);
+
+        final long groupTag = 1001;
+        final int port = 10001;
+
+        final String mdc = "aeron:udp?control-mode=dynamic|control=" + addressStr + ":10000|fc=tagged,g:" + groupTag;
+        final String channel =
+            "aeron:udp?control=" + addressStr + ":10000|endpoint=" + addressStr + ":" + port + "|gtag=" + groupTag;
+
+        try (Aeron aeron = Aeron.connect(ctx);
+            Publication pub = aeron.addPublication(mdc, streamId);
+            Subscription sub = aeron.addSubscription(channel, streamId))
+        {
+            Tests.awaitConnected(pub);
+            Tests.awaitConnected(sub);
+
+            while (pub.offer(message) < 0)
+            {
+                Tests.yield();
+            }
+
+            while (0 == sub.poll((buffer, offset, length, header) -> {}, 1))
+            {
+                Tests.yield();
+            }
+
+            final Image image = sub.imageAtIndex(0);
+            assertEquals(pub.position(), image.position());
+
+            final String reason = "Needs to be closed";
+            image.invalidate(reason);
+
+            PublicationErrorFrame errorFrame;
+            while (null == (errorFrame = errorFrameHandler.poll()))
+            {
+                Tests.yield();
+            }
+
+            assertEquals(reason, errorFrame.errorMessage());
+            assertEquals(pub.registrationId(), errorFrame.registrationId());
+            System.out.printf("pub.streamId()=%d errorFrame.streamId()=%d%n", pub.streamId(), errorFrame.streamId());
+            assertEquals(pub.streamId(), errorFrame.streamId());
+            assertEquals(pub.sessionId(), errorFrame.sessionId());
+            assertEquals(groupTag, errorFrame.groupTag());
+            assertNotNull(errorFrame.sourceAddress());
+            assertEquals(new InetSocketAddress(addressStr, port), errorFrame.sourceAddress());
         }
     }
 }

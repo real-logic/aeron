@@ -496,7 +496,15 @@ public final class NetworkPublication
         flowControl.onError(msg, srcAddress, cachedNanoClock.nanoTime());
         if (livenessTracker.onRemoteClose(msg.receiverId()))
         {
-            conductorProxy.onPublicationError(registrationId, msg.errorCode(), msg.errorMessage());
+            conductorProxy.onPublicationError(
+                registrationId,
+                msg.sessionId(),
+                msg.streamId(),
+                msg.receiverId(),
+                msg.groupTag(),
+                srcAddress,
+                msg.errorCode(),
+                msg.errorMessage());
         }
     }
 

@@ -15,12 +15,15 @@
  */
 package io.aeron.driver;
 
+import io.aeron.Aeron;
 import io.aeron.ErrorCode;
 import io.aeron.command.*;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
+
+import java.net.InetSocketAddress;
 
 import static io.aeron.command.ControlProtocolEvents.*;
 
@@ -69,10 +72,23 @@ final class ClientProxy
         transmit(ON_ERROR, buffer, 0, errorResponse.length());
     }
 
-    void onPublicationErrorFrame(final long registrationId, final int errorCode, final String errorMessage)
+    void onPublicationErrorFrame(
+        final long registrationId,
+        final int sessionId,
+        final int streamId,
+        final long receiverId,
+        final Long groupTag,
+        final InetSocketAddress srcAddress,
+        final int errorCode,
+        final String errorMessage)
     {
         publicationErrorFrame
             .registrationId(registrationId)
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .receiverId(receiverId)
+            .groupTag(null == groupTag ? Aeron.NULL_VALUE : groupTag)
+            .sourceAddress(srcAddress)
             .errorCode(ErrorCode.get(errorCode))
             .errorMessage(errorMessage);
 

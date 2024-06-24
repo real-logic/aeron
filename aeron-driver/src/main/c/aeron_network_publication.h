@@ -185,7 +185,7 @@ void aeron_network_publication_on_error(
     aeron_network_publication_t *publication,
     const uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr,
+    struct sockaddr_storage *src_address,
     aeron_driver_conductor_proxy_t *pStct);
 
 void aeron_network_publication_on_rttm(

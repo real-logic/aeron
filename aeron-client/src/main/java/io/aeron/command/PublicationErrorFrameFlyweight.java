@@ -19,6 +19,12 @@ import io.aeron.ErrorCode;
 import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+
 /**
  * Control message flyweight error frames received by a publication to be reported to the client.
  * <pre>
@@ -28,20 +34,48 @@ import org.agrona.MutableDirectBuffer;
  *  |                 Publication Registration Id                   |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                         Error Code                            |
+ *  |                          Session ID                           |
  *  +---------------------------------------------------------------+
- *  |                   Error Message Length                        |
+ *  |                           Stream ID                           |
  *  +---------------------------------------------------------------+
- *  |                       Error Message                          ...
+ *  |                          Receiver ID                          |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                           Group Tag                           |
+ *  |                                                               |
+ *  +-------------------------------+-------------------------------+
+ *  |          Address Type         |            UDP Port           |
+ *  +-------------------------------+-------------------------------+
+ *  |           IPv4 or IPv6 Address padded out to 16 bytes         |
+ *  |                                                               |
+ *  |                                                               |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                          Error Code                           |
+ *  +---------------------------------------------------------------+
+ *  |                      Error Message Length                     |
+ *  +---------------------------------------------------------------+
+ *  |                         Error Message                        ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
  * </pre>
  */
 public class PublicationErrorFrameFlyweight
 {
-    private static final int OFFENDING_COMMAND_CORRELATION_ID_OFFSET = 0;
-    private static final int ERROR_CODE_OFFSET = OFFENDING_COMMAND_CORRELATION_ID_OFFSET + BitUtil.SIZE_OF_LONG;
+    private static final int REGISTRATION_ID_OFFSET = 0;
+    private static final int IPV6_ADDRESS_LENGTH = 16;
+    private static final int IPV4_ADDRESS_LENGTH = BitUtil.SIZE_OF_INT;
+    private static final int SESSION_ID_OFFSET = REGISTRATION_ID_OFFSET + BitUtil.SIZE_OF_LONG;
+    private static final int STREAM_ID_OFFSET = SESSION_ID_OFFSET + BitUtil.SIZE_OF_INT;
+    private static final int RECEIVER_ID_OFFSET = STREAM_ID_OFFSET + BitUtil.SIZE_OF_INT;
+    private static final int GROUP_TAG_OFFSET = RECEIVER_ID_OFFSET + BitUtil.SIZE_OF_LONG;
+    private static final int ADDRESS_TYPE_OFFSET = GROUP_TAG_OFFSET + BitUtil.SIZE_OF_LONG;
+    private static final int ADDRESS_PORT_OFFSET = ADDRESS_TYPE_OFFSET + BitUtil.SIZE_OF_SHORT;
+    private static final int ADDRESS_OFFSET = ADDRESS_PORT_OFFSET + BitUtil.SIZE_OF_SHORT;
+    private static final int ERROR_CODE_OFFSET = ADDRESS_OFFSET + IPV6_ADDRESS_LENGTH;
     private static final int ERROR_MESSAGE_OFFSET = ERROR_CODE_OFFSET + BitUtil.SIZE_OF_INT;
+    private static final short ADDRESS_TYPE_IPV4 = 1;
+    private static final short ADDRESS_TYPE_IPV6 = 2;
 
     private MutableDirectBuffer buffer;
     private int offset;
@@ -68,7 +102,7 @@ public class PublicationErrorFrameFlyweight
      */
     public long registrationId()
     {
-        return buffer.getLong(offset + OFFENDING_COMMAND_CORRELATION_ID_OFFSET);
+        return buffer.getLong(offset + REGISTRATION_ID_OFFSET);
     }
 
     /**
@@ -79,8 +113,167 @@ public class PublicationErrorFrameFlyweight
      */
     public PublicationErrorFrameFlyweight registrationId(final long registrationId)
     {
-        buffer.putLong(offset + OFFENDING_COMMAND_CORRELATION_ID_OFFSET, registrationId);
+        buffer.putLong(offset + REGISTRATION_ID_OFFSET, registrationId);
         return this;
+    }
+
+    /**
+     * Get the stream id field.
+     *
+     * @return stream id field.
+     */
+    public int streamId()
+    {
+        return buffer.getInt(offset + STREAM_ID_OFFSET);
+    }
+
+    /**
+     * Set the stream id field.
+     *
+     * @param streamId field value.
+     * @return this for a fluent API.
+     */
+    public PublicationErrorFrameFlyweight streamId(final int streamId)
+    {
+        buffer.putInt(offset + STREAM_ID_OFFSET, streamId);
+
+        return this;
+    }
+
+    /**
+     * Get the session id field.
+     *
+     * @return session id field.
+     */
+    public int sessionId()
+    {
+        return buffer.getInt(offset + SESSION_ID_OFFSET);
+    }
+
+    /**
+     * Set session id field.
+     *
+     * @param sessionId field value.
+     * @return this for a fluent API.
+     */
+    public PublicationErrorFrameFlyweight sessionId(final int sessionId)
+    {
+        buffer.putInt(offset + SESSION_ID_OFFSET, sessionId);
+
+        return this;
+    }
+
+    /**
+     * Get the receiver id field
+     *
+     * @return get the receiver id field.
+     */
+    public long receiverId()
+    {
+        return buffer.getLong(offset + RECEIVER_ID_OFFSET);
+    }
+
+    /**
+     * Set receiver id field
+     *
+     * @param receiverId field value.
+     * @return this for a fluent API.
+     */
+    public PublicationErrorFrameFlyweight receiverId(final long receiverId)
+    {
+        buffer.putLong(offset + RECEIVER_ID_OFFSET, receiverId);
+
+        return this;
+    }
+
+    /**
+     * Get the group tag field.
+     *
+     * @return the group tag field.
+     */
+    public long groupTag()
+    {
+        return buffer.getLong(offset + GROUP_TAG_OFFSET);
+    }
+
+    /**
+     * Set the group tag field.
+     *
+     * @param groupTag the group tag value.
+     * @return this for a fluent API.
+     */
+    public PublicationErrorFrameFlyweight groupTag(final long groupTag)
+    {
+        buffer.putLong(offset + GROUP_TAG_OFFSET, groupTag);
+
+        return this;
+    }
+
+    /**
+     * Set the source address for the error frame. Store the type (IPv4 or IPv6), port and address as bytes.
+     *
+     * @param sourceAddress of the error frame.
+     * @return this for a fluent API
+     */
+    public PublicationErrorFrameFlyweight sourceAddress(final InetSocketAddress sourceAddress)
+    {
+        final short sourcePort = (short)(sourceAddress.getPort() & 0xFFFF);
+        final InetAddress address = sourceAddress.getAddress();
+
+        buffer.putShort(offset + ADDRESS_PORT_OFFSET, sourcePort);
+        buffer.putBytes(offset + ADDRESS_OFFSET, address.getAddress());
+        if (address instanceof Inet4Address)
+        {
+            buffer.putShort(offset + ADDRESS_TYPE_OFFSET, ADDRESS_TYPE_IPV4);
+            buffer.setMemory(
+                offset + ADDRESS_OFFSET + IPV4_ADDRESS_LENGTH, IPV6_ADDRESS_LENGTH - IPV4_ADDRESS_LENGTH, (byte)0);
+        }
+        else if (address instanceof Inet6Address)
+        {
+            buffer.putShort(offset + ADDRESS_TYPE_OFFSET, ADDRESS_TYPE_IPV6);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unknown address type:" + address.getClass().getSimpleName());
+        }
+
+        return this;
+    }
+
+    /**
+     * Get the source address of this error frame.
+     *
+     * @return source address of the error frame.
+     */
+    public InetSocketAddress sourceAddress()
+    {
+        final short addressType = buffer.getShort(offset + ADDRESS_TYPE_OFFSET);
+        final int port = buffer.getShort(offset + ADDRESS_PORT_OFFSET) & 0xFFFF;
+
+        final byte[] address;
+        if (ADDRESS_TYPE_IPV4 == addressType)
+        {
+            address = new byte[IPV4_ADDRESS_LENGTH];
+        }
+        else if (ADDRESS_TYPE_IPV6 == addressType)
+        {
+            address = new byte[IPV6_ADDRESS_LENGTH];
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unknown address type:" + addressType);
+        }
+
+        buffer.getBytes(offset + ADDRESS_OFFSET, address);
+        try
+        {
+            return new InetSocketAddress(Inet4Address.getByAddress(address), port);
+        }
+        catch (final UnknownHostException ex)
+        {
+            throw new IllegalArgumentException("Unknown address type:" + addressType, ex);
+        }
+
     }
 
     /**

@@ -836,18 +836,27 @@ void aeron_network_publication_on_error(
     aeron_network_publication_t *publication,
     const uint8_t *buffer,
     size_t length,
-    struct sockaddr_storage *addr,
+    struct sockaddr_storage *src_address,
     aeron_driver_conductor_proxy_t *conductor_proxy)
 {
     aeron_error_t *error = (aeron_error_t *)buffer;
     const uint8_t *error_text = (const uint8_t *)(error + 1);
     const int64_t time_ns = aeron_clock_cached_nano_time(publication->cached_clock);
-    publication->flow_control->on_error(publication->flow_control->state, buffer, length, addr, time_ns);
+    publication->flow_control->on_error(publication->flow_control->state, buffer, length, src_address, time_ns);
     if (aeron_network_publication_liveness_on_remote_close(publication, error->receiver_id))
     {
         const int64_t registration_id = aeron_network_publication_registration_id(publication);
         aeron_driver_conductor_proxy_on_publication_error(
-            conductor_proxy, registration_id, error->error_code, error->error_length, error_text);
+            conductor_proxy,
+            registration_id,
+            error->session_id,
+            error->stream_id,
+            error->receiver_id,
+            AERON_ERROR_HAS_GROUP_TAG_FLAG & error->frame_header.flags ? error->group_tag : AERON_NULL_VALUE,
+            src_address,
+            error->error_code,
+            error->error_length,
+            error_text);
     }
 }
 

@@ -50,6 +50,8 @@
 #define AERON_RESPONSE_ON_CLIENT_TIMEOUT (0x0F0A)
 #define AERON_RESPONSE_ON_STATIC_COUNTER (0x0F0B)
 #define AERON_RESPONSE_ON_PUBLICATION_ERROR (0x0F0C)
+#define AERON_RESPONSE_ADDRESS_TYPE_IPV4 (0x1)
+#define AERON_RESPONSE_ADDRESS_TYPE_IPV6 (0x2)
 
 /* error codes */
 #define AERON_ERROR_CODE_UNKNOWN_CODE_VALUE (-1)
@@ -220,14 +222,21 @@ typedef struct aeron_invalidate_image_command_stct
 }
 aeron_invalidate_image_command_t;
 
-struct aeron_publication_error_response_stct
+struct aeron_publication_error_stct
 {
     int64_t registration_id;
+    int32_t session_id;
+    int32_t stream_id;
+    int64_t receiver_id;
+    int64_t group_tag;
+    int16_t address_type;
+    uint16_t address_port;
+    uint8_t address[16];
     int32_t error_code;
     int32_t error_message_length;
     uint8_t error_message[1];
 };
-typedef struct aeron_publication_error_response_stct aeron_publication_error_response_t;
+typedef struct aeron_publication_error_stct aeron_publication_error_t;
 
 #pragma pack(pop)
 

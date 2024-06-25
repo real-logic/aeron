@@ -1,0 +1,109 @@
+name: Publish Artifacts and Release Documentation
+
+on:
+  workflow_dispatch:
+    inputs:
+      patch:
+        description: Is patch? (Will only update tagged version.txt)
+        required: true
+        default: false
+        type: boolean
+      release:
+        description: Is release? (Will update master version.txt)
+        required: true
+        default: false
+        type: boolean
+      tag:
+        description: Release Version (For tagged version.txt)
+        required: true
+        type: string
+      snapshot-tag:
+        description: New Version (For master version.txt)
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail'
+
+jobs:
+  tag-release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Push Tag
+        id: commit-tag
+        if: ${{ inputs.release || inputs.patch }}
+        run: |
+          echo ${{ inputs.tag }} > version.txt
+          git status
+          git commit -am "${{ inputs.tag }} released."
+          git tag ${{ inputs.tag }}
+          git push origin refs/tags/${{ inputs.tag }}
+
+  java-build:
+    name: Publish Artifacts and Release Documentation
+    permissions:
+      contents: write
+      packages: write
+    needs: tag-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ '8' ]
+        os: ['ubuntu-22.04' ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: update-version
+        if: ${{ inputs.release || inputs.patch }}
+        run: echo ${{ inputs.tag }} > version.txt
+      - name: Setup java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: ${{ matrix.java }}
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          java -Xinternalversion
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+      - name: Publish with Gradle
+        run: ./gradlew publish
+        env:
+          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.ossrhUsername }}
+          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.ossrhPassword }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.signingKey }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.signingPassword }}
+      - name: Build with Gradle
+        if: ${{ inputs.release }}
+        run: ./gradlew tutorialPublish -Paeron.ci.apiKey=${{ secrets.WIKI_PAGE_TOKEN }} --stacktrace
+
+  update-tags:
+    permissions:
+      contents: write
+    needs: java-build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+      - name: Update master
+        if: ${{ inputs.release }}
+        run: |
+          echo ${{ inputs.snapshot-tag }} > version.txt
+          git status
+          git commit -am "post ${{ inputs.tag }} release bump"
+          git push origin master

@@ -81,8 +81,13 @@ ext {
         ossrhPassword = ''
     }
 
-    signingKey = project.findProperty("signingKey")
-    signingPassword = project.findProperty("signingPassword")
+    if (!project.hasProperty('signingKey')) {
+        signingKey = null
+    }
+
+    if (!project.hasProperty('signingPassword')) {
+        signingPassword = null
+    }
 }
 
 def projectPom = {

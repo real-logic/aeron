@@ -39,7 +39,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -356,9 +359,10 @@ public class ImageInvalidationTest
     @ParameterizedTest
     @ValueSource(strings = { "127.0.0.1", "[::1]" })
     @InterruptAfter(5)
-    void shouldReturnAllParametersToApi(final String addressStr)
+    void shouldReturnAllParametersToApi(final String addressStr) throws UnknownHostException
     {
-        assumeTrue(System.getProperty("java.net.preferIPv4Stack") == null);
+        final InetAddress address = InetAddress.getByName(addressStr);
+        assumeTrue(address instanceof Inet4Address || System.getProperty("java.net.preferIPv4Stack") == null);
 
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 

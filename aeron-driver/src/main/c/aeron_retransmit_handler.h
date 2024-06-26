@@ -56,6 +56,7 @@ typedef struct aeron_retransmit_handler_stct
 
     bool is_multicast;
     size_t max_retransmits;
+    int64_t *retransmit_overflow_counter;
 }
 aeron_retransmit_handler_t;
 
@@ -64,7 +65,8 @@ int aeron_retransmit_handler_init(
     int64_t *invalid_packets_counter,
     uint64_t delay_timeout_ns,
     uint64_t linger_timeout_ns,
-    bool is_multicast);
+    bool is_multicast,
+    int64_t *retransmit_overflow_counter);
 
 void aeron_retransmit_handler_close(aeron_retransmit_handler_t *handler);
 

@@ -141,12 +141,16 @@ int aeron_network_publication_create(
         return -1;
     }
 
+    int64_t *retransmit_overflow_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_RETRANSMIT_OVERFLOW);
+
     if (aeron_retransmit_handler_init(
         &_pub->retransmit_handler,
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS),
         context->retransmit_unicast_delay_ns,
         context->retransmit_unicast_linger_ns,
-        endpoint->conductor_fields.udp_channel->is_multicast) < 0)
+        endpoint->conductor_fields.udp_channel->is_multicast,
+        retransmit_overflow_counter) < 0)
     {
         aeron_free(_pub->log_file_name);
         aeron_free(_pub);

@@ -58,6 +58,7 @@ typedef enum aeron_system_counter_enum_stct
     AERON_SYSTEM_COUNTER_AERON_VERSION = 34,
     AERON_SYSTEM_COUNTER_BYTES_CURRENTLY_MAPPED = 35,
     AERON_SYSTEM_COUNTER_RETRANSMITTED_BYTES = 36,
+    AERON_SYSTEM_COUNTER_RETRANSMIT_OVERFLOW = 37,
 
     // Add all new counters before this one (used for a static assertion).
     AERON_SYSTEM_COUNTER_DUMMY_LAST,

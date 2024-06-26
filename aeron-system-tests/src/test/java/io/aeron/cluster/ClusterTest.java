@@ -67,6 +67,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.zip.CRC32;
@@ -2475,6 +2476,8 @@ class ClusterTest
         final ClusteredServiceContainer.Context cscContext1 = new ClusteredServiceContainer.Context();
         final ConsensusModule.Context cmContext2 = new ConsensusModule.Context();
         final ClusteredServiceContainer.Context cscContext2 = new ClusteredServiceContainer.Context();
+        final MutableInteger leadershipCounter1 = new MutableInteger();
+        final MutableInteger leadershipCounter2 = new MutableInteger();
         try (TestMediaDriver mediaDriver = TestMediaDriver.launch(new MediaDriver.Context()
             .threadingMode(ThreadingMode.SHARED)
             .aeronDirectoryName(tmpDir.resolve("aeron").toString()),
@@ -2508,7 +2511,21 @@ class ClusterTest
                 .replayStreamId(cmContext1.replayStreamId())
                 .serviceId(0)
                 .serviceName("test1")
-                .clusteredService(new TestNode.TestService()));
+                .clusteredService(new TestNode.TestService()
+                {
+                    public void onNewLeadershipTermEvent(
+                        final long leadershipTermId,
+                        final long logPosition,
+                        final long timestamp,
+                        final long termBaseLogPosition,
+                        final int leaderMemberId,
+                        final int logSessionId,
+                        final TimeUnit timeUnit,
+                        final int appVersion)
+                    {
+                        leadershipCounter1.increment();
+                    }
+                }));
             ConsensusModule consensusModule2 = ConsensusModule.launch(cmContext2
                 .aeronDirectoryName(mediaDriver.aeronDirectoryName())
                 .clusterId(7)
@@ -2531,7 +2548,21 @@ class ClusterTest
                 .replayStreamId(cmContext2.replayStreamId())
                 .serviceId(0)
                 .serviceName("test2")
-                .clusteredService(new TestNode.TestService())))
+                .clusteredService(new TestNode.TestService()
+                {
+                    public void onNewLeadershipTermEvent(
+                        final long leadershipTermId,
+                        final long logPosition,
+                        final long timestamp,
+                        final long termBaseLogPosition,
+                        final int leaderMemberId,
+                        final int logSessionId,
+                        final TimeUnit timeUnit,
+                        final int appVersion)
+                    {
+                        leadershipCounter2.increment();
+                    }
+                })))
         {
             Tests.await(() ->
                 ElectionState.CLOSED == ElectionState.get(consensusModule1.context().electionStateCounter()));
@@ -2540,6 +2571,8 @@ class ClusterTest
 
             assertEquals(1L, consensusModule1.context().electionCounter().get());
             assertEquals(1L, consensusModule2.context().electionCounter().get());
+            assertEquals(1, leadershipCounter1.get());
+            assertEquals(1, leadershipCounter2.get());
 
             try (AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
                 .aeronDirectoryName(archive.context().aeronDirectoryName())

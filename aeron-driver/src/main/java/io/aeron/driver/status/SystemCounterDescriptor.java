@@ -215,7 +215,12 @@ public enum SystemCounterDescriptor
      * Note that retransmitted bytes are not included in the {@link SystemCounterDescriptor#BYTES_SENT}
      * counter value. We may change this in the future.
      */
-    RETRANSMITTED_BYTES(36, "Retransmitted bytes");
+    RETRANSMITTED_BYTES(36, "Retransmitted bytes"),
+
+    /**
+     * A count of the number of times that the retransmit pool has been overflowed.
+     */
+    RETRANSMIT_OVERFLOW(37, "Restransmit Pool Overflow count");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

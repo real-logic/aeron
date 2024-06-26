@@ -72,12 +72,13 @@ class RetransmitHandlerTest
     private final RetransmitSender sender = mock(RetransmitSender.class);
     private final FlowControl fc = mock(FlowControl.class);
     private final AtomicCounter invalidPackets = mock(AtomicCounter.class);
+    private final AtomicCounter retransmitOverflow = mock(AtomicCounter.class);
 
     private final HeaderWriter headerWriter = HeaderWriter.newInstance(
         DataHeaderFlyweight.createDefaultHeader(0, 0, 0));
 
     private RetransmitHandler handler = new RetransmitHandler(
-        () -> currentTime, invalidPackets, DELAY_GENERATOR, LINGER_GENERATOR, true);
+        () -> currentTime, invalidPackets, DELAY_GENERATOR, LINGER_GENERATOR, true, retransmitOverflow);
 
     @BeforeEach
     void before()
@@ -317,9 +318,30 @@ class RetransmitHandlerTest
         verifyNoInteractions(sender);
     }
 
+    @ParameterizedTest
+    @MethodSource("consumers")
+    void shouldIncrementOverflowCounter(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    {
+        createTermBuffer(creator, 5);
+        final int termLength = 128 * 1024;
+        final long existingCount = retransmitOverflow.get();
+
+        for (int i = 0; i < 16; i++)
+        {
+            final int termOffset = offsetOfFrame(i * 64);
+            handler.onNak(TERM_ID, termOffset, ALIGNED_FRAME_LENGTH, termLength, MTU_LENGTH, fc, sender);
+        }
+
+        handler.onNak(
+            TERM_ID, offsetOfFrame(16 * 64), ALIGNED_FRAME_LENGTH, termLength, MTU_LENGTH, fc, sender);
+
+        verify(retransmitOverflow).increment();
+    }
+
     private RetransmitHandler newZeroDelayRetransmitHandler()
     {
-        return new RetransmitHandler(() -> currentTime, invalidPackets, ZERO_DELAY_GENERATOR, LINGER_GENERATOR, true);
+        return new RetransmitHandler(
+            () -> currentTime, invalidPackets, ZERO_DELAY_GENERATOR, LINGER_GENERATOR, true, retransmitOverflow);
     }
 
     private void createTermBuffer(final BiConsumer<RetransmitHandlerTest, Integer> creator, final int num)

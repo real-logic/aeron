@@ -38,30 +38,34 @@ public final class RetransmitHandler
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
     private final AtomicCounter invalidPackets;
     private final boolean hasGroupSemantics;
+    private final AtomicCounter retransmitOverflowCounter;
 
     private int activeRetransmitCount = 0;
 
     /**
      * Create a handler for the dealing with the reception of frame request a frame to be retransmitted.
      *
-     * @param nanoClock              used to determine time.
-     * @param invalidPackets         for recording invalid packets.
-     * @param delayGenerator         to use for delay determination.
-     * @param lingerTimeoutGenerator to use for linger timeout.
-     * @param hasGroupSemantics      indicates multicast/MDC semantics.
+     * @param nanoClock                 used to determine time.
+     * @param invalidPackets            for recording invalid packets.
+     * @param delayGenerator            to use for delay determination.
+     * @param lingerTimeoutGenerator    to use for linger timeout.
+     * @param hasGroupSemantics         indicates multicast/MDC semantics.
+     * @param retransmitOverflowCounter counter to track overflows.
      */
     public RetransmitHandler(
         final NanoClock nanoClock,
         final AtomicCounter invalidPackets,
         final FeedbackDelayGenerator delayGenerator,
         final FeedbackDelayGenerator lingerTimeoutGenerator,
-        final boolean hasGroupSemantics)
+        final boolean hasGroupSemantics,
+        final AtomicCounter retransmitOverflowCounter)
     {
         this.nanoClock = nanoClock;
         this.invalidPackets = invalidPackets;
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
         this.hasGroupSemantics = hasGroupSemantics;
+        this.retransmitOverflowCounter = retransmitOverflowCounter;
 
         final int maxRetransmits = this.hasGroupSemantics ? MAX_RETRANSMITS_DEFAULT : 1;
 
@@ -214,12 +218,10 @@ public final class RetransmitHandler
                 return addRetransmit(availableAction);
             }
 
-            throw new IllegalStateException("maximum number of active RetransmitActions reached");
+            retransmitOverflowCounter.increment();
         }
-        else
-        {
-            return availableAction;
-        }
+
+        return availableAction;
     }
 
     private RetransmitAction scanForExistingRetransmit(final int termId, final int termOffset)

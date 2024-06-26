@@ -1583,6 +1583,7 @@ public final class DriverConductor implements Agent
                 tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
 
             countersManager.setCounterOwnerId(publisherLmt.id(), clientId);
+            final AtomicCounter retransmitOverflowCounter = ctx.systemCounters().get(RETRANSMIT_OVERFLOW);
 
             if (params.hasPosition)
             {
@@ -1599,7 +1600,8 @@ public final class DriverConductor implements Agent
                 ctx.systemCounters().get(INVALID_PACKETS),
                 ctx.retransmitUnicastDelayGenerator(),
                 ctx.retransmitUnicastLingerGenerator(),
-                udpChannel.hasGroupSemantics());
+                udpChannel.hasGroupSemantics(),
+                retransmitOverflowCounter);
 
             final NetworkPublication publication = new NetworkPublication(
                 registrationId,

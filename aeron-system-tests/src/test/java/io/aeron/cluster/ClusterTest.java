@@ -18,6 +18,8 @@ package io.aeron.cluster;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.Publication;
+import io.aeron.archive.Archive;
+import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
@@ -27,6 +29,8 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.cluster.service.SnapshotDurationTracker;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -37,25 +41,32 @@ import io.aeron.test.*;
 import io.aeron.test.cluster.ClusterTests;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.Hashing;
+import org.agrona.collections.IntHashSet;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.zip.CRC32;
@@ -2452,6 +2463,196 @@ class ClusterTest
 
             final ClusteredServiceContainer.Context containerContext = leader.container().context();
             verifyClientName(aeron, containerContext.aeron().clientId(), containerContext.serviceName());
+        }
+    }
+
+    @Test
+    @SuppressWarnings("MethodLength")
+    @InterruptAfter(30)
+    void twoClustersCanShareArchiveAndMediaDriver(@TempDir final Path tmpDir)
+    {
+        final ConsensusModule.Context cmContext1 = new ConsensusModule.Context();
+        final ClusteredServiceContainer.Context cscContext1 = new ClusteredServiceContainer.Context();
+        final ConsensusModule.Context cmContext2 = new ConsensusModule.Context();
+        final ClusteredServiceContainer.Context cscContext2 = new ClusteredServiceContainer.Context();
+        try (TestMediaDriver mediaDriver = TestMediaDriver.launch(new MediaDriver.Context()
+            .threadingMode(ThreadingMode.SHARED)
+            .aeronDirectoryName(tmpDir.resolve("aeron").toString()),
+            systemTestWatcher);
+            Archive archive = Archive.launch(new Archive.Context()
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .archiveDir(tmpDir.resolve("archive").toFile())
+                .threadingMode(ArchiveThreadingMode.SHARED)
+                .recordingEventsEnabled(false)
+                .controlChannel("aeron:udp?endpoint=localhost:8888|term-length=64k")
+                .replicationChannel("aeron:udp?endpoint=localhost:0"));
+            ConsensusModule consensusModule1 = ConsensusModule.launch(cmContext1
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .clusterId(5)
+                .serviceCount(1)
+                .clusterDir(tmpDir.resolve("cluster-" + cmContext1.clusterId()).toFile())
+                .ingressChannel("aeron:udp?term-length=128k|alias=ingress-cluster-" + cmContext1.clusterId())
+                .replicationChannel("aeron:udp?endpoint=localhost:0")
+                .clusterMembers("0,localhost:8811,localhost:8822,localhost:8833,localhost:0,localhost:8888")
+                .consensusModuleStreamId(cmContext1.consensusModuleStreamId() + 100)
+                .serviceStreamId(cmContext1.serviceStreamId() + 100)
+                .snapshotStreamId(cmContext1.snapshotStreamId() + 100)
+                .replayStreamId(cmContext1.replayStreamId() + 100));
+            ClusteredServiceContainer clusteredServiceContainer1 = ClusteredServiceContainer.launch(cscContext1
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .clusterDir(consensusModule1.context().clusterDir())
+                .clusterId(consensusModule1.context().clusterId())
+                .serviceStreamId(cmContext1.serviceStreamId())
+                .consensusModuleStreamId(cmContext1.consensusModuleStreamId())
+                .snapshotStreamId(cscContext1.snapshotStreamId() + 100)
+                .replayStreamId(cmContext1.replayStreamId())
+                .serviceId(0)
+                .serviceName("test1")
+                .clusteredService(new TestNode.TestService()));
+            ConsensusModule consensusModule2 = ConsensusModule.launch(cmContext2
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .clusterId(7)
+                .serviceCount(1)
+                .clusterDir(tmpDir.resolve("cluster-" + cmContext2.clusterId()).toFile())
+                .ingressChannel("aeron:udp?term-length=128k|alias=ingress-cluster-" + cmContext2.clusterId())
+                .replicationChannel("aeron:udp?endpoint=localhost:0")
+                .clusterMembers("0,localhost:9911,localhost:9922,localhost:9933,localhost:0,localhost:8888")
+                .consensusModuleStreamId(cmContext2.consensusModuleStreamId() + 200)
+                .serviceStreamId(cmContext2.serviceStreamId() + 200)
+                .snapshotStreamId(cmContext2.snapshotStreamId() + 200)
+                .replayStreamId(cmContext2.replayStreamId() + 200));
+            ClusteredServiceContainer clusteredServiceContainer2 = ClusteredServiceContainer.launch(cscContext2
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .clusterDir(consensusModule2.context().clusterDir())
+                .clusterId(consensusModule2.context().clusterId())
+                .serviceStreamId(cmContext2.serviceStreamId())
+                .consensusModuleStreamId(cmContext2.consensusModuleStreamId())
+                .snapshotStreamId(cscContext2.snapshotStreamId() + 100)
+                .replayStreamId(cmContext2.replayStreamId())
+                .serviceId(0)
+                .serviceName("test2")
+                .clusteredService(new TestNode.TestService())))
+        {
+            Tests.await(() ->
+                ElectionState.CLOSED == ElectionState.get(consensusModule1.context().electionStateCounter()));
+            Tests.await(() ->
+                ElectionState.CLOSED == ElectionState.get(consensusModule2.context().electionStateCounter()));
+
+            assertEquals(1L, consensusModule1.context().electionCounter().get());
+            assertEquals(1L, consensusModule2.context().electionCounter().get());
+
+            try (AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
+                .aeronDirectoryName(archive.context().aeronDirectoryName())
+                .controlRequestChannel(archive.context().controlChannel())
+                .controlResponseChannel("aeron:udp?endpoint=localhost:0")))
+            {
+                final IntHashSet logSessions = new IntHashSet();
+                assertEquals(2, aeronArchive.listRecordings(
+                    0,
+                    Integer.MAX_VALUE,
+                    (controlSessionId,
+                    correlationId,
+                    recordingId,
+                    startTimestamp,
+                    stopTimestamp,
+                    startPosition,
+                    stopPosition,
+                    initialTermId,
+                    segmentFileLength,
+                    termBufferLength,
+                    mtuLength,
+                    sessionId,
+                    streamId,
+                    strippedChannel,
+                    originalChannel,
+                    sourceIdentity) ->
+                    {
+                        assertThat(originalChannel, CoreMatchers.containsString("alias=log"));
+                        logSessions.add(sessionId);
+                    }),
+                    "wrong number of recordings");
+                assertEquals(2, logSessions.size());
+            }
+
+            try (AeronCluster client = AeronCluster.connect(new AeronCluster.Context()
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .ingressChannel("aeron:udp?term-length=128k")
+                .ingressEndpoints("0=localhost:8811")
+                .egressChannel("aeron:udp?endpoint=localhost:0")))
+            {
+                assertEquals(1, client.clusterSessionId());
+            }
+
+            final MutableLong client1SessionId = new MutableLong();
+            final MutableLong client2SessionId = new MutableLong();
+            final MutableInteger clientResponsesCount1 = new MutableInteger();
+            final MutableInteger clientResponsesCount2 = new MutableInteger();
+            try (AeronCluster client1 = AeronCluster.connect(new AeronCluster.Context()
+                .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                .ingressChannel("aeron:udp?term-length=128k")
+                .ingressEndpoints("0=localhost:8811")
+                .egressChannel("aeron:udp?endpoint=localhost:0")
+                .egressListener((clusterSessionId, timestamp, buffer, offset, length, header) ->
+                {
+                    assertEquals(client1SessionId.get(), clusterSessionId);
+                    clientResponsesCount1.getAndIncrement();
+                }));
+                AeronCluster client2 = AeronCluster.connect(new AeronCluster.Context()
+                    .aeronDirectoryName(mediaDriver.aeronDirectoryName())
+                    .ingressChannel("aeron:udp?term-length=128k")
+                    .ingressEndpoints("0=localhost:9911")
+                    .egressChannel("aeron:udp?endpoint=localhost:0")
+                    .egressListener((clusterSessionId, timestamp, buffer, offset, length, header) ->
+                    {
+                        assertEquals(client2SessionId.get(), clusterSessionId);
+                        clientResponsesCount2.getAndIncrement();
+                    })))
+            {
+                assertNotEquals(client1.clusterSessionId(), client2.clusterSessionId());
+                client1SessionId.set(client1.clusterSessionId());
+                client2SessionId.set(client2.clusterSessionId());
+
+                final UnsafeBuffer msgBuf = new UnsafeBuffer(new byte[32]);
+                ThreadLocalRandom.current().nextBytes(msgBuf.byteArray());
+
+                for (int i = 0; i < 3; i++)
+                {
+                    while (client1.offer(msgBuf, 0, 16) < 0)
+                    {
+                        client1.pollEgress();
+                    }
+                }
+
+                ThreadLocalRandom.current().nextBytes(msgBuf.byteArray());
+                for (int i = 0; i < 5; i++)
+                {
+                    while (client2.offer(msgBuf, 0, msgBuf.capacity()) < 0)
+                    {
+                        client2.pollEgress();
+                    }
+                }
+
+                Tests.await(() ->
+                {
+                    client2.pollEgress();
+                    final TestNode.TestService service =
+                        (TestNode.TestService)clusteredServiceContainer2.context().clusteredService();
+                    return 5 == service.messageCount();
+                });
+
+                Tests.await(() ->
+                {
+                    client1.pollEgress();
+                    final TestNode.TestService service =
+                        (TestNode.TestService)clusteredServiceContainer1.context().clusteredService();
+                    return 3 == service.messageCount();
+                });
+
+                assertEquals(3,
+                    ((TestNode.TestService)clusteredServiceContainer1.context().clusteredService()).messageCount());
+                assertEquals(5,
+                    ((TestNode.TestService)clusteredServiceContainer2.context().clusteredService()).messageCount());
+            }
         }
     }
 

@@ -3,22 +3,17 @@ name: Publish Artifacts and Release Documentation
 on:
   workflow_dispatch:
     inputs:
-      patch:
-        description: Is patch? (Will only update tagged version.txt)
-        required: true
-        default: false
-        type: boolean
       release:
         description: Is release? (Will update master version.txt)
         required: true
         default: false
         type: boolean
-      tag:
+      tagged-version:
         description: Release Version (For tagged version.txt)
         required: true
         type: string
-      snapshot-tag:
-        description: New Version (For master version.txt)
+      new-version:
+        description: New Version (For branch version.txt)
         required: true
         type: string
 
@@ -38,16 +33,20 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
-      - name: Push Tag
-        id: commit-tag
-        if: ${{ inputs.release || inputs.patch }}
+          ref: ${{ github.ref }}
+      - name: update-tag
+        if: ${{ inputs.release }}
         run: |
-          echo ${{ inputs.tag }} > version.txt
+          git config user.name "github-actions"
+          git config user.email "github-actions"
+          echo ${{ inputs.tagged-version }} > version.txt
+          git add version.txt
           git status
-          git commit -am "${{ inputs.tag }} released."
-          git tag ${{ inputs.tag }}
-          git push origin refs/tags/${{ inputs.tag }}
+          git commit -m "${{ inputs.tagged-version }} released."
+          git tag ${{ inputs.tagged-version }}
+          git push 
+          git push origin refs/tags/${{ inputs.tagged-version }}
+
 
   java-build:
     name: Publish Artifacts and Release Documentation
@@ -65,10 +64,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
-      - name: update-version
-        if: ${{ inputs.release || inputs.patch }}
-        run: echo ${{ inputs.tag }} > version.txt
+          ref: ${{ github.ref }}
       - name: Setup java
         uses: actions/setup-java@v4
         with:
@@ -90,7 +86,7 @@ jobs:
         if: ${{ inputs.release }}
         run: ./gradlew tutorialPublish -Paeron.ci.apiKey=${{ secrets.WIKI_PAGE_TOKEN }} --stacktrace
 
-  update-tags:
+  update-next-version:
     permissions:
       contents: write
     needs: java-build
@@ -99,11 +95,14 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
         with:
-          ref: master
-      - name: Update master
+          ref: ${{ github.ref }}
+      - name: update-branch
         if: ${{ inputs.release }}
         run: |
-          echo ${{ inputs.snapshot-tag }} > version.txt
+          git config user.name "github-actions"
+          git config user.email "github-actions"
+          echo ${{ inputs.new-version }} > version.txt
+          git add version.txt
           git status
-          git commit -am "post ${{ inputs.tag }} release bump"
-          git push origin master
+          git commit -m "${{ inputs.tagged-version }} released."
+          git push

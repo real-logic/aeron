@@ -220,7 +220,7 @@ public enum SystemCounterDescriptor
     /**
      * A count of the number of times that the retransmit pool has been overflowed.
      */
-    RETRANSMIT_OVERFLOW(37, "Restransmit Pool Overflow count");
+    RETRANSMIT_OVERFLOW(37, "Retransmit Pool Overflow count");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

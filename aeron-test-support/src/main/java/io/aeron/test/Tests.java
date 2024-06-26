@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.aeron.test;
 
 import io.aeron.Aeron;
@@ -23,6 +24,7 @@ import io.aeron.driver.Configuration;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
+
 import org.agrona.LangUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
@@ -49,9 +51,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BooleanSupplier;
-import java.util.function.IntConsumer;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.mockito.Mockito.doAnswer;
@@ -399,15 +399,59 @@ public class Tests
      */
     public static void await(final BooleanSupplier conditionSupplier, final long timeoutNs)
     {
+        await(conditionSupplier, timeoutNs, () -> "");
+    }
+
+    /**
+     * Await a condition with a timeout and also check for thread interrupt.
+     *
+     * @param conditionSupplier     for the condition to be awaited.
+     * @param timeoutNs             to await.
+     * @param errorMessageSupplier  supplier of error message if timeout reached
+     */
+    public static void await(
+        final BooleanSupplier conditionSupplier,
+        final long timeoutNs,
+        final Supplier<String> errorMessageSupplier)
+    {
         final long deadlineNs = System.nanoTime() + timeoutNs;
         while (!conditionSupplier.getAsBoolean())
         {
             if ((deadlineNs - System.nanoTime()) <= 0)
             {
-                throw new TimeoutException();
+                throw new TimeoutException(errorMessageSupplier.get());
             }
 
             Tests.yield();
+        }
+    }
+
+    /**
+     * Await a condition with a timeout and also check for thread interrupt.
+     *
+     * @param argSupplier             argument for the condition + message.
+     * @param conditionsPredicate     for the condition to be awaited.
+     * @param timeoutNs               to await.
+     * @param errorMessageCreator     supplier of error message if timeout reached
+     * @param <T>                     type of argument to condition + message
+     */
+    public static <T> void await(
+        final Supplier<T> argSupplier,
+        final Predicate<T> conditionsPredicate,
+        final long timeoutNs,
+        final Function<T, String> errorMessageCreator)
+    {
+        final long deadlineNs = System.nanoTime() + timeoutNs;
+        T arg = argSupplier.get();
+        while (!conditionsPredicate.test(arg))
+        {
+            if ((deadlineNs - System.nanoTime()) <= 0)
+            {
+                throw new TimeoutException(errorMessageCreator.apply(arg));
+            }
+
+            Tests.yield();
+            arg = argSupplier.get();
         }
     }
 
@@ -623,7 +667,7 @@ public class Tests
             try
             {
                 mBeanServer.invoke(
-                    loggingName, "startCollecting", new Object[]{ displayName }, new String[]{ "java.lang.String" });
+                    loggingName, "startCollecting", new Object[] {displayName}, new String[] {"java.lang.String"});
             }
             catch (final InstanceNotFoundException ignore)
             {
@@ -676,7 +720,7 @@ public class Tests
             try
             {
                 mBeanServer.invoke(
-                    loggingName, "writeToFile", new Object[]{ filename }, new String[]{ "java.lang.String" });
+                    loggingName, "writeToFile", new Object[] {filename}, new String[] {"java.lang.String"});
             }
             catch (final InstanceNotFoundException ignore)
             {

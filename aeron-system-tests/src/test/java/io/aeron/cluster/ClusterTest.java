@@ -2470,7 +2470,6 @@ class ClusterTest
     @Test
     @SuppressWarnings("MethodLength")
     @InterruptAfter(30)
-    @Disabled // Is currently intermittent
     void twoClustersCanShareArchiveAndMediaDriver(@TempDir final Path tmpDir)
     {
         final ConsensusModule.Context cmContext1 = new ConsensusModule.Context();
@@ -2572,8 +2571,7 @@ class ClusterTest
 
             assertEquals(1L, consensusModule1.context().electionCounter().get());
             assertEquals(1L, consensusModule2.context().electionCounter().get());
-            assertEquals(1, leadershipCounter1.get());
-            assertEquals(1, leadershipCounter2.get());
+            Tests.await(() -> 1 == leadershipCounter1.get() && 1 == leadershipCounter2.get());
 
             try (AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
                 .aeronDirectoryName(archive.context().aeronDirectoryName())

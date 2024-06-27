@@ -250,6 +250,63 @@ public class ImageInvalidationTest
         }
     }
 
+
+    @Test
+    @InterruptAfter(10)
+    @SlowTest
+    void shouldReceivePublicationErrorFramesAllRelevantClients() throws IOException
+    {
+        context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
+
+        final TestMediaDriver driver = launch();
+        final QueuedErrorFrameHandler errorFrameHandler1 = new QueuedErrorFrameHandler();
+        final QueuedErrorFrameHandler errorFrameHandler2 = new QueuedErrorFrameHandler();
+
+        final Aeron.Context ctx1 = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName())
+            .errorFrameHandler(errorFrameHandler1);
+
+        final Aeron.Context ctx2 = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName())
+            .errorFrameHandler(errorFrameHandler2);
+
+        try (Aeron aeron1 = Aeron.connect(ctx1);
+            Aeron aeron2 = Aeron.connect(ctx2);
+            Publication pub = aeron1.addPublication(channel, streamId);
+            Publication pubOther = aeron2.addPublication(channel, streamId);
+            Subscription sub = aeron1.addSubscription(channel, streamId))
+        {
+            assertNotNull(aeron2);
+            Tests.awaitConnected(pub);
+            Tests.awaitConnected(pubOther);
+            Tests.awaitConnected(sub);
+
+            while (pub.offer(message) < 0)
+            {
+                Tests.yield();
+            }
+
+            while (0 == sub.poll((buffer, offset, length, header) -> {}, 1))
+            {
+                Tests.yield();
+            }
+
+            final Image image = sub.imageAtIndex(0);
+            final String reason = "Needs to be closed";
+            image.invalidate(reason);
+
+            while (null == errorFrameHandler1.poll())
+            {
+                Tests.yield();
+            }
+
+            while (null == errorFrameHandler2.poll())
+            {
+                Tests.yield();
+            }
+        }
+    }
+
     @Test
     @InterruptAfter(10)
     @SlowTest

@@ -274,10 +274,17 @@ final class ClientConductor implements Agent
 
     void onPublicationError(final PublicationErrorFrameFlyweight errorFrameFlyweight)
     {
-        if (resourceByRegIdMap.containsKey(errorFrameFlyweight.registrationId()))
+        for (final Object resource : resourceByRegIdMap.values())
         {
-            publicationErrorFrame.set(errorFrameFlyweight);
-            ctx.errorFrameHandler().onPublicationError(publicationErrorFrame);
+            if (resource instanceof Publication)
+            {
+                final Publication publication = (Publication)resource;
+                if (publication.originalRegistrationId() == errorFrameFlyweight.registrationId())
+                {
+                    publicationErrorFrame.set(errorFrameFlyweight);
+                    ctx.errorFrameHandler().onPublicationError(publicationErrorFrame);
+                }
+            }
         }
     }
 

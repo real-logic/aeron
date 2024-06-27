@@ -60,8 +60,8 @@ static aeron_system_counter_t system_counters[] =
         { "Aeron software: version=" AERON_VERSION_TXT " commit=" AERON_VERSION_GITSHA, AERON_SYSTEM_COUNTER_AERON_VERSION },
         { "Bytes currently mapped", AERON_SYSTEM_COUNTER_BYTES_CURRENTLY_MAPPED },
         { "Retransmitted bytes", AERON_SYSTEM_COUNTER_RETRANSMITTED_BYTES },
-        { "Retransmit Pool Overflow count", AERON_SYSTEM_COUNTER_RETRANSMIT_OVERFLOW }
-        { "Error Frames received", AERON_SYSTEM_COUNTER_ERROR_FRAMES_RECEIVED },
+        { "Retransmit Pool Overflow count", AERON_SYSTEM_COUNTER_RETRANSMIT_OVERFLOW },
+        { "Error Frames received", AERON_SYSTEM_COUNTER_ERROR_FRAMES_RECEIVED }
     };
 
 static size_t num_system_counters = sizeof(system_counters) / sizeof(aeron_system_counter_t);

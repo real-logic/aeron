@@ -942,7 +942,7 @@ public class Aeron implements AutoCloseable
         private UnavailableImageHandler unavailableImageHandler;
         private AvailableCounterHandler availableCounterHandler;
         private UnavailableCounterHandler unavailableCounterHandler;
-        private ErrorFrameListener errorFrameHandler = ErrorFrameListener.NO_OP;
+        private ErrorFrameHandler errorFrameHandler = ErrorFrameHandler.NO_OP;
         private Runnable closeHandler;
         private long keepAliveIntervalNs = Configuration.KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeoutNs = 0;
@@ -1737,18 +1737,19 @@ public class Aeron implements AutoCloseable
          * @param errorFrameHandler to be called back when an error frame is received.
          * @return                  this for a fluent API.
          */
-        public Context errorFrameHandler(final ErrorFrameListener errorFrameHandler)
+        public Context errorFrameHandler(final ErrorFrameHandler errorFrameHandler)
         {
             this.errorFrameHandler = errorFrameHandler;
             return this;
         }
 
         /**
-         * Get the handler used to report error frame received by this driver.
+         * Get the handler to receive error frames that have been received by the local driver for resources owned by
+         * this client.
          *
-         * @return the {@link ErrorFrameListener} to call back on to.
+         * @return the {@link ErrorFrameHandler} to call back on to.
          */
-        public ErrorFrameListener errorFrameHandler()
+        public ErrorFrameHandler errorFrameHandler()
         {
             return this.errorFrameHandler;
         }

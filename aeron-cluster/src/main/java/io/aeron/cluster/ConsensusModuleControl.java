@@ -97,4 +97,12 @@ public interface ConsensusModuleControl
      * @return the response {@link Publication} for a given cluster session id, null if not active.
      */
     Publication responsePublication(long clusterSessionId);
+
+    /**
+     * Get the encoded principle behind a cluster session which can be used for authorisation.
+     *
+     * @param clusterSessionId for which the encoded principle is required.
+     * @return the encoded principle behind a cluster session which can be used for authorisation, null if not found.
+     */
+    byte[] encodedPrinciple(long clusterSessionId);
 }

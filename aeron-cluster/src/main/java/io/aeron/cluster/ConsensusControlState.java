@@ -18,9 +18,9 @@ package io.aeron.cluster;
 import io.aeron.ExclusivePublication;
 
 /**
- * The state needed to allow control of the consensus module
- *
- * This is a record object being passed to external entities
+ * The state needed to allow control of the consensus module.
+ * <p>
+ * This is a record object being passed to external entities.
  *
  * @see ConsensusModuleExtension
  */

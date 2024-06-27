@@ -511,6 +511,20 @@ final class ConsensusModuleAgent
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public byte[] encodedPrinciple(final long clusterSessionId)
+    {
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
+        if (null != session)
+        {
+            return session.encodedPrincipal();
+        }
+
+        return null;
+    }
+
     public void onLoadBeginSnapshot(
         final int appVersion, final TimeUnit timeUnit, final DirectBuffer buffer, final int offset, final int length)
     {

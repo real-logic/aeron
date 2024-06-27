@@ -834,6 +834,40 @@ class ArchiveEventDissectorTest
     }
 
     @Test
+    void replaySessionStateChange()
+    {
+        internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_600_000_000L);
+        buffer.putLong(LOG_HEADER_LENGTH, 20_000_000_000L, LITTLE_ENDIAN);
+        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 30_000_000_000L, LITTLE_ENDIAN);
+        buffer.putStringAscii(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, "x -> y");
+
+        dissectReplaySessionStateChange(buffer, 0, builder);
+
+        assertEquals("[1.600000000] " + CONTEXT + ": " + REPLAY_SESSION_STATE_CHANGE.name() + " [10/20]:" +
+            " sessionId=20000000000" +
+            " position=30000000000" +
+            " x -> y",
+            builder.toString());
+    }
+
+    @Test
+    void recordingSessionStateChange()
+    {
+        internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_700_000_000L);
+        buffer.putLong(LOG_HEADER_LENGTH, 30_000_000_000L, LITTLE_ENDIAN);
+        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 40_000_000_000L, LITTLE_ENDIAN);
+        buffer.putStringAscii(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, "x -> y");
+
+        dissectRecordingSessionStateChange(buffer, 0, builder);
+
+        assertEquals("[1.700000000] " + CONTEXT + ": " + RECORDING_SESSION_STATE_CHANGE.name() + " [10/20]:" +
+            " recordingId=30000000000" +
+            " position=40000000000" +
+            " x -> y",
+            builder.toString());
+    }
+
+    @Test
     void replicationSessionStateChange()
     {
         internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_500_000_000L);

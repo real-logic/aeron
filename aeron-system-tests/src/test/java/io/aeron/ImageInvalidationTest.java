@@ -88,7 +88,7 @@ public class ImageInvalidationTest
         return driver;
     }
 
-    private static final class QueuedErrorFrameListener implements ErrorFrameListener
+    private static final class QueuedErrorFrameHandler implements ErrorFrameHandler
     {
         private final OneToOneConcurrentArrayQueue<PublicationErrorFrame> errorFrameQueue =
             new OneToOneConcurrentArrayQueue<>(512);
@@ -112,7 +112,7 @@ public class ImageInvalidationTest
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 
         final TestMediaDriver driver = launch();
-        final QueuedErrorFrameListener errorFrameHandler = new QueuedErrorFrameListener();
+        final QueuedErrorFrameHandler errorFrameHandler = new QueuedErrorFrameHandler();
 
         final Aeron.Context ctx = new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())
@@ -202,8 +202,8 @@ public class ImageInvalidationTest
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 
         final TestMediaDriver driver = launch();
-        final QueuedErrorFrameListener errorFrameHandler1 = new QueuedErrorFrameListener();
-        final QueuedErrorFrameListener errorFrameHandler2 = new QueuedErrorFrameListener();
+        final QueuedErrorFrameHandler errorFrameHandler1 = new QueuedErrorFrameHandler();
+        final QueuedErrorFrameHandler errorFrameHandler2 = new QueuedErrorFrameHandler();
 
         final Aeron.Context ctx1 = new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())
@@ -367,7 +367,7 @@ public class ImageInvalidationTest
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 
         final TestMediaDriver driver = launch();
-        final QueuedErrorFrameListener errorFrameHandler = new QueuedErrorFrameListener();
+        final QueuedErrorFrameHandler errorFrameHandler = new QueuedErrorFrameHandler();
 
         final Aeron.Context ctx = new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())

@@ -224,7 +224,7 @@ public enum SystemCounterDescriptor
     RETRANSMIT_OVERFLOW(37, "Retransmit Pool Overflow count"),
 
     /**
-     * A count of the number of error messages received from a remote archive.
+     * A count of the number of error frames received by this driver.
      */
     ERROR_FRAMES_RECEIVED(38, "Error Frames received");
 

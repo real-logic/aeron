@@ -274,7 +274,17 @@ class RecordingSession implements Session
 
     private void state(final State newState)
     {
-        //System.out.println("RecordingSession: " + state + " -> " + newState);
+        logStateChange(state, newState, recordingId, null != image ? image.position() : NULL_POSITION);
         state = newState;
+    }
+
+    @SuppressWarnings("unused")
+    private void logStateChange(
+        final State oldState,
+        final State newState,
+        final long recordingId,
+        final long position)
+    {
+        //System.out.println("RecordingSession: " + state + " -> " + newState);
     }
 }

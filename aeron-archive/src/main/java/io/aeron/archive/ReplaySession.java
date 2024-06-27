@@ -588,8 +588,18 @@ class ReplaySession implements Session, AutoCloseable
 
     private void state(final State newState)
     {
-        //System.out.println("ReplaySession: " + epochClock.time() + ": " + state + " -> " + newState);
+        logStateChange(state, newState, sessionId, replayPosition);
         state = newState;
+    }
+
+    @SuppressWarnings("unused")
+    private void logStateChange(
+        final State oldState,
+        final State newState,
+        final long sessionId,
+        final long position)
+    {
+        //System.out.println("ReplaySession: " + state + " -> " + newState);
     }
 
     static boolean isInvalidHeader(

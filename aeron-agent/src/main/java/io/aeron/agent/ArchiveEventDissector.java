@@ -515,6 +515,40 @@ final class ArchiveEventDissector
             .append(" isSynced=").append(isSynced);
     }
 
+    static void dissectReplaySessionStateChange(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, REPLAY_SESSION_STATE_CHANGE, buffer, absoluteOffset, builder);
+
+        final long sessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long position = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        builder.append(": sessionId=").append(sessionId);
+        builder.append(" position=").append(position);
+        builder.append(" ");
+        buffer.getStringAscii(absoluteOffset, builder);
+    }
+
+    static void dissectRecordingSessionStateChange(
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    {
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, RECORDING_SESSION_STATE_CHANGE, buffer, absoluteOffset, builder);
+
+        final long recordingId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long position = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+
+        builder.append(": recordingId=").append(recordingId);
+        builder.append(" position=").append(position);
+        builder.append(" ");
+        buffer.getStringAscii(absoluteOffset, builder);
+    }
+
     static void dissectReplicationSessionStateChange(
         final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {

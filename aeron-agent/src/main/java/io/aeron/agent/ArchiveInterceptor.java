@@ -18,9 +18,7 @@ package io.aeron.agent;
 import io.aeron.archive.client.AeronArchive;
 import net.bytebuddy.asm.Advice;
 
-import static io.aeron.agent.ArchiveEventCode.CONTROL_SESSION_STATE_CHANGE;
-import static io.aeron.agent.ArchiveEventCode.REPLICATION_SESSION_DONE;
-import static io.aeron.agent.ArchiveEventCode.REPLICATION_SESSION_STATE_CHANGE;
+import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.ArchiveEventLogger.LOGGER;
 
 /**
@@ -28,6 +26,32 @@ import static io.aeron.agent.ArchiveEventLogger.LOGGER;
  */
 class ArchiveInterceptor
 {
+    static class ReplaySessionStateChange
+    {
+        @Advice.OnMethodEnter
+        static <E extends Enum<E>> void logStateChange(
+            final E oldState,
+            final E newState,
+            final long sessionId,
+            final long position)
+        {
+            LOGGER.logSessionStateChange(REPLAY_SESSION_STATE_CHANGE, oldState, newState, sessionId, position);
+        }
+    }
+
+    static class RecordingSessionStateChange
+    {
+        @Advice.OnMethodEnter
+        static <E extends Enum<E>> void logStateChange(
+            final E oldState,
+            final E newState,
+            final long recordingId,
+            final long position)
+        {
+            LOGGER.logSessionStateChange(RECORDING_SESSION_STATE_CHANGE, oldState, newState, recordingId, position);
+        }
+    }
+
     static class ReplicationSessionStateChange
     {
         @Advice.OnMethodEnter

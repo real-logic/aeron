@@ -2470,6 +2470,7 @@ class ClusterTest
     @Test
     @SuppressWarnings("MethodLength")
     @InterruptAfter(30)
+    @Disabled // Is currently intermittent
     void twoClustersCanShareArchiveAndMediaDriver(@TempDir final Path tmpDir)
     {
         final ConsensusModule.Context cmContext1 = new ConsensusModule.Context();

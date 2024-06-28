@@ -1377,7 +1377,7 @@ public final class RecordingLog implements AutoCloseable
         for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
             final Entry entry = entriesCache.get(i);
-            if (ENTRY_TYPE_STANDBY_SNAPSHOT == entry.type)
+            if (ENTRY_TYPE_STANDBY_SNAPSHOT == entry.type && entry.isValid)
             {
                 standbySnapshots.computeIfAbsent(entry.archiveEndpoint, (s) -> new TreeMap<>())
                     .computeIfAbsent(entry.logPosition, (l) -> new ArrayList<>())

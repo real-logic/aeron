@@ -33,9 +33,14 @@ class ArchiveInterceptor
             final E oldState,
             final E newState,
             final long sessionId,
-            final long position)
+            final long recordingId,
+            final long streamId,
+            final long correlationId,
+            final long position,
+            final String reason)
         {
-            LOGGER.logSessionStateChange(REPLAY_SESSION_STATE_CHANGE, oldState, newState, sessionId, position);
+            LOGGER.logReplaySessionStateChange(REPLAY_SESSION_STATE_CHANGE,
+                oldState, newState, sessionId, recordingId, streamId, correlationId, position, reason);
         }
     }
 
@@ -46,9 +51,12 @@ class ArchiveInterceptor
             final E oldState,
             final E newState,
             final long recordingId,
-            final long position)
+            final long correlationId,
+            final long position,
+            final String reason)
         {
-            LOGGER.logSessionStateChange(RECORDING_SESSION_STATE_CHANGE, oldState, newState, recordingId, position);
+            LOGGER.logRecordingSessionStateChange(RECORDING_SESSION_STATE_CHANGE,
+                oldState, newState, recordingId, correlationId, position, reason);
         }
     }
 
@@ -59,9 +67,11 @@ class ArchiveInterceptor
             final E oldState,
             final E newState,
             final long replicationId,
-            final long position)
+            final long position,
+            final String reason)
         {
-            LOGGER.logSessionStateChange(REPLICATION_SESSION_STATE_CHANGE, oldState, newState, replicationId, position);
+            LOGGER.logReplicationSessionStateChange(REPLICATION_SESSION_STATE_CHANGE,
+                oldState, newState, replicationId, position, reason);
         }
     }
 

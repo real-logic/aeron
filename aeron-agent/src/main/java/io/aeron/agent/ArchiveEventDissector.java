@@ -523,12 +523,24 @@ final class ArchiveEventDissector
 
         final long sessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
+        final long recordingId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long streamId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
+        final long correlationId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
         final long position = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
 
         builder.append(": sessionId=").append(sessionId);
+        builder.append(" recordingId=").append(recordingId);
+        builder.append(" streamId=").append(streamId);
+        builder.append(" correlationId=").append(correlationId);
         builder.append(" position=").append(position);
-        builder.append(" ");
+        builder.append(" reason=\"");
+        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
+        absoluteOffset += SIZE_OF_INT;
+        builder.append("\" ");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
@@ -540,12 +552,18 @@ final class ArchiveEventDissector
 
         final long recordingId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
+        final long correlationId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_LONG;
         final long position = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
 
         builder.append(": recordingId=").append(recordingId);
+        builder.append(" correlationId=").append(correlationId);
         builder.append(" position=").append(position);
-        builder.append(" ");
+        builder.append(" reason=\"");
+        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
+        absoluteOffset += SIZE_OF_INT;
+        builder.append("\" ");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
@@ -562,7 +580,10 @@ final class ArchiveEventDissector
 
         builder.append(": replicationId=").append(replicationId);
         builder.append(" position=").append(position);
-        builder.append(" ");
+        builder.append(" reason=\"");
+        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
+        absoluteOffset += SIZE_OF_INT;
+        builder.append("\" ");
         buffer.getStringAscii(absoluteOffset, builder);
     }
 

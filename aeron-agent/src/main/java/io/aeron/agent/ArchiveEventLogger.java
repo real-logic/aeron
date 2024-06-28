@@ -104,6 +104,162 @@ public final class ArchiveEventLogger
     }
 
     /**
+     * Log a state change event for an archive replay session
+     *
+     * @param eventCode        for the type of state change.
+     * @param oldState         before the change.
+     * @param newState         after the change.
+     * @param sessionId        identity for the replay session on the Archive.
+     * @param recordingId      recording id on the Archive.
+     * @param streamId         stream id on the Archive.
+     * @param correlationId    correlation id on the Archive.
+     * @param position         position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
+     *                         if not relevant)
+     * @param reason           a string indicating the reason for the state change
+     * @param <E>              type representing the state change.
+     */
+    public <E extends Enum<E>> void logReplaySessionStateChange(
+        final ArchiveEventCode eventCode,
+        final E oldState,
+        final E newState,
+        final long sessionId,
+        final long recordingId,
+        final long streamId,
+        final long correlationId,
+        final long position,
+        final String reason)
+    {
+        final int length = replaySessionStateChangeLength(oldState, newState, reason);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeReplaySessionStateChange(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    oldState,
+                    newState,
+                    sessionId,
+                    recordingId,
+                    streamId,
+                    correlationId,
+                    position,
+                    reason);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log a state change event for an archive recording session
+     *
+     * @param eventCode        for the type of state change.
+     * @param oldState         before the change.
+     * @param newState         after the change.
+     * @param recordingId      recording id on the Archive.
+     * @param correlationId    correlation id on the Archive.
+     * @param position         position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
+     *                         if not relevant)
+     * @param reason           a string indicating the reason for the state change
+     * @param <E>              type representing the state change.
+     */
+    public <E extends Enum<E>> void logRecordingSessionStateChange(
+        final ArchiveEventCode eventCode,
+        final E oldState,
+        final E newState,
+        final long recordingId,
+        final long correlationId,
+        final long position,
+        final String reason)
+    {
+        final int length = recordingSessionStateChangeLength(oldState, newState, reason);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeRecordingSessionStateChange(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    oldState,
+                    newState,
+                    recordingId,
+                    correlationId,
+                    position,
+                    reason);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
+     * Log a state change event for an archive replication session
+     *
+     * @param eventCode        for the type of state change.
+     * @param oldState         before the change.
+     * @param newState         after the change.
+     * @param replicationId    replication id on the Archive.
+     * @param position         position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
+     *                         if not relevant)
+     * @param reason           a string indicating the reason for the state change
+     * @param <E>              type representing the state change.
+     */
+    public <E extends Enum<E>> void logReplicationSessionStateChange(
+        final ArchiveEventCode eventCode,
+        final E oldState,
+        final E newState,
+        final long replicationId,
+        final long position,
+        final String reason)
+    {
+        final int length = replicationSessionStateChangeLength(oldState, newState, reason);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
+        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
+
+        if (index > 0)
+        {
+            try
+            {
+                encodeReplicationSessionStateChange(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    oldState,
+                    newState,
+                    replicationId,
+                    position,
+                    reason);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
+    }
+
+    /**
      * Log a state change event for an archive control session
      *
      * @param eventCode        for the type of state change.

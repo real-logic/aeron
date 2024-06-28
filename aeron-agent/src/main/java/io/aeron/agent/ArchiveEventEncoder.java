@@ -29,6 +29,102 @@ final class ArchiveEventEncoder
     {
     }
 
+    static <E extends Enum<E>> int encodeReplaySessionStateChange(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final E from,
+        final E to,
+        final long id,
+        final long recordingId,
+        final long streamId,
+        final long correlationId,
+        final long position,
+        final String reason)
+    {
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putLong(offset + encodedLength, id, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, recordingId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, streamId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, correlationId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, position, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodedLength += encodingBuffer.putStringAscii(offset + encodedLength, reason);
+
+        return encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
+    }
+
+    static <E extends Enum<E>> int replaySessionStateChangeLength(final E from, final E to, final String reason)
+    {
+        return stateTransitionStringLength(from, to) + (5 * SIZE_OF_LONG) + (SIZE_OF_INT + reason.length());
+    }
+
+    static <E extends Enum<E>> int encodeRecordingSessionStateChange(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final E from,
+        final E to,
+        final long recordingId,
+        final long correlationId,
+        final long position,
+        final String reason)
+    {
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putLong(offset + encodedLength, recordingId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, correlationId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, position, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodedLength += encodingBuffer.putStringAscii(offset + encodedLength, reason);
+
+        return encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
+    }
+
+    static <E extends Enum<E>> int recordingSessionStateChangeLength(final E from, final E to, final String reason)
+    {
+        return stateTransitionStringLength(from, to) + (3 * SIZE_OF_LONG) + (SIZE_OF_INT + reason.length());
+    }
+
+    static <E extends Enum<E>> int encodeReplicationSessionStateChange(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final E from,
+        final E to,
+        final long replicationId,
+        final long position,
+        final String reason)
+    {
+        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putLong(offset + encodedLength, replicationId, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+        encodingBuffer.putLong(offset + encodedLength, position, LITTLE_ENDIAN);
+        encodedLength += SIZE_OF_LONG;
+
+        encodedLength += encodingBuffer.putStringAscii(offset + encodedLength, reason);
+
+        return encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
+    }
+
+    static <E extends Enum<E>> int replicationSessionStateChangeLength(final E from, final E to, final String reason)
+    {
+        return stateTransitionStringLength(from, to) + (2 * SIZE_OF_LONG) + (SIZE_OF_INT + reason.length());
+    }
+
     static <E extends Enum<E>> int encodeSessionStateChange(
         final UnsafeBuffer encodingBuffer,
         final int offset,

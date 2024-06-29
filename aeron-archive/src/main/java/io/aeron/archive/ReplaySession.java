@@ -153,6 +153,9 @@ class ReplaySession implements Session, AutoCloseable
 
         segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFileBasePosition));
         connectDeadlineMs = epochClock.time() + connectTimeoutMs;
+
+        logStarted(sessionId, controlSession.sessionId(), correlationId, streamId,
+            recordingId, startPosition, publication.channel());
     }
 
     /**
@@ -316,9 +319,7 @@ class ReplaySession implements Session, AutoCloseable
             return 0;
         }
 
-        state(State.REPLAY,
-            "[control " + controlSession.controlPublication().channel() + "]" +
-            "[publication " + publication.channel() + "]");
+        state(State.REPLAY, "");
 
         return 1;
     }
@@ -590,7 +591,7 @@ class ReplaySession implements Session, AutoCloseable
 
     private void state(final State newState, final String reason)
     {
-        logStateChange(state, newState, sessionId, recordingId, streamId, correlationId, replayPosition, reason);
+        logStateChange(state, newState, sessionId, recordingId, replayPosition, reason);
         state = newState;
     }
 
@@ -600,12 +601,22 @@ class ReplaySession implements Session, AutoCloseable
         final State newState,
         final long sessionId,
         final long recordingId,
-        final long streamId,
-        final long correlationId,
         final long position,
         final String reason)
     {
         //System.out.println("ReplaySession: " + state + " -> " + newState);
+    }
+
+    @SuppressWarnings("unused")
+    private void logStarted(
+        final long sessionId,
+        final long controlSessionId,
+        final long correlationId,
+        final long streamId,
+        final long recordingId,
+        final long startPosition,
+        final String publicationChannel)
+    {
     }
 
     static boolean isInvalidHeader(

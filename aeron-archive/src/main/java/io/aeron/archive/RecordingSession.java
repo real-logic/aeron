@@ -77,6 +77,8 @@ class RecordingSession implements Session
 
         blockLengthLimit = Math.min(image.termBufferLength(), ctx.fileIoMaxLength());
         recordingWriter = new RecordingWriter(recordingId, startPosition, segmentLength, image, ctx, recorder);
+
+        logStarted(recordingId, controlSession.sessionId(), correlationId, image.subscription().channel());
     }
 
     /**
@@ -221,7 +223,7 @@ class RecordingSession implements Session
                 originalChannel,
                 image.sourceIdentity());
         }
-        state(State.RECORDING, "[subscription " + image.subscription().channel() + "]");
+        state(State.RECORDING, "");
 
         return 1;
     }
@@ -273,8 +275,7 @@ class RecordingSession implements Session
 
     private void state(final State newState, final String reason)
     {
-        logStateChange(state, newState, recordingId, correlationId,
-            null != image ? image.position() : NULL_POSITION, reason);
+        logStateChange(state, newState, recordingId, null != image ? image.position() : NULL_POSITION, reason);
         state = newState;
     }
 
@@ -283,10 +284,18 @@ class RecordingSession implements Session
         final State oldState,
         final State newState,
         final long recordingId,
-        final long correlationId,
         final long position,
         final String reason)
     {
         //System.out.println("RecordingSession: " + state + " -> " + newState);
+    }
+
+    @SuppressWarnings("unused")
+    private void logStarted(
+        final long recordingId,
+        final long controlSessionId,
+        final long correlationId,
+        final String subscriptionChannel)
+    {
     }
 }

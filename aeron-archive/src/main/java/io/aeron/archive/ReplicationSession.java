@@ -146,6 +146,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             isDestinationRecordingEmpty = false;
         }
+
+        logStarted(replicationId, controlSession.sessionId(), srcRecordingId, dstRecordingId, replicationChannel);
     }
 
     /**
@@ -950,7 +952,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     private void state(final State newState, final String reason)
     {
-        logStateChange(state, newState, replicationId, null != image ? image.position() : NULL_POSITION, reason);
+        logStateChange(state, newState, replicationId,
+            srcRecordingId, dstRecordingId,
+            null != image ? image.position() : NULL_POSITION, reason);
         state = newState;
         activeCorrelationId = NULL_VALUE;
         timeOfLastActionMs = epochClock.time();
@@ -961,10 +965,22 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final State oldState,
         final State newState,
         final long replicationId,
+        final long srcRecordingId,
+        final long dstRecordingId,
         final long position,
         final String reason)
     {
         //System.out.println("ReplicationSession: " + oldState + " -> " + newState + " replicationId=" + replicationId);
+    }
+
+    @SuppressWarnings("unused")
+    private void logStarted(
+        final long replicationId,
+        final long controlSessionId,
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final String replicationChannel)
+    {
     }
 
     @SuppressWarnings("unused")

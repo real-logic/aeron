@@ -1867,6 +1867,22 @@ static int aeron_driver_conductor_find_response_publication_image(
     return -1;
 }
 
+static aeron_publication_image_t * aeron_driver_conductor_find_publication_image(
+    aeron_driver_conductor_t *conductor,
+    int64_t correlation_id)
+{
+    for (size_t i = 0; i < conductor->publication_images.length; i++)
+    {
+        aeron_publication_image_t *image_entry = conductor->publication_images.array[i].image;
+        if (aeron_publication_image_registration_id(image_entry) == correlation_id)
+        {
+            return image_entry;
+        }
+    }
+
+    return NULL;
+}
+
 aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publication(
     aeron_driver_conductor_t *conductor,
     aeron_client_t *client,
@@ -2542,6 +2558,49 @@ void on_error(
     memcpy(response_buffer + sizeof(aeron_error_response_t), message, length);
 
     aeron_driver_conductor_client_transmit(conductor, AERON_RESPONSE_ON_ERROR, response, response_length);
+}
+
+void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
+{
+    uint8_t buffer[sizeof(aeron_publication_error_t) + (AERON_ERROR_MAX_TEXT_LENGTH - 1)];
+    aeron_driver_conductor_t *conductor = clientd;
+    aeron_command_publication_error_t *error = item;
+    aeron_driver_conductor_log_explicit_error(conductor, error->error_code, (const char *)error->error_text);
+
+    aeron_publication_error_t *response = (aeron_publication_error_t *)buffer;
+    response->error_code = error->error_code;
+    response->registration_id = error->registration_id;
+    response->session_id = error->session_id;
+    response->stream_id = error->stream_id;
+    response->receiver_id = error->receiver_id;
+    response->group_tag = error->group_tag;
+
+    memset(&response->address[0], 0, sizeof(response->address));
+    if (AF_INET == error->src_address.ss_family)
+    {
+        struct sockaddr_in *src_addr_in = (struct sockaddr_in *)&error->src_address;
+        response->address_type = AERON_RESPONSE_ADDRESS_TYPE_IPV4;
+        response->address_port = ntohs(src_addr_in->sin_port);
+        memcpy(&response->address[0], &src_addr_in->sin_addr, sizeof(src_addr_in->sin_addr));
+    }
+    else if (AF_INET6)
+    {
+        struct sockaddr_in6 *src_addr_in6 = (struct sockaddr_in6 *)&error->src_address;
+        response->address_type = AERON_RESPONSE_ADDRESS_TYPE_IPV6;
+        response->address_port = ntohs(src_addr_in6->sin6_port);
+        memcpy(&response->address[0], &src_addr_in6->sin6_addr, sizeof(src_addr_in6->sin6_addr));
+    }
+    else
+    {
+        response->address_type = 0;
+        response->address_port = 0;
+    }
+
+    response->error_message_length = error->error_length;
+    memcpy(response->error_message, error->error_text, error->error_length);
+    size_t response_length = offsetof(aeron_publication_error_t, error_message) + response->error_message_length;
+
+    aeron_driver_conductor_client_transmit(conductor, AERON_RESPONSE_ON_PUBLICATION_ERROR, response, response_length);
 }
 
 void aeron_driver_conductor_on_error(
@@ -3277,6 +3336,26 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
             }
 
             result = aeron_driver_conductor_on_terminate_driver(conductor, command);
+
+            break;
+        }
+
+        case AERON_COMMAND_INVALIDATE_IMAGE:
+        {
+            aeron_invalidate_image_command_t *command = (aeron_invalidate_image_command_t *)message;
+            correlation_id = command->correlated.correlation_id;
+
+            if (length < sizeof (aeron_invalidate_image_command_t))
+            {
+                goto malformed_command;
+            }
+
+            if (length < offsetof(aeron_invalidate_image_command_t, reason_text) + command->reason_length)
+            {
+                goto malformed_command;
+            }
+
+            result = aeron_driver_conductor_on_invalidate_image(conductor, command);
 
             break;
         }
@@ -5463,7 +5542,38 @@ int aeron_driver_conductor_on_terminate_driver(
     return 0;
 }
 
-void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item)
+int aeron_driver_conductor_on_invalidate_image(
+    aeron_driver_conductor_t *conductor, aeron_invalidate_image_command_t *command)
+{
+    const int64_t image_correlation_id = command->image_correlation_id;
+    aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
+        conductor, image_correlation_id);
+
+    if (AERON_ERROR_MAX_TEXT_LENGTH < command->reason_length)
+    {
+        AERON_SET_ERR(AERON_ERROR_CODE_GENERIC_ERROR, "%s", "Invalidation reason_text must be 1023 bytes or less");
+        return -1;
+    }
+
+    if (NULL == image)
+    {
+        AERON_SET_ERR(
+            AERON_ERROR_CODE_GENERIC_ERROR,
+            "Unable to resolve image for correlationId=%" PRId64, image_correlation_id);
+        return -1;
+    }
+
+    const char *reason_text = (const char *)command->reason_text;
+    aeron_driver_receiver_proxy_on_invalidate_image(
+        conductor->context->receiver_proxy, image_correlation_id, command->position, command->reason_length, reason_text);
+
+    aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+
+    return 0;
+}
+
+
+    void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     aeron_command_create_publication_image_t *command = (aeron_command_create_publication_image_t *)item;

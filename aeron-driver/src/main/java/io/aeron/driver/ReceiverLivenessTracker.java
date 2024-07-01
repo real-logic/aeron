@@ -33,9 +33,9 @@ class ReceiverLivenessTracker
         lastSmTimestampNsByReceiverIdMap.put(receiverId, nowNs);
     }
 
-    public void onRemoteClose(final long receiverId)
+    public boolean onRemoteClose(final long receiverId)
     {
-        lastSmTimestampNsByReceiverIdMap.remove(receiverId);
+        return MISSING_VALUE != lastSmTimestampNsByReceiverIdMap.remove(receiverId);
     }
 
     public void onIdle(final long nowNs, final long timeoutNs)

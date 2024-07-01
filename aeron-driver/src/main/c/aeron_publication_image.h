@@ -136,6 +136,7 @@ typedef struct aeron_publication_image_stct
     int64_t sm_timeout_ns;
 
     int64_t time_of_last_packet_ns;
+    const char *invalidation_reason;
 
     volatile int64_t response_session_id;
 
@@ -217,6 +218,8 @@ void aeron_publication_image_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image, int64_t now_ns, int64_t now_ms);
 
 void aeron_publication_image_receiver_release(aeron_publication_image_t *image);
+
+void aeron_publication_image_invalidate(aeron_publication_image_t *image, int32_t reason_length, const char *reason);
 
 inline bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length)
 {

@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import static io.aeron.CommonContext.UNTETHERED_RESTING_TIMEOUT_PARAM_NAME;
 import static io.aeron.CommonContext.UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME;
+import static io.aeron.ErrorCode.GENERIC_ERROR;
 import static io.aeron.driver.LossDetector.lossFound;
 import static io.aeron.driver.LossDetector.rebuildOffset;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
@@ -87,6 +88,7 @@ class PublicationImageReceiverFields extends PublicationImagePadding2
     boolean isSendingEosSm = false;
     long timeOfLastPacketNs;
     ImageConnection[] imageConnections = new ImageConnection[1];
+    String invalidationReason = null;
 }
 
 class PublicationImagePadding3 extends PublicationImageReceiverFields
@@ -449,7 +451,7 @@ public final class PublicationImage
     void activate()
     {
         timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
-        state = State.ACTIVE;
+        state(State.ACTIVE);
     }
 
     /**
@@ -475,7 +477,7 @@ public final class PublicationImage
                 timeOfLastSmNs = nowNs - smTimeoutNs - 1;
             }
 
-            state = State.DRAINING;
+            state(State.DRAINING);
         }
     }
 
@@ -586,6 +588,17 @@ public final class PublicationImage
         final int transportIndex,
         final InetSocketAddress srcAddress)
     {
+        final boolean isEndOfStream = DataHeaderFlyweight.isEndOfStream(buffer);
+
+        if (null != invalidationReason)
+        {
+            if (isEndOfStream)
+            {
+                System.out.println("Invalidated end of stream");
+            }
+            return 0;
+        }
+
         final boolean isHeartbeat = DataHeaderFlyweight.isHeartbeat(buffer, length);
         final long packetPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = isHeartbeat ? packetPosition : packetPosition + length;
@@ -603,15 +616,15 @@ public final class PublicationImage
                     timeOfLastPacketNs = nowNs;
                     trackConnection(transportIndex, srcAddress, nowNs);
 
-                    if (DataHeaderFlyweight.isEndOfStream(buffer))
+                    if (isEndOfStream)
                     {
                         imageConnections[transportIndex].eosPosition = packetPosition;
                         imageConnections[transportIndex].isEos = true;
 
-                        if (!isEndOfStream && isAllConnectedEos())
+                        if (!this.isEndOfStream && isAllConnectedEos())
                         {
                             LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), findEosPosition());
-                            isEndOfStream = true;
+                            this.isEndOfStream = true;
                         }
                     }
 
@@ -677,7 +690,7 @@ public final class PublicationImage
 
                 isSendingEosSm = true;
                 timeOfLastSmNs = nowNs - smTimeoutNs - 1;
-                state = State.DRAINING;
+                state(State.DRAINING);
             }
         }
     }
@@ -693,8 +706,22 @@ public final class PublicationImage
         int workCount = 0;
         final long changeNumber = endSmChange;
         final boolean hasSmTimedOut = (timeOfLastSmNs + smTimeoutNs) - nowNs < 0;
-        final Integer responseSessionId;
 
+        if (null != invalidationReason)
+        {
+            if (hasSmTimedOut)
+            {
+                channelEndpoint.sendErrorFrame(
+                    imageConnections, sessionId, streamId, GENERIC_ERROR.value(), invalidationReason);
+
+                timeOfLastSmNs = nowNs;
+                workCount++;
+            }
+
+            return workCount;
+        }
+
+        final Integer responseSessionId;
         if (hasSmTimedOut && null != (responseSessionId = this.responseSessionId))
         {
             channelEndpoint.sendResponseSetup(imageConnections, sessionId, streamId, responseSessionId);
@@ -864,7 +891,7 @@ public final class PublicationImage
 
                     timeOfLastStateChangeNs = timeNs;
                     isReceiverReleaseTriggered = true;
-                    state = State.LINGER;
+                    state(State.LINGER);
                 }
                 break;
 
@@ -873,7 +900,7 @@ public final class PublicationImage
                 {
                     conductor.cleanupImage(this);
                     timeOfLastStateChangeNs = timeNs;
-                    state = State.DONE;
+                    state(State.DONE);
                 }
                 break;
 
@@ -889,6 +916,16 @@ public final class PublicationImage
     public boolean hasReachedEndOfLife()
     {
         return hasReceiverReleased && State.DONE == state;
+    }
+
+    void invalidate(final String reason)
+    {
+        invalidationReason = reason;
+    }
+
+    private void state(final State state)
+    {
+        this.state = state;
     }
 
     private boolean isDrained()

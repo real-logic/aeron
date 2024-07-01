@@ -15,9 +15,11 @@
  */
 package io.aeron;
 
+import io.aeron.command.PublicationErrorFrameFlyweight;
 import io.aeron.exceptions.*;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.status.HeartbeatTimestamp;
+import io.aeron.status.PublicationErrorFrame;
 import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -84,6 +86,7 @@ final class ClientConductor implements Agent
     private final AgentInvoker driverAgentInvoker;
     private final UnsafeBuffer counterValuesBuffer;
     private final CountersReader countersReader;
+    private final PublicationErrorFrame publicationErrorFrame = new PublicationErrorFrame();
     private AtomicCounter heartbeatTimestamp;
 
     ClientConductor(final Aeron.Context ctx, final Aeron aeron)
@@ -266,6 +269,22 @@ final class ClientConductor implements Agent
             stashedChannelByRegistrationId.remove(correlationId);
             handleError(new RegistrationException(
                 correlationId, CHANNEL_ENDPOINT_ERROR.value(), CHANNEL_ENDPOINT_ERROR, message));
+        }
+    }
+
+    void onPublicationError(final PublicationErrorFrameFlyweight errorFrameFlyweight)
+    {
+        for (final Object resource : resourceByRegIdMap.values())
+        {
+            if (resource instanceof Publication)
+            {
+                final Publication publication = (Publication)resource;
+                if (publication.originalRegistrationId() == errorFrameFlyweight.registrationId())
+                {
+                    publicationErrorFrame.set(errorFrameFlyweight);
+                    ctx.errorFrameHandler().onPublicationError(publicationErrorFrame);
+                }
+            }
         }
     }
 
@@ -1295,6 +1314,25 @@ final class ClientConductor implements Agent
             {
                 notifyImageUnavailable(unavailableImageHandler, image);
             }
+        }
+    }
+
+    void invalidateImage(final long correlationId, final long position, final String reason)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            // TODO, check reason length??
+
+            final long registrationId = driverProxy.invalidateImage(correlationId, position, reason);
+            awaitResponse(registrationId);
+        }
+        finally
+        {
+            clientLock.unlock();
         }
     }
 

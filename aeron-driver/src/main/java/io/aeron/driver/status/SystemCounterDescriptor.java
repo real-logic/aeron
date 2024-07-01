@@ -220,7 +220,12 @@ public enum SystemCounterDescriptor
     /**
      * A count of the number of times that the retransmit pool has been overflowed.
      */
-    RETRANSMIT_OVERFLOW(37, "Retransmit Pool Overflow count");
+    RETRANSMIT_OVERFLOW(37, "Retransmit Pool Overflow count"),
+
+    /**
+     * A count of the number of error frames received by this driver.
+     */
+    ERROR_FRAMES_RECEIVED(38, "Error Frames received");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

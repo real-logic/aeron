@@ -92,6 +92,11 @@ public class ControlProtocolEvents
      */
     public static final int TERMINATE_DRIVER = 0x0E;
 
+    /**
+     * Invalidate an image.
+     */
+    public static final int INVALIDATE_IMAGE = 0x0F;
+
     // Media Driver to Clients
 
     /**
@@ -143,4 +148,9 @@ public class ControlProtocolEvents
      * Inform clients of client timeout.
      */
     public static final int ON_CLIENT_TIMEOUT = 0x0F0A;
+
+    /**
+     * Inform clients of error frame received by publication
+     */
+    public static final int ON_PUBLICATION_ERROR = 0x0F0B;
 }

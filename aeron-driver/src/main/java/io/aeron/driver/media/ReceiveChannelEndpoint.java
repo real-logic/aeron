@@ -114,6 +114,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     private final RttMeasurementFlyweight rttMeasurementFlyweight;
     private final ByteBuffer responseSetupBuffer;
     private final ResponseSetupFlyweight responseSetupHeader;
+    private final ByteBuffer errorBuffer;
+    private final ErrorFlyweight errorFlyweight;
     private final AtomicCounter shortSends;
     private final AtomicCounter possibleTtlAsymmetry;
     private final AtomicCounter statusIndicator;
@@ -162,6 +164,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
         rttMeasurementFlyweight = threadLocals.rttMeasurementFlyweight();
         responseSetupBuffer = threadLocals.responseSetupBuffer();
         responseSetupHeader = threadLocals.responseSetupHeader();
+        errorBuffer = threadLocals.errorBuffer();
+        errorFlyweight = threadLocals.errorFlyweight();
         cachedNanoClock = context.receiverCachedNanoClock();
         timeOfLastActivityNs = cachedNanoClock.nanoTime();
         receiverId = threadLocals.nextReceiverId();
@@ -936,6 +940,35 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
             .responseSessionId(responseSessionId);
 
         send(responseSetupBuffer, ResponseSetupFlyweight.HEADER_LENGTH, controlAddresses);
+    }
+
+    /**
+     * Send an error frame back to the source publications to indicate this image has errored.
+     *
+     * @param controlAddresses  of the sources.
+     * @param sessionId         for the image.
+     * @param streamId          for the image.
+     * @param errorCode         for the error being sent.
+     * @param errorMessage      to be sent back to the publication.
+     */
+    public void sendErrorFrame(
+        final ImageConnection[] controlAddresses,
+        final int sessionId,
+        final int streamId,
+        final int errorCode,
+        final String errorMessage)
+    {
+        errorBuffer.clear();
+        errorFlyweight
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .receiverId(receiverId)
+            .groupTag(groupTag)
+            .errorCode(errorCode)
+            .errorMessage(errorMessage);
+        errorBuffer.limit(errorFlyweight.frameLength());
+
+        send(errorBuffer, errorFlyweight.frameLength(), controlAddresses);
     }
 
     /**

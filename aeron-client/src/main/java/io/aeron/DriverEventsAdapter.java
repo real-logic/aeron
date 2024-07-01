@@ -30,6 +30,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 class DriverEventsAdapter implements MessageHandler
 {
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
+    private final PublicationErrorFrameFlyweight publicationErrorFrame = new PublicationErrorFrameFlyweight();
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
     private final SubscriptionReadyFlyweight subscriptionReady = new SubscriptionReadyFlyweight();
     private final ImageBuffersReadyFlyweight imageReady = new ImageBuffersReadyFlyweight();
@@ -247,6 +248,13 @@ class DriverEventsAdapter implements MessageHandler
                     conductor.onClientTimeout();
                 }
                 break;
+            }
+
+            case ON_PUBLICATION_ERROR:
+            {
+                publicationErrorFrame.wrap(buffer, index);
+
+                conductor.onPublicationError(publicationErrorFrame);
             }
         }
     }

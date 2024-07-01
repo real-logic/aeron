@@ -43,6 +43,7 @@ final class ClientCommandAdapter implements ControlledMessageHandler
     private final DestinationMessageFlyweight destinationMsgFlyweight = new DestinationMessageFlyweight();
     private final CounterMessageFlyweight counterMsgFlyweight = new CounterMessageFlyweight();
     private final TerminateDriverFlyweight terminateDriverFlyweight = new TerminateDriverFlyweight();
+    private final InvalidateImageFlyweight invalidateImageFlyweight = new InvalidateImageFlyweight();
     private final DriverConductor conductor;
     private final RingBuffer toDriverCommands;
     private final ClientProxy clientProxy;
@@ -260,6 +261,20 @@ final class ClientCommandAdapter implements ControlledMessageHandler
                         buffer,
                         terminateDriverFlyweight.tokenBufferOffset(),
                         terminateDriverFlyweight.tokenBufferLength());
+                    break;
+                }
+
+                case INVALIDATE_IMAGE:
+                {
+                    invalidateImageFlyweight.wrap(buffer, index);
+                    invalidateImageFlyweight.validateLength(msgTypeId, length);
+                    correlationId = invalidateImageFlyweight.correlationId();
+
+                    conductor.onInvalidateImage(
+                        invalidateImageFlyweight.correlationId(),
+                        invalidateImageFlyweight.imageCorrelationId(),
+                        invalidateImageFlyweight.position(),
+                        invalidateImageFlyweight.reason());
                     break;
                 }
 

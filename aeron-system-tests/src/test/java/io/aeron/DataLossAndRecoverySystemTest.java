@@ -35,8 +35,7 @@ import java.io.File;
 import java.util.Random;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.oneOf;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class DataLossAndRecoverySystemTest
@@ -86,8 +85,8 @@ public class DataLossAndRecoverySystemTest
                 .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
             final long retransmittedBytes = aeron.countersReader()
                 .getCounterValue(SystemCounterDescriptor.RETRANSMITTED_BYTES.id());
-            assertThat(retransmitCount, oneOf(1L, 2L));
-            assertThat(nakCount, oneOf(1L, 2L));
+            assertThat(nakCount, greaterThanOrEqualTo(1L));
+            assertThat(retransmitCount, lessThanOrEqualTo(nakCount));
             assertThat(retransmittedBytes, greaterThanOrEqualTo((long)LOSS_LENGTH));
         }
     }
@@ -111,8 +110,8 @@ public class DataLossAndRecoverySystemTest
                 .getCounterValue(SystemCounterDescriptor.NAK_MESSAGES_SENT.id());
             final long retransmittedBytes = aeron.countersReader()
                 .getCounterValue(SystemCounterDescriptor.RETRANSMITTED_BYTES.id());
-            assertThat(retransmitCount, oneOf(1L, 2L));
-            assertThat(nakCount, oneOf(1L, 2L));
+            assertThat(nakCount, greaterThanOrEqualTo(1L));
+            assertThat(retransmitCount, lessThanOrEqualTo(nakCount));
             assertThat(retransmittedBytes, greaterThanOrEqualTo((long)LOSS_LENGTH));
         }
     }
@@ -137,8 +136,7 @@ public class DataLossAndRecoverySystemTest
             final long retransmittedBytes = aeron.countersReader()
                 .getCounterValue(SystemCounterDescriptor.RETRANSMITTED_BYTES.id());
             assertThat(nakCount, greaterThanOrEqualTo(1L));
-            // in CI, we occasionally see an extra retransmission
-            assertThat(retransmitCount, oneOf(1L, 2L));
+            assertThat(retransmitCount, lessThanOrEqualTo(nakCount));
             assertThat(retransmittedBytes, greaterThanOrEqualTo((long)LOSS_LENGTH));
         }
     }

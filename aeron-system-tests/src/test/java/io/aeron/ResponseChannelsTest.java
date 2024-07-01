@@ -69,7 +69,7 @@ public class ResponseChannelsTest
     @BeforeEach
     void setUp()
     {
-        final MediaDriver.Context context = (MediaDriver.Context)new MediaDriver.Context()
+        final MediaDriver.Context context = new MediaDriver.Context()
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
             .threadingMode(ThreadingMode.SHARED)
             .enableExperimentalFeatures(true);

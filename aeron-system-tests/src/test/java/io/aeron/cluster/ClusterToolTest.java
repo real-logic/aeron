@@ -45,6 +45,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.matchesRegex;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 @SlowTest
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
@@ -351,6 +352,29 @@ class ClusterToolTest
         testSeedRecordingLogFromSnapshot(
             emptyClusterDir,
             clusterDir -> ClusterTool.main(new String[]{ clusterDir.toString(), "seed-recording-log-from-snapshot" }));
+    }
+
+    @Test
+    @InterruptAfter(30)
+    void shouldCheckForLeaderInAnyStateAfterElectionWasClosed()
+    {
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+        final PrintStream out = mock(PrintStream.class);
+
+        final TestNode leader = cluster.awaitLeader();
+        assertEquals(0, ClusterTool.isLeader(out, leader.consensusModule().context().clusterDir()));
+        for (final TestNode follower : cluster.followers())
+        {
+            assertEquals(1, ClusterTool.isLeader(out, follower.consensusModule().context().clusterDir()));
+        }
+
+        assertTrue(ClusterTool.suspend(leader.consensusModule().context().clusterDir(), out));
+        assertEquals(0, ClusterTool.isLeader(out, leader.consensusModule().context().clusterDir()));
+        for (final TestNode follower : cluster.followers())
+        {
+            assertEquals(1, ClusterTool.isLeader(out, follower.consensusModule().context().clusterDir()));
+        }
     }
 
     private void testSeedRecordingLogFromSnapshot(final Path emptyClusterDir, final Consumer<File> truncateAction)

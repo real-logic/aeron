@@ -19,6 +19,7 @@
 #include "util/aeron_error.h"
 #include "aeron_retransmit_handler.h"
 #include "aeron_flow_control.h"
+#include <assert.h>
 
 int aeron_retransmit_handler_scan_for_available_retransmit(
     aeron_retransmit_handler_t *handler,
@@ -32,13 +33,17 @@ int aeron_retransmit_handler_init(
     int64_t *invalid_packets_counter,
     uint64_t delay_timeout_ns,
     uint64_t linger_timeout_ns,
-    bool is_multicast)
+    bool is_multicast,
+    int64_t *retransmit_overflow_counter)
 {
     handler->invalid_packets_counter = invalid_packets_counter;
     handler->delay_timeout_ns = delay_timeout_ns;
     handler->linger_timeout_ns = linger_timeout_ns;
     handler->is_multicast = is_multicast;
     handler->max_retransmits = is_multicast ? AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS : 1;
+    handler->retransmit_overflow_counter = retransmit_overflow_counter;
+
+    assert(NULL != retransmit_overflow_counter);
 
     if (aeron_alloc((void **)&handler->retransmit_action_pool, sizeof(aeron_retransmit_action_t) * handler->max_retransmits) < 0)
     {
@@ -224,13 +229,13 @@ int aeron_retransmit_handler_scan_for_available_retransmit(
             return 0;
         }
 
-        AERON_SET_ERR(EINVAL, "%s", "maximum number of active RetransmitActions reached");
+        aeron_counter_add_ordered(handler->retransmit_overflow_counter, 1);
         *actionp = NULL;
-        return -1;
     }
     else
     {
         *actionp = available_action;
-        return 0;
     }
+
+    return 0;
 }

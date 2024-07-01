@@ -1203,11 +1203,12 @@ class ClusterTest
         cluster.awaitLeader();
     }
 
-    @Test
+    @ParameterizedTest
     @InterruptAfter(40)
-    void shouldRecoverWhenFollowerIsMultipleTermsBehind()
+    @ValueSource(booleans = { true, false })
+    void shouldRecoverWhenFollowerIsMultipleTermsBehind(final boolean useResponseChannels)
     {
-        cluster = aCluster().withStaticNodes(3).start();
+        cluster = aCluster().withStaticNodes(3).useResponseChannels(useResponseChannels).start();
         systemTestWatcher.cluster(cluster);
 
         final TestNode originalLeader = cluster.awaitLeader();
@@ -1241,11 +1242,12 @@ class ClusterTest
         }
     }
 
-    @Test
+    @ParameterizedTest
     @InterruptAfter(60)
-    void shouldRecoverWhenFollowerIsMultipleTermsBehindFromEmptyLog()
+    @ValueSource(booleans = { true, false })
+    void shouldRecoverWhenFollowerIsMultipleTermsBehindFromEmptyLog(final boolean useResponseChannels)
     {
-        cluster = aCluster().withStaticNodes(4).start();
+        cluster = aCluster().withStaticNodes(4).useResponseChannels(useResponseChannels).start();
 
         systemTestWatcher.cluster(cluster);
 
@@ -2571,8 +2573,7 @@ class ClusterTest
 
             assertEquals(1L, consensusModule1.context().electionCounter().get());
             assertEquals(1L, consensusModule2.context().electionCounter().get());
-            assertEquals(1, leadershipCounter1.get());
-            assertEquals(1, leadershipCounter2.get());
+            Tests.await(() -> 1 == leadershipCounter1.get() && 1 == leadershipCounter2.get());
 
             try (AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context()
                 .aeronDirectoryName(archive.context().aeronDirectoryName())

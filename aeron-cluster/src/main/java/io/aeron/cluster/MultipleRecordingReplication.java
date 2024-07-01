@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ReplicationParams;
 import io.aeron.archive.codecs.RecordingSignal;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Long2LongHashMap;
@@ -158,15 +159,18 @@ class MultipleRecordingReplication implements AutoCloseable
     private void replicateCurrentSnapshot(final long nowNs)
     {
         final RecordingInfo recordingInfo = recordingsPending.get(recordingCursor);
+        final ReplicationParams replicationParams = new ReplicationParams()
+            .dstRecordingId(recordingInfo.dstRecordingId)
+            .stopPosition(recordingInfo.stopPosition)
+            .replicationChannel(replicationChannel)
+            .replicationSessionId((int)archive.context().aeron().nextCorrelationId());
+
         recordingReplication = new RecordingReplication(
             archive,
             recordingInfo.srcRecordingId,
-            recordingInfo.dstRecordingId,
-            recordingInfo.stopPosition,
             srcControlChannel,
             srcControlStreamId,
-            replicationChannel,
-            (int)archive.context().aeron().nextCorrelationId(),
+            replicationParams,
             progressTimeoutNs,
             progressIntervalNs,
             nowNs);

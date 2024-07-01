@@ -857,7 +857,11 @@ class Election
             if (appendPosition < replicationStopPosition)
             {
                 logReplication = consensusModuleAgent.newLogReplication(
-                    leaderMember.archiveEndpoint(), leaderRecordingId, replicationStopPosition, nowNs);
+                    leaderMember.archiveEndpoint(),
+                    leaderMember.archiveResponseEndpoint(),
+                    leaderRecordingId,
+                    replicationStopPosition,
+                    nowNs);
                 replicationDeadlineNs = nowNs + ctx.leaderHeartbeatTimeoutNs();
                 workCount++;
             }

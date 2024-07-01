@@ -16,6 +16,9 @@
 package io.aeron.samples;
 
 import io.aeron.Aeron;
+import io.aeron.driver.status.SubscriberPos;
+import org.agrona.collections.Hashing;
+import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.PrintStream;
@@ -78,6 +81,7 @@ public final class StreamStat
     public Map<StreamCompositeKey, List<StreamPosition>> snapshot()
     {
         final Map<StreamCompositeKey, List<StreamPosition>> streams = new TreeMap<>(LINES_COMPARATOR);
+        final Object2ObjectHashMap<StreamCompositeKey, String> fullChannelByStream = new Object2ObjectHashMap<>();
 
         counters.forEach(
             (counterId, typeId, keyBuffer, label) ->
@@ -85,33 +89,53 @@ public final class StreamStat
                 if ((typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= RECEIVER_POS_TYPE_ID) ||
                     typeId == SENDER_LIMIT_TYPE_ID || typeId == PUBLISHER_POS_TYPE_ID)
                 {
-                    final String channel;
+                    final int channelLength = keyBuffer.getInt(CHANNEL_OFFSET, LITTLE_ENDIAN);
+                    final String channel =
+                        keyBuffer.getStringWithoutLengthAscii(CHANNEL_OFFSET + SIZE_OF_INT, channelLength);
+
                     final int uriIndex = label.indexOf("aeron:");
+                    final String fullChannel;
                     if (uriIndex >= 0)
                     {
-                        channel = label.substring(uriIndex);
+                        int joinPositionIndex = -1;
+                        if (SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID == typeId &&
+                            (joinPositionIndex = label.lastIndexOf(" @")) > uriIndex)
+                        {
+                            fullChannel = label.substring(uriIndex, joinPositionIndex);
+                        }
+                        else
+                        {
+                            fullChannel = label.substring(uriIndex);
+                        }
                     }
                     else
                     {
-                        final int channelLength = Math.min(
-                            keyBuffer.getInt(CHANNEL_OFFSET, LITTLE_ENDIAN),
-                            MAX_CHANNEL_LENGTH);
-                        channel = keyBuffer.getStringWithoutLengthAscii(CHANNEL_OFFSET + SIZE_OF_INT, channelLength);
+                        fullChannel = channel;
                     }
 
                     final StreamCompositeKey key = new StreamCompositeKey(
-                        keyBuffer.getInt(SESSION_ID_OFFSET),
-                        keyBuffer.getInt(STREAM_ID_OFFSET),
-                        channel);
+                        keyBuffer.getInt(SESSION_ID_OFFSET), keyBuffer.getInt(STREAM_ID_OFFSET), channel);
 
                     final StreamPosition position = new StreamPosition(
-                        keyBuffer.getLong(REGISTRATION_ID_OFFSET),
-                        counters.getCounterValue(counterId),
-                        typeId);
+                        keyBuffer.getLong(REGISTRATION_ID_OFFSET), counters.getCounterValue(counterId), typeId);
 
-                    streams.computeIfAbsent(key, (ignore) -> new ArrayList<>()).add(position);
+                    List<StreamPosition> positions = streams.get(key);
+                    if (null == positions)
+                    {
+                        positions = new ArrayList<>();
+                        streams.put(key, positions);
+                    }
+                    positions.add(position);
+
+                    final String existingFullChannel = fullChannelByStream.get(key);
+                    if (null == existingFullChannel || fullChannel.length() > existingFullChannel.length())
+                    {
+                        fullChannelByStream.put(key, fullChannel);
+                    }
                 }
             });
+
+        streams.keySet().forEach(k -> k.fullChannel = fullChannelByStream.get(k));
 
         return streams;
     }
@@ -137,7 +161,7 @@ public final class StreamStat
             builder
                 .append("sessionId=").append(key.sessionId())
                 .append(" streamId=").append(key.streamId())
-                .append(" channel=").append(key.channel())
+                .append(" channel=").append(key.fullChannel)
                 .append(" :");
 
             for (final StreamPosition streamPosition : entry.getValue())
@@ -163,6 +187,7 @@ public final class StreamStat
         private final int sessionId;
         private final int streamId;
         private final String channel;
+        String fullChannel;
 
         /**
          * Construct a new key representing a unique stream.
@@ -241,7 +266,7 @@ public final class StreamStat
             result = 31 * result + streamId;
             result = 31 * result + channel.hashCode();
 
-            return result;
+            return Hashing.hash(result);
         }
 
         /**
@@ -335,11 +360,11 @@ public final class StreamStat
          */
         public int hashCode()
         {
-            int result = (int)(id ^ (id >>> 32));
-            result = 31 * result + (int)(value ^ (value >>> 32));
+            int result = Hashing.hash(id);
+            result = 31 * result + Hashing.hash(value);
             result = 31 * result + typeId;
 
-            return result;
+            return Hashing.hash(result);
         }
 
         /**

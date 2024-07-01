@@ -18,6 +18,7 @@
 #include <signal.h>
 #include <inttypes.h>
 #include <errno.h>
+#include <string.h>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -43,7 +44,8 @@ static const char *aeron_stat_usage(void)
         "    -h               Displays help information.\n"
         "    -d basePath      Base Path to shared memory. Default: /dev/shm/aeron-[user]\n"
         "    -u update period Update period in milliseconds. Default: 1000\n"
-        "    -t timeout       Number of milliseconds to wait to see if the driver metadata is available. Default: 1000\n";
+        "    -t timeout       Number of milliseconds to wait to see if the driver metadata is available. Default: 1000\n"
+        "    -w watch         Set to 'false' to print stats and exit immediately. Default: true\n";
 }
 
 static void aeron_stat_print_error_and_usage(const char *message)
@@ -56,6 +58,7 @@ typedef struct aeron_stat_settings_stct
     const char *base_path;
     int64_t update_interval_ms;
     int64_t timeout_ms;
+    bool watch;
 }
 aeron_stat_settings_t;
 
@@ -85,13 +88,14 @@ int main(int argc, char **argv)
         {
             .base_path = default_directory,
             .update_interval_ms = 1000,
-            .timeout_ms = 1000
+            .timeout_ms = 1000,
+            .watch = true
         };
 
 
     int opt;
 
-    while ((opt = getopt(argc, argv, "d:u:t:h")) != -1)
+    while ((opt = getopt(argc, argv, "d:u:t:w:h")) != -1)
     {
         switch (opt)
         {
@@ -121,6 +125,15 @@ int main(int argc, char **argv)
                 {
                     aeron_stat_print_error_and_usage("Invalid update interval");
                     return EXIT_FAILURE;
+                }
+                break;
+            }
+
+            case 'w':
+            {
+                if (strcmp(optarg, "false") == 0)
+                {
+                    settings.watch = false;
                 }
                 break;
             }
@@ -168,9 +181,15 @@ int main(int argc, char **argv)
 
         aeron_counters_reader_foreach_counter(counters_reader, aeron_stat_print_counter, NULL);
 
+        if (!settings.watch)
+        {
+            goto close;
+        }
+
         aeron_micro_sleep((unsigned int)(settings.update_interval_ms * 1000));
     }
 
+close:
     aeron_cnc_close(aeron_cnc);
 
     return 0;

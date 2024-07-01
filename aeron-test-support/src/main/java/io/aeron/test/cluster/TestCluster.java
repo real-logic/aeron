@@ -158,6 +158,7 @@ public final class TestCluster implements AutoCloseable
     private File markFileBaseDir;
     private String clusterBaseDir;
     private ClusterBackup.Configuration.ReplayStart replayStart;
+    private boolean useResponseChannels = false;
 
     private TestCluster(
         final int staticMemberCount,
@@ -173,7 +174,7 @@ public final class TestCluster implements AutoCloseable
 
         this.nodes = new TestNode[staticMemberCount + 1];
         this.backupNodeIndex = staticMemberCount;
-        this.staticClusterMembers = clusterMembers(0, staticMemberCount);
+        this.staticClusterMembers = clusterMembers(0, staticMemberCount, useResponseChannels);
         this.staticClusterMemberEndpoints = ingressEndpoints(0, staticMemberCount);
         this.clusterMembersEndpoints = clusterMembersEndpoints(0, staticMemberCount);
         this.senderWildcardPortRanges = senderWildcardPortRanges(0, staticMemberCount);
@@ -292,7 +293,8 @@ public final class TestCluster implements AutoCloseable
             .senderWildcardPortRange(senderWildcardPortRanges[index])
             .receiverWildcardPortRange(receiverWildcardPortRanges[index])
             .dirDeleteOnShutdown(false)
-            .dirDeleteOnStart(true);
+            .dirDeleteOnStart(true)
+            .enableExperimentalFeatures(useResponseChannels);
 
         context.archiveContext
             .archiveId(index)
@@ -373,7 +375,8 @@ public final class TestCluster implements AutoCloseable
             .receiverWildcardPortRange(receiverWildcardPortRanges[index])
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(false)
-            .nameResolver(new RedirectingNameResolver(nodeNameMappings(index)));
+            .nameResolver(new RedirectingNameResolver(nodeNameMappings(index)))
+            .enableExperimentalFeatures(useResponseChannels);
 
         context.archiveContext
             .archiveId(index)
@@ -452,7 +455,8 @@ public final class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .senderWildcardPortRange(senderWildcardPortRanges[backupNodeIndex])
             .receiverWildcardPortRange(receiverWildcardPortRanges[backupNodeIndex])
-            .dirDeleteOnStart(true);
+            .dirDeleteOnStart(true)
+            .enableExperimentalFeatures(useResponseChannels);
 
         context.archiveContext
             .catalogCapacity(CATALOG_CAPACITY)
@@ -610,7 +614,8 @@ public final class TestCluster implements AutoCloseable
                 .aeronDirectoryName(aeronDirName)
                 .nameResolver(new RedirectingNameResolver(nodeNameMappings()))
                 .senderWildcardPortRange("20700 20709")
-                .receiverWildcardPortRange("20710 20719");
+                .receiverWildcardPortRange("20710 20719")
+                .enableExperimentalFeatures(useResponseChannels);
 
             clientMediaDriver = TestMediaDriver.launch(ctx, clientDriverOutputConsumer(dataCollector));
         }
@@ -655,7 +660,8 @@ public final class TestCluster implements AutoCloseable
                 .dirDeleteOnStart(true)
                 .dirDeleteOnShutdown(false)
                 .aeronDirectoryName(aeronDirName)
-                .nameResolver(new RedirectingNameResolver(nodeNameMappings()));
+                .nameResolver(new RedirectingNameResolver(nodeNameMappings()))
+                .enableExperimentalFeatures(useResponseChannels);
 
             clientMediaDriver = TestMediaDriver.launch(ctx, clientDriverOutputConsumer(dataCollector));
         }
@@ -1479,10 +1485,16 @@ public final class TestCluster implements AutoCloseable
 
     public static String clusterMembers(final int clusterId, final int memberCount)
     {
-        return clusterMembers(clusterId, 0, memberCount);
+        return clusterMembers(clusterId, 0, memberCount, false);
     }
 
-    public static String clusterMembers(final int clusterId, final int initialMemberId, final int memberCount)
+    public static String clusterMembers(final int clusterId, final int memberCount, final boolean useResponseChannels)
+    {
+        return clusterMembers(clusterId, 0, memberCount, useResponseChannels);
+    }
+
+    public static String clusterMembers(
+        final int clusterId, final int initialMemberId, final int memberCount, final boolean useResponseChannels)
     {
         final StringBuilder builder = new StringBuilder();
 
@@ -1494,7 +1506,14 @@ public final class TestCluster implements AutoCloseable
                 .append(hostname(i)).append(":2").append(clusterId).append("22").append(i).append(',')
                 .append(hostname(i)).append(":2").append(clusterId).append("33").append(i).append(',')
                 .append(hostname(i)).append(":0,")
-                .append(hostname(i)).append(":801").append(i).append('|');
+                .append(hostname(i)).append(":801").append(i);
+
+            if (useResponseChannels)
+            {
+                builder.append(',').append(hostname(i)).append(":2").append(clusterId).append("44").append(i);
+            }
+
+            builder.append('|');
         }
 
         builder.setLength(builder.length() - 1);
@@ -1997,6 +2016,7 @@ public final class TestCluster implements AutoCloseable
         private File markFileBaseDir = null;
         private String clusterBaseDir = System.getProperty(
             CLUSTER_BASE_DIR_PROP_NAME, CommonContext.getAeronDirectoryName());
+        private boolean useResponseChannels = false;
 
         public Builder withStaticNodes(final int nodeCount)
         {
@@ -2099,6 +2119,12 @@ public final class TestCluster implements AutoCloseable
             return this;
         }
 
+        public Builder useResponseChannels(final boolean enabled)
+        {
+            this.useResponseChannels = enabled;
+            return this;
+        }
+
         public TestCluster start()
         {
             return start(nodeCount);
@@ -2129,6 +2155,7 @@ public final class TestCluster implements AutoCloseable
             testCluster.markFileBaseDir(markFileBaseDir);
             testCluster.clusterBaseDir(clusterBaseDir);
             testCluster.replyStart(replayStart);
+            testCluster.useResponseChannels(useResponseChannels);
 
             try
             {
@@ -2165,6 +2192,11 @@ public final class TestCluster implements AutoCloseable
     private void clusterBaseDir(final String clusterBaseDir)
     {
         this.clusterBaseDir = clusterBaseDir;
+    }
+
+    private void useResponseChannels(final boolean enabled)
+    {
+        this.useResponseChannels = enabled;
     }
 
     private void markFileBaseDir(final File markFileBaseDir)

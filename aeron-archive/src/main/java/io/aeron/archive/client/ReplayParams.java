@@ -28,6 +28,7 @@ public class ReplayParams
     private long position;
     private long length;
     private long replayToken;
+    private long subscriptionRegistrationId;
 
     /**
      * Default, initialise all values to "null"
@@ -50,6 +51,7 @@ public class ReplayParams
         position = AeronArchive.NULL_POSITION;
         length = AeronArchive.NULL_LENGTH;
         replayToken = Aeron.NULL_VALUE;
+        subscriptionRegistrationId = Aeron.NULL_VALUE;
         return this;
     }
 
@@ -181,5 +183,27 @@ public class ReplayParams
     public long replayToken()
     {
         return replayToken;
+    }
+
+    /**
+     * Set the subscription registration id to be used when doing a start replay using response channels and the
+     * response subscription is already created.
+     *
+     * @param registrationId of the subscription to receive the replay (should be set up with control-mode=response).
+     */
+    public void subscriptionRegistrationId(final long registrationId)
+    {
+        this.subscriptionRegistrationId = registrationId;
+    }
+
+    /**
+     * Get the subscription registration id to be used when doing a start replay using response channels and the
+     * response subscription is already created.
+     *
+     * @return registrationId of the subscription to receive the replay (should be set up with control-mode=response).
+     */
+    public long subscriptionRegistrationId()
+    {
+        return subscriptionRegistrationId;
     }
 }

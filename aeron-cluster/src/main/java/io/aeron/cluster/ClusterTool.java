@@ -647,7 +647,6 @@ public class ClusterTool
                 final String aeronDirectoryName = markFile.decoder().aeronDirectory();
                 final MutableLong nodeRoleCounter = new MutableLong(-1);
                 final MutableLong electionStateCounter = new MutableLong(-1);
-                final MutableLong moduleStateCounter = new MutableLong(-1);
 
                 try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName)))
                 {
@@ -664,16 +663,11 @@ public class ClusterTool
                             {
                                 electionStateCounter.set(countersReader.getCounterValue(counterId));
                             }
-                            else if (ConsensusModule.Configuration.CONSENSUS_MODULE_STATE_TYPE_ID == typeId)
-                            {
-                                moduleStateCounter.set(countersReader.getCounterValue(counterId));
-                            }
                         });
                 }
 
                 if (nodeRoleCounter.get() == Cluster.Role.LEADER.code() &&
-                    electionStateCounter.get() == ElectionState.CLOSED.code() &&
-                    moduleStateCounter.get() == ConsensusModule.State.ACTIVE.code())
+                    electionStateCounter.get() == ElectionState.CLOSED.code())
                 {
                     return 0;
                 }

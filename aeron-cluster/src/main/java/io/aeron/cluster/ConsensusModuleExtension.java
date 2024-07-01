@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.aeron.cluster;
 
 import io.aeron.Image;
 import io.aeron.cluster.service.Cluster;
-
-import org.agrona.DirectBuffer;
-
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.AgentTerminationException;
 
 /**

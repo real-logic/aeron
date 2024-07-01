@@ -754,11 +754,12 @@ class ElectionTest
             0,
             true);
 
-        when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
+        when(consensusModuleAgent.newLogReplication(any(), any(), anyLong(), anyLong(), anyLong()))
+            .thenReturn(logReplication);
         followerElection.doWork(++t1);
 
         verify(consensusModuleAgent, times(1)).newLogReplication(
-            liveLeader.archiveEndpoint(), RECORDING_ID, term2BaseLogPosition, t1);
+            liveLeader.archiveEndpoint(), liveLeader.archiveResponseEndpoint(), RECORDING_ID, term2BaseLogPosition, t1);
 
         when(logReplication.hasReplicationEnded()).thenReturn(false);
         followerElection.doWork(++t1);
@@ -845,11 +846,16 @@ class ElectionTest
 
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
 
-        when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
+        when(consensusModuleAgent.newLogReplication(any(), any(), anyLong(), anyLong(), anyLong()))
+            .thenReturn(logReplication);
         election.doWork(clock.increment(1));
 
         verify(consensusModuleAgent, times(1)).newLogReplication(
-            liveLeader.archiveEndpoint(), RECORDING_ID, term2BaseLogPosition, clock.nanoTime());
+            liveLeader.archiveEndpoint(),
+            liveLeader.archiveResponseEndpoint(),
+            RECORDING_ID,
+            term2BaseLogPosition,
+            clock.nanoTime());
 
         when(logReplication.hasReplicationEnded()).thenReturn(true);
         when(logReplication.hasStopped()).thenReturn(true);
@@ -927,11 +933,16 @@ class ElectionTest
 
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
 
-        when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
+        when(consensusModuleAgent.newLogReplication(any(), any(), anyLong(), anyLong(), anyLong()))
+            .thenReturn(logReplication);
         election.doWork(++t1);
 
         verify(consensusModuleAgent, times(1)).newLogReplication(
-            liveLeader.archiveEndpoint(), RECORDING_ID, term10BaseLogPosition, t1);
+            liveLeader.archiveEndpoint(),
+            liveLeader.archiveResponseEndpoint(),
+            RECORDING_ID,
+            term10BaseLogPosition,
+            t1);
     }
 
     @Test
@@ -1044,11 +1055,12 @@ class ElectionTest
         election.doWork(++t1);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
 
-        when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
+        when(consensusModuleAgent.newLogReplication(any(), any(), anyLong(), anyLong(), anyLong()))
+            .thenReturn(logReplication);
         election.doWork(++t1);
 
         verify(consensusModuleAgent).newLogReplication(
-            liveLeader.archiveEndpoint(), RECORDING_ID, term9BaseLogPosition, t1);
+            liveLeader.archiveEndpoint(), liveLeader.archiveResponseEndpoint(), RECORDING_ID, term9BaseLogPosition, t1);
     }
 
     @Test
@@ -1161,11 +1173,12 @@ class ElectionTest
             false);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
 
-        when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
+        when(consensusModuleAgent.newLogReplication(any(), any(), anyLong(), anyLong(), anyLong()))
+            .thenReturn(logReplication);
         election.doWork(++t1);
 
         verify(consensusModuleAgent, times(1)).newLogReplication(
-            liveLeader.archiveEndpoint(), RECORDING_ID, termBaseLogPosition, t1);
+            liveLeader.archiveEndpoint(), liveLeader.archiveResponseEndpoint(), RECORDING_ID, termBaseLogPosition, t1);
 
         when(logReplication.hasReplicationEnded()).thenReturn(true);
         when(logReplication.hasStopped()).thenReturn(true);
@@ -1246,7 +1259,7 @@ class ElectionTest
             false);
 
         doReturn(logReplication).when(consensusModuleAgent)
-            .newLogReplication(any(), anyLong(), anyLong(), anyLong());
+            .newLogReplication(any(), any(), anyLong(), anyLong(), anyLong());
         doReturn(leaderTermBaseLogPosition).when(logReplication).position();
 
         election.doWork(++t1);
@@ -1318,11 +1331,12 @@ class ElectionTest
             false);
         verify(electionStateCounter).setOrdered(ElectionState.FOLLOWER_LOG_REPLICATION.code());
 
-        when(consensusModuleAgent.newLogReplication(any(), anyLong(), anyLong(), anyLong())).thenReturn(logReplication);
+        when(consensusModuleAgent.newLogReplication(any(), any(), anyLong(), anyLong(), anyLong()))
+            .thenReturn(logReplication);
         election.doWork(++t1);
 
         verify(consensusModuleAgent, times(1)).newLogReplication(
-            liveLeader.archiveEndpoint(), RECORDING_ID, termBaseLogPosition, t1);
+            liveLeader.archiveEndpoint(), liveLeader.archiveResponseEndpoint(), RECORDING_ID, termBaseLogPosition, t1);
 
         when(logReplication.recordingId()).thenReturn(localRecordingId);
 

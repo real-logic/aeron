@@ -321,12 +321,11 @@ public final class RecordingLog implements AutoCloseable
          */
         public int hashCode()
         {
-            int result = (int)(recordingId ^ (recordingId >>> 32));
-
-            result = 31 * result + (int)(leadershipTermId ^ (leadershipTermId >>> 32));
-            result = 31 * result + (int)(termBaseLogPosition ^ (termBaseLogPosition >>> 32));
-            result = 31 * result + (int)(logPosition ^ (logPosition >>> 32));
-            result = 31 * result + (int)(timestamp ^ (timestamp >>> 32));
+            int result = Long.hashCode(recordingId);
+            result = 31 * result + Long.hashCode(leadershipTermId);
+            result = 31 * result + Long.hashCode(termBaseLogPosition);
+            result = 31 * result + Long.hashCode(logPosition);
+            result = 31 * result + Long.hashCode(timestamp);
             result = 31 * result + serviceId;
             result = 31 * result + type;
             result = 31 * result + entryIndex;

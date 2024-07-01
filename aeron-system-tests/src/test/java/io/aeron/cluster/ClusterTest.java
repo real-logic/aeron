@@ -1203,11 +1203,12 @@ class ClusterTest
         cluster.awaitLeader();
     }
 
-    @Test
+    @ParameterizedTest
     @InterruptAfter(40)
-    void shouldRecoverWhenFollowerIsMultipleTermsBehind()
+    @ValueSource(booleans = { true, false })
+    void shouldRecoverWhenFollowerIsMultipleTermsBehind(final boolean useResponseChannels)
     {
-        cluster = aCluster().withStaticNodes(3).start();
+        cluster = aCluster().withStaticNodes(3).useResponseChannels(useResponseChannels).start();
         systemTestWatcher.cluster(cluster);
 
         final TestNode originalLeader = cluster.awaitLeader();
@@ -1241,11 +1242,12 @@ class ClusterTest
         }
     }
 
-    @Test
+    @ParameterizedTest
     @InterruptAfter(60)
-    void shouldRecoverWhenFollowerIsMultipleTermsBehindFromEmptyLog()
+    @ValueSource(booleans = { true, false })
+    void shouldRecoverWhenFollowerIsMultipleTermsBehindFromEmptyLog(final boolean useResponseChannels)
     {
-        cluster = aCluster().withStaticNodes(4).start();
+        cluster = aCluster().withStaticNodes(4).useResponseChannels(useResponseChannels).start();
 
         systemTestWatcher.cluster(cluster);
 

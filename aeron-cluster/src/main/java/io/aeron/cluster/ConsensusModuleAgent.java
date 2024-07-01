@@ -3098,18 +3098,25 @@ final class ConsensusModuleAgent
         final long stopPosition,
         final long nowNs)
     {
-//        String replicationChannel = ctx.replicationChannel();
-//        if (null != responseArchiveEndpoint)
-//        {
-//            final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
-//            channelUri.put(ENDPOINT_PARAM_NAME, responseArchiveEndpoint);
-//        }
+        String replicationChannel = ctx.replicationChannel();
 
         final ReplicationParams replicationParams = new ReplicationParams()
             .dstRecordingId(logRecordingId)
             .stopPosition(stopPosition)
-            .replicationChannel(ctx.replicationChannel())
             .replicationSessionId((int)aeron.nextCorrelationId());
+
+        if (null != responseArchiveEndpoint)
+        {
+            final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
+            channelUri.remove(ENDPOINT_PARAM_NAME);
+            channelUri.put(MDC_CONTROL_PARAM_NAME, responseArchiveEndpoint);
+            channelUri.put(MDC_CONTROL_MODE_PARAM_NAME, CONTROL_MODE_RESPONSE);
+            replicationChannel = channelUri.toString();
+
+            replicationParams.srcResponseChannel(replicationChannel);
+        }
+
+        replicationParams.replicationChannel(replicationChannel);
 
         return new RecordingReplication(
             archive,

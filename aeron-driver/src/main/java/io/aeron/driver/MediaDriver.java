@@ -3637,6 +3637,15 @@ public final class MediaDriver implements AutoCloseable
             return channelSendTimestampClock;
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        public Context enableExperimentalFeatures(final boolean enableExperimentalFeatures)
+        {
+            super.enableExperimentalFeatures(enableExperimentalFeatures);
+            return this;
+        }
+
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;

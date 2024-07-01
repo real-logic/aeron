@@ -542,6 +542,11 @@ int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_
     state.if_addr = if_addr;
 
     int result = aeron_lookup_interfaces(aeron_ip_lookup_func, &state);
+    if (result < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
 
     if (0 == result)
     {

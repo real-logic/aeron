@@ -30,7 +30,7 @@ import org.agrona.concurrent.errors.DistinctErrorLog;
 
 import java.util.Arrays;
 
-final class ClusterSession
+final class ClusterSession implements ClusterClientSession
 {
     static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
     static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;
@@ -88,6 +88,36 @@ final class ClusterSession
         state(State.CLOSED);
     }
 
+    public long id()
+    {
+        return id;
+    }
+
+    public byte[] encodedPrincipal()
+    {
+        return encodedPrincipal;
+    }
+
+    public boolean isOpen()
+    {
+        return State.OPEN == state;
+    }
+
+    public Publication responsePublication()
+    {
+        return responsePublication;
+    }
+
+    public long timeOfLastActivityNs()
+    {
+        return timeOfLastActivityNs;
+    }
+
+    public void timeOfLastActivityNs(final long timeNs)
+    {
+        timeOfLastActivityNs = timeNs;
+    }
+
     void loadSnapshotState(
         final long correlationId,
         final long openedLogPosition,
@@ -107,11 +137,6 @@ final class ClusterSession
         {
             state(State.OPEN);
         }
-    }
-
-    long id()
-    {
-        return id;
     }
 
     int responseStreamId()
@@ -204,7 +229,7 @@ final class ClusterSession
         return null != responsePublication && responsePublication.isConnected();
     }
 
-    public long tryClaim(final int length, final BufferClaim bufferClaim)
+    long tryClaim(final int length, final BufferClaim bufferClaim)
     {
         if (null == responsePublication)
         {
@@ -216,7 +241,7 @@ final class ClusterSession
         }
     }
 
-    public long offer(final DirectBuffer buffer, final int offset, final int length)
+    long offer(final DirectBuffer buffer, final int offset, final int length)
     {
         if (null == responsePublication)
         {
@@ -293,11 +318,6 @@ final class ClusterSession
         return 0;
     }
 
-    byte[] encodedPrincipal()
-    {
-        return encodedPrincipal;
-    }
-
     void lastActivityNs(final long timeNs, final long correlationId)
     {
         timeOfLastActivityNs = timeNs;
@@ -334,16 +354,6 @@ final class ClusterSession
     String responseDetail()
     {
         return responseDetail;
-    }
-
-    long timeOfLastActivityNs()
-    {
-        return timeOfLastActivityNs;
-    }
-
-    void timeOfLastActivityNs(final long timeNs)
-    {
-        timeOfLastActivityNs = timeNs;
     }
 
     long correlationId()
@@ -394,11 +404,6 @@ final class ClusterSession
     void action(final Action action)
     {
         this.action = action;
-    }
-
-    Publication responsePublication()
-    {
-        return responsePublication;
     }
 
     void requestInput(final Object requestInput)

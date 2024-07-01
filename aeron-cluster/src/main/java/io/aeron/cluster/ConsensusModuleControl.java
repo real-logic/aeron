@@ -16,7 +16,6 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
-import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.concurrent.IdleStrategy;
 
@@ -81,28 +80,10 @@ public interface ConsensusModuleControl
     AeronArchive archive();
 
     /**
-     * Update activity timestamp for a cluster session which corresponds to an extension session.
+     * Lookup a {@link ClusterClientSession} for a given id.
      *
-     * @param clusterSessionId  session id allocated on connect.
-     * @param timeNs            time of last activity in nanoseconds.
+     * @param clusterSessionId for the session to lookup.
+     * @return a {@link ClusterClientSession} for a given id, otherwise {@code null} if not found.
      */
-    void updateLastActivityNs(long clusterSessionId, long timeNs);
-
-    /**
-     * Get the response {@link Publication} for a given cluster session id. This is the stream to which responses
-     * for sessions are sent.
-     *
-     * @param clusterSessionId of the cluster session for which the response {@link Publication is required}.
-     *
-     * @return the response {@link Publication} for a given cluster session id, null if not active.
-     */
-    Publication responsePublication(long clusterSessionId);
-
-    /**
-     * Get the encoded principle behind a cluster session which can be used for authorisation.
-     *
-     * @param clusterSessionId for which the encoded principle is required.
-     * @return the encoded principle behind a cluster session which can be used for authorisation, null if not found.
-     */
-    byte[] encodedPrinciple(long clusterSessionId);
+    ClusterClientSession getClientSession(long clusterSessionId);
 }

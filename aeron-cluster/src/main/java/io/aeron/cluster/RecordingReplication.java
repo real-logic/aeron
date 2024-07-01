@@ -51,29 +51,20 @@ final class RecordingReplication implements AutoCloseable
     RecordingReplication(
         final AeronArchive archive,
         final long srcRecordingId,
-        final long dstRecordingId,
-        final long stopPosition,
         final String srcArchiveChannel,
         final int srcControlStreamId,
-        final String replicationChannel,
-        final int replicationSessionId,
+        final ReplicationParams replicationParams,
         final long progressCheckTimeoutNs,
         final long progressCheckIntervalNs,
         final long nowNs)
     {
         this.archive = archive;
-        this.stopPosition = stopPosition;
+        this.stopPosition = replicationParams.stopPosition();
         this.progressCheckTimeoutNs = progressCheckTimeoutNs;
         this.progressCheckIntervalNs = progressCheckIntervalNs;
         this.progressDeadlineNs = nowNs + progressCheckTimeoutNs;
         this.progressCheckDeadlineNs = nowNs + progressCheckIntervalNs;
         this.srcArchiveChannel = srcArchiveChannel;
-
-        final ReplicationParams replicationParams = new ReplicationParams()
-            .stopPosition(stopPosition)
-            .dstRecordingId(dstRecordingId)
-            .replicationChannel(replicationChannel)
-            .replicationSessionId(replicationSessionId);
 
         replicationId = archive.replicate(
             srcRecordingId,

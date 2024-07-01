@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.RecordingSignalPoller;
+import io.aeron.archive.client.ReplicationParams;
 import io.aeron.archive.codecs.*;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
@@ -3091,17 +3092,31 @@ final class ConsensusModuleAgent
     }
 
     RecordingReplication newLogReplication(
-        final String leaderArchiveEndpoint, final long leaderRecordingId, final long stopPosition, final long nowNs)
+        final String leaderArchiveEndpoint,
+        final String responseArchiveEndpoint,
+        final long leaderRecordingId,
+        final long stopPosition,
+        final long nowNs)
     {
+//        String replicationChannel = ctx.replicationChannel();
+//        if (null != responseArchiveEndpoint)
+//        {
+//            final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
+//            channelUri.put(ENDPOINT_PARAM_NAME, responseArchiveEndpoint);
+//        }
+
+        final ReplicationParams replicationParams = new ReplicationParams()
+            .dstRecordingId(logRecordingId)
+            .stopPosition(stopPosition)
+            .replicationChannel(ctx.replicationChannel())
+            .replicationSessionId((int)aeron.nextCorrelationId());
+
         return new RecordingReplication(
             archive,
             leaderRecordingId,
-            logRecordingId,
-            stopPosition,
             ChannelUri.createDestinationUri(ctx.leaderArchiveControlChannel(), leaderArchiveEndpoint),
             archive.context().controlRequestStreamId(),
-            ctx.replicationChannel(),
-            (int)aeron.nextCorrelationId(),
+            replicationParams,
             ctx.leaderHeartbeatTimeoutNs(),
             ctx.leaderHeartbeatIntervalNs(),
             nowNs);

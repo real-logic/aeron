@@ -1,0 +1,34 @@
+name: Post-release tasks
+
+on:
+  workflow_call:
+    inputs:
+      release:
+        required: true
+        type: boolean
+      version:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  post-publish:
+    name: Update version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Commit snapshot version to current branch
+        if: ${{ inputs.release }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@aeron.io"
+          echo ${{ inputs.version }}-SNAPSHOT > version.txt
+          git add version.txt
+          git status
+          git commit -m "${{ inputs.version }}-SNAPSHOT version update."
+          git push

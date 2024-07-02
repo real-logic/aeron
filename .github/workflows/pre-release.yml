@@ -1,0 +1,62 @@
+name: Pre-release tasks
+
+on:
+  workflow_call:
+    inputs:
+      release:
+        required: true
+        type: boolean
+      version:
+        required: true
+        type: string
+    outputs:
+      sha:
+        description: Current SHA after version update
+        value: ${{ jobs.pre-publish.outputs.sha }}
+      version:
+        description: Current version after version update
+        value: ${{ jobs.pre-publish.outputs.version }}
+
+permissions:
+  contents: write
+
+jobs:
+  pre-publish:
+    name: Update version, tag repo, and return sha
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.return-details.outputs.sha }}
+      version: ${{ steps.return-details.outputs.version }}
+    steps:
+      - id: checkout
+        name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - id: validate
+        name: Validate no new commits
+        run: |
+          current_sha=$(git rev-parse HEAD)
+          if test $current_sha != '${{ github.sha }}'
+          then exit 1
+          fi
+      - id: tag-version
+        if: ${{ inputs.release }}
+        name: Update version and tag repo
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@aeron.io"
+          echo ${{ inputs.version }} > version.txt
+          git add version.txt
+          git status
+          git commit -m "${{ inputs.version }} version update."
+          git push
+          git tag ${{ inputs.version }}
+          git push origin refs/tags/${{ inputs.version }}
+      - id: return-details
+        name: Return current SHA and version
+        run: |
+          git rev-parse HEAD
+          cat version.txt
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "version=$(cat version.txt)" >> "$GITHUB_OUTPUT"

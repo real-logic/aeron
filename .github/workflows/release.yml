@@ -4,16 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       release:
-        description: Is release? (Will update master version.txt)
+        description: Is release? (Will create tag and update version)
         required: true
         default: false
         type: boolean
-      tagged-version:
-        description: Release Version (For tagged version.txt)
+      release-version:
+        description: Released version (x.y.z)
         required: true
         type: string
-      new-version:
-        description: New Version (For branch version.txt)
+      next-version:
+        description: Next version (x.y.z)
         required: true
         type: string
 
@@ -23,53 +23,45 @@ concurrency:
 
 env:
   GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail'
+  JF_URL: 'http://localhost:8081'
+  OIDC_PROVIDER: 'github'
+  OIDC_AUDIENCE: 'github-workflows'
 
 jobs:
-  tag-release:
-    permissions:
-      contents: write
-    runs-on: ubuntu-22.04
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-      - name: update-tag
-        if: ${{ inputs.release }}
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions"
-          echo ${{ inputs.tagged-version }} > version.txt
-          git add version.txt
-          git status
-          git commit -m "${{ inputs.tagged-version }} released."
-          git tag ${{ inputs.tagged-version }}
-          git push 
-          git push origin refs/tags/${{ inputs.tagged-version }}
+  ci:
+    uses: ./.github/workflows/ci.yml
 
+  ci-low-cadence:
+    uses: ./.github/workflows/ci-low-cadence.yml
 
-  java-build:
-    name: Publish Artifacts and Release Documentation
+  codeql:
+    uses: ./.github/workflows/codeql.yml
+
+  pre-release:
+    name: Update version, tag repo, and return sha
+    needs: [ ci, ci-low-cadence, codeql ]
+    uses: ./.github/workflows/pre-release.yml
+    with:
+      release: ${{ inputs.release }}
+      version: ${{ inputs.release-version }}
+
+  release-java:
+    name: Release java artifacts
     permissions:
-      contents: write
+      contents: read
       packages: write
-    needs: tag-release
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        java: [ '8' ]
-        os: ['ubuntu-22.04' ]
+    needs: pre-release
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ needs.pre-release.outputs.sha }}
       - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: ${{ matrix.java }}
+          java-version: 8
       - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
         run: |
           java -Xinternalversion
@@ -82,27 +74,68 @@ jobs:
           ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.ossrhPassword }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.signingKey }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.signingPassword }}
-      - name: Build with Gradle
+      - name: Publish tutorial with Gradle
         if: ${{ inputs.release }}
         run: ./gradlew tutorialPublish -Paeron.ci.apiKey=${{ secrets.WIKI_PAGE_TOKEN }} --stacktrace
 
-  update-next-version:
+  release-c:
+    name: Release c artifacts
     permissions:
-      contents: write
-    needs: java-build
-    runs-on: ubuntu-22.04
+      contents: read
+      id-token: write
+      packages: write
+    needs: pre-release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: ubuntu
+            version: 20.04
+          - distro: ubuntu
+            version: 22.04
+          - distro: debian
+            version: bullseye
+          - distro: debian
+            version: bookworm
+          - distro: rocky
+            version: 8.9
+          - distro: awslinux
+            version: 2023
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
-      - name: update-branch
-        if: ${{ inputs.release }}
+          ref: ${{ needs.pre-release.outputs.sha }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build Artifacts Using Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./cppbuild/${{ matrix.distro }}/Dockerfile
+          pull: true
+          shm-size: 1g
+          outputs: build/${{ matrix.distro }}/${{ matrix.version }}
+          target: essentials-artifacts
+          build-args: VERSION=${{ matrix.version }}
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        with:
+          oidc-provider-name: ${{ env.OIDC_PROVIDER }}
+          oidc-audience: ${{ env.OIDC_AUDIENCE }}
+      - name: Publish Build info With JFrog CLI
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions"
-          echo ${{ inputs.new-version }} > version.txt
-          git add version.txt
-          git status
-          git commit -m "${{ inputs.tagged-version }} released."
-          git push
+          mv *.tar.gz aeron-${{ needs.pre-release.outputs.version }}-${{ matrix.distro }}-${{ matrix.version }}.tar.gz
+          jf rt u *.tar.gz ${{ inputs.release && 'generic-local/' || 'generic-local/' }}
+        working-directory: ./build/${{ matrix.distro }}/${{ matrix.version }}
+
+  post-release:
+    name: Update version
+    needs: [ release-java, release-c ]
+    uses: ./.github/workflows/post-release.yml
+    with:
+      release: ${{ inputs.release }}
+      version: ${{ inputs.next-version }}

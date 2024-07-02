@@ -1004,6 +1004,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
+         * Has the context had the {@link #conclude()} method called.
+         *
+         * @return true of the {@link #conclude()} method has been called.
+         */
+        public boolean isConcluded()
+        {
+            return 1 == isConcluded;
+        }
+
+        /**
          * User assigned application version which appended to the log as the appVersion in new leadership events.
          * <p>
          * This can be validated using {@link org.agrona.SemanticVersion} to ensure only application nodes of the same
@@ -2040,7 +2050,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             return "ClusteredServiceContainer.Context" +
                 "\n{" +
-                "\n    isConcluded=" + (1 == isConcluded) +
+                "\n    isConcluded=" + isConcluded() +
                 "\n    ownsAeronClient=" + ownsAeronClient +
                 "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
                 "\n    aeron=" + aeron +

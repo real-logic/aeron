@@ -2023,6 +2023,16 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Has the context had the {@link #conclude()} method called.
+         *
+         * @return true of the {@link #conclude()} method has been called.
+         */
+        public boolean isConcluded()
+        {
+            return 1 == isConcluded;
+        }
+
+        /**
          * Should the consensus module attempt to immediately delete {@link #clusterDir()} on startup.
          *
          * @param deleteDirOnStart Attempt deletion.
@@ -4434,7 +4444,7 @@ public final class ConsensusModule implements AutoCloseable
         {
             return "ConsensusModule.Context" +
                 "\n{" +
-                "\n    isConcluded=" + (1 == isConcluded) +
+                "\n    isConcluded=" + isConcluded() +
                 "\n    ownsAeronClient=" + ownsAeronClient +
                 "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
                 "\n    aeron=" + aeron +

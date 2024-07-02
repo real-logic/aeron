@@ -23,9 +23,9 @@ concurrency:
 
 env:
   GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail'
-  JF_URL: 'https://weareadaptive.jfrog.io'
-  OIDC_PROVIDER: 'github'
-  OIDC_AUDIENCE: 'jfrog-github'
+  JF_URL: ${{ secrets.JF_URL }}
+  OIDC_PROVIDER: ${{ secrets.OIDC_PROVIDER }}
+  OIDC_AUDIENCE: ${{ secrets.OIDC_AUDIENCE }}
 
 jobs:
   ci:

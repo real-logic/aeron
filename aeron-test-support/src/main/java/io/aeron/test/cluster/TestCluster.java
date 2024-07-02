@@ -142,6 +142,8 @@ public final class TestCluster implements AutoCloseable
     private final int appointedLeaderId;
     private final int backupNodeIndex;
     private final IntFunction<TestNode.TestService[]> serviceSupplier;
+    private final boolean useResponseChannels;
+
     private String logChannel;
     private String ingressChannel;
     private String egressChannel;
@@ -158,13 +160,13 @@ public final class TestCluster implements AutoCloseable
     private File markFileBaseDir;
     private String clusterBaseDir;
     private ClusterBackup.Configuration.ReplayStart replayStart;
-    private boolean useResponseChannels = false;
 
     private TestCluster(
         final int staticMemberCount,
         final int appointedLeaderId,
         final IntHashSet byHostInvalidInitialResolutions,
-        final IntFunction<TestNode.TestService[]> serviceSupplier)
+        final IntFunction<TestNode.TestService[]> serviceSupplier,
+        final boolean useResponseChannels)
     {
         this.serviceSupplier = requireNonNull(serviceSupplier);
         if ((staticMemberCount + 1) >= 10)
@@ -174,7 +176,8 @@ public final class TestCluster implements AutoCloseable
 
         this.nodes = new TestNode[staticMemberCount + 1];
         this.backupNodeIndex = staticMemberCount;
-        this.staticClusterMembers = clusterMembers(0, staticMemberCount, useResponseChannels);
+        this.useResponseChannels = useResponseChannels;
+        this.staticClusterMembers = clusterMembers(0, staticMemberCount, this.useResponseChannels);
         this.staticClusterMemberEndpoints = ingressEndpoints(0, staticMemberCount);
         this.clusterMembersEndpoints = clusterMembersEndpoints(0, staticMemberCount);
         this.senderWildcardPortRanges = senderWildcardPortRanges(0, staticMemberCount);
@@ -2142,7 +2145,8 @@ public final class TestCluster implements AutoCloseable
                 nodeCount,
                 appointedLeaderId,
                 byHostInvalidInitialResolutions,
-                serviceSupplier);
+                serviceSupplier,
+                useResponseChannels);
             testCluster.logChannel(logChannel);
             testCluster.ingressChannel(ingressChannel);
             testCluster.egressChannel(egressChannel);
@@ -2155,7 +2159,6 @@ public final class TestCluster implements AutoCloseable
             testCluster.markFileBaseDir(markFileBaseDir);
             testCluster.clusterBaseDir(clusterBaseDir);
             testCluster.replyStart(replayStart);
-            testCluster.useResponseChannels(useResponseChannels);
 
             try
             {
@@ -2192,11 +2195,6 @@ public final class TestCluster implements AutoCloseable
     private void clusterBaseDir(final String clusterBaseDir)
     {
         this.clusterBaseDir = clusterBaseDir;
-    }
-
-    private void useResponseChannels(final boolean enabled)
-    {
-        this.useResponseChannels = enabled;
     }
 
     private void markFileBaseDir(final File markFileBaseDir)

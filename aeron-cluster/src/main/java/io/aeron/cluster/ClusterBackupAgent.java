@@ -55,7 +55,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.CommonContext.CONTROL_MODE_RESPONSE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.CommonContext.MDC_CONTROL_MODE_PARAM_NAME;
+import static io.aeron.CommonContext.MDC_CONTROL_PARAM_NAME;
 import static io.aeron.CommonContext.TAGS_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -564,10 +567,20 @@ public final class ClusterBackupAgent implements Agent
                 CloseHelper.close(clusterArchiveAsyncConnect);
 
                 final AeronArchive.Context clusterArchiveContext = ctx.clusterArchiveContext().clone();
-                final ChannelUri leaderArchiveUri = ChannelUri.parse(clusterArchiveContext.controlRequestChannel());
+                final ChannelUri logSupplierArchiveUri = ChannelUri.parse(
+                    clusterArchiveContext.controlRequestChannel());
+                logSupplierArchiveUri.put(ENDPOINT_PARAM_NAME, logSupplierMember.archiveEndpoint());
+                clusterArchiveContext.controlRequestChannel(logSupplierArchiveUri.toString());
 
-                leaderArchiveUri.put(ENDPOINT_PARAM_NAME, logSupplierMember.archiveEndpoint());
-                clusterArchiveContext.controlRequestChannel(leaderArchiveUri.toString());
+                if (null != logSupplierMember.archiveResponseEndpoint())
+                {
+                    final ChannelUri logSupplierResponseUri = ChannelUri.parse(
+                        clusterArchiveContext.controlResponseChannel());
+                    logSupplierResponseUri.put(MDC_CONTROL_MODE_PARAM_NAME, CONTROL_MODE_RESPONSE);
+                    logSupplierResponseUri.remove(ENDPOINT_PARAM_NAME);
+                    logSupplierResponseUri.put(MDC_CONTROL_PARAM_NAME, logSupplierMember.archiveResponseEndpoint());
+                    clusterArchiveContext.controlResponseChannel(logSupplierResponseUri.toString());
+                }
 
                 clusterArchiveAsyncConnect = AeronArchive.asyncConnect(clusterArchiveContext);
             }

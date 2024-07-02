@@ -129,7 +129,7 @@ jobs:
       - name: Publish Build info With JFrog CLI
         run: |
           mv *.tar.gz aeron-${{ needs.pre-release.outputs.version }}-${{ matrix.distro }}-${{ matrix.version }}.tar.gz
-          jf rt u *.tar.gz ${{ inputs.release && 'aeron-local-private/' || 'aeron-test-generic-local-private/' }}
+          jf rt u *.tar.gz ${{ inputs.release && secrets.REPO_PATH || secrets.REPO_TEST_PATH }}
         working-directory: ./build/${{ matrix.distro }}/${{ matrix.version }}
 
   post-release:

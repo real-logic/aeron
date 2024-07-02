@@ -100,8 +100,22 @@ public enum ArchiveEventCode implements EventCode
         41, -1, (event, buffer, offset, builder) -> dissectReplicationSessionDone(buffer, offset, builder)),
 
     CMD_IN_REQUEST_REPLAY_TOKEN(
-        42, ReplayTokenRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest);
+        42, ReplayTokenRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
 
+    REPLAY_SESSION_STATE_CHANGE(43, -1,
+        (event, buffer, offset, builder) -> dissectReplaySessionStateChange(buffer, offset, builder)),
+
+    RECORDING_SESSION_STATE_CHANGE(44, -1,
+        (event, buffer, offset, builder) -> dissectRecordingSessionStateChange(buffer, offset, builder)),
+
+    RECORDING_SESSION_STARTED(45, -1,
+        (event, buffer, offset, builder) -> dissectRecordingSessionStarted(buffer, offset, builder)),
+
+    REPLAY_SESSION_STARTED(46, -1,
+        (event, buffer, offset, builder) -> dissectReplaySessionStarted(buffer, offset, builder)),
+
+    REPLICATION_SESSION_STARTED(47, -1,
+        (event, buffer, offset, builder) -> dissectReplicationSessionStarted(buffer, offset, builder));
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final ArchiveEventCode[] EVENT_CODE_BY_ID;

@@ -107,4 +107,167 @@ class ArchiveEventEncoderTest
         assertEquals(catalogLength, buffer.getLong(offset + LOG_HEADER_LENGTH));
         assertEquals(newCatalogLength, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG));
     }
+
+    enum State
+    {
+        ALPHA, BETA;
+    }
+
+    @Test
+    void testEncodeReplaySessionStateChange()
+    {
+        int offset = 24;
+        final int length = replaySessionStateChangeLength(State.ALPHA, State.BETA, "reason");
+        final int captureLength = captureLength(length);
+
+        encodeReplaySessionStateChange(buffer, offset, captureLength, length,
+            State.ALPHA, State.BETA, 1, 2, 3, "reason");
+
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + 2 * SIZE_OF_INT, LITTLE_ENDIAN));
+        offset += LOG_HEADER_LENGTH;
+
+        assertEquals(1, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(2, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(3, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals("reason", buffer.getStringAscii(offset));
+        offset += SIZE_OF_INT + "reason".length();
+        assertEquals("ALPHA -> BETA", buffer.getStringAscii(offset));
+    }
+
+    @Test
+    void testEncodeReplaySessionStarted()
+    {
+        int offset = 24;
+        final int length = replaySessionStartedLength("channel");
+        final int captureLength = captureLength(length);
+
+        encodeReplaySessionStarted(buffer, offset, captureLength, length,
+            1, 2, 3, 4, 5, 6, "channel");
+
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + 2 * SIZE_OF_INT, LITTLE_ENDIAN));
+        offset += LOG_HEADER_LENGTH;
+
+        assertEquals(1, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(2, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(3, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(4, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(5, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(6, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals("channel", buffer.getStringAscii(offset));
+    }
+
+    @Test
+    void testEncodeRecordingSessionStateChange()
+    {
+        int offset = 24;
+        final int length = recordingSessionStateChangeLength(State.ALPHA, State.BETA, "reason");
+        final int captureLength = captureLength(length);
+
+        encodeRecordingSessionStateChange(buffer, offset, captureLength, length,
+            State.ALPHA, State.BETA, 1, 2, "reason");
+
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + 2 * SIZE_OF_INT, LITTLE_ENDIAN));
+        offset += LOG_HEADER_LENGTH;
+
+        assertEquals(1, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(2, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals("reason", buffer.getStringAscii(offset));
+        offset += SIZE_OF_INT + "reason".length();
+        assertEquals("ALPHA -> BETA", buffer.getStringAscii(offset));
+    }
+
+    @Test
+    void testEncodeRecordingSessionStarted()
+    {
+        int offset = 24;
+        final int length = recordingSessionStartedLength("channel");
+        final int captureLength = captureLength(length);
+
+        encodeRecordingSessionStarted(buffer, offset, captureLength, length,
+            1, 2, 3, "channel");
+
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + 2 * SIZE_OF_INT, LITTLE_ENDIAN));
+        offset += LOG_HEADER_LENGTH;
+
+        assertEquals(1, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(2, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(3, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals("channel", buffer.getStringAscii(offset));
+    }
+
+    @Test
+    void testEncodeReplicationSessionStateChange()
+    {
+        int offset = 24;
+        final int length = replicationSessionStateChangeLength(State.ALPHA, State.BETA, "reason");
+        final int captureLength = captureLength(length);
+
+        encodeReplicationSessionStateChange(buffer, offset, captureLength, length,
+            State.ALPHA, State.BETA, 1, 2, 3, 4, "reason");
+
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + 2 * SIZE_OF_INT, LITTLE_ENDIAN));
+        offset += LOG_HEADER_LENGTH;
+
+        assertEquals(1, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(2, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(3, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(4, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals("reason", buffer.getStringAscii(offset));
+        offset += SIZE_OF_INT + "reason".length();
+        assertEquals("ALPHA -> BETA", buffer.getStringAscii(offset));
+    }
+
+    @Test
+    void testEncodeReplicationSessionStarted()
+    {
+        int offset = 24;
+        final int length = replicationSessionStartedLength("channel");
+        final int captureLength = captureLength(length);
+
+        encodeReplicationSessionStarted(buffer, offset, captureLength, length,
+            1, 2, 3, 4, "channel");
+
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + 2 * SIZE_OF_INT, LITTLE_ENDIAN));
+        offset += LOG_HEADER_LENGTH;
+
+        assertEquals(1, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(2, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(3, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals(4, buffer.getLong(offset, LITTLE_ENDIAN));
+        offset += SIZE_OF_LONG;
+        assertEquals("channel", buffer.getStringAscii(offset));
+    }
 }

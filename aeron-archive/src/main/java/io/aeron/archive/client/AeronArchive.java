@@ -3011,6 +3011,16 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
+         * Has the context had the {@link #conclude()} method called.
+         *
+         * @return true of the {@link #conclude()} method has been called.
+         */
+        public boolean isConcluded()
+        {
+            return 1 == isConcluded;
+        }
+
+        /**
          * Set the message timeout in nanoseconds to wait for sending or receiving a message.
          *
          * @param messageTimeoutNs to wait for sending or receiving a message.
@@ -3490,7 +3500,7 @@ public final class AeronArchive implements AutoCloseable
         {
             return "AeronArchive.Context" +
                 "\n{" +
-                "\n    isConcluded=" + (1 == isConcluded) +
+                "\n    isConcluded=" + isConcluded() +
                 "\n    ownsAeronClient=" + ownsAeronClient +
                 "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
                 "\n    aeron=" + aeron +

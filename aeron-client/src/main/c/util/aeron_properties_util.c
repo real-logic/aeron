@@ -377,7 +377,8 @@ int aeron_properties_load(const char *url_or_filename)
     {
         result = aeron_properties_file_load(url_or_filename + strlen("file://"));
     }
-    else if (strncmp("http://", url_or_filename, strlen("http://")) == 0) // codeql[cpp/user-controlled-bypass]
+    // codeql[cpp/user-controlled-bypass]
+    else if (strncmp("http://", url_or_filename, strlen("http://")) == 0)
     {
         result = aeron_properties_http_load(url_or_filename);
     }

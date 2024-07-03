@@ -528,7 +528,9 @@ final class ArchiveEventDissector
         final long position = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
 
-        builder.append(": sessionId=").append(sessionId);
+        builder.append(": replaySessionId=").append(sessionId);
+        builder.append(" replayId=").append(sessionId >> 32);
+        builder.append(" sessionId=").append(sessionId & 0xFFFF_FFFFL);
         builder.append(" recordingId=").append(recordingId);
         builder.append(" position=").append(position);
 
@@ -537,36 +539,6 @@ final class ArchiveEventDissector
         absoluteOffset += SIZE_OF_INT;
 
         builder.append(" reason=\"");
-        buffer.getStringAscii(absoluteOffset, builder);
-        builder.append("\"");
-    }
-
-    static void dissectReplaySessionStarted(
-        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
-    {
-        int absoluteOffset = offset;
-        absoluteOffset += dissectLogHeader(CONTEXT, REPLAY_SESSION_STARTED, buffer, absoluteOffset, builder);
-
-        final long sessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-        final long controlSessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-        final long correlationId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-        final long streamId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-        final long recordingId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-        final long startPosition = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-
-        builder.append(": sessionId=").append(sessionId);
-        builder.append(" controlSessionId=").append(controlSessionId);
-        builder.append(" correlationId=").append(correlationId);
-        builder.append(" streamId=").append(streamId);
-        builder.append(" recordingId=").append(recordingId);
-        builder.append(" startPosition=").append(startPosition);
-        builder.append(" publicationChannel=\"");
         buffer.getStringAscii(absoluteOffset, builder);
         builder.append("\"");
     }
@@ -590,27 +562,6 @@ final class ArchiveEventDissector
         absoluteOffset += SIZE_OF_INT;
 
         builder.append(" reason=\"");
-        buffer.getStringAscii(absoluteOffset, builder);
-        builder.append("\"");
-    }
-
-    static void dissectRecordingSessionStarted(
-        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
-    {
-        int absoluteOffset = offset;
-        absoluteOffset += dissectLogHeader(CONTEXT, RECORDING_SESSION_STARTED, buffer, absoluteOffset, builder);
-
-        final long recordingId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-        final long controlSessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-        final long correlationId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-
-        builder.append(": recordingId=").append(recordingId);
-        builder.append(" controlSessionId=").append(controlSessionId);
-        builder.append(" correlationId=").append(correlationId);
-        builder.append(" subscriptionChannel=\"");
         buffer.getStringAscii(absoluteOffset, builder);
         builder.append("\"");
     }
@@ -640,30 +591,6 @@ final class ArchiveEventDissector
         absoluteOffset += SIZE_OF_INT;
 
         builder.append(" reason=\"");
-        buffer.getStringAscii(absoluteOffset, builder);
-        builder.append("\"");
-    }
-
-    static void dissectReplicationSessionStarted(
-        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
-    {
-        int absoluteOffset = offset;
-        absoluteOffset += dissectLogHeader(CONTEXT, REPLICATION_SESSION_STARTED, buffer, absoluteOffset, builder);
-
-        final long replicationId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-        final long controlSessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-        final long srcRecordingId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-        final long dstRecordingId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
-        absoluteOffset += SIZE_OF_LONG;
-
-        builder.append(": replicationId=").append(replicationId);
-        builder.append(" controlSessionId=").append(controlSessionId);
-        builder.append(" srcRecordingId=").append(srcRecordingId);
-        builder.append(" dstRecordingId=").append(dstRecordingId);
-        builder.append(" replicationChannel=\"");
         buffer.getStringAscii(absoluteOffset, builder);
         builder.append("\"");
     }

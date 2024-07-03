@@ -77,8 +77,6 @@ class RecordingSession implements Session
 
         blockLengthLimit = Math.min(image.termBufferLength(), ctx.fileIoMaxLength());
         recordingWriter = new RecordingWriter(recordingId, startPosition, segmentLength, image, ctx, recorder);
-
-        logStarted(recordingId, controlSession.sessionId(), correlationId, image.subscription().channel());
     }
 
     /**
@@ -291,14 +289,5 @@ class RecordingSession implements Session
         final String reason)
     {
         //System.out.println("RecordingSession: " + state + " -> " + newState);
-    }
-
-    @SuppressWarnings("unused")
-    private void logStarted(
-        final long recordingId,
-        final long controlSessionId,
-        final long correlationId,
-        final String subscriptionChannel)
-    {
     }
 }

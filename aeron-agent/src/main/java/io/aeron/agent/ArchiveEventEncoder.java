@@ -63,44 +63,6 @@ final class ArchiveEventEncoder
         return stateTransitionStringLength(from, to) + (3 * SIZE_OF_LONG) + (SIZE_OF_INT + reason.length());
     }
 
-    static <E extends Enum<E>> int encodeReplaySessionStarted(
-        final UnsafeBuffer encodingBuffer,
-        final int offset,
-        final int captureLength,
-        final int length,
-        final long sessionId,
-        final long controlSessionId,
-        final long correlationId,
-        final long streamId,
-        final long recordingId,
-        final long startPosition,
-        final String publicationChannel)
-    {
-        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
-
-        encodingBuffer.putLong(offset + encodedLength, sessionId, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-        encodingBuffer.putLong(offset + encodedLength, controlSessionId, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-        encodingBuffer.putLong(offset + encodedLength, correlationId, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-        encodingBuffer.putLong(offset + encodedLength, streamId, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-        encodingBuffer.putLong(offset + encodedLength, recordingId, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-        encodingBuffer.putLong(offset + encodedLength, startPosition, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-
-        encodedLength += encodingBuffer.putStringAscii(offset + encodedLength, publicationChannel);
-
-        return encodedLength;
-    }
-
-    static <E extends Enum<E>> int replaySessionStartedLength(final String publicationChannel)
-    {
-        return (6 * SIZE_OF_LONG) + (SIZE_OF_INT + publicationChannel.length());
-    }
-
     static <E extends Enum<E>> int encodeRecordingSessionStateChange(
         final UnsafeBuffer encodingBuffer,
         final int offset,
@@ -130,35 +92,6 @@ final class ArchiveEventEncoder
     static <E extends Enum<E>> int recordingSessionStateChangeLength(final E from, final E to, final String reason)
     {
         return stateTransitionStringLength(from, to) + (2 * SIZE_OF_LONG) + (SIZE_OF_INT + reason.length());
-    }
-
-    static <E extends Enum<E>> int encodeRecordingSessionStarted(
-        final UnsafeBuffer encodingBuffer,
-        final int offset,
-        final int captureLength,
-        final int length,
-        final long recordingId,
-        final long controlSessionId,
-        final long correlationId,
-        final String subscriptionChannel)
-    {
-        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
-
-        encodingBuffer.putLong(offset + encodedLength, recordingId, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-        encodingBuffer.putLong(offset + encodedLength, controlSessionId, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-        encodingBuffer.putLong(offset + encodedLength, correlationId, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-
-        encodedLength += encodingBuffer.putStringAscii(offset + encodedLength, subscriptionChannel);
-
-        return encodedLength;
-    }
-
-    static <E extends Enum<E>> int recordingSessionStartedLength(final String subscriptionChannel)
-    {
-        return (3 * SIZE_OF_LONG) + (SIZE_OF_INT + subscriptionChannel.length());
     }
 
     static <E extends Enum<E>> int encodeReplicationSessionStateChange(
@@ -196,38 +129,6 @@ final class ArchiveEventEncoder
     static <E extends Enum<E>> int replicationSessionStateChangeLength(final E from, final E to, final String reason)
     {
         return stateTransitionStringLength(from, to) + (4 * SIZE_OF_LONG) + (SIZE_OF_INT + reason.length());
-    }
-
-    static <E extends Enum<E>> int encodeReplicationSessionStarted(
-        final UnsafeBuffer encodingBuffer,
-        final int offset,
-        final int captureLength,
-        final int length,
-        final long replicationId,
-        final long controlSessionId,
-        final long srcRecordingId,
-        final long dstRecordingId,
-        final String replicationChannel)
-    {
-        int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
-
-        encodingBuffer.putLong(offset + encodedLength, replicationId, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-        encodingBuffer.putLong(offset + encodedLength, controlSessionId, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-        encodingBuffer.putLong(offset + encodedLength, srcRecordingId, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-        encodingBuffer.putLong(offset + encodedLength, dstRecordingId, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-
-        encodedLength += encodingBuffer.putStringAscii(offset + encodedLength, replicationChannel);
-
-        return encodedLength;
-    }
-
-    static <E extends Enum<E>> int replicationSessionStartedLength(final String replicationChannel)
-    {
-        return (4 * SIZE_OF_LONG) + (SIZE_OF_INT + replicationChannel.length());
     }
 
     static <E extends Enum<E>> int encodeSessionStateChange(

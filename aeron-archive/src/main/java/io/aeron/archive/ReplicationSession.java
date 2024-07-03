@@ -146,8 +146,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             isDestinationRecordingEmpty = false;
         }
-
-        logStarted(replicationId, controlSession.sessionId(), srcRecordingId, dstRecordingId, replicationChannel);
     }
 
     /**
@@ -980,16 +978,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final String reason)
     {
         //System.out.println("ReplicationSession: " + oldState + " -> " + newState + " replicationId=" + replicationId);
-    }
-
-    @SuppressWarnings("unused")
-    private void logStarted(
-        final long replicationId,
-        final long controlSessionId,
-        final long srcRecordingId,
-        final long dstRecordingId,
-        final String replicationChannel)
-    {
     }
 
     @SuppressWarnings("unused")

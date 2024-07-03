@@ -153,9 +153,6 @@ class ReplaySession implements Session, AutoCloseable
 
         segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFileBasePosition));
         connectDeadlineMs = epochClock.time() + connectTimeoutMs;
-
-        logStarted(sessionId, controlSession.sessionId(), correlationId, streamId,
-            recordingId, startPosition, publication.channel());
     }
 
     /**
@@ -606,18 +603,6 @@ class ReplaySession implements Session, AutoCloseable
         final String reason)
     {
         //System.out.println("ReplaySession: " + state + " -> " + newState);
-    }
-
-    @SuppressWarnings("unused")
-    private void logStarted(
-        final long sessionId,
-        final long controlSessionId,
-        final long correlationId,
-        final long streamId,
-        final long recordingId,
-        final long startPosition,
-        final String publicationChannel)
-    {
     }
 
     static boolean isInvalidHeader(

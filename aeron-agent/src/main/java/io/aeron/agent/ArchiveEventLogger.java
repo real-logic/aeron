@@ -45,9 +45,6 @@ public final class ArchiveEventLogger
 
     static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS = complementOf(of(
         CMD_OUT_RESPONSE,
-        REPLICATION_SESSION_STARTED,
-        REPLAY_SESSION_STARTED,
-        RECORDING_SESSION_STARTED,
         REPLAY_SESSION_STATE_CHANGE,
         RECORDING_SESSION_STATE_CHANGE,
         REPLICATION_SESSION_STATE_CHANGE,
@@ -158,59 +155,6 @@ public final class ArchiveEventLogger
     }
 
     /**
-     * Log a session started event for an archive replay session
-     *
-     * @param eventCode          for the type of state change.
-     * @param sessionId          identity for the replay session on the Archive.
-     * @param controlSessionId   control session id on the Archive.
-     * @param correlationId      correlation id on the Archive.
-     * @param streamId           stream id on the Archive.
-     * @param recordingId        recording id on the Archive.
-     * @param startPosition      start position of the reply.
-     * @param publicationChannel publication channel.
-     * @param <E>                type representing the state change.
-     */
-    public <E extends Enum<E>> void logReplaySessionStarted(
-        final ArchiveEventCode eventCode,
-        final long sessionId,
-        final long controlSessionId,
-        final long correlationId,
-        final long streamId,
-        final long recordingId,
-        final long startPosition,
-        final String publicationChannel)
-    {
-        final int length = replaySessionStartedLength(publicationChannel);
-        final int captureLength = captureLength(length);
-        final int encodedLength = encodedLength(captureLength);
-        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
-
-        if (index > 0)
-        {
-            try
-            {
-                encodeReplaySessionStarted(
-                    (UnsafeBuffer)ringBuffer.buffer(),
-                    index,
-                    captureLength,
-                    length,
-                    sessionId,
-                    controlSessionId,
-                    correlationId,
-                    streamId,
-                    recordingId,
-                    startPosition,
-                    publicationChannel);
-            }
-            finally
-            {
-                ringBuffer.commit(index);
-            }
-        }
-    }
-
-    /**
      * Log a state change event for an archive recording session
      *
      * @param eventCode        for the type of state change.
@@ -250,50 +194,6 @@ public final class ArchiveEventLogger
                     recordingId,
                     position,
                     reason);
-            }
-            finally
-            {
-                ringBuffer.commit(index);
-            }
-        }
-    }
-
-    /**
-     * Log a session started event for an archive recording session
-     *
-     * @param eventCode           for the type of state change.
-     * @param recordingId         recording id on the Archive.
-     * @param controlSessionId    control session id on the Archive.
-     * @param correlationId       correlation id on the Archive.
-     * @param subscriptionChannel subscription channel.
-     * @param <E>                 type representing the state change.
-     */
-    public <E extends Enum<E>> void logRecordingSessionStarted(
-        final ArchiveEventCode eventCode,
-        final long recordingId,
-        final long controlSessionId,
-        final long correlationId,
-        final String subscriptionChannel)
-    {
-        final int length = recordingSessionStartedLength(subscriptionChannel);
-        final int captureLength = captureLength(length);
-        final int encodedLength = encodedLength(captureLength);
-        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
-
-        if (index > 0)
-        {
-            try
-            {
-                encodeRecordingSessionStarted(
-                    (UnsafeBuffer)ringBuffer.buffer(),
-                    index,
-                    captureLength,
-                    length,
-                    recordingId,
-                    controlSessionId,
-                    correlationId,
-                    subscriptionChannel);
             }
             finally
             {
@@ -348,53 +248,6 @@ public final class ArchiveEventLogger
                     dstRecordingId,
                     position,
                     reason);
-            }
-            finally
-            {
-                ringBuffer.commit(index);
-            }
-        }
-    }
-
-    /**
-     * Log a session started event for an archive replication session
-     *
-     * @param eventCode          for the type of state change.
-     * @param replicationId      replication id on the Archive.
-     * @param controlSessionId   control session id on the Archive.
-     * @param srcRecordingId     source recording id on the Archive.
-     * @param dstRecordingId     destination recording id on the Archive.
-     * @param replicationChannel replication channel on the Archive.
-     * @param <E>                type representing the state change.
-     */
-    public <E extends Enum<E>> void logReplicationSessionStarted(
-        final ArchiveEventCode eventCode,
-        final long replicationId,
-        final long controlSessionId,
-        final long srcRecordingId,
-        final long dstRecordingId,
-        final String replicationChannel)
-    {
-        final int length = replicationSessionStartedLength(replicationChannel);
-        final int captureLength = captureLength(length);
-        final int encodedLength = encodedLength(captureLength);
-        final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
-
-        if (index > 0)
-        {
-            try
-            {
-                encodeReplicationSessionStarted(
-                    (UnsafeBuffer)ringBuffer.buffer(),
-                    index,
-                    captureLength,
-                    length,
-                    replicationId,
-                    controlSessionId,
-                    srcRecordingId,
-                    dstRecordingId,
-                    replicationChannel);
             }
             finally
             {

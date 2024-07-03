@@ -42,23 +42,6 @@ class ArchiveInterceptor
         }
     }
 
-    static class ReplaySessionStarted
-    {
-        @Advice.OnMethodEnter
-        static <E extends Enum<E>> void logStarted(
-            final long sessionId,
-            final long controlSessionId,
-            final long correlationId,
-            final long streamId,
-            final long recordingId,
-            final long startPosition,
-            final String publicationChannel)
-        {
-            LOGGER.logReplaySessionStarted(REPLAY_SESSION_STARTED, sessionId, controlSessionId,
-                correlationId, streamId, recordingId, startPosition, publicationChannel);
-        }
-    }
-
     static class RecordingSessionStateChange
     {
         @Advice.OnMethodEnter
@@ -71,20 +54,6 @@ class ArchiveInterceptor
         {
             LOGGER.logRecordingSessionStateChange(RECORDING_SESSION_STATE_CHANGE,
                 oldState, newState, recordingId, position, reason);
-        }
-    }
-
-    static class RecordingSessionStarted
-    {
-        @Advice.OnMethodEnter
-        static <E extends Enum<E>> void logStarted(
-            final long recordingId,
-            final long controlSessionId,
-            final long correlationId,
-            final String subscriptionChannel)
-        {
-            LOGGER.logRecordingSessionStarted(RECORDING_SESSION_STARTED,
-                recordingId, controlSessionId, correlationId, subscriptionChannel);
         }
     }
 
@@ -102,21 +71,6 @@ class ArchiveInterceptor
         {
             LOGGER.logReplicationSessionStateChange(REPLICATION_SESSION_STATE_CHANGE,
                 oldState, newState, replicationId, srcRecordingId, dstRecordingId, position, reason);
-        }
-    }
-
-    static class ReplicationSessionStarted
-    {
-        @Advice.OnMethodEnter
-        static <E extends Enum<E>> void logStarted(
-            final long replicationId,
-            final long controlSessionId,
-            final long srcRecordingId,
-            final long dstRecordingId,
-            final String replicationChannel)
-        {
-            LOGGER.logReplicationSessionStarted(REPLICATION_SESSION_STARTED,
-                replicationId, controlSessionId, srcRecordingId, dstRecordingId, replicationChannel);
         }
     }
 

@@ -847,37 +847,13 @@ class ArchiveEventDissectorTest
         dissectReplaySessionStateChange(buffer, 0, builder);
 
         assertEquals("[1.600000000] " + CONTEXT + ": " + REPLAY_SESSION_STATE_CHANGE.name() + " [10/20]:" +
-            " sessionId=20000000000" +
+            " replaySessionId=20000000000" +
+            " replayId=4" +
+            " sessionId=2820130816" +
             " recordingId=30000000000" +
             " position=40000000000" +
             " x -> y" +
             " reason=\"some reason\"",
-            builder.toString());
-    }
-
-    @Test
-    void replaySessionStarted()
-    {
-        final String channel = "channelA";
-        internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_600_000_000L);
-        buffer.putLong(LOG_HEADER_LENGTH, 1, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 2, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, 3, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + 3 * SIZE_OF_LONG, 4, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + 4 * SIZE_OF_LONG, 5, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + 5 * SIZE_OF_LONG, 6, LITTLE_ENDIAN);
-        buffer.putStringAscii(LOG_HEADER_LENGTH + 6 * SIZE_OF_LONG, channel);
-
-        dissectReplaySessionStarted(buffer, 0, builder);
-
-        assertEquals("[1.600000000] " + CONTEXT + ": " + REPLAY_SESSION_STARTED.name() + " [10/20]:" +
-            " sessionId=1" +
-            " controlSessionId=2" +
-            " correlationId=3" +
-            " streamId=4" +
-            " recordingId=5" +
-            " startPosition=6" +
-            " publicationChannel=\"channelA\"",
             builder.toString());
     }
 
@@ -902,26 +878,6 @@ class ArchiveEventDissectorTest
     }
 
     @Test
-    void recordingSessionStarted()
-    {
-        final String channel = "channelB";
-        internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_600_000_000L);
-        buffer.putLong(LOG_HEADER_LENGTH, 1, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 2, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, 3, LITTLE_ENDIAN);
-        buffer.putStringAscii(LOG_HEADER_LENGTH + 3 * SIZE_OF_LONG, channel);
-
-        dissectRecordingSessionStarted(buffer, 0, builder);
-
-        assertEquals("[1.600000000] " + CONTEXT + ": " + RECORDING_SESSION_STARTED.name() + " [10/20]:" +
-            " recordingId=1" +
-            " controlSessionId=2" +
-            " correlationId=3" +
-            " subscriptionChannel=\"channelB\"",
-            builder.toString());
-    }
-
-    @Test
     void replicationSessionStateChange()
     {
         final String reason = "no reason";
@@ -942,28 +898,6 @@ class ArchiveEventDissectorTest
             " position=40000000000" +
             " x -> y" +
             " reason=\"no reason\"",
-            builder.toString());
-    }
-
-    @Test
-    void repicationSessionStarted()
-    {
-        final String channel = "channelC";
-        internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_600_000_000L);
-        buffer.putLong(LOG_HEADER_LENGTH, 1, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 2, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, 3, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + 3 * SIZE_OF_LONG, 4, LITTLE_ENDIAN);
-        buffer.putStringAscii(LOG_HEADER_LENGTH + 4 * SIZE_OF_LONG, channel);
-
-        dissectReplicationSessionStarted(buffer, 0, builder);
-
-        assertEquals("[1.600000000] " + CONTEXT + ": " + REPLICATION_SESSION_STARTED.name() + " [10/20]:" +
-            " replicationId=1" +
-            " controlSessionId=2" +
-            " srcRecordingId=3" +
-            " dstRecordingId=4" +
-            " replicationChannel=\"channelC\"",
             builder.toString());
     }
 

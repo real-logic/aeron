@@ -138,7 +138,7 @@ class RecordingSession implements Session
 
         if (State.INACTIVE == state)
         {
-            state(State.STOPPED, "state is stopped");
+            state(State.STOPPED, "");
             recordingWriter.close();
             workCount++;
 
@@ -239,7 +239,8 @@ class RecordingSession implements Session
             }
             else if (image.isEndOfStream() || image.isClosed())
             {
-                state(State.INACTIVE, "EOS: " + image.isEndOfStream() + ", Closed: " + image.isClosed());
+                state(State.INACTIVE, "image.isEndOfStream=" + image.isEndOfStream() +
+                    ", image.isClosed=" + image.isClosed());
             }
 
             if (null != recordingEventsProxy)
@@ -261,7 +262,7 @@ class RecordingSession implements Session
             countedErrorHandler.onError(ex);
             errorMessage = ex.getMessage();
             errorCode = ex.errorCode();
-            state(State.INACTIVE, "ArchiveException: " + errorMessage);
+            state(State.INACTIVE, errorMessage);
         }
         catch (final Exception ex)
         {
@@ -275,7 +276,9 @@ class RecordingSession implements Session
 
     private void state(final State newState, final String reason)
     {
-        logStateChange(state, newState, recordingId, null != image ? image.position() : NULL_POSITION, reason);
+        logStateChange(state, newState, recordingId,
+            null != image ? image.position() : NULL_POSITION,
+            null == reason ? "" : reason);
         state = newState;
     }
 

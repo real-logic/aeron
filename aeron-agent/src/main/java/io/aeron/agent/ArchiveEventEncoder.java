@@ -50,9 +50,12 @@ final class ArchiveEventEncoder
         encodingBuffer.putLong(offset + encodedLength, position, LITTLE_ENDIAN);
         encodedLength += SIZE_OF_LONG;
 
-        encodedLength += encodingBuffer.putStringAscii(offset + encodedLength, reason);
+        encodedLength += encodeStateChange(encodingBuffer, offset + encodedLength, from, to);
 
-        return encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
+        encodedLength += encodeTrailingString(encodingBuffer, offset + encodedLength,
+            captureLength + LOG_HEADER_LENGTH - encodedLength, reason);
+
+        return encodedLength;
     }
 
     static <E extends Enum<E>> int replaySessionStateChangeLength(final E from, final E to, final String reason)
@@ -116,9 +119,12 @@ final class ArchiveEventEncoder
         encodingBuffer.putLong(offset + encodedLength, position, LITTLE_ENDIAN);
         encodedLength += SIZE_OF_LONG;
 
-        encodedLength += encodingBuffer.putStringAscii(offset + encodedLength, reason);
+        encodedLength += encodeStateChange(encodingBuffer, offset + encodedLength, from, to);
 
-        return encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
+        encodedLength += encodeTrailingString(encodingBuffer, offset + encodedLength,
+            captureLength + LOG_HEADER_LENGTH - encodedLength, reason);
+
+        return encodedLength;
     }
 
     static <E extends Enum<E>> int recordingSessionStateChangeLength(final E from, final E to, final String reason)
@@ -179,9 +185,12 @@ final class ArchiveEventEncoder
         encodingBuffer.putLong(offset + encodedLength, position, LITTLE_ENDIAN);
         encodedLength += SIZE_OF_LONG;
 
-        encodedLength += encodingBuffer.putStringAscii(offset + encodedLength, reason);
+        encodedLength += encodeStateChange(encodingBuffer, offset + encodedLength, from, to);
 
-        return encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
+        encodedLength += encodeTrailingString(encodingBuffer, offset + encodedLength,
+            captureLength + LOG_HEADER_LENGTH - encodedLength, reason);
+
+        return encodedLength;
     }
 
     static <E extends Enum<E>> int replicationSessionStateChangeLength(final E from, final E to, final String reason)

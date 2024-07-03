@@ -134,9 +134,9 @@ class ArchiveEventEncoderTest
         offset += SIZE_OF_LONG;
         assertEquals(3, buffer.getLong(offset, LITTLE_ENDIAN));
         offset += SIZE_OF_LONG;
-        assertEquals("reason", buffer.getStringAscii(offset));
-        offset += SIZE_OF_INT + "reason".length();
         assertEquals("ALPHA -> BETA", buffer.getStringAscii(offset));
+        offset += SIZE_OF_INT + "ALPHA -> BETA".length();
+        assertEquals("reason", buffer.getStringAscii(offset));
     }
 
     @Test
@@ -188,9 +188,9 @@ class ArchiveEventEncoderTest
         offset += SIZE_OF_LONG;
         assertEquals(2, buffer.getLong(offset, LITTLE_ENDIAN));
         offset += SIZE_OF_LONG;
-        assertEquals("reason", buffer.getStringAscii(offset));
-        offset += SIZE_OF_INT + "reason".length();
         assertEquals("ALPHA -> BETA", buffer.getStringAscii(offset));
+        offset += SIZE_OF_INT + "ALPHA -> BETA".length();
+        assertEquals("reason", buffer.getStringAscii(offset));
     }
 
     @Test
@@ -240,9 +240,9 @@ class ArchiveEventEncoderTest
         offset += SIZE_OF_LONG;
         assertEquals(4, buffer.getLong(offset, LITTLE_ENDIAN));
         offset += SIZE_OF_LONG;
-        assertEquals("reason", buffer.getStringAscii(offset));
-        offset += SIZE_OF_INT + "reason".length();
         assertEquals("ALPHA -> BETA", buffer.getStringAscii(offset));
+        offset += SIZE_OF_INT + "ALPHA -> BETA".length();
+        assertEquals("reason", buffer.getStringAscii(offset));
     }
 
     @Test

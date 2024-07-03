@@ -841,8 +841,8 @@ class ArchiveEventDissectorTest
         buffer.putLong(LOG_HEADER_LENGTH, 20_000_000_000L, LITTLE_ENDIAN);
         buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 30_000_000_000L, LITTLE_ENDIAN);
         buffer.putLong(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, 40_000_000_000L, LITTLE_ENDIAN);
-        final int reasonLength = buffer.putStringAscii(LOG_HEADER_LENGTH + 3 * SIZE_OF_LONG, reason);
-        buffer.putStringAscii(LOG_HEADER_LENGTH + 3 * SIZE_OF_LONG + reasonLength, "x -> y");
+        final int stateChangeLength = buffer.putStringAscii(LOG_HEADER_LENGTH + 3 * SIZE_OF_LONG, "x -> y");
+        buffer.putStringAscii(LOG_HEADER_LENGTH + 3 * SIZE_OF_LONG + stateChangeLength, reason);
 
         dissectReplaySessionStateChange(buffer, 0, builder);
 
@@ -850,8 +850,8 @@ class ArchiveEventDissectorTest
             " sessionId=20000000000" +
             " recordingId=30000000000" +
             " position=40000000000" +
-            " reason=\"some reason\"" +
-            " x -> y",
+            " x -> y" +
+            " reason=\"some reason\"",
             builder.toString());
     }
 
@@ -888,16 +888,16 @@ class ArchiveEventDissectorTest
         internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_700_000_000L);
         buffer.putLong(LOG_HEADER_LENGTH, 30_000_000_000L, LITTLE_ENDIAN);
         buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 40_000_000_000L, LITTLE_ENDIAN);
-        final int reasonLength = buffer.putStringAscii(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, reason);
-        buffer.putStringAscii(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG + reasonLength, "x -> y");
+        final int stateChangeLength = buffer.putStringAscii(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, "x -> y");
+        buffer.putStringAscii(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG + stateChangeLength, reason);
 
         dissectRecordingSessionStateChange(buffer, 0, builder);
 
         assertEquals("[1.700000000] " + CONTEXT + ": " + RECORDING_SESSION_STATE_CHANGE.name() + " [10/20]:" +
             " recordingId=30000000000" +
             " position=40000000000" +
-            " reason=\"some other reason\"" +
-            " x -> y",
+            " x -> y" +
+            " reason=\"some other reason\"",
             builder.toString());
     }
 
@@ -930,8 +930,8 @@ class ArchiveEventDissectorTest
         buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 20_000_000_000L, LITTLE_ENDIAN);
         buffer.putLong(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, 30_000_000_000L, LITTLE_ENDIAN);
         buffer.putLong(LOG_HEADER_LENGTH + 3 * SIZE_OF_LONG, 40_000_000_000L, LITTLE_ENDIAN);
-        final int reasonLength = buffer.putStringAscii(LOG_HEADER_LENGTH + 4 * SIZE_OF_LONG, reason);
-        buffer.putStringAscii(LOG_HEADER_LENGTH + 4 * SIZE_OF_LONG + reasonLength, "x -> y");
+        final int stateChangeLength = buffer.putStringAscii(LOG_HEADER_LENGTH + 4 * SIZE_OF_LONG, "x -> y");
+        buffer.putStringAscii(LOG_HEADER_LENGTH + 4 * SIZE_OF_LONG + stateChangeLength, reason);
 
         dissectReplicationSessionStateChange(buffer, 0, builder);
 
@@ -940,8 +940,8 @@ class ArchiveEventDissectorTest
             " srcRecordingId=20000000000" +
             " dstRecordingId=30000000000" +
             " position=40000000000" +
-            " reason=\"no reason\"" +
-            " x -> y",
+            " x -> y" +
+            " reason=\"no reason\"",
             builder.toString());
     }
 

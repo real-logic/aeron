@@ -209,7 +209,7 @@ class ReplaySession implements Session, AutoCloseable
         if (State.INACTIVE == state)
         {
             closeRecordingSegment();
-            state(State.DONE, "state is inactive");
+            state(State.DONE, "");
         }
 
         return workCount;
@@ -440,7 +440,7 @@ class ReplaySession implements Session, AutoCloseable
 
             if (replayPosition >= replayLimit)
             {
-                state(State.INACTIVE, "position past limit");
+                state(State.INACTIVE, "position (" + replayPosition + ") past limit (" + replayLimit + ")");
             }
 
             return true;
@@ -520,7 +520,7 @@ class ReplaySession implements Session, AutoCloseable
 
         if (replayPosition >= replayLimit)
         {
-            state(State.INACTIVE, "position past limit (notExtended)");
+            state(State.INACTIVE, "position (" + replayPosition + ") past limit (" + replayLimit + ") (notExtended)");
         }
         else if (newStopPosition > oldStopPosition)
         {
@@ -591,7 +591,8 @@ class ReplaySession implements Session, AutoCloseable
 
     private void state(final State newState, final String reason)
     {
-        logStateChange(state, newState, sessionId, recordingId, replayPosition, reason);
+        logStateChange(state, newState, sessionId, recordingId, replayPosition,
+            null == reason ? "" : reason);
         state = newState;
     }
 

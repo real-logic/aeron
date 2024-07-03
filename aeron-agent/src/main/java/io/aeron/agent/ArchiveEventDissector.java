@@ -531,11 +531,14 @@ final class ArchiveEventDissector
         builder.append(": sessionId=").append(sessionId);
         builder.append(" recordingId=").append(recordingId);
         builder.append(" position=").append(position);
-        builder.append(" reason=\"");
+
+        builder.append(" ");
         absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
         absoluteOffset += SIZE_OF_INT;
-        builder.append("\" ");
+
+        builder.append(" reason=\"");
         buffer.getStringAscii(absoluteOffset, builder);
+        builder.append("\"");
     }
 
     static void dissectReplaySessionStarted(
@@ -581,11 +584,14 @@ final class ArchiveEventDissector
 
         builder.append(": recordingId=").append(recordingId);
         builder.append(" position=").append(position);
-        builder.append(" reason=\"");
+
+        builder.append(" ");
         absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
         absoluteOffset += SIZE_OF_INT;
-        builder.append("\" ");
+
+        builder.append(" reason=\"");
         buffer.getStringAscii(absoluteOffset, builder);
+        builder.append("\"");
     }
 
     static void dissectRecordingSessionStarted(
@@ -628,11 +634,14 @@ final class ArchiveEventDissector
         builder.append(" srcRecordingId=").append(srcRecordingId);
         builder.append(" dstRecordingId=").append(dstRecordingId);
         builder.append(" position=").append(position);
-        builder.append(" reason=\"");
+
+        builder.append(" ");
         absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
         absoluteOffset += SIZE_OF_INT;
-        builder.append("\" ");
+
+        builder.append(" reason=\"");
         buffer.getStringAscii(absoluteOffset, builder);
+        builder.append("\"");
     }
 
     static void dissectReplicationSessionStarted(

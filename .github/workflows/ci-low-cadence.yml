@@ -1,6 +1,7 @@
 name: Continuous Integration (Low Cadence)
 
 on:
+  workflow_call:
   workflow_dispatch:
   repository_dispatch:
     types: run-slow-tests
@@ -8,7 +9,7 @@ on:
     - cron: '0 0,12 * * *'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-low-cadence-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:

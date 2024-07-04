@@ -85,7 +85,7 @@ public class HeaderWriter
         UnsafeAccess.UNSAFE.storeFence();
 
         termBuffer.putLong(offset + TERM_OFFSET_FIELD_OFFSET, sessionId | offset);
-        termBuffer.putLong(offset + STREAM_ID_FIELD_OFFSET, streamId | (((long)termId) << 32));
+        termBuffer.putLong(offset + STREAM_ID_FIELD_OFFSET, (((long)termId) << 32) | streamId);
     }
 }
 
@@ -102,10 +102,10 @@ class NativeBigEndianHeaderWriter extends HeaderWriter
     public void write(final UnsafeBuffer termBuffer, final int offset, final int length, final int termId)
     {
         termBuffer.putLongOrdered(
-            offset + FRAME_LENGTH_FIELD_OFFSET, versionFlagsType | ((((long)reverseBytes(-length))) << 32));
+            offset + FRAME_LENGTH_FIELD_OFFSET, ((((long)reverseBytes(-length))) << 32) | versionFlagsType);
         UnsafeAccess.UNSAFE.storeFence();
 
-        termBuffer.putLong(offset + TERM_OFFSET_FIELD_OFFSET, sessionId | ((((long)reverseBytes(offset))) << 32));
+        termBuffer.putLong(offset + TERM_OFFSET_FIELD_OFFSET, ((((long)reverseBytes(offset))) << 32) | sessionId);
         termBuffer.putLong(offset + STREAM_ID_FIELD_OFFSET, streamId | (reverseBytes(termId) & 0xFFFF_FFFFL));
     }
 }

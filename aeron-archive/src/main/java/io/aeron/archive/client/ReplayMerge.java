@@ -50,6 +50,7 @@ public final class ReplayMerge implements AutoCloseable
 
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
     private static final long MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = TimeUnit.SECONDS.toMillis(5);
+    private static final long INITIAL_ATTEMPT_LIVE_JOIN_BACKOFF_MS = 8;
     private static final long ATTEMPT_LIVE_JOIN_BACKOFF_MAX_MS = 500;
 
     enum State
@@ -72,8 +73,8 @@ public final class ReplayMerge implements AutoCloseable
     private long nextTargetPosition = Aeron.NULL_VALUE;
     private long positionOfLastProgress = Aeron.NULL_VALUE;
     private long timeOfLastProgressMs;
-    private long timeOfNextAttemptLiveJoin;
-    private long attemptLiveJoinBackoff = 8;
+    private long timeOfNextAttemptLiveJoinMs;
+    private long attemptLiveJoinBackoffMs = INITIAL_ATTEMPT_LIVE_JOIN_BACKOFF_MS;
     private boolean isLiveAdded = false;
     private boolean isReplayActive = false;
     private State state;
@@ -151,7 +152,7 @@ public final class ReplayMerge implements AutoCloseable
 
         subscription.asyncAddDestination(replayDestination);
         timeOfLastProgressMs = epochClock.time();
-        timeOfNextAttemptLiveJoin = epochClock.time();
+        timeOfNextAttemptLiveJoinMs = epochClock.time();
     }
 
     /**
@@ -448,7 +449,7 @@ public final class ReplayMerge implements AutoCloseable
         if (null != image)
         {
             final long position = image.position();
-            if (position >= nextTargetPosition && nowMs >= timeOfNextAttemptLiveJoin)
+            if (position >= nextTargetPosition && nowMs >= timeOfNextAttemptLiveJoinMs)
             {
                 timeOfLastProgressMs = nowMs;
                 positionOfLastProgress = position;
@@ -508,7 +509,7 @@ public final class ReplayMerge implements AutoCloseable
                         timeOfLastProgressMs = nowMs;
                         positionOfLastProgress = position;
                         isLiveAdded = true;
-                        timeOfNextAttemptLiveJoin = nowMs; // no backoff
+                        timeOfNextAttemptLiveJoinMs = nowMs; // no backoff
                     }
                     else if (shouldStopAndRemoveReplay(position))
                     {
@@ -520,12 +521,12 @@ public final class ReplayMerge implements AutoCloseable
                     }
                     else
                     {
-                        timeOfNextAttemptLiveJoin = nowMs + acquireNextAttemptLiveJoinBackoff();
+                        timeOfNextAttemptLiveJoinMs = nowMs + acquireNextAttemptLiveJoinBackoffMs();
                     }
                 }
                 else
                 {
-                    timeOfNextAttemptLiveJoin = nowMs + acquireNextAttemptLiveJoinBackoff();
+                    timeOfNextAttemptLiveJoinMs = nowMs + acquireNextAttemptLiveJoinBackoffMs();
                 }
 
                 state(nextState);
@@ -537,15 +538,14 @@ public final class ReplayMerge implements AutoCloseable
         return workCount;
     }
 
-    private long acquireNextAttemptLiveJoinBackoff()
+    private long acquireNextAttemptLiveJoinBackoffMs()
     {
-        if (attemptLiveJoinBackoff >= ATTEMPT_LIVE_JOIN_BACKOFF_MAX_MS)
+        if (attemptLiveJoinBackoffMs >= ATTEMPT_LIVE_JOIN_BACKOFF_MAX_MS)
         {
             return ATTEMPT_LIVE_JOIN_BACKOFF_MAX_MS;
         }
-        attemptLiveJoinBackoff *= 2;
-        attemptLiveJoinBackoff = Long.min(attemptLiveJoinBackoff, ATTEMPT_LIVE_JOIN_BACKOFF_MAX_MS);
-        return attemptLiveJoinBackoff;
+        attemptLiveJoinBackoffMs = Long.min(attemptLiveJoinBackoffMs * 2, ATTEMPT_LIVE_JOIN_BACKOFF_MAX_MS);
+        return attemptLiveJoinBackoffMs;
     }
 
     private void stopReplay()

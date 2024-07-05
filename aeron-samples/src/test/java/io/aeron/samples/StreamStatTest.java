@@ -37,6 +37,7 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -81,7 +82,7 @@ class StreamStatTest
 
     @Test
     @SuppressWarnings("MethodLength")
-    @InterruptAfter(10)
+    @InterruptAfter(5)
     void shouldCollectStreamStats()
     {
         final ExclusivePublication pub1 = aeron.addExclusivePublication(
@@ -121,6 +122,11 @@ class StreamStatTest
         Tests.awaitConnected(sub2);
         Tests.awaitConnected(sub4);
 
+        final int sub2RcvPosCounterId = findCounterIdByStream(
+            aeron.countersReader(), ReceiverPos.RECEIVER_POS_TYPE_ID, pub2.streamId());
+        final int sub4RcvPosCounterId = findCounterIdByStream(
+            aeron.countersReader(), ReceiverPos.RECEIVER_POS_TYPE_ID, pub4.streamId());
+
         final UnsafeBuffer msg = new UnsafeBuffer(new byte[128]);
         ThreadLocalRandom.current().nextBytes(msg.byteArray());
         for (int i = 0; i < 5; i++)
@@ -152,6 +158,16 @@ class StreamStatTest
         sub1Handler.pollUntil(3);
         sub2Handler.pollUntil(7);
         sub4Handler.pollUntil(5);
+
+        while (1120 != aeron.countersReader().getCounterValue(sub2RcvPosCounterId))
+        {
+            Tests.yield();
+        }
+
+        while (1716702414144L != aeron.countersReader().getCounterValue(sub4RcvPosCounterId))
+        {
+            Tests.yield();
+        }
 
         final StreamStat streamStat = new StreamStat(aeron.countersReader());
         final Map<StreamStat.StreamCompositeKey, List<StreamStat.StreamPosition>> snapshot = streamStat.snapshot();
@@ -215,6 +231,25 @@ class StreamStatTest
         assertStreamPosition(entry.getValue().get(5), ReceiverHwm.RECEIVER_HWM_TYPE_ID, 1716702414144L);
         assertStreamPosition(entry.getValue().get(6), ReceiverPos.RECEIVER_POS_TYPE_ID, 1716702414144L);
         assertStreamPosition(entry.getValue().get(7), SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID, 1716702413824L);
+    }
+
+    private int findCounterIdByStream(final CountersReader countersReader, final int typeId, final int streamId)
+    {
+        final MutableInteger counterId = new MutableInteger(-1);
+
+        countersReader.forEach(
+            (counterId1, typeId1, keyBuffer, label) ->
+            {
+                final int counterStreamId = keyBuffer.getInt(StreamCounter.STREAM_ID_OFFSET);
+                if (typeId1 == typeId && counterStreamId == streamId)
+                {
+                    counterId.set(counterId1);
+                }
+            });
+
+        assertNotEquals(-1, counterId.intValue());
+
+        return counterId.intValue();
     }
 
     private static void assertStreamInfo(

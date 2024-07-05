@@ -1547,6 +1547,16 @@ public final class Archive implements AutoCloseable
         }
 
         /**
+         * Has the context had the {@link #conclude()} method called.
+         *
+         * @return true of the {@link #conclude()} method has been called.
+         */
+        public boolean isConcluded()
+        {
+            return 1 == isConcluded;
+        }
+
+        /**
          * Should an existing archive be deleted on start. Useful only for testing.
          *
          * @param deleteArchiveOnStart true if an existing archive should be deleted on startup.
@@ -3595,7 +3605,7 @@ public final class Archive implements AutoCloseable
         {
             return "Archive.Context" +
                 "\n{" +
-                "\n    isConcluded=" + (1 == isConcluded) +
+                "\n    isConcluded=" + isConcluded() +
                 "\n    deleteArchiveOnStart=" + deleteArchiveOnStart +
                 "\n    ownsAeronClient=" + ownsAeronClient +
                 "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +

@@ -489,41 +489,9 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
-    public void updateLastActivityNs(final long clusterSessionId, final long timeNs)
+    public ClusterClientSession getClientSession(final long clusterSessionId)
     {
-        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session && session.state() == ClusterSession.State.OPEN)
-        {
-            session.timeOfLastActivityNs(timeNs);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public Publication responsePublication(final long clusterSessionId)
-    {
-        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session)
-        {
-            return session.responsePublication();
-        }
-
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public byte[] encodedPrinciple(final long clusterSessionId)
-    {
-        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session)
-        {
-            return session.encodedPrincipal();
-        }
-
-        return null;
+        return sessionByIdMap.get(clusterSessionId);
     }
 
     public void onLoadBeginSnapshot(
@@ -685,7 +653,7 @@ final class ConsensusModuleAgent
         if (leadershipTermId == this.leadershipTermId && Cluster.Role.LEADER == role)
         {
             final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-            if (null != session && session.state() == ClusterSession.State.OPEN)
+            if (null != session && session.isOpen())
             {
                 session.closing(CloseReason.CLIENT_ACTION);
                 session.disconnect(aeron, ctx.countedErrorHandler());
@@ -773,7 +741,7 @@ final class ConsensusModuleAgent
         if (leadershipTermId == this.leadershipTermId && Cluster.Role.LEADER == role)
         {
             final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-            if (null != session && session.state() == ClusterSession.State.OPEN)
+            if (null != session && session.isOpen())
             {
                 final long timestamp = clusterClock.time();
                 if (logPublisher.appendMessage(

@@ -169,14 +169,6 @@ public final class ReceiveDestinationTransport extends ReceiveDestinationTranspo
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public void close()
-    {
-        super.close();
-    }
-
-    /**
      * Has the channel explicit control address.
      *
      * @return true if the channel has explicit control address.

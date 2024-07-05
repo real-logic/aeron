@@ -970,9 +970,10 @@ class PubAndSubTest
             }
             final int fragmentedMessageLength = computeFragmentedFrameLength(data.capacity(), maxPayloadLength);
             final int frameLength = HEADER_LENGTH + data.capacity();
+            final int position1 = ((termId + 1 - initialTermId) * termLength) + fragmentedMessageLength;
 
-            long position;
-            while ((position = publication.tryClaim(maxPayloadLength, bufferClaim)) < 0)
+            long position2;
+            while ((position2 = publication.tryClaim(maxPayloadLength, bufferClaim)) < 0)
             {
                 Tests.yield();
             }
@@ -1015,7 +1016,7 @@ class PubAndSubTest
                 secondReservedValue,
                 initialTermId,
                 publication.positionBitsToShift(),
-                ((termId + 1 - initialTermId) * termLength) + fragmentedMessageLength,
+                position1,
                 data,
                 0,
                 data.capacity()));
@@ -1032,7 +1033,7 @@ class PubAndSubTest
                 42,
                 initialTermId,
                 publication.positionBitsToShift(),
-                position,
+                position2,
                 data,
                 0,
                 maxPayloadLength));
@@ -1142,7 +1143,7 @@ class PubAndSubTest
                 secondReservedValue + 3 * reservedValue,
                 initialTermId,
                 publication.positionBitsToShift(),
-                ((termId + 1 - initialTermId) * termLength) + fragmentedMessageLength,
+                position1,
                 data,
                 3 * maxPayloadLength,
                 317));
@@ -1159,7 +1160,7 @@ class PubAndSubTest
                 42,
                 initialTermId,
                 publication.positionBitsToShift(),
-                position,
+                position2,
                 data,
                 0,
                 maxPayloadLength));

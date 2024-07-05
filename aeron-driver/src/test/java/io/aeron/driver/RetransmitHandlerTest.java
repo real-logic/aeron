@@ -324,7 +324,6 @@ class RetransmitHandlerTest
     {
         createTermBuffer(creator, 5);
         final int termLength = 128 * 1024;
-        final long existingCount = retransmitOverflow.get();
 
         for (int i = 0; i < 16; i++)
         {

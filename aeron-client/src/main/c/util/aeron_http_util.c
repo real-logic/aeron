@@ -34,6 +34,7 @@ int aeron_http_parse_url(const char *url, aeron_http_parsed_url_t *parsed_url)
     char c;
     int i = 0, at_index = -1, first_slash_index = -1, end_index, length;
 
+    // codeql[cpp/user-controlled-bypass]
     if (strncmp(url, "http://", strlen("http://")) != 0)
     {
         AERON_SET_ERR(EINVAL, "URL %s does not have supported scheme", url);

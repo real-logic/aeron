@@ -856,6 +856,16 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
+         * Has the context had the {@link #conclude()} method called.
+         *
+         * @return true of the {@link #conclude()} method has been called.
+         */
+        public boolean isConcluded()
+        {
+            return 1 == isConcluded;
+        }
+
+        /**
          * {@link Aeron} client for communicating with the local Media Driver.
          * <p>
          * This client will be closed when the {@link ClusterBackup#close()} or {@link #close()} methods are called
@@ -1925,7 +1935,7 @@ public final class ClusterBackup implements AutoCloseable
         {
             return "ClusterBackup.Context" +
                 "\n{" +
-                "\n    isConcluded=" + (1 == isConcluded) +
+                "\n    isConcluded=" + isConcluded() +
                 "\n    ownsAeronClient=" + ownsAeronClient +
                 "\n    aeronDirectoryName='" + aeronDirectoryName + '\'' +
                 "\n    aeron=" + aeron +

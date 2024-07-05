@@ -23,9 +23,6 @@ concurrency:
 
 env:
   GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail'
-  JF_URL: ${{ secrets.JF_URL }}
-  OIDC_PROVIDER: ${{ secrets.OIDC_PROVIDER }}
-  OIDC_AUDIENCE: ${{ secrets.OIDC_AUDIENCE }}
 
 jobs:
   ci:
@@ -158,13 +155,15 @@ jobs:
           build-args: VERSION=${{ matrix.version }}
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ secrets.JF_URL }}
         with:
-          oidc-provider-name: ${{ env.OIDC_PROVIDER }}
-          oidc-audience: ${{ env.OIDC_AUDIENCE }}
+          oidc-provider-name: ${{ secrets.JF_OIDC_PROVIDER }}
+          oidc-audience: ${{ secrets.JF_OIDC_AUDIENCE }}
       - name: Publish Build info With JFrog CLI
         run: |
           mv *.tar.gz aeron-${{ needs.pre-release.outputs.version }}-${{ matrix.distro }}-${{ matrix.version }}.tar.gz
-          jf rt u *.tar.gz ${{ inputs.release && secrets.REPO_PATH || secrets.REPO_TEST_PATH }}
+          jf rt u *.tar.gz ${{ secrets.JF_AERON_REPO_PATH }}
         working-directory: ./build/${{ matrix.distro }}/${{ matrix.version }}
 
   post-release:

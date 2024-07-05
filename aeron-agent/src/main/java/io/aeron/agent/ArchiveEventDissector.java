@@ -521,16 +521,16 @@ final class ArchiveEventDissector
         int absoluteOffset = offset;
         absoluteOffset += dissectLogHeader(CONTEXT, REPLAY_SESSION_STATE_CHANGE, buffer, absoluteOffset, builder);
 
-        final long sessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
+        final long replaySessionId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
         final long recordingId = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
         final long position = buffer.getLong(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_LONG;
 
-        builder.append(": replaySessionId=").append(sessionId);
-        builder.append(" replayId=").append(sessionId >> 32);
-        builder.append(" sessionId=").append(sessionId & 0xFFFF_FFFFL);
+        builder.append(": replaySessionId=").append(replaySessionId);
+        builder.append(" replayId=").append(replaySessionId >> 32);
+        builder.append(" sessionId=").append((int)replaySessionId);
         builder.append(" recordingId=").append(recordingId);
         builder.append(" position=").append(position);
 

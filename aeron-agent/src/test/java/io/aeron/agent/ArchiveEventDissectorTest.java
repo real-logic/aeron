@@ -849,7 +849,7 @@ class ArchiveEventDissectorTest
         assertEquals("[1.600000000] " + CONTEXT + ": " + REPLAY_SESSION_STATE_CHANGE.name() + " [10/20]:" +
             " replaySessionId=20000000000" +
             " replayId=4" +
-            " sessionId=2820130816" +
+            " sessionId=-1474836480" +
             " recordingId=30000000000" +
             " position=40000000000" +
             " x -> y" +

@@ -35,8 +35,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)

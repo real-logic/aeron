@@ -37,7 +37,7 @@ public class EventConfigurationTest
     void nullValueMeansNoEventsEnabled()
     {
         final EnumSet<TestEvent> parsedEvents = parseEventCodes(
-            TestEvent.class, null, Collections.emptyMap(), i -> TestEvent.values()[i], TestEvent::valueOf);
+            TestEvent.class, null, Collections.emptyMap(), (i) -> TestEvent.values()[i], TestEvent::valueOf);
 
         assertEquals(EnumSet.noneOf(TestEvent.class), parsedEvents);
     }
@@ -51,7 +51,7 @@ public class EventConfigurationTest
         try
         {
             final EnumSet<TestEvent> parsedEvents = parseEventCodes(
-                TestEvent.class, "A,FOO,2", Collections.emptyMap(), i -> TestEvent.values()[i], TestEvent::valueOf);
+                TestEvent.class, "A,FOO,2", Collections.emptyMap(), (i) -> TestEvent.values()[i], TestEvent::valueOf);
             assertEquals(EnumSet.of(TestEvent.FOO, TestEvent.BAZ), parsedEvents);
             assertThat(stderr.toString(), startsWith("unknown event code: A"));
         }
@@ -64,9 +64,9 @@ public class EventConfigurationTest
     @Test
     void asyncTaskExecutorThreadsReturnsOneByDefault()
     {
-        assertEquals(1, asyncTaskExecutorThreads());
         try
         {
+            assertEquals(1, asyncTaskExecutorThreads());
         }
         finally
         {

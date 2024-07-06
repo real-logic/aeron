@@ -353,7 +353,7 @@ public final class ReplayMerge implements AutoCloseable
         {
             final long correlationId = archive.context().aeron().nextCorrelationId();
 
-            if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
+            if (archive.archiveProxy().getMaxRecordedPosition(recordingId, correlationId, archive.controlSessionId()))
             {
                 activeCorrelationId = correlationId;
                 timeOfLastProgressMs = nowMs;
@@ -365,18 +365,7 @@ public final class ReplayMerge implements AutoCloseable
             nextTargetPosition = polledRelevantId(archive);
             activeCorrelationId = Aeron.NULL_VALUE;
 
-            if (AeronArchive.NULL_POSITION == nextTargetPosition)
-            {
-                final long correlationId = archive.context().aeron().nextCorrelationId();
-
-                if (archive.archiveProxy().getStopPosition(recordingId, correlationId, archive.controlSessionId()))
-                {
-                    activeCorrelationId = correlationId;
-                    timeOfLastProgressMs = nowMs;
-                    workCount += 1;
-                }
-            }
-            else
+            if (AeronArchive.NULL_POSITION != nextTargetPosition)
             {
                 timeOfLastProgressMs = nowMs;
                 state(State.REPLAY);
@@ -472,9 +461,10 @@ public final class ReplayMerge implements AutoCloseable
         if (Aeron.NULL_VALUE == activeCorrelationId)
         {
             final long correlationId = archive.context().aeron().nextCorrelationId();
-            if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
+            if (archive.archiveProxy().getMaxRecordedPosition(recordingId, correlationId, archive.controlSessionId()))
             {
                 activeCorrelationId = correlationId;
+                timeOfLastProgressMs = nowMs;
                 workCount += 1;
             }
         }
@@ -483,15 +473,7 @@ public final class ReplayMerge implements AutoCloseable
             nextTargetPosition = polledRelevantId(archive);
             activeCorrelationId = Aeron.NULL_VALUE;
 
-            if (AeronArchive.NULL_POSITION == nextTargetPosition)
-            {
-                final long correlationId = archive.context().aeron().nextCorrelationId();
-                if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
-                {
-                    activeCorrelationId = correlationId;
-                }
-            }
-            else
+            if (AeronArchive.NULL_POSITION != nextTargetPosition)
             {
                 State nextState = State.CATCHUP;
 

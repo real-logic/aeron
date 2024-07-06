@@ -369,18 +369,7 @@ public final class ReplayMerge implements AutoCloseable
             nextTargetPosition = polledRelevantId(archive);
             activeCorrelationId = Aeron.NULL_VALUE;
 
-            if (AeronArchive.NULL_POSITION == nextTargetPosition)
-            {
-                final long correlationId = archive.context().aeron().nextCorrelationId();
-
-                if (archive.archiveProxy().getStopPosition(recordingId, correlationId, archive.controlSessionId()))
-                {
-                    activeCorrelationId = correlationId;
-                    timeOfLastProgressMs = nowMs;
-                    workCount += 1;
-                }
-            }
-            else
+            if (AeronArchive.NULL_POSITION != nextTargetPosition)
             {
                 timeOfLastProgressMs = nowMs;
                 state(State.REPLAY);
@@ -484,6 +473,7 @@ public final class ReplayMerge implements AutoCloseable
             if (callGetRecordingPosition(nowMs, correlationId))
             {
                 activeCorrelationId = correlationId;
+                timeOfLastProgressMs = nowMs;
                 workCount += 1;
             }
         }
@@ -492,15 +482,7 @@ public final class ReplayMerge implements AutoCloseable
             nextTargetPosition = polledRelevantId(archive);
             activeCorrelationId = Aeron.NULL_VALUE;
 
-            if (AeronArchive.NULL_POSITION == nextTargetPosition)
-            {
-                final long correlationId = archive.context().aeron().nextCorrelationId();
-                if (callGetRecordingPosition(nowMs, correlationId))
-                {
-                    activeCorrelationId = correlationId;
-                }
-            }
-            else
+            if (AeronArchive.NULL_POSITION != nextTargetPosition)
             {
                 State nextState = State.CATCHUP;
 
@@ -533,10 +515,11 @@ public final class ReplayMerge implements AutoCloseable
         return workCount;
     }
 
+    // TODO rename
     private boolean callGetRecordingPosition(final long nowMs, final long correlationId)
     {
         if (nowMs >= timeOfNextGetRecordingPositionMs &&
-            archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
+            archive.archiveProxy().getMaxRecordedPosition(recordingId, correlationId, archive.controlSessionId()))
         {
             getRecordingPositionBackoffMs = Long.min(
                 getRecordingPositionBackoffMs * 2, GET_RECORDING_POSITION_BACKOFF_MAX_MS);

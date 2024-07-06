@@ -518,21 +518,12 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
 
         final String channel = channelUri.toString();
-        final Object recordingSubscriptionOrString = conductor.extendRecording(
+        final Object recordingSubscriptionOrErrorMsg = conductor.extendRecording(
             replicationId, dstRecordingId, replayStreamId, SourceLocation.REMOTE, true, channel, controlSession);
 
-        if (null == recordingSubscriptionOrString)
+        if (recordingSubscriptionOrErrorMsg instanceof Subscription)
         {
-            state(State.DONE, "null return from extendRecording");
-        }
-        else if (recordingSubscriptionOrString instanceof String)
-        {
-            state(State.DONE, (String)recordingSubscriptionOrString);
-        }
-        else
-        {
-            recordingSubscription = (Subscription)recordingSubscriptionOrString;
-
+            recordingSubscription = (Subscription)recordingSubscriptionOrErrorMsg;
             if (isMds)
             {
                 replayDestination = ChannelUri.createDestinationUri(replicationChannel, endpoint);
@@ -543,7 +534,10 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             {
                 state(State.REPLAY_TOKEN, "replay destination added");
             }
-
+        }
+        else
+        {
+            state(State.DONE, (String)recordingSubscriptionOrErrorMsg);
         }
 
         return 1;

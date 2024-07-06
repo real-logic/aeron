@@ -445,7 +445,7 @@ abstract class ArchiveConductor
             return;
         }
 
-        if (isLowStorageSpace(correlationId, controlSession))
+        if (null != isLowStorageSpace(correlationId, controlSession))
         {
             return;
         }
@@ -928,9 +928,10 @@ abstract class ArchiveConductor
             return msg;
         }
 
-        if (isLowStorageSpace(correlationId, controlSession))
+        final String lowStorageSpaceMsg = isLowStorageSpace(correlationId, controlSession);
+        if (null != lowStorageSpaceMsg)
         {
-            return "low storage space";
+            return lowStorageSpaceMsg;
         }
 
         try
@@ -2378,7 +2379,7 @@ abstract class ArchiveConductor
         CloseHelper.close(errorHandler, subscription);
     }
 
-    private boolean isLowStorageSpace(final long correlationId, final ControlSession controlSession)
+    private String isLowStorageSpace(final long correlationId, final ControlSession controlSession)
     {
         try
         {
@@ -2389,7 +2390,7 @@ abstract class ArchiveConductor
             {
                 final String msg = "low storage threshold=" + threshold + " <= usableSpace=" + usableSpace;
                 controlSession.sendErrorResponse(correlationId, STORAGE_SPACE, msg, controlResponseProxy);
-                return true;
+                return msg;
             }
         }
         catch (final IOException ex)
@@ -2397,7 +2398,7 @@ abstract class ArchiveConductor
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return false;
+        return null;
     }
 
     private void deleteSegments(

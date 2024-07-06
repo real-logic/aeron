@@ -888,7 +888,8 @@ abstract class ArchiveConductor
         controlSession.sendOkResponse(correlationId, controlResponseProxy);
     }
 
-    Subscription extendRecording(
+    /* Returns a Subscription or a String error message indicating why the subscription couldn't be acquired */
+    Object extendRecording(
         final long correlationId,
         final long recordingId,
         final int streamId,
@@ -901,14 +902,14 @@ abstract class ArchiveConductor
         {
             final String msg = "max concurrent recordings reached at " + ctx.maxConcurrentRecordings();
             controlSession.sendErrorResponse(correlationId, MAX_RECORDINGS, msg, controlResponseProxy);
-            return null;
+            return msg;
         }
 
         if (!catalog.hasRecording(recordingId))
         {
             final String msg = "unknown recording id: " + recordingId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-            return null;
+            return msg;
         }
 
         catalog.recordingSummary(recordingId, recordingSummary);
@@ -917,19 +918,19 @@ abstract class ArchiveConductor
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " with streamId=" + streamId + " for existing streamId=" + recordingSummary.streamId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-            return null;
+            return msg;
         }
 
         if (recordingSessionByIdMap.containsKey(recordingId))
         {
             final String msg = "cannot extend active recording " + recordingId;
             controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
-            return null;
+            return msg;
         }
 
         if (isLowStorageSpace(correlationId, controlSession))
         {
-            return null;
+            return "low storage space";
         }
 
         try
@@ -959,15 +960,15 @@ abstract class ArchiveConductor
             {
                 final String msg = "recording exists for streamId=" + streamId + " channel=" + originalChannel;
                 controlSession.sendErrorResponse(correlationId, ACTIVE_SUBSCRIPTION, msg, controlResponseProxy);
+                return msg;
             }
         }
         catch (final Exception ex)
         {
             errorHandler.onError(ex);
             controlSession.sendErrorResponse(correlationId, ex.getMessage(), controlResponseProxy);
+            return ex.getMessage();
         }
-
-        return null;
     }
 
     void getStartPosition(final long correlationId, final long recordingId, final ControlSession controlSession)

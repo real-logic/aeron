@@ -66,7 +66,7 @@ class ArchiveEventLoggerTest
         names = {
             "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
             "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE",
-            "REPLICATION_SESSION_DONE"
+            "REPLICATION_SESSION_DONE", "REPLAY_SESSION_STATE_CHANGE", "RECORDING_SESSION_STATE_CHANGE"
         })
     void logControlRequest(final ArchiveEventCode eventCode)
     {
@@ -148,6 +148,7 @@ class ArchiveEventLoggerTest
         value = ArchiveEventCode.class,
         mode = EXCLUDE,
         names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
+            "REPLAY_SESSION_STATE_CHANGE", "RECORDING_SESSION_STATE_CHANGE",
             "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE" })
     void controlRequestEvents(final ArchiveEventCode eventCode)
     {
@@ -159,6 +160,7 @@ class ArchiveEventLoggerTest
         value = ArchiveEventCode.class,
         mode = INCLUDE,
         names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
+            "REPLAY_SESSION_STATE_CHANGE", "RECORDING_SESSION_STATE_CHANGE",
             "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE" })
     void nonControlRequestEvents(final ArchiveEventCode eventCode)
     {

@@ -48,7 +48,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class InvalidateImageFlyweight extends CorrelatedMessageFlyweight
+public class RejectImageFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int IMAGE_CORRELATION_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int POSITION_FIELD_OFFSET = IMAGE_CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
@@ -62,7 +62,7 @@ public class InvalidateImageFlyweight extends CorrelatedMessageFlyweight
      * @param offset at which the message begins.
      * @return this for a fluent API.
      */
-    public InvalidateImageFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    public RejectImageFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
         super.wrap(buffer, offset);
         return this;
@@ -84,7 +84,7 @@ public class InvalidateImageFlyweight extends CorrelatedMessageFlyweight
      * @param position new image correlation id value.
      * @return this for a fluent API.
      */
-    public InvalidateImageFlyweight imageCorrelationId(final long position)
+    public RejectImageFlyweight imageCorrelationId(final long position)
     {
         buffer.putLong(offset + IMAGE_CORRELATION_ID_FIELD_OFFSET, position);
         return this;
@@ -106,7 +106,7 @@ public class InvalidateImageFlyweight extends CorrelatedMessageFlyweight
      * @param position new position value.
      * @return this for a fluent API.
      */
-    public InvalidateImageFlyweight position(final long position)
+    public RejectImageFlyweight position(final long position)
     {
         buffer.putLong(offset + POSITION_FIELD_OFFSET, position);
         return this;
@@ -118,7 +118,7 @@ public class InvalidateImageFlyweight extends CorrelatedMessageFlyweight
      * @param reason for invalidating the image.
      * @return this for a fluent API.
      */
-    public InvalidateImageFlyweight reason(final String reason)
+    public RejectImageFlyweight reason(final String reason)
     {
         buffer.putStringAscii(offset + REASON_FIELD_OFFSET, reason);
         return this;
@@ -149,7 +149,7 @@ public class InvalidateImageFlyweight extends CorrelatedMessageFlyweight
     /**
      * {@inheritDoc}
      */
-    public InvalidateImageFlyweight clientId(final long clientId)
+    public RejectImageFlyweight clientId(final long clientId)
     {
         super.clientId(clientId);
         return this;
@@ -158,7 +158,7 @@ public class InvalidateImageFlyweight extends CorrelatedMessageFlyweight
     /**
      * {@inheritDoc}
      */
-    public InvalidateImageFlyweight correlationId(final long correlationId)
+    public RejectImageFlyweight correlationId(final long correlationId)
     {
         super.correlationId(correlationId);
         return this;

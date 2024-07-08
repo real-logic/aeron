@@ -1439,7 +1439,7 @@ final class ClientConductor implements Agent
         resourceByRegIdMap.put(correlationId, (Integer)counterId);
     }
 
-    void invalidateImage(final long correlationId, final long position, final String reason)
+    void rejectImage(final long correlationId, final long position, final String reason)
     {
         clientLock.lock();
         try
@@ -1449,7 +1449,7 @@ final class ClientConductor implements Agent
 
             // TODO, check reason length??
 
-            final long registrationId = driverProxy.invalidateImage(correlationId, position, reason);
+            final long registrationId = driverProxy.rejectImage(correlationId, position, reason);
             awaitResponse(registrationId);
         }
         finally

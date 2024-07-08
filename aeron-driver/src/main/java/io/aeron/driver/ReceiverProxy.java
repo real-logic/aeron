@@ -196,15 +196,15 @@ final class ReceiverProxy extends CommandProxy
         }
     }
 
-    void invalidateImage(final long imageCorrelationId, final long position, final String reason)
+    void rejectImage(final long imageCorrelationId, final long position, final String reason)
     {
         if (notConcurrent())
         {
-            receiver.onInvalidateImage(imageCorrelationId, position, reason);
+            receiver.onRejectImage(imageCorrelationId, position, reason);
         }
         else
         {
-            offer(() -> receiver.onInvalidateImage(imageCorrelationId, position, reason));
+            offer(() -> receiver.onRejectImage(imageCorrelationId, position, reason));
         }
     }
 }

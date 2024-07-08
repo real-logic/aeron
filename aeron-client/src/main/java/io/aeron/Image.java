@@ -793,9 +793,9 @@ public final class Image
      *
      * @param reason an error message to be forwarded back to the publication.
      */
-    public void invalidate(final String reason)
+    public void reject(final String reason)
     {
-        subscription.invalidate(correlationId, position(), reason);
+        subscription.rejectImage(correlationId, position(), reason);
     }
 
     private UnsafeBuffer activeTermBuffer(final long position)

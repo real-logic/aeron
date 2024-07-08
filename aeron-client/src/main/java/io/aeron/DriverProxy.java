@@ -39,7 +39,7 @@ public final class DriverProxy
     private final DestinationByIdMessageFlyweight destinationByIdMessage = new DestinationByIdMessageFlyweight();
     private final CounterMessageFlyweight counterMessage = new CounterMessageFlyweight();
     private final StaticCounterMessageFlyweight staticCounterMessageFlyweight = new StaticCounterMessageFlyweight();
-    private final InvalidateImageFlyweight invalidateImage = new InvalidateImageFlyweight();
+    private final RejectImageFlyweight rejectImage = new RejectImageFlyweight();
     private final RingBuffer toDriverCommandBuffer;
 
     /**
@@ -493,29 +493,29 @@ public final class DriverProxy
     }
 
     /**
-     * Invalidate a specific image.
+     * Reject a specific image.
      *
      * @param imageCorrelationId of the image to be invalidated
      * @param position      of the image when invalidation occurred
      * @param reason        user supplied reason for invalidation, reported back to publication
      * @return              the correlationId of the request for invalidation.
      */
-    public long invalidateImage(
+    public long rejectImage(
         final long imageCorrelationId,
         final long position,
         final String reason)
     {
-        final int length = InvalidateImageFlyweight.computeLength(reason);
-        final int index = toDriverCommandBuffer.tryClaim(INVALIDATE_IMAGE, length);
+        final int length = RejectImageFlyweight.computeLength(reason);
+        final int index = toDriverCommandBuffer.tryClaim(REJECT_IMAGE, length);
 
         if (index < 0)
         {
-            throw new AeronException("could not write invalidate image command");
+            throw new AeronException("could not write reject image command");
         }
 
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
 
-        invalidateImage
+        rejectImage
             .wrap(toDriverCommandBuffer.buffer(), index)
             .clientId(clientId)
             .correlationId(correlationId)

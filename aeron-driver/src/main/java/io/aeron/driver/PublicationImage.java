@@ -88,7 +88,7 @@ class PublicationImageReceiverFields extends PublicationImagePadding2
     boolean isSendingEosSm = false;
     long timeOfLastPacketNs;
     ImageConnection[] imageConnections = new ImageConnection[1];
-    String invalidationReason = null;
+    String rejectionReason = null;
 }
 
 class PublicationImagePadding3 extends PublicationImageReceiverFields
@@ -590,7 +590,7 @@ public final class PublicationImage
     {
         final boolean isEndOfStream = DataHeaderFlyweight.isEndOfStream(buffer);
 
-        if (null != invalidationReason)
+        if (null != rejectionReason)
         {
             if (isEndOfStream)
             {
@@ -707,12 +707,12 @@ public final class PublicationImage
         final long changeNumber = endSmChange;
         final boolean hasSmTimedOut = (timeOfLastSmNs + smTimeoutNs) - nowNs < 0;
 
-        if (null != invalidationReason)
+        if (null != rejectionReason)
         {
             if (hasSmTimedOut)
             {
                 channelEndpoint.sendErrorFrame(
-                    imageConnections, sessionId, streamId, GENERIC_ERROR.value(), invalidationReason);
+                    imageConnections, sessionId, streamId, GENERIC_ERROR.value(), rejectionReason);
 
                 timeOfLastSmNs = nowNs;
                 workCount++;
@@ -918,9 +918,9 @@ public final class PublicationImage
         return hasReceiverReleased && State.DONE == state;
     }
 
-    void invalidate(final String reason)
+    void reject(final String reason)
     {
-        invalidationReason = reason;
+        rejectionReason = reason;
     }
 
     private void state(final State state)

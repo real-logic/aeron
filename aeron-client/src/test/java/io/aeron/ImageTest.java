@@ -611,7 +611,7 @@ class ImageTest
     }
 
     @Test
-    void shouldInvalidateFragment()
+    void shouldRejectFragment()
     {
         final int initialOffset = TERM_BUFFER_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
         final long initialPosition = computePosition(
@@ -625,9 +625,9 @@ class ImageTest
         assertEquals(initialPosition, image.position());
 
         final String reason = "this is garbage";
-        image.invalidate(reason);
+        image.reject(reason);
 
-        verify(subscription).invalidate(image.correlationId(), image.position(), reason);
+        verify(subscription).rejectImage(image.correlationId(), image.position(), reason);
 
 //        final int fragmentsRead = image.boundedPoll(
 //            mockFragmentHandler, maxPosition, Integer.MAX_VALUE);

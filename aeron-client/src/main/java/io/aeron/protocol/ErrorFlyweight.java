@@ -95,6 +95,9 @@ public class ErrorFlyweight extends HeaderFlyweight
      */
     public static final int MAX_ERROR_MESSAGE_LENGTH = 1023;
 
+    /**
+     * Maximum length of an error frame. Captures the maximum message length and the header length.
+     */
     public static final int MAX_ERROR_FRAME_LENGTH = HEADER_LENGTH + MAX_ERROR_MESSAGE_LENGTH;
 
     /**

@@ -334,13 +334,13 @@ public final class Receiver implements Agent
         channelEndpoint.updateControlAddress(transportIndex, newAddress);
     }
 
-    void onInvalidateImage(final long imageCorrelationId, final long position, final String reason)
+    void onRejectImage(final long imageCorrelationId, final long position, final String reason)
     {
         for (final PublicationImage image : publicationImages)
         {
             if (imageCorrelationId == image.correlationId())
             {
-                image.invalidate(reason);
+                image.reject(reason);
                 break;
             }
         }

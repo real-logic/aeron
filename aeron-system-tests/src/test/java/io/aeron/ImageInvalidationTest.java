@@ -107,7 +107,7 @@ public class ImageInvalidationTest
     @Test
     @InterruptAfter(10)
     @SlowTest
-    void shouldInvalidateSubscriptionsImage() throws IOException
+    void shouldRejectSubscriptionsImage() throws IOException
     {
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 
@@ -147,7 +147,7 @@ public class ImageInvalidationTest
             assertEquals(pub.position(), image.position());
 
             final String reason = "Needs to be closed";
-            image.invalidate(reason);
+            image.reject(reason);
 
             final long t0 = System.nanoTime();
             while (pub.isConnected())
@@ -234,7 +234,7 @@ public class ImageInvalidationTest
 
             final Image image = sub.imageAtIndex(0);
             final String reason = "Needs to be closed";
-            image.invalidate(reason);
+            image.reject(reason);
 
             while (null == errorFrameHandler1.poll())
             {
@@ -293,7 +293,7 @@ public class ImageInvalidationTest
 
             final Image image = sub.imageAtIndex(0);
             final String reason = "Needs to be closed";
-            image.invalidate(reason);
+            image.reject(reason);
 
             while (null == errorFrameHandler1.poll())
             {
@@ -310,7 +310,7 @@ public class ImageInvalidationTest
     @Test
     @InterruptAfter(10)
     @SlowTest
-    void shouldInvalidateSubscriptionsImageManualMdc()
+    void shouldRejectSubscriptionsImageManualMdc()
     {
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 
@@ -355,7 +355,7 @@ public class ImageInvalidationTest
 
             final int initialAvailable = imageAvailable.get();
             final String reason = "Needs to be closed";
-            image.invalidate(reason);
+            image.reject(reason);
 
             final long t0 = System.nanoTime();
             while (pub.isConnected())
@@ -409,7 +409,7 @@ public class ImageInvalidationTest
             Tests.awaitConnected(pub);
             Tests.awaitConnected(sub);
 
-            assertThrows(AeronException.class, () -> sub.imageAtIndex(0).invalidate(tooLongReason));
+            assertThrows(AeronException.class, () -> sub.imageAtIndex(0).reject(tooLongReason));
         }
     }
 
@@ -458,7 +458,7 @@ public class ImageInvalidationTest
             assertEquals(pub.position(), image.position());
 
             final String reason = "Needs to be closed";
-            image.invalidate(reason);
+            image.reject(reason);
 
             PublicationErrorFrame errorFrame;
             while (null == (errorFrame = errorFrameHandler.poll()))

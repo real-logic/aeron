@@ -1457,7 +1457,7 @@ public final class DriverConductor implements Agent
         }
     }
 
-    void onInvalidateImage(
+    void onRejectImage(
         final long correlationId,
         final long imageCorrelationId,
         final long position,
@@ -1476,7 +1476,7 @@ public final class DriverConductor implements Agent
                 GENERIC_ERROR, "Unable to resolve image for correlationId=" + imageCorrelationId);
         }
 
-        receiverProxy.invalidateImage(imageCorrelationId, position, reason);
+        receiverProxy.rejectImage(imageCorrelationId, position, reason);
         clientProxy.operationSucceeded(correlationId);
     }
 

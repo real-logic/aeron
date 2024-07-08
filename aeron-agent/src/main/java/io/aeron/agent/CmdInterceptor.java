@@ -51,7 +51,7 @@ class CmdInterceptor
         CMD_IN_REMOVE_RCV_DESTINATION,
         CMD_OUT_ON_CLIENT_TIMEOUT,
         CMD_IN_TERMINATE_DRIVER,
-        CMD_IN_INVALIDATE_IMAGE);
+        CMD_IN_REJECT_IMAGE);
 
     @SuppressWarnings("checkstyle:methodlength")
     @Advice.OnMethodEnter
@@ -155,8 +155,8 @@ class CmdInterceptor
                 LOGGER.log(CMD_IN_TERMINATE_DRIVER, buffer, index, length);
                 break;
 
-            case INVALIDATE_IMAGE:
-                LOGGER.log(CMD_IN_INVALIDATE_IMAGE, buffer, index, length);
+            case REJECT_IMAGE:
+                LOGGER.log(CMD_IN_REJECT_IMAGE, buffer, index, length);
                 break;
         }
     }

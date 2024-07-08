@@ -620,9 +620,9 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
         return removedImage;
     }
 
-    void invalidate(final long correlationId, final long position, final String reason)
+    void rejectImage(final long correlationId, final long position, final String reason)
     {
-        conductor.invalidateImage(correlationId, position, reason);
+        conductor.rejectImage(correlationId, position, reason);
     }
 
     /**

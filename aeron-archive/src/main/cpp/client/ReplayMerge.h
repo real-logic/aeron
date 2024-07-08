@@ -24,6 +24,8 @@ namespace aeron { namespace archive { namespace client
 constexpr const std::int32_t REPLAY_MERGE_LIVE_ADD_MAX_WINDOW = 32 * 1024 * 1024;
 constexpr const std::int32_t REPLAY_MERGE_REPLAY_REMOVE_THRESHOLD = 0;
 constexpr const std::int64_t REPLAY_MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = 5 * 1000;
+constexpr const std::int64_t REPLAY_MERGE_INITIAL_GET_MAX_RECORDED_POSITION_BACKOFF_MS = 8;
+constexpr const std::int64_t REPLAY_MERGE_GET_MAX_RECORDED_POSITION_BACKOFF_MAX_MS = 500;
 
 /**
  * Replay a recorded stream from a starting position and merge with live stream to consume a full history of a stream.
@@ -207,6 +209,8 @@ private:
     std::int64_t m_replaySessionId = aeron::NULL_VALUE;
     std::int64_t m_positionOfLastProgress = aeron::NULL_VALUE;
     long long m_timeOfLastProgressMs = 0;
+    long long m_timeOfNextGetMaxRecordedPositionMs;
+    long long m_getMaxRecordedPositionBackoffMs = REPLAY_MERGE_INITIAL_GET_MAX_RECORDED_POSITION_BACKOFF_MS;
     bool m_isLiveAdded = false;
     bool m_isReplayActive = false;
 
@@ -238,6 +242,8 @@ private:
     int catchup(long long nowMs);
 
     int attemptLiveJoin(long long nowMs);
+
+    bool callGetMaxRecordedPosition(long long nowMs);
 
     void stopReplay();
 

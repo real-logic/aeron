@@ -231,6 +231,22 @@ target_link_libraries(
     ${AERON_STATIC_LIB_LINK_OPTS}
     )
 
+if (LINK_CLIENT_TOOLING_CLIENT_SHARED OR (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows"))
+    set(TOOLING_CLIENT_LINK_LIB "aeron")
+else()
+    set(TOOLING_CLIENT_LINK_LIB "aeron_static")
+endif ()
+
+add_executable(AeronStat tooling/aeron_stat.c)
+add_executable(DriverTool tooling/driver_tool.c)
+add_executable(ErrorStat tooling/error_stat.c)
+add_executable(LossStat tooling/loss_stat.c)
+
+target_link_libraries(AeronStat ${TOOLING_CLIENT_LINK_LIB})
+target_link_libraries(DriverTool ${TOOLING_CLIENT_LINK_LIB})
+target_link_libraries(ErrorStat ${TOOLING_CLIENT_LINK_LIB})
+target_link_libraries(LossStat ${TOOLING_CLIENT_LINK_LIB})
+
 if (AERON_INSTALL_TARGETS)
     install(
         TARGETS aeron aeron_static
@@ -238,4 +254,9 @@ if (AERON_INSTALL_TARGETS)
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
     install(DIRECTORY . DESTINATION include/aeron FILES_MATCHING PATTERN "*.h")
+
+    if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux" AND TOOLING_CLIENT_LINK_LIB MATCHES "aeron")
+        set_target_properties(AeronStat DriverTool ErrorStat LossStat PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
+    endif ()
+    install(TARGETS AeronStat DriverTool ErrorStat LossStat DESTINATION bin)
 endif ()

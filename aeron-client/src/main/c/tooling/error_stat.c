@@ -54,7 +54,7 @@ static void aeron_error_stat_print_error_and_usage(const char *message)
     fprintf(stderr, "%s\n%s", message, aeron_error_stat_usage());
 }
 
-void aeron_error_stat_on_observation(
+static void aeron_error_stat_on_observation(
     int32_t observation_count,
     int64_t first_observation_timestamp,
     int64_t last_observation_timestamp,

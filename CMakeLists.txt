@@ -56,6 +56,7 @@ option(AERON_SYSTEM_TESTS "Enable system tests" ${STANDALONE_BUILD})
 option(AERON_SLOW_SYSTEM_TESTS "Enable slow system tests" OFF)
 option(AERON_BUILD_SAMPLES "Enable building the sample projects" ${STANDALONE_BUILD})
 option(LINK_SAMPLES_CLIENT_SHARED "Enable shared linking for sample projects" OFF)
+option(LINK_CLIENT_TOOLING_CLIENT_SHARED "Enable shared linking for driver tooling" OFF)
 option(AERON_BUILD_DOCUMENTATION "Build Aeron documentation" ${STANDALONE_BUILD})
 option(AERON_INSTALL_TARGETS "Enable installation step" ${STANDALONE_BUILD})
 

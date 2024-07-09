@@ -94,6 +94,15 @@ do
       echo "Enabling building of Aeron driver is the default"
       shift
       ;;
+    -s|--build-aeron-samples)
+      echo "Enabling building of Aeron Samples is the default"
+      shift
+      ;;
+    --skip-aeron-samples)
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_BUILD_SAMPLES=OFF"
+      echo "Enabling building of Aeron Samples is the default"
+      shift
+      ;;
     --no-parallel)
       ncpus=1
       echo "Disabling parallel build"
@@ -161,7 +170,7 @@ do
       shift
       ;;
     -h|--help)
-      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--relwithdebinfo-build] [--build-aeron-driver] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests] [--gradle-wrapper path_to_gradle] [--package] [--rebuild-cmake] [--cmake-version \$cmake_version] [--help]"
+      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--relwithdebinfo-build] [--build-aeron-driver] [--build-aeron-samples] [--build-archive-api] [--sanitise-build] [--coverage-build] [--no-parallel] [--no-system-tests] [--slow-system-tests] [--gradle-wrapper path_to_gradle] [--package] [--rebuild-cmake] [--cmake-version \$cmake_version] [--help]"
       exit
       ;;
     *)

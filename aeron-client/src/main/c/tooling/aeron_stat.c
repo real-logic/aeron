@@ -31,9 +31,9 @@
 #include "concurrent/aeron_thread.h"
 #include "concurrent/aeron_atomic.h"
 
-volatile bool running = true;
+static volatile bool running = true;
 
-void sigint_handler(int signal)
+static void sigint_handler(int signal)
 {
     AERON_PUT_ORDERED(running, false);
 }

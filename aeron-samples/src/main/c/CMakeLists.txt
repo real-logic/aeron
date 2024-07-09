@@ -21,12 +21,11 @@ endif ()
 
 if (LINK_SAMPLES_CLIENT_SHARED OR (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows"))
     set(CLIENT_LINK_LIB "aeron")
-    add_definitions(-DCLIENT_SHARED)
 else()
     set(CLIENT_LINK_LIB "aeron_static")
 endif ()
 
-include_directories(${AERON_CLIENT_SOURCE_PATH})
+include_directories(${AERON_C_CLIENT_SOURCE_PATH})
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
@@ -87,18 +86,6 @@ target_link_libraries(response_server
 
 add_dependencies(cping hdr_histogram)
 
-add_executable(AeronStat aeron_stat.c ${HEADERS})
-target_link_libraries(AeronStat ${CLIENT_LINK_LIB})
-
-add_executable(DriverTool driver_tool.c ${HEADERS})
-target_link_libraries(DriverTool ${CLIENT_LINK_LIB})
-
-add_executable(ErrorStat error_stat.c ${HEADERS})
-target_link_libraries(ErrorStat ${CLIENT_LINK_LIB})
-
-add_executable(LossStat loss_stat.c ${HEADERS})
-target_link_libraries(LossStat ${CLIENT_LINK_LIB})
-
 if (AERON_INSTALL_TARGETS)
     install(
         TARGETS
@@ -111,9 +98,5 @@ if (AERON_INSTALL_TARGETS)
         cping
         response_client
         response_server
-        AeronStat
-        DriverTool
-        ErrorStat
-        LossStat
         DESTINATION bin)
 endif ()

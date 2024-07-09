@@ -16,6 +16,7 @@
 package io.aeron.driver.status;
 
 import io.aeron.AeronCounters;
+import io.aeron.status.CounterLabelNameDescriptor;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
@@ -33,7 +34,7 @@ public class SenderPos
     /**
      * Human-readable name for the counter.
      */
-    public static final String NAME = "snd-pos";
+    public static final String NAME = CounterLabelNameDescriptor.SENDER_POS;
 
     /**
      * Allocate a new sender position counter for a stream.

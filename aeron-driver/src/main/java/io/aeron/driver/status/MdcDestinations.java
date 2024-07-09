@@ -17,6 +17,7 @@ package io.aeron.driver.status;
 
 import io.aeron.AeronCounters;
 import io.aeron.status.ChannelEndpointStatus;
+import io.aeron.status.CounterLabelNameDescriptor;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -34,7 +35,7 @@ public class MdcDestinations
     /**
      * Human-readable name for the counter.
      */
-    public static final String NAME = "mdc-num-dest";
+    public static final String NAME = CounterLabelNameDescriptor.MDC_DESTINATIONS;
 
     /**
      * Allocate a new MDC destinations counter for an endpoint

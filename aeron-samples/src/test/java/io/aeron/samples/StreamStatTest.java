@@ -26,15 +26,16 @@ import io.aeron.driver.status.ReceiverHwm;
 import io.aeron.driver.status.ReceiverPos;
 import io.aeron.driver.status.SenderLimit;
 import io.aeron.driver.status.SenderPos;
-import io.aeron.driver.status.StreamCounter;
 import io.aeron.driver.status.SubscriberPos;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.status.CounterKeyOffset;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
+import io.aeron.tooling.StreamStat;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -180,7 +181,7 @@ class StreamStatTest
             entry.getKey(),
             pub5.sessionId(),
             pub5.streamId(),
-            pub5.channel().substring(0, StreamCounter.MAX_CHANNEL_LENGTH),
+            pub5.channel().substring(0, CounterKeyOffset.MAX_CHANNEL_LENGTH),
             pub5.channel());
         assertEquals(4, entry.getValue().size());
         assertStreamPosition(entry.getValue().get(0), PublisherPos.PUBLISHER_POS_TYPE_ID, 0);
@@ -204,7 +205,7 @@ class StreamStatTest
             entry.getKey(),
             pub1.sessionId(),
             pub1.streamId(),
-            pub1.channel().substring(0, StreamCounter.MAX_CHANNEL_LENGTH),
+            pub1.channel().substring(0, CounterKeyOffset.MAX_CHANNEL_LENGTH),
             pub1.channel());
         assertEquals(3, entry.getValue().size());
         assertStreamPosition(entry.getValue().get(0), PublisherPos.PUBLISHER_POS_TYPE_ID, 800);
@@ -220,7 +221,7 @@ class StreamStatTest
             entry.getKey(),
             pub4.sessionId(),
             pub4.streamId(),
-            pub4.channel().substring(0, StreamCounter.MAX_CHANNEL_LENGTH),
+            pub4.channel().substring(0, CounterKeyOffset.MAX_CHANNEL_LENGTH),
             pub4LimitLabel.substring(pub4LimitLabel.indexOf("aeron:")));
         assertEquals(8, entry.getValue().size());
         assertStreamPosition(entry.getValue().get(0), PublisherPos.PUBLISHER_POS_TYPE_ID, 1716702414144L);
@@ -240,7 +241,7 @@ class StreamStatTest
         countersReader.forEach(
             (counterId1, typeId1, keyBuffer, label) ->
             {
-                final int counterStreamId = keyBuffer.getInt(StreamCounter.STREAM_ID_OFFSET);
+                final int counterStreamId = keyBuffer.getInt(CounterKeyOffset.STREAM_ID_OFFSET);
                 if (typeId1 == typeId && counterStreamId == streamId)
                 {
                     counterId.set(counterId1);
@@ -262,7 +263,7 @@ class StreamStatTest
         assertEquals(expectedSessionId, key.sessionId());
         assertEquals(expectedStreamId, key.streamId());
         assertEquals(expectedChannel, key.channel());
-        assertEquals(expectedFullChannel, key.fullChannel);
+        assertEquals(expectedFullChannel, key.fullChannel());
     }
 
     private static void assertStreamPosition(

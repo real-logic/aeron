@@ -15,8 +15,8 @@
  */
 package io.aeron;
 
-import io.aeron.driver.reports.LossReportReader;
-import io.aeron.driver.reports.LossReportUtil;
+import io.aeron.reports.LossReportReader;
+import io.aeron.reports.LossReportUtil;
 import io.aeron.test.Tests;
 import org.agrona.BufferUtil;
 import org.agrona.concurrent.*;

@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.status.CounterLabelNameDescriptor;
 import io.aeron.status.LocalSocketAddressStatus;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -28,7 +29,7 @@ public class ReceiveLocalSocketAddress
     /**
      * The human-readable name for the beginning of a label.
      */
-    public static final String NAME = "rcv-local-sockaddr";
+    public static final String NAME = CounterLabelNameDescriptor.RECEIVE_LOCAL_SOCKET_ADDRESS;
 
     /**
      * Allocate a counter to represent a local socket address associated with a receiving channel.

@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.status.CounterLabelNameDescriptor;
 import io.aeron.status.HeartbeatTimestamp;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -30,7 +31,7 @@ public class ClientHeartbeatTimestamp extends HeartbeatTimestamp
     /**
      * Human-readable name for the counter.
      */
-    public static final String NAME = "client-heartbeat";
+    public static final String NAME = CounterLabelNameDescriptor.CLIENT_HEARTBEAT_TIMESTAMP;
 
     /**
      * Allocate a new counter by delegating to

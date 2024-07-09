@@ -18,12 +18,15 @@ package io.aeron.driver.status;
 import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
+import static io.aeron.status.CounterKeyOffset.REGISTRATION_ID_OFFSET;
+import static io.aeron.status.CounterKeyOffset.SESSION_ID_OFFSET;
+import static io.aeron.status.CounterKeyOffset.STREAM_ID_OFFSET;
+import static io.aeron.status.CounterKeyOffset.CHANNEL_OFFSET;
+import static io.aeron.status.CounterKeyOffset.MAX_CHANNEL_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
 
 /**
@@ -49,30 +52,6 @@ import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
  */
 public class StreamCounter
 {
-    /**
-     * Offset in the key metadata for the registration id of the counter.
-     */
-    public static final int REGISTRATION_ID_OFFSET = 0;
-
-    /**
-     * Offset in the key metadata for the session id of the counter.
-     */
-    public static final int SESSION_ID_OFFSET = REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
-
-    /**
-     * Offset in the key metadata for the stream id of the counter.
-     */
-    public static final int STREAM_ID_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
-
-    /**
-     * Offset in the key metadata for the channel of the counter.
-     */
-    public static final int CHANNEL_OFFSET = STREAM_ID_OFFSET + SIZE_OF_INT;
-
-    /**
-     * The maximum length in bytes of the encoded channel identity.
-     */
-    public static final int MAX_CHANNEL_LENGTH = CountersReader.MAX_KEY_LENGTH - (CHANNEL_OFFSET + SIZE_OF_INT);
 
     /**
      * Allocate a counter for tracking a position on a stream of messages.
@@ -215,44 +194,5 @@ public class StreamCounter
         countersManager.setCounterRegistrationId(counterId, registrationId);
 
         return new UnsafeBufferPosition((UnsafeBuffer)countersManager.valuesBuffer(), counterId, countersManager);
-    }
-
-    /**
-     * Return the label name for a counter type identifier.
-     *
-     * @param typeId of the counter.
-     * @return the label name as a String.
-     */
-    public static String labelName(final int typeId)
-    {
-        switch (typeId)
-        {
-            case PublisherLimit.PUBLISHER_LIMIT_TYPE_ID:
-                return PublisherLimit.NAME;
-
-            case SenderPos.SENDER_POSITION_TYPE_ID:
-                return SenderPos.NAME;
-
-            case ReceiverHwm.RECEIVER_HWM_TYPE_ID:
-                return ReceiverHwm.NAME;
-
-            case SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID:
-                return SubscriberPos.NAME;
-
-            case ReceiverPos.RECEIVER_POS_TYPE_ID:
-                return ReceiverPos.NAME;
-
-            case SenderLimit.SENDER_LIMIT_TYPE_ID:
-                return SenderLimit.NAME;
-
-            case PublisherPos.PUBLISHER_POS_TYPE_ID:
-                return PublisherPos.NAME;
-
-            case SenderBpe.SENDER_BPE_TYPE_ID:
-                return SenderBpe.NAME;
-
-            default:
-                return "<unknown>";
-        }
     }
 }

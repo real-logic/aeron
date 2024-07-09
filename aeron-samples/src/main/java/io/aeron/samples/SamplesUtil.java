@@ -15,29 +15,15 @@
  */
 package io.aeron.samples;
 
-import io.aeron.CommonContext;
 import io.aeron.FragmentAssembler;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.HeaderFlyweight;
-import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
-import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.status.CountersReader;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-
-import static io.aeron.CncFileDescriptor.*;
-import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 
 /**
  * Utility functions for the samples.
@@ -178,79 +164,5 @@ public class SamplesUtil
         System.out.printf(
             "Unavailable image on %s streamId=%d sessionId=%d%n",
             subscription.channel(), subscription.streamId(), image.sessionId());
-    }
-
-    /**
-     * Map an existing file as a read only buffer.
-     *
-     * @param location of file to map.
-     * @return the mapped file.
-     */
-    public static MappedByteBuffer mapExistingFileReadOnly(final File location)
-    {
-        if (!location.exists())
-        {
-            final String msg = "file not found: " + location.getAbsolutePath();
-            throw new IllegalStateException(msg);
-        }
-
-        MappedByteBuffer mappedByteBuffer = null;
-        try (RandomAccessFile file = new RandomAccessFile(location, "r");
-            FileChannel channel = file.getChannel())
-        {
-            mappedByteBuffer = channel.map(READ_ONLY, 0, channel.size());
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return mappedByteBuffer;
-    }
-
-    /**
-     * Map an existing CnC file.
-     *
-     * @return the {@link CountersReader} over the CnC file.
-     */
-    public static CountersReader mapCounters()
-    {
-        final File cncFile = CommonContext.newDefaultCncFile();
-        System.out.println("Command `n Control file " + cncFile);
-
-        final MappedByteBuffer cncByteBuffer = mapExistingFileReadOnly(cncFile);
-        final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
-        final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
-
-        checkVersion(cncVersion);
-
-        return new CountersReader(
-            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
-            createCountersValuesBuffer(cncByteBuffer, cncMetaData),
-            US_ASCII);
-    }
-
-    /**
-     * Map an existing CnC file.
-     *
-     * @param cncFileVersion to set as value of file.
-     * @return the {@link CountersReader} over the CnC file.
-     */
-    public static CountersReader mapCounters(final MutableInteger cncFileVersion)
-    {
-        final File cncFile = CommonContext.newDefaultCncFile();
-        System.out.println("Command `n Control file " + cncFile);
-
-        final MappedByteBuffer cncByteBuffer = mapExistingFileReadOnly(cncFile);
-        final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
-        final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
-
-        cncFileVersion.set(cncVersion);
-        checkVersion(cncVersion);
-
-        return new CountersReader(
-            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
-            createCountersValuesBuffer(cncByteBuffer, cncMetaData),
-            US_ASCII);
     }
 }

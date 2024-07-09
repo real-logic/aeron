@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.driver.reports;
+package io.aeron.reports;
 
 import org.agrona.BitUtil;
 import org.agrona.concurrent.AtomicBuffer;
@@ -22,7 +22,7 @@ import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import static io.aeron.driver.reports.LossReport.*;
+import static io.aeron.reports.LossReport.*;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**

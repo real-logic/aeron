@@ -15,44 +15,18 @@
  */
 package io.aeron.samples;
 
-import io.aeron.driver.reports.LossReportReader;
-import io.aeron.driver.reports.LossReportUtil;
-import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
-import java.io.File;
-import java.nio.MappedByteBuffer;
-
-import static io.aeron.CommonContext.AERON_DIR_PROP_DEFAULT;
-import static io.aeron.CommonContext.AERON_DIR_PROP_NAME;
-import static java.lang.System.getProperty;
-
 /**
- * Application that prints a report of loss observed by stream to {@link System#out}.
+ * See {@link io.aeron.tooling.LossStat}
  */
 public class LossStat
 {
     /**
-     * Main method for launching the process.
+     * Calls {@link io.aeron.tooling.LossStat#main(String[])}
      *
      * @param args passed to the process.
      */
     public static void main(final String[] args)
     {
-        final String aeronDirectoryName = getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT);
-        final File lossReportFile = LossReportUtil.file(aeronDirectoryName);
-
-        if (!lossReportFile.exists())
-        {
-            System.err.print("Loss report does not exist: " + lossReportFile);
-            System.exit(1);
-        }
-
-        final MappedByteBuffer mappedByteBuffer = SamplesUtil.mapExistingFileReadOnly(lossReportFile);
-        final AtomicBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
-
-        System.out.println(LossReportReader.LOSS_REPORT_CSV_HEADER);
-        final int entriesRead = LossReportReader.read(buffer, LossReportReader.defaultEntryConsumer(System.out));
-        System.out.println(entriesRead + " loss entries");
+        io.aeron.tooling.LossStat.main(args);
     }
 }

@@ -16,6 +16,7 @@
 package io.aeron.driver.status;
 
 import io.aeron.AeronCounters;
+import io.aeron.status.CounterLabelNameDescriptor;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -34,7 +35,7 @@ public class SenderBpe
     /**
      * Human-readable name for the counter.
      */
-    public static final String NAME = "snd-bpe";
+    public static final String NAME = CounterLabelNameDescriptor.SENDER_BPE;
 
     /**
      * Allocate a new sender back-pressure counter for a stream.

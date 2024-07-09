@@ -19,7 +19,7 @@ import io.aeron.CommonContext;
 import io.aeron.archive.ArchiveMarkFile;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterTerminationException;
-import io.aeron.samples.SamplesUtil;
+import io.aeron.tooling.ToolingUtils;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.driver.DriverOutputConsumer;
 import org.agrona.*;
@@ -329,7 +329,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             final File file = path.toFile();
             if (file.exists() && file.length() > 0)
             {
-                final MappedByteBuffer mmap = SamplesUtil.mapExistingFileReadOnly(file);
+                final MappedByteBuffer mmap = ToolingUtils.mapExistingFileReadOnly(file);
                 try
                 {
                     final UnsafeBuffer metaDataBuffer = createMetaDataBuffer(mmap);
@@ -471,7 +471,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             final File cncFile = path.toFile();
             System.out.printf("%n%nCommand `n Control file %s, length=%d%n", cncFile, cncFile.length());
             System.out.println("---------------------------------------------------------------------------------");
-            final MappedByteBuffer mappedByteBuffer = SamplesUtil.mapExistingFileReadOnly(cncFile);
+            final MappedByteBuffer mappedByteBuffer = ToolingUtils.mapExistingFileReadOnly(cncFile);
             try
             {
                 final UnsafeBuffer metaDataBuffer = createMetaDataBuffer(mappedByteBuffer);

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.samples;
+package io.aeron.tooling;
 
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
@@ -30,7 +30,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import static io.aeron.CncFileDescriptor.*;
-import static io.aeron.samples.SamplesUtil.mapExistingFileReadOnly;
 
 /**
  * Reader for Aeron CnC file represented by {@link CncFileDescriptor} which can be used for observability.
@@ -81,7 +80,7 @@ public final class CncFileReader implements AutoCloseable
     public static CncFileReader map()
     {
         final File cncFile = CommonContext.newDefaultCncFile();
-        final MappedByteBuffer cncByteBuffer = mapExistingFileReadOnly(cncFile);
+        final MappedByteBuffer cncByteBuffer = ToolingUtils.mapExistingFileReadOnly(cncFile);
 
         return new CncFileReader(cncByteBuffer);
     }

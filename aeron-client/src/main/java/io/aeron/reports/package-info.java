@@ -13,20 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.samples;
-
 /**
- * See {@link io.aeron.tooling.StreamStat}
+ * Reports of driver activity such the {@link io.aeron.reports.LossReport} which tracks loss per stream.
  */
-public final class StreamStat
-{
-    /**
-     * Calls {@link io.aeron.tooling.StreamStat#main(String[])}
-     *
-     * @param args passed to the process.
-     */
-    public static void main(final String[] args)
-    {
-        io.aeron.tooling.StreamStat.main(args);
-    }
-}
+package io.aeron.reports;

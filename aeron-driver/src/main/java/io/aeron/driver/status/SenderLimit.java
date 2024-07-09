@@ -16,6 +16,7 @@
 package io.aeron.driver.status;
 
 import io.aeron.AeronCounters;
+import io.aeron.status.CounterLabelNameDescriptor;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
@@ -33,7 +34,7 @@ public class SenderLimit
     /**
      * Human-readable name for the counter.
      */
-    public static final String NAME = "snd-lmt";
+    public static final String NAME = CounterLabelNameDescriptor.SENDER_LIMIT;
 
     /**
      * Allocate a new sender limit counter for a stream.

@@ -16,6 +16,7 @@
 package io.aeron.driver.status;
 
 import io.aeron.AeronCounters;
+import io.aeron.status.CounterLabelNameDescriptor;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -34,7 +35,7 @@ public class FlowControlReceivers
     /**
      * Human-readable name for the counter.
      */
-    public static final String NAME = "fc-receivers";
+    public static final String NAME = CounterLabelNameDescriptor.FLOW_CONTROL_RECEIVERS;
 
     /**
      * Allocate a new flow control receivers counter for a stream

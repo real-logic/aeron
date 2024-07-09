@@ -16,6 +16,7 @@
 package io.aeron.driver.status;
 
 import io.aeron.AeronCounters;
+import io.aeron.status.CounterLabelNameDescriptor;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
@@ -35,7 +36,7 @@ public class PublisherPos
     /**
      * Human-readable name for the counter.
      */
-    public static final String NAME = "pub-pos (sampled)";
+    public static final String NAME = CounterLabelNameDescriptor.PUBLISHER_POS;
 
     /**
      * Allocate a new publication position counter for a stream.

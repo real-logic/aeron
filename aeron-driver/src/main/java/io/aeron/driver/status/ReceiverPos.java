@@ -16,6 +16,7 @@
 package io.aeron.driver.status;
 
 import io.aeron.AeronCounters;
+import io.aeron.status.CounterLabelNameDescriptor;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
@@ -34,7 +35,7 @@ public class ReceiverPos
     /**
      * Human-readable name for the counter.
      */
-    public static final String NAME = "rcv-pos";
+    public static final String NAME = CounterLabelNameDescriptor.RECEIVER_POS;
 
     /**
      * Allocate a new receiver position counter for a stream.

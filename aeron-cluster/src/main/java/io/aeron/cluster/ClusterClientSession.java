@@ -20,6 +20,7 @@ import io.aeron.Publication;
 /**
  * Representation of a client session to an Aeron Cluster for use in an {@link ConsensusModuleExtension}.
  * @see ConsensusModuleControl#getClientSession(long)
+ * @see ConsensusModuleControl#closeClusterSession(long)
  */
 public interface ClusterClientSession
 {

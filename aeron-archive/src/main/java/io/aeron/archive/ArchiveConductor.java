@@ -2416,7 +2416,7 @@ abstract class ArchiveConductor
 
     public long generateReplayToken(final ControlSession session, final long recordingId)
     {
-        long replayToken = aeron.nextCorrelationId();
+        final long replayToken = aeron.nextCorrelationId();
 
         final SessionForReplay sessionForReplay = new SessionForReplay(
             recordingId, session, nanoClock.nanoTime() + TimeUnit.MILLISECONDS.toNanos(connectTimeoutMs));

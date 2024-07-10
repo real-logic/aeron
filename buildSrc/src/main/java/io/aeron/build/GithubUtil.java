@@ -41,7 +41,7 @@ final class GithubUtil
         if (repositoryBuilder.getGitDir() == null)
         {
             // No .git directory. That will be the case when people download the repo as a zip file.
-            return "-";
+            return "unknown";
         }
 
         try (Repository repository = repositoryBuilder.build();

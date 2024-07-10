@@ -42,12 +42,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.Iterator;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -114,7 +111,6 @@ abstract class ArchiveConductor
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final ControlSessionProxy controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
     private final DutyCycleTracker dutyCycleTracker;
-    private final Random random;
     final Archive.Context ctx;
     Recorder recorder;
     Replayer replayer;
@@ -136,8 +132,6 @@ abstract class ArchiveConductor
         markFile = ctx.archiveMarkFile();
         dutyCycleTracker = ctx.conductorDutyCycleTracker();
         cachedEpochClock.update(epochClock.time());
-
-        random = stronglySeededRandom();
 
         authenticator = ctx.authenticatorSupplier().get();
         if (null == authenticator)
@@ -2422,11 +2416,7 @@ abstract class ArchiveConductor
 
     public long generateReplayToken(final ControlSession session, final long recordingId)
     {
-        long replayToken = NULL_VALUE;
-        while (NULL_VALUE == replayToken)
-        {
-            replayToken = random.nextLong();
-        }
+        long replayToken = aeron.nextCorrelationId();
 
         final SessionForReplay sessionForReplay = new SessionForReplay(
             recordingId, session, nanoClock.nanoTime() + TimeUnit.MILLISECONDS.toNanos(connectTimeoutMs));
@@ -2586,21 +2576,4 @@ abstract class ArchiveConductor
         }
     }
 
-
-    private static Random stronglySeededRandom()
-    {
-        boolean hasSeed = false;
-        long seed = 0;
-
-        try
-        {
-            seed = SecureRandom.getInstanceStrong().nextLong();
-            hasSeed = true;
-        }
-        catch (final NoSuchAlgorithmException ignore)
-        {
-        }
-
-        return hasSeed ? new Random(seed) : new Random();
-    }
 }

@@ -26,7 +26,7 @@ import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
-import io.aeron.reports.LossReport;
+import io.aeron.tooling.reports.LossReport;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.SystemUtil;

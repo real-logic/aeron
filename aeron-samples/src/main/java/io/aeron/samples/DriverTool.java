@@ -16,17 +16,17 @@
 package io.aeron.samples;
 
 /**
- * See {@link io.aeron.tooling.DriverTool}
+ * See {@link io.aeron.tools.DriverTool}
  */
 public class DriverTool
 {
     /**
-     * Calls {@link io.aeron.tooling.DriverTool#main(String[])}
+     * Calls {@link io.aeron.tools.DriverTool#main(String[])}
      *
      * @param args passed to the process.
      */
     public static void main(final String[] args)
     {
-        io.aeron.tooling.DriverTool.main(args);
+        io.aeron.tools.DriverTool.main(args);
     }
 }

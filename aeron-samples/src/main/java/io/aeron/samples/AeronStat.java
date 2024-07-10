@@ -18,12 +18,12 @@ package io.aeron.samples;
 import java.io.IOException;
 
 /**
- * See {@link io.aeron.tooling.AeronStat}
+ * See {@link io.aeron.tools.AeronStat}
  */
 public class AeronStat
 {
     /**
-     * Calls {@link io.aeron.tooling.AeronStat#main(String[])}
+     * Calls {@link io.aeron.tools.AeronStat#main(String[])}
      *
      * @param args passed to the process.
      * @throws IOException if an error occurs writing to the console.
@@ -31,6 +31,6 @@ public class AeronStat
      */
     public static void main(final String[] args) throws IOException, InterruptedException
     {
-        io.aeron.tooling.AeronStat.main(args);
+        io.aeron.tools.AeronStat.main(args);
     }
 }

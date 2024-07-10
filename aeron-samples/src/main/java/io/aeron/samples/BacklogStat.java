@@ -16,18 +16,18 @@
 package io.aeron.samples;
 
 /**
- * See {@link io.aeron.tooling.BacklogStat}
+ * See {@link io.aeron.tools.BacklogStat}
  */
 public class BacklogStat
 {
 
     /**
-     * Calls {@link io.aeron.tooling.BacklogStat#main(String[])}
+     * Calls {@link io.aeron.tools.BacklogStat#main(String[])}
      *
      * @param args passed to the process.
      */
     public static void main(final String[] args)
     {
-        io.aeron.tooling.BacklogStat.main(args);
+        io.aeron.tools.BacklogStat.main(args);
     }
 }

@@ -16,18 +16,18 @@
 package io.aeron.samples;
 
 /**
- * See {@link io.aeron.tooling.LogInspector}
+ * See {@link io.aeron.tools.LogInspector}
  */
 public class LogInspector
 {
     /**
-     * Calls {@link io.aeron.tooling.LogInspector#main(String[])}
+     * Calls {@link io.aeron.tools.LogInspector#main(String[])}
      *
      * @param args passed to the process.
      */
     @SuppressWarnings("methodLength")
     public static void main(final String[] args)
     {
-        io.aeron.tooling.LogInspector.main(args);
+        io.aeron.tools.LogInspector.main(args);
     }
 }

@@ -16,17 +16,17 @@
 package io.aeron.samples;
 
 /**
- * See {@link io.aeron.tooling.ErrorStat}
+ * See {@link io.aeron.tools.ErrorStat}
  */
 public class ErrorStat
 {
     /**
-     * Calls {@link io.aeron.tooling.ErrorStat#main(String[])}
+     * Calls {@link io.aeron.tools.ErrorStat#main(String[])}
      *
      * @param args passed to the process.
      */
     public static void main(final String[] args)
     {
-        io.aeron.tooling.ErrorStat.main(args);
+        io.aeron.tools.ErrorStat.main(args);
     }
 }

@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.reports;
+package io.aeron.tooling.reports;
 
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.mockito.Mockito;
 
 import java.nio.ByteBuffer;
 
@@ -30,7 +31,7 @@ class LossReportReaderTest
     private static final int CAPACITY = 1024;
     private final AtomicBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(CAPACITY));
     private final LossReport lossReport = new LossReport(buffer);
-    private final LossReportReader.EntryConsumer entryConsumer = mock(LossReportReader.EntryConsumer.class);
+    private final LossReportReader.EntryConsumer entryConsumer = Mockito.mock(LossReportReader.EntryConsumer.class);
 
     @Test
     void shouldReadNoEntriesInEmptyReport()

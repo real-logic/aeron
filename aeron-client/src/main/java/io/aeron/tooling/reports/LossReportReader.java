@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.reports;
+package io.aeron.tooling.reports;
 
 import org.agrona.BitUtil;
 import org.agrona.concurrent.AtomicBuffer;
@@ -22,7 +22,6 @@ import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import static io.aeron.reports.LossReport.*;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
@@ -114,7 +113,7 @@ public final class LossReportReader
 
         while (offset < capacity)
         {
-            final long observationCount = buffer.getLongVolatile(offset + OBSERVATION_COUNT_OFFSET);
+            final long observationCount = buffer.getLongVolatile(offset + LossReport.OBSERVATION_COUNT_OFFSET);
             if (observationCount <= 0)
             {
                 break;
@@ -122,25 +121,25 @@ public final class LossReportReader
 
             ++recordsRead;
 
-            final String channel = buffer.getStringAscii(offset + CHANNEL_OFFSET);
+            final String channel = buffer.getStringAscii(offset + LossReport.CHANNEL_OFFSET);
             final String source = buffer.getStringAscii(
-                offset + CHANNEL_OFFSET + BitUtil.align(SIZE_OF_INT + channel.length(), SIZE_OF_INT));
+                offset + LossReport.CHANNEL_OFFSET + BitUtil.align(SIZE_OF_INT + channel.length(), SIZE_OF_INT));
 
             entryConsumer.accept(
                 observationCount,
-                buffer.getLongVolatile(offset + TOTAL_BYTES_LOST_OFFSET),
-                buffer.getLong(offset + FIRST_OBSERVATION_OFFSET),
-                buffer.getLongVolatile(offset + LAST_OBSERVATION_OFFSET),
-                buffer.getInt(offset + SESSION_ID_OFFSET),
-                buffer.getInt(offset + STREAM_ID_OFFSET),
+                buffer.getLongVolatile(offset + LossReport.TOTAL_BYTES_LOST_OFFSET),
+                buffer.getLong(offset + LossReport.FIRST_OBSERVATION_OFFSET),
+                buffer.getLongVolatile(offset + LossReport.LAST_OBSERVATION_OFFSET),
+                buffer.getInt(offset + LossReport.SESSION_ID_OFFSET),
+                buffer.getInt(offset + LossReport.STREAM_ID_OFFSET),
                 channel,
                 source);
 
             final int recordLength =
-                CHANNEL_OFFSET +
+                LossReport.CHANNEL_OFFSET +
                 BitUtil.align(SIZE_OF_INT + channel.length(), SIZE_OF_INT) +
                 SIZE_OF_INT + source.length();
-            offset += BitUtil.align(recordLength, ENTRY_ALIGNMENT);
+            offset += BitUtil.align(recordLength, LossReport.ENTRY_ALIGNMENT);
         }
 
         return recordsRead;

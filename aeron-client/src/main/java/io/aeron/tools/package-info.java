@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 /**
- * Reports of driver activity such the {@link io.aeron.reports.LossReport} which tracks loss per stream.
+ * Tools for understanding Media Driver through Aeron Counters and relevant files.
  */
-package io.aeron.reports;
+package io.aeron.tools;

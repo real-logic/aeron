@@ -27,6 +27,7 @@ import io.aeron.exceptions.ConfigurationException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.tooling.reports.LossReport;
 import org.agrona.AsciiNumberFormatException;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
@@ -233,13 +234,13 @@ public final class Configuration
     public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
     /**
-     * Property name for length of the memory mapped buffer for the {@link io.aeron.reports.LossReport}.
+     * Property name for length of the memory mapped buffer for the {@link LossReport}.
      */
     @Config
     public static final String LOSS_REPORT_BUFFER_LENGTH_PROP_NAME = "aeron.loss.report.buffer.length";
 
     /**
-     * Default buffer length for the {@link io.aeron.reports.LossReport}.
+     * Default buffer length for the {@link LossReport}.
      */
     @Config
     public static final int LOSS_REPORT_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
@@ -1754,9 +1755,9 @@ public final class Configuration
     }
 
     /**
-     * Length of the memory mapped buffer for the {@link io.aeron.reports.LossReport}.
+     * Length of the memory mapped buffer for the {@link LossReport}.
      *
-     * @return length of the memory mapped buffer for the {@link io.aeron.reports.LossReport}.
+     * @return length of the memory mapped buffer for the {@link LossReport}.
      * @see #LOSS_REPORT_BUFFER_LENGTH_PROP_NAME
      */
     public static int lossReportBufferLength()

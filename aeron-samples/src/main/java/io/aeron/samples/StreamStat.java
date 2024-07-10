@@ -16,17 +16,17 @@
 package io.aeron.samples;
 
 /**
- * See {@link io.aeron.tooling.StreamStat}
+ * See {@link io.aeron.tools.StreamStat}
  */
 public final class StreamStat
 {
     /**
-     * Calls {@link io.aeron.tooling.StreamStat#main(String[])}
+     * Calls {@link io.aeron.tools.StreamStat#main(String[])}
      *
      * @param args passed to the process.
      */
     public static void main(final String[] args)
     {
-        io.aeron.tooling.StreamStat.main(args);
+        io.aeron.tools.StreamStat.main(args);
     }
 }

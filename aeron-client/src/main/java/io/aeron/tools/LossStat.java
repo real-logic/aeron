@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.tooling;
+package io.aeron.tools;
 
-import io.aeron.reports.LossReportReader;
-import io.aeron.reports.LossReportUtil;
+import io.aeron.tooling.reports.LossReportReader;
+import io.aeron.tooling.reports.LossReportUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 

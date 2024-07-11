@@ -1138,16 +1138,15 @@ public final class DriverConductor implements Agent
         final int labelOffset,
         final int labelLength,
         final long correlationId,
-        final long clientId,
-        final boolean clientBoundCounter)
+        final long clientId)
     {
         final AeronClient client = getOrAddClient(clientId);
         final AtomicCounter counter = countersManager.newCounter(
             typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
 
-        countersManager.setCounterOwnerId(counter.id(), clientBoundCounter ? clientId : Aeron.NULL_VALUE);
+        countersManager.setCounterOwnerId(counter.id(), clientId);
         countersManager.setCounterRegistrationId(counter.id(), correlationId);
-        counterLinks.add(new CounterLink(counter, correlationId, clientBoundCounter ? client : null));
+        counterLinks.add(new CounterLink(counter, correlationId, client));
         clientProxy.onCounterReady(correlationId, counter.id());
     }
 

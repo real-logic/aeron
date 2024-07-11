@@ -42,7 +42,6 @@ final class ClientCommandAdapter implements ControlledMessageHandler
     private final RemoveMessageFlyweight removeMsgFlyweight = new RemoveMessageFlyweight();
     private final DestinationMessageFlyweight destinationMsgFlyweight = new DestinationMessageFlyweight();
     private final CounterMessageFlyweight counterMsgFlyweight = new CounterMessageFlyweight();
-    private final GlobalCounterMessageFlyweight globalCounterMessageFlyweight = new GlobalCounterMessageFlyweight();
     private final TerminateDriverFlyweight terminateDriverFlyweight = new TerminateDriverFlyweight();
     private final DriverConductor conductor;
     private final RingBuffer toDriverCommands;
@@ -203,8 +202,7 @@ final class ClientCommandAdapter implements ControlledMessageHandler
                         index + counterMsgFlyweight.labelBufferOffset(),
                         counterMsgFlyweight.labelBufferLength(),
                         correlationId,
-                        clientId,
-                        true);
+                        clientId);
                     break;
                 }
 
@@ -262,27 +260,6 @@ final class ClientCommandAdapter implements ControlledMessageHandler
                         buffer,
                         terminateDriverFlyweight.tokenBufferOffset(),
                         terminateDriverFlyweight.tokenBufferLength());
-                    break;
-                }
-
-                case ADD_GLOBAL_COUNTER:
-                {
-                    globalCounterMessageFlyweight.wrap(buffer, index);
-                    globalCounterMessageFlyweight.validateLength(msgTypeId, length);
-
-                    correlationId = globalCounterMessageFlyweight.correlationId();
-                    final long clientId = globalCounterMessageFlyweight.clientId();
-                    conductor.onAddCounter(
-                        globalCounterMessageFlyweight.typeId(),
-                        buffer,
-                        index + globalCounterMessageFlyweight.keyBufferOffset(),
-                        globalCounterMessageFlyweight.keyBufferLength(),
-                        buffer,
-                        index + globalCounterMessageFlyweight.labelBufferOffset(),
-                        globalCounterMessageFlyweight.labelBufferLength(),
-                        correlationId,
-                        clientId,
-                        false);
                     break;
                 }
 

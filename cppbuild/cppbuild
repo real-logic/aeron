@@ -67,7 +67,7 @@ do
       ;;
     --skip-archive-api)
       EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DBUILD_AERON_ARCHIVE_API=OFF"
-      echo "Disabling building of Aeron Archive API"
+      echo "Enabling building of Aeron Archive API is the default"
       shift
       ;;
     -d|--debug-build)

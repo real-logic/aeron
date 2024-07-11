@@ -161,6 +161,12 @@ int main(int argc, char **argv)
     aeron_cnc_constants(aeron_cnc, &cnc_constants);
     aeron_counters_reader_t *counters_reader = aeron_cnc_counters_reader(aeron_cnc);
 
+    char cnc_version[12];
+    snprintf(cnc_version, sizeof(cnc_version), "%" PRIu8 ".%" PRIu8 ".%" PRIu8,
+        aeron_semantic_version_major(cnc_constants.cnc_version),
+        aeron_semantic_version_minor(cnc_constants.cnc_version),
+        aeron_semantic_version_patch(cnc_constants.cnc_version));
+
     while (running)
     {
         int64_t now_ms = aeron_epoch_clock();
@@ -173,7 +179,7 @@ int main(int argc, char **argv)
         printf(
             "%s - Aeron Stat (CnC v%s), pid %" PRId64 ", client liveness %s ns\n",
             currentTime,
-            aeron_version_full(),
+            cnc_version,
             cnc_constants.pid,
             aeron_format_number_to_locale(
                 cnc_constants.client_liveness_timeout, client_liveness_str, sizeof(client_liveness_str)));

@@ -37,6 +37,7 @@ public final class DriverProxy
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
     private final DestinationMessageFlyweight destinationMessage = new DestinationMessageFlyweight();
     private final CounterMessageFlyweight counterMessage = new CounterMessageFlyweight();
+    private final GlobalCounterMessageFlyweight globalCounterMessageFlyweight = new GlobalCounterMessageFlyweight();
     private final RingBuffer toDriverCommandBuffer;
 
     /**
@@ -468,5 +469,58 @@ public final class DriverProxy
         return "DriverProxy{" +
             "clientId=" + clientId +
             '}';
+    }
+
+    long addGlobalCounter(
+        final int typeId,
+        final DirectBuffer keyBuffer,
+        final int keyOffset,
+        final int keyLength,
+        final DirectBuffer labelBuffer,
+        final int labelOffset,
+        final int labelLength)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+        final int length = GlobalCounterMessageFlyweight.computeLength(keyLength, labelLength);
+        final int index = toDriverCommandBuffer.tryClaim(ADD_GLOBAL_COUNTER, length);
+        if (index < 0)
+        {
+            throw new AeronException("could not write add counter command");
+        }
+
+        globalCounterMessageFlyweight
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .keyBuffer(keyBuffer, keyOffset, keyLength)
+            .labelBuffer(labelBuffer, labelOffset, labelLength)
+            .typeId(typeId)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
+
+        return correlationId;
+    }
+
+    long addGlobalCounter(final int typeId, final String label)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+        final int length = GlobalCounterMessageFlyweight.computeLength(0, label.length());
+        final int index = toDriverCommandBuffer.tryClaim(ADD_GLOBAL_COUNTER, length);
+        if (index < 0)
+        {
+            throw new AeronException("could not write add counter command");
+        }
+
+        globalCounterMessageFlyweight
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .keyBuffer(null, 0, 0)
+            .label(label)
+            .typeId(typeId)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
+
+        return correlationId;
     }
 }

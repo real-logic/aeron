@@ -401,7 +401,8 @@ final class ClientConductor implements Agent
 
     void onNewCounter(final long correlationId, final int counterId)
     {
-        resourceByRegIdMap.put(correlationId, new Counter(correlationId, this, counterValuesBuffer, counterId));
+        resourceByRegIdMap.put(correlationId, new Counter(
+            correlationId, countersReader.getCounterOwnerId(counterId), this, counterValuesBuffer, counterId));
         onAvailableCounter(correlationId, counterId);
     }
 
@@ -1035,6 +1036,68 @@ final class ClientConductor implements Agent
         }
     }
 
+    Counter addGlobalCounter(
+        final int typeId,
+        final DirectBuffer keyBuffer,
+        final int keyOffset,
+        final int keyLength,
+        final DirectBuffer labelBuffer,
+        final int labelOffset,
+        final int labelLength)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            if (keyLength < 0 || keyLength > CountersManager.MAX_KEY_LENGTH)
+            {
+                throw new IllegalArgumentException("key length out of bounds: " + keyLength);
+            }
+
+            if (labelLength < 0 || labelLength > CountersManager.MAX_LABEL_LENGTH)
+            {
+                throw new IllegalArgumentException("label length out of bounds: " + labelLength);
+            }
+
+            final long registrationId = driverProxy.addGlobalCounter(
+                typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+
+            awaitResponse(registrationId);
+
+            return (Counter)resourceByRegIdMap.get(registrationId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    Counter addGlobalCounter(final int typeId, final String label)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            if (label.length() > CountersManager.MAX_LABEL_LENGTH)
+            {
+                throw new IllegalArgumentException("label length exceeds MAX_LABEL_LENGTH: " + label.length());
+            }
+
+            final long registrationId = driverProxy.addGlobalCounter(typeId, label);
+            awaitResponse(registrationId);
+
+            return (Counter)resourceByRegIdMap.get(registrationId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
     long addAvailableCounterHandler(final AvailableCounterHandler handler)
     {
         clientLock.lock();
@@ -1554,8 +1617,11 @@ final class ClientConductor implements Agent
             else if (resource instanceof Counter)
             {
                 final Counter counter = (Counter)resource;
-                counter.internalClose();
-                notifyUnavailableCounterHandlers(counter.registrationId(), counter.id());
+                if (counter.ownerId() == aeron.clientId())
+                {
+                    counter.internalClose();
+                    notifyUnavailableCounterHandlers(counter.registrationId(), counter.id());
+                }
             }
         }
 

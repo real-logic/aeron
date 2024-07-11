@@ -33,10 +33,12 @@ public final class Counter extends AtomicCounter
 
     private final long registrationId;
     private final ClientConductor clientConductor;
+    private final long ownerId;
     private volatile int isClosed;
 
     Counter(
         final long registrationId,
+        final long ownerId,
         final ClientConductor clientConductor,
         final AtomicBuffer buffer,
         final int counterId)
@@ -44,6 +46,7 @@ public final class Counter extends AtomicCounter
         super(buffer, counterId);
 
         this.registrationId = registrationId;
+        this.ownerId = ownerId;
         this.clientConductor = clientConductor;
     }
 
@@ -65,6 +68,7 @@ public final class Counter extends AtomicCounter
         }
 
         this.registrationId = registrationId;
+        ownerId = countersReader.getCounterOwnerId(counterId);
         this.clientConductor = null;
     }
 
@@ -76,6 +80,17 @@ public final class Counter extends AtomicCounter
     public long registrationId()
     {
         return registrationId;
+    }
+
+    /**
+     * Return the owner id for this counter.
+     *
+     * @return the owner id for this counter.
+     * @see CountersReader#getCounterOwnerId(int)
+     */
+    public long ownerId()
+    {
+        return ownerId;
     }
 
     /**

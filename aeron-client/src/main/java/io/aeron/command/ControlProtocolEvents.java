@@ -92,6 +92,12 @@ public class ControlProtocolEvents
      */
     public static final int TERMINATE_DRIVER = 0x0E;
 
+    /**
+     * Add a global Counter to the counters-manager, i.e. the Counter lifecycle will be de-coupled from the lifecycle
+     * of the Aeron instance that created it.
+     */
+    public static final int ADD_GLOBAL_COUNTER = 0x0F;
+
     // Media Driver to Clients
 
     /**

@@ -537,6 +537,52 @@ public class Aeron implements AutoCloseable
         return conductor.addCounter(typeId, label);
     }
 
+
+    /**
+     * Allocate a global counter on the media driver and return a {@link Counter} for it. The underlying counter will
+     * outlive this {@link Aeron}, i.e. won't be closed when this instance is closed or times out.
+     * <p>
+     * The counter should be freed by calling {@link Counter#close()}.
+     *
+     * @param typeId      for the counter.
+     * @param keyBuffer   containing the optional key for the counter.
+     * @param keyOffset   within the keyBuffer at which the key begins.
+     * @param keyLength   of the key in the keyBuffer.
+     * @param labelBuffer containing the mandatory label for the counter. The label should not be length prefixed.
+     * @param labelOffset within the labelBuffer at which the label begins.
+     * @param labelLength of the label in the labelBuffer.
+     * @return the newly allocated global counter.
+     * @see org.agrona.concurrent.status.CountersManager#allocate(int, DirectBuffer, int, int, DirectBuffer, int, int)
+     */
+    public Counter addGlobalCounter(
+        final int typeId,
+        final DirectBuffer keyBuffer,
+        final int keyOffset,
+        final int keyLength,
+        final DirectBuffer labelBuffer,
+        final int labelOffset,
+        final int labelLength)
+    {
+        return conductor.addGlobalCounter(
+            typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+    }
+
+    /**
+     * Allocate a global counter on the media driver and return a {@link Counter} for it.The underlying counter will
+     * outlive this {@link Aeron}, i.e. won't be closed when this instance is closed or times out.
+     * <p>
+     * The counter should be freed by calling {@link Counter#close()}.
+     *
+     * @param typeId for the counter.
+     * @param label  for the counter. It should be US-ASCII.
+     * @return the newly allocated global counter.
+     * @see org.agrona.concurrent.status.CountersManager#allocate(String, int)
+     */
+    public Counter addGlobalCounter(final int typeId, final String label)
+    {
+        return conductor.addGlobalCounter(typeId, label);
+    }
+
     /**
      * Add a handler to the list be called when {@link Counter}s become available.
      *

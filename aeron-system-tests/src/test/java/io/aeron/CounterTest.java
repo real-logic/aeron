@@ -32,6 +32,7 @@ import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -215,6 +216,8 @@ class CounterTest
     @InterruptAfter(10)
     void shouldBeAbleToAddGlobalCounter()
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
+
         final AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
         final UnavailableCounterHandler unavailableCounterHandlerClientA = mock(UnavailableCounterHandler.class);
         clientA.addAvailableCounterHandler(availableCounterHandlerClientA);
@@ -276,6 +279,8 @@ class CounterTest
     @InterruptAfter(10)
     void shouldNotClosedGlobalCounterWhenClientInstanceIsClosed()
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
+
         final AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
         final UnavailableCounterHandler unavailableCounterHandlerClientA = mock(UnavailableCounterHandler.class);
         final AtomicBoolean clientClosed = new AtomicBoolean();
@@ -307,6 +312,8 @@ class CounterTest
     @InterruptAfter(10)
     void shouldNotCloseGlobalCounterIfClientTimesOut()
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
+
         final AvailableCounterHandler availableCounterHandler = mock(AvailableCounterHandler.class);
         final UnavailableCounterHandler unavailableCounterHandler = mock(UnavailableCounterHandler.class);
         final ErrorHandler errorHandler = mock(ErrorHandler.class);

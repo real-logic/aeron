@@ -371,6 +371,7 @@ include(CPack)
 
 ##########################################################
 # export targets
+include(CMakePackageConfigHelpers)
 
 install(EXPORT AeronTargets
         FILE AeronTargets.cmake

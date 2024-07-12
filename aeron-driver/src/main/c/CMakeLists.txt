@@ -349,20 +349,28 @@ SET(HEADERS
     aeronmd.h)
 
 add_library(aeron_driver SHARED ${SOURCE} ${HEADERS})
-target_include_directories(aeron_driver
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
+target_include_directories(aeron_driver PUBLIC
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR};${AERON_C_CLIENT_SOURCE_PATH}>"
+        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/aeronmd;${CMAKE_INSTALL_INCLUDEDIR}/aeron>"
+)
 
 add_library(aeron_driver_static STATIC ${SOURCE} ${HEADERS})
-target_include_directories(aeron_driver_static
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
+target_include_directories(aeron_driver_static PUBLIC
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR};${AERON_C_CLIENT_SOURCE_PATH}>"
+        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/aeronmd;${CMAKE_INSTALL_INCLUDEDIR}/aeron>"
+)
 
 add_executable(aeronmd aeronmd.c)
-target_include_directories(aeronmd
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
+target_include_directories(aeronmd PRIVATE
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR};${AERON_C_CLIENT_SOURCE_PATH}>"
+        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/aeronmd;${CMAKE_INSTALL_INCLUDEDIR}/aeron>"
+)
 
 add_executable(aeronmd_s aeronmd.c)
-target_include_directories(aeronmd_s
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
+target_include_directories(aeronmd_s PRIVATE
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR};${AERON_C_CLIENT_SOURCE_PATH}>"
+        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/aeronmd;${CMAKE_INSTALL_INCLUDEDIR}/aeron>"
+)
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
@@ -390,6 +398,16 @@ endif ()
 
 target_link_libraries(
     aeron_driver
+    ${CMAKE_DL_LIBS}
+    ${AERON_LIB_BSD_LIBS}
+    ${AERON_LIB_UUID_LIBS}
+    ${AERON_LIB_M_LIBS}
+    ${AERON_LIB_ATOMIC_LIBS}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${AERON_LIB_WINSOCK_LIBS})
+
+target_link_libraries(
+    aeron_driver_static
     ${CMAKE_DL_LIBS}
     ${AERON_LIB_BSD_LIBS}
     ${AERON_LIB_UUID_LIBS}
@@ -427,11 +445,13 @@ if (AERON_INSTALL_TARGETS)
     if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
         set_target_properties(aeronmd PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
     endif ()
-    install(
-        TARGETS aeron_driver aeron_driver_static
-        RUNTIME DESTINATION lib
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
+    install(TARGETS aeron_driver aeron_driver_static
+            EXPORT AeronTargets
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aeronmd
+    )
     install(TARGETS aeronmd aeronmd_s DESTINATION bin)
-    install(DIRECTORY . DESTINATION include/aeronmd FILES_MATCHING PATTERN "*.h")
+    install(DIRECTORY ./ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aeronmd FILES_MATCHING PATTERN "*.h")
 endif ()

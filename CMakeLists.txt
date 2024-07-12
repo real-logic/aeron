@@ -128,6 +128,8 @@ add_definitions(-DAERON_VERSION_MINOR=${aeron_VERSION_MINOR})
 add_definitions(-DAERON_VERSION_PATCH=${aeron_VERSION_PATCH})
 add_definitions(-DAERON_VERSION_GITSHA="${AERON_VERSION_GITSHA}")
 
+include(GNUInstallDirs)
+
 # all UNIX-based platform compiler flags
 if (UNIX)
     add_compile_options(-Wall -Wpedantic -Wextra -Wno-unused-parameter -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer)
@@ -366,3 +368,34 @@ set(CPACK_PACKAGE_VERSION_PATCH "${aeron_VERSION_PATCH}")
 
 set(CPACK_GENERATOR "TGZ;STGZ")
 include(CPack)
+
+##########################################################
+# export targets
+
+install(EXPORT AeronTargets
+        FILE AeronTargets.cmake
+        NAMESPACE Aeron::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Aeron
+)
+
+write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/AeronConfigVersion.cmake"
+        VERSION "${AERON_VERSION_FROM_FILE}"
+        COMPATIBILITY ExactVersion
+)
+
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/AeronConfig.cmake"
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Aeron
+)
+
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/AeronConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/AeronConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Aeron
+)
+
+export(EXPORT AeronTargets
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/AeronTargets.cmake"
+        NAMESPACE Aeron::
+)

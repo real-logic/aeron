@@ -115,5 +115,5 @@ if (AERON_INSTALL_TARGETS)
         DriverTool
         ErrorStat
         LossStat
-        DESTINATION bin)
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif ()

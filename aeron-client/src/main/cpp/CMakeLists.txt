@@ -141,10 +141,10 @@ add_library(aeron_client STATIC ${SOURCE} ${HEADERS})
 add_library(aeron_client_shared SHARED ${SOURCE} ${HEADERS})
 
 target_include_directories(aeron_client
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 
 target_include_directories(aeron_client_shared
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 
 if (MSVC)
     string(REPLACE "/" "\\\\" NATIVE_PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}")
@@ -155,12 +155,12 @@ endif ()
 target_compile_definitions(aeron_client
     PUBLIC $<$<NOT:$<CONFIG:Debug>>:DISABLE_BOUNDS_CHECKS>
     # relative file paths for use in exceptions
-    PUBLIC "__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\"")
+    PUBLIC "$<BUILD_INTERFACE:__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\">")
 
 target_compile_definitions(aeron_client_shared
     PUBLIC $<$<NOT:$<CONFIG:Debug>>:DISABLE_BOUNDS_CHECKS>
     # relative file paths for use in exceptions
-    PUBLIC "__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\""
+    PUBLIC "$<BUILD_INTERFACE:__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\">"
     PUBLIC CLIENT_SHARED DLL_EXPORT)
 
 if (NOT WIN32)
@@ -175,9 +175,11 @@ target_link_libraries(aeron_client_shared
     INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 if (AERON_INSTALL_TARGETS)
-    install(TARGETS aeron_client_shared aeron_client
-        RUNTIME DESTINATION lib
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
-    install(DIRECTORY . DESTINATION include FILES_MATCHING PATTERN "*.h")
+    install(
+        TARGETS aeron_client_shared aeron_client
+        EXPORT AeronTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(DIRECTORY ./ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
 endif ()

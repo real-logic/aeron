@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_package(Threads)
+find_package(Java)
+
+include("${CMAKE_CURRENT_LIST_DIR}/AeronTargets.cmake")
+
+check_required_components(Aeron)

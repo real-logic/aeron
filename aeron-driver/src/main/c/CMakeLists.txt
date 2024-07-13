@@ -439,13 +439,12 @@ if (AERON_INSTALL_TARGETS)
     if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
         set_target_properties(aeronmd PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
     endif ()
-    install(TARGETS aeron_driver aeron_driver_static
-            EXPORT AeronTargets
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aeronmd
-    )
-    install(TARGETS aeronmd aeronmd_s DESTINATION bin)
+    install(
+        TARGETS aeron_driver aeron_driver_static
+        EXPORT AeronTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS aeronmd aeronmd_s DESTINATION ${CMAKE_INSTALL_BINDIR})
     install(DIRECTORY ./ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aeronmd FILES_MATCHING PATTERN "*.h")
 endif ()

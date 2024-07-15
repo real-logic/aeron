@@ -426,13 +426,18 @@ class CounterTest
 
         final Counter counter2 = clientB.addGlobalCounter(COUNTER_TYPE_ID + 2, "test global counter", 22);
 
+        final Counter counter3 = clientA.addCounter(COUNTER_TYPE_ID, "delete me");
+
         clientA.close();
 
         Tests.await(clientClosed::get);
+        assertFalse(counter1.isClosed());
+        assertTrue(counter3.isClosed());
 
+        Tests.await(() -> CountersReader.RECORD_RECLAIMED == clientB.countersReader().getCounterState(counter3.id()));
         assertEquals(CountersReader.RECORD_ALLOCATED, clientB.countersReader().getCounterState(counter1.id()));
         assertEquals(CountersReader.RECORD_ALLOCATED, clientB.countersReader().getCounterState(counter2.id()));
-        assertFalse(counter1.isClosed());
+        assertFalse(counter2.isClosed());
     }
 
     @Test
@@ -461,6 +466,8 @@ class CounterTest
             assertFalse(counter.isClosed());
             assertEquals(CountersReader.RECORD_ALLOCATED, aeron.countersReader().getCounterState(counter.id()));
 
+            final Counter counter2 = aeron.addCounter(COUNTER_TYPE_ID * 2, "delete me");
+
             conductorAgentInvoker.invoke();
 
             Tests.await(() -> 1 == countersReader.getCounterValue(SystemCounterDescriptor.CLIENT_TIMEOUTS.id()));
@@ -480,10 +487,16 @@ class CounterTest
 
             assertFalse(counter.isClosed());
             assertEquals(CountersReader.RECORD_ALLOCATED, aeron.countersReader().getCounterState(counter.id()));
+            assertTrue(counter2.isClosed());
+            assertEquals(CountersReader.RECORD_RECLAIMED, aeron.countersReader().getCounterState(counter2.id()));
             verify(availableCounterHandler, never()).onAvailableCounter(
                 any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
             verify(unavailableCounterHandler, never()).onUnavailableCounter(
                 any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
+            verify(availableCounterHandler).onAvailableCounter(
+                any(CountersReader.class), eq(counter2.registrationId()), eq(counter2.id()));
+            verify(unavailableCounterHandler).onUnavailableCounter(
+                any(CountersReader.class), eq(counter2.registrationId()), eq(counter2.id()));
         }
     }
 

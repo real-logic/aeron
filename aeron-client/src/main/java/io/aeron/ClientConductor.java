@@ -1035,7 +1035,7 @@ final class ClientConductor implements Agent
         }
     }
 
-    Counter addGlobalCounter(
+    Counter addStaticCounter(
         final int typeId,
         final DirectBuffer keyBuffer,
         final int keyOffset,
@@ -1061,7 +1061,7 @@ final class ClientConductor implements Agent
                 throw new IllegalArgumentException("label length out of bounds: " + labelLength);
             }
 
-            final long correlationId = driverProxy.addGlobalCounter(
+            final long correlationId = driverProxy.addStaticCounter(
                 typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength, registrationId);
 
             awaitResponse(correlationId);
@@ -1075,7 +1075,7 @@ final class ClientConductor implements Agent
         }
     }
 
-    Counter addGlobalCounter(final int typeId, final String label, final long registrationId)
+    Counter addStaticCounter(final int typeId, final String label, final long registrationId)
     {
         clientLock.lock();
         try
@@ -1088,7 +1088,7 @@ final class ClientConductor implements Agent
                 throw new IllegalArgumentException("label length exceeds MAX_LABEL_LENGTH: " + label.length());
             }
 
-            final long correlationId = driverProxy.addGlobalCounter(typeId, label, registrationId);
+            final long correlationId = driverProxy.addStaticCounter(typeId, label, registrationId);
             awaitResponse(correlationId);
 
             final int counterId = (int)resourceByRegIdMap.remove(correlationId);

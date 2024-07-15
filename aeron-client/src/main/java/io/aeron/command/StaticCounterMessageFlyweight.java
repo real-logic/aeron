@@ -23,7 +23,7 @@ import static io.aeron.ErrorCode.MALFORMED_COMMAND;
 import static org.agrona.BitUtil.*;
 
 /**
- * Message to get or create a new global counter.
+ * Message to get or create a new static counter.
  * <p>
  * <b>Note:</b> Layout should be SBE 2.0 compliant so that the label length is aligned.
  *
@@ -55,7 +55,7 @@ import static org.agrona.BitUtil.*;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class GlobalCounterMessageFlyweight extends CorrelatedMessageFlyweight
+public class StaticCounterMessageFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int REGISTRATION_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int COUNTER_TYPE_ID_FIELD_OFFSET = REGISTRATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
@@ -70,7 +70,7 @@ public class GlobalCounterMessageFlyweight extends CorrelatedMessageFlyweight
      * @param offset at which the message begins.
      * @return this for a fluent API.
      */
-    public GlobalCounterMessageFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    public StaticCounterMessageFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
         super.wrap(buffer, offset);
 
@@ -93,7 +93,7 @@ public class GlobalCounterMessageFlyweight extends CorrelatedMessageFlyweight
      * @param registrationId field value.
      * @return this for a fluent API.
      */
-    public GlobalCounterMessageFlyweight registrationId(final long registrationId)
+    public StaticCounterMessageFlyweight registrationId(final long registrationId)
     {
         buffer.putLong(offset + REGISTRATION_ID_FIELD_OFFSET, registrationId);
         return this;
@@ -115,7 +115,7 @@ public class GlobalCounterMessageFlyweight extends CorrelatedMessageFlyweight
      * @param typeId field value.
      * @return this for a fluent API.
      */
-    public GlobalCounterMessageFlyweight typeId(final int typeId)
+    public StaticCounterMessageFlyweight typeId(final int typeId)
     {
         buffer.putInt(offset + COUNTER_TYPE_ID_FIELD_OFFSET, typeId);
         return this;
@@ -149,7 +149,7 @@ public class GlobalCounterMessageFlyweight extends CorrelatedMessageFlyweight
      * @param keyLength of the key in the keyBuffer.
      * @return this for a fluent API.
      */
-    public GlobalCounterMessageFlyweight keyBuffer(
+    public StaticCounterMessageFlyweight keyBuffer(
         final DirectBuffer keyBuffer, final int keyOffset, final int keyLength)
     {
         buffer.putInt(offset + KEY_LENGTH_OFFSET, keyLength);
@@ -189,7 +189,7 @@ public class GlobalCounterMessageFlyweight extends CorrelatedMessageFlyweight
      * @param labelLength of the label in the labelBuffer.
      * @return this for a fluent API.
      */
-    public GlobalCounterMessageFlyweight labelBuffer(
+    public StaticCounterMessageFlyweight labelBuffer(
         final DirectBuffer labelBuffer, final int labelOffset, final int labelLength)
     {
         final int labelLengthOffset = labelLengthOffset();
@@ -208,7 +208,7 @@ public class GlobalCounterMessageFlyweight extends CorrelatedMessageFlyweight
      * @param label for the counter.
      * @return this for a fluent API.
      */
-    public GlobalCounterMessageFlyweight label(final String label)
+    public StaticCounterMessageFlyweight label(final String label)
     {
         buffer.putStringAscii(offset + labelLengthOffset(), label);
 

@@ -93,10 +93,10 @@ public class ControlProtocolEvents
     public static final int TERMINATE_DRIVER = 0x0E;
 
     /**
-     * Add a global Counter to the counters-manager, i.e. the Counter lifecycle will be de-coupled from the lifecycle
-     * of the Aeron instance that created it.
+     * Add or return a static Counter, i.e. the Counter that cannot be deleted and whose lifecycle is decoupled from
+     * the Aeron instance that created it.
      */
-    public static final int ADD_GLOBAL_COUNTER = 0x0F;
+    public static final int ADD_STATIC_COUNTER = 0x0F;
 
     // Media Driver to Clients
 
@@ -151,7 +151,7 @@ public class ControlProtocolEvents
     public static final int ON_CLIENT_TIMEOUT = 0x0F0A;
 
     /**
-     * Response to {@link #ADD_GLOBAL_COUNTER} command.
+     * A response to {@link #ADD_STATIC_COUNTER} command.
      */
-    public static final int ON_GLOBAL_COUNTER_RESPONSE = 0x0F0B;
+    public static final int ON_ADD_STATIC_COUNTER = 0x0F0B;
 }

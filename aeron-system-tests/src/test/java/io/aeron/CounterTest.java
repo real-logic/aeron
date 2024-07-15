@@ -232,7 +232,7 @@ class CounterTest
         clientB.addAvailableCounterHandler(availableCounterHandlerClientB);
         clientB.addUnavailableCounterHandler(unavailableCounterHandlerClientB);
 
-        final Counter counter1 = clientA.addGlobalCounter(
+        final Counter counter1 = clientA.addStaticCounter(
             COUNTER_TYPE_ID,
             keyBuffer,
             0,
@@ -249,14 +249,14 @@ class CounterTest
         assertEquals(NULL_VALUE, clientA.countersReader().getCounterOwnerId(counter1.id()));
         assertEquals(COUNTER_TYPE_ID, clientA.countersReader().getCounterTypeId(counter1.id()));
 
-        final Counter counter2 = clientB.addGlobalCounter(COUNTER_TYPE_ID, "test global counter", 200);
+        final Counter counter2 = clientB.addStaticCounter(COUNTER_TYPE_ID, "test static counter", 200);
 
         assertFalse(counter2.isClosed());
         assertEquals(200, counter2.registrationId());
         assertEquals(CountersReader.RECORD_ALLOCATED, clientB.countersReader().getCounterState(counter2.id()));
         assertEquals(counter2.registrationId(), clientB.countersReader().getCounterRegistrationId(counter2.id()));
         assertEquals(NULL_VALUE, clientB.countersReader().getCounterOwnerId(counter2.id()));
-        assertEquals("test global counter", clientB.countersReader().getCounterLabel(counter2.id()));
+        assertEquals("test static counter", clientB.countersReader().getCounterLabel(counter2.id()));
         assertEquals(COUNTER_TYPE_ID, clientB.countersReader().getCounterTypeId(counter2.id()));
 
         verify(availableCounterHandlerClientA, Mockito.after(1000L).never())
@@ -288,7 +288,7 @@ class CounterTest
         final long registrationId = 888;
         ThreadLocalRandom.current().nextBytes(keyBuffer.byteArray());
         final byte[] expectedKeyBytes = Arrays.copyOf(keyBuffer.byteArray(), keyBuffer.capacity());
-        final Counter counter1 = clientA.addGlobalCounter(
+        final Counter counter1 = clientA.addStaticCounter(
             COUNTER_TYPE_ID,
             keyBuffer,
             0,
@@ -306,7 +306,7 @@ class CounterTest
         assertEquals(COUNTER_TYPE_ID, clientA.countersReader().getCounterTypeId(counter1.id()));
         assertEquals(COUNTER_LABEL, clientA.countersReader().getCounterLabel(counter1.id()));
 
-        final Counter counter2 = clientB.addGlobalCounter(COUNTER_TYPE_ID, "test global counter", registrationId);
+        final Counter counter2 = clientB.addStaticCounter(COUNTER_TYPE_ID, "test static counter", registrationId);
 
         assertEquals(counter1.id(), counter2.id());
         assertEquals(registrationId, counter2.registrationId());
@@ -351,7 +351,7 @@ class CounterTest
         clientB.addAvailableCounterHandler(availableCounterHandlerClientB);
         clientB.addUnavailableCounterHandler(unavailableCounterHandlerClientB);
 
-        final Counter counter1 = clientA.addGlobalCounter(
+        final Counter counter1 = clientA.addStaticCounter(
             COUNTER_TYPE_ID,
             keyBuffer,
             0,
@@ -390,7 +390,7 @@ class CounterTest
 
         final RegistrationException registrationException = assertThrowsExactly(
             RegistrationException.class,
-            () -> clientA.addGlobalCounter(
+            () -> clientA.addStaticCounter(
             COUNTER_TYPE_ID,
             keyBuffer,
             0,
@@ -399,7 +399,7 @@ class CounterTest
             0,
             COUNTER_LABEL.length(),
             counter.registrationId()));
-        assertEquals("ERROR - cannot add global counter, because a non-global counter exists (counterId=" +
+        assertEquals("ERROR - cannot add static counter, because a non-static counter exists (counterId=" +
             counter.id() + ") for typeId=" + COUNTER_TYPE_ID + " and registrationId=" +
             counter.registrationId() + ", errorCodeValue=11",
             registrationException.getMessage());
@@ -414,7 +414,7 @@ class CounterTest
         final AtomicBoolean clientClosed = new AtomicBoolean();
         clientA.addCloseHandler(() -> clientClosed.set(true));
 
-        final Counter counter1 = clientA.addGlobalCounter(
+        final Counter counter1 = clientA.addStaticCounter(
             COUNTER_TYPE_ID,
             keyBuffer,
             0,
@@ -424,7 +424,7 @@ class CounterTest
             COUNTER_LABEL.length(),
             1);
 
-        final Counter counter2 = clientB.addGlobalCounter(COUNTER_TYPE_ID + 2, "test global counter", 22);
+        final Counter counter2 = clientB.addStaticCounter(COUNTER_TYPE_ID + 2, "test static counter", 22);
 
         final Counter counter3 = clientA.addCounter(COUNTER_TYPE_ID, "delete me");
 
@@ -461,7 +461,7 @@ class CounterTest
             final CountersReader countersReader = clientA.countersReader();
             assertEquals(0, countersReader.getCounterValue(SystemCounterDescriptor.CLIENT_TIMEOUTS.id()));
 
-            final Counter counter = aeron.addGlobalCounter(COUNTER_TYPE_ID, "test", 42);
+            final Counter counter = aeron.addStaticCounter(COUNTER_TYPE_ID, "test", 42);
             assertNotNull(counter);
             assertFalse(counter.isClosed());
             assertEquals(CountersReader.RECORD_ALLOCATED, aeron.countersReader().getCounterState(counter.id()));

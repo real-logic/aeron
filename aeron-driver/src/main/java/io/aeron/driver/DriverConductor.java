@@ -1169,8 +1169,8 @@ public final class DriverConductor implements Agent
         {
             if (Aeron.NULL_VALUE != countersManager.getCounterOwnerId(counterId))
             {
-                clientProxy.onError(correlationId, GENERIC_ERROR, "cannot add global counter, because a " +
-                    "non-global counter exists (counterId=" + counterId + ") for typeId=" + typeId + " and " +
+                clientProxy.onError(correlationId, GENERIC_ERROR, "cannot add static counter, because a " +
+                    "non-static counter exists (counterId=" + counterId + ") for typeId=" + typeId + " and " +
                     "registrationId=" + registrationId);
             }
             else

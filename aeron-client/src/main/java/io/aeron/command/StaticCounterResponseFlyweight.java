@@ -21,7 +21,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Message to denote that a Counter has become available or unavailable.
+ * Message to denote a response to a create static counter request.
  *
  * @see ControlProtocolEvents
  * <pre>
@@ -35,7 +35,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class GlobalCounterResponseFlyweight
+public class StaticCounterResponseFlyweight
 {
     /**
      * Length of the header.
@@ -54,7 +54,7 @@ public class GlobalCounterResponseFlyweight
      * @param offset at which the message begins.
      * @return this for a fluent API.
      */
-    public final GlobalCounterResponseFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    public final StaticCounterResponseFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
         this.buffer = buffer;
         this.offset = offset;
@@ -78,7 +78,7 @@ public class GlobalCounterResponseFlyweight
      * @param correlationId field value.
      * @return this for a fluent API.
      */
-    public GlobalCounterResponseFlyweight correlationId(final long correlationId)
+    public StaticCounterResponseFlyweight correlationId(final long correlationId)
     {
         buffer.putLong(offset + CORRELATION_ID_OFFSET, correlationId);
 
@@ -101,7 +101,7 @@ public class GlobalCounterResponseFlyweight
      * @param counterId field value
      * @return this for a fluent API.
      */
-    public GlobalCounterResponseFlyweight counterId(final int counterId)
+    public StaticCounterResponseFlyweight counterId(final int counterId)
     {
         buffer.putInt(offset + COUNTER_ID_OFFSET, counterId);
 

@@ -539,11 +539,12 @@ public class Aeron implements AutoCloseable
 
 
     /**
-     * Allocate a global counter or return an existing one on the media driver using specified {@code typeId} and
-     * {@code registrationId} pair. The underlying counter will
-     * outlive this {@link Aeron}, i.e. won't be closed when this instance is closed or times out.
+     * Allocates or returns an existing static counter instance using specified {@code typeId} and
+     * {@code registrationId} pair. Such counter cannot be deleted and its lifecycle is decoupled from this
+     * {@link Aeron} instance, i.e. won't be closed when this instance is closed or times out.
      * <p>
-     * <em><strong>Note:</strong> it is not possible to delete a global counter.</em>
+     * <em><strong>Note:</strong> calling {@link Counter#close()} will only close the counter instance itself but will
+     * not free the counter in the CnC file.</em>
      *
      * @param typeId         for the counter.
      * @param keyBuffer      containing the optional key for the counter.
@@ -553,10 +554,10 @@ public class Aeron implements AutoCloseable
      * @param labelOffset    within the labelBuffer at which the label begins.
      * @param labelLength    of the label in the labelBuffer.
      * @param registrationId that uniquely identifies the counter.
-     * @return the global counter instance.
+     * @return the static counter instance.
      * @see org.agrona.concurrent.status.CountersManager#allocate(int, DirectBuffer, int, int, DirectBuffer, int, int)
      */
-    public Counter addGlobalCounter(
+    public Counter addStaticCounter(
         final int typeId,
         final DirectBuffer keyBuffer,
         final int keyOffset,
@@ -566,26 +567,27 @@ public class Aeron implements AutoCloseable
         final int labelLength,
         final long registrationId)
     {
-        return conductor.addGlobalCounter(
+        return conductor.addStaticCounter(
             typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength, registrationId);
     }
 
     /**
-     * Allocate a global counter or return an existing one on the media driver using specified {@code typeId} and
-     * {@code registrationId} pair. The underlying counter will
-     * outlive this {@link Aeron}, i.e. won't be closed when this instance is closed or times out.
+     * Allocates or returns an existing static counter instance using specified {@code typeId} and
+     * {@code registrationId} pair. Such counter cannot be deleted and its lifecycle is decoupled from this
+     * {@link Aeron} instance, i.e. won't be closed when this instance is closed or times out.
      * <p>
-     * <em><strong>Note:</strong> it is not possible to delete a global counter.</em>
+     * <em><strong>Note:</strong> calling {@link Counter#close()} will only close the counter instance itself but will
+     * not free the counter in the CnC file.</em>
      *
      * @param typeId         for the counter.
      * @param label          for the counter. It should be US-ASCII.
      * @param registrationId that uniquely identifies the counter.
-     * @return the newly allocated global counter.
+     * @return the static counter.
      * @see org.agrona.concurrent.status.CountersManager#allocate(String, int)
      */
-    public Counter addGlobalCounter(final int typeId, final String label, final long registrationId)
+    public Counter addStaticCounter(final int typeId, final String label, final long registrationId)
     {
-        return conductor.addGlobalCounter(typeId, label, registrationId);
+        return conductor.addStaticCounter(typeId, label, registrationId);
     }
 
     /**

@@ -371,32 +371,31 @@ include(CPack)
 
 ##########################################################
 # export targets
-include(CMakePackageConfigHelpers)
+if (AERON_INSTALL_TARGETS)
+    include(CMakePackageConfigHelpers)
 
-install(EXPORT AeronTargets
+    install(
+        EXPORT AeronTargets
         FILE AeronTargets.cmake
         NAMESPACE Aeron::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Aeron
-)
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Aeron)
 
-write_basic_package_version_file(
+    write_basic_package_version_file(
         "${CMAKE_CURRENT_BINARY_DIR}/AeronConfigVersion.cmake"
         VERSION "${AERON_VERSION_FROM_FILE}"
-        COMPATIBILITY ExactVersion
-)
+        COMPATIBILITY ExactVersion)
 
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+    configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
         "${CMAKE_CURRENT_BINARY_DIR}/AeronConfig.cmake"
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Aeron
-)
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Aeron)
 
-install(FILES
+    install(FILES
         "${CMAKE_CURRENT_BINARY_DIR}/AeronConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/AeronConfigVersion.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Aeron
-)
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Aeron)
 
-export(EXPORT AeronTargets
+    export(EXPORT AeronTargets
         FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/AeronTargets.cmake"
-        NAMESPACE Aeron::
-)
+        NAMESPACE Aeron::)
+endif ()

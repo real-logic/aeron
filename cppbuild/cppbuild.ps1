@@ -152,7 +152,7 @@ for ($i = 0; $i -lt $Args.count; $i++)
 
 $BuildDir = "$PSScriptRoot\$BuildConfig"
 $SourceDir = "$PSScriptRoot\.."
-$CMakeVersion = "3.29.2"
+$CMakeVersion = "3.30.0"
 $CMakeDir = "$PSScriptRoot\cmake-$CMakeVersion-windows-x86_64"
 $OldPath = $env:Path
 

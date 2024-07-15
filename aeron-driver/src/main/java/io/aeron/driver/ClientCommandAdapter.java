@@ -203,8 +203,7 @@ final class ClientCommandAdapter implements ControlledMessageHandler
                         index + counterMsgFlyweight.labelBufferOffset(),
                         counterMsgFlyweight.labelBufferLength(),
                         correlationId,
-                        clientId,
-                        true);
+                        clientId);
                     break;
                 }
 
@@ -272,7 +271,7 @@ final class ClientCommandAdapter implements ControlledMessageHandler
 
                     correlationId = globalCounterMessageFlyweight.correlationId();
                     final long clientId = globalCounterMessageFlyweight.clientId();
-                    conductor.onAddCounter(
+                    conductor.onAddGlobalCounter(
                         globalCounterMessageFlyweight.typeId(),
                         buffer,
                         index + globalCounterMessageFlyweight.keyBufferOffset(),
@@ -280,9 +279,9 @@ final class ClientCommandAdapter implements ControlledMessageHandler
                         buffer,
                         index + globalCounterMessageFlyweight.labelBufferOffset(),
                         globalCounterMessageFlyweight.labelBufferLength(),
+                        globalCounterMessageFlyweight.registrationId(),
                         correlationId,
-                        clientId,
-                        false);
+                        clientId);
                     break;
                 }
 

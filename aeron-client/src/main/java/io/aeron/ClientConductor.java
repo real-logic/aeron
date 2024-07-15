@@ -401,8 +401,7 @@ final class ClientConductor implements Agent
 
     void onNewCounter(final long correlationId, final int counterId)
     {
-        resourceByRegIdMap.put(correlationId, new Counter(
-            correlationId, countersReader.getCounterOwnerId(counterId), this, counterValuesBuffer, counterId));
+        resourceByRegIdMap.put(correlationId, new Counter(correlationId, this, counterValuesBuffer, counterId));
         onAvailableCounter(correlationId, counterId);
     }
 
@@ -1043,7 +1042,8 @@ final class ClientConductor implements Agent
         final int keyLength,
         final DirectBuffer labelBuffer,
         final int labelOffset,
-        final int labelLength)
+        final int labelLength,
+        final long registrationId)
     {
         clientLock.lock();
         try
@@ -1061,12 +1061,13 @@ final class ClientConductor implements Agent
                 throw new IllegalArgumentException("label length out of bounds: " + labelLength);
             }
 
-            final long registrationId = driverProxy.addGlobalCounter(
-                typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+            final long correlationId = driverProxy.addGlobalCounter(
+                typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength, registrationId);
 
-            awaitResponse(registrationId);
+            awaitResponse(correlationId);
 
-            return (Counter)resourceByRegIdMap.get(registrationId);
+            final int counterId = (int)resourceByRegIdMap.remove(correlationId);
+            return new Counter(aeron.countersReader(), registrationId, counterId);
         }
         finally
         {
@@ -1074,7 +1075,7 @@ final class ClientConductor implements Agent
         }
     }
 
-    Counter addGlobalCounter(final int typeId, final String label)
+    Counter addGlobalCounter(final int typeId, final String label, final long registrationId)
     {
         clientLock.lock();
         try
@@ -1087,10 +1088,11 @@ final class ClientConductor implements Agent
                 throw new IllegalArgumentException("label length exceeds MAX_LABEL_LENGTH: " + label.length());
             }
 
-            final long registrationId = driverProxy.addGlobalCounter(typeId, label);
-            awaitResponse(registrationId);
+            final long correlationId = driverProxy.addGlobalCounter(typeId, label, registrationId);
+            awaitResponse(correlationId);
 
-            return (Counter)resourceByRegIdMap.get(registrationId);
+            final int counterId = (int)resourceByRegIdMap.remove(correlationId);
+            return new Counter(aeron.countersReader(), registrationId, counterId);
         }
         finally
         {
@@ -1361,6 +1363,11 @@ final class ClientConductor implements Agent
         }
     }
 
+    void onGlobalCounterResponse(final long correlationId, final int counterId)
+    {
+        resourceByRegIdMap.put(correlationId, (Integer)counterId);
+    }
+
     private void ensureActive()
     {
         if (isClosed)
@@ -1617,11 +1624,8 @@ final class ClientConductor implements Agent
             else if (resource instanceof Counter)
             {
                 final Counter counter = (Counter)resource;
-                if (counter.ownerId() == aeron.clientId())
-                {
-                    counter.internalClose();
-                    notifyUnavailableCounterHandlers(counter.registrationId(), counter.id());
-                }
+                counter.internalClose();
+                notifyUnavailableCounterHandlers(counter.registrationId(), counter.id());
             }
         }
 

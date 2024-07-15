@@ -28,6 +28,7 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -37,7 +38,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -51,7 +55,7 @@ class CounterTest
     private static final int COUNTER_TYPE_ID = 1101;
     private static final String COUNTER_LABEL = "counter label";
 
-    private final UnsafeBuffer keyBuffer = new UnsafeBuffer(new byte[8]);
+    private final UnsafeBuffer keyBuffer = new UnsafeBuffer(new byte[64]);
     private final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[COUNTER_LABEL.length()]);
 
     private Aeron clientA;
@@ -234,57 +238,152 @@ class CounterTest
             keyBuffer.capacity(),
             labelBuffer,
             0,
-            COUNTER_LABEL.length());
+            COUNTER_LABEL.length(),
+            100);
 
-        assertEquals(CountersReader.RECORD_ALLOCATED, clientA.countersReader().getCounterState(counter1.id()));
         assertFalse(counter1.isClosed());
+        assertEquals(100, counter1.registrationId());
+        assertEquals(CountersReader.RECORD_ALLOCATED, clientA.countersReader().getCounterState(counter1.id()));
         assertEquals(counter1.registrationId(), clientA.countersReader().getCounterRegistrationId(counter1.id()));
         assertEquals(NULL_VALUE, clientA.countersReader().getCounterOwnerId(counter1.id()));
+        assertEquals(COUNTER_TYPE_ID, clientA.countersReader().getCounterTypeId(counter1.id()));
 
-        final Counter counter2 = clientB.addGlobalCounter(COUNTER_TYPE_ID + 2, "test global counter");
+        final Counter counter2 = clientB.addGlobalCounter(COUNTER_TYPE_ID, "test global counter", 200);
 
-        assertEquals(CountersReader.RECORD_ALLOCATED, clientB.countersReader().getCounterState(counter2.id()));
         assertFalse(counter2.isClosed());
+        assertEquals(200, counter2.registrationId());
+        assertEquals(CountersReader.RECORD_ALLOCATED, clientB.countersReader().getCounterState(counter2.id()));
         assertEquals(counter2.registrationId(), clientB.countersReader().getCounterRegistrationId(counter2.id()));
         assertEquals(NULL_VALUE, clientB.countersReader().getCounterOwnerId(counter2.id()));
         assertEquals("test global counter", clientB.countersReader().getCounterLabel(counter2.id()));
-        assertEquals(COUNTER_TYPE_ID + 2, clientB.countersReader().getCounterTypeId(counter2.id()));
+        assertEquals(COUNTER_TYPE_ID, clientB.countersReader().getCounterTypeId(counter2.id()));
 
-        verify(availableCounterHandlerClientA, timeout(5000L))
+        verify(availableCounterHandlerClientA, Mockito.after(1000L).never())
             .onAvailableCounter(any(CountersReader.class), eq(counter1.registrationId()), eq(counter1.id()));
-        verify(availableCounterHandlerClientA, timeout(5000L))
+        verify(availableCounterHandlerClientA, never())
             .onAvailableCounter(any(CountersReader.class), eq(counter2.registrationId()), eq(counter2.id()));
-        verify(availableCounterHandlerClientB, timeout(5000L))
+        verify(availableCounterHandlerClientB, never())
             .onAvailableCounter(any(CountersReader.class), eq(counter1.registrationId()), eq(counter1.id()));
-        verify(availableCounterHandlerClientB, timeout(5000L))
+        verify(availableCounterHandlerClientB, never())
             .onAvailableCounter(any(CountersReader.class), eq(counter2.registrationId()), eq(counter2.id()));
-
-        counter2.close();
-        assertTrue(counter2.isClosed());
-
-        verify(unavailableCounterHandlerClientA, timeout(5000L))
-            .onUnavailableCounter(any(CountersReader.class), eq(counter2.registrationId()), eq(counter2.id()));
-        verify(unavailableCounterHandlerClientB, timeout(5000L))
-            .onUnavailableCounter(any(CountersReader.class), eq(counter2.registrationId()), eq(counter2.id()));
-
-        assertEquals(CountersReader.RECORD_RECLAIMED, clientA.countersReader().getCounterState(counter2.id()));
-        assertEquals(CountersReader.RECORD_RECLAIMED, clientB.countersReader().getCounterState(counter2.id()));
-        assertEquals(CountersReader.RECORD_ALLOCATED, clientA.countersReader().getCounterState(counter1.id()));
-        assertEquals(CountersReader.RECORD_ALLOCATED, clientB.countersReader().getCounterState(counter1.id()));
-        assertFalse(counter1.isClosed());
     }
 
     @Test
     @InterruptAfter(10)
-    void shouldNotClosedGlobalCounterWhenClientInstanceIsClosed()
+    void shouldReturnExistingGlobalCounterAndNotUpdateAnything()
     {
         TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
 
         final AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
         final UnavailableCounterHandler unavailableCounterHandlerClientA = mock(UnavailableCounterHandler.class);
-        final AtomicBoolean clientClosed = new AtomicBoolean();
         clientA.addAvailableCounterHandler(availableCounterHandlerClientA);
         clientA.addUnavailableCounterHandler(unavailableCounterHandlerClientA);
+
+        final AvailableCounterHandler availableCounterHandlerClientB = mock(AvailableCounterHandler.class);
+        final UnavailableCounterHandler unavailableCounterHandlerClientB = mock(UnavailableCounterHandler.class);
+        clientB.addAvailableCounterHandler(availableCounterHandlerClientB);
+        clientB.addUnavailableCounterHandler(unavailableCounterHandlerClientB);
+
+        final long registrationId = 888;
+        ThreadLocalRandom.current().nextBytes(keyBuffer.byteArray());
+        final byte[] expectedKeyBytes = Arrays.copyOf(keyBuffer.byteArray(), keyBuffer.capacity());
+        final Counter counter1 = clientA.addGlobalCounter(
+            COUNTER_TYPE_ID,
+            keyBuffer,
+            0,
+            keyBuffer.capacity(),
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length(),
+            registrationId);
+
+        assertFalse(counter1.isClosed());
+        assertEquals(registrationId, counter1.registrationId());
+        assertEquals(CountersReader.RECORD_ALLOCATED, clientA.countersReader().getCounterState(counter1.id()));
+        assertEquals(counter1.registrationId(), clientA.countersReader().getCounterRegistrationId(counter1.id()));
+        assertEquals(NULL_VALUE, clientA.countersReader().getCounterOwnerId(counter1.id()));
+        assertEquals(COUNTER_TYPE_ID, clientA.countersReader().getCounterTypeId(counter1.id()));
+        assertEquals(COUNTER_LABEL, clientA.countersReader().getCounterLabel(counter1.id()));
+
+        final Counter counter2 = clientB.addGlobalCounter(COUNTER_TYPE_ID, "test global counter", registrationId);
+
+        assertEquals(counter1.id(), counter2.id());
+        assertEquals(registrationId, counter2.registrationId());
+        assertEquals(CountersReader.RECORD_ALLOCATED, clientB.countersReader().getCounterState(counter2.id()));
+        assertEquals(registrationId, clientB.countersReader().getCounterRegistrationId(counter2.id()));
+        assertEquals(NULL_VALUE, clientB.countersReader().getCounterOwnerId(counter2.id()));
+        assertEquals(COUNTER_TYPE_ID, clientB.countersReader().getCounterTypeId(counter2.id()));
+        assertEquals(COUNTER_LABEL, clientB.countersReader().getCounterLabel(counter2.id()));
+
+        final MutableBoolean keyChecked = new MutableBoolean(false);
+        clientB.countersReader().forEach((counterId, typeId, keyBuffer, label) ->
+        {
+            if (counterId == counter1.id())
+            {
+                final byte[] actualKeyBytes = new byte[expectedKeyBytes.length];
+                keyBuffer.getBytes(0, actualKeyBytes, 0, expectedKeyBytes.length);
+                assertArrayEquals(expectedKeyBytes, actualKeyBytes);
+                keyChecked.set(true);
+            }
+        });
+        assertTrue(keyChecked.get());
+
+        verify(availableCounterHandlerClientA, Mockito.after(1000L).never())
+            .onAvailableCounter(any(CountersReader.class), eq(registrationId), eq(counter1.id()));
+        verify(availableCounterHandlerClientB, never())
+            .onAvailableCounter(any(CountersReader.class), eq(registrationId), eq(counter2.id()));
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldNotDeleteGlobalCounterIfClosed()
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
+
+        final AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
+        final UnavailableCounterHandler unavailableCounterHandlerClientA = mock(UnavailableCounterHandler.class);
+        clientA.addAvailableCounterHandler(availableCounterHandlerClientA);
+        clientA.addUnavailableCounterHandler(unavailableCounterHandlerClientA);
+
+        final AvailableCounterHandler availableCounterHandlerClientB = mock(AvailableCounterHandler.class);
+        final UnavailableCounterHandler unavailableCounterHandlerClientB = mock(UnavailableCounterHandler.class);
+        clientB.addAvailableCounterHandler(availableCounterHandlerClientB);
+        clientB.addUnavailableCounterHandler(unavailableCounterHandlerClientB);
+
+        final Counter counter1 = clientA.addGlobalCounter(
+            COUNTER_TYPE_ID,
+            keyBuffer,
+            0,
+            keyBuffer.capacity(),
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length(),
+            100);
+
+        assertFalse(counter1.isClosed());
+        assertEquals(100, counter1.registrationId());
+        assertEquals(CountersReader.RECORD_ALLOCATED, clientA.countersReader().getCounterState(counter1.id()));
+        assertEquals(counter1.registrationId(), clientA.countersReader().getCounterRegistrationId(counter1.id()));
+        assertEquals(NULL_VALUE, clientA.countersReader().getCounterOwnerId(counter1.id()));
+        assertEquals(COUNTER_TYPE_ID, clientB.countersReader().getCounterTypeId(counter1.id()));
+
+        counter1.close();
+        assertTrue(counter1.isClosed());
+
+        verify(unavailableCounterHandlerClientA, Mockito.after(1000L).never())
+            .onUnavailableCounter(any(CountersReader.class), eq(counter1.registrationId()), eq(counter1.id()));
+
+        assertEquals(CountersReader.RECORD_ALLOCATED, clientA.countersReader().getCounterState(counter1.id()));
+        assertEquals(CountersReader.RECORD_ALLOCATED, clientB.countersReader().getCounterState(counter1.id()));
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldNotCloseGlobalCounterWhenClientInstanceIsClosed()
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
+
+        final AtomicBoolean clientClosed = new AtomicBoolean();
         clientA.addCloseHandler(() -> clientClosed.set(true));
 
         final Counter counter1 = clientA.addGlobalCounter(
@@ -294,9 +393,10 @@ class CounterTest
             keyBuffer.capacity(),
             labelBuffer,
             0,
-            COUNTER_LABEL.length());
+            COUNTER_LABEL.length(),
+            1);
 
-        final Counter counter2 = clientB.addGlobalCounter(COUNTER_TYPE_ID + 2, "test global counter");
+        final Counter counter2 = clientB.addGlobalCounter(COUNTER_TYPE_ID + 2, "test global counter", 22);
 
         clientA.close();
 
@@ -328,12 +428,10 @@ class CounterTest
             final CountersReader countersReader = clientA.countersReader();
             assertEquals(0, countersReader.getCounterValue(SystemCounterDescriptor.CLIENT_TIMEOUTS.id()));
 
-            final Counter counter = aeron.addGlobalCounter(COUNTER_TYPE_ID, "test");
+            final Counter counter = aeron.addGlobalCounter(COUNTER_TYPE_ID, "test", 42);
             assertNotNull(counter);
             assertFalse(counter.isClosed());
             assertEquals(CountersReader.RECORD_ALLOCATED, aeron.countersReader().getCounterState(counter.id()));
-            verify(availableCounterHandler, timeout(5000L)).onAvailableCounter(
-                any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
 
             conductorAgentInvoker.invoke();
 
@@ -354,6 +452,8 @@ class CounterTest
 
             assertFalse(counter.isClosed());
             assertEquals(CountersReader.RECORD_ALLOCATED, aeron.countersReader().getCounterState(counter.id()));
+            verify(availableCounterHandler, never()).onAvailableCounter(
+                any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
             verify(unavailableCounterHandler, never()).onUnavailableCounter(
                 any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
         }

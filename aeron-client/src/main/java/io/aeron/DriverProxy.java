@@ -478,7 +478,8 @@ public final class DriverProxy
         final int keyLength,
         final DirectBuffer labelBuffer,
         final int labelOffset,
-        final int labelLength)
+        final int labelLength,
+        final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
         final int length = GlobalCounterMessageFlyweight.computeLength(keyLength, labelLength);
@@ -493,15 +494,16 @@ public final class DriverProxy
             .keyBuffer(keyBuffer, keyOffset, keyLength)
             .labelBuffer(labelBuffer, labelOffset, labelLength)
             .typeId(typeId)
-            .clientId(clientId)
-            .correlationId(correlationId);
+            .registrationId(registrationId)
+            .correlationId(correlationId)
+            .clientId(clientId);
 
         toDriverCommandBuffer.commit(index);
 
         return correlationId;
     }
 
-    long addGlobalCounter(final int typeId, final String label)
+    long addGlobalCounter(final int typeId, final String label, final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
         final int length = GlobalCounterMessageFlyweight.computeLength(0, label.length());
@@ -516,8 +518,9 @@ public final class DriverProxy
             .keyBuffer(null, 0, 0)
             .label(label)
             .typeId(typeId)
-            .clientId(clientId)
-            .correlationId(correlationId);
+            .registrationId(registrationId)
+            .correlationId(correlationId)
+            .clientId(clientId);
 
         toDriverCommandBuffer.commit(index);
 

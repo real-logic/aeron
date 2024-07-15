@@ -40,6 +40,7 @@ final class ClientProxy
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
     private final CounterUpdateFlyweight counterUpdate = new CounterUpdateFlyweight();
     private final ClientTimeoutFlyweight clientTimeout = new ClientTimeoutFlyweight();
+    private final GlobalCounterResponseFlyweight globalCounterResponse = new GlobalCounterResponseFlyweight();
 
     ClientProxy(final BroadcastTransmitter transmitter)
     {
@@ -53,6 +54,7 @@ final class ClientProxy
         imageMessage.wrap(buffer, 0);
         counterUpdate.wrap(buffer, 0);
         clientTimeout.wrap(buffer, 0);
+        globalCounterResponse.wrap(buffer, 0);
     }
 
     void onError(final long correlationId, final ErrorCode errorCode, final String errorMessage)
@@ -144,6 +146,15 @@ final class ClientProxy
             .counterId(counterId);
 
         transmit(ON_COUNTER_READY, buffer, 0, CounterUpdateFlyweight.LENGTH);
+    }
+
+    void onGlobalCounterResponse(final long correlationId, final int counterId)
+    {
+        globalCounterResponse
+            .correlationId(correlationId)
+            .counterId(counterId);
+
+        transmit(ON_GLOBAL_COUNTER_RESPONSE, buffer, 0, GlobalCounterResponseFlyweight.LENGTH);
     }
 
     void onUnavailableCounter(final long registrationId, final int counterId)

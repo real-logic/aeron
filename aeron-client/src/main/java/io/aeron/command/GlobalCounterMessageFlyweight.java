@@ -23,7 +23,7 @@ import static io.aeron.ErrorCode.MALFORMED_COMMAND;
 import static org.agrona.BitUtil.*;
 
 /**
- * Message to denote a new counter.
+ * Message to get or create a new global counter.
  * <p>
  * <b>Note:</b> Layout should be SBE 2.0 compliant so that the label length is aligned.
  *
@@ -36,6 +36,9 @@ import static org.agrona.BitUtil.*;
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                        Correlation ID                         |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                        Registration ID                        |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                        Counter Type ID                        |
@@ -54,7 +57,8 @@ import static org.agrona.BitUtil.*;
  */
 public class GlobalCounterMessageFlyweight extends CorrelatedMessageFlyweight
 {
-    private static final int COUNTER_TYPE_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
+    private static final int REGISTRATION_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
+    private static final int COUNTER_TYPE_ID_FIELD_OFFSET = REGISTRATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int KEY_LENGTH_OFFSET = COUNTER_TYPE_ID_FIELD_OFFSET + SIZE_OF_INT;
     static final int KEY_BUFFER_OFFSET = KEY_LENGTH_OFFSET + SIZE_OF_INT;
     private static final int MINIMUM_LENGTH = KEY_BUFFER_OFFSET + SIZE_OF_INT;
@@ -70,6 +74,28 @@ public class GlobalCounterMessageFlyweight extends CorrelatedMessageFlyweight
     {
         super.wrap(buffer, offset);
 
+        return this;
+    }
+
+    /**
+     * Get registration id field.
+     *
+     * @return registration id field.
+     */
+    public long registrationId()
+    {
+        return buffer.getLong(offset + REGISTRATION_ID_FIELD_OFFSET);
+    }
+
+    /**
+     * Set counter registration id field.
+     *
+     * @param registrationId field value.
+     * @return this for a fluent API.
+     */
+    public GlobalCounterMessageFlyweight registrationId(final long registrationId)
+    {
+        buffer.putLong(offset + REGISTRATION_ID_FIELD_OFFSET, registrationId);
         return this;
     }
 
@@ -252,6 +278,7 @@ public class GlobalCounterMessageFlyweight extends CorrelatedMessageFlyweight
         return "GlobalCounterMessageFlyweight{" +
             "clientId=" + clientId() +
             ", correlationId=" + correlationId() +
+            ", registrationId=" + registrationId() +
             ", typeId=" + typeId() +
             ", keyBufferOffset=" + keyBufferOffset() +
             ", keyBufferLength=" + keyBufferLength() +

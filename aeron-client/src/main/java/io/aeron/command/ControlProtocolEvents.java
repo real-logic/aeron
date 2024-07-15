@@ -149,4 +149,9 @@ public class ControlProtocolEvents
      * Inform clients of client timeout.
      */
     public static final int ON_CLIENT_TIMEOUT = 0x0F0A;
+
+    /**
+     * Response to {@link #ADD_GLOBAL_COUNTER} command.
+     */
+    public static final int ON_GLOBAL_COUNTER_RESPONSE = 0x0F0B;
 }

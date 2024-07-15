@@ -20,6 +20,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.exceptions.ClientTimeoutException;
 import io.aeron.exceptions.ConductorServiceTimeoutException;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.status.ReadableCounter;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
@@ -375,6 +376,33 @@ class CounterTest
 
         assertEquals(CountersReader.RECORD_ALLOCATED, clientA.countersReader().getCounterState(counter1.id()));
         assertEquals(CountersReader.RECORD_ALLOCATED, clientB.countersReader().getCounterState(counter1.id()));
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldReturnErrorIfANonGlobalCounterExistsForTypeIdRegistrationId()
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
+
+        final Counter counter = clientA.addCounter(COUNTER_TYPE_ID, "test session-specific counter");
+        assertNotEquals(NULL_VALUE, counter.registrationId());
+        assertEquals(clientA.clientId(), clientA.countersReader().getCounterOwnerId(counter.id()));
+
+        final RegistrationException registrationException = assertThrowsExactly(
+            RegistrationException.class,
+            () -> clientA.addGlobalCounter(
+            COUNTER_TYPE_ID,
+            keyBuffer,
+            0,
+            keyBuffer.capacity(),
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length(),
+            counter.registrationId()));
+        assertEquals("ERROR - cannot add global counter, because a non-global counter exists (counterId=" +
+            counter.id() + ") for typeId=" + COUNTER_TYPE_ID + " and registrationId=" +
+            counter.registrationId() + ", errorCodeValue=11",
+            registrationException.getMessage());
     }
 
     @Test

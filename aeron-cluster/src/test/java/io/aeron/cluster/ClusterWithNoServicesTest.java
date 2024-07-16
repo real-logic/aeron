@@ -137,7 +137,20 @@ class ClusterWithNoServicesTest
         {
         }
 
-        public ControlledFragmentHandler.Action onMessage(
+        public ControlledFragmentHandler.Action onIngressMessage(
+            final int actingBlockLength,
+            final int templateId,
+            final int schemaId,
+            final int actingVersion,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
+        {
+            return null;
+        }
+
+        public ControlledFragmentHandler.Action onLogMessage(
             final int actingBlockLength,
             final int templateId,
             final int schemaId,

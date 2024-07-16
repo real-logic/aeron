@@ -466,7 +466,7 @@ class ConsensusModuleAgentTest
         agent.onExtensionMessage(0, 1, SCHEMA_ID, 0, null, 0, 0, null);
 
         verify(consensusModuleExtension)
-            .onIngressMessage(0, 1, SCHEMA_ID, 0, null, 0, 0, null);
+            .onIngressExtensionMessage(0, 1, SCHEMA_ID, 0, null, 0, 0, null);
     }
 
     @Test

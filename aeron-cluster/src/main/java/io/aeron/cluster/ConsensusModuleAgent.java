@@ -532,7 +532,7 @@ final class ConsensusModuleAgent
     {
         if (null != consensusModuleExtension)
         {
-            return consensusModuleExtension.onIngressMessage(
+            return consensusModuleExtension.onIngressExtensionMessage(
                 actingBlockLength, templateId, schemaId, actingVersion, buffer, offset, length, header);
         }
 
@@ -1472,7 +1472,7 @@ final class ConsensusModuleAgent
     {
         if (null != consensusModuleExtension)
         {
-            return consensusModuleExtension.onLogMessage(
+            return consensusModuleExtension.onLogExtensionMessage(
                 actingBlockLength, templateId, schemaId, actingVersion, buffer, offset, length, header);
         }
 

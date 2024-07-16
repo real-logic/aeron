@@ -79,7 +79,8 @@ SET(HEADERS
 # header only library
 add_library(aeron_client_wrapper INTERFACE)
 target_include_directories(aeron_client_wrapper
-    INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/wrapper>")
+    INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/wrapper>")
+
 target_sources(aeron_client_wrapper INTERFACE FILE_SET HEADERS FILES ${HEADERS})
 
 if (MSVC)
@@ -99,5 +100,5 @@ if (AERON_INSTALL_TARGETS)
     install(
         TARGETS aeron_client_wrapper
         EXPORT AeronTargets
-        FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wrapper)
+        FILE_SET HEADERS DESTINATION include/wrapper)
 endif ()

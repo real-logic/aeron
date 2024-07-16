@@ -177,5 +177,5 @@ if (AERON_INSTALL_TARGETS)
         PongW
         PingPongW
         ExclusivePingPongW
-        DESTINATION ${CMAKE_INSTALL_BINDIR})
+        DESTINATION bin)
 endif ()

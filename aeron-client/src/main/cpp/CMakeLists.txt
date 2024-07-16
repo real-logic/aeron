@@ -141,10 +141,10 @@ add_library(aeron_client STATIC ${SOURCE} ${HEADERS})
 add_library(aeron_client_shared SHARED ${SOURCE} ${HEADERS})
 
 target_include_directories(aeron_client
-    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include>")
 
 target_include_directories(aeron_client_shared
-    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include>")
 
 if (MSVC)
     string(REPLACE "/" "\\\\" NATIVE_PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}")
@@ -175,11 +175,10 @@ target_link_libraries(aeron_client_shared
     INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 if (AERON_INSTALL_TARGETS)
-    install(
-        TARGETS aeron_client_shared aeron_client
+    install(TARGETS aeron_client_shared aeron_client
         EXPORT AeronTargets
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install(DIRECTORY ./ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
+        RUNTIME DESTINATION lib
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+    install(DIRECTORY ./ DESTINATION include FILES_MATCHING PATTERN "*.h")
 endif ()

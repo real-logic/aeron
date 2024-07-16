@@ -494,6 +494,14 @@ final class ConsensusModuleAgent
         return sessionByIdMap.get(clusterSessionId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public void closeClusterSession(final long clusterSessionId)
+    {
+        onServiceCloseSession(clusterSessionId);
+    }
+
     public void onLoadBeginSnapshot(
         final int appVersion, final TimeUnit timeUnit, final DirectBuffer buffer, final int offset, final int length)
     {
@@ -524,7 +532,7 @@ final class ConsensusModuleAgent
     {
         if (null != consensusModuleExtension)
         {
-            return consensusModuleExtension.onMessage(
+            return consensusModuleExtension.onIngressExtensionMessage(
                 actingBlockLength, templateId, schemaId, actingVersion, buffer, offset, length, header);
         }
 
@@ -548,9 +556,7 @@ final class ConsensusModuleAgent
         final int length)
     {
         final ClusterSession session = new ClusterSession(
-            clusterSessionId,
-            responseStreamId,
-            refineResponseChannel(responseChannel));
+            clusterSessionId, responseStreamId, refineResponseChannel(responseChannel));
 
         session.loadSnapshotState(correlationId, openedPosition, timeOfLastActivity, closeReason);
 
@@ -1466,7 +1472,7 @@ final class ConsensusModuleAgent
     {
         if (null != consensusModuleExtension)
         {
-            return consensusModuleExtension.onMessage(
+            return consensusModuleExtension.onLogExtensionMessage(
                 actingBlockLength, templateId, schemaId, actingVersion, buffer, offset, length, header);
         }
 

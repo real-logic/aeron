@@ -18,9 +18,7 @@ package io.aeron.agent;
 import io.aeron.archive.client.AeronArchive;
 import net.bytebuddy.asm.Advice;
 
-import static io.aeron.agent.ArchiveEventCode.CONTROL_SESSION_STATE_CHANGE;
-import static io.aeron.agent.ArchiveEventCode.REPLICATION_SESSION_DONE;
-import static io.aeron.agent.ArchiveEventCode.REPLICATION_SESSION_STATE_CHANGE;
+import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.ArchiveEventLogger.LOGGER;
 
 /**
@@ -28,6 +26,37 @@ import static io.aeron.agent.ArchiveEventLogger.LOGGER;
  */
 class ArchiveInterceptor
 {
+    static class ReplaySessionStateChange
+    {
+        @Advice.OnMethodEnter
+        static <E extends Enum<E>> void logStateChange(
+            final E oldState,
+            final E newState,
+            final long sessionId,
+            final long recordingId,
+            final long position,
+            final String reason)
+        {
+            LOGGER.logReplaySessionStateChange(REPLAY_SESSION_STATE_CHANGE,
+                oldState, newState, sessionId, recordingId, position, reason);
+        }
+    }
+
+    static class RecordingSessionStateChange
+    {
+        @Advice.OnMethodEnter
+        static <E extends Enum<E>> void logStateChange(
+            final E oldState,
+            final E newState,
+            final long recordingId,
+            final long position,
+            final String reason)
+        {
+            LOGGER.logRecordingSessionStateChange(RECORDING_SESSION_STATE_CHANGE,
+                oldState, newState, recordingId, position, reason);
+        }
+    }
+
     static class ReplicationSessionStateChange
     {
         @Advice.OnMethodEnter
@@ -35,9 +64,13 @@ class ArchiveInterceptor
             final E oldState,
             final E newState,
             final long replicationId,
-            final long position)
+            final long srcRecordingId,
+            final long dstRecordingId,
+            final long position,
+            final String reason)
         {
-            LOGGER.logSessionStateChange(REPLICATION_SESSION_STATE_CHANGE, oldState, newState, replicationId, position);
+            LOGGER.logReplicationSessionStateChange(REPLICATION_SESSION_STATE_CHANGE,
+                oldState, newState, replicationId, srcRecordingId, dstRecordingId, position, reason);
         }
     }
 

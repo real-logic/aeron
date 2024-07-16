@@ -195,9 +195,11 @@ public final class TestCluster implements AutoCloseable
 
     public static void awaitElectionState(final TestNode node, final ElectionState electionState)
     {
+        final Supplier<String> msg = () -> "index=" + node.index() + " role=" + node.role() + " electionState=" +
+            node.electionState() + " expected=" + electionState;
         while (node.electionState() != electionState)
         {
-            await(10);
+            await(10, msg);
         }
     }
 
@@ -215,7 +217,7 @@ public final class TestCluster implements AutoCloseable
         }
     }
 
-    private void await(final int delayMs, final Supplier<String> message)
+    private static void await(final int delayMs, final Supplier<String> message)
     {
         Tests.sleep(delayMs, message);
         ClusterTests.failOnClusterError();

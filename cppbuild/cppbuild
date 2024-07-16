@@ -10,7 +10,7 @@ BUILD_PACKAGE=false
 COVERAGE_BUILD=0
 
 BUILD_DELETE_CMAKE=false
-BUILD_CMAKE_VERSION=3.29.2
+BUILD_CMAKE_VERSION=3.30.0
 BUILD_CMAKE_DIR="$(dirname "${BUILD_DIR}")/cmake"
 
 ncpus=1
@@ -67,7 +67,7 @@ do
       ;;
     --skip-archive-api)
       EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DBUILD_AERON_ARCHIVE_API=OFF"
-      echo "Enabling building of Aeron Archive API is the default"
+      echo "Disabline building of Aeron Archive API"
       shift
       ;;
     -d|--debug-build)

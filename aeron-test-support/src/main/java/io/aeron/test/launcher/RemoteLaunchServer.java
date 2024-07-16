@@ -149,7 +149,6 @@ public class RemoteLaunchServer
         private final AtomicReference<State> currentState = new AtomicReference<>(State.CREATED);
         private volatile ProcessResponseReader responseReader;
         private Process process = null;
-        private Thread responseThread = null;
 
         private enum State
         {
@@ -345,7 +344,7 @@ public class RemoteLaunchServer
                 final PrintStream stdOutputStream = parseBaseDirectory(command);
 
                 responseReader = new ProcessResponseReader(connectionChannel, pid(), stdOutputStream);
-                responseThread = new Thread(() -> responseReader.runResponses(p.getInputStream()));
+                final Thread responseThread = new Thread(() -> responseReader.runResponses(p.getInputStream()));
                 responseThread.setDaemon(true);
                 responseThread.start();
 
@@ -360,10 +359,10 @@ public class RemoteLaunchServer
                                 "[" + pid() + "] Exited with code: " + exitCode +
                                 " after: " + (endTimeMs - startTimeMs) + "ms");
                         }
-                        catch (final InterruptedException e)
+                        catch (final InterruptedException ex)
                         {
                             System.out.println("[" + pid() + "] Unexpected exception waiting on exit code");
-                            e.printStackTrace(System.out);
+                            ex.printStackTrace(System.out);
                         }
                     });
                 processMonitorThread.start();

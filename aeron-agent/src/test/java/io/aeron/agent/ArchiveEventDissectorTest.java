@@ -834,19 +834,70 @@ class ArchiveEventDissectorTest
     }
 
     @Test
+    void replaySessionStateChange()
+    {
+        final String reason = "some reason";
+        internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_600_000_000L);
+        buffer.putLong(LOG_HEADER_LENGTH, 20_000_000_000L, LITTLE_ENDIAN);
+        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 30_000_000_000L, LITTLE_ENDIAN);
+        buffer.putLong(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, 40_000_000_000L, LITTLE_ENDIAN);
+        final int stateChangeLength = buffer.putStringAscii(LOG_HEADER_LENGTH + 3 * SIZE_OF_LONG, "x -> y");
+        buffer.putStringAscii(LOG_HEADER_LENGTH + 3 * SIZE_OF_LONG + stateChangeLength, reason);
+
+        dissectReplaySessionStateChange(buffer, 0, builder);
+
+        assertEquals("[1.600000000] " + CONTEXT + ": " + REPLAY_SESSION_STATE_CHANGE.name() + " [10/20]:" +
+            " replaySessionId=20000000000" +
+            " replayId=4" +
+            " sessionId=-1474836480" +
+            " recordingId=30000000000" +
+            " position=40000000000" +
+            " x -> y" +
+            " reason=\"some reason\"",
+            builder.toString());
+    }
+
+    @Test
+    void recordingSessionStateChange()
+    {
+        final String reason = "some other reason";
+        internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_700_000_000L);
+        buffer.putLong(LOG_HEADER_LENGTH, 30_000_000_000L, LITTLE_ENDIAN);
+        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 40_000_000_000L, LITTLE_ENDIAN);
+        final int stateChangeLength = buffer.putStringAscii(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, "x -> y");
+        buffer.putStringAscii(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG + stateChangeLength, reason);
+
+        dissectRecordingSessionStateChange(buffer, 0, builder);
+
+        assertEquals("[1.700000000] " + CONTEXT + ": " + RECORDING_SESSION_STATE_CHANGE.name() + " [10/20]:" +
+            " recordingId=30000000000" +
+            " position=40000000000" +
+            " x -> y" +
+            " reason=\"some other reason\"",
+            builder.toString());
+    }
+
+    @Test
     void replicationSessionStateChange()
     {
+        final String reason = "no reason";
         internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_500_000_000L);
         buffer.putLong(LOG_HEADER_LENGTH, 10_000_000_000L, LITTLE_ENDIAN);
         buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 20_000_000_000L, LITTLE_ENDIAN);
-        buffer.putStringAscii(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, "x -> y");
+        buffer.putLong(LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG, 30_000_000_000L, LITTLE_ENDIAN);
+        buffer.putLong(LOG_HEADER_LENGTH + 3 * SIZE_OF_LONG, 40_000_000_000L, LITTLE_ENDIAN);
+        final int stateChangeLength = buffer.putStringAscii(LOG_HEADER_LENGTH + 4 * SIZE_OF_LONG, "x -> y");
+        buffer.putStringAscii(LOG_HEADER_LENGTH + 4 * SIZE_OF_LONG + stateChangeLength, reason);
 
         dissectReplicationSessionStateChange(buffer, 0, builder);
 
         assertEquals("[1.500000000] " + CONTEXT + ": " + REPLICATION_SESSION_STATE_CHANGE.name() + " [10/20]:" +
             " replicationId=10000000000" +
-            " position=20000000000" +
-            " x -> y",
+            " srcRecordingId=20000000000" +
+            " dstRecordingId=30000000000" +
+            " position=40000000000" +
+            " x -> y" +
+            " reason=\"no reason\"",
             builder.toString());
     }
 

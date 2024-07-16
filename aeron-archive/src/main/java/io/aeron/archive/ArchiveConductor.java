@@ -445,7 +445,7 @@ abstract class ArchiveConductor
             return;
         }
 
-        if (isLowStorageSpace(correlationId, controlSession))
+        if (null != isLowStorageSpace(correlationId, controlSession))
         {
             return;
         }
@@ -888,7 +888,8 @@ abstract class ArchiveConductor
         controlSession.sendOkResponse(correlationId, controlResponseProxy);
     }
 
-    Subscription extendRecording(
+    /* Returns a Subscription or a String error message indicating why the subscription couldn't be acquired */
+    Object extendRecording(
         final long correlationId,
         final long recordingId,
         final int streamId,
@@ -901,14 +902,14 @@ abstract class ArchiveConductor
         {
             final String msg = "max concurrent recordings reached at " + ctx.maxConcurrentRecordings();
             controlSession.sendErrorResponse(correlationId, MAX_RECORDINGS, msg, controlResponseProxy);
-            return null;
+            return msg;
         }
 
         if (!catalog.hasRecording(recordingId))
         {
             final String msg = "unknown recording id: " + recordingId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-            return null;
+            return msg;
         }
 
         catalog.recordingSummary(recordingId, recordingSummary);
@@ -917,19 +918,20 @@ abstract class ArchiveConductor
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " with streamId=" + streamId + " for existing streamId=" + recordingSummary.streamId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-            return null;
+            return msg;
         }
 
         if (recordingSessionByIdMap.containsKey(recordingId))
         {
             final String msg = "cannot extend active recording " + recordingId;
             controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
-            return null;
+            return msg;
         }
 
-        if (isLowStorageSpace(correlationId, controlSession))
+        final String lowStorageSpaceMsg = isLowStorageSpace(correlationId, controlSession);
+        if (null != lowStorageSpaceMsg)
         {
-            return null;
+            return lowStorageSpaceMsg;
         }
 
         try
@@ -959,15 +961,15 @@ abstract class ArchiveConductor
             {
                 final String msg = "recording exists for streamId=" + streamId + " channel=" + originalChannel;
                 controlSession.sendErrorResponse(correlationId, ACTIVE_SUBSCRIPTION, msg, controlResponseProxy);
+                return msg;
             }
         }
         catch (final Exception ex)
         {
             errorHandler.onError(ex);
             controlSession.sendErrorResponse(correlationId, ex.getMessage(), controlResponseProxy);
+            return ex.getMessage();
         }
-
-        return null;
     }
 
     void getStartPosition(final long correlationId, final long recordingId, final ControlSession controlSession)
@@ -2377,7 +2379,7 @@ abstract class ArchiveConductor
         CloseHelper.close(errorHandler, subscription);
     }
 
-    private boolean isLowStorageSpace(final long correlationId, final ControlSession controlSession)
+    private String isLowStorageSpace(final long correlationId, final ControlSession controlSession)
     {
         try
         {
@@ -2388,7 +2390,7 @@ abstract class ArchiveConductor
             {
                 final String msg = "low storage threshold=" + threshold + " <= usableSpace=" + usableSpace;
                 controlSession.sendErrorResponse(correlationId, STORAGE_SPACE, msg, controlResponseProxy);
-                return true;
+                return msg;
             }
         }
         catch (final IOException ex)
@@ -2396,7 +2398,7 @@ abstract class ArchiveConductor
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return false;
+        return null;
     }
 
     private void deleteSegments(
@@ -2421,7 +2423,7 @@ abstract class ArchiveConductor
     public long generateReplayToken(final ControlSession session, final long recordingId)
     {
         long replayToken = NULL_VALUE;
-        while (NULL_VALUE == replayToken)
+        while (NULL_VALUE == replayToken || controlSessionByReplayToken.containsKey(replayToken))
         {
             replayToken = random.nextLong();
         }

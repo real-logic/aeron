@@ -89,6 +89,20 @@ public class ArchiveComponentLogger implements ComponentLogger
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
+            REPLAY_SESSION_STATE_CHANGE,
+            "ReplaySession",
+            ArchiveInterceptor.ReplaySessionStateChange.class,
+            "logStateChange");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            RECORDING_SESSION_STATE_CHANGE,
+            "RecordingSession",
+            ArchiveInterceptor.RecordingSessionStateChange.class,
+            "logStateChange");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
             REPLICATION_SESSION_STATE_CHANGE,
             "ReplicationSession",
             ArchiveInterceptor.ReplicationSessionStateChange.class,

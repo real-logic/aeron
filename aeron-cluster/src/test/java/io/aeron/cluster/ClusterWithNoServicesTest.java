@@ -35,8 +35,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -139,7 +137,20 @@ class ClusterWithNoServicesTest
         {
         }
 
-        public ControlledFragmentHandler.Action onMessage(
+        public ControlledFragmentHandler.Action onIngressExtensionMessage(
+            final int actingBlockLength,
+            final int templateId,
+            final int schemaId,
+            final int actingVersion,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
+        {
+            return null;
+        }
+
+        public ControlledFragmentHandler.Action onLogExtensionMessage(
             final int actingBlockLength,
             final int templateId,
             final int schemaId,

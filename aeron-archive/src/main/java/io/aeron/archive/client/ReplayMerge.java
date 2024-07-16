@@ -50,6 +50,8 @@ public final class ReplayMerge implements AutoCloseable
 
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
     private static final long MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = TimeUnit.SECONDS.toMillis(5);
+    private static final long INITIAL_GET_MAX_RECORDED_POSITION_BACKOFF_MS = 8;
+    private static final long GET_MAX_RECORDED_POSITION_BACKOFF_MAX_MS = 500;
 
     enum State
     {
@@ -71,6 +73,8 @@ public final class ReplayMerge implements AutoCloseable
     private long nextTargetPosition = Aeron.NULL_VALUE;
     private long positionOfLastProgress = Aeron.NULL_VALUE;
     private long timeOfLastProgressMs;
+    private long timeOfNextGetMaxRecordedPositionMs;
+    private long getMaxRecordedPositionBackoffMs = INITIAL_GET_MAX_RECORDED_POSITION_BACKOFF_MS;
     private boolean isLiveAdded = false;
     private boolean isReplayActive = false;
     private State state;
@@ -147,7 +151,7 @@ public final class ReplayMerge implements AutoCloseable
         }
 
         subscription.asyncAddDestination(replayDestination);
-        timeOfLastProgressMs = epochClock.time();
+        timeOfLastProgressMs = timeOfNextGetMaxRecordedPositionMs = epochClock.time();
     }
 
     /**
@@ -351,11 +355,8 @@ public final class ReplayMerge implements AutoCloseable
 
         if (Aeron.NULL_VALUE == activeCorrelationId)
         {
-            final long correlationId = archive.context().aeron().nextCorrelationId();
-
-            if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
+            if (callGetMaxRecordedPosition(nowMs))
             {
-                activeCorrelationId = correlationId;
                 timeOfLastProgressMs = nowMs;
                 workCount += 1;
             }
@@ -365,18 +366,7 @@ public final class ReplayMerge implements AutoCloseable
             nextTargetPosition = polledRelevantId(archive);
             activeCorrelationId = Aeron.NULL_VALUE;
 
-            if (AeronArchive.NULL_POSITION == nextTargetPosition)
-            {
-                final long correlationId = archive.context().aeron().nextCorrelationId();
-
-                if (archive.archiveProxy().getStopPosition(recordingId, correlationId, archive.controlSessionId()))
-                {
-                    activeCorrelationId = correlationId;
-                    timeOfLastProgressMs = nowMs;
-                    workCount += 1;
-                }
-            }
-            else
+            if (AeronArchive.NULL_POSITION != nextTargetPosition)
             {
                 timeOfLastProgressMs = nowMs;
                 state(State.REPLAY);
@@ -415,6 +405,11 @@ public final class ReplayMerge implements AutoCloseable
             isReplayActive = true;
             replaySessionId = polledRelevantId(archive);
             timeOfLastProgressMs = nowMs;
+
+            // reset getRecordingPosition backoff when moving to CATCHUP state
+            getMaxRecordedPositionBackoffMs = INITIAL_GET_MAX_RECORDED_POSITION_BACKOFF_MS;
+            timeOfNextGetMaxRecordedPositionMs = nowMs;
+
             state(State.CATCHUP);
             workCount += 1;
         }
@@ -471,10 +466,9 @@ public final class ReplayMerge implements AutoCloseable
 
         if (Aeron.NULL_VALUE == activeCorrelationId)
         {
-            final long correlationId = archive.context().aeron().nextCorrelationId();
-            if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
+            if (callGetMaxRecordedPosition(nowMs))
             {
-                activeCorrelationId = correlationId;
+                timeOfLastProgressMs = nowMs;
                 workCount += 1;
             }
         }
@@ -483,15 +477,7 @@ public final class ReplayMerge implements AutoCloseable
             nextTargetPosition = polledRelevantId(archive);
             activeCorrelationId = Aeron.NULL_VALUE;
 
-            if (AeronArchive.NULL_POSITION == nextTargetPosition)
-            {
-                final long correlationId = archive.context().aeron().nextCorrelationId();
-                if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
-                {
-                    activeCorrelationId = correlationId;
-                }
-            }
-            else
+            if (AeronArchive.NULL_POSITION != nextTargetPosition)
             {
                 State nextState = State.CATCHUP;
 
@@ -522,6 +508,31 @@ public final class ReplayMerge implements AutoCloseable
         }
 
         return workCount;
+    }
+
+    private boolean callGetMaxRecordedPosition(final long nowMs)
+    {
+        if (nowMs < timeOfNextGetMaxRecordedPositionMs)
+        {
+            return false;
+        }
+
+        final long correlationId = archive.context().aeron().nextCorrelationId();
+
+        final boolean result = archive.archiveProxy().getMaxRecordedPosition(
+            recordingId, correlationId, archive.controlSessionId());
+
+        if (result)
+        {
+            activeCorrelationId = correlationId;
+        }
+
+        // increase backoff regardless of result
+        getMaxRecordedPositionBackoffMs = Long.min(
+            getMaxRecordedPositionBackoffMs * 2, GET_MAX_RECORDED_POSITION_BACKOFF_MAX_MS);
+        timeOfNextGetMaxRecordedPositionMs = nowMs + getMaxRecordedPositionBackoffMs;
+
+        return result;
     }
 
     private void stopReplay()

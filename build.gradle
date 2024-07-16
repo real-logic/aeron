@@ -63,7 +63,7 @@ def hamcrestVersion = '2.2'
 def junitVersion = '5.10.3'
 def junitPlatformVersion = '1.10.3'
 def mockitoVersion = '4.11.0'
-def byteBuddyVersion = '1.14.17'
+def byteBuddyVersion = '1.14.18'
 def findbugsAnnotationsVersion = '3.0.1'
 def hdrHistogramVersion = '2.2.2'
 def gitCommitHash = io.aeron.build.GithubUtil.currentGitHash("${projectDir}")
@@ -288,6 +288,8 @@ subprojects {
         jvmArgs '-javaagent:' + agentFilename()
         systemProperty 'aeron.event.cluster.log', 'all'
         systemProperty 'aeron.event.cluster.log.disable', 'CANVASS_POSITION,APPEND_POSITION,COMMIT_POSITION'
+        systemProperty 'aeron.event.archive.log', 'all'
+        systemProperty 'aeron.event.log', 'admin'
         systemProperty 'aeron.debug.timeout', '3600s'
         systemProperty 'aeron.event.log.reader.classname', 'io.aeron.agent.CollectingEventLogReaderAgent'
         systemProperty 'aeron.fallback.logger', 'no_op'

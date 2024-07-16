@@ -86,4 +86,11 @@ public interface ConsensusModuleControl
      * @return a {@link ClusterClientSession} for a given id, otherwise {@code null} if not found.
      */
     ClusterClientSession getClientSession(long clusterSessionId);
+
+    /**
+     * Close a cluster session as an administrative function.
+     *
+     * @param clusterSessionId to be closed.
+     */
+    void closeClusterSession(long clusterSessionId);
 }

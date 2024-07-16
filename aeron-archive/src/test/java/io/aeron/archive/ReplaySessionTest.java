@@ -77,6 +77,7 @@ class ReplaySessionTest
     private final Image mockImage = mock(Image.class);
     private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
     private final ControlSession mockControlSession = mock(ControlSession.class);
+    private final ExclusivePublication mockPublication = mock(ExclusivePublication.class);
     private final ArchiveConductor mockArchiveConductor = mock(ArchiveConductor.class);
     private final Counter recordingPositionCounter = mock(Counter.class);
     private final UnsafeBuffer replayBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
@@ -115,6 +116,8 @@ class ReplaySessionTest
 
         when(recordingPositionCounter.get()).then((invocation) -> recordingPosition);
         when(mockControlSession.archiveConductor()).thenReturn(mockArchiveConductor);
+        when(mockControlSession.controlPublication()).thenReturn(mockPublication);
+        when(mockPublication.channel()).thenReturn("{some channel}");
         when(mockArchiveConductor.context()).thenReturn(context);
         when(mockReplayPub.termBufferLength()).thenReturn(TERM_BUFFER_LENGTH);
         when(mockReplayPub.positionBitsToShift())

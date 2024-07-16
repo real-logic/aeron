@@ -136,7 +136,7 @@ class RecordingSession implements Session
 
         if (State.INACTIVE == state)
         {
-            state(State.STOPPED);
+            state(State.STOPPED, "");
             recordingWriter.close();
             workCount++;
 
@@ -207,7 +207,7 @@ class RecordingSession implements Session
         {
             errorMessage = ex.getClass().getName() + ": " + ex.getMessage();
             recordingWriter.close();
-            state(State.STOPPED);
+            state(State.STOPPED, errorMessage);
             LangUtil.rethrowUnchecked(ex);
         }
 
@@ -221,8 +221,7 @@ class RecordingSession implements Session
                 originalChannel,
                 image.sourceIdentity());
         }
-
-        state(State.RECORDING);
+        state(State.RECORDING, "");
 
         return 1;
     }
@@ -238,7 +237,8 @@ class RecordingSession implements Session
             }
             else if (image.isEndOfStream() || image.isClosed())
             {
-                state(State.INACTIVE);
+                state(State.INACTIVE, "image.isEndOfStream=" + image.isEndOfStream() +
+                    ", image.isClosed=" + image.isClosed());
             }
 
             if (null != recordingEventsProxy)
@@ -260,21 +260,34 @@ class RecordingSession implements Session
             countedErrorHandler.onError(ex);
             errorMessage = ex.getMessage();
             errorCode = ex.errorCode();
-            state(State.INACTIVE);
+            state(State.INACTIVE, errorMessage);
         }
         catch (final Exception ex)
         {
             countedErrorHandler.onError(ex);
             errorMessage = ex.getClass().getName() + ": " + ex.getMessage();
-            state(State.INACTIVE);
+            state(State.INACTIVE, errorMessage);
         }
 
         return 1;
     }
 
-    private void state(final State newState)
+    private void state(final State newState, final String reason)
+    {
+        logStateChange(state, newState, recordingId,
+            null != image ? image.position() : NULL_POSITION,
+            null == reason ? "" : reason);
+        state = newState;
+    }
+
+    @SuppressWarnings("unused")
+    private void logStateChange(
+        final State oldState,
+        final State newState,
+        final long recordingId,
+        final long position,
+        final String reason)
     {
         //System.out.println("RecordingSession: " + state + " -> " + newState);
-        state = newState;
     }
 }

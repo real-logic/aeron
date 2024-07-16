@@ -49,7 +49,7 @@ Please get in touch at [sales@aeron.io](mailto:sales@aeron.io?subject=Aeron) if 
 1. [Channel Specific Configuration](https://github.com/real-logic/aeron/wiki/Channel-Configuration)
 1. [Aeron Archive (Durable/Persistent Stream Storage)](https://github.com/real-logic/aeron/wiki/Aeron-Archive)
 1. [Aeron Cluster (Fault Tolerant Services)](https://github.com/real-logic/aeron/tree/master/aeron-cluster)
-1. [Aeron Cookbook](https://aeroncookbook.com/).
+1. [Aeron Docs](https://aeron.io/docs/).
 
 ### How does Aeron work?
 

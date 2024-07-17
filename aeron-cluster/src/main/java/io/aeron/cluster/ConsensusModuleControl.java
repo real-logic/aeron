@@ -17,6 +17,8 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.security.AuthorisationService;
+
 import org.agrona.concurrent.IdleStrategy;
 
 import java.util.concurrent.TimeUnit;
@@ -93,4 +95,9 @@ public interface ConsensusModuleControl
      * @param clusterSessionId to be closed.
      */
     void closeClusterSession(long clusterSessionId);
+
+    /**
+     * @return  authorization service for consensus module
+     */
+    AuthorisationService authorisationService();
 }

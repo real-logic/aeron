@@ -502,6 +502,14 @@ final class ConsensusModuleAgent
         onServiceCloseSession(clusterSessionId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public AuthorisationService authorisationService()
+    {
+        return authorisationService;
+    }
+
     public void onLoadBeginSnapshot(
         final int appVersion, final TimeUnit timeUnit, final DirectBuffer buffer, final int offset, final int length)
     {

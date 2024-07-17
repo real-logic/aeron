@@ -1486,7 +1486,8 @@ class ElectionTest
         final ClusterMember candidateMember = clusterMembers[0];
         when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
 
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, candidateMember.id());
+        final Election election =
+            newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, candidateMember.id());
 
         final long candidateTermId = leadershipTermId + 1;
         clock.update(1, clock.timeUnit());

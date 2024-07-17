@@ -1562,7 +1562,9 @@ final class ConsensusModuleAgent
             {
                 state(ConsensusModule.State.SNAPSHOT);
             }
-            else if (ClusterAction.APPOINT_LEADER == action && ConsensusModule.State.ACTIVE == state && election == null)
+            else if (ClusterAction.APPOINT_LEADER == action &&
+                ConsensusModule.State.ACTIVE == state &&
+                election == null)
             {
                 this.onAppointLeader(flags);
             }

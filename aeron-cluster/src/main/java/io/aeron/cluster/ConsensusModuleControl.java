@@ -82,6 +82,13 @@ public interface ConsensusModuleControl
     AeronArchive archive();
 
     /**
+     * The {@link AuthorisationService} used by the consensus module.
+     *
+     * @return the {@link AuthorisationService} used by the consensus module.
+     */
+    AuthorisationService authorisationService();
+
+    /**
      * Lookup a {@link ClusterClientSession} for a given id.
      *
      * @param clusterSessionId for the session to lookup.
@@ -95,9 +102,4 @@ public interface ConsensusModuleControl
      * @param clusterSessionId to be closed.
      */
     void closeClusterSession(long clusterSessionId);
-
-    /**
-     * @return  authorization service for consensus module
-     */
-    AuthorisationService authorisationService();
 }

@@ -489,6 +489,14 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    public AuthorisationService authorisationService()
+    {
+        return authorisationService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public ClusterClientSession getClientSession(final long clusterSessionId)
     {
         return sessionByIdMap.get(clusterSessionId);
@@ -500,14 +508,6 @@ final class ConsensusModuleAgent
     public void closeClusterSession(final long clusterSessionId)
     {
         onServiceCloseSession(clusterSessionId);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public AuthorisationService authorisationService()
-    {
-        return authorisationService;
     }
 
     public void onLoadBeginSnapshot(

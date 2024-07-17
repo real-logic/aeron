@@ -87,21 +87,40 @@ class Election
     private long replicationTermBaseLogPosition;
     private long lastPublishedCommitPosition;
     private int gracefulClosedLeaderId;
+    private int currentAppointedLeaderId;
 
     Election(
-        final boolean isNodeStartup,
-        final int gracefulClosedLeaderId,
-        final long leadershipTermId,
-        final long termBaseLogPosition,
-        final long logPosition,
-        final long appendPosition,
-        final ClusterMember[] clusterMembers,
-        final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap,
-        final ClusterMember thisMember,
-        final ConsensusPublisher consensusPublisher,
-        final ConsensusModule.Context ctx,
-        final ConsensusModuleAgent consensusModuleAgent)
-    {
+            final boolean isNodeStartup,
+            final int gracefulClosedLeaderId,
+            final long leadershipTermId,
+            final long termBaseLogPosition,
+            final long logPosition,
+            final long appendPosition,
+            final ClusterMember[] clusterMembers,
+            final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap,
+            final ClusterMember thisMember,
+            final ConsensusPublisher consensusPublisher,
+            final ConsensusModule.Context ctx,
+            final ConsensusModuleAgent consensusModuleAgent) {
+        this(isNodeStartup, gracefulClosedLeaderId, leadershipTermId, termBaseLogPosition,
+                logPosition, appendPosition, clusterMembers, clusterMemberByIdMap, thisMember,
+                consensusPublisher, ctx, consensusModuleAgent, NULL_VALUE);
+    }
+
+    Election(
+            final boolean isNodeStartup,
+            final int gracefulClosedLeaderId,
+            final long leadershipTermId,
+            final long termBaseLogPosition,
+            final long logPosition,
+            final long appendPosition,
+            final ClusterMember[] clusterMembers,
+            final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap,
+            final ClusterMember thisMember,
+            final ConsensusPublisher consensusPublisher,
+            final ConsensusModule.Context ctx,
+            final ConsensusModuleAgent consensusModuleAgent,
+            final int currentAppointedLeaderId) {
         this.isNodeStartup = isNodeStartup;
         this.isExtendedCanvass = isNodeStartup;
         this.gracefulClosedLeaderId = gracefulClosedLeaderId;
@@ -118,6 +137,7 @@ class Election
         this.consensusPublisher = consensusPublisher;
         this.ctx = ctx;
         this.consensusModuleAgent = consensusModuleAgent;
+        this.currentAppointedLeaderId = currentAppointedLeaderId;
 
         final long nowNs = ctx.clusterClock().timeNanos();
         this.initialTimeOfLastUpdateNs = nowNs - TimeUnit.DAYS.toNanos(1);
@@ -673,8 +693,9 @@ class Election
             workCount++;
         }
 
-        if (isPassiveMember() || (ctx.appointedLeaderId() != NULL_VALUE && ctx.appointedLeaderId() != thisMember.id()))
-        {
+        if (isPassiveMember()
+                || (ctx.appointedLeaderId() != NULL_VALUE && ctx.appointedLeaderId() != thisMember.id())
+                || (this.currentAppointedLeaderId != NULL_VALUE && this.currentAppointedLeaderId != thisMember.id())) {
             return workCount;
         }
 

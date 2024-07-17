@@ -165,6 +165,7 @@ final class ConsensusModuleAgent
     private String catchupLogDestination;
     private String ingressEndpoints;
     private StandbySnapshotReplicator standbySnapshotReplicator = null;
+    private int currentAppointedLeaderId;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {
@@ -196,6 +197,7 @@ final class ConsensusModuleAgent
         this.serviceAckQueues = ServiceAck.newArrayOfQueues(serviceCount);
         this.dutyCycleTracker = ctx.dutyCycleTracker();
         this.totalSnapshotDurationTracker = ctx.totalSnapshotDurationTracker();
+        this.currentAppointedLeaderId = NULL_VALUE;
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -729,9 +731,16 @@ final class ConsensusModuleAgent
                 final String msg = "Failed to switch ClusterControl to the ToggleState.SNAPSHOT state";
                 egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.ERROR, msg);
             }
-        }
-        else
-        {
+        } else if (AdminRequestType.APPOINT_LEADER == requestType) {
+            int appointedLeaderId = payload.getInt(payloadOffset);
+            if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.APPOINT_LEADER, appointedLeaderId)) {
+                egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.OK, "");
+                this.onAppointLeader(appointedLeaderId);
+            } else {
+                final String msg = "Failed to append appoint leader command to cluster";
+                egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.ERROR, msg);
+            }
+        } else {
             egressPublisher.sendAdminResponse(
                 session, correlationId, requestType, AdminResponseCode.ERROR, "Unknown request type: " + requestType);
         }
@@ -1545,6 +1554,8 @@ final class ConsensusModuleAgent
             else if (ClusterAction.SNAPSHOT == action && CLUSTER_ACTION_FLAGS_DEFAULT == flags)
             {
                 state(ConsensusModule.State.SNAPSHOT);
+            } else if (ClusterAction.APPOINT_LEADER == action && ConsensusModule.State.ACTIVE == state && election == null) {
+                this.onAppointLeader(flags);
             }
         }
     }
@@ -3112,10 +3123,14 @@ final class ConsensusModuleAgent
         }
     }
 
-    private void clearSessionsAfter(final long logPosition)
-    {
-        for (int i = sessions.size() - 1; i >= 0; i--)
-        {
+    void onAppointLeader(final int appointedLeaderId) {
+        this.currentAppointedLeaderId = appointedLeaderId;
+        this.enterElection(false, "appoint leader member id : " + appointedLeaderId);
+        this.currentAppointedLeaderId = NULL_VALUE;
+    }
+
+    private void clearSessionsAfter(final long logPosition) {
+        for (int i = sessions.size() - 1; i >= 0; i--) {
             final ClusterSession session = sessions.get(i);
             if (session.openedLogPosition() > logPosition)
             {
@@ -3221,18 +3236,19 @@ final class ConsensusModuleAgent
         ctx.countedErrorHandler().onError(new ClusterEvent(reason));
 
         election = new Election(
-            false,
-            isLogEndOfStream ? leaderMember.id() : NULL_VALUE,
-            leadershipTermId,
-            termBaseLogPosition,
-            commitPosition,
-            appendedPosition,
-            activeMembers,
-            clusterMemberByIdMap,
-            thisMember,
-            consensusPublisher,
-            ctx,
-            this);
+                false,
+                isLogEndOfStream ? leaderMember.id() : NULL_VALUE,
+                leadershipTermId,
+                termBaseLogPosition,
+                commitPosition,
+                appendedPosition,
+                activeMembers,
+                clusterMemberByIdMap,
+                thisMember,
+                consensusPublisher,
+                ctx,
+                this,
+                currentAppointedLeaderId);
 
         election.doWork(clusterClock.timeNanos());
     }

@@ -165,6 +165,7 @@ final class ConsensusModuleAgent
     private String catchupLogDestination;
     private String ingressEndpoints;
     private StandbySnapshotReplicator standbySnapshotReplicator = null;
+    private int currentAppointedLeaderId;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {
@@ -196,6 +197,7 @@ final class ConsensusModuleAgent
         this.serviceAckQueues = ServiceAck.newArrayOfQueues(serviceCount);
         this.dutyCycleTracker = ctx.dutyCycleTracker();
         this.totalSnapshotDurationTracker = ctx.totalSnapshotDurationTracker();
+        this.currentAppointedLeaderId = NULL_VALUE;
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -727,6 +729,20 @@ final class ConsensusModuleAgent
             else
             {
                 final String msg = "Failed to switch ClusterControl to the ToggleState.SNAPSHOT state";
+                egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.ERROR, msg);
+            }
+        }
+        else if (AdminRequestType.APPOINT_LEADER == requestType)
+        {
+            final int appointedLeaderId = payload.getInt(payloadOffset);
+            if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.APPOINT_LEADER, appointedLeaderId))
+            {
+                egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.OK, "");
+                this.onAppointLeader(appointedLeaderId);
+            }
+            else
+            {
+                final String msg = "Failed to append appoint leader command to cluster";
                 egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.ERROR, msg);
             }
         }
@@ -1546,11 +1562,16 @@ final class ConsensusModuleAgent
             {
                 state(ConsensusModule.State.SNAPSHOT);
             }
+            else if (ClusterAction.APPOINT_LEADER == action &&
+                ConsensusModule.State.ACTIVE == state &&
+                election == null)
+            {
+                this.onAppointLeader(flags);
+            }
         }
     }
 
-    void onReplayNewLeadershipTermEvent(
-        final long leadershipTermId,
+    void onReplayNewLeadershipTermEvent(final long leadershipTermId,
         final long logPosition,
         final long timestamp,
         final long termBaseLogPosition,
@@ -3112,6 +3133,13 @@ final class ConsensusModuleAgent
         }
     }
 
+    void onAppointLeader(final int appointedLeaderId)
+    {
+        this.currentAppointedLeaderId = appointedLeaderId;
+        this.enterElection(false, "appoint leader member id : " + appointedLeaderId);
+        this.currentAppointedLeaderId = NULL_VALUE;
+    }
+
     private void clearSessionsAfter(final long logPosition)
     {
         for (int i = sessions.size() - 1; i >= 0; i--)
@@ -3232,7 +3260,8 @@ final class ConsensusModuleAgent
             thisMember,
             consensusPublisher,
             ctx,
-            this);
+            this,
+            currentAppointedLeaderId);
 
         election.doWork(clusterClock.timeNanos());
     }

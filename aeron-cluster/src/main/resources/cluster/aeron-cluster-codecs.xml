@@ -45,6 +45,7 @@
             <validValue name="SUSPEND" description="Suspend ingress to the cluster.">0</validValue>
             <validValue name="RESUME" description="Resume ingress to the cluster.">1</validValue>
             <validValue name="SNAPSHOT" description="Snapshot state in the cluster.">2</validValue>
+            <validValue name="APPOINT_LEADER" description="Appoint leader in the cluster.">3</validValue>
         </enum>
         <enum name="SnapshotMark" encodingType="int32" description="Mark within a snapshot.">
             <validValue name="BEGIN" description="Begin marker for a snapshot.">0</validValue>
@@ -62,6 +63,7 @@
         </enum>
         <enum name="AdminRequestType" encodingType="int32" description="Admin command to execute in the cluster.">
             <validValue name="SNAPSHOT" description="Command to snapshot state in the cluster.">0</validValue>
+            <validValue name="APPOINT_LEADER" description="Command to appoint leader in the cluster.">1</validValue>
         </enum>
         <enum name="AdminResponseCode" encodingType="int32" description="Response code for an admin command request.">
             <validValue name="OK" description="Command was submitted or executed successfully.">0</validValue>

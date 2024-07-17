@@ -1569,8 +1569,7 @@ final class ConsensusModuleAgent
         }
     }
 
-    void onReplayNewLeadershipTermEvent(
-        final long leadershipTermId,
+    void onReplayNewLeadershipTermEvent(final long leadershipTermId,
         final long logPosition,
         final long timestamp,
         final long termBaseLogPosition,

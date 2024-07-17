@@ -489,8 +489,8 @@ public final class AeronCluster implements AutoCloseable
 
         final int length =
             MessageHeaderEncoder.ENCODED_LENGTH +
-            AdminRequestEncoder.BLOCK_LENGTH +
-            AdminRequestEncoder.payloadHeaderLength();
+                AdminRequestEncoder.BLOCK_LENGTH +
+                AdminRequestEncoder.payloadHeaderLength();
 
         while (true)
         {
@@ -642,7 +642,7 @@ public final class AeronCluster implements AutoCloseable
     {
         idleStrategy.reset();
         int attempts = SEND_ATTEMPTS;
-        UnsafeBuffer payload = new UnsafeBuffer(new byte[SIZE_OF_INT]);
+        final UnsafeBuffer payload = new UnsafeBuffer(new byte[SIZE_OF_INT]);
         payload.putInt(0, memberId);
 
         final int length =
@@ -691,7 +691,8 @@ public final class AeronCluster implements AutoCloseable
         return false;
     }
 
-    static Int2ObjectHashMap<MemberIngress> parseIngressEndpoints(final Context ctx, final String endpoints) {
+    static Int2ObjectHashMap<MemberIngress> parseIngressEndpoints(final Context ctx, final String endpoints)
+    {
         final Int2ObjectHashMap<MemberIngress> endpointByIdMap = new Int2ObjectHashMap<>();
 
         if (null != endpoints)
@@ -2062,12 +2063,12 @@ public final class AeronCluster implements AutoCloseable
                     egressSubscription.tryResolveChannelEndpointPort() : "<unknown>";
                 final TimeoutException ex = new TimeoutException(
                     "cluster connect timeout: state=" + state +
-                    " messageTimeout=" + ctx.messageTimeoutNs() + "ns" +
-                    " ingressChannel=" + ctx.ingressChannel() +
-                    " ingressEndpoints=" + ctx.ingressEndpoints() +
-                    " ingressPublication=" + ingressPublication +
-                    " egress.isConnected=" + isConnected +
-                    " responseChannel=" + endpointPort);
+                        " messageTimeout=" + ctx.messageTimeoutNs() + "ns" +
+                        " ingressChannel=" + ctx.ingressChannel() +
+                        " ingressEndpoints=" + ctx.ingressEndpoints() +
+                        " ingressPublication=" + ingressPublication +
+                        " egress.isConnected=" + isConnected +
+                        " responseChannel=" + endpointPort);
 
                 for (final MemberIngress member : memberByIdMap.values())
                 {

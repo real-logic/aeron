@@ -46,11 +46,7 @@ import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.collections.Hashing;
-import org.agrona.collections.IntHashSet;
-import org.agrona.collections.MutableBoolean;
-import org.agrona.collections.MutableInteger;
-import org.agrona.collections.MutableLong;
+import org.agrona.collections.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.hamcrest.CoreMatchers;
@@ -87,9 +83,10 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.concurrent.TimeUnit.*;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.number.OrderingComparison.*;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.number.OrderingComparison.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SlowTest
@@ -1992,10 +1989,10 @@ class ClusterTest
             .withServiceSupplier(
                 (i) -> new TestNode.TestService[]
                     {
-                    new TestNode.SleepOnSnapshotTestService()
-                        .snapshotDelayMs(service1SnapshotDelayMs).index(i),
-                    new TestNode.SleepOnSnapshotTestService()
-                        .snapshotDelayMs(service2SnapshotDelayMs).index(i)
+                        new TestNode.SleepOnSnapshotTestService()
+                            .snapshotDelayMs(service1SnapshotDelayMs).index(i),
+                        new TestNode.SleepOnSnapshotTestService()
+                            .snapshotDelayMs(service2SnapshotDelayMs).index(i)
                     })
             .withStaticNodes(3)
             .withAuthorisationServiceSupplier(() -> AuthorisationService.ALLOW_ALL)
@@ -2214,23 +2211,23 @@ class ClusterTest
             .withLogChannel("aeron:udp?term-length=1m|alias=raft")
             .withStaticNodes(3)
             .withServiceSupplier((i) -> new TestNode.TestService[]
-            {
-                new TestNode.TestService().index(i),
-                new TestNode.TestService()
                 {
-                    public void onSessionMessage(
-                        final ClientSession session,
-                        final long timestamp,
-                        final DirectBuffer buffer,
-                        final int offset,
-                        final int length,
-                        final Header header)
+                    new TestNode.TestService().index(i),
+                    new TestNode.TestService()
                     {
-                        Tests.sleep(sleepTimeMs);
-                        messageCount.incrementAndGet();
-                    }
-                }.index(i)
-            })
+                        public void onSessionMessage(
+                            final ClientSession session,
+                            final long timestamp,
+                            final DirectBuffer buffer,
+                            final int offset,
+                            final int length,
+                            final Header header)
+                        {
+                            Tests.sleep(sleepTimeMs);
+                            messageCount.incrementAndGet();
+                        }
+                    }.index(i)
+                })
             .start();
         systemTestWatcher.cluster(cluster);
 
@@ -2273,6 +2270,7 @@ class ClusterTest
             {
                 private int messageOffset;
 
+                @Override
                 public void onSessionMessage(
                     final ClientSession session,
                     final long timestamp,
@@ -2710,11 +2708,12 @@ class ClusterTest
         final TestNode leader = cluster.awaitLeader();
 
         final long requestCorrelationId = System.nanoTime();
-        final MutableBoolean hasResponse = injectAppointedLeadeerAdminRequestControlledEgressListener(requestCorrelationId);
+        final MutableBoolean hasResponse =
+            injectAppointedLeadeerAdminRequestControlledEgressListener(requestCorrelationId);
 
         final AeronCluster client = cluster.connectClient();
         int appointedLeaderId = 0;
-        for (ClusterMember activeMember : leader.clusterMembership().activeMembers)
+        for (final ClusterMember activeMember : leader.clusterMembership().activeMembers)
         {
             if (activeMember.id() != leader.clusterMembership().memberId)
             {
@@ -2733,7 +2732,7 @@ class ClusterTest
             Tests.yield();
         }
 
-        TestNode newLeader = cluster.awaitLeaderAndClosedElection(leader.clusterMembership().memberId);
+        final TestNode newLeader = cluster.awaitLeaderAndClosedElection(leader.clusterMembership().memberId);
         assertEquals(appointedLeaderId, newLeader.clusterMembership().memberId);
     }
 
@@ -2919,12 +2918,11 @@ class ClusterTest
                     assertEquals(AdminResponseCode.OK, responseCode);
                     assertEquals(EMPTY_MSG, message);
                     assertNotNull(payload);
-                    final int minPayloadOffset =
-                        MessageHeaderEncoder.ENCODED_LENGTH +
-                            AdminResponseEncoder.BLOCK_LENGTH +
-                            AdminResponseEncoder.messageHeaderLength() +
-                            message.length() +
-                            AdminResponseEncoder.payloadHeaderLength();
+                    final int minPayloadOffset = MessageHeaderEncoder.ENCODED_LENGTH +
+                        AdminResponseEncoder.BLOCK_LENGTH +
+                        AdminResponseEncoder.messageHeaderLength() +
+                        message.length() +
+                        AdminResponseEncoder.payloadHeaderLength();
                     assertTrue(payloadOffset > minPayloadOffset);
                     assertEquals(0, payloadLength);
                 }

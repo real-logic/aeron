@@ -2690,6 +2690,53 @@ class ClusterTest
         }
     }
 
+    @Test
+    @InterruptAfter(20)
+    void shouldChangeAppointedLeaderAfterReceivingAdminRequestOfAppointLeader()
+    {
+        cluster = aCluster()
+            .withStaticNodes(3)
+            .withAuthorisationServiceSupplier(() ->
+                (protocolId, actionId, type, encodedPrincipal) ->
+                {
+                    assertEquals(MessageHeaderDecoder.SCHEMA_ID, protocolId);
+                    assertEquals(AdminRequestEncoder.TEMPLATE_ID, actionId);
+                    assertEquals(AdminRequestType.APPOINT_LEADER, type);
+                    return true;
+                })
+            .start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+
+        final long requestCorrelationId = System.nanoTime();
+        final MutableBoolean hasResponse = injectAppointedLeadeerAdminRequestControlledEgressListener(requestCorrelationId);
+
+        final AeronCluster client = cluster.connectClient();
+        int appointedLeaderId = 0;
+        for (ClusterMember activeMember : leader.clusterMembership().activeMembers)
+        {
+            if (activeMember.id() != leader.clusterMembership().memberId)
+            {
+                appointedLeaderId = activeMember.id();
+                break;
+            }
+        }
+        while (!client.sendAdminRequestToAppointLeader(requestCorrelationId, appointedLeaderId))
+        {
+            Tests.yield();
+        }
+
+        while (!hasResponse.get())
+        {
+            client.controlledPollEgress();
+            Tests.yield();
+        }
+
+        TestNode newLeader = cluster.awaitLeaderAndClosedElection(leader.clusterMembership().memberId);
+        assertEquals(appointedLeaderId, newLeader.clusterMembership().memberId);
+    }
+
     private static void verifyClientName(final Aeron aeron, final long targetClientId, final String expectedClientName)
     {
         assertNotEquals(aeron.clientId(), targetClientId);
@@ -2828,6 +2875,56 @@ class ClusterTest
                         AdminResponseEncoder.messageHeaderLength() +
                         message.length() +
                         AdminResponseEncoder.payloadHeaderLength();
+                    assertTrue(payloadOffset > minPayloadOffset);
+                    assertEquals(0, payloadLength);
+                }
+            });
+
+        return hasResponse;
+    }
+
+    private MutableBoolean injectAppointedLeadeerAdminRequestControlledEgressListener(final long expectedCorrelationId)
+    {
+        final MutableBoolean hasResponse = new MutableBoolean();
+
+        cluster.controlledEgressListener(
+            new ControlledEgressListener()
+            {
+                @Override
+                public ControlledFragmentHandler.Action onMessage(
+                    final long clusterSessionId,
+                    final long timestamp,
+                    final DirectBuffer buffer,
+                    final int offset,
+                    final int length,
+                    final Header header)
+                {
+                    return ControlledFragmentHandler.Action.ABORT;
+                }
+
+                @Override
+                public void onAdminResponse(
+                    final long clusterSessionId,
+                    final long correlationId,
+                    final AdminRequestType requestType,
+                    final AdminResponseCode responseCode,
+                    final String message,
+                    final DirectBuffer payload,
+                    final int payloadOffset,
+                    final int payloadLength)
+                {
+                    hasResponse.set(true);
+                    assertEquals(expectedCorrelationId, correlationId);
+                    assertEquals(AdminRequestType.APPOINT_LEADER, requestType);
+                    assertEquals(AdminResponseCode.OK, responseCode);
+                    assertEquals(EMPTY_MSG, message);
+                    assertNotNull(payload);
+                    final int minPayloadOffset =
+                        MessageHeaderEncoder.ENCODED_LENGTH +
+                            AdminResponseEncoder.BLOCK_LENGTH +
+                            AdminResponseEncoder.messageHeaderLength() +
+                            message.length() +
+                            AdminResponseEncoder.payloadHeaderLength();
                     assertTrue(payloadOffset > minPayloadOffset);
                     assertEquals(0, payloadLength);
                 }

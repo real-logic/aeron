@@ -257,6 +257,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Close session and release associated resources.
      */
+    @Override
     public void close()
     {
         if (null != publication && publication.isConnected() && !isClosed)
@@ -489,8 +490,8 @@ public final class AeronCluster implements AutoCloseable
 
         final int length =
             MessageHeaderEncoder.ENCODED_LENGTH +
-                AdminRequestEncoder.BLOCK_LENGTH +
-                AdminRequestEncoder.payloadHeaderLength();
+            AdminRequestEncoder.BLOCK_LENGTH +
+            AdminRequestEncoder.payloadHeaderLength();
 
         while (true)
         {
@@ -645,11 +646,10 @@ public final class AeronCluster implements AutoCloseable
         final UnsafeBuffer payload = new UnsafeBuffer(new byte[SIZE_OF_INT]);
         payload.putInt(0, memberId);
 
-        final int length =
-            MessageHeaderEncoder.ENCODED_LENGTH +
-                AdminRequestEncoder.BLOCK_LENGTH +
-                AdminRequestEncoder.payloadHeaderLength() +
-                SIZE_OF_INT;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
+            AdminRequestEncoder.BLOCK_LENGTH +
+            AdminRequestEncoder.payloadHeaderLength() +
+            SIZE_OF_INT;
 
         while (true)
         {
@@ -1313,6 +1313,7 @@ public final class AeronCluster implements AutoCloseable
          *
          * @return a shallow copy of the object.
          */
+        @Override
         public Context clone()
         {
             try
@@ -1848,6 +1849,7 @@ public final class AeronCluster implements AutoCloseable
         /**
          * {@inheritDoc}
          */
+        @Override
         public String toString()
         {
             return "AeronCluster.Context" +
@@ -1945,6 +1947,7 @@ public final class AeronCluster implements AutoCloseable
         /**
          * Close allocated resources. Must be called on error. On success this is a no op.
          */
+        @Override
         public void close()
         {
             if (State.DONE != state)
@@ -2063,12 +2066,12 @@ public final class AeronCluster implements AutoCloseable
                     egressSubscription.tryResolveChannelEndpointPort() : "<unknown>";
                 final TimeoutException ex = new TimeoutException(
                     "cluster connect timeout: state=" + state +
-                        " messageTimeout=" + ctx.messageTimeoutNs() + "ns" +
-                        " ingressChannel=" + ctx.ingressChannel() +
-                        " ingressEndpoints=" + ctx.ingressEndpoints() +
-                        " ingressPublication=" + ingressPublication +
-                        " egress.isConnected=" + isConnected +
-                        " responseChannel=" + endpointPort);
+                    " messageTimeout=" + ctx.messageTimeoutNs() + "ns" +
+                    " ingressChannel=" + ctx.ingressChannel() +
+                    " ingressEndpoints=" + ctx.ingressEndpoints() +
+                    " ingressPublication=" + ingressPublication +
+                    " egress.isConnected=" + isConnected +
+                    " responseChannel=" + endpointPort);
 
                 for (final MemberIngress member : memberByIdMap.values())
                 {
@@ -2356,6 +2359,7 @@ public final class AeronCluster implements AutoCloseable
             this.endpoint = endpoint;
         }
 
+        @Override
         public void close()
         {
             if (null != publication)
@@ -2370,6 +2374,7 @@ public final class AeronCluster implements AutoCloseable
             publication = null;
         }
 
+        @Override
         public String toString()
         {
             return "MemberIngress{" +

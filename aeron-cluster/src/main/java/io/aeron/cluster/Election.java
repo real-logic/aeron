@@ -695,9 +695,9 @@ class Election
             workCount++;
         }
 
-        if (isPassiveMember()
-            || (ctx.appointedLeaderId() != NULL_VALUE && ctx.appointedLeaderId() != thisMember.id())
-            || (this.currentAppointedLeaderId != NULL_VALUE && this.currentAppointedLeaderId != thisMember.id()))
+        if (isPassiveMember() ||
+            (ctx.appointedLeaderId() != NULL_VALUE && ctx.appointedLeaderId() != thisMember.id()) ||
+            (this.currentAppointedLeaderId != NULL_VALUE && this.currentAppointedLeaderId != thisMember.id()))
         {
             return workCount;
         }

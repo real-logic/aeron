@@ -734,7 +734,7 @@ final class ConsensusModuleAgent
         }
         else if (AdminRequestType.APPOINT_LEADER == requestType)
         {
-            int appointedLeaderId = payload.getInt(payloadOffset);
+            final int appointedLeaderId = payload.getInt(payloadOffset);
             if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.APPOINT_LEADER, appointedLeaderId))
             {
                 egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.OK, "");

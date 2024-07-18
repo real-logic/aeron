@@ -168,26 +168,23 @@ class ArchiveEventLoggerTest
     }
 
     @Test
-    void logSessionStateChange()
+    void logControlSessionStateChange()
     {
         final int offset = ALIGNMENT * 4;
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
         final ChronoUnit from = ChronoUnit.CENTURIES;
         final ChronoUnit to = ChronoUnit.MICROS;
         final long id = 555_000_000_000L;
-        final long position = 827342L;
         final String payload = from.name() + STATE_SEPARATOR + to.name();
-        final int captureLength = 2 * SIZE_OF_LONG + SIZE_OF_INT + payload.length();
+        final int captureLength = SIZE_OF_LONG + SIZE_OF_INT + payload.length();
 
-        logger.logSessionStateChange(CONTROL_SESSION_STATE_CHANGE, from, to, id, position);
+        logger.logControlSessionStateChange(from, to, id);
 
         verifyLogHeader(
             logBuffer, offset, CONTROL_SESSION_STATE_CHANGE.toEventCodeId(), captureLength, captureLength);
         assertEquals(id, logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(
-            position, logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG), LITTLE_ENDIAN));
-        assertEquals(
-            payload, logBuffer.getStringAscii(encodedMsgOffset(offset + LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG)));
+            payload, logBuffer.getStringAscii(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG)));
     }
 
     @Test
@@ -247,7 +244,6 @@ class ArchiveEventLoggerTest
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
 
         logger.logReplicationSessionDone(
-            REPLICATION_SESSION_DONE,
             controlSessionId,
             replicationId,
             srcRecordingId,

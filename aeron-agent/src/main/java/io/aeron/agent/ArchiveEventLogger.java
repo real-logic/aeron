@@ -106,18 +106,16 @@ public final class ArchiveEventLogger
     /**
      * Log a state change event for an archive replay session
      *
-     * @param eventCode        for the type of state change.
-     * @param oldState         before the change.
-     * @param newState         after the change.
-     * @param sessionId        identity for the replay session on the Archive.
-     * @param recordingId      recording id on the Archive.
-     * @param position         position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
-     *                         if not relevant)
-     * @param reason           a string indicating the reason for the state change
-     * @param <E>              type representing the state change.
+     * @param <E>         type representing the state change.
+     * @param oldState    before the change.
+     * @param newState    after the change.
+     * @param sessionId   identity for the replay session on the Archive.
+     * @param recordingId recording id on the Archive.
+     * @param position    position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
+     *                    if not relevant)
+     * @param reason      a string indicating the reason for the state change
      */
     public <E extends Enum<E>> void logReplaySessionStateChange(
-        final ArchiveEventCode eventCode,
         final E oldState,
         final E newState,
         final long sessionId,
@@ -129,7 +127,7 @@ public final class ArchiveEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
+        final int index = ringBuffer.tryClaim(REPLAY_SESSION_STATE_CHANGE.toEventCodeId(), encodedLength);
 
         if (index > 0)
         {
@@ -157,17 +155,15 @@ public final class ArchiveEventLogger
     /**
      * Log a state change event for an archive recording session
      *
-     * @param eventCode        for the type of state change.
-     * @param oldState         before the change.
-     * @param newState         after the change.
-     * @param recordingId      recording id on the Archive.
-     * @param position         position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
-     *                         if not relevant)
-     * @param reason           a string indicating the reason for the state change
-     * @param <E>              type representing the state change.
+     * @param <E>         type representing the state change.
+     * @param oldState    before the change.
+     * @param newState    after the change.
+     * @param recordingId recording id on the Archive.
+     * @param position    position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
+     *                    if not relevant)
+     * @param reason      a string indicating the reason for the state change
      */
     public <E extends Enum<E>> void logRecordingSessionStateChange(
-        final ArchiveEventCode eventCode,
         final E oldState,
         final E newState,
         final long recordingId,
@@ -178,7 +174,7 @@ public final class ArchiveEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
+        final int index = ringBuffer.tryClaim(RECORDING_SESSION_STATE_CHANGE.toEventCodeId(), encodedLength);
 
         if (index > 0)
         {
@@ -205,19 +201,17 @@ public final class ArchiveEventLogger
     /**
      * Log a state change event for an archive replication session
      *
-     * @param eventCode        for the type of state change.
-     * @param oldState         before the change.
-     * @param newState         after the change.
-     * @param replicationId    replication id on the Archive.
-     * @param srcRecordingId   source recording id on the Archive.
-     * @param dstRecordingId   destination recording id on the Archive.
-     * @param position         position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
-     *                         if not relevant)
-     * @param reason           a string indicating the reason for the state change
-     * @param <E>              type representing the state change.
+     * @param <E>            type representing the state change.
+     * @param oldState       before the change.
+     * @param newState       after the change.
+     * @param replicationId  replication id on the Archive.
+     * @param srcRecordingId source recording id on the Archive.
+     * @param dstRecordingId destination recording id on the Archive.
+     * @param position       position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
+     *                       if not relevant)
+     * @param reason         a string indicating the reason for the state change
      */
     public <E extends Enum<E>> void logReplicationSessionStateChange(
-        final ArchiveEventCode eventCode,
         final E oldState,
         final E newState,
         final long replicationId,
@@ -230,7 +224,7 @@ public final class ArchiveEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
+        final int index = ringBuffer.tryClaim(RECORDING_SESSION_STATE_CHANGE.toEventCodeId(), encodedLength);
 
         if (index > 0)
         {
@@ -259,26 +253,21 @@ public final class ArchiveEventLogger
     /**
      * Log a state change event for an archive control session
      *
-     * @param eventCode        for the type of state change.
+     * @param <E>              type representing the state change.
      * @param oldState         before the change.
      * @param newState         after the change.
      * @param controlSessionId identity for the control session on the Archive.
-     * @param position         position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
-     *                         if not relevant)
-     * @param <E>              type representing the state change.
      */
-    public <E extends Enum<E>> void logSessionStateChange(
-        final ArchiveEventCode eventCode,
+    public <E extends Enum<E>> void logControlSessionStateChange(
         final E oldState,
         final E newState,
-        final long controlSessionId,
-        final long position)
+        final long controlSessionId)
     {
         final int length = sessionStateChangeLength(oldState, newState);
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
+        final int index = ringBuffer.tryClaim(CONTROL_SESSION_STATE_CHANGE.toEventCodeId(), encodedLength);
 
         if (index > 0)
         {
@@ -291,8 +280,8 @@ public final class ArchiveEventLogger
                     length,
                     oldState,
                     newState,
-                    controlSessionId,
-                    position);
+                    controlSessionId
+                );
             }
             finally
             {
@@ -304,22 +293,20 @@ public final class ArchiveEventLogger
     /**
      * Log the replication session done event.
      *
-     * @param eventCode         for the replication session completion.
-     * @param controlSessionId  identity for the control session on the Archive.
-     * @param replicationId     identity for the replication session.
-     * @param srcRecordingId    identity for the recording in the source Archive.
-     * @param replayPosition    position to start the replay from.
-     * @param srcStopPosition   stop position of the source recording.
-     * @param dstRecordingId    identity for the recording in the destination Archive.
-     * @param dstStopPosition   stop position of the destination recording.
-     * @param position          position of the replication when the session stopped.
-     * @param isClosed          is the source image closed.
-     * @param isEndOfStream     is the source image at the end of the stream.
-     * @param isSynced          has the destination recording position reached the stop position of the source
-     *                          recording.
+     * @param controlSessionId identity for the control session on the Archive.
+     * @param replicationId    identity for the replication session.
+     * @param srcRecordingId   identity for the recording in the source Archive.
+     * @param replayPosition   position to start the replay from.
+     * @param srcStopPosition  stop position of the source recording.
+     * @param dstRecordingId   identity for the recording in the destination Archive.
+     * @param dstStopPosition  stop position of the destination recording.
+     * @param position         position of the replication when the session stopped.
+     * @param isClosed         is the source image closed.
+     * @param isEndOfStream    is the source image at the end of the stream.
+     * @param isSynced         has the destination recording position reached the stop position of the source
+     *                         recording.
      */
     public void logReplicationSessionDone(
-        final ArchiveEventCode eventCode,
         final long controlSessionId,
         final long replicationId,
         final long srcRecordingId,
@@ -336,7 +323,7 @@ public final class ArchiveEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(eventCode.toEventCodeId(), encodedLength);
+        final int index = ringBuffer.tryClaim(REPLICATION_SESSION_DONE.toEventCodeId(), encodedLength);
 
         if (index > 0)
         {

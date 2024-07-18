@@ -277,7 +277,6 @@ final class ClusterSession implements ClusterClientSession
     void open(final long openedLogPosition)
     {
         this.openedLogPosition = openedLogPosition;
-        encodedPrincipal = null;
         state(State.OPEN);
     }
 

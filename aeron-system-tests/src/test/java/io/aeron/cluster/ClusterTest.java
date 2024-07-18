@@ -1986,14 +1986,13 @@ class ClusterTest
         final long service2SnapshotDelayMs = 222;
 
         cluster = aCluster()
-            .withServiceSupplier(
-                (i) -> new TestNode.TestService[]
-                    {
-                        new TestNode.SleepOnSnapshotTestService()
-                            .snapshotDelayMs(service1SnapshotDelayMs).index(i),
-                        new TestNode.SleepOnSnapshotTestService()
-                            .snapshotDelayMs(service2SnapshotDelayMs).index(i)
-                    })
+            .withServiceSupplier((i) -> new TestNode.TestService[]
+            {
+                new TestNode.SleepOnSnapshotTestService()
+                    .snapshotDelayMs(service1SnapshotDelayMs).index(i),
+                new TestNode.SleepOnSnapshotTestService()
+                    .snapshotDelayMs(service2SnapshotDelayMs).index(i)
+            })
             .withStaticNodes(3)
             .withAuthorisationServiceSupplier(() -> AuthorisationService.ALLOW_ALL)
             .start();
@@ -2211,23 +2210,23 @@ class ClusterTest
             .withLogChannel("aeron:udp?term-length=1m|alias=raft")
             .withStaticNodes(3)
             .withServiceSupplier((i) -> new TestNode.TestService[]
+            {
+                new TestNode.TestService().index(i),
+                new TestNode.TestService()
                 {
-                    new TestNode.TestService().index(i),
-                    new TestNode.TestService()
+                    public void onSessionMessage(
+                        final ClientSession session,
+                        final long timestamp,
+                        final DirectBuffer buffer,
+                        final int offset,
+                        final int length,
+                        final Header header)
                     {
-                        public void onSessionMessage(
-                            final ClientSession session,
-                            final long timestamp,
-                            final DirectBuffer buffer,
-                            final int offset,
-                            final int length,
-                            final Header header)
-                        {
-                            Tests.sleep(sleepTimeMs);
-                            messageCount.incrementAndGet();
-                        }
-                    }.index(i)
-                })
+                        Tests.sleep(sleepTimeMs);
+                        messageCount.incrementAndGet();
+                    }
+                }.index(i)
+            })
             .start();
         systemTestWatcher.cluster(cluster);
 

@@ -45,12 +45,14 @@ public final class ArchiveEventLogger
 
     static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS = complementOf(of(
         CMD_OUT_RESPONSE,
-        REPLAY_SESSION_STATE_CHANGE,
-        RECORDING_SESSION_STATE_CHANGE,
         REPLICATION_SESSION_STATE_CHANGE,
         CONTROL_SESSION_STATE_CHANGE,
         REPLAY_SESSION_ERROR,
-        CATALOG_RESIZE));
+        CATALOG_RESIZE,
+        RECORDING_SIGNAL,
+        REPLICATION_SESSION_DONE,
+        REPLAY_SESSION_STATE_CHANGE,
+        RECORDING_SESSION_STATE_CHANGE));
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ManyToOneRingBuffer ringBuffer;

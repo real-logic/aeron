@@ -147,9 +147,16 @@ class ArchiveEventLoggerTest
     @EnumSource(
         value = ArchiveEventCode.class,
         mode = EXCLUDE,
-        names = { "CMD_OUT_RESPONSE", "REPLICATION_SESSION_STATE_CHANGE",
-            "REPLAY_SESSION_STATE_CHANGE", "RECORDING_SESSION_STATE_CHANGE",
-            "CONTROL_SESSION_STATE_CHANGE", "REPLAY_SESSION_ERROR", "CATALOG_RESIZE" })
+        names = {
+            "CMD_OUT_RESPONSE",
+            "REPLICATION_SESSION_STATE_CHANGE",
+            "CONTROL_SESSION_STATE_CHANGE",
+            "REPLAY_SESSION_ERROR",
+            "CATALOG_RESIZE",
+            "RECORDING_SIGNAL",
+            "REPLICATION_SESSION_DONE",
+            "REPLAY_SESSION_STATE_CHANGE",
+            "RECORDING_SESSION_STATE_CHANGE" })
     void controlRequestEvents(final ArchiveEventCode eventCode)
     {
         assertTrue(CONTROL_REQUEST_EVENTS.contains(eventCode));

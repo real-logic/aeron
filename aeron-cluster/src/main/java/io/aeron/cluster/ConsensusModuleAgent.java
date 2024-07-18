@@ -165,6 +165,7 @@ final class ConsensusModuleAgent
     private String catchupLogDestination;
     private String ingressEndpoints;
     private StandbySnapshotReplicator standbySnapshotReplicator = null;
+    private String localLogChannel;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {
@@ -1347,6 +1348,10 @@ final class ConsensusModuleAgent
         {
             awaitLocalSocketsClosed(logSubscriptionRegistrationId);
         }
+        if (null != consensusModuleExtension)
+        {
+            consensusModuleExtension.onPrepareForNewLeadership();
+        }
 
         return lastAppendPosition;
     }
@@ -1601,7 +1606,7 @@ final class ConsensusModuleAgent
         if (null != consensusModuleExtension)
         {
             consensusModuleExtension.onNewLeadershipTerm(
-                new ConsensusControlState(null, logRecordingId, leadershipTermId));
+                new ConsensusControlState(null, logRecordingId, leadershipTermId, null));
         }
     }
 
@@ -1667,8 +1672,9 @@ final class ConsensusModuleAgent
             idle();
         }
 
+        localLogChannel = isIpc ? channel : SPY_PREFIX + channel;
         awaitServicesReady(
-            isIpc ? channel : SPY_PREFIX + channel,
+            localLogChannel,
             ctx.logStreamId(),
             logSessionId,
             logPosition,
@@ -1850,6 +1856,7 @@ final class ConsensusModuleAgent
             timeOfLastLogUpdateNs = nowNs;
             timeOfLastAppendPositionUpdateNs = nowNs;
             timeOfLastAppendPositionSendNs = nowNs;
+            localLogChannel = null;
         }
         NodeControl.ToggleState.activate(nodeControlToggle);
 
@@ -1864,7 +1871,7 @@ final class ConsensusModuleAgent
         if (null != consensusModuleExtension)
         {
             consensusModuleExtension.onElectionComplete(new ConsensusControlState(
-                logPublisher.publication(), logRecordingId, leadershipTermId));
+                logPublisher.publication(), logRecordingId, leadershipTermId, localLogChannel));
         }
         election = null;
 

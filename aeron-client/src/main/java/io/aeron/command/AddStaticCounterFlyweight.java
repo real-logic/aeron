@@ -35,7 +35,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class StaticCounterResponseFlyweight
+public class AddStaticCounterFlyweight
 {
     /**
      * Length of the header.
@@ -54,7 +54,7 @@ public class StaticCounterResponseFlyweight
      * @param offset at which the message begins.
      * @return this for a fluent API.
      */
-    public final StaticCounterResponseFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    public final AddStaticCounterFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
     {
         this.buffer = buffer;
         this.offset = offset;
@@ -78,7 +78,7 @@ public class StaticCounterResponseFlyweight
      * @param correlationId field value.
      * @return this for a fluent API.
      */
-    public StaticCounterResponseFlyweight correlationId(final long correlationId)
+    public AddStaticCounterFlyweight correlationId(final long correlationId)
     {
         buffer.putLong(offset + CORRELATION_ID_OFFSET, correlationId);
 
@@ -101,7 +101,7 @@ public class StaticCounterResponseFlyweight
      * @param counterId field value
      * @return this for a fluent API.
      */
-    public StaticCounterResponseFlyweight counterId(final int counterId)
+    public AddStaticCounterFlyweight counterId(final int counterId)
     {
         buffer.putInt(offset + COUNTER_ID_OFFSET, counterId);
 
@@ -114,7 +114,7 @@ public class StaticCounterResponseFlyweight
      */
     public String toString()
     {
-        return "GlobalCounterResponseFlyweight{" +
+        return "AddStaticCounterFlyweight{" +
             "correlationId=" + correlationId() +
             ", counterId=" + counterId() +
             "}";

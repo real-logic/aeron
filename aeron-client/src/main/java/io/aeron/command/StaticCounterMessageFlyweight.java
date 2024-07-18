@@ -275,7 +275,7 @@ public class StaticCounterMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public String toString()
     {
-        return "GlobalCounterMessageFlyweight{" +
+        return "StaticCounterMessageFlyweight{" +
             "clientId=" + clientId() +
             ", correlationId=" + correlationId() +
             ", registrationId=" + registrationId() +

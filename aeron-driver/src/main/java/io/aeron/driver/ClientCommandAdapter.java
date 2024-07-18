@@ -271,7 +271,7 @@ final class ClientCommandAdapter implements ControlledMessageHandler
 
                     correlationId = staticCounterMessageFlyweight.correlationId();
                     final long clientId = staticCounterMessageFlyweight.clientId();
-                    conductor.onAddGlobalCounter(
+                    conductor.onAddStaticCounter(
                         staticCounterMessageFlyweight.typeId(),
                         buffer,
                         index + staticCounterMessageFlyweight.keyBufferOffset(),

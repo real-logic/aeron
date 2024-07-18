@@ -218,7 +218,7 @@ class CounterTest
 
     @Test
     @InterruptAfter(10)
-    void shouldBeAbleToAddGlobalCounter()
+    void shouldBeAbleToAddStaticCounter()
     {
         TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
 
@@ -271,7 +271,7 @@ class CounterTest
 
     @Test
     @InterruptAfter(10)
-    void shouldReturnExistingGlobalCounterAndNotUpdateAnything()
+    void shouldReturnExistingStaticCounterAndNotUpdateAnything()
     {
         TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
 
@@ -337,7 +337,7 @@ class CounterTest
 
     @Test
     @InterruptAfter(10)
-    void shouldNotDeleteGlobalCounterIfClosed()
+    void shouldNotDeleteStaticCounterIfClosed()
     {
         TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
 
@@ -380,7 +380,7 @@ class CounterTest
 
     @Test
     @InterruptAfter(10)
-    void shouldReturnErrorIfANonGlobalCounterExistsForTypeIdRegistrationId()
+    void shouldReturnErrorIfANonStaticCounterExistsForTypeIdRegistrationId()
     {
         TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
 
@@ -407,7 +407,7 @@ class CounterTest
 
     @Test
     @InterruptAfter(10)
-    void shouldNotCloseGlobalCounterWhenClientInstanceIsClosed()
+    void shouldNotCloseStaticCounterWhenClientInstanceIsClosed()
     {
         TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
 
@@ -442,7 +442,7 @@ class CounterTest
 
     @Test
     @InterruptAfter(10)
-    void shouldNotCloseGlobalCounterIfClientTimesOut()
+    void shouldNotCloseStaticCounterIfClientTimesOut()
     {
         TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
 

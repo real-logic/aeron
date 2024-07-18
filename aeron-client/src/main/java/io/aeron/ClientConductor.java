@@ -1363,7 +1363,7 @@ final class ClientConductor implements Agent
         }
     }
 
-    void onGlobalCounterResponse(final long correlationId, final int counterId)
+    void onAddStaticCounter(final long correlationId, final int counterId)
     {
         resourceByRegIdMap.put(correlationId, (Integer)counterId);
     }

@@ -1150,7 +1150,7 @@ public final class DriverConductor implements Agent
         clientProxy.onCounterReady(correlationId, counter.id());
     }
 
-    void onAddGlobalCounter(
+    void onAddStaticCounter(
         final int typeId,
         final DirectBuffer keyBuffer,
         final int keyOffset,
@@ -1175,7 +1175,7 @@ public final class DriverConductor implements Agent
             }
             else
             {
-                clientProxy.onGlobalCounterResponse(correlationId, counterId);
+                clientProxy.onAddStaticCounter(correlationId, counterId);
             }
         }
         else
@@ -1185,7 +1185,7 @@ public final class DriverConductor implements Agent
 
             countersManager.setCounterRegistrationId(counter.id(), registrationId);
             countersManager.setCounterOwnerId(counter.id(), Aeron.NULL_VALUE);
-            clientProxy.onGlobalCounterResponse(correlationId, counter.id());
+            clientProxy.onAddStaticCounter(correlationId, counter.id());
         }
     }
 

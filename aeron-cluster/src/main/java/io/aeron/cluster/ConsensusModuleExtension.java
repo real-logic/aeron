@@ -92,7 +92,33 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * @param header            representing the metadata for the data.
      * @return The action to be taken with regard to the stream position after the callback.
      */
-    ControlledFragmentHandler.Action onMessage(
+    ControlledFragmentHandler.Action onIngressExtensionMessage(
+        int actingBlockLength,
+        int templateId,
+        int schemaId,
+        int actingVersion,
+        DirectBuffer buffer,
+        int offset,
+        int length,
+        Header header);
+
+    /**
+     * Callback for handling committed log messages (for follower or recovery).
+     * <p>
+     * Within this callback reentrant calls to the {@link io.aeron.Aeron} client are not permitted and
+     * will result in undefined behaviour.
+     *
+     * @param actingBlockLength acting block length.
+     * @param templateId        the message template id (already parsed from header).
+     * @param schemaId          the schema id.
+     * @param actingVersion     acting version from header
+     * @param buffer            containing the data.
+     * @param offset            at which the data begins.
+     * @param length            of the data in bytes.
+     * @param header            representing the metadata for the data.
+     * @return The action to be taken with regard to the stream position after the callback.
+     */
+    ControlledFragmentHandler.Action onLogExtensionMessage(
         int actingBlockLength,
         int templateId,
         int schemaId,
@@ -120,4 +146,9 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * @param clusterSessionId of the opened session which is unique and not reused.
      */
     void onSessionClosed(long clusterSessionId);
+
+    /**
+     * callback when preparing for a new leader - before election
+     */
+    void onPrepareForNewLeadership();
 }

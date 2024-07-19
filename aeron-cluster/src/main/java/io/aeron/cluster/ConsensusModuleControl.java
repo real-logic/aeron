@@ -17,6 +17,8 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.security.AuthorisationService;
+
 import org.agrona.concurrent.IdleStrategy;
 
 import java.util.concurrent.TimeUnit;
@@ -78,6 +80,13 @@ public interface ConsensusModuleControl
      * @return the {@link AeronArchive} client to be used by the extension.
      */
     AeronArchive archive();
+
+    /**
+     * The {@link AuthorisationService} used by the consensus module.
+     *
+     * @return the {@link AuthorisationService} used by the consensus module.
+     */
+    AuthorisationService authorisationService();
 
     /**
      * Lookup a {@link ClusterClientSession} for a given id.

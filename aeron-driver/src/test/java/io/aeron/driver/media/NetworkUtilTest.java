@@ -16,16 +16,17 @@
 package io.aeron.driver.media;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.net.*;
 import java.util.*;
 
+import static io.aeron.driver.media.NetworkUtil.*;
 import static java.lang.Short.parseShort;
 import static java.net.InetAddress.getByName;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
-import static io.aeron.driver.media.NetworkUtil.filterBySubnet;
-import static io.aeron.driver.media.NetworkUtil.isMatchWithPrefix;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -170,6 +171,47 @@ class NetworkUtilTest
         assertThat(filteredBySubnet[0], sameInstance(ifc3));
         assertThat(filteredBySubnet[1], sameInstance(ifc2));
         assertThat(filteredBySubnet[2], sameInstance(ifc1));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "0,0",
+        "1,0x80000000",
+        "2,0xC0000000",
+        "3,0xE0000000",
+        "4,0xF0000000",
+        "5,0xF8000000",
+        "6,0xFC000000",
+        "7,0xFE000000",
+        "8,0xFF000000",
+        "9,0xFF800000",
+        "10,0xFFC00000",
+        "11,0xFFE00000",
+        "12,0xFFF00000",
+        "13,0xFFF80000",
+        "14,0xFFFC0000",
+        "15,0xFFFE0000",
+        "16,0xFFFF0000",
+        "17,0xFFFF8000",
+        "18,0xFFFFC000",
+        "19,0xFFFFE000",
+        "20,0xFFFFF000",
+        "21,0xFFFFF800",
+        "22,0xFFFFFC00",
+        "23,0xFFFFFE00",
+        "24,0xFFFFFF00",
+        "25,0xFFFFFF80",
+        "26,0xFFFFFFC0",
+        "27,0xFFFFFFE0",
+        "28,0xFFFFFFF0",
+        "29,0xFFFFFFF8",
+        "30,0xFFFFFFFC",
+        "31,0xFFFFFFFE",
+        "32,0xFFFFFFFF",
+    })
+    void shouldConvertSubnetPrefixIpV4PrefixToMask(final int subnetPrefix, final long expectedMask)
+    {
+        assertEquals(expectedMask + Integer.MIN_VALUE, prefixLengthToIpV4Mask(subnetPrefix) + Integer.MIN_VALUE);
     }
 
     static class NetworkInterfaceStub implements NetworkInterfaceShim

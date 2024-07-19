@@ -29,22 +29,26 @@ public final class ConsensusControlState
     private final ExclusivePublication logPublication;
     private final long logRecordingId;
     private final long leadershipTermId;
+    private final String leaderLocalLogChannel;
 
     /**
      * record constructor
      *
-     * @param logPublication    publication or null
-     * @param logRecordingId    log recording id
-     * @param leadershipTermId  leadership term id
+     * @param logPublication        publication or null
+     * @param logRecordingId        log recording id
+     * @param leadershipTermId      leadership term id
+     * @param leaderLocalLogChannel leader local log channel or null
      */
     ConsensusControlState(
         final ExclusivePublication logPublication,
         final long logRecordingId,
-        final long leadershipTermId)
+        final long leadershipTermId,
+        final String leaderLocalLogChannel)
     {
         this.logPublication = logPublication;
         this.logRecordingId = logRecordingId;
         this.leadershipTermId = leadershipTermId;
+        this.leaderLocalLogChannel = leaderLocalLogChannel;
     }
 
     /**
@@ -77,5 +81,13 @@ public final class ConsensusControlState
     public long leadershipTermId()
     {
         return leadershipTermId;
+    }
+
+    /**
+     * @return the local log channel (for services or extension). Only applicable for a leader.
+     */
+    public String leaderLocalLogChannel()
+    {
+        return leaderLocalLogChannel;
     }
 }

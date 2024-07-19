@@ -198,11 +198,11 @@ set(HEADERS
 
 add_library(aeron SHARED ${SOURCE} ${HEADERS})
 target_include_directories(aeron
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/aeron>")
 
 add_library(aeron_static STATIC ${SOURCE} ${HEADERS})
 target_include_directories(aeron_static
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/aeron>")
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
@@ -234,8 +234,9 @@ target_link_libraries(
 if (AERON_INSTALL_TARGETS)
     install(
         TARGETS aeron aeron_static
+        EXPORT AeronTargets
         RUNTIME DESTINATION lib
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
-    install(DIRECTORY . DESTINATION include/aeron FILES_MATCHING PATTERN "*.h")
+    install(DIRECTORY ./ DESTINATION include/aeron FILES_MATCHING PATTERN "*.h")
 endif ()

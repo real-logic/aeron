@@ -2423,7 +2423,7 @@ abstract class ArchiveConductor
     public long generateReplayToken(final ControlSession session, final long recordingId)
     {
         long replayToken = NULL_VALUE;
-        while (NULL_VALUE == replayToken)
+        while (NULL_VALUE == replayToken || controlSessionByReplayToken.containsKey(replayToken))
         {
             replayToken = random.nextLong();
         }

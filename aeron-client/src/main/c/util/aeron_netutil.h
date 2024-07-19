@@ -71,6 +71,8 @@ bool aeron_ipv6_does_prefix_match(struct in6_addr *in6_addr1, struct in6_addr *i
 
 size_t aeron_ipv4_netmask_to_prefixlen(struct in_addr *netmask);
 
+uint32_t aeron_ipv4_netmask_from_prefixlen(size_t prefixlen);
+
 size_t aeron_ipv6_netmask_to_prefixlen(struct in6_addr *netmask);
 
 int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_addr, unsigned int *if_index);

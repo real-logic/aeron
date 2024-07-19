@@ -68,7 +68,7 @@ ReplayMerge::ReplayMerge(
     }
 
     m_subscription->addDestination(m_replayDestination);
-    m_timeOfLastProgressMs = m_epochClock();
+    m_timeOfLastProgressMs = m_timeOfNextGetMaxRecordedPositionMs = m_epochClock();
 }
 
 ReplayMerge::~ReplayMerge()
@@ -119,12 +119,9 @@ int ReplayMerge::getRecordingPosition(long long nowMs)
 
     if (aeron::NULL_VALUE == m_activeCorrelationId)
     {
-        const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
-
-        if (m_archive->archiveProxy().getRecordingPosition(m_recordingId, correlationId, m_archive->controlSessionId()))
+        if (callGetMaxRecordedPosition(nowMs))
         {
             m_timeOfLastProgressMs = nowMs;
-            m_activeCorrelationId = correlationId;
             workCount += 1;
         }
     }
@@ -184,6 +181,11 @@ int ReplayMerge::replay(long long nowMs)
         m_replaySessionId = m_archive->controlResponsePoller().relevantId();
         m_timeOfLastProgressMs = nowMs;
         m_activeCorrelationId = aeron::NULL_VALUE;
+
+        // reset getRecordingPosition backoff when moving to CATCHUP state
+        m_getMaxRecordedPositionBackoffMs = REPLAY_MERGE_INITIAL_GET_MAX_RECORDED_POSITION_BACKOFF_MS;
+        m_timeOfNextGetMaxRecordedPositionMs = nowMs;
+
         state(State::CATCHUP);
         workCount += 1;
     }
@@ -233,11 +235,9 @@ int ReplayMerge::attemptLiveJoin(long long nowMs)
 
     if (aeron::NULL_VALUE == m_activeCorrelationId)
     {
-        const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
-
-        if (m_archive->archiveProxy().getRecordingPosition(m_recordingId, correlationId, m_archive->controlSessionId()))
+        if (callGetMaxRecordedPosition(nowMs))
         {
-            m_activeCorrelationId = correlationId;
+            m_timeOfLastProgressMs = nowMs;
             workCount += 1;
         }
     }
@@ -246,17 +246,7 @@ int ReplayMerge::attemptLiveJoin(long long nowMs)
         m_nextTargetPosition = m_archive->controlResponsePoller().relevantId();
         m_activeCorrelationId = aeron::NULL_VALUE;
 
-        if (NULL_POSITION == m_nextTargetPosition)
-        {
-            const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
-
-            if (m_archive->archiveProxy().getRecordingPosition(
-                m_recordingId, correlationId, m_archive->controlSessionId()))
-            {
-                m_activeCorrelationId = correlationId;
-            }
-        }
-        else
+        if (NULL_POSITION != m_nextTargetPosition)
         {
             State nextState = State::CATCHUP;
 
@@ -288,6 +278,33 @@ int ReplayMerge::attemptLiveJoin(long long nowMs)
     }
 
     return workCount;
+}
+
+bool ReplayMerge::callGetMaxRecordedPosition(long long nowMs)
+{
+    if (nowMs < m_timeOfNextGetMaxRecordedPositionMs)
+    {
+        return false;
+    }
+
+    const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
+
+    const bool result = m_archive->archiveProxy().getMaxRecordedPosition(m_recordingId, correlationId, m_archive->controlSessionId());
+
+    if (result)
+    {
+        m_activeCorrelationId = correlationId;
+    }
+
+    // increase backoff regardless of result
+    m_getMaxRecordedPositionBackoffMs *= 2;
+    if (m_getMaxRecordedPositionBackoffMs > REPLAY_MERGE_GET_MAX_RECORDED_POSITION_BACKOFF_MAX_MS)
+    {
+        m_getMaxRecordedPositionBackoffMs = REPLAY_MERGE_GET_MAX_RECORDED_POSITION_BACKOFF_MAX_MS;
+    }
+    m_timeOfNextGetMaxRecordedPositionMs = nowMs + m_getMaxRecordedPositionBackoffMs;
+
+    return result;
 }
 
 void ReplayMerge::stopReplay()

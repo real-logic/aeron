@@ -37,7 +37,14 @@ final class GithubUtil
 
     public static String currentGitHash(final String projectDir) throws IOException, GitAPIException
     {
-        try (Repository repository = new FileRepositoryBuilder().findGitDir(new File(projectDir)).build();
+        final FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder().findGitDir(new File(projectDir));
+        if (repositoryBuilder.getGitDir() == null)
+        {
+            // No .git directory. That will be the case when people download the repo as a zip file.
+            return "unknown";
+        }
+
+        try (Repository repository = repositoryBuilder.build();
             ObjectReader reader = repository.newObjectReader();
             Git git = new Git(repository))
         {

@@ -699,7 +699,7 @@ final class ConsensusModuleAgent
         final int payloadOffset,
         final int payloadLength)
     {
-        if (Cluster.Role.LEADER != role)
+        if (Cluster.Role.LEADER != role || leadershipTermId != this.leadershipTermId)
         {
             return;
         }
@@ -707,14 +707,6 @@ final class ConsensusModuleAgent
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null == session || session.state() != ClusterSession.State.OPEN)
         {
-            return;
-        }
-
-        if (leadershipTermId != this.leadershipTermId)
-        {
-            final String msg =
-                "Invalid leadership term: expected " + this.leadershipTermId + ", got " + leadershipTermId;
-            egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.ERROR, msg);
             return;
         }
 

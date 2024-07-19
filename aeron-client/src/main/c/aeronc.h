@@ -77,6 +77,7 @@ typedef struct aeron_client_registering_resource_stct aeron_async_add_publicatio
 typedef struct aeron_client_registering_resource_stct aeron_async_add_exclusive_publication_t;
 typedef struct aeron_client_registering_resource_stct aeron_async_add_subscription_t;
 typedef struct aeron_client_registering_resource_stct aeron_async_add_counter_t;
+typedef struct aeron_client_registering_resource_stct aeron_async_add_static_counter_t;
 typedef struct aeron_client_registering_resource_stct aeron_async_destination_t;
 
 typedef struct aeron_image_fragment_assembler_stct aeron_image_fragment_assembler_t;
@@ -491,13 +492,47 @@ int aeron_async_add_counter(
     size_t label_buffer_length);
 
 /**
- * Poll the completion of the aeron_async_add_counter call.
+ * Poll the completion of the `aeron_async_add_counter` call.
  *
  * @param counter to set if completed successfully.
  * @param async to check for completion.
  * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
  */
 int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_counter_t *async);
+
+/**
+ * Asynchronously allocates or returns an existing static counter instance using specified `type_id` and
+ * `registration_id`. Such counter cannot be deleted and its lifecycle is decoupled from the client that created it.
+ * Returns an object to use to determine when the counter is available.
+ *
+ * @param async object to use for polling completion.
+ * @param client to add the counter to.
+ * @param type_id for the counter.
+ * @param key_buffer for the counter.
+ * @param key_buffer_length for the counter.
+ * @param label_buffer for the counter.
+ * @param label_buffer_length for the counter.
+ * @param registration_id that uniquely identifies the counter.
+ * @return 0 for success or -1 for an error.
+ */
+int aeron_async_add_static_counter(
+    aeron_async_add_static_counter_t **async,
+    aeron_t *client,
+    int32_t type_id,
+    const uint8_t *key_buffer,
+    size_t key_buffer_length,
+    const char *label_buffer,
+    size_t label_buffer_length,
+    int64_t registration_id);
+
+/**
+ * Poll the completion of the `aeron_async_add_static_counter` call.
+ *
+ * @param counter to set if completed successfully.
+ * @param async to check for completion.
+ * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
+ */
+int aeron_async_add_static_counter_poll(aeron_counter_t **counter, aeron_async_add_static_counter_t *async);
 
 typedef struct aeron_on_available_counter_pair_stct
 {
@@ -691,6 +726,17 @@ typedef void (*aeron_counters_reader_foreach_counter_func_t)(
  */
 void aeron_counters_reader_foreach_counter(
     aeron_counters_reader_t *counters_reader, aeron_counters_reader_foreach_counter_func_t func, void *clientd);
+
+/**
+ * Iterate over allocated counters and find the first matching a given type id and registration id.
+ *
+ * @param counters_reader
+ * @param type_id to find.
+ * @param registration_id to find.
+ * @return the counter id if found otherwise AERON_NULL_COUNTER_ID.
+ */
+int32_t aeron_counters_reader_find_by_type_id_and_registration_id(
+    aeron_counters_reader_t *counters_reader, int32_t type_id, int64_t registration_id);
 
 /**
  * Get the current max counter id.

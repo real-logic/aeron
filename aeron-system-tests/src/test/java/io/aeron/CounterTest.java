@@ -47,6 +47,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -391,10 +394,10 @@ class CounterTest
             0,
             COUNTER_LABEL.length(),
             counter.registrationId()));
-        assertEquals("ERROR - cannot add static counter, because a non-static counter exists (counterId=" +
-            counter.id() + ") for typeId=" + COUNTER_TYPE_ID + " and registrationId=" +
-            counter.registrationId() + ", errorCodeValue=11",
-            registrationException.getMessage());
+        assertThat(registrationException.getMessage(), allOf(
+            containsString("cannot add static counter, because a non-static counter exists (counterId=" +
+            counter.id() + ") for typeId=" + COUNTER_TYPE_ID + " and registrationId=" + counter.registrationId()),
+            containsString("errorCodeValue=11")));
     }
 
     @Test

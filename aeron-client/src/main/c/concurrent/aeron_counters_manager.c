@@ -18,7 +18,6 @@
 #include <math.h>
 #include <errno.h>
 #include <inttypes.h>
-#include <stdio.h>
 
 #include "aeron_alloc.h"
 #include "concurrent/aeron_counters_manager.h"

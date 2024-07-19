@@ -16,6 +16,7 @@
 package io.aeron.agent;
 
 import io.aeron.cluster.codecs.CloseReason;
+import io.aeron.test.Tests;
 import org.agrona.SemanticVersion;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -31,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.ClusterEventEncoder.*;
+import static io.aeron.agent.ClusterEventEncoder.MAX_REASON_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.STATE_SEPARATOR;
 import static io.aeron.agent.CommonEventEncoder.enumName;
@@ -182,7 +184,8 @@ class ClusterEventLoggerTest
         final long logLeadershipTermId = -9L;
         final long appendPosition = 16 * 1024L;
         final long catchupPosition = 8192L;
-        final int length = electionStateChangeLength(from, to);
+        final String reason = Tests.generateStringWithSuffix("reason-", "x", MAX_REASON_LENGTH * 5);
+        final int length = electionStateChangeLength(from, to, reason);
 
         logger.logElectionStateChange(
             memberId,
@@ -194,7 +197,8 @@ class ClusterEventLoggerTest
             logPosition,
             logLeadershipTermId,
             appendPosition,
-            catchupPosition);
+            catchupPosition,
+            reason);
 
         verifyLogHeader(logBuffer, offset, ELECTION_STATE_CHANGE.toEventCodeId(), length, length);
         int index = encodedMsgOffset(offset) + LOG_HEADER_LENGTH;
@@ -214,14 +218,18 @@ class ClusterEventLoggerTest
         index += SIZE_OF_INT;
         assertEquals(leaderId, logBuffer.getInt(index, LITTLE_ENDIAN));
         index += SIZE_OF_INT;
-        assertEquals(from.name() + STATE_SEPARATOR + "null", logBuffer.getStringAscii(index));
+        final String encodedStateTransition = from.name() + STATE_SEPARATOR + "null";
+        assertEquals(encodedStateTransition, logBuffer.getStringAscii(index));
+        index += SIZE_OF_INT + encodedStateTransition.length();
+        final String trailingReason = reason.substring(0, MAX_REASON_LENGTH - 3) + "...";
+        assertEquals(trailingReason, logBuffer.getStringAscii(index));
 
         final StringBuilder sb = new StringBuilder();
         ClusterEventDissector.dissectElectionStateChange(logBuffer, encodedMsgOffset(offset), sb);
 
         final String expectedMessagePattern = "\\[[0-9]+\\.[0-9]+] CLUSTER: ELECTION_STATE_CHANGE " +
-            "\\[72/72]: memberId=18 ERAS -> null leaderId=-1 candidateTermId=29 leadershipTermId=0 " +
-            "logPosition=100 logLeadershipTermId=-9 appendPosition=16384 catchupPosition=8192";
+            "\\[376/376]: memberId=18 ERAS -> null leaderId=-1 candidateTermId=29 leadershipTermId=0 " +
+            "logPosition=100 logLeadershipTermId=-9 appendPosition=16384 catchupPosition=8192 reason=" + trailingReason;
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }

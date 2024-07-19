@@ -5525,9 +5525,6 @@ int aeron_driver_conductor_on_add_static_counter(aeron_driver_conductor_t *condu
 
         int64_t saved_owner_id;
         aeron_counters_reader_counter_owner_id(reader, counter_id, &saved_owner_id);
-
-        fprintf(stdout, "[C] create static counter: type_id=%d registration_id=%lld saved_registration_id=%lld saved_owner_id=%lld\n", command->type_id, command->registration_id, saved_registration_id, saved_owner_id);
-        fflush(stdout);
     }
 
     aeron_driver_conductor_on_static_counter(conductor, command->correlated.correlation_id, counter_id);

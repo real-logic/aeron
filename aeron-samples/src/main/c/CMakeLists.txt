@@ -37,6 +37,7 @@ set(HEADERS
     samples_configuration.h
     sample_util.h)
 
+add_executable(archive_test archive_test.c ${HEADERS} ${SOURCES})
 add_executable(basic_publisher basic_publisher.c ${HEADERS} ${SOURCES})
 add_executable(basic_subscriber basic_subscriber.c ${HEADERS} ${SOURCES})
 add_executable(basic_mds_subscriber basic_mds_subscriber.c ${HEADERS} ${SOURCES})
@@ -53,6 +54,12 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     add_dependencies(ping_pong_raw hdr_histogram)
     target_link_libraries(ping_pong_raw m hdr_histogram_static)
 endif ()
+
+target_include_directories(archive_test
+    PUBLIC ${AERON_C_ARCHIVE_SOURCE_PATH})
+target_link_libraries(archive_test
+    ${CLIENT_LINK_LIB}
+    "aeron_archive_c_client")
 
 target_link_libraries(basic_publisher
     ${CLIENT_LINK_LIB})
@@ -102,6 +109,7 @@ target_link_libraries(LossStat ${CLIENT_LINK_LIB})
 if (AERON_INSTALL_TARGETS)
     install(
         TARGETS
+        archive_test
         basic_publisher
         basic_subscriber
         rate_subscriber

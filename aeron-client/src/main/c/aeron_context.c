@@ -110,7 +110,13 @@ int aeron_context_init(aeron_context_t **context)
 
     if ((value = getenv(AERON_CLIENT_NAME_ENV_VAR)))
     {
-        _context->client_name = value;
+        size_t name_length = strlen(value);
+        if (aeron_alloc((void **)&_context->client_name, name_length + 1) < 0)
+        {
+            AERON_APPEND_ERR("%s", "Unable to allocate client_name");
+            return -1;
+        }
+        snprintf(_context->client_name, name_length + 1, "%s", value);
     }
 
     if ((value = getenv(AERON_DRIVER_TIMEOUT_ENV_VAR)))
@@ -216,7 +222,13 @@ int aeron_context_set_client_name(aeron_context_t *context, const char *value)
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
 
-    context->client_name = value;
+    size_t name_length = strlen(value);
+    if (aeron_reallocf((void **)&context->client_name, name_length + 1) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Unable to reallocate context->client_name");
+        return -1;
+    }
+    snprintf(context->client_name, name_length + 1, "%s", value);
     return 0;
 }
 

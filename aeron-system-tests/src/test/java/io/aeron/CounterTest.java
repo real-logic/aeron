@@ -220,8 +220,6 @@ class CounterTest
     @InterruptAfter(10)
     void shouldBeAbleToAddStaticCounter()
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
-
         final AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
         final UnavailableCounterHandler unavailableCounterHandlerClientA = mock(UnavailableCounterHandler.class);
         clientA.addAvailableCounterHandler(availableCounterHandlerClientA);
@@ -273,8 +271,6 @@ class CounterTest
     @InterruptAfter(10)
     void shouldReturnExistingStaticCounterAndNotUpdateAnything()
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
-
         final AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
         final UnavailableCounterHandler unavailableCounterHandlerClientA = mock(UnavailableCounterHandler.class);
         clientA.addAvailableCounterHandler(availableCounterHandlerClientA);
@@ -339,8 +335,6 @@ class CounterTest
     @InterruptAfter(10)
     void shouldNotDeleteStaticCounterIfClosed()
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
-
         final AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
         final UnavailableCounterHandler unavailableCounterHandlerClientA = mock(UnavailableCounterHandler.class);
         clientA.addAvailableCounterHandler(availableCounterHandlerClientA);
@@ -382,8 +376,6 @@ class CounterTest
     @InterruptAfter(10)
     void shouldReturnErrorIfANonStaticCounterExistsForTypeIdRegistrationId()
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
-
         final Counter counter = clientA.addCounter(COUNTER_TYPE_ID, "test session-specific counter");
         assertNotEquals(NULL_VALUE, counter.registrationId());
         assertEquals(clientA.clientId(), clientA.countersReader().getCounterOwnerId(counter.id()));
@@ -409,8 +401,6 @@ class CounterTest
     @InterruptAfter(10)
     void shouldNotCloseStaticCounterWhenClientInstanceIsClosed()
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
-
         final AtomicBoolean clientClosed = new AtomicBoolean();
         clientA.addCloseHandler(() -> clientClosed.set(true));
 
@@ -444,8 +434,6 @@ class CounterTest
     @InterruptAfter(10)
     void shouldNotCloseStaticCounterIfClientTimesOut()
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("not implemented");
-
         final AvailableCounterHandler availableCounterHandler = mock(AvailableCounterHandler.class);
         final UnavailableCounterHandler unavailableCounterHandler = mock(UnavailableCounterHandler.class);
         final ErrorHandler errorHandler = mock(ErrorHandler.class);

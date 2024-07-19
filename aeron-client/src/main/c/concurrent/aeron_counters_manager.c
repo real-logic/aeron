@@ -356,9 +356,6 @@ int32_t aeron_counters_reader_find_by_type_id_and_registration_id(
         {
             if (type_id == record->type_id)
             {
-                fprintf(stdout, "[C] match on type_id=%d \n", type_id);
-                fflush(stdout);
-
                 int64_t counter_registration_id;
                 aeron_counter_value_descriptor_t *value_descriptor = (aeron_counter_value_descriptor_t *)(
                     counters_reader->values + AERON_COUNTER_OFFSET(counter_id));

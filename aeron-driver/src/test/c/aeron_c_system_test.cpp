@@ -214,6 +214,35 @@ TEST_P(CSystemTest, shouldAddAndCloseCounter)
     }
 }
 
+TEST_P(CSystemTest, shouldAddStaticCounter)
+{
+    std::atomic<bool> counterClosedFlag(false);
+    aeron_async_add_static_counter_t *async = nullptr;
+    aeron_counter_constants_t counter_constants;
+
+    ASSERT_TRUE(connect());
+
+    const char *key = "my static key";
+    size_t key_length = strlen(key);
+    const char *label = "my static counter label";
+    size_t label_length = strlen(label);
+    int64_t registration_id = -51515155188822;
+    ASSERT_EQ(aeron_async_add_static_counter(
+        &async, m_aeron, 12, (uint8_t *)key, key_length, label, label_length, registration_id), 0);
+
+    aeron_counter_t *counter = awaitStaticCounterOrError(async);
+    ASSERT_TRUE(counter) << aeron_errmsg();
+    ASSERT_EQ(0, aeron_counter_constants(counter, &counter_constants));
+    ASSERT_EQ(registration_id, counter_constants.registration_id);
+
+    aeron_counter_close(counter, setFlagOnClose, &counterClosedFlag);
+
+    while (!counterClosedFlag)
+    {
+        std::this_thread::yield();
+    }
+}
+
 TEST_P(CSystemTest, shouldAddPublicationAndSubscription)
 {
     aeron_async_add_publication_t *async_pub = nullptr;

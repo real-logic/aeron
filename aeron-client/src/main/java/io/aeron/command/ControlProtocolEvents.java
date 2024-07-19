@@ -153,5 +153,5 @@ public class ControlProtocolEvents
     /**
      * A response to {@link #ADD_STATIC_COUNTER} command.
      */
-    public static final int ON_ADD_STATIC_COUNTER = 0x0F0B;
+    public static final int ON_STATIC_COUNTER = 0x0F0B;
 }

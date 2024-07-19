@@ -1175,7 +1175,7 @@ public final class DriverConductor implements Agent
             }
             else
             {
-                clientProxy.onAddStaticCounter(correlationId, counterId);
+                clientProxy.onStaticCounter(correlationId, counterId);
             }
         }
         else
@@ -1185,7 +1185,7 @@ public final class DriverConductor implements Agent
 
             countersManager.setCounterRegistrationId(counter.id(), registrationId);
             countersManager.setCounterOwnerId(counter.id(), Aeron.NULL_VALUE);
-            clientProxy.onAddStaticCounter(correlationId, counter.id());
+            clientProxy.onStaticCounter(correlationId, counter.id());
         }
     }
 

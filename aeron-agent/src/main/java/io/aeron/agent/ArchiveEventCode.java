@@ -106,7 +106,10 @@ public enum ArchiveEventCode implements EventCode
         (event, buffer, offset, builder) -> dissectReplaySessionStateChange(buffer, offset, builder)),
 
     RECORDING_SESSION_STATE_CHANGE(44, -1,
-        (event, buffer, offset, builder) -> dissectRecordingSessionStateChange(buffer, offset, builder));
+        (event, buffer, offset, builder) -> dissectRecordingSessionStateChange(buffer, offset, builder)),
+
+    CMD_IN_MAX_RECORDED_POSITION(
+        45, MaxRecordedPositionRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest);
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final ArchiveEventCode[] EVENT_CODE_BY_ID;

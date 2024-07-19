@@ -146,4 +146,9 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * @param clusterSessionId of the opened session which is unique and not reused.
      */
     void onSessionClosed(long clusterSessionId);
+
+    /**
+     * callback when preparing for a new leader - before election
+     */
+    void onPrepareForNewLeadership();
 }

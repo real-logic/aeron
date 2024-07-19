@@ -241,7 +241,7 @@ public final class NetworkUtil
         throw new IllegalArgumentException("how many bytes does an IP address have again?");
     }
 
-    private static int prefixLengthToIpV4Mask(final int subnetPrefix)
+    static int prefixLengthToIpV4Mask(final int subnetPrefix)
     {
         return 0 == subnetPrefix ? 0 : -(1 << 32 - subnetPrefix);
     }

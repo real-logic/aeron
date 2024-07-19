@@ -174,5 +174,9 @@ class ClusterWithNoServicesTest
         public void onSessionClosed(final long clusterSessionId)
         {
         }
+
+        public void onPrepareForNewLeadership()
+        {
+        }
     }
 }

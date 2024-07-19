@@ -165,6 +165,7 @@ final class ConsensusModuleAgent
     private String catchupLogDestination;
     private String ingressEndpoints;
     private StandbySnapshotReplicator standbySnapshotReplicator = null;
+    private String localLogChannel;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {
@@ -489,6 +490,14 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    public AuthorisationService authorisationService()
+    {
+        return authorisationService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public ClusterClientSession getClientSession(final long clusterSessionId)
     {
         return sessionByIdMap.get(clusterSessionId);
@@ -690,7 +699,7 @@ final class ConsensusModuleAgent
         final int payloadOffset,
         final int payloadLength)
     {
-        if (Cluster.Role.LEADER != role)
+        if (Cluster.Role.LEADER != role || leadershipTermId != this.leadershipTermId)
         {
             return;
         }
@@ -698,14 +707,6 @@ final class ConsensusModuleAgent
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null == session || session.state() != ClusterSession.State.OPEN)
         {
-            return;
-        }
-
-        if (leadershipTermId != this.leadershipTermId)
-        {
-            final String msg =
-                "Invalid leadership term: expected " + this.leadershipTermId + ", got " + leadershipTermId;
-            egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.ERROR, msg);
             return;
         }
 
@@ -1339,6 +1340,10 @@ final class ConsensusModuleAgent
         {
             awaitLocalSocketsClosed(logSubscriptionRegistrationId);
         }
+        if (null != consensusModuleExtension)
+        {
+            consensusModuleExtension.onPrepareForNewLeadership();
+        }
 
         return lastAppendPosition;
     }
@@ -1593,7 +1598,7 @@ final class ConsensusModuleAgent
         if (null != consensusModuleExtension)
         {
             consensusModuleExtension.onNewLeadershipTerm(
-                new ConsensusControlState(null, logRecordingId, leadershipTermId));
+                new ConsensusControlState(null, logRecordingId, leadershipTermId, null));
         }
     }
 
@@ -1659,8 +1664,9 @@ final class ConsensusModuleAgent
             idle();
         }
 
+        localLogChannel = isIpc ? channel : SPY_PREFIX + channel;
         awaitServicesReady(
-            isIpc ? channel : SPY_PREFIX + channel,
+            localLogChannel,
             ctx.logStreamId(),
             logSessionId,
             logPosition,
@@ -1842,6 +1848,7 @@ final class ConsensusModuleAgent
             timeOfLastLogUpdateNs = nowNs;
             timeOfLastAppendPositionUpdateNs = nowNs;
             timeOfLastAppendPositionSendNs = nowNs;
+            localLogChannel = null;
         }
         NodeControl.ToggleState.activate(nodeControlToggle);
 
@@ -1856,7 +1863,7 @@ final class ConsensusModuleAgent
         if (null != consensusModuleExtension)
         {
             consensusModuleExtension.onElectionComplete(new ConsensusControlState(
-                logPublisher.publication(), logRecordingId, leadershipTermId));
+                logPublisher.publication(), logRecordingId, leadershipTermId, localLogChannel));
         }
         election = null;
 

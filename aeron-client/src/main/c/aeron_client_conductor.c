@@ -1119,7 +1119,14 @@ void aeron_client_conductor_on_cmd_close_counter(void *clientd, void *item)
     aeron_notification_t on_close_complete = counter->on_close_complete;
     void *on_close_complete_clientd = counter->on_close_complete_clientd;
 
-    aeron_int64_to_ptr_hash_map_remove(&conductor->resource_by_id_map, counter->registration_id);
+    if (NULL != aeron_int64_to_ptr_hash_map_remove(&conductor->resource_by_id_map, counter->registration_id))
+    {
+        if (aeron_client_conductor_offer_remove_command(
+            conductor, counter->registration_id, AERON_COMMAND_REMOVE_COUNTER) < 0)
+        {
+            return;
+        }
+    }
 
     aeron_counter_delete(counter);
 
@@ -1790,12 +1797,6 @@ int aeron_client_conductor_async_close_counter(
     counter->command_base.item = NULL;
     counter->on_close_complete = on_close_complete;
     counter->on_close_complete_clientd = on_close_complete_clientd;
-
-    if (aeron_client_conductor_offer_remove_command(
-        conductor, counter->registration_id, AERON_COMMAND_REMOVE_COUNTER) < 0)
-    {
-        return -1;
-    }
 
     if (conductor->invoker_mode)
     {

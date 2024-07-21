@@ -116,6 +116,11 @@ bool aeron_archive_control_response_poller_is_poll_complete(aeron_archive_contro
     return poller->is_poll_complete;
 }
 
+bool aeron_archive_control_response_poller_is_recording_signal(aeron_archive_control_response_poller_t *poller)
+{
+    return poller->is_recording_signal;
+}
+
 bool aeron_archive_control_response_poller_was_challenged(aeron_archive_control_response_poller_t *poller)
 {
     return poller->was_challenged;
@@ -129,6 +134,11 @@ bool aeron_archive_control_response_poller_is_code_ok(aeron_archive_control_resp
 bool aeron_archive_control_response_poller_is_code_error(aeron_archive_control_response_poller_t *poller)
 {
     return poller->is_code_error;
+}
+
+int aeron_archive_control_response_poller_code_value(aeron_archive_control_response_poller_t *poller)
+{
+    return poller->code_value;
 }
 
 int64_t aeron_archive_control_response_poller_correlation_id(aeron_archive_control_response_poller_t  *poller)
@@ -215,6 +225,8 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
         {
             struct aeron_archive_client_controlResponse control_response;
 
+            fprintf(stderr, "  <- control response\n");
+
             aeron_archive_client_controlResponse_wrap_for_decode(
                 &control_response,
                 (char *)buffer,
@@ -247,9 +259,38 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
             return AERON_ACTION_BREAK;
         }
         case AERON_ARCHIVE_CLIENT_CHALLENGE_SBE_TEMPLATE_ID:
+            // TODO
             return AERON_ACTION_BREAK;
         case AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_EVENT_SBE_TEMPLATE_ID:
+        {
+            struct aeron_archive_client_recordingSignalEvent recording_signal_event;
+
+            fprintf(stderr, "  <- recording signal event\n");
+
+            aeron_archive_client_recordingSignalEvent_wrap_for_decode(
+                &recording_signal_event,
+                (char *)buffer,
+                aeron_archive_client_messageHeader_encoded_length(),
+                aeron_archive_client_recordingSignalEvent_sbe_block_length(),
+                aeron_archive_client_recordingSignalEvent_sbe_schema_version(),
+                length);
+
+            poller->control_session_id = aeron_archive_client_recordingSignalEvent_controlSessionId(&recording_signal_event);
+            poller->correlation_id = aeron_archive_client_recordingSignalEvent_correlationId(&recording_signal_event);
+            poller->recording_id = aeron_archive_client_recordingSignalEvent_recordingId(&recording_signal_event);
+            poller->subscription_id = aeron_archive_client_recordingSignalEvent_subscriptionId(&recording_signal_event);
+            poller->position = aeron_archive_client_recordingSignalEvent_position(&recording_signal_event);
+
+            if (!aeron_archive_client_recordingSignalEvent_signal(&recording_signal_event, &poller->recording_signal_code))
+            {
+                // TODO
+            }
+
+            poller->is_recording_signal = true;
+            poller->is_poll_complete = true;
+
             return AERON_ACTION_BREAK;
+        }
         default:
             // do nothing
     }

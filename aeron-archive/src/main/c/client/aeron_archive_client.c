@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
+#include <sys/errno.h>
+
 #include "aeron_archive.h"
+#include "aeron_archive_context.h"
 #include "aeron_archive_client.h"
 
 #include "aeronc.h"
 #include "aeron_alloc.h"
+#include "aeron_agent.h"
 #include "util/aeron_error.h"
 
 struct aeron_archive_stct
@@ -31,8 +35,57 @@ struct aeron_archive_stct
     int64_t archive_id;
 };
 
+int aeron_archive_poll_for_response(
+    int64_t *relevant_id,
+    aeron_archive_t *aeron_archive,
+    const char *operation_name,
+    int64_t correlation_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
+
+/* **************** */
+
+int aeron_archive_connect(aeron_archive_t **aeron_archive, aeron_archive_context_t *ctx /*, TODO my-cool-idle-strategy */)
+{
+    aeron_archive_async_connect_t *async;
+
+    // TODO ensure *aeron_archive == NULL
+
+    const uint64_t idle_duration_ns = UINT64_C(1000) * UINT64_C(1000); /* 1ms */
+
+    if (aeron_archive_async_connect(&async, ctx) < 0)
+    {
+        // TODO
+        return -1;
+    }
+
+    if (aeron_archive_async_connect_poll(aeron_archive, async) < 0)
+    {
+        // TODO
+        return -1;
+    }
+
+    while (NULL == *aeron_archive)
+    {
+        aeron_idle_strategy_sleeping_idle((void *)&idle_duration_ns, 0);
+
+        if (aeron_archive_async_connect_poll(aeron_archive, async) < 0)
+        {
+            // TODO
+            return -1;
+        }
+
+        // _poll returned either 0 or 1
+        // 0 leaves *aeron_archive as NULL, which is basically 'continue'
+        // 1 sets *aeron_archive, which is basically a 'break'
+        // if we sit in this loop for 'too long', eventually _poll will return -1
+    }
+
+    return 0;
+}
+
 int aeron_archive_create(
-    aeron_archive_t **client,
+    aeron_archive_t **aeron_archive,
     aeron_archive_context_t *ctx,
     aeron_archive_proxy_t *archive_proxy,
     aeron_archive_control_response_poller_t *control_response_poller,
@@ -42,31 +95,395 @@ int aeron_archive_create(
     int64_t control_session_id,
     int64_t archive_id)
 {
-    aeron_archive_t *_client = NULL;
+    aeron_archive_t *_aeron_archive = NULL;
 
-    if (aeron_alloc((void **)&_client, sizeof(aeron_archive_t)) < 0)
+    if (aeron_alloc((void **)&_aeron_archive, sizeof(aeron_archive_t)) < 0)
     {
         AERON_APPEND_ERR("%s", "Unable to allocate aeron_archive_t");
         return -1;
     }
 
-    _client->ctx = ctx;
-    _client->archive_proxy = archive_proxy;
-    _client->control_response_poller = control_response_poller;
-    _client->aeron = aeron;
-    _client->control_session_id = control_session_id;
-    _client->archive_id = archive_id;
+    _aeron_archive->ctx = ctx;
+    _aeron_archive->archive_proxy = archive_proxy;
+    _aeron_archive->control_response_poller = control_response_poller;
+    _aeron_archive->aeron = aeron;
+    _aeron_archive->control_session_id = control_session_id;
+    _aeron_archive->archive_id = archive_id;
 
-    *client = _client;
+    *aeron_archive = _aeron_archive;
     return 0;
 }
 
-int64_t aeron_archive_get_archive_id(aeron_archive_t *client)
+int aeron_archive_start_recording(
+    int64_t *subscription_id_p,
+    aeron_archive_t *aeron_archive,
+    const char *recording_channel,
+    int32_t recording_stream_id,
+    aeron_archive_source_location_t source_location,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
 {
-    return client->archive_id;
+    // TODO lock
+
+    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+
+    if (!aeron_archive_proxy_start_recording(
+        aeron_archive->archive_proxy,
+        recording_channel,
+        recording_stream_id,
+        source_location == AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        correlation_id,
+        aeron_archive->control_session_id,
+        idle_strategy_func,
+        idle_strategy_state))
+    {
+        AERON_APPEND_ERR("%s", "");
+        // TODO unlock
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        subscription_id_p,
+        aeron_archive,
+        "AeronArchive::startRecording",
+        correlation_id,
+        idle_strategy_func,
+        idle_strategy_state);
+
+    // TODO unlock
+
+    return rc;
 }
 
-aeron_archive_control_response_poller_t *aeron_archive_get_control_response_poller(aeron_archive_t *client)
+int aeron_archive_get_recording_position(
+    int64_t *recording_position_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
 {
-    return client->control_response_poller;
+    // TODO lock
+
+    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+
+    if (!aeron_archive_proxy_get_recording_position(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id,
+        idle_strategy_func,
+        idle_strategy_state))
+    {
+        AERON_APPEND_ERR("%s", "");
+        // TODO unlock
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        recording_position_p,
+        aeron_archive,
+        "AeronArchive::getRecordingPosition",
+        correlation_id,
+        idle_strategy_func,
+        idle_strategy_state);
+
+    // TODO unlock
+
+    return rc;
+}
+
+int aeron_archive_get_stop_position(
+    int64_t *stop_position_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    // TODO lock
+
+    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+
+    if (!aeron_archive_proxy_get_stop_position(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id,
+        idle_strategy_func,
+        idle_strategy_state))
+    {
+        AERON_APPEND_ERR("%s", "");
+        // TODO unlock
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        stop_position_p,
+        aeron_archive,
+        "AeronArchive::getStopPosition",
+        correlation_id,
+        idle_strategy_func,
+        idle_strategy_state);
+
+    // TODO unlock
+
+    return rc;
+}
+
+int aeron_archive_get_max_recorded_position(
+    int64_t *max_recorded_position_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    // TODO lock
+
+    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+
+    if (!aeron_archive_proxy_get_max_recorded_position(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id,
+        idle_strategy_func,
+        idle_strategy_state))
+    {
+        AERON_APPEND_ERR("%s", "");
+        // TODO unlock
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        max_recorded_position_p,
+        aeron_archive,
+        "AeronArchive::getMaxRecordedPosition",
+        correlation_id,
+        idle_strategy_func,
+        idle_strategy_state);
+
+    // TODO unlock
+
+    return rc;
+}
+
+int aeron_archive_stop_recording(
+    aeron_archive_t *aeron_archive,
+    int64_t subscription_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    // TODO lock
+
+    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+
+    if (!aeron_archive_proxy_stop_recording(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        subscription_id,
+        idle_strategy_func,
+        idle_strategy_state))
+    {
+        AERON_APPEND_ERR("%s", "");
+        // TODO unlock
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        NULL,
+        aeron_archive,
+        "AeronArchive::stopRecording",
+        correlation_id,
+        idle_strategy_func,
+        idle_strategy_state);
+
+    // TODO unlock
+
+    return rc;
+}
+
+int aeron_archive_find_last_matching_recording(
+    int64_t *recording_id_p,
+    aeron_archive_t *aeron_archive,
+    int64_t min_recording_id,
+    const char *channel_fragment,
+    int32_t stream_id,
+    int32_t session_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    // TODO lock
+
+    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+
+    if (!aeron_archive_proxy_find_last_matching_recording(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        min_recording_id,
+        channel_fragment,
+        stream_id,
+        session_id,
+        idle_strategy_func,
+        idle_strategy_state))
+    {
+        AERON_APPEND_ERR("%s", "");
+        // TODO unlock
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        recording_id_p,
+        aeron_archive,
+        "AeronArchive::findLastMatchingRecording",
+        correlation_id,
+        idle_strategy_func,
+        idle_strategy_state);
+
+    // TODO unlock
+
+    return rc;
+}
+
+aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive)
+{
+    return aeron_archive->aeron;
+}
+
+int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive)
+{
+    return aeron_archive->archive_id;
+}
+
+aeron_archive_control_response_poller_t *aeron_archive_get_control_response_poller(aeron_archive_t *aeron_archive)
+{
+    return aeron_archive->control_response_poller;
+}
+
+/* **************** */
+
+int aeron_archive_poll_next_response(
+    aeron_archive_t *aeron_archive,
+    const char *operation_name,
+    int64_t correlation_id,
+    int64_t deadline_ns,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
+
+    while (true)
+    {
+        int fragments = aeron_archive_control_response_poller_poll(poller);
+
+        if (aeron_archive_control_response_poller_is_poll_complete(poller))
+        {
+            if (aeron_archive_control_response_poller_is_recording_signal(poller) &&
+                aeron_archive_control_response_poller_control_session_id(poller) == aeron_archive->control_session_id)
+            {
+                // TODO dispatch recording signal???
+                continue;
+            }
+
+            break;
+        }
+
+        if (fragments > 0)
+        {
+            continue;
+        }
+
+        {
+            aeron_subscription_t *subscription;
+
+            subscription = aeron_archive_control_response_poller_get_subscription(poller);
+            if (!aeron_subscription_is_connected(subscription))
+            {
+                AERON_SET_ERR(-1, "%s", "subscription to archive is not connected");
+                return -1;
+            }
+        }
+
+        if (aeron_nano_clock() > deadline_ns)
+        {
+            AERON_SET_ERR(ETIMEDOUT, "%s awaiting response - correlationId=%llu", operation_name, correlation_id);
+            return -1;
+        }
+
+        idle_strategy_func(idle_strategy_state, 0);
+
+        // TODO invoke aeron client???
+    }
+
+    return 0;
+}
+
+int aeron_archive_poll_for_response(
+    int64_t *relevant_id_p,
+    aeron_archive_t *aeron_archive,
+    const char *operation_name,
+    int64_t correlation_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
+
+    int64_t deadline_ns = aeron_nano_clock() + aeron_archive_context_get_message_timeout_ns(aeron_archive->ctx);
+
+    while (true)
+    {
+        if (aeron_archive_poll_next_response(
+            aeron_archive,
+            operation_name,
+            correlation_id,
+            deadline_ns,
+            idle_strategy_func,
+            idle_strategy_state) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+
+        // make sure the session id matches
+        if (aeron_archive_control_response_poller_control_session_id(poller) != aeron_archive->control_session_id)
+        {
+            // TODO invoke aeron client??
+            continue;
+        }
+
+        if (aeron_archive_control_response_poller_is_code_error(poller))
+        {
+            if (aeron_archive_control_response_poller_correlation_id(poller) == correlation_id)
+            {
+                // got an error, and the correlation ids match
+                AERON_SET_ERR(
+                    -1,
+                    "response for correlationId=%llu, error: %s",
+                    correlation_id,
+                    aeron_archive_control_response_poller_error_message(poller));
+                return -1;
+            }
+            /* // TODO
+            else if (error_handler(aeron_archive->ctx) != NULL)
+            {
+
+            }
+             */
+        }
+        else if (aeron_archive_control_response_poller_correlation_id(poller) == correlation_id)
+        {
+            if (!aeron_archive_control_response_poller_is_code_ok(poller))
+            {
+                AERON_SET_ERR(-1, "unexpected response code: %i", aeron_archive_control_response_poller_code_value(poller));
+                return -1;
+            }
+
+            if (NULL != relevant_id_p)
+            {
+                *relevant_id_p = aeron_archive_control_response_poller_relevant_id(poller);
+            }
+
+            return 0;
+        }
+    }
 }

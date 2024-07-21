@@ -29,6 +29,5 @@ char *aeron_archive_context_get_control_response_channel(aeron_archive_context_t
 int32_t aeron_archive_context_get_control_response_stream_id(aeron_archive_context_t *ctx);
 
 int64_t aeron_archive_context_get_message_timeout_ns(aeron_archive_context_t *ctx);
-int aeron_archive_context_set_message_timeout_ns(aeron_archive_context_t *ctx, int64_t message_timeout_ns);
 
 #endif //AERON_ARCHIVE_CLIENT_CONTEXT_H

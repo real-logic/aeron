@@ -14,21 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef AERON_ARCHIVE_CLIENT_H
-#define AERON_ARCHIVE_CLIENT_H
+#ifndef AERON_ARCHIVE_RECORDING_POS_H
+#define AERON_ARCHIVE_RECORDING_POS_H
 
-#include "aeron_archive_proxy.h"
-#include "aeron_archive_control_response_poller.h"
+#include "aeron_archive.h"
 
-int aeron_archive_create(
-    aeron_archive_t **aeron_archive,
-    aeron_archive_context_t *ctx,
-    aeron_archive_proxy_t *archive_proxy,
-    aeron_archive_control_response_poller_t *control_response_poller,
-    void *recording_descriptor_poller,
-    void *recording_subscription_descriptor_poller,
-    aeron_t *aeron,
-    int64_t control_session_id,
-    int64_t archive_id);
+//int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters_reader_t *counters_reader, int32_t session_id);
 
-#endif //AERON_ARCHIVE_CLIENT_H
+#endif //AERON_ARCHIVE_RECORDING_POS_H

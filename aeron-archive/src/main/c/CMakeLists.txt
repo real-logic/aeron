@@ -90,6 +90,7 @@ SET(SOURCE
     client/aeron_archive_context.c
     client/aeron_archive_control_response_poller.c
     client/aeron_archive_proxy.c
+    client/aeron_archive_recording_pos.c
     client/aeron_archive_something.c
 )
 
@@ -100,6 +101,7 @@ SET(HEADERS
     client/aeron_archive_context.h
     client/aeron_archive_control_response_poller.h
     client/aeron_archive_proxy.h
+    client/aeron_archive_recording_pos.h
     client/aeron_archive_something.h
 )
 

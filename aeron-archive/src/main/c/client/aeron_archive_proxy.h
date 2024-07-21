@@ -18,6 +18,7 @@
 #define AERON_ARCHIVE_PROXY_H
 
 #include "aeronc.h"
+#include "aeron_common.h"
 
 #define AERON_ARCHIVE_PROXY_RETRY_ATTEMPTS_DEFAULT (3)
 
@@ -45,5 +46,58 @@ bool aeron_archive_proxy_archive_id(
 bool aeron_archive_proxy_close_session(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id);
+
+bool aeron_archive_proxy_start_recording(
+    aeron_archive_proxy_t *archive_proxy,
+    const char *recording_channel,
+    int32_t recording_stream_id,
+    bool localSource,
+    int64_t correlation_id,
+    int64_t control_session_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
+
+bool aeron_archive_proxy_get_recording_position(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
+
+bool aeron_archive_proxy_get_stop_position(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
+
+bool aeron_archive_proxy_get_max_recorded_position(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
+
+bool aeron_archive_proxy_stop_recording(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t subscription_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
+
+bool aeron_archive_proxy_find_last_matching_recording(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t min_recording_id,
+    const char *channel_fragment,
+    int32_t stream_id,
+    int32_t session_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
 
 #endif //AERON_ARCHIVE_PROXY_H

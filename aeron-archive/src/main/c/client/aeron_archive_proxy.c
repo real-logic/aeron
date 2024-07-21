@@ -26,6 +26,12 @@
 #include "c/aeron_archive_client/authConnectRequest.h"
 #include "c/aeron_archive_client/archiveIdRequest.h"
 #include "c/aeron_archive_client/closeSessionRequest.h"
+#include "c/aeron_archive_client/startRecordingRequest.h"
+#include "c/aeron_archive_client/recordingPositionRequest.h"
+#include "c/aeron_archive_client/stopPositionRequest.h"
+#include "c/aeron_archive_client/maxRecordedPositionRequest.h"
+#include "c/aeron_archive_client/stopRecordingSubscriptionRequest.h"
+#include "c/aeron_archive_client/findLastMatchingRecordingRequest.h"
 
 #define AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH (8 * 1024)
 
@@ -33,10 +39,17 @@ struct aeron_archive_proxy_stct
 {
     aeron_exclusive_publication_t *exclusive_publication;
     int retry_attempts;
+    // TODO why bake a buffer into the archive_proxy_t?  Couldn't/shouldn't we just toss it on the stack?
+    // This seems odd to me.  ... but that's how it was done in the C++ implementation...
     uint8_t buffer[AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH];
 };
 
-bool aeron_archive_proxy_offer(aeron_archive_proxy_t *archive_proxy, size_t length);
+int64_t aeron_archive_proxy_offer_once(aeron_archive_proxy_t *archive_proxy, size_t length);
+bool aeron_archive_proxy_offer(
+    aeron_archive_proxy_t *archive_proxy,
+    size_t length,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
 
 int aeron_archive_proxy_create(aeron_archive_proxy_t **archive_proxy, aeron_exclusive_publication_t *exclusive_publication, int retry_attempts)
 {
@@ -66,6 +79,8 @@ bool aeron_archive_proxy_try_connect(
     struct aeron_archive_client_authConnectRequest codec;
     struct aeron_archive_client_messageHeader hdr;
 
+    fprintf(stderr, " -> try connect\n");
+
     aeron_archive_client_authConnectRequest_wrap_and_apply_header(
         &codec,
         (char *)archive_proxy->buffer,
@@ -81,9 +96,9 @@ bool aeron_archive_proxy_try_connect(
         strlen(control_response_channel));
     aeron_archive_client_authConnectRequest_put_encodedCredentials(&codec, "admin:admin", 11); // TODO
 
-    return aeron_archive_proxy_offer(archive_proxy,
-        aeron_archive_client_messageHeader_encoded_length() +
-        aeron_archive_client_authConnectRequest_sbe_position(&codec));
+    return aeron_archive_proxy_offer_once(
+        archive_proxy,
+        aeron_archive_client_authConnectRequest_encoded_length(&codec)) > 0;
 }
 
 bool aeron_archive_proxy_archive_id(
@@ -94,6 +109,8 @@ bool aeron_archive_proxy_archive_id(
     struct aeron_archive_client_archiveIdRequest codec;
     struct aeron_archive_client_messageHeader hdr;
 
+    fprintf(stderr, " -> archive id\n");
+
     aeron_archive_client_archiveIdRequest_wrap_and_apply_header(
         &codec,
         (char *)archive_proxy->buffer,
@@ -103,9 +120,9 @@ bool aeron_archive_proxy_archive_id(
     aeron_archive_client_archiveIdRequest_set_controlSessionId(&codec, control_session_id);
     aeron_archive_client_archiveIdRequest_set_correlationId(&codec, correlation_id);
 
-    return aeron_archive_proxy_offer(archive_proxy,
-        aeron_archive_client_messageHeader_encoded_length() +
-        aeron_archive_client_archiveIdRequest_sbe_position(&codec));
+    return aeron_archive_proxy_offer_once(
+        archive_proxy,
+        aeron_archive_client_archiveIdRequest_encoded_length(&codec)) > 0;
 }
 
 bool aeron_archive_proxy_close_session(
@@ -115,6 +132,8 @@ bool aeron_archive_proxy_close_session(
     struct aeron_archive_client_closeSessionRequest codec;
     struct aeron_archive_client_messageHeader hdr;
 
+    fprintf(stderr, " -> close session\n");
+
     aeron_archive_client_closeSessionRequest_wrap_and_apply_header(
         &codec,
         (char *)archive_proxy->buffer,
@@ -123,36 +142,250 @@ bool aeron_archive_proxy_close_session(
         &hdr);
     aeron_archive_client_closeSessionRequest_set_controlSessionId(&codec, control_session_id);
 
-    return aeron_archive_proxy_offer(archive_proxy,
-        aeron_archive_client_messageHeader_encoded_length() +
-        aeron_archive_client_closeSessionRequest_sbe_position(&codec));
+
+    return aeron_archive_proxy_offer_once(
+        archive_proxy,
+        aeron_archive_client_closeSessionRequest_encoded_length(&codec)) > 0;
+}
+
+bool aeron_archive_proxy_start_recording(
+    aeron_archive_proxy_t *archive_proxy,
+    const char *recording_channel,
+    int32_t recording_stream_id,
+    bool localSource,
+    int64_t correlation_id,
+    int64_t control_session_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    struct aeron_archive_client_startRecordingRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_startRecordingRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_startRecordingRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_startRecordingRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_startRecordingRequest_set_streamId(&codec, recording_stream_id);
+    aeron_archive_client_startRecordingRequest_set_sourceLocation(
+        &codec,
+        localSource ? aeron_archive_client_sourceLocation_LOCAL : aeron_archive_client_sourceLocation_REMOTE);
+    aeron_archive_client_startRecordingRequest_put_channel(
+        &codec,
+        recording_channel,
+        strlen(recording_channel));
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_startRecordingRequest_encoded_length(&codec),
+        idle_strategy_func,
+        idle_strategy_state);
+}
+
+bool aeron_archive_proxy_get_recording_position(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    struct aeron_archive_client_recordingPositionRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_recordingPositionRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_recordingPositionRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_recordingPositionRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_recordingPositionRequest_set_recordingId(&codec, recording_id);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_recordingPositionRequest_encoded_length(&codec),
+        idle_strategy_func,
+        idle_strategy_state);
+}
+
+bool aeron_archive_proxy_get_stop_position(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    struct aeron_archive_client_stopPositionRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_stopPositionRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_stopPositionRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_stopPositionRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_stopPositionRequest_set_recordingId(&codec, recording_id);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_stopPositionRequest_encoded_length(&codec),
+        idle_strategy_func,
+        idle_strategy_state);
+}
+
+bool aeron_archive_proxy_get_max_recorded_position(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    struct aeron_archive_client_maxRecordedPositionRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_maxRecordedPositionRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_maxRecordedPositionRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_maxRecordedPositionRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_maxRecordedPositionRequest_set_recordingId(&codec, recording_id);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_maxRecordedPositionRequest_encoded_length(&codec),
+        idle_strategy_func,
+        idle_strategy_state);
+}
+
+bool aeron_archive_proxy_stop_recording(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t subscription_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    struct aeron_archive_client_stopRecordingSubscriptionRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_stopRecordingSubscriptionRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_stopRecordingSubscriptionRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_stopRecordingSubscriptionRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_stopRecordingSubscriptionRequest_set_subscriptionId(&codec, subscription_id);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_stopRecordingSubscriptionRequest_encoded_length(&codec),
+        idle_strategy_func,
+        idle_strategy_state);
+}
+
+bool aeron_archive_proxy_find_last_matching_recording(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t min_recording_id,
+    const char *channel_fragment,
+    int32_t stream_id,
+    int32_t session_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    struct aeron_archive_client_findLastMatchingRecordingRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_findLastMatchingRecordingRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_findLastMatchingRecordingRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_findLastMatchingRecordingRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_findLastMatchingRecordingRequest_set_minRecordingId(&codec, min_recording_id);
+    aeron_archive_client_findLastMatchingRecordingRequest_set_sessionId(&codec, session_id);
+    aeron_archive_client_findLastMatchingRecordingRequest_set_streamId(&codec, stream_id);
+    aeron_archive_client_findLastMatchingRecordingRequest_put_channel(
+        &codec,
+        channel_fragment,
+        strlen(channel_fragment));
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_findLastMatchingRecordingRequest_encoded_length(&codec),
+        idle_strategy_func,
+        idle_strategy_state);
 }
 
 /* ************* */
 
-bool aeron_archive_proxy_offer(aeron_archive_proxy_t *archive_proxy, size_t length)
+// The length here must NOT include the messageHeader encoded length
+int64_t aeron_archive_proxy_offer_once(aeron_archive_proxy_t *archive_proxy, size_t length)
 {
+    /*
     fprintf(stderr, "length :: %i\n", length);
     for (uint64_t i = 0; i < length; i++)
     {
         fprintf(stderr, "[%llu] '%x' '%c'\n", i, archive_proxy->buffer[i], archive_proxy->buffer[i]);
     }
-
-    int64_t rc = aeron_exclusive_publication_offer(
+     */
+    return aeron_exclusive_publication_offer(
         archive_proxy->exclusive_publication,
         archive_proxy->buffer,
-        length,
+        aeron_archive_client_messageHeader_encoded_length() + length,
         NULL,
         NULL);
+}
 
-    fprintf(stderr, "ex pub offer :: %llu\n", rc);
+// The length here must NOT include the messageHeader encoded length
+bool aeron_archive_proxy_offer(
+    aeron_archive_proxy_t *archive_proxy,
+    size_t length,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    int attempts = archive_proxy->retry_attempts;
 
-    if (rc > 0)
+    while (true)
     {
-        return true;
+        int64_t result = aeron_archive_proxy_offer_once(archive_proxy, length);
+
+        if (result > 0)
+        {
+            return true;
+        }
+
+        if (AERON_PUBLICATION_CLOSED == result ||
+            AERON_PUBLICATION_NOT_CONNECTED == result ||
+            AERON_PUBLICATION_MAX_POSITION_EXCEEDED == result)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return false;
+        }
+
+        if (--attempts <= 0)
+        {
+            AERON_SET_ERR(-1, "%s", "too many retries");
+            return false;
+        }
+
+        idle_strategy_func(idle_strategy_state, 0);
     }
-
-    // TODO do something with rc
-
-    return false;
 }

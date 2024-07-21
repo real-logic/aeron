@@ -1,9 +1,13 @@
 ARG VERSION="bookworm"
 FROM debian:${VERSION} as builder
 
+ARG GCC_VERSION="12"
+ENV CC=gcc-${GCC_VERSION} \
+    CXX=g++-${GCC_VERSION}
+
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
+    gcc-${GCC_VERSION} \
+    g++-${GCC_VERSION} \
     make \
     tar \
     zlib1g-dev \

@@ -1,21 +1,10 @@
-name: Publish Artifacts and Release Documentation
+name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      release:
-        description: Is release? (Will create tag and update version)
-        required: true
-        default: false
-        type: boolean
-      release-version:
-        description: Released version (x.y.z)
-        required: true
-        type: string
-      next-version:
-        description: Next version (x.y.z)
-        required: true
-        type: string
+  push:
+    tags:
+      - "*.*.*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,61 +23,42 @@ jobs:
   codeql:
     uses: ./.github/workflows/codeql.yml
 
-  pre-release:
-    name: Update version, tag repo, and return sha
+  github-release:
+    name: Create Github Release
     permissions:
       contents: write
     needs: [ ci, ci-low-cadence, codeql ]
     runs-on: ubuntu-latest
     outputs:
-      sha: ${{ steps.return-details.outputs.sha }}
-      version: ${{ steps.return-details.outputs.version }}
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - id: checkout
         name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-      - id: validate
-        name: Validate no new commits
-        run: |
-          current_sha=$(git rev-parse HEAD)
-          if test $current_sha != '${{ github.sha }}'
-          then exit 1
-          fi
-      - id: tag-version
-        if: ${{ inputs.release }}
-        name: Update version and tag repo
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@aeron.io"
-          echo ${{ inputs.release-version }} > version.txt
-          git add version.txt
-          git status
-          git commit -m "${{ inputs.release-version }} version update."
-          git push
-          git tag ${{ inputs.release-version }}
-          git push origin refs/tags/${{ inputs.release-version }}
-      - id: return-details
-        name: Return current SHA and version
-        run: |
-          git rev-parse HEAD
-          cat version.txt
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          echo "version=$(cat version.txt)" >> "$GITHUB_OUTPUT"
+      - id: create-release
+        name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: true
 
   release-java:
     name: Release java artifacts
     permissions:
       contents: read
       packages: write
-    needs: pre-release
+    needs: github-release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.pre-release.outputs.sha }}
+          ref: ${{ github.ref }}
       - name: Setup java
         uses: actions/setup-java@v4
         with:
@@ -106,17 +76,14 @@ jobs:
           ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.ossrhPassword }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.signingKey }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.signingPassword }}
-      - name: Publish tutorial with Gradle
-        if: ${{ inputs.release }}
-        run: ./gradlew tutorialPublish -Paeron.ci.apiKey=${{ secrets.WIKI_PAGE_TOKEN }} --stacktrace
 
   release-c:
     name: Release c artifacts
     permissions:
-      contents: read
+      contents: write
       id-token: write
       packages: write
-    needs: pre-release
+    needs: github-release
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -124,21 +91,69 @@ jobs:
         include:
           - distro: ubuntu
             version: 20.04
+            gcc-version: 7
+          - distro: ubuntu
+            version: 20.04
+            gcc-version: 8
+          - distro: ubuntu
+            version: 20.04
+            gcc-version: 9
+          - distro: ubuntu
+            version: 20.04
+            gcc-version: 10
           - distro: ubuntu
             version: 22.04
+            gcc-version: 9
+          - distro: ubuntu
+            version: 22.04
+            gcc-version: 10
+          - distro: ubuntu
+            version: 22.04
+            gcc-version: 11
+          - distro: ubuntu
+            version: 22.04
+            gcc-version: 12
           - distro: debian
             version: bullseye
+            gcc-version: 9
+          - distro: debian
+            version: bullseye
+            gcc-version: 10
           - distro: debian
             version: bookworm
+            gcc-version: 11
+          - distro: debian
+            version: bookworm
+            gcc-version: 12
           - distro: rocky
             version: 8.9
+            gcc-version: 9
+          - distro: rocky
+            version: 8.9
+            gcc-version: 10
+          - distro: rocky
+            version: 8.9
+            gcc-version: 11
+          - distro: rocky
+            version: 8.9
+            gcc-version: 12
+          - distro: rocky
+            version: 8.9
+            gcc-version: 13
+          - distro: rocky
+            version: 9.3
+            gcc-version: 12
+          - distro: rocky
+            version: 9.3
+            gcc-version: 13
           - distro: awslinux
             version: 2023
+            gcc-version: 11
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.pre-release.outputs.sha }}
+          ref: ${{ github.ref }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -150,40 +165,32 @@ jobs:
           file: ./cppbuild/${{ matrix.distro }}/Dockerfile
           pull: true
           shm-size: 1g
-          outputs: build/${{ matrix.distro }}/${{ matrix.version }}
+          outputs: type=local,dest=build
           target: essentials-artifacts
-          build-args: VERSION=${{ matrix.version }}
+          build-args: |
+            VERSION=${{ matrix.version }}
+            GCC_VERSION=${{ matrix.gcc-version }}
+      - name: Rename artifact
+        run: |
+          artifact_name=aeron-$(cat version.txt)-${{ matrix.distro }}-${{ matrix.version }}-GNU-${{ matrix.gcc-version }}-x86_64.tar.gz
+          echo "artifact_name=$artifact_name" >> $GITHUB_ENV
+          mv ./build/*.tar.gz ./build/$artifact_name
+      - name: Upload to Github Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.github-release.outputs.upload_url }}
+          asset_path: ./build/${{ env.artifact_name }}
+          asset_name: ${{ env.artifact_name }}
+          asset_content_type: application/gzip
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
         env:
-          JF_URL: ${{ secrets.JF_URL }}
+          JF_URL: ${{ secrets.jfUrl }}
         with:
-          oidc-provider-name: ${{ secrets.JF_OIDC_PROVIDER }}
-          oidc-audience: ${{ secrets.JF_OIDC_AUDIENCE }}
+          oidc-provider-name: ${{ secrets.jfOidcProvider }}
+          oidc-audience: ${{ secrets.jfOidcAudience }}
       - name: Publish Build info With JFrog CLI
-        run: |
-          mv *.tar.gz aeron-${{ needs.pre-release.outputs.version }}-${{ matrix.distro }}-${{ matrix.version }}.tar.gz
-          jf rt u *.tar.gz ${{ secrets.JF_AERON_REPO_PATH }}
-        working-directory: ./build/${{ matrix.distro }}/${{ matrix.version }}
-
-  post-release:
-    name: Update version
-    permissions:
-      contents: write
-    needs: [ release-java, release-c ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-      - name: Commit snapshot version to current branch
-        if: ${{ inputs.release }}
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@aeron.io"
-          echo ${{ inputs.next-version }}-SNAPSHOT > version.txt
-          git add version.txt
-          git status
-          git commit -m "${{ inputs.next-version }}-SNAPSHOT version update."
-          git push
+        run: jf rt u *.tar.gz ${{ secrets.jfAeronRepoPath }}
+        working-directory: ./build

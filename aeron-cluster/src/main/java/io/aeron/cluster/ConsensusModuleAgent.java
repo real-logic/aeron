@@ -2451,11 +2451,11 @@ final class ConsensusModuleAgent
                 break;
 
             case STANDBY_SNAPSHOT:
-                if (ConsensusModule.State.ACTIVE == state)
+                if (ConsensusModule.State.ACTIVE == state &&
+                    appendAction(ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT))
                 {
-                    appendAction(ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT);
+                    ClusterControl.ToggleState.reset(controlToggle);
                 }
-                ClusterControl.ToggleState.reset(controlToggle);
                 break;
 
             case SHUTDOWN:

@@ -26,6 +26,8 @@ import static org.agrona.BitUtil.*;
 
 final class ClusterEventEncoder
 {
+    static final int MAX_REASON_LENGTH = 300;
+
     private ClusterEventEncoder()
     {
     }
@@ -138,7 +140,8 @@ final class ClusterEventEncoder
         final long logPosition,
         final long logLeadershipTermId,
         final long appendPosition,
-        final long catchupPosition)
+        final long catchupPosition,
+        final String reason)
     {
         int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
@@ -166,12 +169,18 @@ final class ClusterEventEncoder
         encodingBuffer.putInt(offset + encodedLength, leaderId, LITTLE_ENDIAN);
         encodedLength += SIZE_OF_INT;
 
-        return encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
+        encodedLength += CommonEventEncoder.encodeStateChange(encodingBuffer, offset + encodedLength, from, to);
+
+        encodedLength += encodeTrailingString(
+            encodingBuffer, offset + encodedLength, captureLength + LOG_HEADER_LENGTH - encodedLength, reason);
+
+        return encodedLength;
     }
 
-    static <E extends Enum<E>> int electionStateChangeLength(final E from, final E to)
+    static <E extends Enum<E>> int electionStateChangeLength(final E from, final E to, final String reason)
     {
-        return (2 * SIZE_OF_INT) + (6 * SIZE_OF_LONG) + stateTransitionStringLength(from, to);
+        return (2 * SIZE_OF_INT) + (6 * SIZE_OF_LONG) + stateTransitionStringLength(from, to) +
+            trailingStringLength(reason, MAX_REASON_LENGTH);
     }
 
     static int encodeOnCanvassPosition(

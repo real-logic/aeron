@@ -25,7 +25,7 @@ int aeron_archive_control_response_poller_create(
     aeron_subscription_t *subscription,
     int fragment_limit);
 
-// TODO need a _delete()
+int aeron_archive_control_response_poller_close(aeron_archive_control_response_poller_t *poller);
 
 int aeron_archive_control_response_poller_poll(aeron_archive_control_response_poller_t *poller);
 

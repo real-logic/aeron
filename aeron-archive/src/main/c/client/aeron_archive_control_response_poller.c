@@ -92,6 +92,19 @@ int aeron_archive_control_response_poller_create(
     return 0;
 }
 
+int aeron_archive_control_response_poller_close(aeron_archive_control_response_poller_t *poller)
+{
+    aeron_subscription_close(poller->subscription, NULL, NULL);
+    poller->subscription = NULL;
+
+    aeron_controlled_fragment_assembler_delete(poller->fragment_assembler);
+    poller->fragment_assembler = NULL;
+
+    aeron_free(poller);
+
+    return 0;
+}
+
 int aeron_archive_control_response_poller_poll(aeron_archive_control_response_poller_t *poller)
 {
     if (poller->is_poll_complete)

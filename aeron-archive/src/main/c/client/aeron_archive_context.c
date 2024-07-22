@@ -32,6 +32,7 @@
 struct aeron_archive_context_stct
 {
     aeron_t *aeron;
+    aeron_context_t *aeron_ctx;
     char aeron_directory_name[AERON_MAX_PATH];
     bool owns_aeron_client;
 
@@ -83,6 +84,15 @@ int aeron_archive_context_close(aeron_archive_context_t *ctx)
 {
     if (NULL != ctx)
     {
+        if (ctx->owns_aeron_client)
+        {
+            aeron_close(ctx->aeron);
+            ctx->aeron = NULL;
+
+            aeron_context_close(ctx->aeron_ctx);
+            ctx->aeron_ctx = NULL;
+        }
+
         aeron_free(ctx);
     }
 
@@ -93,19 +103,17 @@ int aeron_archive_context_conclude(aeron_archive_context_t *ctx)
 {
     if (NULL == ctx->aeron)
     {
-        aeron_context_t *aeron_ctx;
-
-        if (aeron_context_init(&aeron_ctx) < 0)
+        if (aeron_context_init(&ctx->aeron_ctx) < 0)
         {
             return -1; // TODO
         }
 
-        if (aeron_context_set_dir(aeron_ctx, ctx->aeron_directory_name) < 0)
+        if (aeron_context_set_dir(ctx->aeron_ctx, ctx->aeron_directory_name) < 0)
         {
             return -1; // TODO
         }
 
-        if (aeron_init(&ctx->aeron, aeron_ctx) < 0)
+        if (aeron_init(&ctx->aeron, ctx->aeron_ctx) < 0)
         {
             return -1; // TODO
         }

@@ -42,6 +42,8 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
 
 int aeron_archive_connect(aeron_archive_t **aeron_archive, aeron_archive_context_t *ctx);
 
+int aeron_archive_close(aeron_archive_t *aeron_archive);
+
 int aeron_archive_start_recording(
     int64_t *subscription_id_p,
     aeron_archive_t *aeron_archive,

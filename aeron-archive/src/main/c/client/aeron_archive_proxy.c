@@ -69,6 +69,16 @@ int aeron_archive_proxy_create(aeron_archive_proxy_t **archive_proxy, aeron_excl
     return 0;
 }
 
+int aeron_archive_proxy_close(aeron_archive_proxy_t *archive_proxy)
+{
+    aeron_exclusive_publication_close(archive_proxy->exclusive_publication, NULL, NULL);
+    archive_proxy->exclusive_publication = NULL;
+
+    aeron_free(archive_proxy);
+
+    return 0;
+}
+
 bool aeron_archive_proxy_try_connect(
     aeron_archive_proxy_t *archive_proxy,
     const char *control_response_channel,

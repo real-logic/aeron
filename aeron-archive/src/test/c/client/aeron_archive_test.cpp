@@ -172,6 +172,9 @@ TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
     ASSERT_TRUE(aeron_subscription_is_connected(subscription));
 
     ASSERT_EQ(42, aeron_archive_get_archive_id(archive));
+
+    ASSERT_EQ(0, aeron_archive_close(archive));
+    ASSERT_EQ(0, aeron_archive_context_close(ctx));
 }
 
 TEST_F(AeronCArchiveTest, shouldConnectToArchive)
@@ -187,6 +190,9 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchive)
     ASSERT_TRUE(aeron_subscription_is_connected(subscription));
 
     ASSERT_EQ(42, aeron_archive_get_archive_id(archive));
+
+    ASSERT_EQ(0, aeron_archive_close(archive));
+    ASSERT_EQ(0, aeron_archive_context_close(ctx));
 }
 
 TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
@@ -337,4 +343,7 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
     EXPECT_EQ(stop_position, found_stop_position);
 
     // TODO listRecording()
+
+    ASSERT_EQ(0, aeron_archive_close(archive));
+    ASSERT_EQ(0, aeron_archive_context_close(ctx));
 }

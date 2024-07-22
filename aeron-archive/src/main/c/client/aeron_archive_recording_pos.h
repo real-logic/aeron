@@ -19,6 +19,4 @@
 
 #include "aeron_archive.h"
 
-//int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters_reader_t *counters_reader, int32_t session_id);
-
 #endif //AERON_ARCHIVE_RECORDING_POS_H

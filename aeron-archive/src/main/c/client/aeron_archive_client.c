@@ -114,6 +114,19 @@ int aeron_archive_create(
     return 0;
 }
 
+int aeron_archive_close(aeron_archive_t *aeron_archive)
+{
+    aeron_archive_proxy_close(aeron_archive->archive_proxy);
+    aeron_archive->archive_proxy = NULL;
+
+    aeron_archive_control_response_poller_close(aeron_archive->control_response_poller);
+    aeron_archive->control_response_poller = NULL;
+
+    aeron_free(aeron_archive);
+
+    return 0;
+}
+
 int aeron_archive_start_recording(
     int64_t *subscription_id_p,
     aeron_archive_t *aeron_archive,

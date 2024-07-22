@@ -29,7 +29,7 @@ int aeron_archive_proxy_create(
     aeron_exclusive_publication_t *exclusive_publication,
     int retry_attempts);
 
-// TODO need a _delete()
+int aeron_archive_proxy_close(aeron_archive_proxy_t *archive_proxy);
 
 bool aeron_archive_proxy_try_connect(
     aeron_archive_proxy_t *archive_proxy,

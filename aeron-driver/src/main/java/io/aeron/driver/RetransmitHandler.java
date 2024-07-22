@@ -19,8 +19,6 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 
-import static io.aeron.driver.Configuration.MAX_RETRANSMITS_DEFAULT;
-
 /**
  * Tracking and handling of retransmit request, NAKs, for senders, and receivers.
  * <p>

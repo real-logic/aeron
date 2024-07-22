@@ -1,13 +1,9 @@
 ARG VERSION="22.04"
 FROM ubuntu:${VERSION} as builder
 
-ARG GCC_VERSION="12"
-ENV CC=gcc-${GCC_VERSION} \
-    CXX=g++-${GCC_VERSION}
-
 RUN apt-get update && apt-get install -y \
-    gcc-${GCC_VERSION} \
-    g++-${GCC_VERSION} \
+    gcc \
+    g++ \
     make \
     tar \
     zlib1g-dev \

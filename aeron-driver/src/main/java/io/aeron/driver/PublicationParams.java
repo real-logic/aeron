@@ -45,6 +45,8 @@ final class PublicationParams
     boolean spiesSimulateConnection;
     boolean isResponse = false;
     long responseCorrelationId = Aeron.NULL_VALUE;
+    boolean hasMaxRetransmits = false;
+    int maxRetransmits = Aeron.NULL_VALUE;
 
     PublicationParams()
     {
@@ -68,6 +70,7 @@ final class PublicationParams
         params.getSpiesSimulateConnection(channelUri, ctx);
         params.getUntetheredWindowLimitTimeout(channelUri, ctx);
         params.getUntetheredRestingTimeout(channelUri, ctx);
+        params.getMaxRetransmits(channelUri);
 
         int count = 0;
 
@@ -406,6 +409,34 @@ final class PublicationParams
     {
         untetheredRestingTimeoutNs = getTimeoutNs(
             channelUri, UNTETHERED_RESTING_TIMEOUT_PARAM_NAME, ctx.untetheredRestingTimeoutNs());
+    }
+
+    private void getMaxRetransmits(final ChannelUri channelUri)
+    {
+        final String maxRetransmtsString = channelUri.get(MAX_RETRANSMITS_PARAM_NAME);
+
+        if (maxRetransmtsString == null)
+        {
+            this.hasMaxRetransmits = false;
+
+            return;
+        }
+
+        try
+        {
+            maxRetransmits = Integer.parseInt(maxRetransmtsString);
+        }
+        catch (final NumberFormatException ex)
+        {
+            throw new IllegalArgumentException("invalid " + MAX_RETRANSMITS_PARAM_NAME + ", must be a number", ex);
+        }
+
+        if (maxRetransmits < 1)
+        {
+            throw new IllegalArgumentException("invalid " + MAX_RETRANSMITS_PARAM_NAME + ", must be > 0");
+        }
+
+        this.hasMaxRetransmits = true;
     }
 
     private static long parseEntityTag(

@@ -50,6 +50,7 @@ public final class RetransmitHandler
      * @param delayGenerator            to use for delay determination.
      * @param lingerTimeoutGenerator    to use for linger timeout.
      * @param hasGroupSemantics         indicates multicast/MDC semantics.
+     * @param maxRetransmits            max retransmits for when group semantics is enabled
      * @param retransmitOverflowCounter counter to track overflows.
      */
     public RetransmitHandler(
@@ -58,6 +59,7 @@ public final class RetransmitHandler
         final FeedbackDelayGenerator delayGenerator,
         final FeedbackDelayGenerator lingerTimeoutGenerator,
         final boolean hasGroupSemantics,
+        final int maxRetransmits,
         final AtomicCounter retransmitOverflowCounter)
     {
         this.nanoClock = nanoClock;
@@ -67,10 +69,10 @@ public final class RetransmitHandler
         this.hasGroupSemantics = hasGroupSemantics;
         this.retransmitOverflowCounter = retransmitOverflowCounter;
 
-        final int maxRetransmits = this.hasGroupSemantics ? MAX_RETRANSMITS_DEFAULT : 1;
+        final int actualMaxRetransmits = this.hasGroupSemantics ? maxRetransmits : 1;
 
-        retransmitActionPool = new RetransmitAction[maxRetransmits];
-        for (int i = 0; i < maxRetransmits; i++)
+        retransmitActionPool = new RetransmitAction[actualMaxRetransmits];
+        for (int i = 0; i < actualMaxRetransmits; i++)
         {
             retransmitActionPool[i] = new RetransmitAction();
         }

@@ -72,10 +72,10 @@ jobs:
       - name: Publish with Gradle
         run: ./gradlew publish
         env:
-          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.ossrhUsername }}
-          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.ossrhPassword }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.signingKey }}
-          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.signingPassword }}
+          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.SONATYPE_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.SONATYPE_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_RSA_SIGN_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_RSA_SIGN_KEYPASS }}
 
   release-c:
     name: Release c artifacts
@@ -187,10 +187,10 @@ jobs:
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
         env:
-          JF_URL: ${{ secrets.jfUrl }}
+          JF_URL: ${{ vars.JFROG_OIDC_URL }}
         with:
-          oidc-provider-name: ${{ secrets.jfOidcProvider }}
-          oidc-audience: ${{ secrets.jfOidcAudience }}
+          oidc-provider-name: ${{ vars.JFROG_OIDC_PROVIDER }}
+          oidc-audience: ${{ vars.JFROG_OIDC_AUDIENCE }}
       - name: Publish Build info With JFrog CLI
-        run: jf rt u *.tar.gz ${{ secrets.jfAeronRepoPath }}
+        run: jf rt u *.tar.gz ${{ vars.JFROG_AERON_OSS_REPO_NAME }}
         working-directory: ./build

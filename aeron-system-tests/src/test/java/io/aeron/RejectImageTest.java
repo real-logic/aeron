@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERROR_FRAMES_RECEIVED;
+import static io.aeron.driver.status.SystemCounterDescriptor.ERROR_FRAMES_SENT;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -61,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
-public class ImageInvalidationTest
+public class RejectImageTest
 {
     public static final long A_VALUE_THAT_SHOWS_WE_ARENT_SPAMMING_ERROR_MESSAGES = 1000L;
     @RegisterExtension
@@ -130,6 +131,8 @@ public class ImageInvalidationTest
             final CountersReader countersReader = aeron.countersReader();
             final long initialErrorFramesReceived = countersReader
                 .getCounterValue(ERROR_FRAMES_RECEIVED.id());
+            final long initialErrorFramesSent = countersReader
+                .getCounterValue(ERROR_FRAMES_SENT.id());
             final long initialErrors = countersReader
                 .getCounterValue(ERRORS.id());
 
@@ -158,8 +161,8 @@ public class ImageInvalidationTest
             final long value = driver.context().publicationConnectionTimeoutNs();
             assertThat(t1 - t0, lessThan(value));
 
-            while (initialErrorFramesReceived == countersReader
-                .getCounterValue(ERROR_FRAMES_RECEIVED.id()))
+            while (initialErrorFramesReceived == countersReader.getCounterValue(ERROR_FRAMES_RECEIVED.id()) ||
+                initialErrorFramesSent == countersReader.getCounterValue(ERROR_FRAMES_SENT.id()))
             {
                 Tests.yield();
             }

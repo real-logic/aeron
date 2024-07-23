@@ -226,7 +226,12 @@ public enum SystemCounterDescriptor
     /**
      * A count of the number of error frames received by this driver.
      */
-    ERROR_FRAMES_RECEIVED(38, "Error Frames received");
+    ERROR_FRAMES_RECEIVED(38, "Error Frames received"),
+
+    /**
+     * A count of the number of error frames sent by this driver.
+     */
+    ERROR_FRAMES_SENT(39, "Error Frames sent");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

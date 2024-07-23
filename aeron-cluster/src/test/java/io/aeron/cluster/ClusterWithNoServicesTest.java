@@ -72,7 +72,7 @@ class ClusterWithNoServicesTest
         final InOrder inOrder = inOrder(consensusModuleExtensionSpy);
         inOrder.verify(consensusModuleExtensionSpy).onStart(any(ConsensusModuleControl.class), isNull());
         inOrder.verify(consensusModuleExtensionSpy).onElectionComplete(any(ConsensusControlState.class));
-        inOrder.verify(consensusModuleExtensionSpy, atLeastOnce()).doWork(anyLong());
+        inOrder.verify(consensusModuleExtensionSpy, atLeastOnce()).doWork(anyBoolean(), anyLong());
 
         verify(consensusModuleExtensionSpy).onSessionOpened(anyLong());
 
@@ -124,7 +124,7 @@ class ClusterWithNoServicesTest
         {
         }
 
-        public int doWork(final long nowNs)
+        public int doWork(final boolean duringElection, final long nowNs)
         {
             return 0;
         }

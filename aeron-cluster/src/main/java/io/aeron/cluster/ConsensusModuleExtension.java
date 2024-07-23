@@ -57,9 +57,10 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * If the extension wished to terminate and close then a {@link AgentTerminationException} can be thrown.
      *
      * @param nowNs is cluster time in nanoseconds.
+     * @param duringElection indicates if the cluster is in an election.
      * @return 0 to indicate no work was currently available, a positive value otherwise.
      */
-    int doWork(long nowNs);
+    int doWork(boolean duringElection, long nowNs);
 
     /**
      * Cluster election is complete and new publication is added for the leadership term. If the node is a follower

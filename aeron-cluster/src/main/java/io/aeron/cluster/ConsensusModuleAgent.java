@@ -368,6 +368,11 @@ final class ConsensusModuleAgent
             {
                 workCount += consensusWork(timestamp, nowNs);
             }
+
+            if (null != consensusModuleExtension)
+            {
+                workCount += consensusModuleExtension.doWork(election != null, nowNs);
+            }
         }
         catch (final AgentTerminationException ex)
         {
@@ -2415,10 +2420,6 @@ final class ConsensusModuleAgent
 
         workCount += consensusModuleAdapter.poll();
         workCount += pollStandbySnapshotReplication(nowNs);
-        if (null != consensusModuleExtension)
-        {
-            workCount += consensusModuleExtension.doWork(nowNs);
-        }
 
         return workCount;
     }

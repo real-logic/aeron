@@ -26,7 +26,7 @@ typedef struct aeron_archive_stct aeron_archive_t;
 typedef struct aeron_archive_context_stct aeron_archive_context_t;
 typedef struct aeron_archive_async_connect_stct aeron_archive_async_connect_t;
 
-typedef int (*aeron_archive_recording_descriptor_consumer_func_t)(
+typedef void (*aeron_archive_recording_descriptor_consumer_func_t)(
     int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id,

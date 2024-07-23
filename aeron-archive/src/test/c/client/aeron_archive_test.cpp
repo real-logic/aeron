@@ -148,6 +148,40 @@ public:
     }
 };
 
+typedef struct recording_descriptor_consumer_clientd_stct
+{
+    int64_t recording_id;
+    int32_t stream_id;
+}
+recording_descriptor_consumer_clientd_t;
+
+static void recording_descriptor_consumer(
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id,
+    int64_t start_timestamp,
+    int64_t stop_timestamp,
+    int64_t start_position,
+    int64_t stop_position,
+    int32_t initial_term_id,
+    int32_t segment_file_length,
+    int32_t term_buffer_length,
+    int32_t mtu_length,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *stripped_channel,
+    const char *original_channel,
+    const char *source_identity,
+    void *clientd)
+{
+    auto *cd = (recording_descriptor_consumer_clientd_t *)clientd;
+
+    EXPECT_EQ(cd->recording_id, recording_id);
+    EXPECT_EQ(cd->stream_id, stream_id);
+
+    fprintf(stderr, "GOT THE LIST RECORDING CALLBACK\n");
+}
+
 TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
 {
     aeron_archive_context_t *ctx;
@@ -340,17 +374,21 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
         (void *)&idle_duration_ns));
     EXPECT_EQ(stop_position, found_stop_position);
 
-    /*
     int32_t count;
+
+    recording_descriptor_consumer_clientd_t clientd;
+    clientd.recording_id = found_recording_id;
+    clientd.stream_id = m_recordingStreamId;
+
     EXPECT_EQ(0, aeron_archive_list_recording(
         &count,
         archive,
         found_recording_id,
-        NULL,
-        NULL,
+        recording_descriptor_consumer,
+        &clientd,
         aeron_idle_strategy_sleeping_idle,
         (void *)&idle_duration_ns));
-        */
+    EXPECT_EQ(1, count);
 
     ASSERT_EQ(0, aeron_archive_close(archive));
     ASSERT_EQ(0, aeron_archive_context_close(ctx));

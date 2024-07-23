@@ -19,6 +19,7 @@
 #include "aeron_archive_configuration.h"
 #include "aeron_archive_context.h"
 #include "aeron_archive_control_response_poller.h"
+#include "aeron_archive_recording_descriptor_poller.h"
 #include "aeron_archive_proxy.h"
 
 #include "aeron_alloc.h"
@@ -71,7 +72,6 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
 
     if (aeron_archive_context_conclude(ctx) < 0)
     {
-        fprintf(stderr, "ctx conclude\n");
         return -1;
     }
 
@@ -92,7 +92,6 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
         NULL) < 0)
     {
         // TODO
-        fprintf(stderr, "add sub %s\n", aeron_errmsg());
         return -1;
     }
 
@@ -107,7 +106,6 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
         aeron_archive_context_get_control_request_stream_id(ctx)) < 0)
     {
         // TODO
-        fprintf(stderr, "add ex pub\n");
         return -1;
     }
 
@@ -146,7 +144,6 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
     if (aeron_nano_clock() > async->deadline_ns)
     {
         // TODO timeout
-        fprintf(stderr, "connect poll timeout\n");
         return -1;
     }
 
@@ -183,7 +180,6 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
                 AERON_ARCHIVE_PROXY_RETRY_ATTEMPTS_DEFAULT) < 0)
             {
                 // TODO
-                fprintf(stderr, "archive proxy create -1\n");
                 return -1;
             }
         }
@@ -219,10 +215,8 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
                 AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_FRAGMENT_LIMIT_DEFAULT) < 0)
             {
                 // TODO
-                fprintf(stderr, "poller create -1\n");
                 return -1;
             }
-            fprintf(stderr, "poller create SUCCESS?? %p\n", (void *)async->control_response_poller);
         }
 
         if (NULL != async->archive_proxy && NULL != async->control_response_poller)
@@ -235,7 +229,6 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
     {
         if (aeron_exclusive_publication_is_connected(async->exclusive_publication))
         {
-            fprintf(stderr, "pub is connected !!!!\n");
             async->state = SEND_CONNECT_REQUEST;
         }
         else
@@ -251,7 +244,6 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
         if (aeron_subscription_try_resolve_channel_endpoint_port(async->subscription, control_response_channel, sizeof(control_response_channel)) < 0)
         {
             // TODO
-            fprintf(stderr, "resolve -1\n");
             return -1;
         }
 
@@ -271,7 +263,6 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
             NULL, // TODO encoded credentials
             async->correlation_id))
         {
-            fprintf(stderr, "try connect false\n");
             return 0;
         }
 
@@ -322,12 +313,10 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
             if (aeron_archive_control_response_poller_was_challenged(async->control_response_poller))
             {
                 // TODO
-                fprintf(stderr, "CHALLENGED\n");
                 return -1;
             }
             else
             {
-                fprintf(stderr, "-----got a response\n");
                 if (!aeron_archive_control_response_poller_is_code_ok(async->control_response_poller))
                 {
                     if (aeron_archive_control_response_poller_is_code_error(async->control_response_poller))
@@ -336,27 +325,20 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
 
                         aeron_archive_proxy_close_session(async->archive_proxy, async->control_session_id);
                         // TODO
-                        fprintf(stderr, "CODE ERROR :: %s\n", aeron_archive_control_response_poller_error_message(async->control_response_poller));
                         return -1;
                     }
 
                     aeron_archive_proxy_close_session(async->archive_proxy, async->control_session_id);
                     // TODO
-                    fprintf(stderr, "CODE NOT OK\n");
                     return -1;
                 }
 
                 if (AWAIT_CONNECT_RESPONSE == async->state)
                 {
-                    fprintf(stderr, "connect response!!\n");
                     int32_t archive_protocol_version = aeron_archive_control_response_poller_version(async->control_response_poller);
-
-                    fprintf(stderr, "connect response!! archive proto vers: %i\n", archive_protocol_version);
-                    fprintf(stderr, "connect response!! vers with id: %i\n", aeron_archive_protocol_version_with_archive_id());
 
                     if (archive_protocol_version < aeron_archive_protocol_version_with_archive_id())
                     {
-                        fprintf(stderr, "NULL archive id!!\n");
                         return aeron_archive_async_connect_transition_to_done(aeron_archive, async, AERON_NULL_VALUE);
                     }
                     else
@@ -374,7 +356,6 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
                 else
                 {
                     // TODO
-                    fprintf(stderr, "unexpected state : %i\n", async->state);
                     return -1;
                 }
             }
@@ -397,12 +378,26 @@ int aeron_archive_check_and_setup_response_channel(aeron_archive_context_t *ctx,
 
 int aeron_archive_async_connect_transition_to_done(aeron_archive_t **aeron_archive, aeron_archive_async_connect_t *async, int64_t archive_id)
 {
+    aeron_archive_recording_descriptor_poller_t *recording_descriptor_poller;
+
+    if (aeron_archive_recording_descriptor_poller_create(
+        &recording_descriptor_poller,
+        async->ctx,
+        async->subscription,
+        async->control_session_id,
+        AERON_ARCHIVE_RECORDING_DESCRIPTOR_POLLER_FRAGMENT_LIMIT_DEFAULT) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
     int rc = aeron_archive_create(
         aeron_archive,
         async->ctx,
         async->archive_proxy,
+        async->subscription,
         async->control_response_poller,
-        NULL, // recording descriptor poller
+        recording_descriptor_poller,
         NULL, // recording subscription descriptor poller
         async->aeron,
         async->control_session_id,
@@ -410,10 +405,17 @@ int aeron_archive_async_connect_transition_to_done(aeron_archive_t **aeron_archi
 
     if (rc == 0)
     {
-        rc = 1; // TODO figure out a way to make this less stupid.
+        /*
+         * What's returned here is what's returned from aeron_archive_async_connect_poll().
+         * '0' means 'try again'.
+         * '1' means 'success' and then it's expected that aeron_archive is now valid.
+         * If aeron_archive_create() returns 0, then the aeron_archive should be valid.  So return 1.
+         */
+        rc = 1;
+
+        // TODO NULL out things like archive proxy and poller and such so they're not deleted when the async is deleted
     }
 
-    // TODO NULL out things like archive proxy and poller and such so they're not deleted when the async is deleted
     aeron_archive_async_connect_delete(async);
 
     return rc;

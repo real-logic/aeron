@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
+#ifndef AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_H
+#define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_H
+
 #include "aeron_archive.h"
 
 #include "aeronc.h"
 
 #define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_FRAGMENT_LIMIT_DEFAULT 10
+
+typedef struct aeron_archive_control_response_poller_stct aeron_archive_control_response_poller_t;
 
 int aeron_archive_control_response_poller_create(
     aeron_archive_control_response_poller_t **poller,
@@ -26,6 +31,8 @@ int aeron_archive_control_response_poller_create(
     int fragment_limit);
 
 int aeron_archive_control_response_poller_close(aeron_archive_control_response_poller_t *poller);
+
+aeron_subscription_t *aeron_archive_control_response_poller_get_subscription(aeron_archive_control_response_poller_t *poller);
 
 int aeron_archive_control_response_poller_poll(aeron_archive_control_response_poller_t *poller);
 
@@ -50,3 +57,5 @@ int64_t aeron_archive_control_response_poller_relevant_id(aeron_archive_control_
 int32_t aeron_archive_control_response_poller_version(aeron_archive_control_response_poller_t  *poller);
 
 char *aeron_archive_control_response_poller_error_message(aeron_archive_control_response_poller_t  *poller);
+
+#endif // AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_H

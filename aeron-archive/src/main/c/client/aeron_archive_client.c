@@ -29,7 +29,9 @@ struct aeron_archive_stct
 {
     aeron_archive_context_t *ctx;
     aeron_archive_proxy_t *archive_proxy;
+    aeron_subscription_t *subscription; // shared by various pollers
     aeron_archive_control_response_poller_t *control_response_poller;
+    aeron_archive_recording_descriptor_poller_t *recording_descriptor_poller;
     aeron_t *aeron;
     int64_t control_session_id;
     int64_t archive_id;
@@ -40,6 +42,17 @@ int aeron_archive_poll_for_response(
     aeron_archive_t *aeron_archive,
     const char *operation_name,
     int64_t correlation_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
+
+int aeron_archive_poll_for_descriptors(
+    int32_t *count_p,
+    aeron_archive_t *aeron_archive,
+    const char *operation_name,
+    int64_t correlation_id,
+    int32_t record_count,
+    aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
+    void *recording_descriptor_consumer_clientd,
     aeron_idle_strategy_func_t idle_strategy_func,
     void *idle_strategy_state);
 
@@ -88,8 +101,9 @@ int aeron_archive_create(
     aeron_archive_t **aeron_archive,
     aeron_archive_context_t *ctx,
     aeron_archive_proxy_t *archive_proxy,
+    aeron_subscription_t *subscription,
     aeron_archive_control_response_poller_t *control_response_poller,
-    void *recording_descriptor_poller,
+    aeron_archive_recording_descriptor_poller_t *recording_descriptor_poller,
     void *recording_subscription_descriptor_poller,
     aeron_t *aeron,
     int64_t control_session_id,
@@ -105,7 +119,9 @@ int aeron_archive_create(
 
     _aeron_archive->ctx = ctx;
     _aeron_archive->archive_proxy = archive_proxy;
+    _aeron_archive->subscription = subscription;
     _aeron_archive->control_response_poller = control_response_poller;
+    _aeron_archive->recording_descriptor_poller = recording_descriptor_poller;
     _aeron_archive->aeron = aeron;
     _aeron_archive->control_session_id = control_session_id;
     _aeron_archive->archive_id = archive_id;
@@ -121,6 +137,12 @@ int aeron_archive_close(aeron_archive_t *aeron_archive)
 
     aeron_archive_control_response_poller_close(aeron_archive->control_response_poller);
     aeron_archive->control_response_poller = NULL;
+
+    aeron_archive_recording_descriptor_poller_close(aeron_archive->recording_descriptor_poller);
+    aeron_archive->recording_descriptor_poller = NULL;
+
+    aeron_subscription_close(aeron_archive->subscription, NULL, NULL);
+    aeron_archive->subscription = NULL;
 
     aeron_free(aeron_archive);
 
@@ -358,6 +380,48 @@ int aeron_archive_find_last_matching_recording(
     return rc;
 }
 
+int aeron_archive_list_recording(
+    int32_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
+    void *recording_descriptor_consumer_clientd,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    // TODO lock
+
+    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+
+    if (!aeron_archive_proxy_list_recording(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id,
+        idle_strategy_func,
+        idle_strategy_state))
+    {
+        AERON_APPEND_ERR("%s", "");
+        // TODO unlock
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_descriptors(
+        count_p,
+        aeron_archive,
+        "AeronArchive::listRecording",
+        correlation_id,
+        1,
+        recording_descriptor_consumer,
+        recording_descriptor_consumer_clientd,
+        idle_strategy_func,
+        idle_strategy_state);
+
+    // TODO unlock
+
+    return rc;
+}
+
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive)
 {
     return aeron_archive->aeron;
@@ -368,9 +432,9 @@ int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive)
     return aeron_archive->archive_id;
 }
 
-aeron_archive_control_response_poller_t *aeron_archive_get_control_response_poller(aeron_archive_t *aeron_archive)
+aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive)
 {
-    return aeron_archive->control_response_poller;
+    return aeron_archive->subscription;
 }
 
 /* **************** */
@@ -498,5 +562,72 @@ int aeron_archive_poll_for_response(
 
             return 0;
         }
+    }
+}
+
+int aeron_archive_poll_for_descriptors(
+    int32_t *count_p,
+    aeron_archive_t *aeron_archive,
+    const char *operation_name,
+    int64_t correlation_id,
+    int32_t record_count,
+    aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
+    void *recording_descriptor_consumer_clientd,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    aeron_archive_recording_descriptor_poller_t *poller = aeron_archive->recording_descriptor_poller;
+
+    int32_t existing_remain_count = record_count;
+
+    int64_t deadline_ns = aeron_nano_clock() + aeron_archive_context_get_message_timeout_ns(aeron_archive->ctx);
+
+    aeron_archive_recording_descriptor_poller_reset(
+        poller,
+        correlation_id,
+        record_count,
+        recording_descriptor_consumer,
+        recording_descriptor_consumer_clientd);
+
+    while (true)
+    {
+        const int fragments = aeron_archive_recording_descriptor_poller_poll(poller);
+
+        const int32_t remaining_record_count = aeron_archive_recording_descriptor_poller_remaining_record_count(poller);
+
+        if (aeron_archive_recording_descriptor_poller_is_dispatch_complete(poller))
+        {
+            *count_p = record_count - remaining_record_count;
+
+            return 0;
+        }
+
+        if (remaining_record_count != existing_remain_count)
+        {
+            existing_remain_count = remaining_record_count;
+
+            deadline_ns = aeron_nano_clock() + aeron_archive_context_get_message_timeout_ns(aeron_archive->ctx);
+        }
+
+        // TODO invoke aeron client
+
+        if (fragments > 0)
+        {
+            continue;
+        }
+
+        if (!aeron_subscription_is_connected(aeron_archive->subscription))
+        {
+            // TODO
+            return -1;
+        }
+
+        if (aeron_nano_clock() > deadline_ns)
+        {
+            AERON_SET_ERR(ETIMEDOUT, "%s awaiting recording descriptors - correlationId=%llu", operation_name, correlation_id);
+            return -1;
+        }
+
+        idle_strategy_func(idle_strategy_state, 0);
     }
 }

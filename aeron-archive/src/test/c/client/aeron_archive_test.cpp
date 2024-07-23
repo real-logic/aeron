@@ -167,8 +167,7 @@ TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
         ASSERT_NE(-1, aeron_archive_async_connect_poll(&archive, async));
     }
 
-    aeron_archive_control_response_poller_t *control_response_poller = aeron_archive_get_control_response_poller(archive);
-    aeron_subscription_t *subscription = aeron_archive_control_response_poller_get_subscription(control_response_poller);
+    aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
     ASSERT_TRUE(aeron_subscription_is_connected(subscription));
 
     ASSERT_EQ(42, aeron_archive_get_archive_id(archive));
@@ -185,8 +184,7 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchive)
     ASSERT_EQ(0, aeron_archive_context_init(&ctx));
     ASSERT_EQ(0, aeron_archive_connect(&archive, ctx));
 
-    aeron_archive_control_response_poller_t *control_response_poller = aeron_archive_get_control_response_poller(archive);
-    aeron_subscription_t *subscription = aeron_archive_control_response_poller_get_subscription(control_response_poller);
+    aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
     ASSERT_TRUE(aeron_subscription_is_connected(subscription));
 
     ASSERT_EQ(42, aeron_archive_get_archive_id(archive));
@@ -342,7 +340,17 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
         (void *)&idle_duration_ns));
     EXPECT_EQ(stop_position, found_stop_position);
 
-    // TODO listRecording()
+    /*
+    int32_t count;
+    EXPECT_EQ(0, aeron_archive_list_recording(
+        &count,
+        archive,
+        found_recording_id,
+        NULL,
+        NULL,
+        aeron_idle_strategy_sleeping_idle,
+        (void *)&idle_duration_ns));
+        */
 
     ASSERT_EQ(0, aeron_archive_close(archive));
     ASSERT_EQ(0, aeron_archive_context_close(ctx));

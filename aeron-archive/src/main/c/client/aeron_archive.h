@@ -25,7 +25,25 @@
 typedef struct aeron_archive_stct aeron_archive_t;
 typedef struct aeron_archive_context_stct aeron_archive_context_t;
 typedef struct aeron_archive_async_connect_stct aeron_archive_async_connect_t;
-typedef struct aeron_archive_control_response_poller_stct aeron_archive_control_response_poller_t;
+
+typedef int (*aeron_archive_recording_descriptor_consumer_func_t)(
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id,
+    int64_t start_timestamp,
+    int64_t stop_timestamp,
+    int64_t start_position,
+    int64_t stop_position,
+    int32_t initial_term_id,
+    int32_t segment_file_length,
+    int32_t term_buffer_length,
+    int32_t mtu_length,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *stripped_channel,
+    const char *original_channel,
+    const char *source_identity,
+    void *clientd);
 
 typedef enum aeron_archive_source_location_en
 {
@@ -90,15 +108,22 @@ int aeron_archive_find_last_matching_recording(
     aeron_idle_strategy_func_t idle_strategy_func,
     void *idle_strategy_state);
 
+int aeron_archive_list_recording(
+    int32_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
+    void *recording_descriptor_consumer_clientd,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
+
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
+
+aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);
 
 int aeron_archive_context_set_message_timeout_ns(aeron_archive_context_t *ctx, int64_t message_timeout_ns);
 
-/* maybe these can be in the 'private' headers because they'll only be used for unit tests? */
 int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
-aeron_archive_control_response_poller_t *aeron_archive_get_control_response_poller(aeron_archive_t *aeron_archive);
-
-aeron_subscription_t *aeron_archive_control_response_poller_get_subscription(aeron_archive_control_response_poller_t *poller);
 
 int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters_reader_t *counters_reader, int32_t session_id);
 int64_t aeron_archive_recording_pos_get_recording_id(aeron_counters_reader_t *counters_reader, int32_t counter_id);

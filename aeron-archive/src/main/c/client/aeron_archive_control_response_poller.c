@@ -15,6 +15,7 @@
  */
 
 #include "aeron_archive.h"
+#include "aeron_archive_control_response_poller.h"
 
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
@@ -94,9 +95,6 @@ int aeron_archive_control_response_poller_create(
 
 int aeron_archive_control_response_poller_close(aeron_archive_control_response_poller_t *poller)
 {
-    aeron_subscription_close(poller->subscription, NULL, NULL);
-    poller->subscription = NULL;
-
     aeron_controlled_fragment_assembler_delete(poller->fragment_assembler);
     poller->fragment_assembler = NULL;
 
@@ -238,8 +236,6 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
         {
             struct aeron_archive_client_controlResponse control_response;
 
-            fprintf(stderr, "  <- control response\n");
-
             aeron_archive_client_controlResponse_wrap_for_decode(
                 &control_response,
                 (char *)buffer,
@@ -272,13 +268,13 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
             return AERON_ACTION_BREAK;
         }
         case AERON_ARCHIVE_CLIENT_CHALLENGE_SBE_TEMPLATE_ID:
+        {
             // TODO
             return AERON_ACTION_BREAK;
+        }
         case AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_EVENT_SBE_TEMPLATE_ID:
         {
             struct aeron_archive_client_recordingSignalEvent recording_signal_event;
-
-            fprintf(stderr, "  <- recording signal event\n");
 
             aeron_archive_client_recordingSignalEvent_wrap_for_decode(
                 &recording_signal_event,

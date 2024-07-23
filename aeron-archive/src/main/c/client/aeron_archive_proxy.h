@@ -100,4 +100,12 @@ bool aeron_archive_proxy_find_last_matching_recording(
     aeron_idle_strategy_func_t idle_strategy_func,
     void *idle_strategy_state);
 
+bool aeron_archive_proxy_list_recording(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
+
 #endif //AERON_ARCHIVE_PROXY_H

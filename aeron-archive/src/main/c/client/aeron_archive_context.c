@@ -103,30 +103,32 @@ int aeron_archive_context_conclude(aeron_archive_context_t *ctx)
 {
     if (NULL == ctx->aeron)
     {
-        if (aeron_context_init(&ctx->aeron_ctx) < 0)
+        if (aeron_context_init(&ctx->aeron_ctx) < 0 ||
+            aeron_context_set_dir(ctx->aeron_ctx, ctx->aeron_directory_name) < 0 ||
+            aeron_init(&ctx->aeron, ctx->aeron_ctx) < 0 ||
+            aeron_start(ctx->aeron) < 0)
         {
-            return -1; // TODO
-        }
-
-        if (aeron_context_set_dir(ctx->aeron_ctx, ctx->aeron_directory_name) < 0)
-        {
-            return -1; // TODO
-        }
-
-        if (aeron_init(&ctx->aeron, ctx->aeron_ctx) < 0)
-        {
-            return -1; // TODO
-        }
-
-        if (aeron_start(ctx->aeron) < 0)
-        {
-            return -1; // TODO
+            AERON_APPEND_ERR("%s", "");
+            goto cleanup;
         }
 
         ctx->owns_aeron_client = true;
     }
 
     return 0;
+
+cleanup:
+    if (NULL != ctx->aeron)
+    {
+        aeron_close(ctx->aeron);
+    }
+
+    if (NULL != ctx->aeron_ctx)
+    {
+        aeron_context_close(ctx->aeron_ctx);
+    }
+
+    return -1;
 }
 
 aeron_t *aeron_archive_context_get_aeron(aeron_archive_context_t *ctx)

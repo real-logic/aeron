@@ -274,7 +274,7 @@ public class ErrorFlyweight extends HeaderFlyweight
      */
     public String errorMessage()
     {
-        return getStringUtf8(ERROR_STRING_FIELD_OFFSET);
+        return getStringAscii(ERROR_STRING_FIELD_OFFSET);
     }
 
     /**

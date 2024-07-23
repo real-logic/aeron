@@ -20,6 +20,7 @@ import io.aeron.ErrorCode;
 import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.protocol.*;
@@ -66,6 +67,7 @@ abstract class ReceiveChannelEndpointLhsPadding extends UdpChannelTransport
 
 abstract class ReceiveChannelEndpointHotFields extends ReceiveChannelEndpointLhsPadding
 {
+    protected final AtomicCounter errorFramesSent;
     long timeOfLastActivityNs;
 
     ReceiveChannelEndpointHotFields(
@@ -76,6 +78,7 @@ abstract class ReceiveChannelEndpointHotFields extends ReceiveChannelEndpointLhs
         final MediaDriver.Context context)
     {
         super(udpChannel, endPointAddress, bindAddress, connectAddress, context);
+        errorFramesSent = context.systemCounters().get(SystemCounterDescriptor.ERROR_FRAMES_SENT);
     }
 }
 
@@ -958,6 +961,8 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
         final int errorCode,
         final String errorMessage)
     {
+        errorFramesSent.increment();
+
         errorBuffer.clear();
         errorFlyweight
             .sessionId(sessionId)

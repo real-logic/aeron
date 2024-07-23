@@ -81,6 +81,7 @@ typedef struct aeron_receive_channel_endpoint_stct
 
     int64_t *short_sends_counter;
     int64_t *possible_ttl_asymmetry_counter;
+    int64_t *errors_frames_sent_counter;
 }
 aeron_receive_channel_endpoint_t;
 

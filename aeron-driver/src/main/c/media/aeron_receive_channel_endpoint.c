@@ -122,6 +122,8 @@ int aeron_receive_channel_endpoint_create(
     _endpoint->short_sends_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
     _endpoint->possible_ttl_asymmetry_counter = aeron_system_counter_addr(
         system_counters, AERON_SYSTEM_COUNTER_POSSIBLE_TTL_ASYMMETRY);
+    _endpoint->errors_frames_sent_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_ERROR_FRAMES_SENT);
 
     _endpoint->cached_clock = context->receiver_cached_clock;
 
@@ -460,6 +462,10 @@ int aeron_receiver_channel_endpoint_send_error_frame(
         {
             aeron_counter_increment(channel_endpoint->short_sends_counter, 1);
         }
+    }
+    else
+    {
+        aeron_counter_increment(channel_endpoint->errors_frames_sent_counter, 1);
     }
 
     return bytes_sent;

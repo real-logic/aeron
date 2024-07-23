@@ -885,6 +885,8 @@ public final class Configuration
     @Config
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
+    public static final int MAX_RETRANSMITS_MAX = 256;
+
     /**
      * Property name for the class used to validate if a driver should terminate based on token.
      */
@@ -1379,7 +1381,9 @@ public final class Configuration
      */
     public static int maxRetransmits()
     {
-        return Integer.max(getInteger(MAX_RETRANSMITS_PROP_NAME, MAX_RETRANSMITS_DEFAULT), 1);
+        return Integer.min(
+            Integer.max(getInteger(MAX_RETRANSMITS_PROP_NAME, MAX_RETRANSMITS_DEFAULT), 1),
+            MAX_RETRANSMITS_MAX);
     }
 
     /**

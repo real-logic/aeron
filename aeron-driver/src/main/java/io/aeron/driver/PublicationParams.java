@@ -431,9 +431,10 @@ final class PublicationParams
             throw new IllegalArgumentException("invalid " + MAX_RETRANSMITS_PARAM_NAME + ", must be a number", ex);
         }
 
-        if (maxRetransmits < 1)
+        if (maxRetransmits < 1 || maxRetransmits > Configuration.MAX_RETRANSMITS_MAX)
         {
-            throw new IllegalArgumentException("invalid " + MAX_RETRANSMITS_PARAM_NAME + ", must be > 0");
+            throw new IllegalArgumentException(
+                "invalid " + MAX_RETRANSMITS_PARAM_NAME + ", must be > 0 and <= " + Configuration.MAX_RETRANSMITS_MAX);
         }
 
         this.hasMaxRetransmits = true;
@@ -490,6 +491,8 @@ final class PublicationParams
             ", isSparse=" + isSparse +
             ", signalEos=" + signalEos +
             ", spiesSimulateConnection=" + spiesSimulateConnection +
+            ", hasMaxRetransmits=" + hasMaxRetransmits +
+            ", maxRetransmits=" + maxRetransmits +
             '}';
     }
 }

@@ -83,7 +83,7 @@ class RetransmitHandlerTest
         DELAY_GENERATOR,
         LINGER_GENERATOR,
         true,
-        Configuration.maxRetransmits(),
+        16,
         retransmitOverflow);
 
     @BeforeEach
@@ -351,7 +351,7 @@ class RetransmitHandlerTest
             ZERO_DELAY_GENERATOR,
             LINGER_GENERATOR,
             true,
-            Configuration.maxRetransmits(),
+            16,
             retransmitOverflow);
     }
 

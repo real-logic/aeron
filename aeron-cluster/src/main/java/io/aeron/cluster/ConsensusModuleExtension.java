@@ -36,17 +36,15 @@ public interface ConsensusModuleExtension extends AutoCloseable
     int supportedSchemaId();
 
     /**
-     * Start event where the extension can perform any initialisation required and load snapshot state.
-     * The snapshot image can be null if no previous snapshot exists.
+     * Start event where the extension can perform any initialisation required.
      * <p>
      * <b>Note:</b> As this is a potentially long-running operation the implementation should use
      * {@link Cluster#idleStrategy()} and then occasionally call {@link org.agrona.concurrent.IdleStrategy#idle()} or
      * {@link org.agrona.concurrent.IdleStrategy#idle(int)}, especially when polling the {@link Image} returns 0.
      *
      * @param consensusModuleControl with which the extension can interact.
-     * @param snapshotImage          from which the extension can load its state which can be null when no snapshot.
      */
-    void onStart(ConsensusModuleControl consensusModuleControl, Image snapshotImage);
+    void onStart(ConsensusModuleControl consensusModuleControl);
 
     /**
      * An extension should implement this method to do its work. Long-running operations should be decomposed.

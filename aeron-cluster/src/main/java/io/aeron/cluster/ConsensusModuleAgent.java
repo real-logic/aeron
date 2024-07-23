@@ -3612,9 +3612,10 @@ final class ConsensusModuleAgent
             {
                 loadSnapshot(recoveryPlan.snapshots.get(0), archive);
             }
-            else if (null != consensusModuleExtension)
+
+            if (null != consensusModuleExtension)
             {
-                consensusModuleExtension.onStart(this, null);
+                consensusModuleExtension.onStart(this);
             }
 
             while (!ServiceAck.hasReached(expectedAckPosition, serviceAckId, serviceAckQueues))

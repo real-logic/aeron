@@ -285,7 +285,7 @@ public class ErrorFlyweight extends HeaderFlyweight
      */
     public ErrorFlyweight errorMessage(final String errorMessage)
     {
-        final int headerAndMessageLength = putStringUtf8(ERROR_STRING_FIELD_OFFSET, errorMessage, LITTLE_ENDIAN);
+        final int headerAndMessageLength = putStringAscii(ERROR_STRING_FIELD_OFFSET, errorMessage, LITTLE_ENDIAN);
         frameLength(HEADER_LENGTH + (headerAndMessageLength - STR_HEADER_LEN));
         return this;
     }

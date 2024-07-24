@@ -17,6 +17,7 @@
 #include <errno.h>
 
 #include "aeron_archive.h"
+#include "aeron_archive_context.h"
 #include "aeron_archive_proxy.h"
 #include "aeron_archive_configuration.h"
 
@@ -38,6 +39,7 @@
 
 struct aeron_archive_proxy_stct
 {
+    aeron_archive_context_t *ctx;
     aeron_exclusive_publication_t *exclusive_publication;
     int retry_attempts;
     // TODO why bake a buffer into the archive_proxy_t?  Couldn't/shouldn't we just toss it on the stack?
@@ -46,13 +48,18 @@ struct aeron_archive_proxy_stct
 };
 
 int64_t aeron_archive_proxy_offer_once(aeron_archive_proxy_t *archive_proxy, size_t length);
+
 bool aeron_archive_proxy_offer(
     aeron_archive_proxy_t *archive_proxy,
-    size_t length,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    size_t length);
 
-int aeron_archive_proxy_create(aeron_archive_proxy_t **archive_proxy, aeron_exclusive_publication_t *exclusive_publication, int retry_attempts)
+/* **************** */
+
+int aeron_archive_proxy_create(
+    aeron_archive_proxy_t **archive_proxy,
+    aeron_archive_context_t *ctx,
+    aeron_exclusive_publication_t *exclusive_publication,
+    int retry_attempts)
 {
     aeron_archive_proxy_t *_archive_proxy = NULL;
 
@@ -62,6 +69,7 @@ int aeron_archive_proxy_create(aeron_archive_proxy_t **archive_proxy, aeron_excl
         return -1;
     }
 
+    _archive_proxy->ctx = ctx;
     _archive_proxy->exclusive_publication = exclusive_publication;
     _archive_proxy->retry_attempts = retry_attempts;
 
@@ -90,8 +98,6 @@ bool aeron_archive_proxy_try_connect(
     struct aeron_archive_client_authConnectRequest codec;
     struct aeron_archive_client_messageHeader hdr;
 
-    fprintf(stderr, " -> try connect\n");
-
     aeron_archive_client_authConnectRequest_wrap_and_apply_header(
         &codec,
         (char *)archive_proxy->buffer,
@@ -105,7 +111,10 @@ bool aeron_archive_proxy_try_connect(
         &codec,
         control_response_channel,
         strlen(control_response_channel));
-    aeron_archive_client_authConnectRequest_put_encodedCredentials(&codec, "admin:admin", 11); // TODO
+    aeron_archive_client_authConnectRequest_put_encodedCredentials(
+        &codec,
+        "admin:admin",
+        11); // TODO
 
     return aeron_archive_proxy_offer_once(
         archive_proxy,
@@ -119,8 +128,6 @@ bool aeron_archive_proxy_archive_id(
 {
     struct aeron_archive_client_archiveIdRequest codec;
     struct aeron_archive_client_messageHeader hdr;
-
-    fprintf(stderr, " -> archive id\n");
 
     aeron_archive_client_archiveIdRequest_wrap_and_apply_header(
         &codec,
@@ -143,8 +150,6 @@ bool aeron_archive_proxy_close_session(
     struct aeron_archive_client_closeSessionRequest codec;
     struct aeron_archive_client_messageHeader hdr;
 
-    fprintf(stderr, " -> close session\n");
-
     aeron_archive_client_closeSessionRequest_wrap_and_apply_header(
         &codec,
         (char *)archive_proxy->buffer,
@@ -165,9 +170,7 @@ bool aeron_archive_proxy_start_recording(
     int32_t recording_stream_id,
     bool localSource,
     int64_t correlation_id,
-    int64_t control_session_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int64_t control_session_id)
 {
     struct aeron_archive_client_startRecordingRequest codec;
     struct aeron_archive_client_messageHeader hdr;
@@ -191,18 +194,14 @@ bool aeron_archive_proxy_start_recording(
 
     return aeron_archive_proxy_offer(
         archive_proxy,
-        aeron_archive_client_startRecordingRequest_encoded_length(&codec),
-        idle_strategy_func,
-        idle_strategy_state);
+        aeron_archive_client_startRecordingRequest_encoded_length(&codec));
 }
 
 bool aeron_archive_proxy_get_recording_position(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
     int64_t correlation_id,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int64_t recording_id)
 {
     struct aeron_archive_client_recordingPositionRequest codec;
     struct aeron_archive_client_messageHeader hdr;
@@ -219,18 +218,14 @@ bool aeron_archive_proxy_get_recording_position(
 
     return aeron_archive_proxy_offer(
         archive_proxy,
-        aeron_archive_client_recordingPositionRequest_encoded_length(&codec),
-        idle_strategy_func,
-        idle_strategy_state);
+        aeron_archive_client_recordingPositionRequest_encoded_length(&codec));
 }
 
 bool aeron_archive_proxy_get_stop_position(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
     int64_t correlation_id,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int64_t recording_id)
 {
     struct aeron_archive_client_stopPositionRequest codec;
     struct aeron_archive_client_messageHeader hdr;
@@ -247,18 +242,14 @@ bool aeron_archive_proxy_get_stop_position(
 
     return aeron_archive_proxy_offer(
         archive_proxy,
-        aeron_archive_client_stopPositionRequest_encoded_length(&codec),
-        idle_strategy_func,
-        idle_strategy_state);
+        aeron_archive_client_stopPositionRequest_encoded_length(&codec));
 }
 
 bool aeron_archive_proxy_get_max_recorded_position(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
     int64_t correlation_id,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int64_t recording_id)
 {
     struct aeron_archive_client_maxRecordedPositionRequest codec;
     struct aeron_archive_client_messageHeader hdr;
@@ -275,18 +266,14 @@ bool aeron_archive_proxy_get_max_recorded_position(
 
     return aeron_archive_proxy_offer(
         archive_proxy,
-        aeron_archive_client_maxRecordedPositionRequest_encoded_length(&codec),
-        idle_strategy_func,
-        idle_strategy_state);
+        aeron_archive_client_maxRecordedPositionRequest_encoded_length(&codec));
 }
 
 bool aeron_archive_proxy_stop_recording(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
     int64_t correlation_id,
-    int64_t subscription_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int64_t subscription_id)
 {
     struct aeron_archive_client_stopRecordingSubscriptionRequest codec;
     struct aeron_archive_client_messageHeader hdr;
@@ -303,9 +290,7 @@ bool aeron_archive_proxy_stop_recording(
 
     return aeron_archive_proxy_offer(
         archive_proxy,
-        aeron_archive_client_stopRecordingSubscriptionRequest_encoded_length(&codec),
-        idle_strategy_func,
-        idle_strategy_state);
+        aeron_archive_client_stopRecordingSubscriptionRequest_encoded_length(&codec));
 }
 
 bool aeron_archive_proxy_find_last_matching_recording(
@@ -315,9 +300,7 @@ bool aeron_archive_proxy_find_last_matching_recording(
     int64_t min_recording_id,
     const char *channel_fragment,
     int32_t stream_id,
-    int32_t session_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int32_t session_id)
 {
     struct aeron_archive_client_findLastMatchingRecordingRequest codec;
     struct aeron_archive_client_messageHeader hdr;
@@ -340,18 +323,14 @@ bool aeron_archive_proxy_find_last_matching_recording(
 
     return aeron_archive_proxy_offer(
         archive_proxy,
-        aeron_archive_client_findLastMatchingRecordingRequest_encoded_length(&codec),
-        idle_strategy_func,
-        idle_strategy_state);
+        aeron_archive_client_findLastMatchingRecordingRequest_encoded_length(&codec));
 }
 
 bool aeron_archive_proxy_list_recording(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
     int64_t correlation_id,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int64_t recording_id)
 {
     struct aeron_archive_client_listRecordingRequest codec;
     struct aeron_archive_client_messageHeader hdr;
@@ -368,9 +347,7 @@ bool aeron_archive_proxy_list_recording(
 
     return aeron_archive_proxy_offer(
         archive_proxy,
-        aeron_archive_client_listRecordingRequest_encoded_length(&codec),
-        idle_strategy_func,
-        idle_strategy_state);
+        aeron_archive_client_listRecordingRequest_encoded_length(&codec));
 }
 
 /* ************* */
@@ -396,9 +373,7 @@ int64_t aeron_archive_proxy_offer_once(aeron_archive_proxy_t *archive_proxy, siz
 // The length here must NOT include the messageHeader encoded length
 bool aeron_archive_proxy_offer(
     aeron_archive_proxy_t *archive_proxy,
-    size_t length,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    size_t length)
 {
     int attempts = archive_proxy->retry_attempts;
 
@@ -425,6 +400,6 @@ bool aeron_archive_proxy_offer(
             return false;
         }
 
-        idle_strategy_func(idle_strategy_state, 0);
+        aeron_archive_context_idle(archive_proxy->ctx);
     }
 }

@@ -67,36 +67,26 @@ int aeron_archive_start_recording(
     aeron_archive_t *aeron_archive,
     const char *recording_channel,
     int32_t recording_stream_id,
-    aeron_archive_source_location_t source_location,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    aeron_archive_source_location_t source_location);
 
 int aeron_archive_get_recording_position(
     int64_t *recording_position_p,
     aeron_archive_t *aeron_archive,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int64_t recording_id);
 
 int aeron_archive_get_stop_position(
     int64_t *stop_position_p,
     aeron_archive_t *aeron_archive,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int64_t recording_id);
 
 int aeron_archive_get_max_recorded_position(
     int64_t *max_recorded_position_p,
     aeron_archive_t *aeron_archive,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int64_t recording_id);
 
 int aeron_archive_stop_recording(
     aeron_archive_t *aeron_archive,
-    int64_t subscription_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int64_t subscription_id);
 
 int aeron_archive_find_last_matching_recording(
     int64_t *recording_id_p,
@@ -104,24 +94,24 @@ int aeron_archive_find_last_matching_recording(
     int64_t min_recording_id,
     const char *channel_fragment,
     int32_t stream_id,
-    int32_t session_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int32_t session_id);
 
 int aeron_archive_list_recording(
     int32_t *count_p,
     aeron_archive_t *aeron_archive,
     int64_t recording_id,
     aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
-    void *recording_descriptor_consumer_clientd,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    void *recording_descriptor_consumer_clientd);
 
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
 
 aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);
 
 int aeron_archive_context_set_message_timeout_ns(aeron_archive_context_t *ctx, int64_t message_timeout_ns);
+int aeron_archive_context_set_idle_strategy(
+    aeron_archive_context_t *ctx,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
 
 int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
 

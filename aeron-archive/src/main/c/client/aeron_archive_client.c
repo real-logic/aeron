@@ -41,9 +41,7 @@ int aeron_archive_poll_for_response(
     int64_t *relevant_id,
     aeron_archive_t *aeron_archive,
     const char *operation_name,
-    int64_t correlation_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int64_t correlation_id);
 
 int aeron_archive_poll_for_descriptors(
     int32_t *count_p,
@@ -52,9 +50,7 @@ int aeron_archive_poll_for_descriptors(
     int64_t correlation_id,
     int32_t record_count,
     aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
-    void *recording_descriptor_consumer_clientd,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    void *recording_descriptor_consumer_clientd);
 
 /* **************** */
 
@@ -149,14 +145,17 @@ int aeron_archive_close(aeron_archive_t *aeron_archive)
     return 0;
 }
 
+void aeron_archive_idle(aeron_archive_t *aeron_archive)
+{
+    aeron_archive_context_idle(aeron_archive->ctx);
+}
+
 int aeron_archive_start_recording(
     int64_t *subscription_id_p,
     aeron_archive_t *aeron_archive,
     const char *recording_channel,
     int32_t recording_stream_id,
-    aeron_archive_source_location_t source_location,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    aeron_archive_source_location_t source_location)
 {
     // TODO lock
 
@@ -168,9 +167,7 @@ int aeron_archive_start_recording(
         recording_stream_id,
         source_location == AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
         correlation_id,
-        aeron_archive->control_session_id,
-        idle_strategy_func,
-        idle_strategy_state))
+        aeron_archive->control_session_id))
     {
         AERON_APPEND_ERR("%s", "");
         // TODO unlock
@@ -181,9 +178,7 @@ int aeron_archive_start_recording(
         subscription_id_p,
         aeron_archive,
         "AeronArchive::startRecording",
-        correlation_id,
-        idle_strategy_func,
-        idle_strategy_state);
+        correlation_id);
 
     // TODO unlock
 
@@ -193,9 +188,7 @@ int aeron_archive_start_recording(
 int aeron_archive_get_recording_position(
     int64_t *recording_position_p,
     aeron_archive_t *aeron_archive,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int64_t recording_id)
 {
     // TODO lock
 
@@ -205,9 +198,7 @@ int aeron_archive_get_recording_position(
         aeron_archive->archive_proxy,
         aeron_archive->control_session_id,
         correlation_id,
-        recording_id,
-        idle_strategy_func,
-        idle_strategy_state))
+        recording_id))
     {
         AERON_APPEND_ERR("%s", "");
         // TODO unlock
@@ -218,9 +209,7 @@ int aeron_archive_get_recording_position(
         recording_position_p,
         aeron_archive,
         "AeronArchive::getRecordingPosition",
-        correlation_id,
-        idle_strategy_func,
-        idle_strategy_state);
+        correlation_id);
 
     // TODO unlock
 
@@ -230,9 +219,7 @@ int aeron_archive_get_recording_position(
 int aeron_archive_get_stop_position(
     int64_t *stop_position_p,
     aeron_archive_t *aeron_archive,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int64_t recording_id)
 {
     // TODO lock
 
@@ -242,9 +229,7 @@ int aeron_archive_get_stop_position(
         aeron_archive->archive_proxy,
         aeron_archive->control_session_id,
         correlation_id,
-        recording_id,
-        idle_strategy_func,
-        idle_strategy_state))
+        recording_id))
     {
         AERON_APPEND_ERR("%s", "");
         // TODO unlock
@@ -255,9 +240,7 @@ int aeron_archive_get_stop_position(
         stop_position_p,
         aeron_archive,
         "AeronArchive::getStopPosition",
-        correlation_id,
-        idle_strategy_func,
-        idle_strategy_state);
+        correlation_id);
 
     // TODO unlock
 
@@ -267,9 +250,7 @@ int aeron_archive_get_stop_position(
 int aeron_archive_get_max_recorded_position(
     int64_t *max_recorded_position_p,
     aeron_archive_t *aeron_archive,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int64_t recording_id)
 {
     // TODO lock
 
@@ -279,9 +260,7 @@ int aeron_archive_get_max_recorded_position(
         aeron_archive->archive_proxy,
         aeron_archive->control_session_id,
         correlation_id,
-        recording_id,
-        idle_strategy_func,
-        idle_strategy_state))
+        recording_id))
     {
         AERON_APPEND_ERR("%s", "");
         // TODO unlock
@@ -292,9 +271,7 @@ int aeron_archive_get_max_recorded_position(
         max_recorded_position_p,
         aeron_archive,
         "AeronArchive::getMaxRecordedPosition",
-        correlation_id,
-        idle_strategy_func,
-        idle_strategy_state);
+        correlation_id);
 
     // TODO unlock
 
@@ -303,9 +280,7 @@ int aeron_archive_get_max_recorded_position(
 
 int aeron_archive_stop_recording(
     aeron_archive_t *aeron_archive,
-    int64_t subscription_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int64_t subscription_id)
 {
     // TODO lock
 
@@ -315,9 +290,7 @@ int aeron_archive_stop_recording(
         aeron_archive->archive_proxy,
         aeron_archive->control_session_id,
         correlation_id,
-        subscription_id,
-        idle_strategy_func,
-        idle_strategy_state))
+        subscription_id))
     {
         AERON_APPEND_ERR("%s", "");
         // TODO unlock
@@ -328,9 +301,7 @@ int aeron_archive_stop_recording(
         NULL,
         aeron_archive,
         "AeronArchive::stopRecording",
-        correlation_id,
-        idle_strategy_func,
-        idle_strategy_state);
+        correlation_id);
 
     // TODO unlock
 
@@ -343,9 +314,7 @@ int aeron_archive_find_last_matching_recording(
     int64_t min_recording_id,
     const char *channel_fragment,
     int32_t stream_id,
-    int32_t session_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int32_t session_id)
 {
     // TODO lock
 
@@ -358,9 +327,7 @@ int aeron_archive_find_last_matching_recording(
         min_recording_id,
         channel_fragment,
         stream_id,
-        session_id,
-        idle_strategy_func,
-        idle_strategy_state))
+        session_id))
     {
         AERON_APPEND_ERR("%s", "");
         // TODO unlock
@@ -371,9 +338,7 @@ int aeron_archive_find_last_matching_recording(
         recording_id_p,
         aeron_archive,
         "AeronArchive::findLastMatchingRecording",
-        correlation_id,
-        idle_strategy_func,
-        idle_strategy_state);
+        correlation_id);
 
     // TODO unlock
 
@@ -385,9 +350,7 @@ int aeron_archive_list_recording(
     aeron_archive_t *aeron_archive,
     int64_t recording_id,
     aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
-    void *recording_descriptor_consumer_clientd,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    void *recording_descriptor_consumer_clientd)
 {
     // TODO lock
 
@@ -397,9 +360,7 @@ int aeron_archive_list_recording(
         aeron_archive->archive_proxy,
         aeron_archive->control_session_id,
         correlation_id,
-        recording_id,
-        idle_strategy_func,
-        idle_strategy_state))
+        recording_id))
     {
         AERON_APPEND_ERR("%s", "");
         // TODO unlock
@@ -413,9 +374,7 @@ int aeron_archive_list_recording(
         correlation_id,
         1,
         recording_descriptor_consumer,
-        recording_descriptor_consumer_clientd,
-        idle_strategy_func,
-        idle_strategy_state);
+        recording_descriptor_consumer_clientd);
 
     // TODO unlock
 
@@ -443,9 +402,7 @@ int aeron_archive_poll_next_response(
     aeron_archive_t *aeron_archive,
     const char *operation_name,
     int64_t correlation_id,
-    int64_t deadline_ns,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int64_t deadline_ns)
 {
     aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
 
@@ -487,7 +444,7 @@ int aeron_archive_poll_next_response(
             return -1;
         }
 
-        idle_strategy_func(idle_strategy_state, 0);
+        aeron_archive_idle(aeron_archive);
 
         // TODO invoke aeron client???
     }
@@ -499,13 +456,11 @@ int aeron_archive_poll_for_response(
     int64_t *relevant_id_p,
     aeron_archive_t *aeron_archive,
     const char *operation_name,
-    int64_t correlation_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    int64_t correlation_id)
 {
     aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
 
-    int64_t deadline_ns = aeron_nano_clock() + aeron_archive_context_get_message_timeout_ns(aeron_archive->ctx);
+    int64_t deadline_ns = aeron_nano_clock() + aeron_archive->ctx->message_timeout_ns;
 
     while (true)
     {
@@ -513,9 +468,7 @@ int aeron_archive_poll_for_response(
             aeron_archive,
             operation_name,
             correlation_id,
-            deadline_ns,
-            idle_strategy_func,
-            idle_strategy_state) < 0)
+            deadline_ns) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             return -1;
@@ -572,15 +525,13 @@ int aeron_archive_poll_for_descriptors(
     int64_t correlation_id,
     int32_t record_count,
     aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
-    void *recording_descriptor_consumer_clientd,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state)
+    void *recording_descriptor_consumer_clientd)
 {
     aeron_archive_recording_descriptor_poller_t *poller = aeron_archive->recording_descriptor_poller;
 
     int32_t existing_remain_count = record_count;
 
-    int64_t deadline_ns = aeron_nano_clock() + aeron_archive_context_get_message_timeout_ns(aeron_archive->ctx);
+    int64_t deadline_ns = aeron_nano_clock() + aeron_archive->ctx->message_timeout_ns;
 
     aeron_archive_recording_descriptor_poller_reset(
         poller,
@@ -606,7 +557,7 @@ int aeron_archive_poll_for_descriptors(
         {
             existing_remain_count = remaining_record_count;
 
-            deadline_ns = aeron_nano_clock() + aeron_archive_context_get_message_timeout_ns(aeron_archive->ctx);
+            deadline_ns = aeron_nano_clock() + aeron_archive->ctx->message_timeout_ns;
         }
 
         // TODO invoke aeron client
@@ -628,6 +579,6 @@ int aeron_archive_poll_for_descriptors(
             return -1;
         }
 
-        idle_strategy_func(idle_strategy_state, 0);
+        aeron_archive_idle(aeron_archive);
     }
 }

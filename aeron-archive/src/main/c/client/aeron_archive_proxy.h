@@ -17,6 +17,7 @@
 #ifndef AERON_ARCHIVE_PROXY_H
 #define AERON_ARCHIVE_PROXY_H
 
+#include "aeron_archive.h"
 #include "aeronc.h"
 #include "aeron_common.h"
 
@@ -26,6 +27,7 @@ typedef struct aeron_archive_proxy_stct aeron_archive_proxy_t;
 
 int aeron_archive_proxy_create(
     aeron_archive_proxy_t **archive_proxy,
+    aeron_archive_context_t *ctx,
     aeron_exclusive_publication_t *exclusive_publication,
     int retry_attempts);
 
@@ -53,41 +55,31 @@ bool aeron_archive_proxy_start_recording(
     int32_t recording_stream_id,
     bool localSource,
     int64_t correlation_id,
-    int64_t control_session_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int64_t control_session_id);
 
 bool aeron_archive_proxy_get_recording_position(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
     int64_t correlation_id,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int64_t recording_id);
 
 bool aeron_archive_proxy_get_stop_position(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
     int64_t correlation_id,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int64_t recording_id);
 
 bool aeron_archive_proxy_get_max_recorded_position(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
     int64_t correlation_id,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int64_t recording_id);
 
 bool aeron_archive_proxy_stop_recording(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
     int64_t correlation_id,
-    int64_t subscription_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int64_t subscription_id);
 
 bool aeron_archive_proxy_find_last_matching_recording(
     aeron_archive_proxy_t *archive_proxy,
@@ -96,16 +88,12 @@ bool aeron_archive_proxy_find_last_matching_recording(
     int64_t min_recording_id,
     const char *channel_fragment,
     int32_t stream_id,
-    int32_t session_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int32_t session_id);
 
 bool aeron_archive_proxy_list_recording(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
     int64_t correlation_id,
-    int64_t recording_id,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
+    int64_t recording_id);
 
 #endif //AERON_ARCHIVE_PROXY_H

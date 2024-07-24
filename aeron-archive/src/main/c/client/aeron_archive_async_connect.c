@@ -79,13 +79,13 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
     aeron_async_add_subscription_t *async_add_subscription = NULL;
     aeron_async_add_exclusive_publication_t *async_add_exclusive_publication = NULL;
 
-    aeron = aeron_archive_context_get_aeron(ctx);
+    aeron = ctx->aeron;
 
     if (aeron_async_add_subscription(
         &async_add_subscription,
         aeron,
-        aeron_archive_context_get_control_response_channel(ctx),
-        aeron_archive_context_get_control_response_stream_id(ctx),
+        ctx->control_response_channel,
+        ctx->control_response_stream_id,
         NULL,
         NULL,
         NULL,
@@ -102,8 +102,8 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
     if (aeron_async_add_exclusive_publication(
         &async_add_exclusive_publication,
         aeron,
-        aeron_archive_context_get_control_request_channel(ctx),
-        aeron_archive_context_get_control_request_stream_id(ctx)) < 0)
+        ctx->control_request_channel,
+        ctx->control_request_stream_id) < 0)
     {
         // TODO
         return -1;
@@ -128,7 +128,7 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
     _async->async_add_exclusive_publication = async_add_exclusive_publication;
     _async->exclusive_publication_id = exclusive_publication_id;
     _async->exclusive_publication = NULL;
-    _async->deadline_ns = aeron_nano_clock() + aeron_archive_context_get_message_timeout_ns(ctx);
+    _async->deadline_ns = aeron_nano_clock() + ctx->message_timeout_ns;
     _async->archive_proxy = NULL;
     _async->control_response_poller = NULL;
     _async->correlation_id = AERON_NULL_VALUE;
@@ -176,6 +176,7 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
         {
             if (aeron_archive_proxy_create(
                 &async->archive_proxy,
+                async->ctx,
                 async->exclusive_publication,
                 AERON_ARCHIVE_PROXY_RETRY_ATTEMPTS_DEFAULT) < 0)
             {
@@ -259,7 +260,7 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
         if (!aeron_archive_proxy_try_connect(
             async->archive_proxy,
             control_response_channel,
-            aeron_archive_context_get_control_response_stream_id(async->ctx),
+            async->ctx->control_response_stream_id,
             NULL, // TODO encoded credentials
             async->correlation_id))
         {

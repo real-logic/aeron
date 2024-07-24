@@ -33,4 +33,6 @@ int aeron_archive_create(
     int64_t control_session_id,
     int64_t archive_id);
 
+void aeron_archive_idle(aeron_archive_t *aeron_archive);
+
 #endif //AERON_ARCHIVE_CLIENT_H

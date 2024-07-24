@@ -191,6 +191,7 @@ TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
     const uint64_t idle_duration_ns = UINT64_C(1000) * UINT64_C(1000); /* 1ms */
 
     ASSERT_EQ(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&idle_duration_ns));
     ASSERT_EQ(0, aeron_archive_async_connect(&async, ctx));
     ASSERT_EQ(0, aeron_archive_async_connect_poll(&archive, async));
 
@@ -215,7 +216,10 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchive)
     aeron_archive_context_t *ctx;
     aeron_archive_t *archive = nullptr;
 
+    const uint64_t idle_duration_ns = UINT64_C(1000) * UINT64_C(1000); /* 1ms */
+
     ASSERT_EQ(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&idle_duration_ns));
     ASSERT_EQ(0, aeron_archive_connect(&archive, ctx));
 
     aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
@@ -240,6 +244,7 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
     const uint64_t idle_duration_ns = UINT64_C(1000) * UINT64_C(1000); /* 1ms */
 
     ASSERT_EQ(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&idle_duration_ns));
     ASSERT_EQ(0, aeron_archive_connect(&archive, ctx));
 
     int64_t subscription_id;
@@ -248,9 +253,8 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
         archive,
         m_recordingChannel.c_str(),
         m_recordingStreamId,
-        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
-        aeron_idle_strategy_sleeping_idle,
-        (void *)&idle_duration_ns));
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL));
+
 
     fprintf(stderr, "start recording succeeded\n");
 
@@ -315,9 +319,7 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
         EXPECT_EQ(0, aeron_archive_get_recording_position(
             &found_recording_position,
             archive,
-            recording_id_from_counter,
-            aeron_idle_strategy_sleeping_idle,
-            (void *)&idle_duration_ns));
+            recording_id_from_counter));
         EXPECT_EQ(stop_position, found_recording_position);
 
         fprintf(stderr, "found recording position %llu\n", found_recording_position);
@@ -326,9 +328,7 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
         EXPECT_EQ(0, aeron_archive_get_stop_position(
             &found_stop_position,
             archive,
-            recording_id_from_counter,
-            aeron_idle_strategy_sleeping_idle,
-            (void *)&idle_duration_ns));
+            recording_id_from_counter));
         EXPECT_EQ(AERON_NULL_VALUE, found_stop_position);
 
         fprintf(stderr, "found stop position %llu\n", found_stop_position);
@@ -337,9 +337,7 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
         EXPECT_EQ(0, aeron_archive_get_max_recorded_position(
             &found_max_recorded_position,
             archive,
-            recording_id_from_counter,
-            aeron_idle_strategy_sleeping_idle,
-            (void *)&idle_duration_ns));
+            recording_id_from_counter));
         EXPECT_EQ(stop_position, found_max_recorded_position);
 
         fprintf(stderr, "found max recorded position %llu\n", found_max_recorded_position);
@@ -347,9 +345,7 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
 
     EXPECT_EQ(0, aeron_archive_stop_recording(
         archive,
-        subscription_id,
-        aeron_idle_strategy_sleeping_idle,
-        (void *)&idle_duration_ns));
+        subscription_id));
 
     int64_t found_recording_id;
     const char *channel_fragment = "endpoint=localhost:3333";
@@ -359,9 +355,7 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
         0,
         channel_fragment,
         m_recordingStreamId,
-        session_id,
-        aeron_idle_strategy_sleeping_idle,
-        (void *)&idle_duration_ns));
+        session_id));
 
     EXPECT_EQ(recording_id_from_counter, found_recording_id);
 
@@ -369,9 +363,7 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
     EXPECT_EQ(0, aeron_archive_get_stop_position(
         &found_stop_position,
         archive,
-        recording_id_from_counter,
-        aeron_idle_strategy_sleeping_idle,
-        (void *)&idle_duration_ns));
+        recording_id_from_counter));
     EXPECT_EQ(stop_position, found_stop_position);
 
     int32_t count;
@@ -385,9 +377,7 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
         archive,
         found_recording_id,
         recording_descriptor_consumer,
-        &clientd,
-        aeron_idle_strategy_sleeping_idle,
-        (void *)&idle_duration_ns));
+        &clientd));
     EXPECT_EQ(1, count);
 
     ASSERT_EQ(0, aeron_archive_close(archive));

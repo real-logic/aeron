@@ -29,21 +29,6 @@
 #define AERON_ARCHIVE_CONTEXT_CONTROL_RESPONSE_CHANNEL_DEFAULT "aeron:udp?endpoint=localhost:0"
 #define AERON_ARCHIVE_CONTEXT_CONTROL_RESPONSE_STREAM_ID_DEFAULT (20)
 
-struct aeron_archive_context_stct
-{
-    aeron_t *aeron;
-    aeron_context_t *aeron_ctx;
-    char aeron_directory_name[AERON_MAX_PATH];
-    bool owns_aeron_client;
-
-    char control_request_channel[AERON_MAX_PATH];
-    int32_t control_request_stream_id;
-    char control_response_channel[AERON_MAX_PATH];
-    int32_t control_response_stream_id;
-
-    int64_t message_timeout_ns;
-};
-
 int aeron_archive_context_init(aeron_archive_context_t **ctx)
 {
     aeron_archive_context_t *_ctx = NULL;
@@ -131,37 +116,25 @@ cleanup:
     return -1;
 }
 
-aeron_t *aeron_archive_context_get_aeron(aeron_archive_context_t *ctx)
-{
-    return ctx->aeron;
-}
-
-char *aeron_archive_context_get_control_request_channel(aeron_archive_context_t *ctx) {
-    return ctx->control_request_channel;
-}
-
-int32_t aeron_archive_context_get_control_request_stream_id(aeron_archive_context_t *ctx) {
-    return ctx->control_request_stream_id;
-}
-
-char *aeron_archive_context_get_control_response_channel(aeron_archive_context_t *ctx)
-{
-    return ctx->control_response_channel;
-}
-
-int32_t aeron_archive_context_get_control_response_stream_id(aeron_archive_context_t *ctx)
-{
-    return ctx->control_response_stream_id;
-}
-
-int64_t aeron_archive_context_get_message_timeout_ns(aeron_archive_context_t *ctx)
-{
-    return ctx->message_timeout_ns;
-}
-
 int aeron_archive_context_set_message_timeout_ns(aeron_archive_context_t *ctx, int64_t message_timeout_ns)
 {
     ctx->message_timeout_ns = message_timeout_ns;
 
     return 0;
+}
+
+int aeron_archive_context_set_idle_strategy(
+    aeron_archive_context_t *ctx,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state)
+{
+    ctx->idle_strategy_func = idle_strategy_func;
+    ctx->idle_strategy_state = idle_strategy_state;
+
+    return 0;
+}
+
+void aeron_archive_context_idle(aeron_archive_context_t *ctx)
+{
+    ctx->idle_strategy_func(ctx->idle_strategy_state, 0);
 }

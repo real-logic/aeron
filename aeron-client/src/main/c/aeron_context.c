@@ -29,6 +29,7 @@
 #include "aeron_context.h"
 #include "util/aeron_error.h"
 #include "util/aeron_parse_util.h"
+#include "util/aeron_strutil.h"
 
 #define AERON_CONTEXT_USE_CONDUCTOR_AGENT_INVOKER_DEFAULT (false)
 #define AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT (10 * 1000L)
@@ -110,7 +111,11 @@ int aeron_context_init(aeron_context_t **context)
 
     if ((value = getenv(AERON_CLIENT_NAME_ENV_VAR)))
     {
-        _context->client_name = value;
+        if (aeron_context_set_client_name(_context, value) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
     }
 
     if ((value = getenv(AERON_DRIVER_TIMEOUT_ENV_VAR)))
@@ -216,7 +221,25 @@ int aeron_context_set_client_name(aeron_context_t *context, const char *value)
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
 
-    context->client_name = value;
+    size_t copy_length = 0;
+    bool truncate = !aeron_str_length(value, AERON_COUNTER_MAX_CLIENT_NAME_LENGTH, &copy_length);
+    copy_length = truncate ? AERON_COUNTER_MAX_CLIENT_NAME_LENGTH : copy_length;
+    char *client_name = NULL;
+
+    if (aeron_alloc((void **)&client_name, copy_length + 1) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    memcpy(client_name, value, copy_length);
+    if (truncate)
+    {
+        memset(client_name + (copy_length - 3), '.', 3);
+    }
+    client_name[copy_length] = '\0';
+
+    context->client_name = client_name;
     return 0;
 }
 

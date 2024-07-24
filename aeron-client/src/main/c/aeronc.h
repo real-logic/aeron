@@ -629,6 +629,7 @@ aeron_counter_metadata_descriptor_t;
 
 #define AERON_COUNTER_MAX_LABEL_LENGTH sizeof(((aeron_counter_metadata_descriptor_t *)NULL)->label)
 #define AERON_COUNTER_MAX_KEY_LENGTH sizeof(((aeron_counter_metadata_descriptor_t *)NULL)->key)
+#define AERON_COUNTER_MAX_CLIENT_NAME_LENGTH (100)
 
 #define AERON_COUNTER_RECORD_UNUSED (0)
 #define AERON_COUNTER_RECORD_ALLOCATED (1)

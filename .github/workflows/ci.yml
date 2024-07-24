@@ -312,32 +312,38 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - version: 8.9
-            gcc-version: 10
-          - version: 9.3
-            gcc-version: 13
+        version: [ '10' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Build Artifacts Using Docker
-        uses: docker/build-push-action@v6
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
         with:
-          context: .
-          file: ./cppbuild/rocky/Dockerfile
-          pull: true
-          shm-size: 1g
-          outputs: type=local,dest=build
-          target: essentials-artifacts
-          build-args: |
-            VERSION=${{ matrix.version }}
-            GCC_VERSION=${{ matrix.gcc-version }}
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-caches-
+      - name: Cache Gradle wrappers
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Build
+        run: GCC_VERSION=${{ matrix.version }} cppbuild/rocky-docker-build
+      - name: Copy test logs
+        id: copy_test_logs
+        if: failure()
+        run: |
+          echo "file=build/distributions/test_logs.tbz2" >> $GITHUB_OUTPUT
+          ./gradlew tarTestLogs
+      - name: Upload crash logs
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
+        uses: actions/upload-artifact@v4
+        with:
+          name: crash-logs-gcc-rhel-${{ matrix.version }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-clang-ubuntu-2004-build:
     name: C++ Clang ${{ matrix.version }} (Ubuntu 20.04)

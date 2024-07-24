@@ -1,7 +1,7 @@
-ARG VERSION="9.3"
+ARG VERSION="8.9"
 FROM rockylinux:${VERSION} as builder
 
-ARG GCC_VERSION="13"
+ARG GCC_VERSION="10"
 
 RUN yum update -y && yum install -y https://cdn.azul.com/zulu/bin/zulu-repo-1.0.0-1.noarch.rpm && \
     yum update -y && yum install -y \
@@ -30,15 +30,17 @@ RUN adduser --uid $USER_ID --system --create-home --gid $GROUP_ID athena
 
 USER athena
 WORKDIR /opt/aeron
-ADD --chown=athena:athena . /opt/aeron
 
+FROM builder as essentials-test
+ENTRYPOINT scl enable "gcc-toolset-${GCC_VERSION}" -- cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --package
+
+FROM builder as essentials-build
+
+ADD --chown=athena:athena . /opt/aeron
 RUN git config --global user.email "build@aeron.io"
 RUN git config --global user.name "Athena (Build Master)"
 RUN git config --global core.autocrlf false
 RUN git update-index -q --refresh
-
-FROM builder as essentials-build
 RUN scl enable "gcc-toolset-${GCC_VERSION}" -- cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --package
-
 FROM scratch AS essentials-artifacts
 COPY --from=essentials-build /opt/aeron/cppbuild/Release/*.tar.gz /

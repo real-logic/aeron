@@ -212,7 +212,7 @@ int main(int argc, char **argv)
         sched_yield();
     }
 
-    printf("Publication channel status %" PRIu64 "\n", aeron_publication_channel_status(publication));
+    printf("Publication channel status %" PRId64 "\n", aeron_publication_channel_status(publication));
 
     if (rate_reporter_start(&rate_reporter, print_rate_report) < 0)
     {

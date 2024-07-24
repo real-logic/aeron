@@ -101,7 +101,7 @@ abstract class AbstractListRecordingsSession implements Session
             }
         }
 
-        final int alreadySent = sent;
+        final int batchStartPosition = position;
         for (int recordsScanned = 0; sent < count && recordsScanned < MAX_SCANS_PER_WORK_CYCLE; recordsScanned++)
         {
             final boolean noMoreRecordings = position < 0 || position > lastPosition;
@@ -140,7 +140,7 @@ abstract class AbstractListRecordingsSession implements Session
             isDone = true;
         }
 
-        return sent - alreadySent;
+        return (position - batchStartPosition) / 2;
     }
 
     /**

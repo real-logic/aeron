@@ -474,6 +474,7 @@ private:
     // The internal length type used by the atomic buffer
     typedef std::uint32_t length_t;
 
+    static_assert(std::is_same<std::uint8_t, unsigned char>::value, "unit8_t is not aliasable");
     std::uint8_t *m_buffer = nullptr;
     length_t m_length = 0;
 };

@@ -85,6 +85,24 @@ typedef struct aeron_image_controlled_fragment_assembler_stct aeron_image_contro
 typedef struct aeron_fragment_assembler_stct aeron_fragment_assembler_t;
 typedef struct aeron_controlled_fragment_assembler_stct aeron_controlled_fragment_assembler_t;
 
+struct aeron_publication_error_frame_stct
+{
+    int64_t registration_id;
+    int64_t receiver_id;
+    int32_t session_id;
+    int32_t stream_id;
+    struct
+    {
+        bool is_present;
+        int64_t value;
+    }
+    group_tag;
+    // TODO: How best to handle the source address?  String?  Do we want to have a dependency on struct sockaddr_storage
+    size_t message_len;
+    const char *message;
+};
+typedef struct aeron_publication_error_frame_stct aeron_publication_error_frame_t;
+
 /**
  * Environment variables and functions used for setting values of an aeron_context_t.
  */
@@ -131,6 +149,11 @@ const char *aeron_context_get_client_name(aeron_context_t *context);
 typedef void (*aeron_error_handler_t)(void *clientd, int errcode, const char *message);
 
 /**
+ * The error frame handler to be called when the driver notifies the client about an error frame being received
+ */
+typedef void (*aeron_error_frame_handler_t)(void *clientd);
+
+/**
  * Generalised notification callback.
  */
 typedef void (*aeron_notification_t)(void *clientd);
@@ -138,6 +161,10 @@ typedef void (*aeron_notification_t)(void *clientd);
 int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handler_t handler, void *clientd);
 aeron_error_handler_t aeron_context_get_error_handler(aeron_context_t *context);
 void *aeron_context_get_error_handler_clientd(aeron_context_t *context);
+
+int aeron_context_set_error_frame_handler(aeron_context_t *context, aeron_error_frame_handler_t handler, void *clientd);
+aeron_error_frame_handler_t aeron_context_get_error_frame_handler(aeron_context_t *context);
+void *aeron_context_get_error_frame_handler_clientd(aeron_context_t *context);
 
 /**
  * Function called by aeron_client_t to deliver notification that the media driver has added an aeron_publication_t

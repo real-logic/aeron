@@ -253,7 +253,7 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
             return 0;
         }
 
-        // TODO encoded credentials!!!
+        aeron_archive_encoded_credentials_t *encoded_credentials = aeron_archive_credentials_supplier_encoded_credentials(&async->ctx->credentials_supplier);
 
         async->correlation_id = aeron_next_correlation_id(async->aeron);
 
@@ -261,12 +261,14 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
             async->archive_proxy,
             control_response_channel,
             async->ctx->control_response_stream_id,
-            NULL, // TODO encoded credentials
+            encoded_credentials,
             async->correlation_id))
         {
+            aeron_archive_credentials_supplier_on_free(&async->ctx->credentials_supplier, encoded_credentials);
             return 0;
         }
 
+        aeron_archive_credentials_supplier_on_free(&async->ctx->credentials_supplier, encoded_credentials);
         async->state = AWAIT_SUBSCRIPTION_CONNECTED;
     }
 

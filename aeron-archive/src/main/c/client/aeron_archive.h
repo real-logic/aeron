@@ -26,6 +26,21 @@ typedef struct aeron_archive_stct aeron_archive_t;
 typedef struct aeron_archive_context_stct aeron_archive_context_t;
 typedef struct aeron_archive_async_connect_stct aeron_archive_async_connect_t;
 
+typedef struct aeron_archive_encoded_credentials_stct
+{
+    const char *data;
+    uint32_t length;
+}
+aeron_archive_encoded_credentials_t;
+
+typedef aeron_archive_encoded_credentials_t *(*aeron_archive_credentials_encoded_credentials_supplier_func_t)(void *clientd);
+typedef aeron_archive_encoded_credentials_t *(*aeron_archive_credentials_challenge_supplier_func_t)(
+    aeron_archive_encoded_credentials_t *encoded_challenge,
+    void *clientd);
+typedef void (*aeron_archive_credentials_free_func_t)(
+    aeron_archive_encoded_credentials_t *credentials,
+    void *clientd);
+
 typedef void (*aeron_archive_recording_descriptor_consumer_func_t)(
     int64_t control_session_id,
     int64_t correlation_id,
@@ -54,6 +69,18 @@ aeron_archive_source_location_t;
 
 int aeron_archive_context_init(aeron_archive_context_t **ctx);
 int aeron_archive_context_close(aeron_archive_context_t *ctx);
+
+int aeron_archive_context_set_message_timeout_ns(aeron_archive_context_t *ctx, int64_t message_timeout_ns);
+int aeron_archive_context_set_idle_strategy(
+    aeron_archive_context_t *ctx,
+    aeron_idle_strategy_func_t idle_strategy_func,
+    void *idle_strategy_state);
+int aeron_archive_context_set_credentials_supplier(
+    aeron_archive_context_t *ctx,
+    aeron_archive_credentials_encoded_credentials_supplier_func_t encoded_credentials,
+    aeron_archive_credentials_challenge_supplier_func_t  on_challenge,
+    aeron_archive_credentials_free_func_t on_free,
+    void *clientd);
 
 int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_archive_context_t *ctx);
 int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_archive_async_connect_t *async);
@@ -104,16 +131,8 @@ int aeron_archive_list_recording(
     void *recording_descriptor_consumer_clientd);
 
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
-
-aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);
-
-int aeron_archive_context_set_message_timeout_ns(aeron_archive_context_t *ctx, int64_t message_timeout_ns);
-int aeron_archive_context_set_idle_strategy(
-    aeron_archive_context_t *ctx,
-    aeron_idle_strategy_func_t idle_strategy_func,
-    void *idle_strategy_state);
-
 int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
+aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);
 
 int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters_reader_t *counters_reader, int32_t session_id);
 int64_t aeron_archive_recording_pos_get_recording_id(aeron_counters_reader_t *counters_reader, int32_t counter_id);

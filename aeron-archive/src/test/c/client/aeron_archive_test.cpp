@@ -182,6 +182,13 @@ static void recording_descriptor_consumer(
     fprintf(stderr, "GOT THE LIST RECORDING CALLBACK\n");
 }
 
+aeron_archive_encoded_credentials_t default_creds = { "admin:admin", 11 };
+
+static aeron_archive_encoded_credentials_t *encoded_credentials_supplier(void *clientd)
+{
+    return (aeron_archive_encoded_credentials_t *)clientd;
+}
+
 TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
 {
     aeron_archive_context_t *ctx;
@@ -192,6 +199,12 @@ TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
 
     ASSERT_EQ(0, aeron_archive_context_init(&ctx));
     ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds));
     ASSERT_EQ(0, aeron_archive_async_connect(&async, ctx));
     ASSERT_EQ(0, aeron_archive_async_connect_poll(&archive, async));
 
@@ -220,6 +233,12 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchive)
 
     ASSERT_EQ(0, aeron_archive_context_init(&ctx));
     ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds));
     ASSERT_EQ(0, aeron_archive_connect(&archive, ctx));
 
     aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
@@ -245,6 +264,12 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
 
     ASSERT_EQ(0, aeron_archive_context_init(&ctx));
     ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds));
     ASSERT_EQ(0, aeron_archive_connect(&archive, ctx));
 
     int64_t subscription_id;

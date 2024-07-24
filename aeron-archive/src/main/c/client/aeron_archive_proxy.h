@@ -37,7 +37,7 @@ bool aeron_archive_proxy_try_connect(
     aeron_archive_proxy_t *archive_proxy,
     const char *control_response_channel,
     int32_t control_response_stream_id,
-    void *encoded_credentials,
+    aeron_archive_encoded_credentials_t *encoded_credentials,
     int64_t correlation_id);
 
 bool aeron_archive_proxy_archive_id(

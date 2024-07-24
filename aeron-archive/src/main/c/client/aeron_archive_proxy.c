@@ -92,7 +92,7 @@ bool aeron_archive_proxy_try_connect(
     aeron_archive_proxy_t *archive_proxy,
     const char *control_response_channel,
     int32_t control_response_stream_id,
-    void *encoded_credentials,
+    aeron_archive_encoded_credentials_t *encoded_credentials,
     int64_t correlation_id)
 {
     struct aeron_archive_client_authConnectRequest codec;
@@ -113,8 +113,8 @@ bool aeron_archive_proxy_try_connect(
         strlen(control_response_channel));
     aeron_archive_client_authConnectRequest_put_encodedCredentials(
         &codec,
-        "admin:admin",
-        11); // TODO
+        encoded_credentials->data,
+        encoded_credentials->length);
 
     return aeron_archive_proxy_offer_once(
         archive_proxy,

@@ -18,6 +18,7 @@
 #define AERON_ARCHIVE_CLIENT_CONTEXT_H
 
 #include "aeron_archive.h"
+#include "aeron_archive_credentials_supplier.h"
 
 struct aeron_archive_context_stct
 {
@@ -35,6 +36,8 @@ struct aeron_archive_context_stct
 
     aeron_idle_strategy_func_t idle_strategy_func;
     void *idle_strategy_state;
+
+    aeron_archive_credentials_supplier_t credentials_supplier;
 };
 
 int aeron_archive_context_conclude(aeron_archive_context_t *ctx);

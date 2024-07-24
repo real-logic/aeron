@@ -134,6 +134,21 @@ int aeron_archive_context_set_idle_strategy(
     return 0;
 }
 
+int aeron_archive_context_set_credentials_supplier(
+    aeron_archive_context_t *ctx,
+    aeron_archive_credentials_encoded_credentials_supplier_func_t encoded_credentials,
+    aeron_archive_credentials_challenge_supplier_func_t  on_challenge,
+    aeron_archive_credentials_free_func_t on_free,
+    void *clientd)
+{
+    ctx->credentials_supplier.encoded_credentials = encoded_credentials;
+    ctx->credentials_supplier.on_challenge = on_challenge;
+    ctx->credentials_supplier.on_free = on_free;
+    ctx->credentials_supplier.clientd = clientd;
+
+    return 0;
+}
+
 void aeron_archive_context_idle(aeron_archive_context_t *ctx)
 {
     ctx->idle_strategy_func(ctx->idle_strategy_state, 0);

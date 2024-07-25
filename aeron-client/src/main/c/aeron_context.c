@@ -222,8 +222,12 @@ int aeron_context_set_client_name(aeron_context_t *context, const char *value)
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
 
     size_t copy_length = 0;
-    bool truncate = !aeron_str_length(value, AERON_COUNTER_MAX_CLIENT_NAME_LENGTH, &copy_length);
-    copy_length = truncate ? AERON_COUNTER_MAX_CLIENT_NAME_LENGTH : copy_length;
+    if (!aeron_str_length(value, AERON_COUNTER_MAX_CLIENT_NAME_LENGTH, &copy_length))
+    {
+        AERON_SET_ERR(EINVAL, "client_name length must <= %d", AERON_COUNTER_MAX_CLIENT_NAME_LENGTH);
+        return -1;
+    }
+
     char *client_name = NULL;
 
     if (aeron_alloc((void **)&client_name, copy_length + 1) < 0)
@@ -233,11 +237,6 @@ int aeron_context_set_client_name(aeron_context_t *context, const char *value)
     }
 
     memcpy(client_name, value, copy_length);
-    if (truncate)
-    {
-        memset(client_name + (copy_length - 3), '.', 3);
-    }
-    client_name[copy_length] = '\0';
 
     context->client_name = client_name;
     return 0;

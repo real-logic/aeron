@@ -166,7 +166,7 @@ class ClientContextTest
     @InterruptAfter(10)
     void shouldAddClientInfoToTheHeartbeatTimestampCounterUpToMaxLabelLength()
     {
-        final String clientName = Tests.generateStringWithSuffix("x", "X", 1000);
+        final String clientName = Tests.generateStringWithSuffix("", "X", 100);
         try (Aeron aeron = Aeron.connect(new Aeron.Context()
             .aeronDirectoryName(mediaDriver.aeronDirectoryName())
             .clientName(clientName)
@@ -179,7 +179,9 @@ class ClientContextTest
             int counterId = Aeron.NULL_VALUE;
             final CountersReader countersReader = aeron.countersReader();
             final String baseLabel = ClientHeartbeatTimestamp.NAME + ": id=" + clientId;
-            final String expandedLabel = baseLabel + " name=" + clientName.substring(0, 352);
+            final String expandedLabel =
+                baseLabel + " name=" + clientName.substring(0, 100) +
+                " version=" + AeronVersion.VERSION + " commit=" + AeronVersion.GIT_SHA;
             while (true)
             {
                 if (Aeron.NULL_VALUE == counterId)
@@ -201,5 +203,17 @@ class ClientContextTest
                 Tests.yield();
             }
         }
+    }
+
+    @Test
+    void shouldRejectClientNameThatIsTooLong()
+    {
+        final String name =
+            "this is a very long value that we are hoping with be reject when the value gets " +
+            "set on the the context without causing issues will labels";
+
+        final AeronException aeronException = assertThrows(
+            AeronException.class, () -> new Aeron.Context().clientName(name).conclude());
+        assertEquals("ERROR - clientName length must <= 100", aeronException.getMessage());
     }
 }

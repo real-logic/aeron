@@ -74,3 +74,25 @@ TEST_F(WrapperSystemTest, shouldSendReceiveDataWithRawPointer)
         },
         1), invoker);
 }
+
+TEST_F(WrapperSystemTest, shouldRejectClientNameThatIsTooLong)
+{
+    std::string name =
+        "this is a very long value that we are hoping with be reject when the value gets "
+        "set on the the context without causing issues will labels";
+
+    try
+    {
+        Context ctx;
+        ctx.useConductorAgentInvoker(true);
+        ctx.clientName(name);
+
+        std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+        FAIL();
+    }
+    catch (IllegalArgumentException &ex)
+    {
+        const char *string = strstr(ex.what(), "client_name length must <= 100");
+        ASSERT_NE(nullptr, string) << ex.what();
+    }
+}

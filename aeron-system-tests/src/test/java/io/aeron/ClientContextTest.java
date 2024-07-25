@@ -214,6 +214,6 @@ class ClientContextTest
 
         final AeronException aeronException = assertThrows(
             AeronException.class, () -> new Aeron.Context().clientName(name).conclude());
-        assertEquals("ERROR - clientName must <= 100", aeronException.getMessage());
+        assertEquals("ERROR - clientName length must <= 100", aeronException.getMessage());
     }
 }

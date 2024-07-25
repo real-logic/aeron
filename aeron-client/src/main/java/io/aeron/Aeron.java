@@ -927,7 +927,7 @@ public class Aeron implements AutoCloseable
 
             if (null != clientName && clientName.length() > MAX_CLIENT_NAME_LENGTH)
             {
-                throw new AeronException("clientName must <= " + MAX_CLIENT_NAME_LENGTH);
+                throw new AeronException("clientName length must <= " + MAX_CLIENT_NAME_LENGTH);
             }
 
             if (null == epochClock)

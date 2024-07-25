@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static io.aeron.Aeron.Configuration.MAX_CLIENT_NAME_LENGTH;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -841,6 +842,8 @@ public class Aeron implements AutoCloseable
         {
             return getProperty(CLIENT_NAME_PROP_NAME, "");
         }
+
+        public static final int MAX_CLIENT_NAME_LENGTH = 100;
     }
 
     /**
@@ -919,6 +922,11 @@ public class Aeron implements AutoCloseable
                 throw new AeronException(
                     "Must use Aeron.Context.useConductorAgentInvoker(true) when Aeron.Context.clientLock(...) " +
                     "is using a NoOpLock");
+            }
+
+            if (null != clientName && clientName.length() > MAX_CLIENT_NAME_LENGTH)
+            {
+                throw new AeronException("clientName must <= " + MAX_CLIENT_NAME_LENGTH);
             }
 
             if (null == epochClock)

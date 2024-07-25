@@ -202,4 +202,16 @@ class ClientContextTest
             }
         }
     }
+
+    @Test
+    void shouldRejectClientNameThatIsTooLong()
+    {
+        final String name =
+            "this is a very long value that we are hoping with be reject when the value gets " +
+            "set on the the context without causing issues will labels";
+
+        final AeronException aeronException = assertThrows(
+            AeronException.class, () -> new Aeron.Context().clientName(name).conclude());
+        assertEquals("ERROR - clientName must <= 100", aeronException.getMessage());
+    }
 }

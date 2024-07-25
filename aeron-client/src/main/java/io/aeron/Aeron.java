@@ -909,6 +909,7 @@ public class Aeron implements AutoCloseable
          *
          * @return this for a fluent API.
          */
+        @SuppressWarnings("checkstyle:methodlength")
         public Context conclude()
         {
             super.conclude();

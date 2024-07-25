@@ -166,7 +166,7 @@ class ClientContextTest
     @InterruptAfter(10)
     void shouldAddClientInfoToTheHeartbeatTimestampCounterUpToMaxLabelLength()
     {
-        final String clientName = Tests.generateStringWithSuffix("x", "X", 1000);
+        final String clientName = Tests.generateStringWithSuffix("", "X", 100);
         try (Aeron aeron = Aeron.connect(new Aeron.Context()
             .aeronDirectoryName(mediaDriver.aeronDirectoryName())
             .clientName(clientName)
@@ -179,7 +179,9 @@ class ClientContextTest
             int counterId = Aeron.NULL_VALUE;
             final CountersReader countersReader = aeron.countersReader();
             final String baseLabel = ClientHeartbeatTimestamp.NAME + ": id=" + clientId;
-            final String expandedLabel = baseLabel + " name=" + clientName.substring(0, 352);
+            final String expandedLabel =
+                baseLabel + " name=" + clientName.substring(0, 100) +
+                " version=" + AeronVersion.VERSION + " commit=" + AeronVersion.GIT_SHA;
             while (true)
             {
                 if (Aeron.NULL_VALUE == counterId)

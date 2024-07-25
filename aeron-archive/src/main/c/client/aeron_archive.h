@@ -20,11 +20,22 @@
 #include "aeronc.h"
 #include "aeron_common.h"
 
-#include <stdio.h>
+#include <stdio.h> // TODO remove this
 
 typedef struct aeron_archive_stct aeron_archive_t;
 typedef struct aeron_archive_context_stct aeron_archive_context_t;
 typedef struct aeron_archive_async_connect_stct aeron_archive_async_connect_t;
+
+typedef struct aeron_archive_replay_params_stct
+{
+    int32_t bounding_limit_counter_id;
+    int32_t file_io_max_length;
+    int64_t position;
+    int64_t length;
+    int64_t replay_token;
+    int64_t subscription_registration_id;
+}
+aeron_archive_replay_params_t;
 
 typedef struct aeron_archive_encoded_credentials_stct
 {
@@ -130,11 +141,24 @@ int aeron_archive_list_recording(
     aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
     void *recording_descriptor_consumer_clientd);
 
+int aeron_archive_start_replay(
+    int64_t *replay_session_id_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    const char *replay_channel,
+    int32_t replay_stream_id,
+    aeron_archive_replay_params_t *params);
+
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
 int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
 aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);
 
+int aeron_archive_replay_params_init(aeron_archive_replay_params_t *params);
+
+int32_t aeron_archive_recording_pos_find_counter_id_by_recording_id(aeron_counters_reader_t *counters_reader, int64_t recording_id);
 int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters_reader_t *counters_reader, int32_t session_id);
 int64_t aeron_archive_recording_pos_get_recording_id(aeron_counters_reader_t *counters_reader, int32_t counter_id);
+int aeron_archive_recording_pos_get_source_identity(aeron_counters_reader_t *counters_reader, int32_t counter_id, const char *dst, int32_t *len_p);
+int aeron_archive_recording_pos_is_active(aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t recording_id, bool *is_active);
 
 #endif //AERON_ARCHIVE_H

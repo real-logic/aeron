@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "aeron_archive_recording_pos.h"
 #include "util/aeron_error.h"
 #include "concurrent/aeron_counters_manager.h"
 
@@ -30,7 +29,9 @@ struct aeron_archive_recording_pos_key_defn
 };
 #pragma pack(pop)
 
-int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters_reader_t *counters_reader, int32_t session_id)
+typedef bool (*key_matcher_func_t)(struct aeron_archive_recording_pos_key_defn *key, void *clientd);
+
+static int32_t find_counter_id(aeron_counters_reader_t *counters_reader, key_matcher_func_t matcher, void *clientd)
 {
     for (int32_t i = 0, size = aeron_counters_reader_max_counter_id(counters_reader); i < size; i++)
     {
@@ -62,7 +63,7 @@ int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters
                     return AERON_NULL_COUNTER_ID;
                 }
 
-                if (key->session_id == session_id)
+                if (matcher(key, clientd))
                 {
                     return i;
                 }
@@ -75,6 +76,26 @@ int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters
     }
 
     return AERON_NULL_COUNTER_ID;
+}
+
+static bool recording_id_matcher(struct aeron_archive_recording_pos_key_defn *key, void *clientd)
+{
+    return key->recording_id == *(int64_t *)clientd;
+}
+
+int32_t aeron_archive_recording_pos_find_counter_id_by_recording_id(aeron_counters_reader_t *counters_reader, int64_t recording_id)
+{
+    return find_counter_id(counters_reader, recording_id_matcher, &recording_id);
+}
+
+static bool session_id_matcher(struct aeron_archive_recording_pos_key_defn *key, void *clientd)
+{
+    return key->session_id == *(int32_t *)clientd;
+}
+
+int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters_reader_t *counters_reader, int32_t session_id)
+{
+    return find_counter_id(counters_reader, session_id_matcher, &session_id);
 }
 
 int64_t aeron_archive_recording_pos_get_recording_id(aeron_counters_reader_t *counters_reader, int32_t counter_id)
@@ -102,4 +123,54 @@ int64_t aeron_archive_recording_pos_get_recording_id(aeron_counters_reader_t *co
     }
 
     return key->recording_id;
+}
+
+int aeron_archive_recording_pos_get_source_identity(aeron_counters_reader_t *counters_reader, int32_t counter_id, const char *dst, int32_t *len_p)
+{
+    int32_t state, type_id;
+    struct aeron_archive_recording_pos_key_defn *key;
+
+    if (aeron_counters_reader_counter_state(counters_reader, counter_id, &state) < 0 ||
+        aeron_counters_reader_counter_type_id(counters_reader, counter_id, &type_id) < 0 ||
+        aeron_counters_reader_metadata_key(counters_reader, counter_id, (uint8_t **)&key) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (AERON_COUNTER_RECORD_ALLOCATED == state &&
+        AERON_ARCHIVE_RECORDING_POSITION_TYPE_ID == type_id)
+    {
+        // use the shorter of the two
+        *len_p = key->source_identity_length < *len_p ? key->source_identity_length : *len_p;
+
+        // the source_identity string comes right after the key definition
+        memcpy((void *)dst,((uint8_t *)key + sizeof(struct aeron_archive_recording_pos_key_defn)),*len_p);
+
+        return 0;
+    }
+
+    *len_p = 0;
+
+    return 0;
+}
+
+int aeron_archive_recording_pos_is_active(aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t recording_id, bool *is_active)
+{
+    int32_t state, type_id;
+    struct aeron_archive_recording_pos_key_defn *key;
+
+    if (aeron_counters_reader_counter_state(counters_reader, counter_id, &state) < 0 ||
+        aeron_counters_reader_counter_type_id(counters_reader, counter_id, &type_id) < 0 ||
+        aeron_counters_reader_metadata_key(counters_reader, counter_id, (uint8_t **)&key) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    *is_active = AERON_COUNTER_RECORD_ALLOCATED == state &&
+        AERON_ARCHIVE_RECORDING_POSITION_TYPE_ID == type_id &&
+        key->recording_id == recording_id;
+
+    return 0;
 }

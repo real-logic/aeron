@@ -96,4 +96,13 @@ bool aeron_archive_proxy_list_recording(
     int64_t correlation_id,
     int64_t recording_id);
 
+bool aeron_archive_proxy_replay(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id,
+    const char *replay_channel,
+    int32_t replay_stream_id,
+    aeron_archive_replay_params_t *params);
+
 #endif //AERON_ARCHIVE_PROXY_H

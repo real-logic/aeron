@@ -14,9 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef AERON_ARCHIVE_RECORDING_POS_H
-#define AERON_ARCHIVE_RECORDING_POS_H
-
 #include "aeron_archive.h"
+#include "aeron_archive_replay_params.h"
 
-#endif //AERON_ARCHIVE_RECORDING_POS_H
+int aeron_archive_replay_params_init(aeron_archive_replay_params_t *params)
+{
+    params->bounding_limit_counter_id = AERON_NULL_VALUE;
+    params->file_io_max_length = AERON_NULL_VALUE;
+    params->position = AERON_NULL_VALUE;
+    params->length = AERON_NULL_VALUE;
+    params->replay_token = AERON_NULL_VALUE;
+    params->subscription_registration_id = AERON_NULL_VALUE;
+
+    return 0;
+}
+
+bool aeron_archive_replay_params_is_bounded(aeron_archive_replay_params_t *params)
+{
+    return AERON_NULL_COUNTER_ID != params->bounding_limit_counter_id;
+}

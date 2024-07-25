@@ -25,9 +25,19 @@
 #include "aeron_agent.h"
 #include "util/aeron_error.h"
 
+#define ENSURE_NOT_REENTRANT_CHECK_RETURN(_aa, _rc) \
+do { \
+    if ((_aa)->is_in_callback) \
+    { \
+        AERON_SET_ERR(-1, "%s", "client cannot be invoked within callback"); \
+        return (_rc); \
+    } \
+} while (0)
+
 struct aeron_archive_stct
 {
     aeron_archive_context_t *ctx;
+    aeron_mutex_t lock;
     aeron_archive_proxy_t *archive_proxy;
     aeron_subscription_t *subscription; // shared by various pollers
     aeron_archive_control_response_poller_t *control_response_poller;
@@ -35,6 +45,7 @@ struct aeron_archive_stct
     aeron_t *aeron;
     int64_t control_session_id;
     int64_t archive_id;
+    bool is_in_callback;
 };
 
 int aeron_archive_poll_for_response(
@@ -114,6 +125,9 @@ int aeron_archive_create(
     }
 
     _aeron_archive->ctx = ctx;
+
+    aeron_mutex_init(&_aeron_archive->lock, NULL);
+
     _aeron_archive->archive_proxy = archive_proxy;
     _aeron_archive->subscription = subscription;
     _aeron_archive->control_response_poller = control_response_poller;
@@ -121,6 +135,7 @@ int aeron_archive_create(
     _aeron_archive->aeron = aeron;
     _aeron_archive->control_session_id = control_session_id;
     _aeron_archive->archive_id = archive_id;
+    _aeron_archive->is_in_callback = false;
 
     *aeron_archive = _aeron_archive;
     return 0;
@@ -140,6 +155,8 @@ int aeron_archive_close(aeron_archive_t *aeron_archive)
     aeron_subscription_close(aeron_archive->subscription, NULL, NULL);
     aeron_archive->subscription = NULL;
 
+    aeron_mutex_destroy(&aeron_archive->lock);
+
     aeron_free(aeron_archive);
 
     return 0;
@@ -157,7 +174,8 @@ int aeron_archive_start_recording(
     int32_t recording_stream_id,
     aeron_archive_source_location_t source_location)
 {
-    // TODO lock
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
 
@@ -169,8 +187,8 @@ int aeron_archive_start_recording(
         correlation_id,
         aeron_archive->control_session_id))
     {
+        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        // TODO unlock
         return -1;
     }
 
@@ -180,7 +198,7 @@ int aeron_archive_start_recording(
         "AeronArchive::startRecording",
         correlation_id);
 
-    // TODO unlock
+    aeron_mutex_unlock(&aeron_archive->lock);
 
     return rc;
 }
@@ -190,7 +208,8 @@ int aeron_archive_get_recording_position(
     aeron_archive_t *aeron_archive,
     int64_t recording_id)
 {
-    // TODO lock
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
 
@@ -200,8 +219,8 @@ int aeron_archive_get_recording_position(
         correlation_id,
         recording_id))
     {
+        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        // TODO unlock
         return -1;
     }
 
@@ -211,7 +230,7 @@ int aeron_archive_get_recording_position(
         "AeronArchive::getRecordingPosition",
         correlation_id);
 
-    // TODO unlock
+    aeron_mutex_unlock(&aeron_archive->lock);
 
     return rc;
 }
@@ -221,7 +240,8 @@ int aeron_archive_get_stop_position(
     aeron_archive_t *aeron_archive,
     int64_t recording_id)
 {
-    // TODO lock
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
 
@@ -231,8 +251,8 @@ int aeron_archive_get_stop_position(
         correlation_id,
         recording_id))
     {
+        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        // TODO unlock
         return -1;
     }
 
@@ -242,7 +262,7 @@ int aeron_archive_get_stop_position(
         "AeronArchive::getStopPosition",
         correlation_id);
 
-    // TODO unlock
+    aeron_mutex_unlock(&aeron_archive->lock);
 
     return rc;
 }
@@ -252,7 +272,8 @@ int aeron_archive_get_max_recorded_position(
     aeron_archive_t *aeron_archive,
     int64_t recording_id)
 {
-    // TODO lock
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
 
@@ -262,8 +283,8 @@ int aeron_archive_get_max_recorded_position(
         correlation_id,
         recording_id))
     {
+        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        // TODO unlock
         return -1;
     }
 
@@ -273,7 +294,7 @@ int aeron_archive_get_max_recorded_position(
         "AeronArchive::getMaxRecordedPosition",
         correlation_id);
 
-    // TODO unlock
+    aeron_mutex_unlock(&aeron_archive->lock);
 
     return rc;
 }
@@ -282,7 +303,8 @@ int aeron_archive_stop_recording(
     aeron_archive_t *aeron_archive,
     int64_t subscription_id)
 {
-    // TODO lock
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
 
@@ -292,8 +314,8 @@ int aeron_archive_stop_recording(
         correlation_id,
         subscription_id))
     {
+        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        // TODO unlock
         return -1;
     }
 
@@ -303,7 +325,7 @@ int aeron_archive_stop_recording(
         "AeronArchive::stopRecording",
         correlation_id);
 
-    // TODO unlock
+    aeron_mutex_unlock(&aeron_archive->lock);
 
     return rc;
 }
@@ -316,7 +338,8 @@ int aeron_archive_find_last_matching_recording(
     int32_t stream_id,
     int32_t session_id)
 {
-    // TODO lock
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
 
@@ -329,8 +352,8 @@ int aeron_archive_find_last_matching_recording(
         stream_id,
         session_id))
     {
+        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        // TODO unlock
         return -1;
     }
 
@@ -340,7 +363,7 @@ int aeron_archive_find_last_matching_recording(
         "AeronArchive::findLastMatchingRecording",
         correlation_id);
 
-    // TODO unlock
+    aeron_mutex_unlock(&aeron_archive->lock);
 
     return rc;
 }
@@ -352,7 +375,8 @@ int aeron_archive_list_recording(
     aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
     void *recording_descriptor_consumer_clientd)
 {
-    // TODO lock
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
 
@@ -362,10 +386,12 @@ int aeron_archive_list_recording(
         correlation_id,
         recording_id))
     {
+        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        // TODO unlock
         return -1;
     }
+
+    aeron_archive->is_in_callback = true;
 
     int rc = aeron_archive_poll_for_descriptors(
         count_p,
@@ -376,7 +402,50 @@ int aeron_archive_list_recording(
         recording_descriptor_consumer,
         recording_descriptor_consumer_clientd);
 
-    // TODO unlock
+    aeron_archive->is_in_callback = false;
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+int aeron_archive_start_replay(
+    int64_t *replay_session_id_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    const char *replay_channel,
+    int32_t replay_stream_id,
+    aeron_archive_replay_params_t *params)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    // TODO check replay channel for control mode response
+    // ... but for now assume it's not present
+
+    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+
+    if (!aeron_archive_proxy_replay(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id,
+        replay_channel,
+        replay_stream_id,
+        params))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        replay_session_id_p,
+        aeron_archive,
+        "AeronArchive::startReplay",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
 
     return rc;
 }

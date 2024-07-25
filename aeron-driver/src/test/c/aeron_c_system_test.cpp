@@ -741,15 +741,13 @@ TEST_P(CSystemTest, shouldSetNullClientName)
 TEST_P(CSystemTest, shouldSetClientNameOverLong)
 {
     const char *name =
-        "this is a very long value that we are hoping with be truncated when the value gets "
+        "this is a very long value that we are hoping with be reject when the value gets "
         "set on the the context without causing issues will labels";
-    const char *expected =
-        "this is a very long value that we are hoping with be truncated when the value gets set on the the...";
 
     aeron_context_t *context;
     ASSERT_EQ(aeron_context_init(&context), 0);
-    ASSERT_EQ(0, aeron_context_set_client_name(context, name));
-    ASSERT_STREQ(expected, aeron_context_get_client_name(context));
+    ASSERT_EQ(-1, aeron_context_set_client_name(context, name));
+    ASSERT_EQ(EINVAL, aeron_errcode());
 
     aeron_context_close(context);
 }

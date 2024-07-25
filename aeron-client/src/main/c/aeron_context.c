@@ -224,7 +224,7 @@ int aeron_context_set_client_name(aeron_context_t *context, const char *value)
     size_t copy_length = 0;
     if (!aeron_str_length(value, AERON_COUNTER_MAX_CLIENT_NAME_LENGTH, &copy_length))
     {
-        AERON_SET_ERR(EINVAL, "client_name must <= %d", AERON_COUNTER_MAX_CLIENT_NAME_LENGTH);
+        AERON_SET_ERR(EINVAL, "client_name length must <= %d", AERON_COUNTER_MAX_CLIENT_NAME_LENGTH);
         return -1;
     }
 

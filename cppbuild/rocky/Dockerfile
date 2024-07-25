@@ -42,5 +42,6 @@ RUN git config --global user.name "Athena (Build Master)"
 RUN git config --global core.autocrlf false
 RUN git update-index -q --refresh
 RUN scl enable "gcc-toolset-${GCC_VERSION}" -- cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --package
+
 FROM scratch AS essentials-artifacts
 COPY --from=essentials-build /opt/aeron/cppbuild/Release/*.tar.gz /

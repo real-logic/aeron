@@ -843,6 +843,9 @@ public class Aeron implements AutoCloseable
             return getProperty(CLIENT_NAME_PROP_NAME, "");
         }
 
+        /**
+         * Limit to the number of characters allowed in the client name.
+         */
         public static final int MAX_CLIENT_NAME_LENGTH = 100;
     }
 

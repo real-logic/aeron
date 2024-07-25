@@ -80,6 +80,14 @@ ext {
     if (!project.hasProperty('ossrhPassword')) {
         ossrhPassword = ''
     }
+
+    if (!project.hasProperty('signingKey')) {
+        signingKey = null
+    }
+
+    if (!project.hasProperty('signingPassword')) {
+        signingPassword = null
+    }
 }
 
 def projectPom = {
@@ -403,6 +411,9 @@ project(':aeron-annotations') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronAnnotations
     }
 }
@@ -473,6 +484,9 @@ project(':aeron-client') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronClient
     }
 
@@ -580,6 +594,9 @@ project(':aeron-driver') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronDriver
     }
 
@@ -758,6 +775,9 @@ project(':aeron-archive') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronArchive
     }
 
@@ -887,6 +907,9 @@ project(':aeron-cluster') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronCluster
     }
 
@@ -998,6 +1021,9 @@ project(':aeron-agent') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronAgent
     }
 }
@@ -1045,6 +1071,9 @@ project(':aeron-samples') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronSamples
     }
 
@@ -1166,6 +1195,9 @@ project(':aeron-test-support') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronTestSupport
     }
 }
@@ -1260,6 +1292,9 @@ project(':aeron-all') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronAll
     }
 }

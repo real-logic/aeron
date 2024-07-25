@@ -1,46 +1,157 @@
-name: Release Documentation
+name: Release
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+  push:
+    tags:
+      - "*.*.*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail'
 
 jobs:
-  java-build:
-    name: Publish Release Documentation
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        java: [ '8' ]
-        os: ['ubuntu-22.04' ]
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  ci-low-cadence:
+    uses: ./.github/workflows/ci-low-cadence.yml
+
+  codeql:
+    uses: ./.github/workflows/codeql.yml
+
+  github-release:
+    name: Create Github Release
+    permissions:
+      contents: write
+    needs: [ ci, ci-low-cadence, codeql ]
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
+    steps:
+      - id: checkout
+        name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - id: create-release
+        name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: true
+
+  release-java:
+    name: Release java artifacts
+    permissions:
+      contents: read
+      packages: write
+    needs: github-release
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-caches-
-      - name: Cache Gradle wrappers
-        uses: actions/cache@v4
-        with:
-          path: ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-wrapper
+          ref: ${{ github.ref }}
       - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: ${{ matrix.java }}
-      - name: Build with Gradle
-        run: ./gradlew tutorialPublish -Paeron.ci.apiKey=${{ secrets.WIKI_PAGE_TOKEN }} --stacktrace
+          java-version: 8
+      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
+        run: |
+          java -Xinternalversion
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+      - name: Publish with Gradle
+        run: ./gradlew publish
+        env:
+          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.SONATYPE_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.SONATYPE_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_RSA_SIGN_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_RSA_SIGN_KEYPASS }}
+
+  release-c:
+    name: Release c artifacts
+    permissions:
+      contents: write
+      id-token: write
+      packages: write
+    needs: github-release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: ubuntu
+            version: 20.04
+            gcc-version: default
+          - distro: ubuntu
+            version: 22.04
+            gcc-version: default
+          - distro: debian
+            version: bullseye
+            gcc-version: default
+          - distro: debian
+            version: bookworm
+            gcc-version: default
+          - distro: rocky
+            version: 8.9
+            gcc-version: 10
+          - distro: rocky
+            version: 9.3
+            gcc-version: 13
+          - distro: awslinux
+            version: 2023
+            gcc-version: default
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build Artifacts Using Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./cppbuild/${{ matrix.distro }}/Dockerfile
+          pull: true
+          shm-size: 1g
+          outputs: type=local,dest=build
+          target: essentials-artifacts
+          build-args: |
+            VERSION=${{ matrix.version }}
+            GCC_VERSION=${{ matrix.gcc-version }}
+      - name: Rename artifact
+        run: |
+          artifact_name=aeron-$(cat version.txt)-${{ matrix.distro }}-${{ matrix.version }}-x86_64.tar.gz
+          echo "artifact_name=$artifact_name" >> $GITHUB_ENV
+          mv ./build/*.tar.gz ./build/$artifact_name
+      - name: Upload to Github Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.github-release.outputs.upload_url }}
+          asset_path: ./build/${{ env.artifact_name }}
+          asset_name: ${{ env.artifact_name }}
+          asset_content_type: application/gzip
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ vars.JFROG_OIDC_URL }}
+        with:
+          oidc-provider-name: ${{ vars.JFROG_OIDC_PROVIDER }}
+          oidc-audience: ${{ vars.JFROG_OIDC_AUDIENCE }}
+      - name: Publish Build info With JFrog CLI
+        run: jf rt u *.tar.gz ${{ vars.JFROG_AERON_OSS_REPO_NAME }}
+        working-directory: ./build

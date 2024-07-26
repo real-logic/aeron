@@ -224,7 +224,7 @@ TEST_F(CSystemTest, shouldAddAndCloseCounter)
 TEST_F(CSystemTest, shouldAddStaticCounter)
 {
     std::atomic<bool> counterClosedFlag(false);
-    aeron_async_add_static_counter_t *async = nullptr;
+    aeron_async_add_counter_t *async = nullptr;
     aeron_counter_constants_t counter_constants;
     aeron_counter_constants_t counter_constants2;
     aeron_counter_constants_t counter_constants3;

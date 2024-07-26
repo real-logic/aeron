@@ -77,7 +77,6 @@ typedef struct aeron_client_registering_resource_stct aeron_async_add_publicatio
 typedef struct aeron_client_registering_resource_stct aeron_async_add_exclusive_publication_t;
 typedef struct aeron_client_registering_resource_stct aeron_async_add_subscription_t;
 typedef struct aeron_client_registering_resource_stct aeron_async_add_counter_t;
-typedef struct aeron_client_registering_resource_stct aeron_async_add_static_counter_t;
 typedef struct aeron_client_registering_resource_stct aeron_async_destination_t;
 
 typedef struct aeron_image_fragment_assembler_stct aeron_image_fragment_assembler_t;
@@ -492,7 +491,7 @@ int aeron_async_add_counter(
     size_t label_buffer_length);
 
 /**
- * Poll the completion of the `aeron_async_add_counter` call.
+ * Poll the completion of the `aeron_async_add_counter` or `aeron_async_add_static_counter` calls.
  *
  * @param counter to set if completed successfully.
  * @param async to check for completion.
@@ -516,7 +515,7 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
  * @return 0 for success or -1 for an error.
  */
 int aeron_async_add_static_counter(
-    aeron_async_add_static_counter_t **async,
+    aeron_async_add_counter_t **async,
     aeron_t *client,
     int32_t type_id,
     const uint8_t *key_buffer,
@@ -524,15 +523,6 @@ int aeron_async_add_static_counter(
     const char *label_buffer,
     size_t label_buffer_length,
     int64_t registration_id);
-
-/**
- * Poll the completion of the `aeron_async_add_static_counter` call.
- *
- * @param counter to set if completed successfully.
- * @param async to check for completion.
- * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
- */
-int aeron_async_add_static_counter_poll(aeron_counter_t **counter, aeron_async_add_static_counter_t *async);
 
 typedef struct aeron_on_available_counter_pair_stct
 {

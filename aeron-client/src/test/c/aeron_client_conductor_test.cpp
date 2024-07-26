@@ -372,7 +372,7 @@ public:
         }
     }
 
-    void transmitOnStaticCounter(aeron_async_add_static_counter_t *async, int32_t counter_id)
+    void transmitOnStaticCounter(aeron_async_add_counter_t *async, int32_t counter_id)
     {
         char response_buffer[sizeof(aeron_static_counter_response_t)];
         auto response = reinterpret_cast<aeron_static_counter_response_t *>(response_buffer);
@@ -1207,7 +1207,7 @@ TEST_F(ClientConductorTest, shouldAddClientInfoToTheHeartbeatCounterLabelUpToMax
 
 TEST_F(ClientConductorTest, shouldAddStaticCounterSuccessfully)
 {
-    aeron_async_add_static_counter_t *async = nullptr;
+    aeron_async_add_counter_t *async = nullptr;
     aeron_counter_t *counter = nullptr;
 
     const char *label = "first static counter from C";
@@ -1219,14 +1219,14 @@ TEST_F(ClientConductorTest, shouldAddStaticCounterSuccessfully)
     ASSERT_EQ(label_length, async->counter.label_buffer_length);
     doWork();
 
-    ASSERT_EQ(aeron_async_add_static_counter_poll(&counter, async), 0) << aeron_errmsg();
+    ASSERT_EQ(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr == counter);
 
     const int32_t counter_id = 777;
     transmitOnStaticCounter(async, counter_id);
     doWork();
 
-    ASSERT_GT(aeron_async_add_static_counter_poll(&counter, async), 0) << aeron_errmsg();
+    ASSERT_GT(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
     ASSERT_TRUE(nullptr != counter);
     ASSERT_EQ(registration_id, counter->registration_id);
     ASSERT_EQ(counter_id, counter->counter_id);

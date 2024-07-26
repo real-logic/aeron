@@ -163,14 +163,14 @@ public:
         return counter;
     }
 
-    static aeron_counter_t *awaitStaticCounterOrError(aeron_async_add_static_counter_t *async)
+    static aeron_counter_t *awaitStaticCounterOrError(aeron_async_add_counter_t *async)
     {
         aeron_counter_t *counter = nullptr;
 
         do
         {
             std::this_thread::yield();
-            if (aeron_async_add_static_counter_poll(&counter, async) < 0)
+            if (aeron_async_add_counter_poll(&counter, async) < 0)
             {
                 return nullptr;
             }

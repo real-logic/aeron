@@ -661,7 +661,7 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
 }
 
 int aeron_async_add_static_counter(
-    aeron_async_add_static_counter_t **async,
+    aeron_async_add_counter_t **async,
     aeron_t *client,
     int32_t type_id,
     const uint8_t *key_buffer,
@@ -689,74 +689,6 @@ int aeron_async_add_static_counter(
         label_buffer,
         label_buffer_length,
         registration_id);
-}
-
-int aeron_async_add_static_counter_poll(aeron_counter_t **counter, aeron_async_add_static_counter_t *async)
-{
-    if (NULL == counter || NULL == async)
-    {
-        AERON_SET_ERR(
-            EINVAL,
-            "Parameters must not be null, counter: %s, async: %s",
-            AERON_NULL_STR(counter),
-            AERON_NULL_STR(async));
-        return -1;
-    }
-    if (AERON_CLIENT_TYPE_COUNTER != async->type)
-    {
-        AERON_SET_ERR(
-            EINVAL,
-            "Parameters must be valid, async->type: %d (expected: %d)",
-            (int)async->type,
-            (int)AERON_CLIENT_TYPE_COUNTER);
-        return -1;
-    }
-
-    *counter = NULL;
-
-    aeron_client_registration_status_t registration_status;
-    AERON_GET_VOLATILE(registration_status, async->registration_status);
-
-    switch (registration_status)
-    {
-        case AERON_CLIENT_AWAITING_MEDIA_DRIVER:
-        {
-            return 0;
-        }
-
-        case AERON_CLIENT_ERRORED_MEDIA_DRIVER:
-        {
-            AERON_SET_ERR(
-                -async->error_code,
-                "async_add_static_counter registration\n== Driver Error ==\n%.*s",
-                (int)async->error_message_length,
-                async->error_message);
-            aeron_async_cmd_free(async);
-            return -1;
-        }
-
-        case AERON_CLIENT_REGISTERED_MEDIA_DRIVER:
-        {
-            *counter = async->resource.counter;
-            aeron_async_cmd_free(async);
-            return 1;
-        }
-
-        case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
-        {
-            AERON_SET_ERR(
-                AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_static_counter no response from media driver");
-            aeron_async_cmd_free(async);
-            return -1;
-        }
-
-        default:
-        {
-            AERON_SET_ERR(EINVAL, "async_add_static_counter async status %s", "unknown");
-            aeron_async_cmd_free(async);
-            return -1;
-        }
-    }
 }
 
 static int aeron_async_destination_poll(aeron_async_destination_t *async)

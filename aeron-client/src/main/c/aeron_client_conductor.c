@@ -1139,7 +1139,7 @@ void aeron_client_conductor_on_cmd_close_counter(void *clientd, void *item)
 void aeron_client_conductor_on_cmd_add_static_counter(void *clientd, void *item)
 {
     aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
-    aeron_async_add_static_counter_t *async = (aeron_async_add_static_counter_t *)item;
+    aeron_async_add_counter_t *async = (aeron_async_add_counter_t *)item;
 
     const size_t command_length =
         sizeof(aeron_static_counter_command_t) +
@@ -1814,7 +1814,7 @@ int aeron_client_conductor_async_close_counter(
 }
 
 int aeron_client_conductor_async_add_static_counter(
-    aeron_async_add_static_counter_t **async,
+    aeron_async_add_counter_t **async,
     aeron_client_conductor_t *conductor,
     int32_t type_id,
     const uint8_t *key_buffer,
@@ -1823,7 +1823,7 @@ int aeron_client_conductor_async_add_static_counter(
     size_t label_buffer_length,
     int64_t registration_id)
 {
-    aeron_async_add_static_counter_t *cmd = NULL;
+    aeron_async_add_counter_t *cmd = NULL;
     uint8_t *key_buffer_copy = NULL;
     char *label_buffer_copy = NULL;
 

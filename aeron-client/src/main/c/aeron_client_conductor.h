@@ -302,7 +302,7 @@ int aeron_client_conductor_async_close_counter(
     void *on_close_complete_clientd);
 
 int aeron_client_conductor_async_add_static_counter(
-    aeron_async_add_static_counter_t **async,
+    aeron_async_add_counter_t **async,
     aeron_client_conductor_t *conductor,
     int32_t type_id,
     const uint8_t *key_buffer,

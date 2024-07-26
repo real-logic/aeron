@@ -136,3 +136,53 @@ TEST_F(CountersTest, shouldReadCounterChange)
     counter->setWeak(6000);
     EXPECT_EQ(6000, counter.get()->getWeak());
 }
+
+TEST_F(CountersTest, shouldFindCounterByTypeRegistrationId)
+{
+    Context ctx;
+
+    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+    auto valuesBuffer = aeron->countersReader().valuesBuffer();
+    std::int64_t registrationId = INT64_C(-674328648234);
+    const std::int64_t nullCounterId = CountersReader::NULL_COUNTER_ID;
+
+    std::int64_t counterId1 = aeron->addCounter(COUNTER_TYPE_ID, m_key, COUNTER_KEY_LENGTH, m_label);
+    WAIT_FOR_NON_NULL(counter, aeron->findCounter(counterId1));
+    valuesBuffer.putInt64(CountersReader::counterOffset(counter->id()) + CountersReader::REGISTRATION_ID_OFFSET, registrationId);
+    ASSERT_EQ(registrationId, aeron->countersReader().getCounterRegistrationId(counter->id()));
+
+    std::int64_t counterId2 = aeron->addCounter(COUNTER_TYPE_ID, m_key, COUNTER_KEY_LENGTH, m_label);
+    WAIT_FOR_NON_NULL(counter2, aeron->findCounter(counterId2));
+    ASSERT_NE(counter->id(), counter2->id());
+    valuesBuffer.putInt64(CountersReader::counterOffset(counter2->id()) + CountersReader::REGISTRATION_ID_OFFSET, registrationId);
+    ASSERT_EQ(registrationId, aeron->countersReader().getCounterRegistrationId(counter2->id()));
+
+    ASSERT_EQ(counter->id(), aeron->countersReader().findByTypeIdAndRegistrationId(COUNTER_TYPE_ID, registrationId));
+    ASSERT_EQ(nullCounterId, aeron->countersReader().findByTypeIdAndRegistrationId(COUNTER_TYPE_ID, 0));
+    ASSERT_EQ(nullCounterId, aeron->countersReader().findByTypeIdAndRegistrationId(0, registrationId));
+}
+
+TEST_F(CountersTest, shouldFindCounterByRegistrationId)
+{
+    Context ctx;
+
+    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+    auto valuesBuffer = aeron->countersReader().valuesBuffer();
+    std::int64_t registrationId = INT64_C(123456789);
+    const std::int64_t nullCounterId = CountersReader::NULL_COUNTER_ID;
+
+    std::int64_t counterId1 = aeron->addCounter(COUNTER_TYPE_ID, m_key, COUNTER_KEY_LENGTH, m_label);
+    WAIT_FOR_NON_NULL(counter, aeron->findCounter(counterId1));
+    valuesBuffer.putInt64(CountersReader::counterOffset(counter->id()) + CountersReader::REGISTRATION_ID_OFFSET, registrationId);
+    ASSERT_EQ(registrationId, aeron->countersReader().getCounterRegistrationId(counter->id()));
+
+    std::int64_t counterId2 = aeron->addCounter(COUNTER_TYPE_ID, m_key, COUNTER_KEY_LENGTH, m_label);
+    WAIT_FOR_NON_NULL(counter2, aeron->findCounter(counterId2));
+    ASSERT_NE(counter->id(), counter2->id());
+    valuesBuffer.putInt64(CountersReader::counterOffset(counter2->id()) + CountersReader::REGISTRATION_ID_OFFSET, registrationId);
+    ASSERT_EQ(registrationId, aeron->countersReader().getCounterRegistrationId(counter2->id()));
+
+    ASSERT_EQ(counter->id(), aeron->countersReader().findByRegistrationId(registrationId));
+    ASSERT_EQ(nullCounterId, aeron->countersReader().findByRegistrationId(-registrationId));
+}
+

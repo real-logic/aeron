@@ -68,7 +68,7 @@ public:
      * @param context for configuration of the client.
      */
     explicit Aeron(Context &context) :
-        m_context(context.conclude()),
+        m_context(std::move(context.conclude())),
         m_aeron(Aeron::init_aeron(m_context)),
         m_countersReader(aeron_counters_reader(m_aeron)),
         m_clientConductor(m_aeron),
@@ -82,7 +82,7 @@ public:
         aeron_on_close_client_pair_t closePair = {emptyCallback, nullptr};
         aeron_add_close_handler(m_aeron, &closePair);
         aeron_close(m_aeron);
-        aeron_context_close(m_context.m_context);
+//        aeron_context_close(m_context.m_context);
 
         m_availableCounterHandlers.clear();
         m_unavailableCounterHandlers.clear();

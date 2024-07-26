@@ -112,4 +112,10 @@ bool aeron_archive_proxy_truncate_recording(
     int64_t recording_id,
     int64_t position);
 
+bool aeron_archive_proxy_stop_replay(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t replay_session_id);
+
 #endif //AERON_ARCHIVE_PROXY_H

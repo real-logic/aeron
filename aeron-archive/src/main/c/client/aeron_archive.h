@@ -163,6 +163,10 @@ int aeron_archive_truncate_recording(
     int64_t recording_id,
     int64_t position);
 
+int aeron_archive_stop_replay(
+    aeron_archive_t *aeron_archive,
+    int64_t replay_session_id);
+
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
 int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
 aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);

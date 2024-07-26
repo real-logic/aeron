@@ -884,3 +884,184 @@ TEST_F(AeronCArchiveTest, shouldRecordThenReplayThenTruncate)
     ASSERT_EQ(0, aeron_archive_close(archive));
     ASSERT_EQ(0, aeron_archive_context_close(ctx));
 }
+
+TEST_F(AeronCArchiveTest, shouldRecordAndCancelReplayEarly)
+{
+    size_t message_count = 10;
+    const char *message_prefix = "Message ";
+    aeron_archive_context_t *ctx;
+    aeron_archive_t *archive = nullptr;
+    int32_t session_id;
+    int64_t recording_id_from_counter;
+    int64_t stop_position;
+
+    const uint64_t idle_duration_ns = UINT64_C(1000) * UINT64_C(1000); /* 1ms */
+
+    ASSERT_EQ(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ(0,
+        aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds));
+    ASSERT_EQ(0, aeron_archive_connect(&archive, ctx));
+
+    int64_t subscription_id;
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id,
+        archive,
+        m_recordingChannel.c_str(),
+        m_recordingStreamId,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL));
+
+    {
+        aeron_t *aeron = aeron_archive_get_aeron(archive);
+
+        aeron_subscription_t *subscription = addSubscription(aeron, m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(aeron, m_recordingChannel, m_recordingStreamId);
+
+        session_id = aeron_publication_session_id(publication);
+
+        aeron_counters_reader_t *counters_reader = aeron_counters_reader(aeron);
+        int32_t counter_id = getRecordingCounterId(session_id, counters_reader);
+        recording_id_from_counter = aeron_archive_recording_pos_get_recording_id(counters_reader, counter_id);
+
+        offerMessages(publication, message_count, message_prefix, 0);
+        consumeMessages(subscription, message_count, message_prefix);
+
+        stop_position = aeron_publication_position(publication);
+
+        while (*aeron_counters_reader_addr(counters_reader, counter_id) < stop_position)
+        {
+            idle();
+        }
+
+        int64_t found_recording_position;
+        EXPECT_EQ(0, aeron_archive_get_recording_position(
+            &found_recording_position,
+            archive,
+            recording_id_from_counter));
+        EXPECT_EQ(stop_position, found_recording_position);
+
+        EXPECT_EQ(0, aeron_archive_stop_recording(archive, subscription_id));
+
+        EXPECT_EQ(0, aeron_archive_get_recording_position(
+            &found_recording_position,
+            archive,
+            recording_id_from_counter));
+        while (AERON_NULL_VALUE != found_recording_position)
+        {
+            idle();
+
+            EXPECT_EQ(0, aeron_archive_get_recording_position(
+                &found_recording_position,
+                archive,
+                recording_id_from_counter));
+        }
+    }
+
+    const int64_t position = 0;
+    const int64_t length = stop_position - position;
+    int64_t replay_session_id;
+
+    aeron_archive_replay_params_t replay_params;
+    aeron_archive_replay_params_init(&replay_params);
+
+    replay_params.position = position;
+    replay_params.length = length;
+    replay_params.file_io_max_length = 4096;
+
+    ASSERT_EQ(0, aeron_archive_start_replay(
+        &replay_session_id,
+        archive,
+        recording_id_from_counter,
+        m_replayChannel.c_str(),
+        m_replayStreamId,
+        &replay_params));
+
+    ASSERT_EQ(0, aeron_archive_stop_replay(archive, replay_session_id));
+
+    ASSERT_EQ(0, aeron_archive_close(archive));
+    ASSERT_EQ(0, aeron_archive_context_close(ctx));
+}
+
+TEST_F(AeronCArchiveTest, shouldReplayRecordingFromLateJoinPosition)
+{
+    size_t message_count = 10;
+    const char *message_prefix = "Message ";
+    aeron_archive_context_t *ctx;
+    aeron_archive_t *archive = nullptr;
+    int32_t session_id;
+    int64_t recording_id_from_counter;
+
+    const uint64_t idle_duration_ns = UINT64_C(1000) * UINT64_C(1000); /* 1ms */
+
+    ASSERT_EQ(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ(0,
+        aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds));
+    ASSERT_EQ(0, aeron_archive_connect(&archive, ctx));
+
+    int64_t subscription_id;
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id,
+        archive,
+        m_recordingChannel.c_str(),
+        m_recordingStreamId,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL));
+
+    {
+        aeron_t *aeron = aeron_archive_get_aeron(archive);
+
+        aeron_subscription_t *subscription = addSubscription(aeron, m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(aeron, m_recordingChannel, m_recordingStreamId);
+
+        session_id = aeron_publication_session_id(publication);
+
+        aeron_counters_reader_t *counters_reader = aeron_counters_reader(aeron);
+        int32_t counter_id = getRecordingCounterId(session_id, counters_reader);
+        recording_id_from_counter = aeron_archive_recording_pos_get_recording_id(counters_reader, counter_id);
+
+        offerMessages(publication, message_count, message_prefix, 0);
+        consumeMessages(subscription, message_count, message_prefix);
+
+        int64_t current_position = aeron_publication_position(publication);
+
+        while (*aeron_counters_reader_addr(counters_reader, counter_id) < current_position)
+        {
+            idle();
+        }
+
+        aeron_archive_replay_params_t replay_params;
+        aeron_archive_replay_params_init(&replay_params);
+
+        replay_params.position = current_position;
+        replay_params.file_io_max_length = 4096;
+
+        aeron_subscription_t *replay_subscription;
+
+        EXPECT_EQ(0, aeron_archive_replay(
+            &replay_subscription,
+            archive,
+            recording_id_from_counter,
+            m_replayChannel.c_str(),
+            m_replayStreamId,
+            &replay_params));
+
+        offerMessages(publication, message_count, message_prefix, 0);
+        consumeMessages(subscription, message_count, message_prefix);
+        consumeMessages(replay_subscription, message_count, message_prefix);
+
+        int64_t end_position = aeron_publication_position(publication);
+
+        aeron_image_t *image = aeron_subscription_image_at_index(replay_subscription, 0);
+        EXPECT_EQ(end_position, aeron_image_position(image));
+    }
+}

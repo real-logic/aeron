@@ -38,6 +38,7 @@
 #include "c/aeron_archive_client/boundedReplayRequest.h"
 #include "c/aeron_archive_client/replayRequest.h"
 #include "c/aeron_archive_client/truncateRecordingRequest.h"
+#include "c/aeron_archive_client/stopReplayRequest.h"
 
 #define AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH (8 * 1024)
 
@@ -445,6 +446,31 @@ bool aeron_archive_proxy_truncate_recording(
     return aeron_archive_proxy_offer(
         archive_proxy,
         aeron_archive_client_truncateRecordingRequest_encoded_length(&codec));
+}
+
+bool aeron_archive_proxy_stop_replay(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t replay_session_id)
+{
+    struct aeron_archive_client_stopReplayRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_stopReplayRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_stopReplayRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_stopReplayRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_stopReplayRequest_set_replaySessionId(&codec, replay_session_id);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_stopReplayRequest_encoded_length(&codec));
+
 }
 
 /* ************* */

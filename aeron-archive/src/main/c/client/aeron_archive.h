@@ -149,6 +149,20 @@ int aeron_archive_start_replay(
     int32_t replay_stream_id,
     aeron_archive_replay_params_t *params);
 
+int aeron_archive_replay(
+    aeron_subscription_t **subscription_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    const char *replay_channel,
+    int32_t replay_stream_id,
+    aeron_archive_replay_params_t *params);
+
+int aeron_archive_truncate_recording(
+    int64_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    int64_t position);
+
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
 int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
 aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);

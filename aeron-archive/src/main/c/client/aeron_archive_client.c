@@ -24,6 +24,7 @@
 #include "aeron_alloc.h"
 #include "aeron_agent.h"
 #include "util/aeron_error.h"
+#include "uri/aeron_uri.h"
 
 #define ENSURE_NOT_REENTRANT_CHECK_RETURN(_aa, _rc) \
 do { \
@@ -443,6 +444,141 @@ int aeron_archive_start_replay(
         replay_session_id_p,
         aeron_archive,
         "AeronArchive::startReplay",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+int aeron_archive_replay(
+    aeron_subscription_t **subscription_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    const char *replay_channel,
+    int32_t replay_stream_id,
+    aeron_archive_replay_params_t *params)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    // TODO check replay channel for control mode response
+    // ... but for now assume it's not present
+
+    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+
+    if (!aeron_archive_proxy_replay(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id,
+        replay_channel,
+        replay_stream_id,
+        params))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int64_t replay_session_id;
+
+    if (aeron_archive_poll_for_response(
+        &replay_session_id,
+        aeron_archive,
+        "AeronArchive::replay",
+        correlation_id) < 0)
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    fprintf(stderr, "pre  :: %s\n", replay_channel);
+    char replay_channel_with_sid[AERON_MAX_PATH + 1];
+    aeron_uri_string_put_int64(
+        replay_channel,
+        strlen(replay_channel),
+        replay_channel_with_sid,
+        AERON_MAX_PATH + 1,
+        AERON_URI_SESSION_ID_KEY,
+        (int32_t)replay_session_id);
+    fprintf(stderr, "post :: %s\n", replay_channel_with_sid);
+
+    aeron_async_add_subscription_t *async_add_subscription;
+    aeron_subscription_t *subscription = NULL;
+
+    if (aeron_async_add_subscription(
+        &async_add_subscription,
+        aeron_archive->aeron,
+        replay_channel_with_sid,
+        replay_stream_id,
+        NULL,
+        NULL,
+        NULL,
+        NULL) < 0)
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        fprintf(stderr, "add sub %s\n", aeron_errmsg());
+        return -1;
+    }
+
+    if (aeron_async_add_subscription_poll(&subscription, async_add_subscription) < 0)
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        fprintf(stderr, "add poll %s\n", aeron_errmsg());
+        return -1;
+    }
+
+    while (NULL == subscription)
+    {
+        aeron_archive_idle(aeron_archive);
+
+        if (aeron_async_add_subscription_poll(&subscription, async_add_subscription) < 0)
+        {
+            aeron_mutex_unlock(&aeron_archive->lock);
+            AERON_APPEND_ERR("%s", "");
+            fprintf(stderr, "add poll (2) %s\n", aeron_errmsg());
+            return -1;
+        }
+    }
+
+    *subscription_p = subscription;
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return 0;
+}
+
+int aeron_archive_truncate_recording(
+    int64_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    int64_t position)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+
+    if (!aeron_archive_proxy_truncate_recording(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id,
+        position))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        count_p,
+        aeron_archive,
+        "AeronArchive::truncateRecording",
         correlation_id);
 
     aeron_mutex_unlock(&aeron_archive->lock);

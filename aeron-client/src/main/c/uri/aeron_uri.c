@@ -495,6 +495,12 @@ int aeron_uri_get_timeout(aeron_uri_params_t *uri_params, const char *param_name
     return 0;
 }
 
+// TODO this is just a placeholder until more complete uri_[string_]_put_.* functionality is implemented
+int aeron_uri_string_put_int64(const char *uri, size_t uri_len, char *buffer, size_t buffer_len, const char *key, int64_t val)
+{
+    return snprintf(buffer, buffer_len, "%.*s|%s=%" PRId64, (int)uri_len, uri, key, val);
+}
+
 int64_t aeron_uri_parse_tag(const char *tag_str)
 {
     errno = 0;

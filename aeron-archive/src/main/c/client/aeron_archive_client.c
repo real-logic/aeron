@@ -496,14 +496,29 @@ int aeron_archive_replay(
 
     fprintf(stderr, "pre  :: %s\n", replay_channel);
     char replay_channel_with_sid[AERON_MAX_PATH + 1];
-    aeron_uri_string_put_int64(
-        replay_channel,
-        strlen(replay_channel),
-        replay_channel_with_sid,
-        AERON_MAX_PATH + 1,
-        AERON_URI_SESSION_ID_KEY,
-        (int32_t)replay_session_id);
-    fprintf(stderr, "post :: %s\n", replay_channel_with_sid);
+    memset(replay_channel_with_sid, '\0', AERON_MAX_PATH + 1);
+    {
+        aeron_uri_string_put_int64(
+            replay_channel,
+            strlen(replay_channel),
+            replay_channel_with_sid,
+            AERON_MAX_PATH + 1,
+            AERON_URI_SESSION_ID_KEY,
+            (int32_t)replay_session_id);
+        fprintf(stderr, "post :: %s\n", replay_channel_with_sid);
+    }
+
+    memset(replay_channel_with_sid, '\0', AERON_MAX_PATH + 1);
+    {
+        aeron_uri_t uri;
+
+        aeron_uri_parse(strlen(replay_channel), replay_channel, &uri);
+        aeron_uri_put_int64(&uri, AERON_URI_SESSION_ID_KEY, (int32_t)replay_session_id);
+        aeron_uri_sprint(&uri, replay_channel_with_sid, AERON_MAX_PATH + 1);
+        aeron_uri_close(&uri);
+
+        fprintf(stderr, "post :: %s\n", replay_channel_with_sid);
+    }
 
     aeron_async_add_subscription_t *async_add_subscription;
     aeron_subscription_t *subscription = NULL;

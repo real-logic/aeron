@@ -196,6 +196,7 @@ int aeron_udp_uri_parse(char *uri, aeron_udp_channel_params_t *params)
     params->bind_interface = NULL;
     params->ttl = NULL;
     params->control = NULL;
+    params->control_mode = NULL;
     params->channel_tag = NULL;
     params->entity_tag = NULL;
 
@@ -499,6 +500,62 @@ int aeron_uri_get_timeout(aeron_uri_params_t *uri_params, const char *param_name
 int aeron_uri_string_put_int64(const char *uri, size_t uri_len, char *buffer, size_t buffer_len, const char *key, int64_t val)
 {
     return snprintf(buffer, buffer_len, "%.*s|%s=%" PRId64, (int)uri_len, uri, key, val);
+}
+
+// I'm not in love with this either.  Modify the uri_t, generate a string, append '|k=v', then regenerate the uri_t.
+// ... but it doesn't require mucking around with the guts of the uri_t.
+int aeron_uri_put_int64(aeron_uri_t *uri, const char *key, int64_t value)
+{
+    size_t buffer_len = AERON_MAX_PATH + 1;
+    char buffer[buffer_len];
+
+    aeron_uri_params_t *additional;
+    switch (uri->type)
+    {
+        case AERON_URI_UDP:
+            additional = &uri->params.udp.additional_params;
+            break;
+
+        case AERON_URI_IPC:
+            additional = &uri->params.ipc.additional_params;
+            break;
+
+        default:
+            // TODO
+            return -1;
+    }
+
+    // unset the value at the key (if it exists)
+    for (size_t i = 0, n = additional->length; i < n; i++)
+    {
+        if (strcmp(additional->array[i].key, key) == 0)
+        {
+            additional->array[i].value = NULL;
+        }
+    }
+
+    int bytes_written = aeron_uri_sprint(uri, buffer, buffer_len);
+
+    if (bytes_written < 0)
+    {
+        // TODO
+        return -1;
+    }
+
+    size_t remaining_len = buffer_len - bytes_written;
+
+    if (remaining_len > 0)
+    {
+        if (snprintf(buffer + bytes_written, remaining_len, "|%s=%" PRId64, key, value) < 0)
+        {
+            // TODO
+            return -1;
+        }
+    }
+
+    aeron_uri_close(uri);
+
+    return aeron_uri_parse(strlen(buffer), buffer, uri);
 }
 
 int64_t aeron_uri_parse_tag(const char *tag_str)

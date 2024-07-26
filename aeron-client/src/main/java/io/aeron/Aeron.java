@@ -553,7 +553,7 @@ public class Aeron implements AutoCloseable
      * @param labelBuffer    containing the mandatory label for the counter. The label should not be length prefixed.
      * @param labelOffset    within the labelBuffer at which the label begins.
      * @param labelLength    of the label in the labelBuffer.
-     * @param registrationId that uniquely identifies the counter.
+     * @param registrationId that uniquely identifies the static counter for a given {@code typeId}.
      * @return the static counter instance.
      * @see org.agrona.concurrent.status.CountersManager#allocate(int, DirectBuffer, int, int, DirectBuffer, int, int)
      */
@@ -581,7 +581,7 @@ public class Aeron implements AutoCloseable
      *
      * @param typeId         for the counter.
      * @param label          for the counter. It should be US-ASCII.
-     * @param registrationId that uniquely identifies the counter.
+     * @param registrationId that uniquely identifies the static counter for a given {@code typeId}.
      * @return the static counter.
      * @see org.agrona.concurrent.status.CountersManager#allocate(String, int)
      */

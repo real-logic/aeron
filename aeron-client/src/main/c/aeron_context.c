@@ -176,9 +176,6 @@ int aeron_context_init(aeron_context_t **context)
 
 error:
     aeron_context_close(_context);
-//    aeron_free(_context->idle_strategy_state);
-//    aeron_free(_context->aeron_dir);
-//    aeron_free(_context);
     return -1;
 }
 

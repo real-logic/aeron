@@ -214,7 +214,6 @@ TEST_F(CountersTest, shouldErrorCreatingAStaticCounterIfSessionCounterAlreadyExi
     std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
     auto valuesBuffer = aeron->countersReader().valuesBuffer();
     std::int64_t registrationId = INT64_C(123456789);
-    const std::int64_t nullCounterId = CountersReader::NULL_COUNTER_ID;
 
     std::int64_t counterId = aeron->addCounter(COUNTER_TYPE_ID, m_key, COUNTER_KEY_LENGTH, m_label);
     WAIT_FOR_NON_NULL(counter, aeron->findCounter(counterId));

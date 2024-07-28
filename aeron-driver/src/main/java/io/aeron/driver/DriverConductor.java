@@ -32,6 +32,7 @@ import io.aeron.exceptions.AeronEvent;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.SetupFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -323,8 +324,6 @@ public final class DriverConductor implements Agent
                 hwmPos = ReceiverHwm.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
                 rcvPos = ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
 
-                final boolean isMulticastSemantics = subscription.group() == INFER ?
-                    channelEndpoint.udpChannel(transportIndex).isMulticast() : subscription.group() == FORCE_TRUE;
                 final String sourceIdentity = Configuration.sourceIdentity(sourceAddress);
 
                 final PublicationImage image = new PublicationImage(
@@ -340,7 +339,7 @@ public final class DriverConductor implements Agent
                     initialTermOffset,
                     flags,
                     rawLog,
-                    resolveDelayGenerator(ctx, channelEndpoint.udpChannel(), isMulticastSemantics),
+                    resolveDelayGenerator(ctx, channelEndpoint.udpChannel(), subscription.group(), flags),
                     subscriberPositions,
                     hwmPos,
                     rcvPos,
@@ -2547,6 +2546,19 @@ public final class DriverConductor implements Agent
         {
             return ctx.unicastFeedbackDelayGenerator();
         }
+    }
+
+    static FeedbackDelayGenerator resolveDelayGenerator(
+        final Context ctx,
+        final UdpChannel channel,
+        final InferableBoolean receiverGroupConsideration,
+        final short flags)
+    {
+        final boolean isGroupFromFlag = (flags & SetupFlyweight.GROUP_FLAG) == SetupFlyweight.GROUP_FLAG;
+        final boolean isMulticastSemantics = receiverGroupConsideration == INFER ?
+            channel.isMulticast() || isGroupFromFlag : receiverGroupConsideration == FORCE_TRUE;
+
+        return resolveDelayGenerator(ctx, channel, isMulticastSemantics);
     }
 
     private interface AsyncResult<T> extends Supplier<T>

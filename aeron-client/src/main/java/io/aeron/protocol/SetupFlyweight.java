@@ -35,9 +35,14 @@ public class SetupFlyweight extends HeaderFlyweight
     public static final int HEADER_LENGTH = 40;
 
     /**
-     * Subscriber should send response channel information in SM.
+     * Subscriber should send response channel setup message.
      */
     public static final short SEND_RESPONSE_SETUP_FLAG = 0x80;
+
+    /**
+     * Publication uses group/multicast semantics.
+     */
+    public static final short GROUP_FLAG = 0x40;
 
     /**
      * Offset in the frame at which the term-offset field begins.

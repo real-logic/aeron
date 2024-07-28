@@ -1069,7 +1069,7 @@ public final class Configuration
     /**
      * Property name to set a limit on the number sessions allowed per stream on a subscription.
      */
-    @Config
+    @Config(defaultType = DefaultType.INT, defaultInt = Integer.MAX_VALUE)
     public static final String STREAM_SESSION_LIMIT_PROP_NAME = "aeron.driver.stream.session.limit";
 
     /**

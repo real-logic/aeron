@@ -574,6 +574,14 @@ static int aeron_time_tracking_name_resolver_close(aeron_name_resolver_t *resolv
     return 0;
 }
 
+static inline bool aeron_driver_conductor_treat_image_as_multicast(
+    aeron_udp_channel_t *channel, uint8_t flags, aeron_inferable_boolean_t is_group)
+{
+    bool is_group_from_flag = ((flags & AERON_SETUP_HEADER_GROUP_FLAG) == AERON_SETUP_HEADER_GROUP_FLAG);
+    return AERON_INFER == is_group ?
+        channel->is_multicast || is_group_from_flag : AERON_FORCE_TRUE == is_group;
+}
+
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context)
 {
     if (aeron_mpsc_rb_init(
@@ -5560,9 +5568,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         &conductor->counters_manager, rcv_pos_position.counter_id);
 
     bool is_reliable = subscription_link.is_reliable;
-    aeron_inferable_boolean_t group_subscription = subscription_link.group;
-    bool treat_as_multicast = AERON_INFER == group_subscription ?
-        endpoint->conductor_fields.udp_channel->is_multicast : AERON_FORCE_TRUE == group_subscription;
+    bool treat_as_multicast = aeron_driver_conductor_treat_image_as_multicast(
+        endpoint->conductor_fields.udp_channel, command->flags, subscription_link.group);
     bool is_oldest_subscription_sparse = aeron_driver_conductor_is_oldest_subscription_sparse(
         conductor, endpoint, command->stream_id, command->session_id, registration_id);
 

@@ -177,6 +177,7 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 #define AERON_STATUS_MESSAGE_HEADER_EOS_FLAG (UINT8_C(0x40))
 
 #define AERON_SETUP_HEADER_SEND_RESPONSE_FLAG (UINT8_C(0x80))
+#define AERON_SETUP_HEADER_GROUP_FLAG (UINT8_C(0x40))
 
 #define AERON_RTTM_HEADER_REPLY_FLAG (UINT8_C(0x80))
 

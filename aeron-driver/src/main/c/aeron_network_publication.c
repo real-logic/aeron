@@ -149,7 +149,7 @@ int aeron_network_publication_create(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS),
         context->retransmit_unicast_delay_ns,
         context->retransmit_unicast_linger_ns,
-        endpoint->conductor_fields.udp_channel->is_multicast,
+        aeron_udp_channel_has_group_semantics(endpoint->conductor_fields.udp_channel),
         retransmit_overflow_counter) < 0)
     {
         aeron_free(_pub->log_file_name);
@@ -401,14 +401,15 @@ int aeron_network_publication_setup_message_check(
         aeron_setup_header_t *setup_header = (aeron_setup_header_t *)setup_buffer;
         struct iovec iov;
 
+        uint8_t send_response_flag = (!publication->is_response && AERON_NULL_VALUE != publication->response_correlation_id) ?
+            AERON_SETUP_HEADER_SEND_RESPONSE_FLAG : 0;
+        uint8_t group_flag = publication->retransmit_handler.has_group_semantics ? AERON_SETUP_HEADER_GROUP_FLAG : 0;
+
         setup_header->frame_header.frame_length = sizeof(aeron_setup_header_t);
         setup_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
         setup_header->frame_header.flags = 0;
         setup_header->frame_header.type = AERON_HDR_TYPE_SETUP;
-        setup_header->frame_header.flags =
-            (!publication->is_response && AERON_NULL_VALUE != publication->response_correlation_id) ?
-                AERON_SETUP_HEADER_SEND_RESPONSE_FLAG : 0;
-
+        setup_header->frame_header.flags = send_response_flag | group_flag;
         setup_header->term_offset = term_offset;
         setup_header->session_id = publication->session_id;
         setup_header->stream_id = publication->stream_id;

@@ -320,10 +320,6 @@ bool aeron_context_get_pre_touch_mapped_memory(aeron_context_t *context)
 
 int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handler_t handler, void *clientd)
 {
-    if (NULL == context)
-    {
-        printf("hello");
-    }
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
     context->error_handler = handler;

@@ -1557,14 +1557,22 @@ final class ClientConductor implements Agent
 
                 if (CountersReader.NULL_COUNTER_ID != counterId)
                 {
-                    heartbeatTimestamp = new AtomicCounter(counterValuesBuffer, counterId);
-                    heartbeatTimestamp.setOrdered(nowMs);
-                    AeronCounters.appendToLabel(
-                        countersReader.metaDataBuffer(),
-                        counterId,
-                        " name=" + ctx.clientName() + " " +
-                        AeronCounters.formatVersionInfo(AeronVersion.VERSION, AeronVersion.GIT_SHA));
-                    timeOfLastKeepAliveNs = nowNs;
+                    try
+                    {
+                        heartbeatTimestamp = new AtomicCounter(counterValuesBuffer, counterId);
+                        heartbeatTimestamp.setOrdered(nowMs);
+                        AeronCounters.appendToLabel(
+                            countersReader.metaDataBuffer(),
+                            counterId,
+                            " name=" + ctx.clientName() + " " +
+                            AeronCounters.formatVersionInfo(AeronVersion.VERSION, AeronVersion.GIT_SHA));
+                        timeOfLastKeepAliveNs = nowNs;
+                    }
+                    catch (final RuntimeException ex)  // a race caused by the driver timing out the client
+                    {
+                        terminateConductor();
+                        throw new AeronException("unexpected close of heartbeat timestamp counter: " + counterId, ex);
+                    }
                 }
             }
             else
@@ -1573,7 +1581,6 @@ final class ClientConductor implements Agent
                 if (!HeartbeatTimestamp.isActive(countersReader, counterId, HEARTBEAT_TYPE_ID, ctx.clientId()))
                 {
                     terminateConductor();
-
                     throw new AeronException("unexpected close of heartbeat timestamp counter: " + counterId);
                 }
 

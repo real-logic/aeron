@@ -95,6 +95,8 @@ public class ControlProtocolEvents
     /**
      * Add or return a static Counter, i.e. the Counter that cannot be deleted and whose lifecycle is decoupled from
      * the Aeron instance that created it.
+     *
+     * @since 1.45.0
      */
     public static final int ADD_STATIC_COUNTER = 0x0F;
 
@@ -152,6 +154,8 @@ public class ControlProtocolEvents
 
     /**
      * A response to {@link #ADD_STATIC_COUNTER} command.
+     *
+     * @since 1.45.0
      */
     public static final int ON_STATIC_COUNTER = 0x0F0B;
 }

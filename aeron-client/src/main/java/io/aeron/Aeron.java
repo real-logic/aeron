@@ -556,6 +556,7 @@ public class Aeron implements AutoCloseable
      * @param registrationId that uniquely identifies the static counter for a given {@code typeId}.
      * @return the static counter instance.
      * @see org.agrona.concurrent.status.CountersManager#allocate(int, DirectBuffer, int, int, DirectBuffer, int, int)
+     * @since 1.45.0
      */
     public Counter addStaticCounter(
         final int typeId,
@@ -584,6 +585,7 @@ public class Aeron implements AutoCloseable
      * @param registrationId that uniquely identifies the static counter for a given {@code typeId}.
      * @return the static counter.
      * @see org.agrona.concurrent.status.CountersManager#allocate(String, int)
+     * @since 1.45.0
      */
     public Counter addStaticCounter(final int typeId, final String label, final long registrationId)
     {

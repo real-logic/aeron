@@ -508,7 +508,6 @@ int aeron_archive_replay(
         return -1;
     }
 
-    fprintf(stderr, "pre  :: %s\n", replay_channel);
     char replay_channel_with_sid[AERON_MAX_PATH + 1];
     memset(replay_channel_with_sid, '\0', AERON_MAX_PATH + 1);
     {
@@ -519,7 +518,6 @@ int aeron_archive_replay(
             AERON_MAX_PATH + 1,
             AERON_URI_SESSION_ID_KEY,
             (int32_t)replay_session_id);
-        fprintf(stderr, "post :: %s\n", replay_channel_with_sid);
     }
 
     memset(replay_channel_with_sid, '\0', AERON_MAX_PATH + 1);
@@ -531,7 +529,6 @@ int aeron_archive_replay(
         aeron_uri_sprint(&uri, replay_channel_with_sid, AERON_MAX_PATH + 1);
         aeron_uri_close(&uri);
 
-        fprintf(stderr, "post :: %s\n", replay_channel_with_sid);
     }
 
     aeron_async_add_subscription_t *async_add_subscription;
@@ -549,7 +546,6 @@ int aeron_archive_replay(
     {
         aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        fprintf(stderr, "add sub %s\n", aeron_errmsg());
         return -1;
     }
 
@@ -557,7 +553,6 @@ int aeron_archive_replay(
     {
         aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        fprintf(stderr, "add poll %s\n", aeron_errmsg());
         return -1;
     }
 
@@ -569,7 +564,6 @@ int aeron_archive_replay(
         {
             aeron_mutex_unlock(&aeron_archive->lock);
             AERON_APPEND_ERR("%s", "");
-            fprintf(stderr, "add poll (2) %s\n", aeron_errmsg());
             return -1;
         }
     }

@@ -20,8 +20,6 @@
 #include "aeronc.h"
 #include "aeron_common.h"
 
-#include <stdio.h> // TODO remove this
-
 typedef struct aeron_archive_stct aeron_archive_t;
 typedef struct aeron_archive_context_stct aeron_archive_context_t;
 typedef struct aeron_archive_async_connect_stct aeron_archive_async_connect_t;

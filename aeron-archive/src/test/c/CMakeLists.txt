@@ -35,7 +35,5 @@ function(aeron_c_archive_test name file)
 endfunction()
 
 if (AERON_UNIT_TESTS)
-    aeron_c_archive_test(simple_test client/SimpleTest.cpp)
-
     aeron_c_archive_test(aeron_archive_test client/aeron_archive_test.cpp)
 endif ()

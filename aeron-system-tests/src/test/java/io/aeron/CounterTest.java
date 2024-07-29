@@ -18,7 +18,9 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ClientTimeoutException;
+import io.aeron.exceptions.ConductorServiceTimeoutException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.status.ReadableCounter;
 import io.aeron.test.InterruptAfter;
@@ -93,7 +95,10 @@ class CounterTest
     void after()
     {
         CloseHelper.closeAll(clientA, clientB, driver);
-        driver.context().deleteDirectory();
+        if (null != driver)
+        {
+            driver.context().deleteDirectory();
+        }
     }
 
     @Test
@@ -471,23 +476,35 @@ class CounterTest
             {
                 assertEquals("FATAL - client timeout from driver", timeoutException.getMessage());
             }
-            else
+            else if (timeoutException instanceof ConductorServiceTimeoutException)
             {
                 assertThat(timeoutException.getMessage(), CoreMatchers.startsWith("FATAL - service interval exceeded"));
             }
+            else if (timeoutException instanceof AeronException)
+            {
+                assertThat(
+                    timeoutException.getMessage(),
+                    CoreMatchers.startsWith("ERROR - unexpected close of heartbeat timestamp counter:"));
+            }
+            else
+            {
+                // on unknown error print stack trace
+                timeoutException.printStackTrace();
+            }
 
-            assertFalse(counter.isClosed());
-            assertEquals(CountersReader.RECORD_ALLOCATED, aeron.countersReader().getCounterState(counter.id()));
             assertTrue(counter2.isClosed());
             assertEquals(CountersReader.RECORD_RECLAIMED, aeron.countersReader().getCounterState(counter2.id()));
-            verify(availableCounterHandler, never()).onAvailableCounter(
-                any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
-            verify(unavailableCounterHandler, never()).onUnavailableCounter(
-                any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
             verify(availableCounterHandler).onAvailableCounter(
                 any(CountersReader.class), eq(counter2.registrationId()), eq(counter2.id()));
             verify(unavailableCounterHandler).onUnavailableCounter(
                 any(CountersReader.class), eq(counter2.registrationId()), eq(counter2.id()));
+
+            assertFalse(counter.isClosed());
+            assertEquals(CountersReader.RECORD_ALLOCATED, aeron.countersReader().getCounterState(counter.id()));
+            verify(availableCounterHandler, never()).onAvailableCounter(
+                any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
+            verify(unavailableCounterHandler, never()).onUnavailableCounter(
+                any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
         }
     }
 

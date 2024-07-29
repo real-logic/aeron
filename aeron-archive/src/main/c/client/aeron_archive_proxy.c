@@ -39,6 +39,7 @@
 #include "c/aeron_archive_client/replayRequest.h"
 #include "c/aeron_archive_client/truncateRecordingRequest.h"
 #include "c/aeron_archive_client/stopReplayRequest.h"
+#include "c/aeron_archive_client/listRecordingSubscriptionsRequest.h"
 
 #define AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH (8 * 1024)
 
@@ -470,7 +471,43 @@ bool aeron_archive_proxy_stop_replay(
     return aeron_archive_proxy_offer(
         archive_proxy,
         aeron_archive_client_stopReplayRequest_encoded_length(&codec));
+}
 
+bool aeron_archive_proxy_list_recording_subscriptions(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int32_t pseudo_index,
+    int32_t subscription_count,
+    const char *channel_fragment,
+    int32_t stream_id,
+    bool apply_stream_id)
+{
+    struct aeron_archive_client_listRecordingSubscriptionsRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_listRecordingSubscriptionsRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_listRecordingSubscriptionsRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_listRecordingSubscriptionsRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_listRecordingSubscriptionsRequest_set_pseudoIndex(&codec, pseudo_index);
+    aeron_archive_client_listRecordingSubscriptionsRequest_set_subscriptionCount(&codec, subscription_count);
+    aeron_archive_client_listRecordingSubscriptionsRequest_set_applyStreamId(
+        &codec,
+        apply_stream_id ? aeron_archive_client_booleanType_TRUE : aeron_archive_client_booleanType_FALSE);
+    aeron_archive_client_listRecordingSubscriptionsRequest_set_streamId(&codec, stream_id);
+    aeron_archive_client_listRecordingSubscriptionsRequest_put_channel(
+        &codec,
+        channel_fragment,
+        strlen(channel_fragment));
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_listRecordingSubscriptionsRequest_encoded_length(&codec));
 }
 
 /* ************* */

@@ -292,6 +292,45 @@ static aeron_archive_encoded_credentials_t *encoded_credentials_supplier(void *c
     return (aeron_archive_encoded_credentials_t *)clientd;
 }
 
+struct SubscriptionDescriptor
+{
+    const std::int64_t m_controlSessionId;
+    const std::int64_t m_correlationId;
+    const std::int64_t m_subscriptionId;
+    const std::int32_t m_streamId;
+
+    SubscriptionDescriptor(
+        std::int64_t controlSessionId,
+        std::int64_t correlationId,
+        std::int64_t subscriptionId,
+        std::int32_t streamId) :
+        m_controlSessionId(controlSessionId),
+        m_correlationId(correlationId),
+        m_subscriptionId(subscriptionId),
+        m_streamId(streamId)
+    {
+    }
+};
+
+struct sub_desc_consumer_clientd
+{
+    std::vector<SubscriptionDescriptor> descriptors;
+};
+
+static void recording_subscription_descriptor_consumer(
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t subscription_id,
+    int32_t stream_id,
+    const char *stripped_channel,
+    void *clientd)
+{
+    fprintf(stderr, "GOT THE LIST RECORDING SUBSCRIPTION CALLBACK\n");
+
+    auto cd = (sub_desc_consumer_clientd *)clientd;
+    cd->descriptors.emplace_back(control_session_id, correlation_id, subscription_id, stream_id);
+}
+
 TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
 {
     aeron_archive_context_t *ctx;
@@ -1064,4 +1103,117 @@ TEST_F(AeronCArchiveTest, shouldReplayRecordingFromLateJoinPosition)
         aeron_image_t *image = aeron_subscription_image_at_index(replay_subscription, 0);
         EXPECT_EQ(end_position, aeron_image_position(image));
     }
+
+    ASSERT_EQ(0, aeron_archive_close(archive));
+    ASSERT_EQ(0, aeron_archive_context_close(ctx));
+}
+
+TEST_F(AeronCArchiveTest, shouldListRegisteredRecordingSubscriptions)
+{
+    sub_desc_consumer_clientd clientd;
+
+    int32_t expected_stream_id = 7;
+    const char *channelOne = "aeron:ipc";
+    const char *channelTwo = "aeron:udp?endpoint=localhost:5678";
+    const char *channelThree = "aeron:udp?endpoint=localhost:4321";
+
+    aeron_archive_context_t *ctx;
+    aeron_archive_t *archive = nullptr;
+
+    const uint64_t idle_duration_ns = UINT64_C(1000) * UINT64_C(1000); /* 1ms */
+
+    ASSERT_EQ(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ(0,
+        aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds));
+    ASSERT_EQ(0, aeron_archive_connect(&archive, ctx));
+
+    int64_t subscription_id_one;
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id_one,
+        archive,
+        channelOne,
+        expected_stream_id,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL));
+
+    int64_t subscription_id_two;
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id_two,
+        archive,
+        channelTwo,
+        expected_stream_id + 1,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL));
+
+    int64_t subscription_id_three;
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id_three,
+        archive,
+        channelThree,
+        expected_stream_id + 2,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL));
+
+    int32_t count_one;
+    EXPECT_EQ(0, aeron_archive_list_recording_subscriptions(
+        &count_one,
+        archive,
+        0,
+        5,
+        "ipc",
+        expected_stream_id,
+        true,
+        recording_subscription_descriptor_consumer,
+        &clientd));
+    EXPECT_EQ(1, clientd.descriptors.size());
+    EXPECT_EQ(1, count_one);
+
+    clientd.descriptors.clear();
+
+    int32_t count_two;
+    EXPECT_EQ(0, aeron_archive_list_recording_subscriptions(
+        &count_two,
+        archive,
+        0,
+        5,
+        "",
+        expected_stream_id,
+        false,
+        recording_subscription_descriptor_consumer,
+        &clientd));
+    EXPECT_EQ(3, clientd.descriptors.size());
+    EXPECT_EQ(3, count_two);
+
+    aeron_archive_stop_recording(archive, subscription_id_two);
+    clientd.descriptors.clear();
+
+    int32_t count_three;
+    EXPECT_EQ(0, aeron_archive_list_recording_subscriptions(
+        &count_three,
+        archive,
+        0,
+        5,
+        "",
+        expected_stream_id,
+        false,
+        recording_subscription_descriptor_consumer,
+        &clientd));
+    EXPECT_EQ(2, clientd.descriptors.size());
+    EXPECT_EQ(2, count_three);
+
+    EXPECT_EQ(1, std::count_if(
+        clientd.descriptors.begin(),
+        clientd.descriptors.end(),
+        [=](const SubscriptionDescriptor &descriptor) { return descriptor.m_subscriptionId == subscription_id_one; }));
+
+    EXPECT_EQ(1, std::count_if(
+        clientd.descriptors.begin(),
+        clientd.descriptors.end(),
+        [=](const SubscriptionDescriptor &descriptor) { return descriptor.m_subscriptionId == subscription_id_three; }));
+
+    ASSERT_EQ(0, aeron_archive_close(archive));
+    ASSERT_EQ(0, aeron_archive_context_close(ctx));
 }

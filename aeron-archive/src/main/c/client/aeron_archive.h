@@ -71,6 +71,14 @@ typedef void (*aeron_archive_recording_descriptor_consumer_func_t)(
     const char *source_identity,
     void *clientd);
 
+typedef void (*aeron_archive_recording_subscription_descriptor_consumer_func_t)(
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t subscription_id,
+    int32_t stream_id,
+    const char *stripped_channel,
+    void *clientd);
+
 typedef enum aeron_archive_source_location_en
 {
     AERON_ARCHIVE_SOURCE_LOCATION_LOCAL = 0,
@@ -166,6 +174,17 @@ int aeron_archive_truncate_recording(
 int aeron_archive_stop_replay(
     aeron_archive_t *aeron_archive,
     int64_t replay_session_id);
+
+int aeron_archive_list_recording_subscriptions(
+    int32_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int32_t pseudo_index,
+    int32_t subscription_count,
+    const char *channel_fragment,
+    int32_t stream_id,
+    bool apply_stream_id,
+    aeron_archive_recording_subscription_descriptor_consumer_func_t recording_subscription_descriptor_consumer,
+    void *recording_subscription_descriptor_consumer_clientd);
 
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
 int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);

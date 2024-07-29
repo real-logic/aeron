@@ -20,6 +20,7 @@
 #include "aeron_archive_proxy.h"
 #include "aeron_archive_control_response_poller.h"
 #include "aeron_archive_recording_descriptor_poller.h"
+#include "aeron_archive_recording_subscription_descriptor_poller.h"
 
 int aeron_archive_create(
     aeron_archive_t **aeron_archive,
@@ -28,7 +29,7 @@ int aeron_archive_create(
     aeron_subscription_t *subscription,
     aeron_archive_control_response_poller_t *control_response_poller,
     aeron_archive_recording_descriptor_poller_t *recording_descriptor_poller,
-    void *recording_subscription_descriptor_poller,
+    aeron_archive_recording_subscription_descriptor_poller_t *recording_subscription_descriptor_poller,
     aeron_t *aeron,
     int64_t control_session_id,
     int64_t archive_id);

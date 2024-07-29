@@ -118,4 +118,14 @@ bool aeron_archive_proxy_stop_replay(
     int64_t correlation_id,
     int64_t replay_session_id);
 
+bool aeron_archive_proxy_list_recording_subscriptions(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int32_t pseudo_index,
+    int32_t subscription_count,
+    const char *channel_fragment,
+    int32_t stream_id,
+    bool apply_stream_id);
+
 #endif //AERON_ARCHIVE_PROXY_H

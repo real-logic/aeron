@@ -20,6 +20,7 @@
 #include "aeron_archive_context.h"
 #include "aeron_archive_control_response_poller.h"
 #include "aeron_archive_recording_descriptor_poller.h"
+#include "aeron_archive_recording_subscription_descriptor_poller.h"
 #include "aeron_archive_proxy.h"
 
 #include "aeron_alloc.h"
@@ -394,6 +395,20 @@ int aeron_archive_async_connect_transition_to_done(aeron_archive_t **aeron_archi
         return -1;
     }
 
+    aeron_archive_recording_subscription_descriptor_poller_t *recording_subscription_descriptor_poller;
+
+    if (aeron_archive_recording_subscription_descriptor_poller_create(
+        &recording_subscription_descriptor_poller,
+        async->ctx,
+        async->subscription,
+        async->control_session_id,
+        AERON_ARCHIVE_RECORDING_SUBSCRIPTION_DESCRIPTOR_POLLER_FRAGMENT_LIMIT_DEFAULT) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        // TODO free up the recording_descriptor
+        return -1;
+    }
+
     int rc = aeron_archive_create(
         aeron_archive,
         async->ctx,
@@ -401,7 +416,7 @@ int aeron_archive_async_connect_transition_to_done(aeron_archive_t **aeron_archi
         async->subscription,
         async->control_response_poller,
         recording_descriptor_poller,
-        NULL, // recording subscription descriptor poller
+        recording_subscription_descriptor_poller,
         async->aeron,
         async->control_session_id,
         archive_id);

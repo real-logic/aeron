@@ -43,6 +43,7 @@ struct aeron_archive_stct
     aeron_subscription_t *subscription; // shared by various pollers
     aeron_archive_control_response_poller_t *control_response_poller;
     aeron_archive_recording_descriptor_poller_t *recording_descriptor_poller;
+    aeron_archive_recording_subscription_descriptor_poller_t *recording_subscription_descriptor_poller;
     aeron_t *aeron;
     int64_t control_session_id;
     int64_t archive_id;
@@ -63,6 +64,15 @@ int aeron_archive_poll_for_descriptors(
     int32_t record_count,
     aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
     void *recording_descriptor_consumer_clientd);
+
+int aeron_archive_poll_for_subscription_descriptors(
+    int32_t *count_p,
+    aeron_archive_t *aeron_archive,
+    const char *operation_name,
+    int64_t correlation_id,
+    int32_t subscription_count,
+    aeron_archive_recording_subscription_descriptor_consumer_func_t recording_subscription_descriptor_consumer,
+    void *recording_subscription_descriptor_consumer_clientd);
 
 /* **************** */
 
@@ -112,7 +122,7 @@ int aeron_archive_create(
     aeron_subscription_t *subscription,
     aeron_archive_control_response_poller_t *control_response_poller,
     aeron_archive_recording_descriptor_poller_t *recording_descriptor_poller,
-    void *recording_subscription_descriptor_poller,
+    aeron_archive_recording_subscription_descriptor_poller_t *recording_subscription_descriptor_poller,
     aeron_t *aeron,
     int64_t control_session_id,
     int64_t archive_id)
@@ -133,6 +143,7 @@ int aeron_archive_create(
     _aeron_archive->subscription = subscription;
     _aeron_archive->control_response_poller = control_response_poller;
     _aeron_archive->recording_descriptor_poller = recording_descriptor_poller;
+    _aeron_archive->recording_subscription_descriptor_poller = recording_subscription_descriptor_poller;
     _aeron_archive->aeron = aeron;
     _aeron_archive->control_session_id = control_session_id;
     _aeron_archive->archive_id = archive_id;
@@ -152,6 +163,9 @@ int aeron_archive_close(aeron_archive_t *aeron_archive)
 
     aeron_archive_recording_descriptor_poller_close(aeron_archive->recording_descriptor_poller);
     aeron_archive->recording_descriptor_poller = NULL;
+
+    aeron_archive_recording_subscription_descriptor_poller_close(aeron_archive->recording_subscription_descriptor_poller);
+    aeron_archive->recording_subscription_descriptor_poller = NULL;
 
     aeron_subscription_close(aeron_archive->subscription, NULL, NULL);
     aeron_archive->subscription = NULL;
@@ -630,7 +644,55 @@ int aeron_archive_stop_replay(
     aeron_mutex_unlock(&aeron_archive->lock);
 
     return rc;
+}
 
+int aeron_archive_list_recording_subscriptions(
+    int32_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int32_t pseudo_index,
+    int32_t subscription_count,
+    const char *channel_fragment,
+    int32_t stream_id,
+    bool apply_stream_id,
+    aeron_archive_recording_subscription_descriptor_consumer_func_t recording_subscription_descriptor_consumer,
+    void *recording_subscription_descriptor_consumer_clientd)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+
+    if (!aeron_archive_proxy_list_recording_subscriptions(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        pseudo_index,
+        subscription_count,
+        channel_fragment,
+        stream_id,
+        apply_stream_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    aeron_archive->is_in_callback = true;
+
+    int rc = aeron_archive_poll_for_subscription_descriptors(
+        count_p,
+        aeron_archive,
+        "AeronArchive::listRecordingSubscriptions",
+        correlation_id,
+        subscription_count,
+        recording_subscription_descriptor_consumer,
+        recording_subscription_descriptor_consumer_clientd);
+
+    aeron_archive->is_in_callback = false;
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
 }
 
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive)
@@ -808,6 +870,71 @@ int aeron_archive_poll_for_descriptors(
         if (remaining_record_count != existing_remain_count)
         {
             existing_remain_count = remaining_record_count;
+
+            deadline_ns = aeron_nano_clock() + aeron_archive->ctx->message_timeout_ns;
+        }
+
+        // TODO invoke aeron client
+
+        if (fragments > 0)
+        {
+            continue;
+        }
+
+        if (!aeron_subscription_is_connected(aeron_archive->subscription))
+        {
+            // TODO
+            return -1;
+        }
+
+        if (aeron_nano_clock() > deadline_ns)
+        {
+            AERON_SET_ERR(ETIMEDOUT, "%s awaiting recording descriptors - correlationId=%llu", operation_name, correlation_id);
+            return -1;
+        }
+
+        aeron_archive_idle(aeron_archive);
+    }
+}
+
+int aeron_archive_poll_for_subscription_descriptors(
+    int32_t *count_p,
+    aeron_archive_t *aeron_archive,
+    const char *operation_name,
+    int64_t correlation_id,
+    int32_t subscription_count,
+    aeron_archive_recording_subscription_descriptor_consumer_func_t recording_subscription_descriptor_consumer,
+    void *recording_subscription_descriptor_consumer_clientd)
+{
+    aeron_archive_recording_subscription_descriptor_poller_t *poller = aeron_archive->recording_subscription_descriptor_poller;
+
+    int32_t existing_remain_count = subscription_count;
+
+    int64_t deadline_ns = aeron_nano_clock() + aeron_archive->ctx->message_timeout_ns;
+
+    aeron_archive_recording_subscription_descriptor_poller_reset(
+        poller,
+        correlation_id,
+        subscription_count,
+        recording_subscription_descriptor_consumer,
+        recording_subscription_descriptor_consumer_clientd);
+
+    while (true)
+    {
+        const int fragments = aeron_archive_recording_subscription_descriptor_poller_poll(poller);
+
+        const int32_t remaining_subscription_count = aeron_archive_recording_subscription_descriptor_poller_remaining_subscription_count(poller);
+
+        if (aeron_archive_recording_subscription_descriptor_poller_is_dispatch_complete(poller))
+        {
+            *count_p = subscription_count - remaining_subscription_count;
+
+            return 0;
+        }
+
+        if (remaining_subscription_count != existing_remain_count)
+        {
+            existing_remain_count = remaining_subscription_count;
 
             deadline_ns = aeron_nano_clock() + aeron_archive->ctx->message_timeout_ns;
         }

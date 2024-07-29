@@ -19,7 +19,6 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.exceptions.ClientTimeoutException;
-import io.aeron.exceptions.ConductorServiceTimeoutException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.status.ReadableCounter;
 import io.aeron.test.InterruptAfter;
@@ -33,6 +32,7 @@ import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -473,7 +473,7 @@ class CounterTest
             }
             else
             {
-                assertInstanceOf(ConductorServiceTimeoutException.class, timeoutException);
+                assertThat(timeoutException.getMessage(), CoreMatchers.startsWith("FATAL - service interval exceeded"));
             }
 
             assertFalse(counter.isClosed());

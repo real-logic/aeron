@@ -174,13 +174,14 @@ public:
     static void offerMessages(
         aeron_publication_t *publication,
         size_t message_count,
-        size_t start_count)
+        size_t start_count = 0,
+        const char *message_prefix = "Message ")
     {
         for (size_t i = 0; i < message_count; i++)
         {
             size_t index = i + start_count;
             char message[1000];
-            size_t len = snprintf(message, 1000, "Message %lu", index);
+            size_t len = snprintf(message, 1000, "%s%lu", message_prefix, index);
 
             while (aeron_publication_offer(publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
             {
@@ -438,7 +439,7 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
         int32_t counter_id = getRecordingCounterId(session_id, counters_reader);
         recording_id_from_counter = aeron_archive_recording_pos_get_recording_id(counters_reader, counter_id);
 
-        offerMessages(publication, message_count, 0);
+        offerMessages(publication, message_count);
         consumeMessages(subscription, message_count);
 
         stop_position = aeron_publication_position(publication);
@@ -564,7 +565,7 @@ TEST_F(AeronCArchiveTest, shouldRecordThenReplay)
             EXPECT_STREQ("aeron:ipc", source_identity_buffer);
         }
 
-        offerMessages(publication, message_count, 0);
+        offerMessages(publication, message_count);
         consumeMessages(subscription, message_count);
 
         stop_position = aeron_publication_position(publication);
@@ -650,7 +651,7 @@ TEST_F(AeronCArchiveTest, shouldRecordThenBoundedReplay)
         int32_t counter_id = getRecordingCounterId(session_id, counters_reader);
         recording_id_from_counter = aeron_archive_recording_pos_get_recording_id(counters_reader, counter_id);
 
-        offerMessages(publication, message_count, 0);
+        offerMessages(publication, message_count);
         consumeMessages(subscription, message_count);
 
         stop_position = aeron_publication_position(publication);
@@ -759,7 +760,7 @@ TEST_F(AeronCArchiveTest, shouldRecordThenReplayThenTruncate)
         int32_t counter_id = getRecordingCounterId(session_id, counters_reader);
         recording_id_from_counter = aeron_archive_recording_pos_get_recording_id(counters_reader, counter_id);
 
-        offerMessages(publication, message_count, 0);
+        offerMessages(publication, message_count);
         consumeMessages(subscription, message_count);
 
         stop_position = aeron_publication_position(publication);
@@ -897,7 +898,7 @@ TEST_F(AeronCArchiveTest, shouldRecordAndCancelReplayEarly)
         int32_t counter_id = getRecordingCounterId(session_id, counters_reader);
         recording_id_from_counter = aeron_archive_recording_pos_get_recording_id(counters_reader, counter_id);
 
-        offerMessages(publication, message_count, 0);
+        offerMessages(publication, message_count);
         consumeMessages(subscription, message_count);
 
         stop_position = aeron_publication_position(publication);
@@ -979,7 +980,7 @@ TEST_F(AeronCArchiveTest, shouldReplayRecordingFromLateJoinPosition)
         int32_t counter_id = getRecordingCounterId(session_id, counters_reader);
         recording_id_from_counter = aeron_archive_recording_pos_get_recording_id(counters_reader, counter_id);
 
-        offerMessages(publication, message_count, 0);
+        offerMessages(publication, message_count);
         consumeMessages(subscription, message_count);
 
         int64_t current_position = aeron_publication_position(publication);
@@ -1005,7 +1006,7 @@ TEST_F(AeronCArchiveTest, shouldReplayRecordingFromLateJoinPosition)
             m_replayStreamId,
             &replay_params));
 
-        offerMessages(publication, message_count, 0);
+        offerMessages(publication, message_count);
         consumeMessages(subscription, message_count);
         consumeMessages(replay_subscription, message_count);
 
@@ -1107,4 +1108,17 @@ TEST_F(AeronCArchiveTest, shouldListRegisteredRecordingSubscriptions)
         clientd.descriptors.begin(),
         clientd.descriptors.end(),
         [=](const SubscriptionDescriptor &descriptor) { return descriptor.m_subscriptionId == subscription_id_three; }));
+}
+
+TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
+{
+    const std::size_t termLength = 64 * 1024;
+    const std::string message_prefix = "Message ";
+    const std::size_t min_messages_per_term = termLength / (message_prefix.length() + AERON_DATA_HEADER_LENGTH);
+    const char *control_endpoint = "localhost:23265";
+    const char *recording_endpoint = "localhost:23266";
+    const char *live_endpoint = "localhost:23267";
+    const char *replay_endpoint = "localhost:0";
+
+    connect();
 }

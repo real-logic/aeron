@@ -24,7 +24,7 @@
 #include "aeron_alloc.h"
 #include "aeron_agent.h"
 #include "util/aeron_error.h"
-#include "uri/aeron_uri.h"
+#include "uri/aeron_uri_string_builder.h"
 
 #define ENSURE_NOT_REENTRANT_CHECK_RETURN(_aa, _rc) \
 do { \
@@ -509,26 +509,14 @@ int aeron_archive_replay(
     }
 
     char replay_channel_with_sid[AERON_MAX_PATH + 1];
-    memset(replay_channel_with_sid, '\0', AERON_MAX_PATH + 1);
+
     {
-        aeron_uri_string_put_int64(
-            replay_channel,
-            strlen(replay_channel),
-            replay_channel_with_sid,
-            AERON_MAX_PATH + 1,
-            AERON_URI_SESSION_ID_KEY,
-            (int32_t)replay_session_id);
-    }
+        aeron_uri_string_builder_t builder;
 
-    memset(replay_channel_with_sid, '\0', AERON_MAX_PATH + 1);
-    {
-        aeron_uri_t uri;
-
-        aeron_uri_parse(strlen(replay_channel), replay_channel, &uri);
-        aeron_uri_put_int64(&uri, AERON_URI_SESSION_ID_KEY, (int32_t)replay_session_id);
-        aeron_uri_sprint(&uri, replay_channel_with_sid, AERON_MAX_PATH + 1);
-        aeron_uri_close(&uri);
-
+        aeron_uri_string_builder_init_on_string(&builder, replay_channel);
+        aeron_uri_string_builder_put_int32(&builder, AERON_URI_SESSION_ID_KEY, (int32_t)replay_session_id);
+        aeron_uri_string_builder_sprint(&builder, replay_channel_with_sid, AERON_MAX_PATH + 1);
+        aeron_uri_string_builder_close(&builder);
     }
 
     aeron_async_add_subscription_t *async_add_subscription;

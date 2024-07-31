@@ -42,6 +42,7 @@ final class ClientCommandAdapter implements ControlledMessageHandler
     private final RemoveMessageFlyweight removeMsgFlyweight = new RemoveMessageFlyweight();
     private final DestinationMessageFlyweight destinationMsgFlyweight = new DestinationMessageFlyweight();
     private final CounterMessageFlyweight counterMsgFlyweight = new CounterMessageFlyweight();
+    private final StaticCounterMessageFlyweight staticCounterMessageFlyweight = new StaticCounterMessageFlyweight();
     private final TerminateDriverFlyweight terminateDriverFlyweight = new TerminateDriverFlyweight();
     private final DriverConductor conductor;
     private final RingBuffer toDriverCommands;
@@ -260,6 +261,27 @@ final class ClientCommandAdapter implements ControlledMessageHandler
                         buffer,
                         terminateDriverFlyweight.tokenBufferOffset(),
                         terminateDriverFlyweight.tokenBufferLength());
+                    break;
+                }
+
+                case ADD_STATIC_COUNTER:
+                {
+                    staticCounterMessageFlyweight.wrap(buffer, index);
+                    staticCounterMessageFlyweight.validateLength(msgTypeId, length);
+
+                    correlationId = staticCounterMessageFlyweight.correlationId();
+                    final long clientId = staticCounterMessageFlyweight.clientId();
+                    conductor.onAddStaticCounter(
+                        staticCounterMessageFlyweight.typeId(),
+                        buffer,
+                        index + staticCounterMessageFlyweight.keyBufferOffset(),
+                        staticCounterMessageFlyweight.keyBufferLength(),
+                        buffer,
+                        index + staticCounterMessageFlyweight.labelBufferOffset(),
+                        staticCounterMessageFlyweight.labelBufferLength(),
+                        staticCounterMessageFlyweight.registrationId(),
+                        correlationId,
+                        clientId);
                     break;
                 }
 

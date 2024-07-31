@@ -2726,6 +2726,19 @@ void aeron_driver_conductor_on_unavailable_counter(
         conductor, AERON_RESPONSE_ON_UNAVAILABLE_COUNTER, response, sizeof(aeron_counter_update_t));
 }
 
+void aeron_driver_conductor_on_static_counter(
+    aeron_driver_conductor_t *conductor, int64_t correlation_id, int32_t counter_id)
+{
+    char response_buffer[sizeof(aeron_static_counter_response_t)];
+    aeron_static_counter_response_t *response = (aeron_static_counter_response_t *)response_buffer;
+
+    response->correlation_id = correlation_id;
+    response->counter_id = counter_id;
+
+    aeron_driver_conductor_client_transmit(
+        conductor, AERON_RESPONSE_ON_STATIC_COUNTER, response, sizeof(aeron_static_counter_response_t));
+}
+
 void aeron_driver_conductor_on_operation_succeeded(aeron_driver_conductor_t *conductor, int64_t correlation_id)
 {
     char response_buffer[sizeof(aeron_correlated_command_t)];
@@ -3289,6 +3302,21 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
             break;
         }
 
+        case AERON_COMMAND_ADD_STATIC_COUNTER:
+        {
+            aeron_static_counter_command_t *command = (aeron_static_counter_command_t *)message;
+
+            if (length < sizeof(aeron_static_counter_command_t))
+            {
+                goto malformed_command;
+            }
+
+            correlation_id = command->correlated.correlation_id;
+
+            result = aeron_driver_conductor_on_add_static_counter(conductor, command);
+            break;
+        }
+
         default:
             AERON_SET_ERR(-AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID, "command=%d unknown", msg_type_id);
             aeron_driver_conductor_log_error(conductor);
@@ -3709,6 +3737,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
     aeron_client_t *client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id);
     if (NULL == client)
     {
+        AERON_APPEND_ERR("%s", "Failed to add client");
         goto error_cleanup;
     }
 
@@ -4013,6 +4042,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
 
     if (aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id) == NULL)
     {
+        AERON_APPEND_ERR("%s", "Failed to add client");
         goto error_cleanup;
     }
 
@@ -4102,6 +4132,7 @@ int aeron_driver_conductor_on_add_spy_subscription_complete(
 
     if (aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id) == NULL)
     {
+        AERON_APPEND_ERR("%s", "Failed to add client");
         return -1;
     }
 
@@ -5355,6 +5386,7 @@ int aeron_driver_conductor_on_add_counter(aeron_driver_conductor_t *conductor, a
     aeron_client_t *client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id);
     if (NULL == client)
     {
+        AERON_APPEND_ERR("%s", "Failed to add client");
         return -1;
     }
 
@@ -5433,6 +5465,70 @@ int aeron_driver_conductor_on_remove_counter(aeron_driver_conductor_t *conductor
         command->registration_id);
 
     return -1;
+}
+
+int aeron_driver_conductor_on_add_static_counter(aeron_driver_conductor_t *conductor, aeron_static_counter_command_t *command)
+{
+    aeron_client_t *client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id);
+    if (NULL == client)
+    {
+        AERON_APPEND_ERR("%s", "Failed to add client");
+        return -1;
+    }
+
+    aeron_counters_reader_t *reader = (aeron_counters_reader_t *)&conductor->counters_manager;
+
+    int32_t counter_id = aeron_counters_reader_find_by_type_id_and_registration_id(
+        reader, command->type_id, command->registration_id);
+    if (AERON_NULL_COUNTER_ID != counter_id)
+    {
+        int64_t owner_id;
+        aeron_counters_reader_counter_owner_id(reader, counter_id, &owner_id);
+        if (AERON_NULL_VALUE != owner_id)
+        {
+            AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR,
+                "cannot add static counter, because a non-static counter exists (counterId=%" PRIi32 ") for typeId=%"
+                PRIi32 " and registrationId=%" PRIi64 "", counter_id, command->type_id, command->registration_id);
+            return -1;
+        }
+    }
+    else
+    {
+        const uint8_t *cursor = (const uint8_t *)command + sizeof(aeron_static_counter_command_t);
+        int32_t key_length;
+
+        memcpy(&key_length, cursor, sizeof(key_length));
+        const uint8_t *key = cursor + sizeof(int32_t);
+
+        cursor = key + AERON_ALIGN(key_length, sizeof(int32_t));
+        int32_t label_length;
+
+        memcpy(&label_length, cursor, sizeof(label_length));
+        const char *label = (const char *)cursor + sizeof(int32_t);
+
+        counter_id = aeron_counters_manager_allocate(
+            &conductor->counters_manager, command->type_id, key, (size_t)key_length, label, (size_t)label_length);
+
+        if (counter_id < 0)
+        {
+            return -1;
+        }
+
+        aeron_counters_manager_counter_registration_id(
+            &conductor->counters_manager, counter_id, command->registration_id);
+
+        aeron_counters_manager_counter_owner_id(
+            &conductor->counters_manager, counter_id, AERON_NULL_VALUE);
+
+        int64_t saved_registration_id;
+        aeron_counters_reader_counter_registration_id(reader, counter_id, &saved_registration_id);
+
+        int64_t saved_owner_id;
+        aeron_counters_reader_counter_owner_id(reader, counter_id, &saved_owner_id);
+    }
+
+    aeron_driver_conductor_on_static_counter(conductor, command->correlated.correlation_id, counter_id);
+    return 0;
 }
 
 int aeron_driver_conductor_on_client_close(aeron_driver_conductor_t *conductor, aeron_correlated_command_t *command)

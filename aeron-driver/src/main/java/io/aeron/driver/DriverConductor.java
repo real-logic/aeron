@@ -51,6 +51,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
@@ -1147,6 +1148,45 @@ public final class DriverConductor implements Agent
         countersManager.setCounterRegistrationId(counter.id(), correlationId);
         counterLinks.add(new CounterLink(counter, correlationId, client));
         clientProxy.onCounterReady(correlationId, counter.id());
+    }
+
+    void onAddStaticCounter(
+        final int typeId,
+        final DirectBuffer keyBuffer,
+        final int keyOffset,
+        final int keyLength,
+        final DirectBuffer labelBuffer,
+        final int labelOffset,
+        final int labelLength,
+        final long registrationId,
+        final long correlationId,
+        final long clientId)
+    {
+        getOrAddClient(clientId);
+
+        final int counterId = countersManager.findByTypeIdAndRegistrationId(typeId, registrationId);
+        if (CountersReader.NULL_COUNTER_ID != counterId)
+        {
+            if (Aeron.NULL_VALUE != countersManager.getCounterOwnerId(counterId))
+            {
+                clientProxy.onError(correlationId, GENERIC_ERROR, "cannot add static counter, because a " +
+                    "non-static counter exists (counterId=" + counterId + ") for typeId=" + typeId + " and " +
+                    "registrationId=" + registrationId);
+            }
+            else
+            {
+                clientProxy.onStaticCounter(correlationId, counterId);
+            }
+        }
+        else
+        {
+            final AtomicCounter counter = countersManager.newCounter(
+                typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+
+            countersManager.setCounterRegistrationId(counter.id(), registrationId);
+            countersManager.setCounterOwnerId(counter.id(), Aeron.NULL_VALUE);
+            clientProxy.onStaticCounter(correlationId, counter.id());
+        }
     }
 
     void onRemoveCounter(final long registrationId, final long correlationId)

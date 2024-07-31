@@ -34,6 +34,7 @@
 #define AERON_COMMAND_ADD_RCV_DESTINATION (0x0C)
 #define AERON_COMMAND_REMOVE_RCV_DESTINATION (0x0D)
 #define AERON_COMMAND_TERMINATE_DRIVER (0x0E)
+#define AERON_COMMAND_ADD_STATIC_COUNTER (0x0F)
 
 #define AERON_RESPONSE_ON_ERROR (0x0F01)
 #define AERON_RESPONSE_ON_AVAILABLE_IMAGE (0x0F02)
@@ -45,6 +46,7 @@
 #define AERON_RESPONSE_ON_COUNTER_READY (0x0F08)
 #define AERON_RESPONSE_ON_UNAVAILABLE_COUNTER (0x0F09)
 #define AERON_RESPONSE_ON_CLIENT_TIMEOUT (0x0F0A)
+#define AERON_RESPONSE_ON_STATIC_COUNTER (0x0F0B)
 
 /* error codes */
 #define AERON_ERROR_CODE_UNKNOWN_CODE_VALUE (-1)
@@ -168,6 +170,21 @@ typedef struct aeron_counter_update_stct
     int32_t counter_id;
 }
 aeron_counter_update_t;
+
+typedef struct aeron_static_counter_command_stct
+{
+    aeron_correlated_command_t correlated;
+    int64_t registration_id;
+    int32_t type_id;
+}
+aeron_static_counter_command_t;
+
+typedef struct aeron_static_counter_response_stct
+{
+    int64_t correlation_id;
+    int32_t counter_id;
+}
+aeron_static_counter_response_t;
 
 typedef struct aeron_client_timeout_stct
 {

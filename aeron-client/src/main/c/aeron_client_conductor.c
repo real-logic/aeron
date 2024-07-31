@@ -1728,16 +1728,13 @@ int aeron_client_conductor_async_add_counter(
     if (aeron_alloc((void **)&key_buffer_copy, key_buffer_length) < 0)
     {
         AERON_APPEND_ERR("%s", "Unable to allocate counter");
-        aeron_free(cmd);
-        return -1;
+        goto error;
     }
 
     if (aeron_alloc((void **)&label_buffer_copy, label_buffer_length + 1) < 0)
     {
         AERON_APPEND_ERR("%s", "Unable to allocate counter");
-        aeron_free(cmd);
-        aeron_free(key_buffer_copy);
-        return -1;
+        goto error;
     }
 
     if (key_buffer && key_buffer_length > 0)
@@ -1785,6 +1782,12 @@ int aeron_client_conductor_async_add_counter(
     }
 
     return 0;
+
+error:
+    aeron_free(cmd);
+    aeron_free(key_buffer_copy);
+    aeron_free(label_buffer_copy);
+    return -1;
 }
 
 int aeron_client_conductor_async_close_counter(

@@ -23,6 +23,29 @@
 #include "concurrent/aeron_counters_manager.h"
 #include "util/aeron_error.h"
 
+#ifdef _MSC_VER
+#define _Static_assert static_assert
+#endif
+
+_Static_assert(
+    sizeof(aeron_counters_manager_t) > sizeof(aeron_counters_reader_t),
+    "sizeof(aeron_counters_manager_t) must be greater than sizeof(aeron_counters_reader_t)");
+_Static_assert(
+    offsetof(aeron_counters_manager_t, values) == offsetof(aeron_counters_reader_t, values),
+    "offsetof(aeron_counters_manager_t, values) must match offsetof(aeron_counters_reader_t, values)");
+_Static_assert(
+    offsetof(aeron_counters_manager_t, metadata) == offsetof(aeron_counters_reader_t, metadata),
+    "offsetof(aeron_counters_manager_t, metadata) must match offsetof(aeron_counters_reader_t, metadata)");
+_Static_assert(
+    offsetof(aeron_counters_manager_t, values_length) == offsetof(aeron_counters_reader_t, values_length),
+    "offsetof(aeron_counters_manager_t, values_length) must match offsetof(aeron_counters_reader_t, values_length)");
+_Static_assert(
+    offsetof(aeron_counters_manager_t, metadata_length) == offsetof(aeron_counters_reader_t, metadata_length),
+    "offsetof(aeron_counters_manager_t, metadata_length) must match offsetof(aeron_counters_reader_t, metadata_length)");
+_Static_assert(
+    offsetof(aeron_counters_manager_t, max_counter_id) == offsetof(aeron_counters_reader_t, max_counter_id),
+    "offsetof(aeron_counters_manager_t, max_counter_id) must match offsetof(aeron_counters_reader_t, max_counter_id)");
+
 int aeron_counters_manager_init(
     aeron_counters_manager_t *manager,
     uint8_t *metadata_buffer,

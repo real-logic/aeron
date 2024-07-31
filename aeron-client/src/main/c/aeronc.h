@@ -491,7 +491,7 @@ int aeron_async_add_counter(
     size_t label_buffer_length);
 
 /**
- * Poll the completion of the `aeron_async_add_counter` or `aeron_async_add_static_counter` calls.
+ * Poll the completion of the <code>aeron_async_add_counter</code> or <code>aeron_async_add_static_counter</code> calls.
  *
  * @param counter to set if completed successfully.
  * @param async to check for completion.
@@ -500,8 +500,8 @@ int aeron_async_add_counter(
 int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_counter_t *async);
 
 /**
- * Asynchronously allocates or returns an existing static counter instance using specified `type_id` and
- * `registration_id`. Such counter cannot be deleted and its lifecycle is decoupled from the client that created it.
+ * Asynchronously allocates or returns an existing static counter instance using specified <code>type_id</code> and
+ * <code>registration_id</code>. Such counter cannot be deleted and its lifecycle is decoupled from the client that created it.
  * Returns an object to use to determine when the counter is available.
  *
  * @param async object to use for polling completion.
@@ -1782,7 +1782,7 @@ int aeron_subscription_resolved_endpoint(aeron_subscription_t *subscription, con
 
 /**
  * Retrieves the channel URI for this subscription with any wildcard ports filled in. If the channel is not UDP or
- * does not have a wildcard port (`0`), then it will return the original URI.
+ * does not have a wildcard port (<code>0</code>), then it will return the original URI.
  *
  * @param subscription to query
  * @param uri buffer to hold the resolved uri
@@ -2357,7 +2357,7 @@ const char *aeron_errmsg(void);
  *
  * @param path buffer to store the path.
  * @param path_length space available in the buffer
- * @return -1 if there is an issue or the number of bytes written to path excluding the terminator `\0`. If this
+ * @return -1 if there is an issue or the number of bytes written to path excluding the terminator <code>\0</code>. If this
  * is equal to or greater than the path_length then the path has been truncated.
  */
 int aeron_default_path(char *path, size_t path_length);

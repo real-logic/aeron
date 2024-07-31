@@ -662,16 +662,16 @@ public:
     }
 
     /**
-     * Allocates or returns an existing static counter instance using specified <tt>typeId</tt> and
-     * <tt>registrationId</tt> pair. Such counter cannot be deleted and its lifecycle is decoupled from this
-     * <tt>Aeron</tt> instance, i.e. won't be freed when this instance is closed or times out.
+     * Allocates or returns an existing static counter instance using specified <code>typeId</code> and
+     * <code>registrationId</code> pair. Such counter cannot be deleted and its lifecycle is decoupled from this
+     * <code>Aeron</code> instance, i.e. won't be freed when this instance is closed or times out.
      *
      * @param typeId         for the counter.
      * @param keyBuffer      containing the optional key for the counter.
      * @param keyLength      of the key in the keyBuffer.
      * @param label          for the counter.
-     * @param registrationId that uniquely identifies the static counter for a given <tt>typeId</tt>
-     * @return correlation id to resolve the AsyncAddCounter for the <tt>Counter</tt>.
+     * @param registrationId that uniquely identifies the static counter for a given <code>typeId</code>
+     * @return correlation id to resolve the AsyncAddCounter for the <code>Counter</code>.
      */
     std::int64_t addStaticCounter(
         std::int32_t typeId,
@@ -690,15 +690,15 @@ public:
     }
 
     /**
-     * Allocates or returns an existing static counter instance using specified <tt>typeId</tt> and
-     * <tt>registrationId</tt> pair. Such counter cannot be deleted and its lifecycle is decoupled from this
-     * <tt>Aeron</tt> instance, i.e. won't be freed when this instance is closed or times out.
+     * Allocates or returns an existing static counter instance using specified <code>typeId</code> and
+     * <code>registrationId</code> pair. Such counter cannot be deleted and its lifecycle is decoupled from this
+     * <code>Aeron</code> instance, i.e. won't be freed when this instance is closed or times out.
      *
      * @param typeId         for the counter.
      * @param keyBuffer      containing the optional key for the counter.
      * @param keyLength      of the key in the keyBuffer.
      * @param label          for the counter.
-     * @param registrationId that uniquely identifies the static counter for a given <tt>typeId</tt>.
+     * @param registrationId that uniquely identifies the static counter for a given <code>typeId</code>.
      * @return AsyncAddCounter to find the counter.
      */
     inline AsyncAddCounter *addStaticCounterAsync(

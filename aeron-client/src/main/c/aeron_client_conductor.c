@@ -1143,10 +1143,10 @@ void aeron_client_conductor_on_cmd_add_static_counter(void *clientd, void *item)
 
     const size_t command_length =
         sizeof(aeron_static_counter_command_t) +
-            sizeof(int32_t) +
-            (size_t)(AERON_ALIGN(async->counter.key_buffer_length, sizeof(int32_t))) +
-            sizeof(int32_t) +
-            (size_t)async->counter.label_buffer_length;
+        sizeof(int32_t) +
+        (size_t)(AERON_ALIGN(async->counter.key_buffer_length, sizeof(int32_t))) +
+        sizeof(int32_t) +
+        (size_t)async->counter.label_buffer_length;
 
     int ensure_capacity_result = 0, rb_offer_fail_count = 0;
 

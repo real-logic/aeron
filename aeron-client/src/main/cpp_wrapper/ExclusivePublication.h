@@ -469,6 +469,35 @@ public:
     }
 
     /**
+     * Non-blocking publish of a simple const data buffer and length containing a message
+     *
+     * @param buffer contain the message.
+     * @param length of the message.
+     * @param reservedValueSupplier for the frame.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     */
+    std::int64_t offer(
+        const std::uint8_t *buffer,
+        std::size_t length,
+        const on_reserved_value_supplier_t &reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
+    {
+        std::int64_t position = aeron_exclusive_publication_offer(
+            m_publication,
+            buffer,
+            static_cast<std::size_t>(length),
+            reservedValueSupplierCallback,
+            (void *)&reservedValueSupplier);
+
+        if (AERON_PUBLICATION_ERROR == position)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return position;
+    }
+
+    /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
      * <p>

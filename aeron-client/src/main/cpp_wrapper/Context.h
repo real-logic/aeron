@@ -24,6 +24,7 @@
 #include "concurrent/AgentRunner.h"
 #include "concurrent/CountersReader.h"
 #include "CncFileDescriptor.h"
+#include "status/PublicationErrorFrame.h"
 
 #include "aeronc.h"
 
@@ -133,6 +134,8 @@ typedef std::function<void(
  */
 typedef std::function<void()> on_close_client_t;
 
+typedef std::function<void(aeron::status::PublicationErrorFrame &errorFrame)> on_error_frame_t;
+
 const static long NULL_TIMEOUT = -1;
 const static long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10000;
 const static long DEFAULT_RESOURCE_LINGER_MS = 5000;
@@ -190,6 +193,10 @@ inline void defaultOnUnavailableCounterHandler(CountersReader &, std::int64_t, s
 }
 
 inline void defaultOnCloseClientHandler()
+{
+}
+
+inline void defaultOnErrorFrameHandler(aeron::status::PublicationErrorFrame &)
 {
 }
 
@@ -526,6 +533,12 @@ public:
         return *this;
     }
 
+    inline this_t &errorFrameHandler(on_error_frame_t &handler)
+    {
+        m_onErrorFrameHandler = handler;
+        return *this;
+    }
+
     static bool requestDriverTermination(
         const std::string &directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength)
     {
@@ -576,6 +589,7 @@ private:
     on_available_counter_t m_onAvailableCounterHandler = defaultOnAvailableCounterHandler;
     on_unavailable_counter_t m_onUnavailableCounterHandler = defaultOnUnavailableCounterHandler;
     on_close_client_t m_onCloseClientHandler = defaultOnCloseClientHandler;
+    on_error_frame_t m_onErrorFrameHandler = defaultOnErrorFrameHandler;
 
     void attachCallbacksToContext()
     {
@@ -634,6 +648,14 @@ private:
         {
             throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
         }
+
+        if (aeron_context_set_error_frame_handler(
+            m_context,
+            errorFrameHandlerCallback,
+            const_cast<void *>(reinterpret_cast<const void *>(&m_onErrorFrameHandler))) < 0)
+        {
+            throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
+        }
     }
 
     static void errorHandlerCallback(void *clientd, int errcode, const char *message)
@@ -684,6 +706,13 @@ private:
     {
         on_close_client_t &handler = *reinterpret_cast<on_close_client_t *>(clientd);
         handler();
+    }
+
+    static void errorFrameHandlerCallback(void *clientd, aeron_publication_error_values_t *error_frame)
+    {
+        on_error_frame_t &handler = *reinterpret_cast<on_error_frame_t *>(clientd);
+        aeron::status::PublicationErrorFrame errorFrame{error_frame};
+        handler(errorFrame);
     }
 };
 

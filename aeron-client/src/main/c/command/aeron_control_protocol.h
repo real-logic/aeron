@@ -35,7 +35,7 @@
 #define AERON_COMMAND_REMOVE_RCV_DESTINATION (0x0D)
 #define AERON_COMMAND_TERMINATE_DRIVER (0x0E)
 #define AERON_COMMAND_ADD_STATIC_COUNTER (0x0F)
-#define AERON_COMMAND_INVALIDATE_IMAGE (0x10)
+#define AERON_COMMAND_REJECT_IMAGE (0x10)
 
 #define AERON_RESPONSE_ON_ERROR (0x0F01)
 #define AERON_RESPONSE_ON_AVAILABLE_IMAGE (0x0F02)
@@ -203,7 +203,7 @@ typedef struct aeron_terminate_driver_command_stct
 }
 aeron_terminate_driver_command_t;
 
-typedef struct aeron_invalidate_image_command_stct
+typedef struct aeron_reject_image_command_stct
 {
     aeron_correlated_command_t correlated;
     int64_t image_correlation_id;
@@ -211,7 +211,7 @@ typedef struct aeron_invalidate_image_command_stct
     int32_t reason_length;
     uint8_t reason_text[1];
 }
-aeron_invalidate_image_command_t;
+aeron_reject_image_command_t;
 
 struct aeron_publication_error_stct
 {

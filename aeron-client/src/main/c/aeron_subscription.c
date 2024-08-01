@@ -734,6 +734,19 @@ int aeron_subscription_try_resolve_channel_endpoint_port(
     return result;
 }
 
+int aeron_subscription_reject_image(
+    aeron_subscription_t *subscription, int64_t image_correlation_id, int64_t position, const char *reason)
+{
+    if (aeron_client_conductor_reject_image(
+        subscription->conductor, image_correlation_id, position, reason, AERON_COMMAND_REJECT_IMAGE) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    return 0;
+}
+
 extern int aeron_subscription_find_image_index(aeron_image_list_t *volatile image_list, aeron_image_t *image);
 extern int64_t aeron_subscription_last_image_list_change_number(aeron_subscription_t *subscription);
 extern void aeron_subscription_propose_last_image_change_number(

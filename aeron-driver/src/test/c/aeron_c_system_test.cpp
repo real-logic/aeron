@@ -255,8 +255,15 @@ TEST_F(CSystemTest, shouldAddStaticCounter)
     ASSERT_EQ(counter_constants.registration_id, counter_constants2.registration_id);
     ASSERT_NE(counter, counter2);
 
+    counterClosedFlag = false;
     aeron_counter_close(counter, setFlagOnClose, &counterClosedFlag);
+    while (!counterClosedFlag)
+    {
+        std::this_thread::yield();
+    }
 
+    counterClosedFlag = false;
+    aeron_counter_close(counter2, setFlagOnClose, &counterClosedFlag);
     while (!counterClosedFlag)
     {
         std::this_thread::yield();
@@ -270,6 +277,13 @@ TEST_F(CSystemTest, shouldAddStaticCounter)
     ASSERT_EQ(0, aeron_counter_constants(counter3, &counter_constants3));
     ASSERT_EQ(999999999, counter_constants3.registration_id);
     ASSERT_NE(counter_constants.counter_id, counter_constants3.counter_id);
+
+    counterClosedFlag = false;
+    aeron_counter_close(counter3, setFlagOnClose, &counterClosedFlag);
+    while (!counterClosedFlag)
+    {
+        std::this_thread::yield();
+    }
 
     // verify that the closed static counter was not deleted
     aeron_counters_reader_t *counters_reader = aeron_counters_reader(m_aeron);

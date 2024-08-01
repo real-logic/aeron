@@ -2570,12 +2570,12 @@ void on_error(
 
 void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
 {
-    uint8_t buffer[sizeof(aeron_publication_error_t) + (AERON_ERROR_MAX_TEXT_LENGTH - 1)];
+    uint8_t buffer[sizeof(aeron_publication_error_values_t) + (AERON_ERROR_MAX_TEXT_LENGTH - 1)];
     aeron_driver_conductor_t *conductor = clientd;
     aeron_command_publication_error_t *error = item;
     aeron_driver_conductor_log_explicit_error(conductor, error->error_code, (const char *)error->error_text);
 
-    aeron_publication_error_t *response = (aeron_publication_error_t *)buffer;
+    aeron_publication_error_values_t *response = (aeron_publication_error_values_t *)buffer;
     response->error_code = error->error_code;
     response->registration_id = error->registration_id;
     response->session_id = error->session_id;
@@ -2606,7 +2606,7 @@ void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
 
     response->error_message_length = error->error_length;
     memcpy(response->error_message, error->error_text, error->error_length);
-    size_t response_length = offsetof(aeron_publication_error_t, error_message) + response->error_message_length;
+    size_t response_length = offsetof(aeron_publication_error_values_t, error_message) + response->error_message_length;
 
     aeron_driver_conductor_client_transmit(conductor, AERON_RESPONSE_ON_PUBLICATION_ERROR, response, response_length);
 }
@@ -3376,17 +3376,17 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
             break;
         }
 
-        case AERON_COMMAND_INVALIDATE_IMAGE:
+        case AERON_COMMAND_REJECT_IMAGE:
         {
-            aeron_invalidate_image_command_t *command = (aeron_invalidate_image_command_t *)message;
+            aeron_reject_image_command_t *command = (aeron_reject_image_command_t *)message;
             correlation_id = command->correlated.correlation_id;
 
-            if (length < sizeof (aeron_invalidate_image_command_t))
+            if (length < sizeof (aeron_reject_image_command_t))
             {
                 goto malformed_command;
             }
 
-            if (length < offsetof(aeron_invalidate_image_command_t, reason_text) + command->reason_length)
+            if (length < offsetof(aeron_reject_image_command_t, reason_text) + command->reason_length)
             {
                 goto malformed_command;
             }
@@ -5714,7 +5714,7 @@ int aeron_driver_conductor_on_terminate_driver(
 }
 
 int aeron_driver_conductor_on_invalidate_image(
-    aeron_driver_conductor_t *conductor, aeron_invalidate_image_command_t *command)
+    aeron_driver_conductor_t *conductor, aeron_reject_image_command_t *command)
 {
     const int64_t image_correlation_id = command->image_correlation_id;
     aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
@@ -5744,7 +5744,7 @@ int aeron_driver_conductor_on_invalidate_image(
 }
 
 
-    void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item)
+void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     aeron_command_create_publication_image_t *command = (aeron_command_create_publication_image_t *)item;

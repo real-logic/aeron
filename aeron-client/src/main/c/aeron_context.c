@@ -44,6 +44,10 @@ void aeron_default_error_handler(void *clientd, int errcode, const char *message
     exit(EXIT_FAILURE);
 }
 
+void aeron_default_error_frame_handler(void *clientd, aeron_publication_error_values_t *message)
+{
+}
+
 int aeron_context_init(aeron_context_t **context)
 {
     aeron_context_t *_context = NULL;
@@ -78,6 +82,7 @@ int aeron_context_init(aeron_context_t **context)
     _context->client_name = NULL;
     _context->error_handler = aeron_default_error_handler;
     _context->error_handler_clientd = NULL;
+    _context->error_frame_handler = aeron_default_error_frame_handler;
     _context->on_new_publication = NULL;
     _context->on_new_publication_clientd = NULL;
     _context->on_new_exclusive_publication = NULL;
@@ -336,6 +341,26 @@ void *aeron_context_get_error_handler_clientd(aeron_context_t *context)
 {
     return NULL != context ? context->error_handler_clientd : NULL;
 }
+
+int aeron_context_set_error_frame_handler(aeron_context_t *context, aeron_error_frame_handler_t handler, void *clientd)
+{
+    AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->error_frame_handler = handler;
+    context->error_frame_handler_clientd = clientd;
+    return 0;
+}
+
+aeron_error_frame_handler_t aeron_context_get_error_frame_handler(aeron_context_t *context)
+{
+    return NULL != context ? context->error_frame_handler : NULL;
+}
+
+void *aeron_context_get_error_frame_handler_clientd(aeron_context_t *context)
+{
+    return NULL != context ? context->error_frame_handler_clientd : NULL;
+}
+
 
 int aeron_context_set_on_new_publication(aeron_context_t *context, aeron_on_new_publication_t handler, void *clientd)
 {

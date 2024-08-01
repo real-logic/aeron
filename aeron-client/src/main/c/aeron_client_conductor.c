@@ -165,6 +165,9 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->error_handler = context->error_handler;
     conductor->error_handler_clientd = context->error_handler_clientd;
 
+    conductor->error_frame_handler = context->error_frame_handler;
+    conductor->error_handler_clientd = context->error_frame_handler_clientd;
+
     conductor->on_new_publication = context->on_new_publication;
     conductor->on_new_publication_clientd = context->on_new_publication_clientd;
 
@@ -352,6 +355,19 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
             break;
         }
 
+        case AERON_RESPONSE_ON_PUBLICATION_ERROR:
+        {
+            aeron_publication_error_t *response = (aeron_publication_error_t *)buffer;
+
+            if (length < sizeof(aeron_publication_error_t))
+            {
+                goto malformed_command;
+            }
+
+            result = aeron_client_conductor_on_error_frame(conductor, response);
+            break;
+        }
+
         case AERON_RESPONSE_ON_STATIC_COUNTER:
         {
             aeron_static_counter_response_t *response = (aeron_static_counter_response_t *)buffer;
@@ -367,7 +383,6 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
 
         default:
         {
-
             AERON_CLIENT_FORMAT_BUFFER(error_message, "response=%x unknown", type_id);
             conductor->error_handler(
                 conductor->error_handler_clientd, AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID, error_message);
@@ -2526,6 +2541,45 @@ int aeron_client_conductor_on_operation_success(
     return 0;
 }
 
+struct aeron_client_conductor_clientd_stct
+{
+    aeron_client_conductor_t *conductor;
+    void *clientd;
+};
+typedef struct aeron_client_conductor_clientd_stct aeron_client_conductor_clientd_t;
+
+void aeron_client_conductor_forward_error(void *clientd, int64_t key, void *value)
+{
+    aeron_client_conductor_clientd_t *conductor_clientd = (aeron_client_conductor_clientd_t *)clientd;
+    aeron_client_conductor_t *conductor = conductor_clientd->conductor;
+    aeron_publication_error_t *response = (aeron_publication_error_t *)conductor_clientd->clientd;
+    aeron_client_command_base_t *resource = (aeron_client_command_base_t *)value;
+
+    if (AERON_CLIENT_TYPE_PUBLICATION == resource->type)
+    {
+        aeron_publication_t *publication = (aeron_publication_t *)resource;
+        if (response->registration_id == publication->original_registration_id)
+        {
+            // TODO: Use a union.
+            conductor->error_frame_handler(
+                conductor->error_handler_clientd, (aeron_publication_error_values_t *)response);
+        }
+    }
+}
+
+int aeron_client_conductor_on_error_frame(aeron_client_conductor_t *conductor, aeron_publication_error_t *response)
+{
+    aeron_client_conductor_clientd_t clientd = {
+        .conductor = conductor,
+        .clientd = response
+    };
+
+    aeron_int64_to_ptr_hash_map_for_each(
+        &conductor->resource_by_id_map, aeron_client_conductor_forward_error, (void *)&clientd);
+
+    return 0;
+}
+
 aeron_subscription_t *aeron_client_conductor_find_subscription_by_id(
     aeron_client_conductor_t *conductor, int64_t registration_id)
 {
@@ -2855,6 +2909,44 @@ int aeron_client_conductor_offer_destination_command(
     {
         *correlation_id = command->correlated.correlation_id;
     }
+
+    return 0;
+}
+
+int aeron_client_conductor_reject_image(
+    aeron_client_conductor_t *conductor,
+    int64_t image_correlation_id,
+    int64_t position,
+    const char *reason,
+    int32_t command_type)
+{
+    size_t reason_length = strlen(reason);
+    const size_t command_length = sizeof(aeron_reject_image_command_t) + reason_length;
+
+    int rb_offer_fail_count = 0;
+    int32_t offset;
+    while ((offset = aeron_mpsc_rb_try_claim(&conductor->to_driver_buffer, command_type, command_length)) < 0)
+    {
+        if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
+        {
+            const char *err_buffer = "reject_image command could not be sent";
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
+            AERON_SET_ERR(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", err_buffer);
+            return -1;
+        }
+
+        sched_yield();
+    }
+
+    uint8_t *ptr = (conductor->to_driver_buffer.buffer + offset);
+    aeron_reject_image_command_t *command = (aeron_reject_image_command_t *)ptr;
+    command->image_correlation_id = image_correlation_id;
+    command->position = position;
+    command->reason_length = reason_length;
+    memcpy(ptr + offsetof(aeron_reject_image_command_t, reason_text), reason, reason_length);
+    command->reason_text[reason_length] = '\0';
+
+    aeron_mpsc_rb_commit(&conductor->to_driver_buffer, offset);
 
     return 0;
 }

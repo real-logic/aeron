@@ -55,6 +55,9 @@ typedef struct aeron_context_stct
     aeron_on_unavailable_counter_t on_unavailable_counter;
     void *on_unavailable_counter_clientd;
 
+    aeron_error_frame_handler_t error_frame_handler;
+    void *error_frame_handler_clientd;
+
     aeron_agent_on_start_func_t agent_on_start_func;
     void *agent_on_start_state;
 

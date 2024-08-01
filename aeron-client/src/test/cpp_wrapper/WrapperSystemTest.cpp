@@ -124,3 +124,49 @@ TEST_F(WrapperSystemTest, shouldRejectClientNameThatIsTooLong)
         ASSERT_NE(nullptr, string) << ex.what();
     }
 }
+
+TEST_F(WrapperSystemTest, shouldRejectImage)
+{
+    Context ctx;
+    ctx.useConductorAgentInvoker(true);
+
+    std::atomic<std::int32_t> errorFrameCount{0};
+
+    on_error_frame_t errorFrameHandler =
+        [&](aeron::status::PublicationErrorFrame &errorFrame)
+        {
+            std::atomic_fetch_add(&errorFrameCount, 1);
+            return;
+        };
+
+    ctx.errorFrameHandler(errorFrameHandler);
+    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+    AgentInvoker<ClientConductor> &invoker = aeron->conductorAgentInvoker();
+    invoker.start();
+
+    std::int64_t pubId = aeron->addPublication("aeron:udp?endpoint=localhost:10000", 10000);
+    std::int64_t subId = aeron->addSubscription("aeron:udp?endpoint=localhost:10000", 10000);
+    invoker.invoke();
+
+    POLL_FOR_NON_NULL(pub, aeron->findPublication(pubId), invoker);
+    POLL_FOR_NON_NULL(sub, aeron->findSubscription(subId), invoker);
+    POLL_FOR(pub->isConnected() && sub->isConnected(), invoker);
+
+    std::string message = "Hello World!";
+
+    const uint8_t *data = reinterpret_cast<const uint8_t *>(message.c_str());
+    POLL_FOR(0 < pub->offer(data, message.length()), invoker);
+    POLL_FOR(0 < sub->poll(
+        [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
+        {
+            EXPECT_EQ(message, buffer.getStringWithoutLength(offset, length));
+        },
+        1), invoker);
+
+    POLL_FOR(1 == sub->imageCount(), invoker);
+
+    const std::shared_ptr<Image> image = sub->imageByIndex(0);
+    image->reject("No Longer Valid");
+
+    POLL_FOR(0 < errorFrameCount, invoker);
+}

@@ -64,6 +64,22 @@ typedef struct aeron_header_values_stct
     size_t position_bits_to_shift;
 }
 aeron_header_values_t;
+
+struct aeron_publication_error_values_stct
+{
+    int64_t registration_id;
+    int32_t session_id;
+    int32_t stream_id;
+    int64_t receiver_id;
+    int64_t group_tag;
+    int16_t address_type;
+    uint16_t address_port;
+    uint8_t address[16];
+    int32_t error_code;
+    int32_t error_message_length;
+    uint8_t error_message[1];
+};
+typedef struct aeron_publication_error_values_stct aeron_publication_error_values_t;
 #pragma pack(pop)
 
 typedef struct aeron_subscription_stct aeron_subscription_t;
@@ -85,23 +101,6 @@ typedef struct aeron_image_controlled_fragment_assembler_stct aeron_image_contro
 typedef struct aeron_fragment_assembler_stct aeron_fragment_assembler_t;
 typedef struct aeron_controlled_fragment_assembler_stct aeron_controlled_fragment_assembler_t;
 
-struct aeron_publication_error_frame_stct
-{
-    int64_t registration_id;
-    int64_t receiver_id;
-    int32_t session_id;
-    int32_t stream_id;
-    struct
-    {
-        bool is_present;
-        int64_t value;
-    }
-    group_tag;
-    // TODO: How best to handle the source address?  String?  Do we want to have a dependency on struct sockaddr_storage
-    size_t message_len;
-    const char *message;
-};
-typedef struct aeron_publication_error_frame_stct aeron_publication_error_frame_t;
 
 /**
  * Environment variables and functions used for setting values of an aeron_context_t.
@@ -151,7 +150,7 @@ typedef void (*aeron_error_handler_t)(void *clientd, int errcode, const char *me
 /**
  * The error frame handler to be called when the driver notifies the client about an error frame being received
  */
-typedef void (*aeron_error_frame_handler_t)(void *clientd);
+typedef void (*aeron_error_frame_handler_t)(void *clientd, aeron_publication_error_values_t *error_frame);
 
 /**
  * Generalised notification callback.
@@ -2088,6 +2087,14 @@ int aeron_image_block_poll(
     aeron_image_t *image, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
 
 bool aeron_image_is_closed(aeron_image_t *image);
+
+/**
+ * Force the driver to disconnect this image from the remote publication.
+ *
+ * @param image to be rejected.
+ * @param reason an error message to be forwarded back to the publication.
+ */
+int aeron_image_reject(aeron_image_t *image, const char *reason);
 
 /**
  * A fragment handler that sits in a chain-of-responsibility pattern that reassembles fragmented messages

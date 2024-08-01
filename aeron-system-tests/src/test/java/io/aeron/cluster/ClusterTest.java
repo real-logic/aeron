@@ -391,11 +391,12 @@ class ClusterTest
         cluster.sendAndAwaitMessages(messageCount);
 
         cluster.stopNode(followerTwo);
-        awaitLossOfLeadership(leader.service());
+        cluster.awaitLossOfLeadership(leader.service());
 
         followerOne = cluster.startStaticNode(followerOne.index(), false);
-
+        cluster.client().sendKeepAlive();
         awaitElectionClosed(followerOne);
+
         final TestNode newLeader = cluster.awaitLeader();
         cluster.awaitNewLeadershipEvent(1);
 
@@ -852,7 +853,7 @@ class ClusterTest
         cluster.stopNode(followerA);
         cluster.stopNode(followerB);
 
-        awaitLossOfLeadership(leader.service());
+        cluster.awaitLossOfLeadership(leader.service());
         assertEquals(FOLLOWER, leader.role());
     }
 

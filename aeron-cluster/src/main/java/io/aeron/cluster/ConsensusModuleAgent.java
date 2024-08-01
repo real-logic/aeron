@@ -2224,13 +2224,6 @@ final class ConsensusModuleAgent
             for (int i = 0, size = sessions.size(); i < size; i++)
             {
                 final ClusterSession session = sessions.get(i);
-
-                if (session.closeReason() == CloseReason.TIMEOUT)
-                {
-                    session.resetCloseReason();
-                    session.state(ClusterSession.State.OPEN);
-                }
-
                 if (session.state() == ClusterSession.State.OPEN)
                 {
                     session.connect(ctx.countedErrorHandler(), aeron);
@@ -3158,16 +3151,7 @@ final class ConsensusModuleAgent
             if (session.closedLogPosition() > commitPosition)
             {
                 session.closedLogPosition(NULL_POSITION);
-                if (CloseReason.TIMEOUT == session.closeReason())
-                {
-                    session.resetCloseReason();
-                    session.state(ClusterSession.State.OPEN);
-                }
-                else
-                {
-                    session.state(CLOSING);
-                }
-
+                session.state(CLOSING);
                 addSession(session);
             }
         }
@@ -3732,7 +3716,8 @@ final class ConsensusModuleAgent
     public String toString()
     {
         return "ConsensusModuleAgent{" +
-            "election=" + election +
+            "memberId=" + memberId +
+            ", election=" + election +
             '}';
     }
 }

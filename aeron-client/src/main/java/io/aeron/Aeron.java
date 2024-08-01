@@ -942,7 +942,7 @@ public class Aeron implements AutoCloseable
         private UnavailableImageHandler unavailableImageHandler;
         private AvailableCounterHandler availableCounterHandler;
         private UnavailableCounterHandler unavailableCounterHandler;
-        private ErrorFrameHandler errorFrameHandler = ErrorFrameHandler.NO_OP;
+        private PublicationErrorFrameHandler publicationErrorFrameHandler = PublicationErrorFrameHandler.NO_OP;
         private Runnable closeHandler;
         private long keepAliveIntervalNs = Configuration.KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeoutNs = 0;
@@ -1731,27 +1731,28 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Set a handler to receive error frames that have been received by the local driver for resources owned by
+         * Set the handler to receive error frames that have been received by the local driver for publications added by
          * this client.
          *
-         * @param errorFrameHandler to be called back when an error frame is received.
-         * @return                  this for a fluent API.
+         * @param publicationErrorFrameHandler to be called back when an error frame is received.
+         * @return this for a fluent API.
          */
-        public Context errorFrameHandler(final ErrorFrameHandler errorFrameHandler)
+        public Context publicationErrorFrameHandler(
+            final PublicationErrorFrameHandler publicationErrorFrameHandler)
         {
-            this.errorFrameHandler = errorFrameHandler;
+            this.publicationErrorFrameHandler = publicationErrorFrameHandler;
             return this;
         }
 
         /**
-         * Get the handler to receive error frames that have been received by the local driver for resources owned by
+         * Get the handler to receive error frames that have been received by the local driver for publications added by
          * this client.
          *
-         * @return the {@link ErrorFrameHandler} to call back on to.
+         * @return the {@link PublicationErrorFrameHandler} to call back on to.
          */
-        public ErrorFrameHandler errorFrameHandler()
+        public PublicationErrorFrameHandler publicationErrorFrameHandler()
         {
-            return this.errorFrameHandler;
+            return this.publicationErrorFrameHandler;
         }
 
         /**

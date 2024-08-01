@@ -30,6 +30,7 @@ import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -282,7 +283,7 @@ final class ClientConductor implements Agent
                 if (publication.originalRegistrationId() == errorFrameFlyweight.registrationId())
                 {
                     publicationErrorFrame.set(errorFrameFlyweight);
-                    ctx.errorFrameHandler().onPublicationError(publicationErrorFrame);
+                    ctx.publicationErrorFrameHandler().onPublicationError(publicationErrorFrame);
                 }
             }
         }

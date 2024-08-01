@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.PublicationImage;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.AeronException;
 import io.aeron.status.PublicationErrorFrame;
@@ -47,6 +48,8 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERROR_FRAMES_RECEIVED;
@@ -65,6 +68,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 public class RejectImageTest
 {
     public static final long A_VALUE_THAT_SHOWS_WE_ARENT_SPAMMING_ERROR_MESSAGES = 1000L;
+
     @RegisterExtension
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
@@ -89,7 +93,7 @@ public class RejectImageTest
         return driver;
     }
 
-    private static final class QueuedErrorFrameHandler implements ErrorFrameHandler
+    private static final class QueuedErrorFrameHandler implements PublicationErrorFrameHandler
     {
         private final OneToOneConcurrentArrayQueue<PublicationErrorFrame> errorFrameQueue =
             new OneToOneConcurrentArrayQueue<>(512);
@@ -117,7 +121,7 @@ public class RejectImageTest
 
         final Aeron.Context ctx = new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())
-            .errorFrameHandler(errorFrameHandler);
+            .publicationErrorFrameHandler(errorFrameHandler);
 
         final AtomicBoolean imageUnavailable = new AtomicBoolean(false);
 
@@ -210,11 +214,11 @@ public class RejectImageTest
 
         final Aeron.Context ctx1 = new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())
-            .errorFrameHandler(errorFrameHandler1);
+            .publicationErrorFrameHandler(errorFrameHandler1);
 
         final Aeron.Context ctx2 = new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())
-            .errorFrameHandler(errorFrameHandler2);
+            .publicationErrorFrameHandler(errorFrameHandler2);
 
         try (Aeron aeron1 = Aeron.connect(ctx1);
             Aeron aeron2 = Aeron.connect(ctx2);
@@ -253,7 +257,6 @@ public class RejectImageTest
         }
     }
 
-
     @Test
     @InterruptAfter(10)
     @SlowTest
@@ -267,11 +270,11 @@ public class RejectImageTest
 
         final Aeron.Context ctx1 = new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())
-            .errorFrameHandler(errorFrameHandler1);
+            .publicationErrorFrameHandler(errorFrameHandler1);
 
         final Aeron.Context ctx2 = new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())
-            .errorFrameHandler(errorFrameHandler2);
+            .publicationErrorFrameHandler(errorFrameHandler2);
 
         try (Aeron aeron1 = Aeron.connect(ctx1);
             Aeron aeron2 = Aeron.connect(ctx2);
@@ -431,7 +434,7 @@ public class RejectImageTest
 
         final Aeron.Context ctx = new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())
-            .errorFrameHandler(errorFrameHandler);
+            .publicationErrorFrameHandler(errorFrameHandler);
 
         final long groupTag = 1001;
         final int port = 10001;
@@ -476,6 +479,51 @@ public class RejectImageTest
             assertEquals(groupTag, errorFrame.groupTag());
             assertNotNull(errorFrame.sourceAddress());
             assertEquals(new InetSocketAddress(addressStr, port), errorFrame.sourceAddress());
+        }
+    }
+
+    @ParameterizedTest
+    @InterruptAfter(5)
+    @ValueSource(booleans = { true, false })
+    void shouldOnlyReceivePublicationErrorFrames(final boolean isExclusive) throws IOException
+    {
+        context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
+
+        final TestMediaDriver driver = launch();
+        final QueuedErrorFrameHandler errorFrameHandler = new QueuedErrorFrameHandler();
+
+        final Aeron.Context ctx = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName())
+            .publicationErrorFrameHandler(errorFrameHandler);
+
+        final Function<Aeron, ? extends Publication> addPub = (aeron) -> isExclusive ?
+            aeron.addExclusivePublication(channel, streamId) : aeron.addPublication(channel, streamId);
+
+        try (Aeron aeron = Aeron.connect(ctx);
+            Publication pub = addPub.apply(aeron);
+            Subscription sub = aeron.addSubscription(channel, streamId))
+        {
+            Tests.awaitConnected(pub);
+            Tests.awaitConnected(sub);
+
+            while (pub.offer(message) < 0)
+            {
+                Tests.yield();
+            }
+
+            while (0 == sub.poll((buffer, offset, length, header) -> {}, 1))
+            {
+                Tests.yield();
+            }
+
+            final Image image = sub.imageAtIndex(0);
+            final String reason = "Needs to be closed";
+            image.reject(reason);
+
+            while (null == errorFrameHandler.poll())
+            {
+                Tests.yield();
+            }
         }
     }
 }

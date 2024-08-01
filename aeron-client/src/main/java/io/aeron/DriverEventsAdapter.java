@@ -270,6 +270,7 @@ class DriverEventsAdapter implements MessageHandler
                 publicationErrorFrame.wrap(buffer, index);
 
                 conductor.onPublicationError(publicationErrorFrame);
+                break;
             }
         }
     }

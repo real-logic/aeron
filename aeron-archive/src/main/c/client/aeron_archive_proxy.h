@@ -53,7 +53,8 @@ bool aeron_archive_proxy_start_recording(
     aeron_archive_proxy_t *archive_proxy,
     const char *recording_channel,
     int32_t recording_stream_id,
-    bool localSource,
+    bool local_source,
+    bool auto_stop,
     int64_t correlation_id,
     int64_t control_session_id);
 

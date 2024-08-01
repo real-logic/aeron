@@ -31,6 +31,11 @@ int aeron_uri_string_builder_init_new(aeron_uri_string_builder_t *builder)
     return 0;
 }
 
+static int aeron_uri_string_builder_params_func(void *clientd, const char *key, const char *value)
+{
+    return aeron_uri_string_builder_put((aeron_uri_string_builder_t *)clientd, key, value);
+}
+
 int aeron_uri_string_builder_init_on_string(aeron_uri_string_builder_t *builder, const char *uri)
 {
     aeron_uri_string_builder_init_new(builder);
@@ -85,42 +90,12 @@ int aeron_uri_string_builder_init_on_string(aeron_uri_string_builder_t *builder,
 
     aeron_uri_string_builder_put(builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, ptr);
 
-    while (NULL != end_ptr)
+    if (NULL == end_ptr)
     {
-        // end_ptr was previously either a '?' or a '|'
-        ptr = end_ptr + 1;
-
-        end_ptr = strchr(ptr, '|');
-
-        if (NULL != end_ptr)
-        {
-            // replace '|' after parameter with NULL character
-            *end_ptr = '\0';
-        }
-
-        char *key = ptr;
-
-        char *key_end = strchr(key, '=');
-
-        if (NULL == key_end)
-        {
-            AERON_SET_ERR(EINVAL, "%s", "parameter found without an '='");
-            return -1;
-        }
-
-        // replace '=' after key with NULL character
-        *key_end = '\0';
-
-        char *value = key_end + 1;
-
-        // *value is terminated by a NULL either because:
-        // A) we're at the end of the string, or
-        // B) the '|' that starts the next parameter has already been turned into a NULL character
-
-        aeron_uri_string_builder_put(builder, key, value);
+        return 0;
     }
 
-    return 0;
+    return aeron_uri_parse_params(end_ptr + 1, aeron_uri_string_builder_params_func, builder);
 }
 
 static void aeron_uri_string_builder_entry_delete(void *clientd, const char *key, size_t key_len, void *value)

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "aeron_archive.h"
 #include "aeron_archive_replay_params.h"
 
 int aeron_archive_replay_params_init(aeron_archive_replay_params_t *params)

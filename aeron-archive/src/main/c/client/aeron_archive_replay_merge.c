@@ -1,0 +1,477 @@
+/*
+ * Copyright 2014-2024 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "aeron_archive.h"
+#include "aeron_alloc.h"
+#include "util/aeron_error.h"
+#include "uri/aeron_uri_string_builder.h"
+#include "aeron_archive_client.h"
+
+#define REPLAY_MERGE_INITIAL_GET_MAX_RECORDED_POSITION_BACKOFF_MS (8)
+#define REPLAY_MERGE_GET_MAX_RECORDED_POSITION_BACKOFF_MAX_MS (500)
+
+typedef enum aeron_archive_replay_merge_state_en
+{
+    RESOLVE_REPLAY_PORT = 0,
+    GET_RECORDING_POSITION = 1,
+    REPLAY = 2,
+    CATCHUP = 3,
+    ATTEMPT_LIVE_JOIN = 4,
+    MERGED = 5,
+    FAILED = 6,
+    CLOSED = 7
+}
+aeron_archive_replay_merge_state_t;
+
+struct aeron_archive_replay_merge_stct
+{
+    aeron_subscription_t *subscription;
+    aeron_archive_t *aeron_archive;
+    aeron_archive_proxy_t *archive_proxy;
+    int64_t control_session_id;
+    aeron_uri_string_builder_t replay_channel_builder;
+    char replay_destination[AERON_MAX_PATH + 1];
+    char replay_endpoint[AERON_MAX_PATH];
+    char live_destination[AERON_MAX_PATH + 1];
+    int64_t recording_id;
+    int64_t start_position;
+    long long epoch_clock;
+    int64_t merge_progress_timeout_ms;
+    long long time_of_last_progress_ms;
+    long long time_of_next_get_max_recorded_position_ms;
+    aeron_async_destination_t *async_destination;
+    aeron_archive_replay_merge_state_t state;
+    aeron_image_t *image;
+    int64_t active_correlation_id;
+    int64_t next_target_position;
+    long long get_max_recorded_position_backoff_ms;
+};
+
+static int aeron_archive_replay_merge_resolve_replay_port(int *work_count_p, aeron_archive_replay_merge_t *replay_merge, long long now_ms);
+static int aeron_archive_replay_merge_get_recording_position(int *work_count_p, aeron_archive_replay_merge_t *replay_merge, long long now_ms);
+static int aeron_archive_replay_merge_replay(int *work_count_p, aeron_archive_replay_merge_t *replay_merge, long long now_ms);
+static int aeron_archive_replay_merge_catchup(int *work_count_p, aeron_archive_replay_merge_t *replay_merge, long long now_ms);
+static int aeron_archive_replay_merge_attempt_live_join(int *work_count_p, aeron_archive_replay_merge_t *replay_merge, long long now_ms);
+
+static void aeron_archive_replay_merge_set_state(aeron_archive_replay_merge_t *replay_merge, aeron_archive_replay_merge_state_t new_state);
+static int aeron_archive_replay_merge_handle_async_destination(aeron_archive_replay_merge_t *replay_merge);
+
+static bool aeron_archive_replay_merge_call_get_max_recorded_position(aeron_archive_replay_merge_t *replay_merge, long long now_ms);
+static bool aeron_archive_replay_merge_poll_for_response(bool *found_response_p, aeron_archive_replay_merge_t *replay_merge);
+
+/* ************* */
+
+int aeron_archive_replay_merge_init(
+    aeron_archive_replay_merge_t **replay_merge,
+    aeron_subscription_t *subscription,
+    aeron_archive_t *aeron_archive,
+    const char *replay_channel,
+    const char *replay_destination,
+    const char *live_destination,
+    int64_t recording_id,
+    int64_t start_position,
+    long long epoch_clock,
+    int64_t merge_progress_timeout_ms)
+{
+    aeron_archive_replay_merge_t *_replay_merge;
+
+    // TODO check for IPC
+
+    // TODO check for subscription->channel control-mode=manual
+
+    if (aeron_alloc((void **)&_replay_merge, sizeof(aeron_archive_replay_merge_t)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Unable to allocate aeron_archive_replay_merge_t");
+        return -1;
+    }
+
+    _replay_merge->subscription = subscription;
+    _replay_merge->aeron_archive = aeron_archive;
+    _replay_merge->archive_proxy = aeron_archive_proxy(aeron_archive);
+    _replay_merge->control_session_id = aeron_archive_control_session_id(aeron_archive);
+
+    aeron_uri_string_builder_init_on_string(&_replay_merge->replay_channel_builder, replay_channel);
+    aeron_uri_string_builder_put(&_replay_merge->replay_channel_builder, AERON_URI_LINGER_TIMEOUT_KEY, "0");
+    aeron_uri_string_builder_put(&_replay_merge->replay_channel_builder, AERON_URI_EOS_KEY, "false");
+
+    {
+        aeron_uri_string_builder_t builder;
+
+        aeron_uri_string_builder_init_on_string(&builder, replay_destination);
+
+        strncpy(
+            _replay_merge->replay_endpoint,
+            aeron_uri_string_builder_get(&builder, AERON_UDP_CHANNEL_ENDPOINT_KEY),
+            AERON_MAX_PATH);
+
+        aeron_uri_string_builder_close(&builder);
+    }
+
+    {
+        size_t replay_endpoint_len = strlen(_replay_merge->replay_endpoint);
+
+        if (strncmp(":0", &_replay_merge->replay_endpoint[replay_endpoint_len - 2], 2) == 0)
+        {
+            _replay_merge->state = RESOLVE_REPLAY_PORT;
+        }
+        else
+        {
+            aeron_uri_string_builder_put(
+                &_replay_merge->replay_channel_builder,
+                AERON_UDP_CHANNEL_ENDPOINT_KEY,
+                _replay_merge->replay_endpoint);
+            _replay_merge->state = GET_RECORDING_POSITION;
+        }
+    }
+
+    strncpy(_replay_merge->replay_destination, replay_destination, AERON_MAX_PATH + 1);
+    strncpy(_replay_merge->live_destination, live_destination, AERON_MAX_PATH + 1);
+
+    _replay_merge->recording_id = recording_id;
+    _replay_merge->start_position = start_position;
+    _replay_merge->epoch_clock = epoch_clock;
+    _replay_merge->merge_progress_timeout_ms = merge_progress_timeout_ms;
+
+    if (aeron_subscription_async_add_destination(
+        &_replay_merge->async_destination,
+        aeron_archive_get_aeron(_replay_merge->aeron_archive),
+        _replay_merge->subscription,
+        _replay_merge->replay_destination) < 0)
+    {
+        // TODO
+        return -1;
+    }
+
+    _replay_merge->time_of_last_progress_ms = epoch_clock;
+    _replay_merge->time_of_next_get_max_recorded_position_ms = epoch_clock;
+
+    _replay_merge->image = NULL;
+    _replay_merge->active_correlation_id = AERON_NULL_VALUE;
+    _replay_merge->next_target_position = AERON_NULL_VALUE;
+    _replay_merge->get_max_recorded_position_backoff_ms = REPLAY_MERGE_INITIAL_GET_MAX_RECORDED_POSITION_BACKOFF_MS;
+
+    *replay_merge = _replay_merge;
+
+    return 0;
+}
+
+int aeron_archive_replay_merge_close(aeron_archive_replay_merge_t *replay_merge)
+{
+    if (aeron_archive_replay_merge_handle_async_destination(replay_merge) < 0)
+    {
+        // TODO
+    }
+    while (NULL != replay_merge->async_destination)
+    {
+        aeron_archive_idle(replay_merge->aeron_archive);
+
+        if (aeron_archive_replay_merge_handle_async_destination(replay_merge) < 0)
+        {
+            // TODO
+        }
+    }
+
+    aeron_uri_string_builder_close(&replay_merge->replay_channel_builder);
+
+    aeron_free(replay_merge);
+
+    return 0;
+}
+
+int aeron_archive_replay_merge_do_work(int *work_count_p, aeron_archive_replay_merge_t *replay_merge)
+{
+    if (aeron_archive_replay_merge_handle_async_destination(replay_merge) < 0)
+    {
+        // TODO
+        return -1;
+    }
+
+    int rc = 0;
+    const long long now_ms = aeron_epoch_clock();
+    bool check_progress = true;
+    int work_count = 0;
+
+    switch (replay_merge->state)
+    {
+        case RESOLVE_REPLAY_PORT:
+            rc = aeron_archive_replay_merge_resolve_replay_port(&work_count, replay_merge, now_ms);
+            break;
+
+        case GET_RECORDING_POSITION:
+            rc = aeron_archive_replay_merge_get_recording_position(&work_count, replay_merge, now_ms);
+            break;
+
+        case REPLAY:
+            rc = aeron_archive_replay_merge_replay(&work_count, replay_merge, now_ms);
+            break;
+
+        case CATCHUP:
+            rc = aeron_archive_replay_merge_catchup(&work_count, replay_merge, now_ms);
+            break;
+
+        case ATTEMPT_LIVE_JOIN:
+            rc = aeron_archive_replay_merge_attempt_live_join(&work_count, replay_merge, now_ms);
+            break;
+
+        default:
+            check_progress = false;
+            break;
+    }
+
+    if (NULL != work_count_p)
+    {
+        *work_count_p += work_count;
+    }
+
+    if (-1 == rc)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (check_progress &&
+        now_ms > (replay_merge->time_of_last_progress_ms + replay_merge->merge_progress_timeout_ms))
+    {
+        // TODO AERON_SET_ERR()
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_archive_replay_merge_poll(
+    aeron_archive_replay_merge_t *replay_merge,
+    aeron_fragment_handler_t handler,
+    void *clientd,
+    int fragment_limit)
+{
+    if (aeron_archive_replay_merge_do_work(NULL, replay_merge) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    return NULL == replay_merge->image ? 0 : aeron_image_poll(replay_merge->image, handler, clientd, fragment_limit);
+}
+
+aeron_image_t *aeron_archive_replay_merge_image(aeron_archive_replay_merge_t *replay_merge)
+{
+    // TODO
+    return NULL;
+}
+
+bool aeron_archive_replay_merge_is_merged(aeron_archive_replay_merge_t *replay_merge)
+{
+    // TODO
+    return false;
+}
+
+bool aeron_archive_replay_merge_has_failed(aeron_archive_replay_merge_t *replay_merge)
+{
+    // TODO
+    return false;
+}
+
+bool aeron_archive_replay_merge_is_live_added(aeron_archive_replay_merge_t *replay_merge)
+{
+    // TODO
+    return false;
+}
+
+/* ************* */
+
+static int aeron_archive_replay_merge_resolve_replay_port(int *work_count_p, aeron_archive_replay_merge_t *replay_merge, long long now_ms)
+{
+    int work_count = 0;
+    char resolved_endpoint[AERON_MAX_PATH];
+
+    if (aeron_subscription_resolved_endpoint(replay_merge->subscription, resolved_endpoint, AERON_MAX_PATH) < 0)
+    {
+        // TODO
+        return -1;
+    }
+
+    if (strlen(resolved_endpoint) != 0)
+    {
+        char *p = strrchr(resolved_endpoint, ':');
+
+        if (NULL == p)
+        {
+            // TODO
+            return -1;
+        }
+
+        char *dest = &replay_merge->replay_endpoint[strlen(replay_merge->replay_endpoint - 2)];
+
+        strncpy(dest, p, strlen(p));
+
+        aeron_uri_string_builder_put(
+            &replay_merge->replay_channel_builder,
+            AERON_UDP_CHANNEL_ENDPOINT_KEY,
+            replay_merge->replay_endpoint);
+
+        replay_merge->time_of_last_progress_ms = now_ms;
+
+        aeron_archive_replay_merge_set_state(replay_merge, GET_RECORDING_POSITION);
+
+        work_count += 1;
+    }
+
+    *work_count_p = work_count;
+
+    return 0;
+}
+
+static int aeron_archive_replay_merge_get_recording_position(int *work_count_p, aeron_archive_replay_merge_t *replay_merge, long long now_ms)
+{
+    int work_count = 0;
+
+    if (AERON_NULL_VALUE == replay_merge->active_correlation_id)
+    {
+        if (aeron_archive_replay_merge_call_get_max_recorded_position(replay_merge, now_ms))
+        {
+            replay_merge->time_of_last_progress_ms = now_ms;
+            work_count += 1;
+        }
+    }
+    else
+    {
+        bool found_response;
+
+        if (aeron_archive_replay_merge_poll_for_response(&found_response, replay_merge) < 0)
+        {
+            // TODO
+            return -1;
+        }
+
+        if (found_response)
+        {
+            replay_merge->next_target_position =
+                aeron_archive_control_response_poller_relevant_id(
+                    aeron_archive_control_response_poller(
+                        replay_merge->aeron_archive));
+
+            replay_merge->active_correlation_id = AERON_NULL_VALUE;
+
+            if (AERON_NULL_VALUE == replay_merge->next_target_position)
+            {
+
+                int64_t correlation_id = aeron_archive_next_correlation_id(replay_merge->aeron_archive);
+
+                if (aeron_archive_proxy_get_stop_position(
+                    replay_merge->archive_proxy,
+                    replay_merge->recording_id,
+                    correlation_id,
+                    replay_merge->control_session_id))
+                {
+                    replay_merge->time_of_last_progress_ms = now_ms;
+                    replay_merge->active_correlation_id = correlation_id;
+                    work_count += 1;
+                }
+            }
+            else
+            {
+                replay_merge->time_of_last_progress_ms = now_ms;
+                aeron_archive_replay_merge_set_state(replay_merge, REPLAY);
+            }
+
+            work_count += 1;
+        }
+    }
+
+    *work_count_p = work_count;
+
+    return 0;
+}
+
+static int aeron_archive_replay_merge_replay(int *work_count_p, aeron_archive_replay_merge_t *replay_merge, long long now_ms)
+{
+    // TODO
+    return 0;
+}
+
+static int aeron_archive_replay_merge_catchup(int *work_count_p, aeron_archive_replay_merge_t *replay_merge, long long now_ms)
+{
+    // TODO
+    return 0;
+}
+
+static int aeron_archive_replay_merge_attempt_live_join(int *work_count_p, aeron_archive_replay_merge_t *replay_merge, long long now_ms)
+{
+    // TODO
+    return 0;
+}
+
+static void aeron_archive_replay_merge_set_state(aeron_archive_replay_merge_t *replay_merge, aeron_archive_replay_merge_state_t new_state)
+{
+    replay_merge->state = new_state;
+}
+
+static int aeron_archive_replay_merge_handle_async_destination(aeron_archive_replay_merge_t *replay_merge)
+{
+    if (NULL != replay_merge->async_destination)
+    {
+        int rc = aeron_subscription_async_destination_poll(replay_merge->async_destination);
+
+        if (rc == 1)
+        {
+            replay_merge->async_destination = NULL;
+        }
+        else if (rc < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+static bool aeron_archive_replay_merge_call_get_max_recorded_position(aeron_archive_replay_merge_t *replay_merge, long long now_ms)
+{
+    if (now_ms < replay_merge->time_of_next_get_max_recorded_position_ms)
+    {
+        return false;
+    }
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(replay_merge->aeron_archive);
+
+    bool result = aeron_archive_proxy_get_max_recorded_position(
+        replay_merge->archive_proxy,
+        replay_merge->recording_id,
+        correlation_id,
+        replay_merge->control_session_id);
+
+    if (result)
+    {
+        replay_merge->active_correlation_id = correlation_id;
+    }
+
+    replay_merge->get_max_recorded_position_backoff_ms *= 2;
+    if (replay_merge->get_max_recorded_position_backoff_ms > REPLAY_MERGE_GET_MAX_RECORDED_POSITION_BACKOFF_MAX_MS)
+    {
+        replay_merge->get_max_recorded_position_backoff_ms = REPLAY_MERGE_GET_MAX_RECORDED_POSITION_BACKOFF_MAX_MS;
+    }
+    replay_merge->time_of_next_get_max_recorded_position_ms = now_ms + replay_merge->get_max_recorded_position_backoff_ms;
+
+    return result;
+}
+
+static bool aeron_archive_replay_merge_poll_for_response(bool *found_response_p, aeron_archive_replay_merge_t *replay_merge)
+{
+    // TODO
+    return true;
+}

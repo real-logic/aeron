@@ -155,7 +155,7 @@ int aeron_archive_recording_pos_get_source_identity(aeron_counters_reader_t *cou
     return 0;
 }
 
-int aeron_archive_recording_pos_is_active(aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t recording_id, bool *is_active)
+int aeron_archive_recording_pos_is_active(bool *is_active, aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t recording_id)
 {
     int32_t state, type_id;
     struct aeron_archive_recording_pos_key_defn *key;

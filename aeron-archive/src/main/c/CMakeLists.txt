@@ -94,6 +94,7 @@ SET(SOURCE
     client/aeron_archive_recording_descriptor_poller.c
     client/aeron_archive_recording_pos.c
     client/aeron_archive_recording_subscription_descriptor_poller.c
+    client/aeron_archive_replay_merge.c
     client/aeron_archive_replay_params.c
 )
 

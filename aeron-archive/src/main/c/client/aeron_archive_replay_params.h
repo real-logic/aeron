@@ -21,4 +21,4 @@
 
 bool aeron_archive_replay_params_is_bounded(aeron_archive_replay_params_t *params);
 
-#endif //AERON_ARCHIVE_CLIENT_CONTEXT_H
+#endif //AERON_ARCHIVE_REPLAY_PARAMS_H

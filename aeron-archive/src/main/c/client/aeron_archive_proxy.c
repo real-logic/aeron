@@ -28,7 +28,7 @@
 #include "c/aeron_archive_client/authConnectRequest.h"
 #include "c/aeron_archive_client/archiveIdRequest.h"
 #include "c/aeron_archive_client/closeSessionRequest.h"
-#include "c/aeron_archive_client/startRecordingRequest.h"
+#include "c/aeron_archive_client/startRecordingRequest2.h"
 #include "c/aeron_archive_client/recordingPositionRequest.h"
 #include "c/aeron_archive_client/stopPositionRequest.h"
 #include "c/aeron_archive_client/maxRecordedPositionRequest.h"
@@ -174,33 +174,37 @@ bool aeron_archive_proxy_start_recording(
     aeron_archive_proxy_t *archive_proxy,
     const char *recording_channel,
     int32_t recording_stream_id,
-    bool localSource,
+    bool local_source,
+    bool auto_stop,
     int64_t correlation_id,
     int64_t control_session_id)
 {
-    struct aeron_archive_client_startRecordingRequest codec;
+    struct aeron_archive_client_startRecordingRequest2 codec;
     struct aeron_archive_client_messageHeader hdr;
 
-    aeron_archive_client_startRecordingRequest_wrap_and_apply_header(
+    aeron_archive_client_startRecordingRequest2_wrap_and_apply_header(
         &codec,
         (char *)archive_proxy->buffer,
         0,
         AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
         &hdr);
-    aeron_archive_client_startRecordingRequest_set_controlSessionId(&codec, control_session_id);
-    aeron_archive_client_startRecordingRequest_set_correlationId(&codec, correlation_id);
-    aeron_archive_client_startRecordingRequest_set_streamId(&codec, recording_stream_id);
-    aeron_archive_client_startRecordingRequest_set_sourceLocation(
+    aeron_archive_client_startRecordingRequest2_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_startRecordingRequest2_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_startRecordingRequest2_set_streamId(&codec, recording_stream_id);
+    aeron_archive_client_startRecordingRequest2_set_sourceLocation(
         &codec,
-        localSource ? aeron_archive_client_sourceLocation_LOCAL : aeron_archive_client_sourceLocation_REMOTE);
-    aeron_archive_client_startRecordingRequest_put_channel(
+        local_source ? aeron_archive_client_sourceLocation_LOCAL : aeron_archive_client_sourceLocation_REMOTE);
+    aeron_archive_client_startRecordingRequest2_set_autoStop(
+        &codec,
+        auto_stop ? aeron_archive_client_booleanType_TRUE : aeron_archive_client_booleanType_FALSE);
+    aeron_archive_client_startRecordingRequest2_put_channel(
         &codec,
         recording_channel,
         strlen(recording_channel));
 
     return aeron_archive_proxy_offer(
         archive_proxy,
-        aeron_archive_client_startRecordingRequest_encoded_length(&codec));
+        aeron_archive_client_startRecordingRequest2_encoded_length(&codec));
 }
 
 bool aeron_archive_proxy_get_recording_position(

@@ -111,7 +111,8 @@ int aeron_archive_start_recording(
     aeron_archive_t *aeron_archive,
     const char *recording_channel,
     int32_t recording_stream_id,
-    aeron_archive_source_location_t source_location);
+    aeron_archive_source_location_t source_location,
+    bool auto_stop);
 
 int aeron_archive_get_recording_position(
     int64_t *recording_position_p,
@@ -194,6 +195,32 @@ int32_t aeron_archive_recording_pos_find_counter_id_by_recording_id(aeron_counte
 int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters_reader_t *counters_reader, int32_t session_id);
 int64_t aeron_archive_recording_pos_get_recording_id(aeron_counters_reader_t *counters_reader, int32_t counter_id);
 int aeron_archive_recording_pos_get_source_identity(aeron_counters_reader_t *counters_reader, int32_t counter_id, const char *dst, int32_t *len_p);
-int aeron_archive_recording_pos_is_active(aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t recording_id, bool *is_active);
+int aeron_archive_recording_pos_is_active(bool *is_active, aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t recording_id);
+
+typedef struct aeron_archive_replay_merge_stct aeron_archive_replay_merge_t;
+
+int aeron_archive_replay_merge_init(
+    aeron_archive_replay_merge_t **replay_merge,
+    aeron_subscription_t *subscription,
+    aeron_archive_t *aeron_archive,
+    const char *replay_channel,
+    const char *replay_destination,
+    const char *live_destination,
+    int64_t recording_id,
+    int64_t start_position,
+    long long epoch_clock,
+    int64_t merge_progress_timeout_ms);
+int aeron_archive_replay_merge_close(aeron_archive_replay_merge_t *replay_merge);
+
+int aeron_archive_replay_merge_do_work(int *work_count_p, aeron_archive_replay_merge_t *replay_merge);
+int aeron_archive_replay_merge_poll(
+    aeron_archive_replay_merge_t *replay_merge,
+    aeron_fragment_handler_t handler,
+    void *clientd,
+    int fragment_limit);
+aeron_image_t *aeron_archive_replay_merge_image(aeron_archive_replay_merge_t *replay_merge);
+bool aeron_archive_replay_merge_is_merged(aeron_archive_replay_merge_t *replay_merge);
+bool aeron_archive_replay_merge_has_failed(aeron_archive_replay_merge_t *replay_merge);
+bool aeron_archive_replay_merge_is_live_added(aeron_archive_replay_merge_t *replay_merge);
 
 #endif //AERON_ARCHIVE_H

@@ -182,23 +182,45 @@ void aeron_archive_idle(aeron_archive_t *aeron_archive)
     aeron_archive_context_idle(aeron_archive->ctx);
 }
 
+aeron_archive_control_response_poller_t *aeron_archive_control_response_poller(aeron_archive_t *aeron_archive)
+{
+    return aeron_archive->control_response_poller;
+}
+
+aeron_archive_proxy_t *aeron_archive_proxy(aeron_archive_t *aeron_archive)
+{
+    return aeron_archive->archive_proxy;
+}
+
+int64_t aeron_archive_control_session_id(aeron_archive_t *aeron_archive)
+{
+    return aeron_archive->control_session_id;
+}
+
+int64_t aeron_archive_next_correlation_id(aeron_archive_t *aeron_archive)
+{
+    return aeron_next_correlation_id(aeron_archive->aeron);
+}
+
 int aeron_archive_start_recording(
     int64_t *subscription_id_p,
     aeron_archive_t *aeron_archive,
     const char *recording_channel,
     int32_t recording_stream_id,
-    aeron_archive_source_location_t source_location)
+    aeron_archive_source_location_t source_location,
+    bool auto_stop)
 {
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
 
-    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
     if (!aeron_archive_proxy_start_recording(
         aeron_archive->archive_proxy,
         recording_channel,
         recording_stream_id,
         source_location == AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        auto_stop,
         correlation_id,
         aeron_archive->control_session_id))
     {
@@ -226,7 +248,7 @@ int aeron_archive_get_recording_position(
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
 
-    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
     if (!aeron_archive_proxy_get_recording_position(
         aeron_archive->archive_proxy,
@@ -258,7 +280,7 @@ int aeron_archive_get_stop_position(
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
 
-    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
     if (!aeron_archive_proxy_get_stop_position(
         aeron_archive->archive_proxy,
@@ -290,7 +312,7 @@ int aeron_archive_get_max_recorded_position(
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
 
-    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
     if (!aeron_archive_proxy_get_max_recorded_position(
         aeron_archive->archive_proxy,
@@ -321,7 +343,7 @@ int aeron_archive_stop_recording(
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
 
-    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
     if (!aeron_archive_proxy_stop_recording(
         aeron_archive->archive_proxy,
@@ -356,7 +378,7 @@ int aeron_archive_find_last_matching_recording(
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
 
-    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
     if (!aeron_archive_proxy_find_last_matching_recording(
         aeron_archive->archive_proxy,
@@ -393,7 +415,7 @@ int aeron_archive_list_recording(
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
 
-    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
     if (!aeron_archive_proxy_list_recording(
         aeron_archive->archive_proxy,
@@ -438,7 +460,7 @@ int aeron_archive_start_replay(
     // TODO check replay channel for control mode response
     // ... but for now assume it's not present
 
-    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
     if (!aeron_archive_proxy_replay(
         aeron_archive->archive_proxy,
@@ -479,7 +501,7 @@ int aeron_archive_replay(
     // TODO check replay channel for control mode response
     // ... but for now assume it's not present
 
-    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
     if (!aeron_archive_proxy_replay(
         aeron_archive->archive_proxy,
@@ -572,7 +594,7 @@ int aeron_archive_truncate_recording(
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
 
-    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
     if (!aeron_archive_proxy_truncate_recording(
         aeron_archive->archive_proxy,
@@ -604,7 +626,7 @@ int aeron_archive_stop_replay(
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
 
-    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
     if (!aeron_archive_proxy_stop_replay(
         aeron_archive->archive_proxy,
@@ -642,7 +664,7 @@ int aeron_archive_list_recording_subscriptions(
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
 
-    int64_t correlation_id = aeron_next_correlation_id(aeron_archive->aeron);
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
     if (!aeron_archive_proxy_list_recording_subscriptions(
         aeron_archive->archive_proxy,

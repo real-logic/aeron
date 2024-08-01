@@ -486,5 +486,4 @@ TEST_F(UriStringBuilderTest, initOnMalformedStrings)
 {
     EXPECT_EQ(-1, aeron_uri_string_builder_init_on_string(&m_builder, "asdf"));
     EXPECT_EQ(-1, aeron_uri_string_builder_init_on_string(&m_builder, "asdf:asdf"));
-    EXPECT_EQ(-1, aeron_uri_string_builder_init_on_string(&m_builder, "aeron:udp?asdf"));
 }

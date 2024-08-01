@@ -1116,7 +1116,6 @@ final class ConsensusModuleAgent
         {
             if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
-
                 final ClusterSession session = new ClusterSession(
                     NULL_VALUE,
                     responseStreamId,
@@ -1155,7 +1154,6 @@ final class ConsensusModuleAgent
         {
             if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
             {
-
                 final ClusterSession session = new ClusterSession(
                     NULL_VALUE,
                     responseStreamId,
@@ -1742,13 +1740,7 @@ final class ConsensusModuleAgent
 
     LogReplay newLogReplay(final long logPosition, final long appendPosition)
     {
-        return new LogReplay(
-            archive,
-            logRecordingId,
-            logPosition,
-            appendPosition,
-            logAdapter,
-            ctx);
+        return new LogReplay(archive, logRecordingId, logPosition, appendPosition, logAdapter, ctx);
     }
 
     int replayLogPoll(final LogAdapter logAdapter, final long stopPosition)
@@ -1847,8 +1839,8 @@ final class ConsensusModuleAgent
             consensusModuleExtension.onElectionComplete(new ConsensusControlState(
                 logPublisher.publication(), logRecordingId, leadershipTermId, localLogChannel));
         }
-        election = null;
 
+        election = null;
     }
 
     void trackCatchupCompletion(
@@ -3057,7 +3049,6 @@ final class ConsensusModuleAgent
         final long nowNs)
     {
         String replicationChannel = ctx.replicationChannel();
-
         final ReplicationParams replicationParams = new ReplicationParams()
             .dstRecordingId(logRecordingId)
             .stopPosition(stopPosition)

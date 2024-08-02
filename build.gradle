@@ -57,7 +57,7 @@ def aeronVersion = file('version.txt').text.trim()
 
 def agronaVersion = '1.21.2'
 def agronaVersionRange = '[1.21.2,2.0[' // allow any release >= 1.21.2 and < 2.0.0
-def sbeVersion = '1.31.1'
+def sbeVersion = '1.32.0'
 def checkstyleVersion = '9.3'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.10.3'
@@ -694,8 +694,7 @@ project(':aeron-archive') {
     def generatedCDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated/c")
     tasks.register('generateCCodecs', JavaExec) {
         mainClass.set('uk.co.real_logic.sbe.SbeTool')
-        //classpath = configurations.codecGeneration
-        classpath = files(['/Users/natebradac/src/real-logic/simple-binary-encoding/sbe-tool/build/libs/sbe-tool-1.32.0-SNAPSHOT.jar']) + configurations.codecGeneration
+        classpath = configurations.codecGeneration
         systemProperties(
             'sbe.output.dir': generatedCDir,
             'sbe.target.language': 'C',

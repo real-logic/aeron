@@ -15,7 +15,6 @@
  */
 package io.aeron.status;
 
-import io.aeron.ErrorCode;
 import io.aeron.command.PublicationErrorFrameFlyweight;
 
 import java.net.InetSocketAddress;

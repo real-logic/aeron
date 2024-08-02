@@ -16,7 +16,6 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.PublicationImage;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.AeronException;
 import io.aeron.status.PublicationErrorFrame;
@@ -48,7 +47,6 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;

@@ -17,6 +17,11 @@ public:
     {
     }
 
+    std::int64_t registrationId()
+    {
+        return m_errorValues->registration_id;
+    }
+
 private:
     aeron_publication_error_values_t *m_errorValues;
 };

@@ -229,7 +229,8 @@ public:
         m_onNewSubscriptionHandler(other.m_onNewSubscriptionHandler),
         m_onAvailableCounterHandler(other.m_onAvailableCounterHandler),
         m_onUnavailableCounterHandler(other.m_onUnavailableCounterHandler),
-        m_onCloseClientHandler(other.m_onCloseClientHandler)
+        m_onCloseClientHandler(other.m_onCloseClientHandler),
+        m_onErrorFrameHandler(other.m_onErrorFrameHandler)
     {
         other.m_context = nullptr;
     }

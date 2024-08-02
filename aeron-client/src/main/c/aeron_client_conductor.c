@@ -2555,15 +2555,16 @@ void aeron_client_conductor_forward_error(void *clientd, int64_t key, void *valu
     aeron_publication_error_t *response = (aeron_publication_error_t *)conductor_clientd->clientd;
     aeron_client_command_base_t *resource = (aeron_client_command_base_t *)value;
 
-    if (AERON_CLIENT_TYPE_PUBLICATION == resource->type)
+    const bool is_publication = AERON_CLIENT_TYPE_PUBLICATION == resource->type &&
+        ((aeron_publication_t *)resource)->original_registration_id == response->registration_id;
+    const bool is_exclusive_publication = AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION == resource->type &&
+        ((aeron_exclusive_publication_t *)resource)->original_registration_id == response->registration_id;
+
+    if (is_publication || is_exclusive_publication)
     {
-        aeron_publication_t *publication = (aeron_publication_t *)resource;
-        if (response->registration_id == publication->original_registration_id)
-        {
-            // TODO: Use a union.
-            conductor->error_frame_handler(
-                conductor->error_handler_clientd, (aeron_publication_error_values_t *)response);
-        }
+        // TODO: Use a union or a copy...
+        conductor->error_frame_handler(
+            conductor->error_handler_clientd, (aeron_publication_error_values_t *)response);
     }
 }
 

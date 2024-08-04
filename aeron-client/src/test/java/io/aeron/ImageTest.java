@@ -624,20 +624,10 @@ class ImageTest
 
         assertEquals(initialPosition, image.position());
 
-        final String reason = "this is garbage";
+        final String reason = "this is frame is to be rejected";
         image.reject(reason);
 
         verify(subscription).rejectImage(image.correlationId(), image.position(), reason);
-
-//        final int fragmentsRead = image.boundedPoll(
-//            mockFragmentHandler, maxPosition, Integer.MAX_VALUE);
-//
-//        assertThat(fragmentsRead, is(1));
-//
-//        final InOrder inOrder = Mockito.inOrder(position, mockFragmentHandler);
-//        inOrder.verify(mockFragmentHandler).onFragment(
-//            any(UnsafeBuffer.class), eq(initialOffset + HEADER_LENGTH), eq(DATA.length), any(Header.class));
-//        inOrder.verify(position).setOrdered(TERM_BUFFER_LENGTH);
     }
 
 

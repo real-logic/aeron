@@ -23,7 +23,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Control message to invalidate an image for a subscription.
+ * Control message to reject an image for a subscription.
  *
  * <pre>
  *   0                   1                   2                   3

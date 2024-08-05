@@ -2570,12 +2570,12 @@ void on_error(
 
 void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
 {
-    uint8_t buffer[sizeof(aeron_publication_error_values_t) + (AERON_ERROR_MAX_TEXT_LENGTH - 1)];
+    uint8_t buffer[sizeof(aeron_publication_error_t) + (AERON_ERROR_MAX_TEXT_LENGTH - 1)];
     aeron_driver_conductor_t *conductor = clientd;
     aeron_command_publication_error_t *error = item;
     aeron_driver_conductor_log_explicit_error(conductor, error->error_code, (const char *)error->error_text);
 
-    aeron_publication_error_values_t *response = (aeron_publication_error_values_t *)buffer;
+    aeron_publication_error_t *response = (aeron_publication_error_t *)buffer;
     response->error_code = error->error_code;
     response->registration_id = error->registration_id;
     response->session_id = error->session_id;
@@ -2591,7 +2591,7 @@ void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
         response->address_port = ntohs(src_addr_in->sin_port);
         memcpy(&response->address[0], &src_addr_in->sin_addr, sizeof(src_addr_in->sin_addr));
     }
-    else if (AF_INET6)
+    else if (AF_INET6 == error->src_address.ss_family)
     {
         struct sockaddr_in6 *src_addr_in6 = (struct sockaddr_in6 *)&error->src_address;
         response->address_type = AERON_RESPONSE_ADDRESS_TYPE_IPV6;

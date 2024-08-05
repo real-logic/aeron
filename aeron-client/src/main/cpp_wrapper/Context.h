@@ -134,7 +134,7 @@ typedef std::function<void(
  */
 typedef std::function<void()> on_close_client_t;
 
-typedef std::function<void(aeron::status::PublicationErrorFrame &errorFrame)> on_error_frame_t;
+typedef std::function<void(aeron::status::PublicationErrorFrame &errorFrame)> on_publication_error_frame_t;
 
 const static long NULL_TIMEOUT = -1;
 const static long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10000;
@@ -534,7 +534,7 @@ public:
         return *this;
     }
 
-    inline this_t &errorFrameHandler(on_error_frame_t &handler)
+    inline this_t &errorFrameHandler(on_publication_error_frame_t &handler)
     {
         m_onErrorFrameHandler = handler;
         return *this;
@@ -590,7 +590,7 @@ private:
     on_available_counter_t m_onAvailableCounterHandler = defaultOnAvailableCounterHandler;
     on_unavailable_counter_t m_onUnavailableCounterHandler = defaultOnUnavailableCounterHandler;
     on_close_client_t m_onCloseClientHandler = defaultOnCloseClientHandler;
-    on_error_frame_t m_onErrorFrameHandler = defaultOnErrorFrameHandler;
+    on_publication_error_frame_t m_onErrorFrameHandler = defaultOnErrorFrameHandler;
 
     void attachCallbacksToContext()
     {
@@ -711,7 +711,7 @@ private:
 
     static void errorFrameHandlerCallback(void *clientd, aeron_publication_error_values_t *error_frame)
     {
-        on_error_frame_t &handler = *reinterpret_cast<on_error_frame_t *>(clientd);
+        on_publication_error_frame_t &handler = *reinterpret_cast<on_publication_error_frame_t *>(clientd);
         aeron::status::PublicationErrorFrame errorFrame{error_frame};
         handler(errorFrame);
     }

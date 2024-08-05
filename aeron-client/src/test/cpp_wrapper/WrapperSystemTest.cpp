@@ -65,7 +65,7 @@ TEST_F(WrapperSystemTest, shouldSendReceiveDataWithRawPointer)
 
     std::string message = "Hello World!";
 
-    const uint8_t *data = reinterpret_cast<const uint8_t *>(message.c_str());
+    auto *data = reinterpret_cast<const uint8_t *>(message.c_str());
     POLL_FOR(0 < pub->offer(data, message.length()), invoker);
     POLL_FOR(0 < sub->poll(
         [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
@@ -93,7 +93,7 @@ TEST_F(WrapperSystemTest, shouldSendReceiveDataWithRawPointerExclusive)
 
     std::string message = "Hello World!";
 
-    const uint8_t *data = reinterpret_cast<const uint8_t *>(message.c_str());
+    auto *data = reinterpret_cast<const uint8_t *>(message.c_str());
     POLL_FOR(0 < pub->offer(data, message.length()), invoker);
     POLL_FOR(0 < sub->poll(
         [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)

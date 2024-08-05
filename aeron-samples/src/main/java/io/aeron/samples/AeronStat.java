@@ -202,7 +202,7 @@ public class AeronStat
         System.out.print(dateFormat.format(new Date()));
         System.out.println(
             " - Aeron Stat (CnC v" + cncFileReader.semanticVersion() + ")" +
-            ", pid " + SystemUtil.getPid() +
+            ", pid " + CncFileDescriptor.pid(cncFileReader.countersReader().metaDataBuffer()) +
             ", heartbeat age " + cncFileReader.driverHeartbeatAgeMs() + "ms");
         System.out.println("======================================================================");
 

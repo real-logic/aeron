@@ -38,6 +38,7 @@ import static io.aeron.samples.SamplesUtil.mapExistingFileReadOnly;
 public final class CncFileReader implements AutoCloseable
 {
     private boolean isClosed = false;
+    private final int driverPid;
     private final int cncVersion;
     private final String cncSemanticVersion;
     private final MappedByteBuffer cncByteBuffer;
@@ -49,6 +50,7 @@ public final class CncFileReader implements AutoCloseable
         this.cncByteBuffer = cncByteBuffer;
 
         final DirectBuffer cncMetaDataBuffer = createMetaDataBuffer(cncByteBuffer);
+        driverPid = cncMetaDataBuffer.getInt(pidOffset(0));
         final int cncVersion = cncMetaDataBuffer.getInt(cncVersionOffset(0));
 
         try
@@ -127,6 +129,16 @@ public final class CncFileReader implements AutoCloseable
             RingBufferDescriptor.CONSUMER_HEARTBEAT_OFFSET;
 
         return toDriverBuffer.getLongVolatile(timestampOffset);
+    }
+
+    /**
+     * Return media driver PID that is stored in the CnC file.
+     *
+     * @return media driver PID.
+     */
+    public int driverPid()
+    {
+        return driverPid;
     }
 
     /**

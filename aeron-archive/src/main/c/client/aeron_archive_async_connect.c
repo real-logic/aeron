@@ -325,8 +325,6 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
                 {
                     if (aeron_archive_control_response_poller_is_code_error(async->control_response_poller))
                     {
-                        async->control_response_poller;
-
                         aeron_archive_proxy_close_session(async->archive_proxy, async->control_session_id);
                         // TODO
                         return -1;
@@ -368,8 +366,10 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
 
     return 0;
 
+    /*
 cleanup: // TODO add cleanup: section that frees up the async
     return -1;
+     */
 }
 
 /* *********************** */

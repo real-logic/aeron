@@ -199,6 +199,8 @@ int aeron_archive_recording_pos_is_active(bool *is_active, aeron_counters_reader
 
 typedef struct aeron_archive_replay_merge_stct aeron_archive_replay_merge_t;
 
+#define REPLAY_MERGE_PROGRESS_TIMEOUT_DEFAULT_MS (5 * 1000)
+
 int aeron_archive_replay_merge_init(
     aeron_archive_replay_merge_t **replay_merge,
     aeron_subscription_t *subscription,

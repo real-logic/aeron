@@ -152,27 +152,27 @@ int aeron_archive_control_response_poller_code_value(aeron_archive_control_respo
     return poller->code_value;
 }
 
-int64_t aeron_archive_control_response_poller_correlation_id(aeron_archive_control_response_poller_t  *poller)
+int64_t aeron_archive_control_response_poller_correlation_id(aeron_archive_control_response_poller_t *poller)
 {
     return poller->correlation_id;
 }
 
-int64_t aeron_archive_control_response_poller_control_session_id(aeron_archive_control_response_poller_t  *poller)
+int64_t aeron_archive_control_response_poller_control_session_id(aeron_archive_control_response_poller_t *poller)
 {
     return poller->control_session_id;
 }
 
-int64_t aeron_archive_control_response_poller_relevant_id(aeron_archive_control_response_poller_t  *poller)
+int64_t aeron_archive_control_response_poller_relevant_id(aeron_archive_control_response_poller_t *poller)
 {
     return poller->relevant_id;
 }
 
-int32_t aeron_archive_control_response_poller_version(aeron_archive_control_response_poller_t  *poller)
+int32_t aeron_archive_control_response_poller_version(aeron_archive_control_response_poller_t *poller)
 {
     return poller->version;
 }
 
-char *aeron_archive_control_response_poller_error_message(aeron_archive_control_response_poller_t  *poller)
+char *aeron_archive_control_response_poller_error_message(aeron_archive_control_response_poller_t *poller)
 {
     return poller->error_message;
 }
@@ -302,6 +302,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
         }
         default:
             // do nothing
+            break;
     }
 
     return AERON_ACTION_CONTINUE;

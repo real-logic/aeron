@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <errno.h>
-
 #include "aeron_archive.h"
 #include "aeron_archive_context.h"
 #include "aeron_archive_proxy.h"
@@ -519,13 +517,6 @@ bool aeron_archive_proxy_list_recording_subscriptions(
 // The length here must NOT include the messageHeader encoded length
 int64_t aeron_archive_proxy_offer_once(aeron_archive_proxy_t *archive_proxy, size_t length)
 {
-    /*
-    fprintf(stderr, "length :: %i\n", length);
-    for (uint64_t i = 0; i < length; i++)
-    {
-        fprintf(stderr, "[%llu] '%x' '%c'\n", i, archive_proxy->buffer[i], archive_proxy->buffer[i]);
-    }
-     */
     return aeron_exclusive_publication_offer(
         archive_proxy->exclusive_publication,
         archive_proxy->buffer,

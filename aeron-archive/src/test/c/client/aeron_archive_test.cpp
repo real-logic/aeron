@@ -41,7 +41,7 @@ fragment_handler_clientd_t;
 
 void fragment_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_stct *header)
 {
-    fprintf(stderr, "got a message!!\n");
+    // fprintf(stderr, "got a message!!\n");
 
     auto *cd = (fragment_handler_clientd_t *)clientd;
     cd->received++;
@@ -143,17 +143,26 @@ public:
         aeron_async_add_publication_t *async_add_publication;
         aeron_publication_t *publication = nullptr;
 
-        aeron_async_add_publication(
+        if (aeron_async_add_publication(
             &async_add_publication,
             aeron,
             channel.c_str(),
-            stream_id);
+            stream_id) < 0)
+        {
+            fprintf(stderr, " -- GOT AN ERROR :: %s\n", aeron_errmsg());
+        }
 
-        aeron_async_add_publication_poll(&publication, async_add_publication);
+        if (aeron_async_add_publication_poll(&publication, async_add_publication) < 0)
+        {
+            fprintf(stderr, " -- GOT AN ERROR :: %s\n", aeron_errmsg());
+        }
         while (nullptr == publication)
         {
             idle();
-            aeron_async_add_publication_poll(&publication, async_add_publication);
+            if (aeron_async_add_publication_poll(&publication, async_add_publication) < 0)
+            {
+                fprintf(stderr, " -- GOT AN ERROR :: %s\n", aeron_errmsg());
+            }
         }
 
         return publication;
@@ -246,6 +255,64 @@ public:
         return clientd.position;
     }
 
+    bool attemptReplayMerge(
+        aeron_archive_replay_merge_t *replay_merge,
+        aeron_publication_t *publication,
+        aeron_fragment_handler_t handler,
+        void *clientd,
+        size_t total_message_count,
+        size_t *messages_published,
+        size_t *received_message_count,
+        const char *message_prefix = "Message ")
+    {
+        for (size_t i = *messages_published; i < total_message_count; i++)
+        {
+            char message[1000];
+            size_t len = snprintf(message, 1000, "%s%lu", message_prefix, i);
+
+            while (aeron_publication_offer(publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
+            {
+                idle();
+
+                int fragments = aeron_archive_replay_merge_poll(replay_merge, handler, clientd, m_fragment_limit);
+
+                if (0 == fragments && aeron_archive_replay_merge_has_failed(replay_merge))
+                {
+                    return false;
+                }
+            }
+
+            (*messages_published)++;
+        }
+
+        while (!aeron_archive_replay_merge_is_merged(replay_merge))
+        {
+            int fragments = aeron_archive_replay_merge_poll(replay_merge, handler, clientd, m_fragment_limit);
+
+            if (0 == fragments && aeron_archive_replay_merge_has_failed(replay_merge))
+            {
+                return false;
+            }
+
+            idle();
+        }
+
+        aeron_image_t *image = aeron_archive_replay_merge_image(replay_merge);
+        while (*received_message_count < total_message_count)
+        {
+            int fragments = aeron_image_poll(image, handler, clientd, m_fragment_limit);
+
+            if (0 == fragments && aeron_image_is_closed(image))
+            {
+                return false;
+            }
+
+            idle();
+        }
+
+        return true;
+    }
+
 protected:
     const std::string m_archiveDir = ARCHIVE_DIR;
 
@@ -253,6 +320,8 @@ protected:
     const std::int32_t m_recordingStreamId = 33;
     const std::string m_replayChannel = "aeron:udp?endpoint=localhost:6666";
     const std::int32_t m_replayStreamId = 66;
+
+    const int m_fragment_limit = 10;
 
     aeron_counters_reader_t *m_counters_reader;
     std::int32_t m_counter_id;
@@ -265,6 +334,7 @@ protected:
     bool m_debug = true;
 
     const uint64_t m_idle_duration_ns = UINT64_C(1000) * UINT64_C(1000); /* 1ms */
+    //const uint64_t m_idle_duration_ns = UINT64_C(5) * UINT64_C(1000) * UINT64_C(1000); /* 5ms */
 
     aeron_archive_context_t *m_ctx = nullptr;
     aeron_archive_t *m_archive = nullptr;
@@ -1115,6 +1185,11 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
     const char *replay_endpoint = "localhost:0";
 
     char publication_channel[AERON_MAX_PATH + 1];
+    char live_destination[AERON_MAX_PATH + 1];
+    char replay_destination[AERON_MAX_PATH + 1];
+    char recording_channel[AERON_MAX_PATH + 1];
+    char subscription_channel[AERON_MAX_PATH + 1];
+
     {
         aeron_uri_string_builder_t builder;
 
@@ -1128,11 +1203,11 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
         aeron_uri_string_builder_sprint(&builder, publication_channel, AERON_MAX_PATH + 1);
         aeron_uri_string_builder_close(&builder);
-    }
-    // aeron:udp?control-mode=dynamic|term-length=65536|fc=tagged,g:99901/1,t:5s|control=localhost:23265
-    fprintf(stderr, "pub channel :: %s\n", publication_channel);
 
-    char live_destination[AERON_MAX_PATH + 1];
+        // aeron:udp?control-mode=dynamic|term-length=65536|fc=tagged,g:99901/1,t:5s|control=localhost:23265
+        fprintf(stderr, "pub channel :: %s\n", publication_channel);
+    }
+
     {
         aeron_uri_string_builder_t builder;
 
@@ -1144,10 +1219,10 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
         aeron_uri_string_builder_sprint(&builder, live_destination, AERON_MAX_PATH + 1);
         aeron_uri_string_builder_close(&builder);
-    }
-    fprintf(stderr, "live destination :: %s\n", live_destination);
 
-    char replay_destination[AERON_MAX_PATH + 1];
+        fprintf(stderr, "live destination :: %s\n", live_destination);
+    }
+
     {
         aeron_uri_string_builder_t builder;
 
@@ -1158,8 +1233,9 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
         aeron_uri_string_builder_sprint(&builder, replay_destination, AERON_MAX_PATH + 1);
         aeron_uri_string_builder_close(&builder);
+
+        fprintf(stderr, "replay destination :: %s\n", replay_destination);
     }
-    fprintf(stderr, "replay destination :: %s\n", replay_destination);
 
     const size_t initial_message_count = min_messages_per_term * 3;
     const size_t subsequent_message_count = min_messages_per_term * 3;
@@ -1171,7 +1247,6 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
     int32_t session_id = aeron_publication_session_id(publication);
 
-    char recording_channel[AERON_MAX_PATH + 1];
     {
         aeron_uri_string_builder_t builder;
 
@@ -1185,10 +1260,10 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
         aeron_uri_string_builder_sprint(&builder, recording_channel, AERON_MAX_PATH + 1);
         aeron_uri_string_builder_close(&builder);
-    }
-    fprintf(stderr, "recording channel :: %s\n", recording_channel);
 
-    char subscription_channel[AERON_MAX_PATH + 1];
+        fprintf(stderr, "recording channel :: %s\n", recording_channel);
+    }
+
     {
         aeron_uri_string_builder_t builder;
 
@@ -1200,15 +1275,16 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
         aeron_uri_string_builder_sprint(&builder, subscription_channel, AERON_MAX_PATH + 1);
         aeron_uri_string_builder_close(&builder);
+
+        fprintf(stderr, "subscription channel :: %s\n", subscription_channel);
     }
-    fprintf(stderr, "subscription channel :: %s\n", subscription_channel);
 
     ASSERT_EQ(0, aeron_archive_start_recording(
         nullptr,
         m_archive,
         recording_channel,
         m_recordingStreamId,
-        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        AERON_ARCHIVE_SOURCE_LOCATION_REMOTE,
         true));
 
     setupCounters(session_id);
@@ -1235,7 +1311,6 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
                 m_counter_id,
                 source_identity_buffer,
                 &sib_len));
-        fprintf(stderr, "SI :: %s (len: %i)\n", source_identity_buffer, sib_len);
         EXPECT_STREQ("127.0.0.1:23265", source_identity_buffer);
     }
 
@@ -1244,8 +1319,10 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
     waitUntilCaughtUp(aeron_publication_position(publication));
 
     size_t messages_published = initial_message_count;
-    size_t received_message_count = 0;
-    int64_t received_position = 0;
+
+    fragment_handler_clientd_t clientd;
+    clientd.received = 0;
+    clientd.position = 0;
 
     while (true)
     {
@@ -1262,11 +1339,41 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
             aeron_uri_string_builder_sprint(&builder, replay_channel, AERON_MAX_PATH + 1);
             aeron_uri_string_builder_close(&builder);
+
+            fprintf(stderr, "replay channel :: %s\n", replay_channel);
         }
-        fprintf(stderr, "replay channel :: %s\n", replay_channel);
 
+        aeron_archive_replay_merge_t *replay_merge;
 
+        ASSERT_EQ(0, aeron_archive_replay_merge_init(
+            &replay_merge,
+            subscription,
+            m_archive,
+            replay_channel,
+            replay_destination,
+            live_destination,
+            m_recording_id_from_counter,
+            clientd.position,
+            currentTimeMillis(),
+            REPLAY_MERGE_PROGRESS_TIMEOUT_DEFAULT_MS));
 
+        if (attemptReplayMerge(
+            replay_merge,
+            publication,
+            fragment_handler,
+            &clientd,
+            total_message_count,
+            &messages_published,
+            &clientd.received))
+        {
+            ASSERT_EQ(0, aeron_archive_replay_merge_close(replay_merge));
+            break;
+        }
+
+        ASSERT_EQ(0, aeron_archive_replay_merge_close(replay_merge));
         idle();
     }
+
+    EXPECT_EQ(clientd.received, total_message_count);
+    EXPECT_EQ(clientd.position, aeron_publication_position(publication));
 }

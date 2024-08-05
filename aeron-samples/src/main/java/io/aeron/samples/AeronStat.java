@@ -52,6 +52,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
  */
 public class AeronStat
 {
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     private static final String ANSI_CLS = "\u001b[2J";
     private static final String ANSI_HOME = "\u001b[H";
 
@@ -197,9 +198,7 @@ public class AeronStat
 
     private static void printOutput(final CncFileReader cncFileReader, final CounterFilter counterFilter)
     {
-        final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
-
-        System.out.print(dateFormat.format(new Date()));
+        System.out.print(DATE_FORMAT.format(new Date()));
         System.out.println(
             " - Aeron Stat (CnC v" + cncFileReader.semanticVersion() + ")" +
             ", pid " + CncFileDescriptor.pid(cncFileReader.countersReader().metaDataBuffer()) +

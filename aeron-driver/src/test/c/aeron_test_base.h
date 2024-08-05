@@ -163,6 +163,23 @@ public:
         return counter;
     }
 
+    static aeron_counter_t *awaitStaticCounterOrError(aeron_async_add_counter_t *async)
+    {
+        aeron_counter_t *counter = nullptr;
+
+        do
+        {
+            std::this_thread::yield();
+            if (aeron_async_add_counter_poll(&counter, async) < 0)
+            {
+                return nullptr;
+            }
+        }
+        while (!counter);
+
+        return counter;
+    }
+
     static void awaitConnected(aeron_subscription_t *subscription)
     {
         while (!aeron_subscription_is_connected(subscription))

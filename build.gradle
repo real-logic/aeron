@@ -55,11 +55,11 @@ def toolchainLauncher = javaToolchains.launcherFor {
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
-def agronaVersion = '1.21.2'
-def agronaVersionRange = '[1.21.2,2.0[' // allow any release >= 1.21.2 and < 2.0.0
-def sbeVersion = '1.32.0'
+def agronaVersion = '1.22.0'
+def agronaVersionRange = '[1.22.0,2.0[' // allow any release >= 1.22.0 and < 2.0.0
+def sbeVersion = '1.32.1'
 def checkstyleVersion = '9.3'
-def hamcrestVersion = '2.2'
+def hamcrestVersion = '3.0'
 def junitVersion = '5.10.3'
 def junitPlatformVersion = '1.10.3'
 def mockitoVersion = '4.11.0'
@@ -79,6 +79,14 @@ ext {
 
     if (!project.hasProperty('ossrhPassword')) {
         ossrhPassword = ''
+    }
+
+    if (!project.hasProperty('signingKey')) {
+        signingKey = null
+    }
+
+    if (!project.hasProperty('signingPassword')) {
+        signingPassword = null
     }
 }
 
@@ -403,6 +411,9 @@ project(':aeron-annotations') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronAnnotations
     }
 }
@@ -473,6 +484,9 @@ project(':aeron-client') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronClient
     }
 
@@ -580,6 +594,9 @@ project(':aeron-driver') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronDriver
     }
 
@@ -771,6 +788,9 @@ project(':aeron-archive') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronArchive
     }
 
@@ -900,6 +920,9 @@ project(':aeron-cluster') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronCluster
     }
 
@@ -1011,6 +1034,9 @@ project(':aeron-agent') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronAgent
     }
 }
@@ -1058,6 +1084,9 @@ project(':aeron-samples') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronSamples
     }
 
@@ -1179,6 +1208,9 @@ project(':aeron-test-support') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronTestSupport
     }
 }
@@ -1273,6 +1305,9 @@ project(':aeron-all') {
     }
 
     signing {
+        if (signingKey != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
         sign publishing.publications.aeronAll
     }
 }

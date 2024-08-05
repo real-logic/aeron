@@ -15,10 +15,8 @@
  */
 package io.aeron.agent;
 
-import io.aeron.archive.client.AeronArchive;
 import net.bytebuddy.asm.Advice;
 
-import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.ArchiveEventLogger.LOGGER;
 
 /**
@@ -37,7 +35,7 @@ class ArchiveInterceptor
             final long position,
             final String reason)
         {
-            LOGGER.logReplaySessionStateChange(REPLAY_SESSION_STATE_CHANGE,
+            LOGGER.logReplaySessionStateChange(
                 oldState, newState, sessionId, recordingId, position, reason);
         }
     }
@@ -52,8 +50,7 @@ class ArchiveInterceptor
             final long position,
             final String reason)
         {
-            LOGGER.logRecordingSessionStateChange(RECORDING_SESSION_STATE_CHANGE,
-                oldState, newState, recordingId, position, reason);
+            LOGGER.logRecordingSessionStateChange(oldState, newState, recordingId, position, reason);
         }
     }
 
@@ -69,7 +66,7 @@ class ArchiveInterceptor
             final long position,
             final String reason)
         {
-            LOGGER.logReplicationSessionStateChange(REPLICATION_SESSION_STATE_CHANGE,
+            LOGGER.logReplicationSessionStateChange(
                 oldState, newState, replicationId, srcRecordingId, dstRecordingId, position, reason);
         }
     }
@@ -91,7 +88,6 @@ class ArchiveInterceptor
             final boolean isSynced)
         {
             LOGGER.logReplicationSessionDone(
-                REPLICATION_SESSION_DONE,
                 controlSessionId,
                 replicationId,
                 srcRecordingId,
@@ -111,8 +107,7 @@ class ArchiveInterceptor
         @Advice.OnMethodEnter
         static <E extends Enum<E>> void logStateChange(final E oldState, final E newState, final long controlSessionId)
         {
-            LOGGER.logSessionStateChange(
-                CONTROL_SESSION_STATE_CHANGE, oldState, newState, controlSessionId, AeronArchive.NULL_POSITION);
+            LOGGER.logControlSessionStateChange(oldState, newState, controlSessionId);
         }
     }
 

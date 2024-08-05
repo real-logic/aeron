@@ -136,6 +136,7 @@ typedef std::function<void()> on_close_client_t;
 const static long NULL_TIMEOUT = -1;
 const static long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10000;
 const static long DEFAULT_RESOURCE_LINGER_MS = 5000;
+const static int MAX_CLIENT_NAME_LENGTH = 100;
 
 /**
  * The Default handler for Aeron runtime exceptions.
@@ -210,9 +211,35 @@ public:
         aeron_context_init(&m_context);
     }
 
+    Context(Context &&other) :
+        m_context(other.m_context),
+        m_onAvailableImageHandler(other.m_onAvailableImageHandler),
+        m_onUnavailableImageHandler(other.m_onUnavailableImageHandler),
+        m_exceptionHandler(other.m_exceptionHandler),
+        m_onNewPublicationHandler(other.m_onNewPublicationHandler),
+        m_isOnNewExclusivePublicationHandlerSet(other.m_isOnNewExclusivePublicationHandlerSet),
+        m_onNewExclusivePublicationHandler(other.m_onNewExclusivePublicationHandler),
+        m_onNewSubscriptionHandler(other.m_onNewSubscriptionHandler),
+        m_onAvailableCounterHandler(other.m_onAvailableCounterHandler),
+        m_onUnavailableCounterHandler(other.m_onUnavailableCounterHandler),
+        m_onCloseClientHandler(other.m_onCloseClientHandler)
+    {
+        other.m_context = nullptr;
+    }
+
+    ~Context()
+    {
+        aeron_context_close(m_context);
+    }
+
     /// @cond HIDDEN_SYMBOLS
     this_t &conclude()
     {
+        if (clientName().length() > MAX_CLIENT_NAME_LENGTH)
+        {
+            throw util::IllegalArgumentException("clientName length must <= 100", SOURCEINFO);
+        }
+
         if (!m_isOnNewExclusivePublicationHandlerSet)
         {
             newExclusivePublicationHandler(m_onNewPublicationHandler);

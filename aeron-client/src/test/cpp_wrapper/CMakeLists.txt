@@ -18,6 +18,8 @@ set(TEST_HEADERS
     ../cpp_shared/EmbeddedMediaDriver.h
     TestUtil.h)
 
+include_directories(${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+
 function(aeron_client_native_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
     add_dependencies(${name} gmock)

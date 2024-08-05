@@ -314,10 +314,14 @@ TEST_F(CountersManagerTest, shouldFindByTypeIdAndRegisrationId)
 
     m_countersManager.allocate("null");
 
-    const std::int32_t counterId = m_countersManager.allocate("abc", typeId, [](AtomicBuffer &){});
-    m_countersManager.setCounterRegistrationId(counterId, registrationId);
+    const std::int32_t counterId1 = m_countersManager.allocate("abc", typeId, [](AtomicBuffer &){});
+    m_countersManager.setCounterRegistrationId(counterId1, registrationId);
+
+    const std::int32_t counterId2 = m_countersManager.allocate("xyz", typeId, [](AtomicBuffer &){});
+    m_countersManager.setCounterRegistrationId(counterId2, registrationId);
+    ASSERT_NE(counterId1, counterId2);
 
     EXPECT_EQ(m_countersManager.findByTypeIdAndRegistrationId(0, registrationId), nullCounterId);
     EXPECT_EQ(m_countersManager.findByTypeIdAndRegistrationId(typeId, 0), nullCounterId);
-    EXPECT_EQ(m_countersManager.findByTypeIdAndRegistrationId(typeId, registrationId), counterId);
+    EXPECT_EQ(m_countersManager.findByTypeIdAndRegistrationId(typeId, registrationId), counterId1);
 }

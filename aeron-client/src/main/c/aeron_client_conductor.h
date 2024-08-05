@@ -90,6 +90,7 @@ typedef struct aeron_client_registering_resource_stct
         const char *label_buffer;
         uint64_t key_buffer_length;
         uint64_t label_buffer_length;
+        int64_t registration_id;
         int32_t type_id;
     }
     counter;
@@ -300,6 +301,16 @@ int aeron_client_conductor_async_close_counter(
     aeron_notification_t on_close_complete,
     void *on_close_complete_clientd);
 
+int aeron_client_conductor_async_add_static_counter(
+    aeron_async_add_counter_t **async,
+    aeron_client_conductor_t *conductor,
+    int32_t type_id,
+    const uint8_t *key_buffer,
+    size_t key_buffer_length,
+    const char *label_buffer,
+    size_t label_buffer_length,
+    int64_t registration_id);
+
 int aeron_client_conductor_async_add_publication_destination(
     aeron_async_destination_t **async,
     aeron_client_conductor_t *conductor,
@@ -356,6 +367,9 @@ int aeron_client_conductor_on_unavailable_image(aeron_client_conductor_t *conduc
 int aeron_client_conductor_on_counter_ready(aeron_client_conductor_t *conductor, aeron_counter_update_t *response);
 int aeron_client_conductor_on_unavailable_counter(
     aeron_client_conductor_t *conductor, aeron_counter_update_t *response);
+
+int aeron_client_conductor_on_static_counter(aeron_client_conductor_t *conductor, aeron_static_counter_response_t *response);
+
 int aeron_client_conductor_on_client_timeout(aeron_client_conductor_t *conductor, aeron_client_timeout_t *response);
 
 int aeron_client_conductor_get_or_create_log_buffer(

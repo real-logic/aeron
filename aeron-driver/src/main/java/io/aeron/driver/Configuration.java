@@ -1066,8 +1066,15 @@ public final class Configuration
     @Config(defaultType = DefaultType.INT, defaultInt = 1)
     public static final String ASYNC_TASK_EXECUTOR_THREADS_PROP_NAME = "aeron.driver.async.executor.threads";
 
+    /**
+     * Property name to set a limit on the number sessions allowed per stream on a subscription.
+     */
+    @Config(defaultType = DefaultType.INT, defaultInt = Integer.MAX_VALUE)
     public static final String STREAM_SESSION_LIMIT_PROP_NAME = "aeron.driver.stream.session.limit";
 
+    /**
+     * Default number of sessions allowed per stream on a subscription. Default is to be effectively unlimited.
+     */
     public static final int STREAM_SESSION_LIMIT_DEFAULT = Integer.MAX_VALUE;
 
     /**

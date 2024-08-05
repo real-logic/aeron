@@ -130,7 +130,7 @@ add_definitions(-DAERON_VERSION_GITSHA="${AERON_VERSION_GITSHA}")
 
 # all UNIX-based platform compiler flags
 if (UNIX)
-    add_compile_options(-Wall -Wpedantic -Wextra -Wno-unused-parameter -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer)
+    add_compile_options(-fstrict-aliasing -Wall -Wpedantic -Wextra -Wno-unused-parameter -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer)
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "11.0")
         add_compile_options(-Wno-error=maybe-uninitialized)
@@ -177,8 +177,8 @@ elseif (MSVC)
         add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
     endif ()
 
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Od /Zi /MP /wd4251 /Oy- /D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /MP /wd4251 /Oy- /D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Od /Zi /MP /wd4251 /Oy-")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /MP /wd4251 /Oy-")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd /Oy-")
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT /Oy-")
 
@@ -371,3 +371,34 @@ set(CPACK_PACKAGE_VERSION_PATCH "${aeron_VERSION_PATCH}")
 
 set(CPACK_GENERATOR "TGZ;STGZ")
 include(CPack)
+
+##########################################################
+# export targets
+if (AERON_INSTALL_TARGETS)
+    include(CMakePackageConfigHelpers)
+
+    install(
+        EXPORT AeronTargets
+        FILE AeronTargets.cmake
+        NAMESPACE Aeron::
+        DESTINATION lib/cmake/Aeron)
+
+    write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/AeronConfigVersion.cmake"
+        VERSION "${AERON_VERSION_FROM_FILE}"
+        COMPATIBILITY ExactVersion)
+
+    configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/AeronConfig.cmake"
+        INSTALL_DESTINATION lib/cmake/Aeron)
+
+    install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/AeronConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/AeronConfigVersion.cmake"
+        DESTINATION lib/cmake/Aeron)
+
+    export(EXPORT AeronTargets
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/AeronTargets.cmake"
+        NAMESPACE Aeron::)
+endif ()

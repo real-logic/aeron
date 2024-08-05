@@ -104,12 +104,12 @@ add_dependencies(aeron_archive_client codecs)
 add_dependencies(aeron_archive_client_wrapper codecs)
 
 target_include_directories(aeron_archive_client
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-    PRIVATE ${ARCHIVE_CODEC_TARGET_DIR})
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include>"
+    PRIVATE "$<BUILD_INTERFACE:${ARCHIVE_CODEC_TARGET_DIR}>")
 
 target_include_directories(aeron_archive_client_wrapper
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-    PRIVATE ${ARCHIVE_CODEC_TARGET_DIR})
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include>"
+    PRIVATE "$<BUILD_INTERFACE:${ARCHIVE_CODEC_TARGET_DIR}>")
 
 if (NOT WIN32)
     set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
@@ -125,6 +125,12 @@ target_link_libraries(aeron_archive_client_wrapper
     INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 if (AERON_INSTALL_TARGETS)
-    install(TARGETS aeron_archive_client ARCHIVE DESTINATION lib)
-    install(DIRECTORY . DESTINATION include FILES_MATCHING PATTERN "*.h")
+    install(
+        TARGETS aeron_archive_client aeron_archive_client_wrapper
+        EXPORT AeronTargets
+        RUNTIME DESTINATION lib
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+    install(DIRECTORY ./ DESTINATION include FILES_MATCHING PATTERN "*.h")
+    install(DIRECTORY ${ARCHIVE_CODEC_TARGET_DIR}/ DESTINATION include FILES_MATCHING PATTERN "*.h")
 endif ()

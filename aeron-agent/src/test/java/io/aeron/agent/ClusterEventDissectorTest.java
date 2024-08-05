@@ -99,13 +99,14 @@ class ClusterEventDissectorTest
         writeIndex += SIZE_OF_INT;
         buffer.putInt(writeIndex, 3, LITTLE_ENDIAN);
         writeIndex += SIZE_OF_INT;
-        buffer.putStringAscii(writeIndex, "old -> new");
+        writeIndex += buffer.putStringAscii(writeIndex, "old -> new");
+        buffer.putStringAscii(writeIndex, "this is a test");
 
         ClusterEventDissector.dissectElectionStateChange(buffer, offset, builder);
 
         assertEquals("[5.000000000] " + CONTEXT + ": " + ELECTION_STATE_CHANGE.name() + " [100/200]: memberId=86" +
             " old -> new leaderId=3 candidateTermId=101010 leadershipTermId=6 logPosition=1024 logLeadershipTermId=2" +
-            " appendPosition=1218 catchupPosition=800",
+            " appendPosition=1218 catchupPosition=800 reason=this is a test",
             builder.toString());
     }
 

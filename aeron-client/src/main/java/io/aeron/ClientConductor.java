@@ -1035,6 +1035,71 @@ final class ClientConductor implements Agent
         }
     }
 
+    Counter addStaticCounter(
+        final int typeId,
+        final DirectBuffer keyBuffer,
+        final int keyOffset,
+        final int keyLength,
+        final DirectBuffer labelBuffer,
+        final int labelOffset,
+        final int labelLength,
+        final long registrationId)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            if (keyLength < 0 || keyLength > CountersManager.MAX_KEY_LENGTH)
+            {
+                throw new IllegalArgumentException("key length out of bounds: " + keyLength);
+            }
+
+            if (labelLength < 0 || labelLength > CountersManager.MAX_LABEL_LENGTH)
+            {
+                throw new IllegalArgumentException("label length out of bounds: " + labelLength);
+            }
+
+            final long correlationId = driverProxy.addStaticCounter(
+                typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength, registrationId);
+
+            awaitResponse(correlationId);
+
+            final int counterId = (int)resourceByRegIdMap.remove(correlationId);
+            return new Counter(aeron.countersReader(), registrationId, counterId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    Counter addStaticCounter(final int typeId, final String label, final long registrationId)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            if (label.length() > CountersManager.MAX_LABEL_LENGTH)
+            {
+                throw new IllegalArgumentException("label length exceeds MAX_LABEL_LENGTH: " + label.length());
+            }
+
+            final long correlationId = driverProxy.addStaticCounter(typeId, label, registrationId);
+            awaitResponse(correlationId);
+
+            final int counterId = (int)resourceByRegIdMap.remove(correlationId);
+            return new Counter(aeron.countersReader(), registrationId, counterId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
     long addAvailableCounterHandler(final AvailableCounterHandler handler)
     {
         clientLock.lock();
@@ -1298,6 +1363,11 @@ final class ClientConductor implements Agent
         }
     }
 
+    void onStaticCounter(final long correlationId, final int counterId)
+    {
+        resourceByRegIdMap.put(correlationId, (Integer)counterId);
+    }
+
     private void ensureActive()
     {
         if (isClosed)
@@ -1487,14 +1557,22 @@ final class ClientConductor implements Agent
 
                 if (CountersReader.NULL_COUNTER_ID != counterId)
                 {
-                    heartbeatTimestamp = new AtomicCounter(counterValuesBuffer, counterId);
-                    heartbeatTimestamp.setOrdered(nowMs);
-                    AeronCounters.appendToLabel(
-                        countersReader.metaDataBuffer(),
-                        counterId,
-                        " name=" + ctx.clientName() + " " +
-                        AeronCounters.formatVersionInfo(AeronVersion.VERSION, AeronVersion.GIT_SHA));
-                    timeOfLastKeepAliveNs = nowNs;
+                    try
+                    {
+                        heartbeatTimestamp = new AtomicCounter(counterValuesBuffer, counterId);
+                        heartbeatTimestamp.setOrdered(nowMs);
+                        AeronCounters.appendToLabel(
+                            countersReader.metaDataBuffer(),
+                            counterId,
+                            " name=" + ctx.clientName() + " " +
+                            AeronCounters.formatVersionInfo(AeronVersion.VERSION, AeronVersion.GIT_SHA));
+                        timeOfLastKeepAliveNs = nowNs;
+                    }
+                    catch (final RuntimeException ex)  // a race caused by the driver timing out the client
+                    {
+                        terminateConductor();
+                        throw new AeronException("unexpected close of heartbeat timestamp counter: " + counterId, ex);
+                    }
                 }
             }
             else
@@ -1503,7 +1581,6 @@ final class ClientConductor implements Agent
                 if (!HeartbeatTimestamp.isActive(countersReader, counterId, HEARTBEAT_TYPE_ID, ctx.clientId()))
                 {
                     terminateConductor();
-
                     throw new AeronException("unexpected close of heartbeat timestamp counter: " + counterId);
                 }
 

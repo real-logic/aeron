@@ -210,7 +210,7 @@ int main(int argc, char **argv)
         sched_yield();
     }
 
-    printf("Publication channel status %" PRIu64 "\n", aeron_exclusive_publication_channel_status(publication));
+    printf("Publication channel status %" PRId64 "\n", aeron_exclusive_publication_channel_status(publication));
 
     if (show_rate_progress)
     {

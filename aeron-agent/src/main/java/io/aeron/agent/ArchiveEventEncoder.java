@@ -138,14 +138,11 @@ final class ArchiveEventEncoder
         final int length,
         final E from,
         final E to,
-        final long id,
-        final long position)
+        final long id)
     {
         int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
         encodingBuffer.putLong(offset + encodedLength, id, LITTLE_ENDIAN);
-        encodedLength += SIZE_OF_LONG;
-        encodingBuffer.putLong(offset + encodedLength, position, LITTLE_ENDIAN);
         encodedLength += SIZE_OF_LONG;
 
         return encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
@@ -153,7 +150,7 @@ final class ArchiveEventEncoder
 
     static <E extends Enum<E>> int sessionStateChangeLength(final E from, final E to)
     {
-        return stateTransitionStringLength(from, to) + 2 * SIZE_OF_LONG;
+        return stateTransitionStringLength(from, to) + SIZE_OF_LONG;
     }
 
     static void encodeReplaySessionError(

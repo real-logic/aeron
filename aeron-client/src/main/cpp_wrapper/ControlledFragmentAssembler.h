@@ -60,6 +60,11 @@ public:
         aeron_controlled_fragment_assembler_delete(m_fragment_assembler);
     }
 
+    ControlledFragmentAssembler(ControlledFragmentAssembler& other) = delete;
+    ControlledFragmentAssembler(ControlledFragmentAssembler&& other) = delete;
+    ControlledFragmentAssembler& operator=(ControlledFragmentAssembler& other) = delete;
+    ControlledFragmentAssembler& operator=(ControlledFragmentAssembler&& other) = delete;
+
     /**
      * Compose a controlled_poll_fragment_handler_t that calls the this ControlledFragmentAssembler instance for
      * reassembly. Suitable for passing to Subscription::controlledPoll(controlled_poll_fragment_handler_t, int).

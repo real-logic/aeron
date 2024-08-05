@@ -537,3 +537,4 @@ extern bool aeron_udp_channel_is_channel_snd_timestamps_enabled(aeron_udp_channe
 
 extern bool aeron_udp_channel_is_multi_destination(const aeron_udp_channel_t *channel);
 
+extern bool aeron_udp_channel_has_group_semantics(const aeron_udp_channel_t *channel);

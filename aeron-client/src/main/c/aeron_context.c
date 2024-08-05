@@ -29,6 +29,7 @@
 #include "aeron_context.h"
 #include "util/aeron_error.h"
 #include "util/aeron_parse_util.h"
+#include "util/aeron_strutil.h"
 
 #define AERON_CONTEXT_USE_CONDUCTOR_AGENT_INVOKER_DEFAULT (false)
 #define AERON_CONTEXT_DRIVER_TIMEOUT_MS_DEFAULT (10 * 1000L)
@@ -50,25 +51,26 @@ int aeron_context_init(aeron_context_t **context)
     if (NULL == context)
     {
         AERON_SET_ERR(EINVAL, "%s", "aeron_context_init(NULL)");
-        return -1;
+        goto error;
     }
 
     if (aeron_alloc((void **)&_context, sizeof(aeron_context_t)) < 0)
     {
         AERON_APPEND_ERR("%s", "Unable to allocate aeron_context");
-        return -1;
+        goto error;
     }
 
+    _context->aeron_dir = NULL;
     if (aeron_alloc((void **)&_context->aeron_dir, AERON_MAX_PATH) < 0)
     {
         AERON_APPEND_ERR("%s", "Unable to allocate aeron_dir path");
-        return -1;
+        goto error;
     }
 
     if (aeron_mpsc_concurrent_array_queue_init(&_context->command_queue, AERON_CLIENT_COMMAND_QUEUE_CAPACITY) < 0)
     {
         AERON_APPEND_ERR("%s", "Unable to init command_queue");
-        return -1;
+        goto error;
     }
 
     aeron_default_path(_context->aeron_dir, AERON_MAX_PATH - 1);
@@ -110,7 +112,11 @@ int aeron_context_init(aeron_context_t **context)
 
     if ((value = getenv(AERON_CLIENT_NAME_ENV_VAR)))
     {
-        _context->client_name = value;
+        if (aeron_context_set_client_name(_context, value) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error;
+        }
     }
 
     if ((value = getenv(AERON_DRIVER_TIMEOUT_ENV_VAR)))
@@ -122,7 +128,7 @@ int aeron_context_init(aeron_context_t **context)
         if ((0 == result && 0 != errno) || '\0' != *end_ptr)
         {
             AERON_SET_ERR(EINVAL, "could not parse driver timeout: %s=%s", AERON_DRIVER_TIMEOUT_ENV_VAR, value);
-            return -1;
+            goto error;
         }
 
         _context->driver_timeout_ms = result;
@@ -134,7 +140,7 @@ int aeron_context_init(aeron_context_t **context)
         if (aeron_parse_duration_ns(value, &result) < 0)
         {
             AERON_SET_ERR(EINVAL, "could not parse: %s=%s", AERON_CLIENT_RESOURCE_LINGER_DURATION_ENV_VAR, value);
-            return -1;
+            goto error;
         }
 
         _context->resource_linger_duration_ns = result;
@@ -146,7 +152,7 @@ int aeron_context_init(aeron_context_t **context)
         if (aeron_parse_duration_ns(value, &result) < 0)
         {
             AERON_SET_ERR(EINVAL, "could not parse: %s=%s", AERON_CLIENT_IDLE_SLEEP_DURATION_ENV_VAR, value);
-            return -1;
+            goto error;
         }
 
         _context->idle_sleep_duration_ns = result;
@@ -158,14 +164,19 @@ int aeron_context_init(aeron_context_t **context)
     char sleep_duration_ascii[32] = { 0 };
     snprintf(sleep_duration_ascii, sizeof(sleep_duration_ascii), "%" PRIu64, _context->idle_sleep_duration_ns);
 
+    _context->idle_strategy_state = NULL;
     if ((_context->idle_strategy_func = aeron_idle_strategy_load(
         "sleep-ns", &_context->idle_strategy_state, NULL, sleep_duration_ascii)) == NULL)
     {
-        return -1;
+        goto error;
     }
 
     *context = _context;
     return 0;
+
+error:
+    aeron_context_close(_context);
+    return -1;
 }
 
 int aeron_context_close(aeron_context_t *context)
@@ -216,7 +227,24 @@ int aeron_context_set_client_name(aeron_context_t *context, const char *value)
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
 
-    context->client_name = value;
+    size_t copy_length = 0;
+    if (!aeron_str_length(value, AERON_COUNTER_MAX_CLIENT_NAME_LENGTH, &copy_length))
+    {
+        AERON_SET_ERR(EINVAL, "client_name length must <= %d", AERON_COUNTER_MAX_CLIENT_NAME_LENGTH);
+        return -1;
+    }
+
+    char *client_name = NULL;
+
+    if (aeron_alloc((void **)&client_name, copy_length + 1) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    memcpy(client_name, value, copy_length);
+
+    context->client_name = client_name;
     return 0;
 }
 

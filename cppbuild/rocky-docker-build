@@ -14,6 +14,7 @@ docker build --tag rocky8-aeron \
   --build-arg USER_ID="$(id -u)" \
   --build-arg GROUP_ID="$(id -g)" \
   --build-arg GCC_VERSION="${GCC_VERSION}" \
+  --target essentials-test \
   "${SOURCE_DIR}/cppbuild/rocky"
 
 docker run --rm --shm-size=1G --network host \

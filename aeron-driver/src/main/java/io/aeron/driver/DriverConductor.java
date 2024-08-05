@@ -32,6 +32,7 @@ import io.aeron.exceptions.AeronEvent;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.SetupFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -50,6 +51,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
@@ -323,8 +325,6 @@ public final class DriverConductor implements Agent
                 hwmPos = ReceiverHwm.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
                 rcvPos = ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
 
-                final boolean isMulticastSemantics = subscription.group() == INFER ?
-                    channelEndpoint.udpChannel(transportIndex).isMulticast() : subscription.group() == FORCE_TRUE;
                 final String sourceIdentity = Configuration.sourceIdentity(sourceAddress);
 
                 final PublicationImage image = new PublicationImage(
@@ -340,7 +340,7 @@ public final class DriverConductor implements Agent
                     initialTermOffset,
                     flags,
                     rawLog,
-                    resolveDelayGenerator(ctx, channelEndpoint.udpChannel(), isMulticastSemantics),
+                    resolveDelayGenerator(ctx, channelEndpoint.udpChannel(), subscription.group(), flags),
                     subscriberPositions,
                     hwmPos,
                     rcvPos,
@@ -1148,6 +1148,45 @@ public final class DriverConductor implements Agent
         countersManager.setCounterRegistrationId(counter.id(), correlationId);
         counterLinks.add(new CounterLink(counter, correlationId, client));
         clientProxy.onCounterReady(correlationId, counter.id());
+    }
+
+    void onAddStaticCounter(
+        final int typeId,
+        final DirectBuffer keyBuffer,
+        final int keyOffset,
+        final int keyLength,
+        final DirectBuffer labelBuffer,
+        final int labelOffset,
+        final int labelLength,
+        final long registrationId,
+        final long correlationId,
+        final long clientId)
+    {
+        getOrAddClient(clientId);
+
+        final int counterId = countersManager.findByTypeIdAndRegistrationId(typeId, registrationId);
+        if (CountersReader.NULL_COUNTER_ID != counterId)
+        {
+            if (Aeron.NULL_VALUE != countersManager.getCounterOwnerId(counterId))
+            {
+                clientProxy.onError(correlationId, GENERIC_ERROR, "cannot add static counter, because a " +
+                    "non-static counter exists (counterId=" + counterId + ") for typeId=" + typeId + " and " +
+                    "registrationId=" + registrationId);
+            }
+            else
+            {
+                clientProxy.onStaticCounter(correlationId, counterId);
+            }
+        }
+        else
+        {
+            final AtomicCounter counter = countersManager.newCounter(
+                typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+
+            countersManager.setCounterRegistrationId(counter.id(), registrationId);
+            countersManager.setCounterOwnerId(counter.id(), Aeron.NULL_VALUE);
+            clientProxy.onStaticCounter(correlationId, counter.id());
+        }
     }
 
     void onRemoveCounter(final long registrationId, final long correlationId)
@@ -2547,6 +2586,19 @@ public final class DriverConductor implements Agent
         {
             return ctx.unicastFeedbackDelayGenerator();
         }
+    }
+
+    static FeedbackDelayGenerator resolveDelayGenerator(
+        final Context ctx,
+        final UdpChannel channel,
+        final InferableBoolean receiverGroupConsideration,
+        final short flags)
+    {
+        final boolean isGroupFromFlag = (flags & SetupFlyweight.GROUP_FLAG) == SetupFlyweight.GROUP_FLAG;
+        final boolean isMulticastSemantics = receiverGroupConsideration == INFER ?
+            channel.isMulticast() || isGroupFromFlag : receiverGroupConsideration == FORCE_TRUE;
+
+        return resolveDelayGenerator(ctx, channel, isMulticastSemantics);
     }
 
     private interface AsyncResult<T> extends Supplier<T>

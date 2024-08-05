@@ -204,23 +204,21 @@ final class LogAdapter implements ControlledFragmentHandler
                 actingBlockLength, templateId, schemaId, actingVersion, buffer, offset, length, header);
         }
 
-        if (templateId == SessionMessageHeaderDecoder.TEMPLATE_ID)
-        {
-            sessionHeaderDecoder.wrap(
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                actingVersion);
-
-            consensusModuleAgent.onReplaySessionMessage(
-                sessionHeaderDecoder.clusterSessionId(),
-                sessionHeaderDecoder.timestamp());
-
-            return Action.CONTINUE;
-        }
-
         switch (templateId)
         {
+            case SessionMessageHeaderDecoder.TEMPLATE_ID:
+                sessionHeaderDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    actingVersion);
+
+                consensusModuleAgent.onReplaySessionMessage(
+                    sessionHeaderDecoder.clusterSessionId(),
+                    sessionHeaderDecoder.timestamp());
+
+                return Action.CONTINUE;
+
             case TimerEventDecoder.TEMPLATE_ID:
                 timerEventDecoder.wrap(
                     buffer,

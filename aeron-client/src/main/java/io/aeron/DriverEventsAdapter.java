@@ -37,6 +37,7 @@ class DriverEventsAdapter implements MessageHandler
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
     private final CounterUpdateFlyweight counterUpdate = new CounterUpdateFlyweight();
     private final ClientTimeoutFlyweight clientTimeout = new ClientTimeoutFlyweight();
+    private final StaticCounterFlyweight staticCounter = new StaticCounterFlyweight();
     private final CopyBroadcastReceiver receiver;
     private final ClientConductor conductor;
     private final LongHashSet asyncCommandIdSet;
@@ -245,6 +246,20 @@ class DriverEventsAdapter implements MessageHandler
                 if (clientTimeout.clientId() == clientId)
                 {
                     conductor.onClientTimeout();
+                }
+                break;
+            }
+
+            case ON_STATIC_COUNTER:
+            {
+                staticCounter.wrap(buffer, index);
+
+                final long correlationId = staticCounter.correlationId();
+                if (correlationId == activeCorrelationId)
+                {
+                    final int counterId = staticCounter.counterId();
+                    receivedCorrelationId = correlationId;
+                    conductor.onStaticCounter(correlationId, counterId);
                 }
                 break;
             }

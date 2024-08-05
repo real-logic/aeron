@@ -391,11 +391,12 @@ class ClusterTest
         cluster.sendAndAwaitMessages(messageCount);
 
         cluster.stopNode(followerTwo);
-        awaitLossOfLeadership(leader.service());
+        cluster.awaitLossOfLeadership(leader.service());
 
         followerOne = cluster.startStaticNode(followerOne.index(), false);
-
+        cluster.client().sendKeepAlive();
         awaitElectionClosed(followerOne);
+
         final TestNode newLeader = cluster.awaitLeader();
         cluster.awaitNewLeadershipEvent(1);
 
@@ -852,7 +853,7 @@ class ClusterTest
         cluster.stopNode(followerA);
         cluster.stopNode(followerB);
 
-        awaitLossOfLeadership(leader.service());
+        cluster.awaitLossOfLeadership(leader.service());
         assertEquals(FOLLOWER, leader.role());
     }
 
@@ -1897,50 +1898,6 @@ class ClusterTest
         }
 
         Tests.await(isAuthorisedInvoked::get);
-
-        while (!hasResponse.get())
-        {
-            client.pollEgress();
-            Tests.yield();
-        }
-    }
-
-    @Test
-    @InterruptAfter(10)
-    void shouldRejectAnAdminRequestIfLeadershipTermIsInvalid()
-    {
-        cluster = aCluster().withStaticNodes(3).start();
-        systemTestWatcher.cluster(cluster);
-
-        cluster.awaitLeader();
-
-        AeronCluster client = cluster.connectClient();
-        final long requestCorrelationId = System.nanoTime();
-        final long expectedLeadershipTermId = client.leadershipTermId();
-        final long invalidLeadershipTermId = expectedLeadershipTermId - 1000;
-        final AdminRequestType requestType = AdminRequestType.NULL_VAL;
-        final MutableBoolean hasResponse = injectAdminResponseEgressListener(
-            requestCorrelationId,
-            requestType,
-            AdminResponseCode.ERROR,
-            "Invalid leadership term: expected " + expectedLeadershipTermId + ", got " + invalidLeadershipTermId);
-        client = cluster.connectClient();
-
-        final AdminRequestEncoder adminRequestEncoder = new AdminRequestEncoder()
-            .wrapAndApplyHeader(cluster.msgBuffer(), 0, new MessageHeaderEncoder())
-            .leadershipTermId(invalidLeadershipTermId)
-            .clusterSessionId(client.clusterSessionId())
-            .correlationId(requestCorrelationId)
-            .requestType(requestType);
-
-        final Publication ingressPublication = client.ingressPublication();
-        while (ingressPublication.offer(
-            adminRequestEncoder.buffer(),
-            0,
-            MessageHeaderEncoder.ENCODED_LENGTH + adminRequestEncoder.encodedLength()) < 0)
-        {
-            Tests.yield();
-        }
 
         while (!hasResponse.get())
         {

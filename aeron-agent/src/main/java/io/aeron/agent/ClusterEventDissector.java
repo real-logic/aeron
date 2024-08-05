@@ -157,7 +157,8 @@ final class ClusterEventDissector
         absoluteOffset += SIZE_OF_INT;
 
         builder.append(": memberId=").append(memberId).append(' ');
-        buffer.getStringAscii(absoluteOffset, builder);
+        absoluteOffset += SIZE_OF_INT + buffer.getStringAscii(absoluteOffset, builder);
+
         builder.append(" leaderId=").append(leaderId);
         builder.append(" candidateTermId=").append(candidateTermId);
         builder.append(" leadershipTermId=").append(leadershipTermId);
@@ -165,6 +166,8 @@ final class ClusterEventDissector
         builder.append(" logLeadershipTermId=").append(logLeadershipTermId);
         builder.append(" appendPosition=").append(appendPosition);
         builder.append(" catchupPosition=").append(catchupPosition);
+        builder.append(" reason=");
+        buffer.getStringAscii(absoluteOffset, builder);
     }
 
     static void dissectCanvassPosition(

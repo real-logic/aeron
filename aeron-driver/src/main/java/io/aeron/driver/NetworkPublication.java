@@ -800,8 +800,9 @@ public final class NetworkPublication
         {
             timeOfLastSetupNs = nowNs;
 
-            final short flags = (!isResponse && Aeron.NULL_VALUE != responseCorrelationId) ?
-                SetupFlyweight.SEND_RESPONSE_SETUP_FLAG : 0;
+            final int flags =
+                (isSendResponseSetupFlag() ? SetupFlyweight.SEND_RESPONSE_SETUP_FLAG : 0) |
+                (hasGroupSemantics() ? SetupFlyweight.GROUP_FLAG : 0);
 
             setupBuffer.clear();
             setupHeader
@@ -813,7 +814,7 @@ public final class NetworkPublication
                 .termLength(termBufferLength)
                 .mtuLength(mtuLength)
                 .ttl(channelEndpoint.multicastTtl())
-                .flags(flags);
+                .flags((short)(flags & 0xFFFF));
 
             if (isSetupElicited)
             {
@@ -1136,5 +1137,15 @@ public final class NetworkPublication
     long consumerPosition()
     {
         return senderPosition.getVolatile();
+    }
+
+    private boolean isSendResponseSetupFlag()
+    {
+        return !isResponse && Aeron.NULL_VALUE != responseCorrelationId;
+    }
+
+    private boolean hasGroupSemantics()
+    {
+        return channelEndpoint().udpChannel().hasGroupSemantics();
     }
 }

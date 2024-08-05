@@ -113,7 +113,23 @@ public:
         forEach(
             [&](std::int32_t counterId, std::int32_t counterTypeId, const AtomicBuffer &keyBuffer, const std::string &label)
             {
-                if (typeId == counterTypeId && registrationId == getCounterRegistrationId(counterId))
+                if (NULL_COUNTER_ID == id && typeId == counterTypeId && registrationId == getCounterRegistrationId(counterId))
+                {
+                    id = counterId;
+                }
+            });
+
+        return id;
+    }
+
+    inline std::int32_t findByRegistrationId(const std::int64_t registrationId) const
+    {
+        std::int32_t id = NULL_COUNTER_ID;
+
+        forEach(
+            [&](std::int32_t counterId, std::int32_t counterTypeId, const AtomicBuffer &keyBuffer, const std::string &label)
+            {
+                if (NULL_COUNTER_ID == id && registrationId == getCounterRegistrationId(counterId))
                 {
                     id = counterId;
                 }

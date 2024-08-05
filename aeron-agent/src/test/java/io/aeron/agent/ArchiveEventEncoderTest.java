@@ -43,21 +43,19 @@ class ArchiveEventEncoderTest
         final TimeUnit from = DAYS;
         final TimeUnit to = MILLISECONDS;
         final long sessionId = Long.MAX_VALUE;
-        final long position = 9823742;
         final String payload = from.name() + STATE_SEPARATOR + to.name();
-        final int length = payload.length() + 2 * SIZE_OF_LONG + SIZE_OF_INT;
+        final int length = payload.length() + SIZE_OF_LONG + SIZE_OF_INT;
         final int captureLength = captureLength(length);
 
         final int encodedLength = encodeSessionStateChange(
-            buffer, offset, captureLength, length, from, to, sessionId, position);
+            buffer, offset, captureLength, length, from, to, sessionId);
 
         assertEquals(encodedLength(sessionStateChangeLength(from, to)), encodedLength);
         assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
         assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
         assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
         assertEquals(sessionId, buffer.getLong(offset + LOG_HEADER_LENGTH));
-        assertEquals(position, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG));
-        assertEquals(payload, buffer.getStringAscii(offset + LOG_HEADER_LENGTH + 2 * SIZE_OF_LONG));
+        assertEquals(payload, buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG));
     }
 
     @Test
@@ -67,7 +65,7 @@ class ArchiveEventEncoderTest
         final ChronoUnit to = ChronoUnit.MILLENNIA;
         final String payload = from.name() + STATE_SEPARATOR + to.name();
 
-        assertEquals(payload.length() + 2 * SIZE_OF_LONG + SIZE_OF_INT, sessionStateChangeLength(from, to));
+        assertEquals(payload.length() + SIZE_OF_LONG + SIZE_OF_INT, sessionStateChangeLength(from, to));
     }
 
     @Test

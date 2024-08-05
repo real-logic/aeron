@@ -491,13 +491,38 @@ int aeron_async_add_counter(
     size_t label_buffer_length);
 
 /**
- * Poll the completion of the aeron_async_add_counter call.
+ * Poll the completion of the <code>aeron_async_add_counter</code> or <code>aeron_async_add_static_counter</code> calls.
  *
  * @param counter to set if completed successfully.
  * @param async to check for completion.
  * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
  */
 int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_counter_t *async);
+
+/**
+ * Asynchronously allocates or returns an existing static counter instance using specified <code>type_id</code> and
+ * <code>registration_id</code>. Such counter cannot be deleted and its lifecycle is decoupled from the client that created it.
+ * Returns an object to use to determine when the counter is available.
+ *
+ * @param async object to use for polling completion.
+ * @param client to add the counter to.
+ * @param type_id for the counter.
+ * @param key_buffer for the counter.
+ * @param key_buffer_length for the counter.
+ * @param label_buffer for the counter.
+ * @param label_buffer_length for the counter.
+ * @param registration_id that uniquely identifies the counter.
+ * @return 0 for success or -1 for an error.
+ */
+int aeron_async_add_static_counter(
+    aeron_async_add_counter_t **async,
+    aeron_t *client,
+    int32_t type_id,
+    const uint8_t *key_buffer,
+    size_t key_buffer_length,
+    const char *label_buffer,
+    size_t label_buffer_length,
+    int64_t registration_id);
 
 typedef struct aeron_on_available_counter_pair_stct
 {
@@ -629,6 +654,7 @@ aeron_counter_metadata_descriptor_t;
 
 #define AERON_COUNTER_MAX_LABEL_LENGTH sizeof(((aeron_counter_metadata_descriptor_t *)NULL)->label)
 #define AERON_COUNTER_MAX_KEY_LENGTH sizeof(((aeron_counter_metadata_descriptor_t *)NULL)->key)
+#define AERON_COUNTER_MAX_CLIENT_NAME_LENGTH (100)
 
 #define AERON_COUNTER_RECORD_UNUSED (0)
 #define AERON_COUNTER_RECORD_ALLOCATED (1)
@@ -690,6 +716,17 @@ typedef void (*aeron_counters_reader_foreach_counter_func_t)(
  */
 void aeron_counters_reader_foreach_counter(
     aeron_counters_reader_t *counters_reader, aeron_counters_reader_foreach_counter_func_t func, void *clientd);
+
+/**
+ * Iterate over allocated counters and find the first matching a given type id and registration id.
+ *
+ * @param counters_reader
+ * @param type_id to find.
+ * @param registration_id to find.
+ * @return the counter id if found otherwise AERON_NULL_COUNTER_ID.
+ */
+int32_t aeron_counters_reader_find_by_type_id_and_registration_id(
+    aeron_counters_reader_t *counters_reader, int32_t type_id, int64_t registration_id);
 
 /**
  * Get the current max counter id.
@@ -1756,7 +1793,7 @@ int aeron_subscription_resolved_endpoint(aeron_subscription_t *subscription, con
 
 /**
  * Retrieves the channel URI for this subscription with any wildcard ports filled in. If the channel is not UDP or
- * does not have a wildcard port (`0`), then it will return the original URI.
+ * does not have a wildcard port (<code>0</code>), then it will return the original URI.
  *
  * @param subscription to query
  * @param uri buffer to hold the resolved uri
@@ -2331,7 +2368,7 @@ const char *aeron_errmsg(void);
  *
  * @param path buffer to store the path.
  * @param path_length space available in the buffer
- * @return -1 if there is an issue or the number of bytes written to path excluding the terminator `\0`. If this
+ * @return -1 if there is an issue or the number of bytes written to path excluding the terminator <code>\0</code>. If this
  * is equal to or greater than the path_length then the path has been truncated.
  */
 int aeron_default_path(char *path, size_t path_length);

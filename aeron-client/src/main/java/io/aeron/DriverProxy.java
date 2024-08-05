@@ -37,6 +37,7 @@ public final class DriverProxy
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
     private final DestinationMessageFlyweight destinationMessage = new DestinationMessageFlyweight();
     private final CounterMessageFlyweight counterMessage = new CounterMessageFlyweight();
+    private final StaticCounterMessageFlyweight staticCounterMessageFlyweight = new StaticCounterMessageFlyweight();
     private final RingBuffer toDriverCommandBuffer;
 
     /**
@@ -468,5 +469,61 @@ public final class DriverProxy
         return "DriverProxy{" +
             "clientId=" + clientId +
             '}';
+    }
+
+    long addStaticCounter(
+        final int typeId,
+        final DirectBuffer keyBuffer,
+        final int keyOffset,
+        final int keyLength,
+        final DirectBuffer labelBuffer,
+        final int labelOffset,
+        final int labelLength,
+        final long registrationId)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+        final int length = StaticCounterMessageFlyweight.computeLength(keyLength, labelLength);
+        final int index = toDriverCommandBuffer.tryClaim(ADD_STATIC_COUNTER, length);
+        if (index < 0)
+        {
+            throw new AeronException("could not write add counter command");
+        }
+
+        staticCounterMessageFlyweight
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .keyBuffer(keyBuffer, keyOffset, keyLength)
+            .labelBuffer(labelBuffer, labelOffset, labelLength)
+            .typeId(typeId)
+            .registrationId(registrationId)
+            .correlationId(correlationId)
+            .clientId(clientId);
+
+        toDriverCommandBuffer.commit(index);
+
+        return correlationId;
+    }
+
+    long addStaticCounter(final int typeId, final String label, final long registrationId)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+        final int length = StaticCounterMessageFlyweight.computeLength(0, label.length());
+        final int index = toDriverCommandBuffer.tryClaim(ADD_STATIC_COUNTER, length);
+        if (index < 0)
+        {
+            throw new AeronException("could not write add counter command");
+        }
+
+        staticCounterMessageFlyweight
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .keyBuffer(null, 0, 0)
+            .label(label)
+            .typeId(typeId)
+            .registrationId(registrationId)
+            .correlationId(correlationId)
+            .clientId(clientId);
+
+        toDriverCommandBuffer.commit(index);
+
+        return correlationId;
     }
 }

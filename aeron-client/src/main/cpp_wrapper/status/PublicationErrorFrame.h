@@ -1,6 +1,18 @@
-//
-// Created by mike on 31/07/24.
-//
+/*
+ * Copyright 2014-2024 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef AERON_PUBLICATIONERRORFRAME_H
 #define AERON_PUBLICATIONERRORFRAME_H
@@ -12,8 +24,15 @@ namespace aeron { namespace status {
 class PublicationErrorFrame
 {
 public:
-    PublicationErrorFrame(aeron_publication_error_values_t *errorValues) :
-        m_errorValues(errorValues), m_ownsErrorValuesPtr(false)
+    /**
+     * Constructs from a supplied C pointer to the aeron_publication_error_values_t and wraps over the top of it.
+     * By default it won't manage the underlying memory of the C structure.
+     *
+     * @param errorValues C structure holding the actual data.
+     * @param ownsErrorValuesPtr to indicate if the destructor of this class should free the underlying C memory.
+     */
+    PublicationErrorFrame(aeron_publication_error_values_t *errorValues, bool ownsErrorValuesPtr = false) :
+        m_errorValues(errorValues), m_ownsErrorValuesPtr(ownsErrorValuesPtr)
     {
     }
 

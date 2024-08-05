@@ -2581,6 +2581,36 @@ int aeron_client_conductor_on_error_frame(aeron_client_conductor_t *conductor, a
     return 0;
 }
 
+int aeron_publication_error_values_copy(aeron_publication_error_values_t **dst, aeron_publication_error_values_t *src)
+{
+    if (NULL == src)
+    {
+        AERON_SET_ERR(-1, "%s", "src must not be NULL");
+        return -1;
+    }
+
+    if (NULL == dst)
+    {
+        AERON_SET_ERR(-1, "%s", "dst must not be NULL");
+        return -1;
+    }
+
+    size_t error_values_size = sizeof(*src) + (size_t)src->error_message_length;
+    if (aeron_alloc((void **)dst, error_values_size) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    memcpy((void *)*dst, (void *)src, error_values_size);
+    return 0;
+}
+
+void aeron_publication_error_values_delete(aeron_publication_error_values_t *to_delete)
+{
+    aeron_free(to_delete);
+}
+
 aeron_subscription_t *aeron_client_conductor_find_subscription_by_id(
     aeron_client_conductor_t *conductor, int64_t registration_id)
 {

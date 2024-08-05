@@ -74,5 +74,6 @@ if (AERON_UNIT_TESTS)
     aeron_client_wrapper_test(imageFragmentAssemblerTest ImageFragmentAssemblerTest.cpp)
     aeron_client_wrapper_test(controlledFragmentAssemblerTest ControlledFragmentAssemblerTest.cpp)
     aeron_client_wrapper_test(imageControlledFragmentAssemblerTest ImageControlledFragmentAssemblerTest.cpp)
+    aeron_client_wrapper_test(rejectImageTest RejectImageTest.cpp)
 
 endif ()

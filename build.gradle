@@ -59,7 +59,7 @@ def agronaVersion = '1.22.0'
 def agronaVersionRange = '[1.22.0,2.0[' // allow any release >= 1.22.0 and < 2.0.0
 def sbeVersion = '1.32.0'
 def checkstyleVersion = '9.3'
-def hamcrestVersion = '2.2'
+def hamcrestVersion = '3.0'
 def junitVersion = '5.10.3'
 def junitPlatformVersion = '1.10.3'
 def mockitoVersion = '4.11.0'

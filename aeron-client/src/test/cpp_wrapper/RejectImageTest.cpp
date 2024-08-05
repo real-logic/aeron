@@ -21,8 +21,7 @@
 #include "EmbeddedMediaDriver.h"
 #include "Aeron.h"
 #include "TestUtil.h"
-#include <sys/socket.h>
-#include <arpa/inet.h>
+#include "aeron_socket.h"
 
 using namespace aeron;
 
@@ -45,7 +44,7 @@ public:
         return reader.metaDataBuffer().getInt32(offset + CountersReader::TYPE_ID_OFFSET);
     }
 
-    std::string addressAsString(int16_t addressType, uint8_t *address)
+    static std::string addressAsString(int16_t addressType, uint8_t *address)
     {
         if (AERON_RESPONSE_ADDRESS_TYPE_IPV4 == addressType)
         {
@@ -107,7 +106,7 @@ TEST_P(RejectImageTest, shouldRejectImage)
 
     std::string message = "Hello World!";
 
-    const uint8_t *data = reinterpret_cast<const uint8_t *>(message.c_str());
+    auto *data = reinterpret_cast<const uint8_t *>(message.c_str());
     POLL_FOR(0 < pub->offer(data, message.length()), invoker);
     POLL_FOR(0 < sub->poll(
         [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)
@@ -161,7 +160,7 @@ TEST_P(RejectImageTest, shouldRejectImageForExclusive)
 
     std::string message = "Hello World!";
 
-    const uint8_t *data = reinterpret_cast<const uint8_t *>(message.c_str());
+    auto *data = reinterpret_cast<const uint8_t *>(message.c_str());
     POLL_FOR(0 < pub->offer(data, message.length()), invoker);
     POLL_FOR(0 < sub->poll(
         [&](concurrent::AtomicBuffer &buffer, util::index_t offset, util::index_t length, Header &header)

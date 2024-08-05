@@ -21,8 +21,6 @@
 #include "EmbeddedMediaDriver.h"
 #include "Aeron.h"
 #include "TestUtil.h"
-#include <sys/socket.h>
-#include <arpa/inet.h>
 
 using namespace aeron;
 

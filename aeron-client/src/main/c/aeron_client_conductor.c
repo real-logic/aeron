@@ -2973,7 +2973,7 @@ int aeron_client_conductor_reject_image(
     aeron_reject_image_command_t *command = (aeron_reject_image_command_t *)ptr;
     command->image_correlation_id = image_correlation_id;
     command->position = position;
-    command->reason_length = reason_length;
+    command->reason_length = (int32_t)reason_length;
     memcpy(ptr + offsetof(aeron_reject_image_command_t, reason_text), reason, reason_length);
     command->reason_text[reason_length] = '\0';
 

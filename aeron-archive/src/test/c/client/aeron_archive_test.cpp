@@ -48,12 +48,27 @@ void fragment_handler(void *clientd, const uint8_t *buffer, size_t length, aeron
     cd->position = aeron_header_position(header);
 }
 
+typedef struct credentials_supplier_clientd_stct
+{
+    aeron_archive_encoded_credentials_t *credentials;
+    aeron_archive_encoded_credentials_t *on_challenge_credentials;
+}
+credentials_supplier_clientd_t;
+
 aeron_archive_encoded_credentials_t default_creds = { "admin:admin", 11 };
 aeron_archive_encoded_credentials_t bad_creds = { "admin:NotAdmin", 14 };
 
+credentials_supplier_clientd_t default_creds_clientd = { &default_creds, nullptr };
+
 static aeron_archive_encoded_credentials_t *encoded_credentials_supplier(void *clientd)
 {
-    return (aeron_archive_encoded_credentials_t *)clientd;
+    return ((credentials_supplier_clientd_t *)clientd)->credentials;
+}
+
+static aeron_archive_encoded_credentials_t *encoded_credentials_on_challenge(aeron_archive_encoded_credentials_t *encoded_challenge, void *clientd)
+{
+    fprintf(stderr, "GOT THE CHALLENGE CALLBACK\n");
+    return ((credentials_supplier_clientd_t *)clientd)->on_challenge_credentials;
 }
 
 class AeronCArchiveTestBase
@@ -108,7 +123,7 @@ public:
             encoded_credentials_supplier,
             nullptr,
             nullptr,
-            &default_creds));
+            &default_creds_clientd));
         ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
 
         m_aeron = aeron_archive_get_aeron(m_archive);
@@ -458,7 +473,7 @@ TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
         encoded_credentials_supplier,
         nullptr,
         nullptr,
-        &default_creds));
+        &default_creds_clientd));
     ASSERT_EQ(0, aeron_archive_async_connect(&async, ctx));
     ASSERT_EQ(0, aeron_archive_async_connect_poll(&archive, async));
 
@@ -490,7 +505,7 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchive)
         encoded_credentials_supplier,
         nullptr,
         nullptr,
-        &default_creds));
+        &default_creds_clientd));
     ASSERT_EQ(0, aeron_archive_connect(&archive, ctx));
     connect();
 
@@ -1381,6 +1396,8 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
 TEST_F(AeronCArchiveTest, shouldFailForIncorrectInitialCredentials)
 {
+    credentials_supplier_clientd_t bad_creds_clientd = { &bad_creds, nullptr };
+
     ASSERT_EQ(0, aeron_archive_context_init(&m_ctx));
     ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
@@ -1388,7 +1405,25 @@ TEST_F(AeronCArchiveTest, shouldFailForIncorrectInitialCredentials)
         encoded_credentials_supplier,
         nullptr,
         nullptr,
-        &bad_creds));
+        &bad_creds_clientd));
 
     ASSERT_EQ(-1, aeron_archive_connect(&m_archive, m_ctx));
+}
+
+TEST_F(AeronCArchiveTest, shouldBeAbleToHandleBeingChallenged)
+{
+    aeron_archive_encoded_credentials_t creds = { "admin:adminC", 12 };
+    aeron_archive_encoded_credentials_t challenge_creds = { "admin:CSadmin", 13 };
+    credentials_supplier_clientd_t creds_clientd = { &creds, &challenge_creds };
+
+    ASSERT_EQ(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        m_ctx,
+        encoded_credentials_supplier,
+        encoded_credentials_on_challenge,
+        nullptr,
+        &creds_clientd));
+
+    ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
 }

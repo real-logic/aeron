@@ -58,4 +58,6 @@ int32_t aeron_archive_control_response_poller_version(aeron_archive_control_resp
 
 char *aeron_archive_control_response_poller_error_message(aeron_archive_control_response_poller_t *poller);
 
+aeron_archive_encoded_credentials_t *aeron_archive_control_response_poller_encoded_challenge(aeron_archive_control_response_poller_t *poller);
+
 #endif // AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_H

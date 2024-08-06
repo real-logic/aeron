@@ -26,6 +26,7 @@
 #include "c/aeron_archive_client/recordingSignalEvent.h"
 
 #define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_MAX_LEN 10000 // TODO
+#define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ENCODED_CHALLENGE_BUFFER_MAX_LEN 10000 // TODO
 
 struct aeron_archive_control_response_poller_stct
 {
@@ -44,6 +45,9 @@ struct aeron_archive_control_response_poller_stct
     int32_t version;
 
     char error_message[AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_MAX_LEN];
+    char encoded_challenge_buffer[AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ENCODED_CHALLENGE_BUFFER_MAX_LEN];
+
+    aeron_archive_encoded_credentials_t encoded_challenge;
 
     int code_value;
 
@@ -177,6 +181,11 @@ char *aeron_archive_control_response_poller_error_message(aeron_archive_control_
     return poller->error_message;
 }
 
+aeron_archive_encoded_credentials_t *aeron_archive_control_response_poller_encoded_challenge(aeron_archive_control_response_poller_t *poller)
+{
+    return &poller->encoded_challenge;
+}
+
 /* *************** */
 
 void aeron_archive_control_response_poller_reset(aeron_archive_control_response_poller_t *poller)
@@ -192,6 +201,10 @@ void aeron_archive_control_response_poller_reset(aeron_archive_control_response_
     poller->version = 0;
 
     memset(poller->error_message, 0, AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_MAX_LEN);
+    memset(poller->encoded_challenge_buffer, 0, AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ENCODED_CHALLENGE_BUFFER_MAX_LEN);
+
+    poller->encoded_challenge.data = NULL;
+    poller->encoded_challenge.length = 0;
 
     poller->code_value = -1;
 
@@ -269,7 +282,38 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
         }
         case AERON_ARCHIVE_CLIENT_CHALLENGE_SBE_TEMPLATE_ID:
         {
-            // TODO
+            struct aeron_archive_client_challenge challenge;
+
+            aeron_archive_client_challenge_wrap_for_decode(
+                &challenge,
+                (char *)buffer,
+                aeron_archive_client_messageHeader_encoded_length(),
+                aeron_archive_client_challenge_sbe_block_length(),
+                aeron_archive_client_challenge_sbe_schema_version(),
+                length);
+
+            poller->control_session_id = aeron_archive_client_challenge_controlSessionId(&challenge);
+            poller->correlation_id = aeron_archive_client_challenge_correlationId(&challenge);
+            poller->relevant_id = AERON_NULL_VALUE;
+            poller->version = aeron_archive_client_challenge_version(&challenge);
+
+            poller->code_value = aeron_archive_client_controlResponseCode_NULL_VALUE;
+            poller->is_code_error = false;
+            poller->is_code_ok = false;
+
+            uint32_t encoded_challenge_length = aeron_archive_client_challenge_encodedChallenge_length(&challenge);
+            aeron_archive_client_challenge_get_encodedChallenge(
+                &challenge,
+                poller->encoded_challenge_buffer,
+                encoded_challenge_length);
+
+            poller->encoded_challenge.data = poller->encoded_challenge_buffer;
+            poller->encoded_challenge.length = encoded_challenge_length;
+
+            poller->is_control_response = false;
+            poller->was_challenged = true;
+            poller->is_poll_complete = true;
+
             return AERON_ACTION_BREAK;
         }
         case AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_EVENT_SBE_TEMPLATE_ID:

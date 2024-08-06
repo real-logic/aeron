@@ -31,6 +31,9 @@ typedef struct aeron_archive_credentials_supplier_stct
 aeron_archive_credentials_supplier_t;
 
 aeron_archive_encoded_credentials_t *aeron_archive_credentials_supplier_encoded_credentials(aeron_archive_credentials_supplier_t *supplier);
+aeron_archive_encoded_credentials_t *aeron_archive_credentials_supplier_on_challenge(
+    aeron_archive_credentials_supplier_t *supplier,
+    aeron_archive_encoded_credentials_t *encoded_challenge);
 void aeron_archive_credentials_supplier_on_free(aeron_archive_credentials_supplier_t *supplier, aeron_archive_encoded_credentials_t *credentials);
 
 #endif //AERON_ARCHIVE_CREDENTIALS_SUPPLIER_H

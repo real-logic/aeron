@@ -45,6 +45,12 @@ bool aeron_archive_proxy_archive_id(
     int64_t correlation_id,
     int64_t control_session_id);
 
+bool aeron_archive_proxy_challenge_response(
+    aeron_archive_proxy_t *archive_proxy,
+    aeron_archive_encoded_credentials_t *encoded_credentials,
+    int64_t correlation_id,
+    int64_t control_session_id);
+
 bool aeron_archive_proxy_close_session(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id);

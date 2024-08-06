@@ -25,6 +25,7 @@
 
 #include "c/aeron_archive_client/authConnectRequest.h"
 #include "c/aeron_archive_client/archiveIdRequest.h"
+#include "c/aeron_archive_client/challengeResponse.h"
 #include "c/aeron_archive_client/closeSessionRequest.h"
 #include "c/aeron_archive_client/startRecordingRequest2.h"
 #include "c/aeron_archive_client/recordingPositionRequest.h"
@@ -145,6 +146,33 @@ bool aeron_archive_proxy_archive_id(
     return aeron_archive_proxy_offer_once(
         archive_proxy,
         aeron_archive_client_archiveIdRequest_encoded_length(&codec)) > 0;
+}
+
+bool aeron_archive_proxy_challenge_response(
+    aeron_archive_proxy_t *archive_proxy,
+    aeron_archive_encoded_credentials_t *encoded_credentials,
+    int64_t correlation_id,
+    int64_t control_session_id)
+{
+    struct aeron_archive_client_challengeResponse codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_challengeResponse_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_challengeResponse_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_challengeResponse_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_challengeResponse_put_encodedCredentials(
+        &codec,
+        encoded_credentials->data,
+        encoded_credentials->length);
+
+    return aeron_archive_proxy_offer_once(
+        archive_proxy,
+        aeron_archive_client_challengeResponse_encoded_length(&codec)) > 0;
 }
 
 bool aeron_archive_proxy_close_session(

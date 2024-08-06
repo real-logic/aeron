@@ -52,6 +52,7 @@ struct aeron_archive_async_connect_stct
     aeron_async_add_exclusive_publication_t *async_add_exclusive_publication;
     int64_t exclusive_publication_id;
     aeron_exclusive_publication_t *exclusive_publication;
+    aeron_archive_encoded_credentials_t *encoded_credentials_from_challenge;
     int64_t deadline_ns;
     aeron_archive_proxy_t *archive_proxy;
     aeron_archive_control_response_poller_t *control_response_poller;
@@ -130,6 +131,7 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
     _async->async_add_exclusive_publication = async_add_exclusive_publication;
     _async->exclusive_publication_id = exclusive_publication_id;
     _async->exclusive_publication = NULL;
+    _async->encoded_credentials_from_challenge = NULL;
     _async->deadline_ns = aeron_nano_clock() + ctx->message_timeout_ns;
     _async->archive_proxy = NULL;
     _async->control_response_poller = NULL;
@@ -307,7 +309,20 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
 
     if (SEND_CHALLENGE_RESPONSE == async->state)
     {
-        // TODO
+        if (!aeron_archive_proxy_challenge_response(
+            async->archive_proxy,
+            async->encoded_credentials_from_challenge,
+            async->correlation_id,
+            async->control_session_id))
+        {
+            return 0;
+        }
+
+        aeron_archive_credentials_supplier_on_free(
+            &async->ctx->credentials_supplier,
+            async->encoded_credentials_from_challenge);
+
+        async->encoded_credentials_from_challenge = NULL;
 
         async->state = AWAIT_CHALLENGE_RESPONSE;
     }
@@ -325,8 +340,13 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
 
             if (aeron_archive_control_response_poller_was_challenged(poller))
             {
-                // TODO
-                return -1;
+                async->encoded_credentials_from_challenge =
+                    aeron_archive_credentials_supplier_on_challenge(
+                        &async->ctx->credentials_supplier,
+                        aeron_archive_control_response_poller_encoded_challenge(poller));
+
+                async->correlation_id = aeron_next_correlation_id(async->aeron);
+                async->state = SEND_CHALLENGE_RESPONSE;
             }
             else
             {
@@ -340,10 +360,17 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
                     }
 
                     aeron_archive_proxy_close_session(async->archive_proxy, async->control_session_id);
+                    AERON_SET_ERR(-1, "unexpected response code: code=%i", aeron_archive_control_response_poller_code_value(poller));
                     goto cleanup;
                 }
 
-                if (AWAIT_CONNECT_RESPONSE == async->state)
+                if (AWAIT_ARCHIVE_ID_RESPONSE == async->state)
+                {
+                    int64_t archive_id = aeron_archive_control_response_poller_relevant_id(poller);
+
+                    return aeron_archive_async_connect_transition_to_done(aeron_archive, async, archive_id);
+                }
+                else // AWAIT_CONNECT_RESPONSE or AWAIT_CHALLENGE_RESPONSE
                 {
                     int32_t archive_protocol_version = aeron_archive_control_response_poller_version(poller);
 
@@ -356,17 +383,6 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
                         async->correlation_id = aeron_next_correlation_id(async->aeron);
                         async->state = SEND_ARCHIVE_ID_REQUEST;
                     }
-                }
-                else if (AWAIT_ARCHIVE_ID_RESPONSE == async->state)
-                {
-                    int64_t archive_id = aeron_archive_control_response_poller_relevant_id(poller);
-
-                    return aeron_archive_async_connect_transition_to_done(aeron_archive, async, archive_id);
-                }
-                else
-                {
-                    // TODO
-                    return -1;
                 }
             }
         }
@@ -475,6 +491,13 @@ int aeron_archive_async_connect_delete(aeron_archive_async_connect_t *async)
     {
         aeron_archive_control_response_poller_close(async->control_response_poller);
         async->control_response_poller = NULL;
+    }
+
+    if (NULL != async->encoded_credentials_from_challenge)
+    {
+        aeron_archive_credentials_supplier_on_free(
+            &async->ctx->credentials_supplier,
+            async->encoded_credentials_from_challenge);
     }
 
     aeron_free(async);

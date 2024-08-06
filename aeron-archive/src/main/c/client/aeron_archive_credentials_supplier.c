@@ -22,6 +22,13 @@ aeron_archive_encoded_credentials_t *aeron_archive_credentials_supplier_encoded_
     return supplier->encoded_credentials(supplier->clientd);
 }
 
+aeron_archive_encoded_credentials_t *aeron_archive_credentials_supplier_on_challenge(
+    aeron_archive_credentials_supplier_t *supplier,
+    aeron_archive_encoded_credentials_t *encoded_challenge)
+{
+    return supplier->on_challenge(encoded_challenge, supplier->clientd);
+}
+
 void aeron_archive_credentials_supplier_on_free(aeron_archive_credentials_supplier_t *supplier, aeron_archive_encoded_credentials_t *credentials)
 {
     if (NULL != supplier->on_free)

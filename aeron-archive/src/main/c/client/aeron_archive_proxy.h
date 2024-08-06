@@ -135,4 +135,10 @@ bool aeron_archive_proxy_list_recording_subscriptions(
     int32_t stream_id,
     bool apply_stream_id);
 
+bool aeron_archive_proxy_purge_recording(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id);
+
 #endif //AERON_ARCHIVE_PROXY_H

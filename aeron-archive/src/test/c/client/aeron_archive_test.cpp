@@ -1427,3 +1427,108 @@ TEST_F(AeronCArchiveTest, shouldBeAbleToHandleBeingChallenged)
 
     ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
 }
+
+TEST_F(AeronCArchiveTest, shouldExceptionForIncorrectChallengeCredentials)
+{
+    aeron_archive_encoded_credentials_t creds = { "admin:adminC", 12 };
+    aeron_archive_encoded_credentials_t bad_challenge_creds = { "admin:adminNoCS", 15 };
+    credentials_supplier_clientd_t creds_clientd = { &creds, &bad_challenge_creds };
+
+    ASSERT_EQ(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        m_ctx,
+        encoded_credentials_supplier,
+        encoded_credentials_on_challenge,
+        nullptr,
+        &creds_clientd));
+
+    ASSERT_EQ(-1, aeron_archive_connect(&m_archive, m_ctx));
+}
+
+TEST_F(AeronCArchiveTest, shouldPurgeStoppedRecording)
+{
+    int32_t session_id;
+    int64_t stop_position;
+
+    connect();
+
+    int64_t subscription_id;
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id,
+        m_archive,
+        m_recordingChannel.c_str(),
+        m_recordingStreamId,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        false));
+
+    {
+        aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(m_aeron, m_recordingChannel, m_recordingStreamId);
+
+        session_id = aeron_publication_session_id(publication);
+
+        setupCounters(session_id);
+
+        offerMessages(publication);
+        consumeMessages(subscription);
+
+        stop_position = aeron_publication_position(publication);
+
+        waitUntilCaughtUp(stop_position);
+
+        int64_t found_recording_position;
+        EXPECT_EQ(0, aeron_archive_get_recording_position(
+            &found_recording_position,
+            m_archive,
+            m_recording_id_from_counter));
+        EXPECT_EQ(stop_position, found_recording_position);
+
+        int64_t found_stop_position;
+        EXPECT_EQ(0, aeron_archive_get_stop_position(
+            &found_stop_position,
+            m_archive,
+            m_recording_id_from_counter));
+        EXPECT_EQ(AERON_NULL_VALUE, found_stop_position);
+    }
+
+    EXPECT_EQ(0, aeron_archive_stop_recording(
+        m_archive,
+        subscription_id));
+
+    int64_t found_recording_id;
+    const char *channel_fragment = "endpoint=localhost:3333";
+    EXPECT_EQ(0, aeron_archive_find_last_matching_recording(
+        &found_recording_id,
+        m_archive,
+        0,
+        channel_fragment,
+        m_recordingStreamId,
+        session_id));
+
+    EXPECT_EQ(m_recording_id_from_counter, found_recording_id);
+
+    int64_t found_stop_position;
+    EXPECT_EQ(0, aeron_archive_get_stop_position(
+        &found_stop_position,
+        m_archive,
+        m_recording_id_from_counter));
+    EXPECT_EQ(stop_position, found_stop_position);
+
+    EXPECT_EQ(0, aeron_archive_purge_recording(m_archive, m_recording_id_from_counter));
+
+    int32_t count = 1234; // <-- just to make sure later when it's zero it's because it was explicitly set to 0.
+
+    recording_descriptor_consumer_clientd_t clientd;
+    clientd.verify_recording_id = false;
+    clientd.verify_stream_id = false;
+    clientd.verify_start_equals_stop_position = true;
+
+    EXPECT_EQ(0, aeron_archive_list_recording(
+        &count,
+        m_archive,
+        found_recording_id,
+        recording_descriptor_consumer,
+        &clientd));
+    EXPECT_EQ(0, count);
+}

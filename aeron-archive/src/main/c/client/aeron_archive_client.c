@@ -699,6 +699,37 @@ int aeron_archive_list_recording_subscriptions(
     return rc;
 }
 
+int aeron_archive_purge_recording(
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_purge_recording(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        NULL,
+        aeron_archive,
+        "AeronArchive::purgeRecording",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive)
 {
     return aeron_archive->aeron;

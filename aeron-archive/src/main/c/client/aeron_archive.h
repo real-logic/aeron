@@ -185,6 +185,10 @@ int aeron_archive_list_recording_subscriptions(
     aeron_archive_recording_subscription_descriptor_consumer_func_t recording_subscription_descriptor_consumer,
     void *recording_subscription_descriptor_consumer_clientd);
 
+int aeron_archive_purge_recording(
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id);
+
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
 int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
 aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);

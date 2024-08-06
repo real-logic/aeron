@@ -22,7 +22,6 @@ import io.aeron.cluster.client.ClusterException;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.Strings;
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.Long2LongHashMap;
@@ -31,11 +30,9 @@ import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -50,8 +47,12 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.lang.Math.max;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.nio.file.StandardOpenOption.*;
-import static org.agrona.BitUtil.*;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.align;
 
 /**
  * A log of recordings which make up the history of a Raft log across leadership terms. Entries are in order.
@@ -63,24 +64,11 @@ import static org.agrona.BitUtil.*;
  * that a snapshot is taken midterm and therefore the latest state is the snapshot plus the log of messages which
  * got appended to the log after the snapshot was taken.
  * <p>
- * Recording log header as follows:
+ * Record layout as follows:
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                  0xFFA3F010 (Magic Number)                    |
- *  |                                                               |
- *  +---------------------------------------------------------------+
- *  |                          Version                              |
- *  +---------------------------------------------------------------+
- *  |                          Reserved                             |
- *  +---------------------------------------------------------------+
- * </pre>
- * Recording log entry as follows:
- * <pre>
- *   0                   1                   2                   3
- *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- *  +---------------------------------------------------------------+
  *  |                        Recording ID                           |
  *  |                                                               |
  *  +---------------------------------------------------------------+
@@ -114,13 +102,10 @@ import static org.agrona.BitUtil.*;
  * </pre>
  * <p>The reserved bit on the entry type indicates whether the entry was marked invalid.</p>
  */
-public final class RecordingLog implements AutoCloseable
+public final class UnversionedRecordingLog implements AutoCloseable
 {
-    public static final long MAGIC_NUMBER = 0xFFA3F010_00000000L;
-    private static final int HEADER_SIZE = 64;
-
     /**
-     * Representation of the entry in the {@link RecordingLog}.
+     * Representation of the entry in the {@link UnversionedRecordingLog}.
      */
     public static final class Entry
     {
@@ -188,7 +173,7 @@ public final class RecordingLog implements AutoCloseable
          * @param type                of the entry as a log of a term or a snapshot.
          * @param archiveEndpoint     archive where the snapshot is located, if
          *                            <code>entryType == ENTRY_TYPE_STANDBY_SNAPSHOT</code>.
-         * @param isValid             indicates if the entry is valid, {@link RecordingLog#invalidateEntry(long, int)}
+         * @param isValid             indicates if the entry is valid, {@link UnversionedRecordingLog#invalidateEntry(long, int)}
          *                            marks it invalid.
          * @param position            of the entry on disk.
          * @param entryIndex          of the entry on disk.
@@ -377,7 +362,7 @@ public final class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Representation of a snapshot entry in the {@link RecordingLog}.
+     * Representation of a snapshot entry in the {@link UnversionedRecordingLog}.
      */
     public static final class Snapshot
     {
@@ -412,7 +397,7 @@ public final class RecordingLog implements AutoCloseable
         public final int serviceId;
 
         /**
-         * A snapshot entry in the {@link RecordingLog}.
+         * A snapshot entry in the {@link UnversionedRecordingLog}.
          *
          * @param recordingId         of the entry in an archive.
          * @param leadershipTermId    in which the snapshot was taken.
@@ -454,7 +439,7 @@ public final class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Representation of a log entry in the {@link RecordingLog}.
+     * Representation of a log entry in the {@link UnversionedRecordingLog}.
      */
     public static final class Log
     {
@@ -509,7 +494,7 @@ public final class RecordingLog implements AutoCloseable
         public final int sessionId;
 
         /**
-         * Construct a representation of a log entry in the {@link RecordingLog}.
+         * Construct a representation of a log entry in the {@link UnversionedRecordingLog}.
          *
          * @param recordingId         for the recording in an archive.
          * @param leadershipTermId    identity for the leadership term.
@@ -762,7 +747,7 @@ public final class RecordingLog implements AutoCloseable
      * @param parentDir in which the log will be created.
      * @param createNew create a new recording log if one does not exist.
      */
-    public RecordingLog(final File parentDir, final boolean createNew)
+    public UnversionedRecordingLog(final File parentDir, final boolean createNew)
     {
         final File logFile = new File(parentDir, RECORDING_LOG_FILE_NAME);
         final boolean isNewFile = !logFile.exists();
@@ -775,11 +760,6 @@ public final class RecordingLog implements AutoCloseable
 
         try
         {
-            if (!isNewFile)
-            {
-                checkForVersionAndMigrate(logFile);
-            }
-
             fileChannel = FileChannel.open(logFile.toPath(), openOptions);
 
             if (isNewFile)
@@ -788,11 +768,6 @@ public final class RecordingLog implements AutoCloseable
             }
             else
             {
-                if (isMagicNumberInvalid(fileChannel))
-                {
-                    throw new IllegalStateException("Failed to migrate correctly");
-                }
-
                 reload();
             }
         }
@@ -800,54 +775,6 @@ public final class RecordingLog implements AutoCloseable
         {
             throw new ClusterException(ex);
         }
-    }
-
-    private void checkForVersionAndMigrate(final File logFile) throws IOException
-    {
-        if (requiresMigration(logFile))
-        {
-            final File oldMigratedFile = new File(logFile.getParentFile(), RECORDING_LOG_FILE_NAME + ".migrated");
-            if (!logFile.renameTo(oldMigratedFile))
-            {
-                throw new IOException("Unable to backup old file to new one");
-            }
-
-            final File newFile = new File(logFile.getParentFile(), RECORDING_LOG_FILE_NAME);
-            final MutableDirectBuffer header = new UnsafeBuffer(new byte[HEADER_SIZE]);
-            // TODO: Offset constants
-            header.putLong(0, MAGIC_NUMBER, LITTLE_ENDIAN);
-            header.putInt(8, 0 /* TODO: version */, LITTLE_ENDIAN);
-
-            try (FileOutputStream outputStream = new FileOutputStream(newFile))
-            {
-                outputStream.write(header.byteArray());
-                Files.copy(oldMigratedFile.toPath(), outputStream);
-            }
-        }
-    }
-
-    private boolean requiresMigration(final File logFile) throws IOException
-    {
-        if (logFile.length() < HEADER_SIZE)
-        {
-            return true;
-        }
-
-        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), READ))
-        {
-            return isMagicNumberInvalid(fileChannel);
-        }
-    }
-
-    private static boolean isMagicNumberInvalid(final FileChannel fileChannel) throws IOException
-    {
-        final DirectBuffer header = new UnsafeBuffer(ByteBuffer.allocateDirect(HEADER_SIZE));
-        if (HEADER_SIZE != fileChannel.read(header.byteBuffer()))
-        {
-            throw new IOException("Unable to read header");
-        }
-        final long magicNumber = header.getLong(0, LITTLE_ENDIAN);
-        return magicNumber != MAGIC_NUMBER;
     }
 
     /**
@@ -913,8 +840,8 @@ public final class RecordingLog implements AutoCloseable
 
         try
         {
-            long filePosition = HEADER_SIZE;
-            long consumePosition = filePosition;
+            long filePosition = 0;
+            long consumePosition = 0;
 
             while (true)
             {
@@ -1103,7 +1030,7 @@ public final class RecordingLog implements AutoCloseable
      * Get the {@link Entry#timestamp} for a term.
      *
      * @param leadershipTermId to get {@link Entry#timestamp} for.
-     * @return the timestamp or {@link io.aeron.Aeron#NULL_VALUE} if not found.
+     * @return the timestamp or {@link Aeron#NULL_VALUE} if not found.
      */
     public long getTermTimestamp(final long leadershipTermId)
     {
@@ -1172,7 +1099,7 @@ public final class RecordingLog implements AutoCloseable
      * @param snapshots to construct plan from.
      * @return a new {@link RecoveryPlan} for the cluster.
      */
-    public static RecoveryPlan createRecoveryPlan(final ArrayList<RecordingLog.Snapshot> snapshots)
+    public static RecoveryPlan createRecoveryPlan(final ArrayList<UnversionedRecordingLog.Snapshot> snapshots)
     {
         long lastLeadershipTermId = NULL_VALUE;
         long lastTermBaseLogPosition = 0;

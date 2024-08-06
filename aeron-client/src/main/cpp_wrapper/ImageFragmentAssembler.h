@@ -58,6 +58,11 @@ public:
         aeron_image_fragment_assembler_delete(m_fragment_assembler);
     }
 
+    ImageFragmentAssembler(ImageFragmentAssembler& other) = delete;
+    ImageFragmentAssembler(ImageFragmentAssembler&& other) = delete;
+    ImageFragmentAssembler& operator=(ImageFragmentAssembler& other) = delete;
+    ImageFragmentAssembler& operator=(ImageFragmentAssembler&& other) = delete;
+
     /**
      * Compose a fragment_handler_t that calls the ImageFragmentAssembler instance for reassembly. Suitable for
      * passing to Image::poll(fragment_handler_t, int).

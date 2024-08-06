@@ -352,6 +352,19 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
             break;
         }
 
+        case AERON_RESPONSE_ON_STATIC_COUNTER:
+        {
+            aeron_static_counter_response_t *response = (aeron_static_counter_response_t *)buffer;
+
+            if (length < sizeof(aeron_static_counter_response_t))
+            {
+                goto malformed_command;
+            }
+
+            result = aeron_client_conductor_on_static_counter(conductor, response);
+            break;
+        }
+
         default:
         {
 
@@ -1106,7 +1119,14 @@ void aeron_client_conductor_on_cmd_close_counter(void *clientd, void *item)
     aeron_notification_t on_close_complete = counter->on_close_complete;
     void *on_close_complete_clientd = counter->on_close_complete_clientd;
 
-    aeron_int64_to_ptr_hash_map_remove(&conductor->resource_by_id_map, counter->registration_id);
+    if (NULL != aeron_int64_to_ptr_hash_map_remove(&conductor->resource_by_id_map, counter->registration_id))
+    {
+        if (aeron_client_conductor_offer_remove_command(
+            conductor, counter->registration_id, AERON_COMMAND_REMOVE_COUNTER) < 0)
+        {
+            return;
+        }
+    }
 
     aeron_counter_delete(counter);
 
@@ -1114,6 +1134,71 @@ void aeron_client_conductor_on_cmd_close_counter(void *clientd, void *item)
     {
         on_close_complete(on_close_complete_clientd);
     }
+}
+
+void aeron_client_conductor_on_cmd_add_static_counter(void *clientd, void *item)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_async_add_counter_t *async = (aeron_async_add_counter_t *)item;
+
+    const size_t command_length =
+        sizeof(aeron_static_counter_command_t) +
+        sizeof(int32_t) +
+        (size_t)(AERON_ALIGN(async->counter.key_buffer_length, sizeof(int32_t))) +
+        sizeof(int32_t) +
+        (size_t)async->counter.label_buffer_length;
+
+    int ensure_capacity_result = 0, rb_offer_fail_count = 0;
+
+    int32_t offset;
+    while ((offset = aeron_mpsc_rb_try_claim(
+        &conductor->to_driver_buffer, AERON_COMMAND_ADD_STATIC_COUNTER, command_length)) < 0)
+    {
+        if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
+        {
+            char err_buffer[AERON_MAX_PATH];
+
+            snprintf(err_buffer, sizeof(err_buffer) - 1, "ADD_STATIC_COUNTER could not be sent (%s:%d)",
+                __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
+            return;
+        }
+
+        sched_yield();
+    }
+
+    uint8_t *ptr = (conductor->to_driver_buffer.buffer + offset);
+    aeron_static_counter_command_t *command = (aeron_static_counter_command_t *)ptr;
+    char *cursor = (char *)(ptr + sizeof(aeron_static_counter_command_t));
+
+    command->correlated.correlation_id = async->registration_id;
+    command->correlated.client_id = conductor->client_id;
+    command->registration_id = async->counter.registration_id;
+    command->type_id = async->counter.type_id;
+
+    memcpy(cursor, &async->counter.key_buffer_length, sizeof(int32_t));
+    cursor += sizeof(int32_t);
+    memcpy(cursor, async->counter.key_buffer, (size_t)async->counter.key_buffer_length);
+    cursor += AERON_ALIGN(async->counter.key_buffer_length, sizeof(int32_t));
+    memcpy(cursor, &async->counter.label_buffer_length, sizeof(int32_t));
+    cursor += sizeof(int32_t);
+    memcpy(cursor, async->counter.label_buffer, (size_t)async->counter.label_buffer_length);
+
+    aeron_mpsc_rb_commit(&conductor->to_driver_buffer, offset);
+
+    AERON_ARRAY_ENSURE_CAPACITY(
+        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t)
+    if (ensure_capacity_result < 0)
+    {
+        char err_buffer[AERON_MAX_PATH];
+
+        snprintf(err_buffer, sizeof(err_buffer) - 1, "static counter registering_resources: %s", aeron_errmsg());
+        conductor->error_handler(conductor->error_handler_clientd, aeron_errcode(), err_buffer);
+        return;
+    }
+
+    conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
+    async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
 }
 
 static void aeron_client_conductor_on_cmd_destination(const void *clientd, const void *item, int32_t msg_type_id)
@@ -1634,12 +1719,22 @@ int aeron_client_conductor_async_add_counter(
 
     *async = NULL;
 
-    if (aeron_alloc((void **)&cmd, sizeof(aeron_async_add_counter_t)) < 0 ||
-        aeron_alloc((void **)&key_buffer_copy, key_buffer_length) < 0 ||
-        aeron_alloc((void **)&label_buffer_copy, label_buffer_length + 1) < 0)
+    if (aeron_alloc((void **)&cmd, sizeof(aeron_async_add_counter_t)) < 0)
     {
         AERON_APPEND_ERR("%s", "Unable to allocate counter");
         return -1;
+    }
+
+    if (aeron_alloc((void **)&key_buffer_copy, key_buffer_length) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Unable to allocate counter");
+        goto error;
+    }
+
+    if (aeron_alloc((void **)&label_buffer_copy, label_buffer_length + 1) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Unable to allocate counter");
+        goto error;
     }
 
     if (key_buffer && key_buffer_length > 0)
@@ -1677,8 +1772,9 @@ int aeron_client_conductor_async_add_counter(
     {
         if (aeron_client_conductor_command_offer(conductor->command_queue, cmd) < 0)
         {
-            aeron_free(cmd->uri);
             aeron_free(cmd);
+            aeron_free(key_buffer_copy);
+            aeron_free(label_buffer_copy);
             return -1;
         }
 
@@ -1686,6 +1782,12 @@ int aeron_client_conductor_async_add_counter(
     }
 
     return 0;
+
+error:
+    aeron_free(cmd);
+    aeron_free(key_buffer_copy);
+    aeron_free(label_buffer_copy);
+    return -1;
 }
 
 int aeron_client_conductor_async_close_counter(
@@ -1699,12 +1801,6 @@ int aeron_client_conductor_async_close_counter(
     counter->on_close_complete = on_close_complete;
     counter->on_close_complete_clientd = on_close_complete_clientd;
 
-    if (aeron_client_conductor_offer_remove_command(
-        conductor, counter->registration_id, AERON_COMMAND_REMOVE_COUNTER) < 0)
-    {
-        return -1;
-    }
-
     if (conductor->invoker_mode)
     {
         aeron_client_conductor_on_cmd_close_counter(conductor, counter);
@@ -1715,6 +1811,91 @@ int aeron_client_conductor_async_close_counter(
         {
             return -1;
         }
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_async_add_static_counter(
+    aeron_async_add_counter_t **async,
+    aeron_client_conductor_t *conductor,
+    int32_t type_id,
+    const uint8_t *key_buffer,
+    size_t key_buffer_length,
+    const char *label_buffer,
+    size_t label_buffer_length,
+    int64_t registration_id)
+{
+    aeron_async_add_counter_t *cmd = NULL;
+    uint8_t *key_buffer_copy = NULL;
+    char *label_buffer_copy = NULL;
+
+    *async = NULL;
+
+    if (aeron_alloc((void **)&cmd, sizeof(aeron_async_add_counter_t)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Unable to allocate static counter");
+        return -1;
+    }
+
+    if (aeron_alloc((void **)&key_buffer_copy, key_buffer_length) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Unable to allocate static counter");
+        aeron_free(cmd);
+        return -1;
+    }
+
+    if (aeron_alloc((void **)&label_buffer_copy, label_buffer_length + 1) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Unable to allocate static counter");
+        aeron_free(cmd);
+        aeron_free(key_buffer_copy);
+        return -1;
+    }
+
+    if (key_buffer && key_buffer_length > 0)
+    {
+        memcpy(key_buffer_copy, key_buffer, key_buffer_length);
+    }
+
+    if (label_buffer && label_buffer_length > 0)
+    {
+        memcpy(label_buffer_copy, label_buffer, label_buffer_length);
+    }
+
+    label_buffer_copy[label_buffer_length] = '\0';
+
+    cmd->command_base.func = aeron_client_conductor_on_cmd_add_static_counter;
+    cmd->command_base.item = NULL;
+    cmd->resource.counter = NULL;
+    cmd->error_message = NULL;
+    cmd->uri = NULL;
+    cmd->counter.key_buffer = key_buffer_copy;
+    cmd->counter.label_buffer = label_buffer_copy;
+    cmd->counter.key_buffer_length = key_buffer_length;
+    cmd->counter.label_buffer_length = label_buffer_length;
+    cmd->counter.type_id = type_id;
+    cmd->counter.registration_id = registration_id;
+    cmd->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
+    cmd->registration_status = AERON_CLIENT_AWAITING_MEDIA_DRIVER;
+    cmd->type = AERON_CLIENT_TYPE_COUNTER;
+
+    if (conductor->invoker_mode)
+    {
+        *async = cmd;
+        aeron_client_conductor_on_cmd_add_static_counter(conductor, cmd);
+    }
+    else
+    {
+        if (aeron_client_conductor_command_offer(conductor->command_queue, cmd) < 0)
+        {
+            aeron_free(cmd);
+            aeron_free(key_buffer_copy);
+            aeron_free(label_buffer_copy);
+            return -1;
+        }
+
+        *async = cmd;
     }
 
     return 0;
@@ -2382,6 +2563,45 @@ int aeron_client_conductor_on_unavailable_counter(aeron_client_conductor_t *cond
         aeron_on_unavailable_counter_pair_t *pair = &conductor->unavailable_counter_handlers.array[i];
 
         pair->handler(pair->clientd, &conductor->counters_reader, response->correlation_id, response->counter_id);
+    }
+
+    return 0;
+}
+
+int aeron_client_conductor_on_static_counter(aeron_client_conductor_t *conductor, aeron_static_counter_response_t *response)
+{
+    for (size_t i = 0, size = conductor->registering_resources.length, last_index = size - 1; i < size; i++)
+    {
+        aeron_client_registering_resource_t *resource = conductor->registering_resources.array[i].resource;
+
+        if (response->correlation_id == resource->registration_id)
+        {
+            aeron_counter_t *counter;
+            int64_t *counter_addr = aeron_counters_reader_addr(&conductor->counters_reader, response->counter_id);
+
+            if (aeron_counter_create(
+                &counter,
+                conductor,
+                resource->counter.registration_id,
+                response->counter_id,
+                counter_addr) < 0)
+            {
+                AERON_APPEND_ERR("%s", "");
+                return -1;
+            }
+
+            resource->resource.counter = counter;
+
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)conductor->registering_resources.array,
+                sizeof(aeron_client_registering_resource_entry_t),
+                i,
+                last_index);
+            conductor->registering_resources.length--;
+
+            AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+            break;
+        }
     }
 
     return 0;

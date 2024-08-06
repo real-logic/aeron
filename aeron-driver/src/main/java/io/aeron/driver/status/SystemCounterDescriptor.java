@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.Aeron;
 import io.aeron.AeronCounters;
 import io.aeron.driver.MediaDriverVersion;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -288,6 +289,10 @@ public enum SystemCounterDescriptor
      */
     public AtomicCounter newCounter(final CountersManager countersManager)
     {
-        return countersManager.newCounter(label, SYSTEM_COUNTER_TYPE_ID, (buffer) -> buffer.putInt(0, id));
+        final AtomicCounter counter =
+            countersManager.newCounter(label, SYSTEM_COUNTER_TYPE_ID, (buffer) -> buffer.putInt(0, id));
+        countersManager.setCounterRegistrationId(counter.id(), id);
+        countersManager.setCounterOwnerId(counter.id(), Aeron.NULL_VALUE);
+        return counter;
     }
 }

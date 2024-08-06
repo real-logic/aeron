@@ -487,6 +487,11 @@ public:
     inline std::shared_ptr<Image> imageBySessionId(std::int32_t sessionId) const
     {
         aeron_image_t *image = aeron_subscription_image_by_session_id(m_subscription, sessionId);
+        if (nullptr == image)
+        {
+            return nullptr;
+        }
+
         return std::make_shared<Image>(m_subscription, image);
     }
 
@@ -502,6 +507,11 @@ public:
     inline std::shared_ptr<Image> imageByIndex(std::size_t index) const
     {
         aeron_image_t *image = aeron_subscription_image_at_index(m_subscription, index);
+        if (nullptr == image)
+        {
+            throw std::logic_error("index out of range");
+        }
+
         return std::make_shared<Image>(m_subscription, image);
     }
 

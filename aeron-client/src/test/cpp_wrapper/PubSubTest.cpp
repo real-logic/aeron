@@ -581,11 +581,10 @@ public:
         m_subscription(subscription),
         m_publication(publication),
         m_assembler(
-            FragmentAssembler(
-                [&](AtomicBuffer &buffer, index_t offset, index_t length, Header &header)
-                {
-                    m_innerHandler(buffer, offset, length, header);
-                })),
+             [&](AtomicBuffer &buffer, index_t offset, index_t length, Header &header)
+             {
+                 m_innerHandler(buffer, offset, length, header);
+             }),
         m_outerHandler(m_assembler.handler()),
         m_generator(generator_t(m_rd())),
         m_invoker(invoker)

@@ -62,7 +62,7 @@ static int64_t subscription_registration_id(aeron_subscription_t *subscription)
     return constants.registration_id;
 }
 
-TEST_P(CSystemTest, shouldSpinUpDriverAndConnectSuccessfully)
+TEST_F(CSystemTest, shouldSpinUpDriverAndConnectSuccessfully)
 {
     aeron_context_t *context;
     aeron_t *aeron;
@@ -76,7 +76,7 @@ TEST_P(CSystemTest, shouldSpinUpDriverAndConnectSuccessfully)
     aeron_context_close(context);
 }
 
-TEST_P(CSystemTest, shouldReallocateBindingsClientd)
+TEST_F(CSystemTest, shouldReallocateBindingsClientd)
 {
     aeron_driver_context_t *context = nullptr;
     aeron_driver_t *driver = nullptr;
@@ -189,7 +189,7 @@ TEST_P(CSystemTest, shouldAddAndCloseSubscription)
     }
 }
 
-TEST_P(CSystemTest, shouldAddAndCloseCounter)
+TEST_F(CSystemTest, shouldAddAndCloseCounter)
 {
     std::atomic<bool> counterClosedFlag(false);
     aeron_async_add_counter_t *async = nullptr;
@@ -212,6 +212,84 @@ TEST_P(CSystemTest, shouldAddAndCloseCounter)
     {
         std::this_thread::yield();
     }
+
+    aeron_counters_reader_t *counters_reader = aeron_counters_reader(m_aeron);
+    int32_t state = AERON_COUNTER_RECORD_ALLOCATED;
+    while(AERON_COUNTER_RECORD_RECLAIMED != state)
+    {
+        ASSERT_EQ(0, aeron_counters_reader_counter_state(counters_reader, counter_constants.counter_id, &state));
+    }
+}
+
+TEST_F(CSystemTest, shouldAddStaticCounter)
+{
+    std::atomic<bool> counterClosedFlag(false);
+    aeron_async_add_counter_t *async = nullptr;
+    aeron_counter_constants_t counter_constants;
+    aeron_counter_constants_t counter_constants2;
+    aeron_counter_constants_t counter_constants3;
+
+    ASSERT_TRUE(connect());
+
+    const char *key = "my static key";
+    size_t key_length = strlen(key);
+    const char *label = "my static counter label";
+    size_t label_length = strlen(label);
+    int type_id = 12;
+    int64_t registration_id = -51515155188822;
+    ASSERT_EQ(aeron_async_add_static_counter(
+        &async, m_aeron, type_id, (uint8_t *)key, key_length, label, label_length, registration_id), 0);
+
+    aeron_counter_t *counter = awaitStaticCounterOrError(async);
+    ASSERT_TRUE(counter) << aeron_errmsg();
+    ASSERT_EQ(0, aeron_counter_constants(counter, &counter_constants));
+    ASSERT_EQ(registration_id, counter_constants.registration_id);
+
+    ASSERT_EQ(aeron_async_add_static_counter(
+        &async, m_aeron, type_id, nullptr, 0, "test", 4, registration_id), 0);
+
+    aeron_counter_t *counter2 = awaitStaticCounterOrError(async);
+    ASSERT_TRUE(counter2) << aeron_errmsg();
+    ASSERT_EQ(0, aeron_counter_constants(counter2, &counter_constants2));
+    ASSERT_EQ(counter_constants.counter_id, counter_constants2.counter_id);
+    ASSERT_EQ(counter_constants.registration_id, counter_constants2.registration_id);
+    ASSERT_NE(counter, counter2);
+
+    counterClosedFlag = false;
+    aeron_counter_close(counter, setFlagOnClose, &counterClosedFlag);
+    while (!counterClosedFlag)
+    {
+        std::this_thread::yield();
+    }
+
+    counterClosedFlag = false;
+    aeron_counter_close(counter2, setFlagOnClose, &counterClosedFlag);
+    while (!counterClosedFlag)
+    {
+        std::this_thread::yield();
+    }
+
+    ASSERT_EQ(aeron_async_add_static_counter(
+        &async, m_aeron, type_id, nullptr, 0, "another counter", 4, 999999999), 0);
+
+    aeron_counter_t *counter3 = awaitStaticCounterOrError(async);
+    ASSERT_TRUE(counter3) << aeron_errmsg();
+    ASSERT_EQ(0, aeron_counter_constants(counter3, &counter_constants3));
+    ASSERT_EQ(999999999, counter_constants3.registration_id);
+    ASSERT_NE(counter_constants.counter_id, counter_constants3.counter_id);
+
+    counterClosedFlag = false;
+    aeron_counter_close(counter3, setFlagOnClose, &counterClosedFlag);
+    while (!counterClosedFlag)
+    {
+        std::this_thread::yield();
+    }
+
+    // verify that the closed static counter was not deleted
+    aeron_counters_reader_t *counters_reader = aeron_counters_reader(m_aeron);
+    int32_t state;
+    ASSERT_EQ(0, aeron_counters_reader_counter_state(counters_reader, counter_constants.counter_id, &state));
+    ASSERT_EQ(AERON_COUNTER_RECORD_ALLOCATED, state);
 }
 
 TEST_P(CSystemTest, shouldAddPublicationAndSubscription)
@@ -716,4 +794,38 @@ TEST_P(CSystemTest, shouldAddMultipleSubscriptionsUsingSameImage)
     EXPECT_THAT(unavailable_images, testing::UnorderedElementsAre(
         std::pair<int64_t, int64_t>(id1, id1),
         std::pair<int64_t, int64_t>(id2, id2)));
+}
+
+TEST_P(CSystemTest, shouldSetClientName)
+{
+    aeron_context_t *context;
+    ASSERT_EQ(aeron_context_init(&context), 0);
+    aeron_context_set_client_name(context, "this is a name");
+
+    ASSERT_STREQ("this is a name", aeron_context_get_client_name(context));
+
+    aeron_context_close(context);
+}
+
+TEST_P(CSystemTest, shouldSetNullClientName)
+{
+    aeron_context_t *context;
+    ASSERT_EQ(aeron_context_init(&context), 0);
+    ASSERT_EQ(-1, aeron_context_set_client_name(context, nullptr));
+
+    aeron_context_close(context);
+}
+
+TEST_P(CSystemTest, shouldSetClientNameOverLong)
+{
+    const char *name =
+        "this is a very long value that we are hoping with be reject when the value gets "
+        "set on the the context without causing issues will labels";
+
+    aeron_context_t *context;
+    ASSERT_EQ(aeron_context_init(&context), 0);
+    ASSERT_EQ(-1, aeron_context_set_client_name(context, name));
+    ASSERT_EQ(EINVAL, aeron_errcode());
+
+    aeron_context_close(context);
 }

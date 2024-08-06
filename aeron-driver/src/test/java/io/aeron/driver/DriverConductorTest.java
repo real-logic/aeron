@@ -24,6 +24,7 @@ import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
+import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.media.WildcardPortManager;
 import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.driver.status.SystemCounterDescriptor;
@@ -31,6 +32,7 @@ import io.aeron.driver.status.SystemCounters;
 import io.aeron.exceptions.AeronEvent;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.protocol.SetupFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
@@ -2091,5 +2093,75 @@ class DriverConductorTest
         termBuffer.putBytes(termOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
 
         frameLengthOrdered(termBuffer, termOffset, frameLength);
+    }
+
+    @Test
+    void shouldInferFeedbackGeneratorBasedOnMulticastAddress()
+    {
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .multicastFeedbackDelayGenerator(new OptimalMulticastDelayGenerator(10, 10))
+            .unicastFeedbackDelayGenerator(new StaticDelayGenerator(10));
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=224.20.30.39:24326");
+
+        final FeedbackDelayGenerator feedbackDelayGenerator = DriverConductor.resolveDelayGenerator(
+            context, udpChannel, InferableBoolean.INFER, (short)0);
+
+        assertSame(context.multicastFeedbackDelayGenerator(), feedbackDelayGenerator);
+    }
+
+    @Test
+    void shouldInferFeedbackGeneratorBasedOnUnicastAddress()
+    {
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .multicastFeedbackDelayGenerator(new OptimalMulticastDelayGenerator(10, 10))
+            .unicastFeedbackDelayGenerator(new StaticDelayGenerator(10));
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=192.168.0.1:24326");
+
+        final FeedbackDelayGenerator feedbackDelayGenerator = DriverConductor.resolveDelayGenerator(
+            context, udpChannel, InferableBoolean.INFER, (short)0);
+
+        assertSame(context.unicastFeedbackDelayGenerator(), feedbackDelayGenerator);
+    }
+
+    @Test
+    void shouldFixMulticastFeedbackGeneratorBasedOnReceiverGroupConsideration()
+    {
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .multicastFeedbackDelayGenerator(new OptimalMulticastDelayGenerator(10, 10))
+            .unicastFeedbackDelayGenerator(new StaticDelayGenerator(10));
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=192.168.0.1:24326");
+
+        final FeedbackDelayGenerator feedbackDelayGenerator = DriverConductor.resolveDelayGenerator(
+            context, udpChannel, InferableBoolean.FORCE_TRUE, (short)0);
+
+        assertSame(context.multicastFeedbackDelayGenerator(), feedbackDelayGenerator);
+    }
+
+    @Test
+    void shouldFixUnicastFeedbackGeneratorBasedOnReceiverGroupConsideration()
+    {
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .multicastFeedbackDelayGenerator(new OptimalMulticastDelayGenerator(10, 10))
+            .unicastFeedbackDelayGenerator(new StaticDelayGenerator(10));
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=192.168.0.1:24326");
+
+        final FeedbackDelayGenerator feedbackDelayGenerator = DriverConductor.resolveDelayGenerator(
+            context, udpChannel, InferableBoolean.FORCE_FALSE, (short)0);
+
+        assertSame(context.unicastFeedbackDelayGenerator(), feedbackDelayGenerator);
+    }
+
+    @Test
+    void shouldInferFeedbackGeneratorBasedOnReceiverGroupFlag()
+    {
+        final MediaDriver.Context context = new MediaDriver.Context()
+            .multicastFeedbackDelayGenerator(new OptimalMulticastDelayGenerator(10, 10))
+            .unicastFeedbackDelayGenerator(new StaticDelayGenerator(10));
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=192.168.0.1:24326");
+
+        final FeedbackDelayGenerator feedbackDelayGenerator = DriverConductor.resolveDelayGenerator(
+            context, udpChannel, InferableBoolean.INFER, SetupFlyweight.GROUP_FLAG);
+
+        assertSame(context.multicastFeedbackDelayGenerator(), feedbackDelayGenerator);
     }
 }

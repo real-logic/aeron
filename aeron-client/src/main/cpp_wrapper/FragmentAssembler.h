@@ -61,6 +61,11 @@ public:
         aeron_fragment_assembler_delete(m_fragment_assembler);
     }
 
+    FragmentAssembler(FragmentAssembler& other) = delete;
+    FragmentAssembler(FragmentAssembler&& other) = delete;
+    FragmentAssembler& operator=(FragmentAssembler& other) = delete;
+    FragmentAssembler& operator=(FragmentAssembler&& other) = delete;
+
     /**
      * Compose a fragment_handler_t that calls the this FragmentAssembler instance for reassembly. Suitable for
      * passing to Subscription::poll(fragment_handler_t, int).

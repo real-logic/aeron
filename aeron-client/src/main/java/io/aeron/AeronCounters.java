@@ -582,7 +582,7 @@ public final class AeronCounters
         final int state = metaDataBuffer.getIntVolatile(counterMetaDataOffset);
         if (CountersReader.RECORD_ALLOCATED != state)
         {
-            throw new IllegalArgumentException("counter id " + counterId + " state != RECORD_ALLOCATED");
+            throw new IllegalArgumentException("counter id " + counterId + " is not allocated, state: " + state);
         }
 
         final int existingLabelLength = metaDataBuffer.getInt(counterMetaDataOffset + CountersReader.LABEL_OFFSET);

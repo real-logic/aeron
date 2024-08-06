@@ -80,6 +80,28 @@ static void aeron_stat_print_counter(
         (int)label_length, label);
 }
 
+static void printStats(
+    aeron_cnc_t *aeron_cnc,
+    aeron_cnc_constants_t *cnc_constants,
+    aeron_counters_reader_t *counters_reader,
+    const char *cnc_version)
+{
+    int64_t now_ms = aeron_epoch_clock();
+    char currentTime[AERON_MAX_PATH];
+    aeron_format_date(currentTime, sizeof(currentTime) - 1, now_ms);
+    const int64_t heartbeat_ms = aeron_cnc_to_driver_heartbeat(aeron_cnc);
+
+    printf(
+        "%s - Aeron Stat (CnC v%s), pid %" PRId64 ", heartbeat age %" PRId64 "ms\n",
+        currentTime,
+        cnc_version,
+        (*cnc_constants).pid,
+        now_ms - heartbeat_ms);
+    printf("===========================\n");
+
+    aeron_counters_reader_foreach_counter(counters_reader, aeron_stat_print_counter, NULL);
+}
+
 int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];
@@ -167,35 +189,21 @@ int main(int argc, char **argv)
         aeron_semantic_version_minor(cnc_constants.cnc_version),
         aeron_semantic_version_patch(cnc_constants.cnc_version));
 
-    while (running)
+    if (settings.watch)
     {
-        int64_t now_ms = aeron_epoch_clock();
-        char currentTime[AERON_MAX_PATH];
-        char client_liveness_str[AERON_FORMAT_NUMBER_TO_LOCALE_STR_LEN];
-        aeron_format_date(currentTime, sizeof(currentTime) - 1, now_ms);
 
-        printf("\033[H\033[2J");
-
-        printf(
-            "%s - Aeron Stat (CnC v%s), pid %" PRId64 ", client liveness %s ns\n",
-            currentTime,
-            cnc_version,
-            cnc_constants.pid,
-            aeron_format_number_to_locale(
-                cnc_constants.client_liveness_timeout, client_liveness_str, sizeof(client_liveness_str)));
-        printf("===========================\n");
-
-        aeron_counters_reader_foreach_counter(counters_reader, aeron_stat_print_counter, NULL);
-
-        if (!settings.watch)
+        while (running)
         {
-            goto close;
+            printf("\033[2J\033[H");
+            printStats(aeron_cnc, &cnc_constants, counters_reader, cnc_version);
+            aeron_micro_sleep((unsigned int)(settings.update_interval_ms * 1000));
         }
-
-        aeron_micro_sleep((unsigned int)(settings.update_interval_ms * 1000));
+    }
+    else
+    {
+        printStats(aeron_cnc, &cnc_constants, counters_reader, cnc_version);
     }
 
-close:
     aeron_cnc_close(aeron_cnc);
 
     return 0;

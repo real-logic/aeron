@@ -112,7 +112,6 @@ public final class TestCluster implements AutoCloseable
     static final long CATALOG_CAPACITY = 128 * 1024;
 
     static final String LOG_CHANNEL = "aeron:udp?term-length=512k|alias=raft";
-    static final String REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc";
     static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0|alias=egress";
     static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k|alias=ingress";
@@ -207,14 +206,6 @@ public final class TestCluster implements AutoCloseable
     {
         Tests.sleep(delayMs);
         ClusterTests.failOnClusterError();
-    }
-
-    public static void awaitLossOfLeadership(final TestNode.TestService leaderService)
-    {
-        while (leaderService.roleChangedTo() != FOLLOWER)
-        {
-            Tests.sleep(100);
-        }
     }
 
     private static void await(final int delayMs, final Supplier<String> message)
@@ -921,6 +912,23 @@ public final class TestCluster implements AutoCloseable
         {
             await(1);
             pollClient();
+        }
+    }
+
+    public void awaitLossOfLeadership(final TestNode.TestService leaderService)
+    {
+        if (null != client)
+        {
+            clientKeepAlive.init();
+        }
+
+        while (leaderService.roleChangedTo() != FOLLOWER)
+        {
+            Tests.sleep(100);
+            if (null != client)
+            {
+                clientKeepAlive.run();
+            }
         }
     }
 

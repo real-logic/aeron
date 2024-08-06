@@ -1,6 +1,7 @@
 name: Continuous Integration
 
 on:
+  workflow_call:
   workflow_dispatch:
   repository_dispatch:
     types: run-commit-tests
@@ -15,7 +16,7 @@ on:
       - release/**
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:

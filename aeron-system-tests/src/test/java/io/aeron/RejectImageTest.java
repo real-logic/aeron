@@ -394,7 +394,7 @@ public class RejectImageTest
 
     @Test
     @InterruptAfter(10)
-    void shouldRejectInvalidationReasonThatIsTooLong()
+    void shouldErrorIfRejectionReasonIsTooLong()
     {
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
         final byte[] bytes = new byte[1024];
@@ -416,6 +416,32 @@ public class RejectImageTest
             assertThrows(AeronException.class, () -> sub.imageAtIndex(0).reject(tooLongReason));
         }
     }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldErrorIfUsingAndIpcChannel()
+    {
+        context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
+        final String rejectionReason = "Reject this";
+
+        final TestMediaDriver driver = launch();
+
+        final Aeron.Context ctx = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName());
+
+        try (Aeron aeron = Aeron.connect(ctx);
+            Publication pub = aeron.addPublication(CommonContext.IPC_CHANNEL, streamId);
+            Subscription sub = aeron.addSubscription(CommonContext.IPC_CHANNEL, streamId))
+        {
+            Tests.awaitConnected(pub);
+            Tests.awaitConnected(sub);
+
+            final AeronException ex = assertThrows(AeronException.class, () -> sub.imageAtIndex(0)
+                .reject(rejectionReason));
+            System.out.println(ex.getMessage());
+        }
+    }
+
 
     @ParameterizedTest
     @ValueSource(strings = { "127.0.0.1", "[::1]" })

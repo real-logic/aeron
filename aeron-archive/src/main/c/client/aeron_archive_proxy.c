@@ -162,7 +162,6 @@ bool aeron_archive_proxy_close_session(
         &hdr);
     aeron_archive_client_closeSessionRequest_set_controlSessionId(&codec, control_session_id);
 
-
     return aeron_archive_proxy_offer_once(
         archive_proxy,
         aeron_archive_client_closeSessionRequest_encoded_length(&codec)) > 0;

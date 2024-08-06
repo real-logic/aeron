@@ -86,13 +86,13 @@ int aeron_archive_connect(aeron_archive_t **aeron_archive, aeron_archive_context
 
     if (aeron_archive_async_connect(&async, ctx) < 0)
     {
-        // TODO
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
     if (aeron_archive_async_connect_poll(aeron_archive, async) < 0)
     {
-        // TODO
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -102,7 +102,7 @@ int aeron_archive_connect(aeron_archive_t **aeron_archive, aeron_archive_context
 
         if (aeron_archive_async_connect_poll(aeron_archive, async) < 0)
         {
-            // TODO
+            AERON_APPEND_ERR("%s", "");
             return -1;
         }
 

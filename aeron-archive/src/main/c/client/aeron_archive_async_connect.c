@@ -73,6 +73,7 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
 
     if (aeron_archive_context_conclude(ctx) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -92,7 +93,7 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
         NULL,
         NULL) < 0)
     {
-        // TODO
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -106,7 +107,7 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
         ctx->control_request_channel,
         ctx->control_request_stream_id) < 0)
     {
-        // TODO
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -144,8 +145,8 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
 {
     if (aeron_nano_clock() > async->deadline_ns)
     {
-        // TODO timeout
-        return -1;
+        AERON_SET_ERR(-1, "%s", "connect timeout");
+        goto cleanup;
     }
 
     if (ADD_PUBLICATION == async->state)
@@ -169,7 +170,8 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
             {
                 // error
                 async->async_add_exclusive_publication = NULL;
-                return -1;
+                AERON_APPEND_ERR("%s", "");
+                goto cleanup;
             }
         }
 
@@ -181,8 +183,8 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
                 async->exclusive_publication,
                 AERON_ARCHIVE_PROXY_RETRY_ATTEMPTS_DEFAULT) < 0)
             {
-                // TODO
-                return -1;
+                AERON_APPEND_ERR("%s", "");
+                goto cleanup;
             }
         }
 
@@ -205,7 +207,8 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
             {
                 // error
                 async->async_add_subscription = NULL;
-                return -1;
+                AERON_APPEND_ERR("%s", "");
+                goto cleanup;
             }
         }
 
@@ -216,8 +219,8 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
                 async->subscription,
                 AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_FRAGMENT_LIMIT_DEFAULT) < 0)
             {
-                // TODO
-                return -1;
+                AERON_APPEND_ERR("%s", "");
+                goto cleanup;
             }
         }
 
@@ -243,10 +246,13 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
     {
         char control_response_channel[AERON_MAX_PATH] = { 0 };
 
-        if (aeron_subscription_try_resolve_channel_endpoint_port(async->subscription, control_response_channel, sizeof(control_response_channel)) < 0)
+        if (aeron_subscription_try_resolve_channel_endpoint_port(
+            async->subscription,
+            control_response_channel,
+            sizeof(control_response_channel)) < 0)
         {
-            // TODO
-            return -1;
+            AERON_APPEND_ERR("%s", "");
+            goto cleanup;
         }
 
         if ('\0' == control_response_channel[0])
@@ -254,7 +260,8 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
             return 0;
         }
 
-        aeron_archive_encoded_credentials_t *encoded_credentials = aeron_archive_credentials_supplier_encoded_credentials(&async->ctx->credentials_supplier);
+        aeron_archive_encoded_credentials_t *encoded_credentials =
+            aeron_archive_credentials_supplier_encoded_credentials(&async->ctx->credentials_supplier);
 
         async->correlation_id = aeron_next_correlation_id(async->aeron);
 
@@ -305,39 +312,40 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
         async->state = AWAIT_CHALLENGE_RESPONSE;
     }
 
-    if (NULL != async->control_response_poller)
+    aeron_archive_control_response_poller_t *poller = async->control_response_poller;
+
+    if (NULL != poller)
     {
-        aeron_archive_control_response_poller_poll(async->control_response_poller);
+        aeron_archive_control_response_poller_poll(poller);
 
-        if (aeron_archive_control_response_poller_is_poll_complete(async->control_response_poller) &&
-            aeron_archive_control_response_poller_correlation_id(async->control_response_poller) == async->correlation_id)
+        if (aeron_archive_control_response_poller_is_poll_complete(poller) &&
+            aeron_archive_control_response_poller_correlation_id(poller) == async->correlation_id)
         {
-            async->control_session_id = aeron_archive_control_response_poller_control_session_id(async->control_response_poller);
+            async->control_session_id = aeron_archive_control_response_poller_control_session_id(poller);
 
-            if (aeron_archive_control_response_poller_was_challenged(async->control_response_poller))
+            if (aeron_archive_control_response_poller_was_challenged(poller))
             {
                 // TODO
                 return -1;
             }
             else
             {
-                if (!aeron_archive_control_response_poller_is_code_ok(async->control_response_poller))
+                if (!aeron_archive_control_response_poller_is_code_ok(poller))
                 {
-                    if (aeron_archive_control_response_poller_is_code_error(async->control_response_poller))
+                    if (aeron_archive_control_response_poller_is_code_error(poller))
                     {
                         aeron_archive_proxy_close_session(async->archive_proxy, async->control_session_id);
-                        // TODO
-                        return -1;
+                        AERON_SET_ERR(-1, "%s", aeron_archive_control_response_poller_error_message(poller));
+                        goto cleanup;
                     }
 
                     aeron_archive_proxy_close_session(async->archive_proxy, async->control_session_id);
-                    // TODO
-                    return -1;
+                    goto cleanup;
                 }
 
                 if (AWAIT_CONNECT_RESPONSE == async->state)
                 {
-                    int32_t archive_protocol_version = aeron_archive_control_response_poller_version(async->control_response_poller);
+                    int32_t archive_protocol_version = aeron_archive_control_response_poller_version(poller);
 
                     if (archive_protocol_version < aeron_archive_protocol_version_with_archive_id())
                     {
@@ -351,7 +359,7 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
                 }
                 else if (AWAIT_ARCHIVE_ID_RESPONSE == async->state)
                 {
-                    int64_t archive_id = aeron_archive_control_response_poller_relevant_id(async->control_response_poller);
+                    int64_t archive_id = aeron_archive_control_response_poller_relevant_id(poller);
 
                     return aeron_archive_async_connect_transition_to_done(aeron_archive, async, archive_id);
                 }
@@ -366,10 +374,11 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
 
     return 0;
 
-    /*
-cleanup: // TODO add cleanup: section that frees up the async
+cleanup:
+
+    aeron_archive_async_connect_delete(async);
+
     return -1;
-     */
 }
 
 /* *********************** */
@@ -405,7 +414,7 @@ int aeron_archive_async_connect_transition_to_done(aeron_archive_t **aeron_archi
         AERON_ARCHIVE_RECORDING_SUBSCRIPTION_DESCRIPTOR_POLLER_FRAGMENT_LIMIT_DEFAULT) < 0)
     {
         AERON_APPEND_ERR("%s", "");
-        // TODO free up the recording_descriptor
+        aeron_archive_recording_descriptor_poller_close(recording_descriptor_poller);
         return -1;
     }
 
@@ -431,7 +440,10 @@ int aeron_archive_async_connect_transition_to_done(aeron_archive_t **aeron_archi
          */
         rc = 1;
 
-        // TODO NULL out things like archive proxy and poller and such so they're not deleted when the async is deleted
+        async->subscription = NULL;
+        async->exclusive_publication = NULL;
+        async->archive_proxy = NULL;
+        async->control_response_poller = NULL;
     }
 
     aeron_archive_async_connect_delete(async);
@@ -441,7 +453,29 @@ int aeron_archive_async_connect_transition_to_done(aeron_archive_t **aeron_archi
 
 int aeron_archive_async_connect_delete(aeron_archive_async_connect_t *async)
 {
-    // TODO check for non-NULL fields and free things up accordingly
+    if (NULL != async->subscription)
+    {
+        aeron_subscription_close(async->subscription, NULL, NULL);
+        async->subscription = NULL;
+    }
+
+    if (NULL != async->exclusive_publication)
+    {
+        aeron_exclusive_publication_close(async->exclusive_publication, NULL, NULL);
+        async->exclusive_publication = NULL;
+    }
+
+    if (NULL != async->archive_proxy)
+    {
+        aeron_archive_proxy_close(async->archive_proxy);
+        async->archive_proxy = NULL;
+    }
+
+    if (NULL != async->control_response_poller)
+    {
+        aeron_archive_control_response_poller_close(async->control_response_poller);
+        async->control_response_poller = NULL;
+    }
 
     aeron_free(async);
 

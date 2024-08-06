@@ -49,6 +49,7 @@ void fragment_handler(void *clientd, const uint8_t *buffer, size_t length, aeron
 }
 
 aeron_archive_encoded_credentials_t default_creds = { "admin:admin", 11 };
+aeron_archive_encoded_credentials_t bad_creds = { "admin:NotAdmin", 14 };
 
 static aeron_archive_encoded_credentials_t *encoded_credentials_supplier(void *clientd)
 {
@@ -1376,4 +1377,18 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
     EXPECT_EQ(clientd.received, total_message_count);
     EXPECT_EQ(clientd.position, aeron_publication_position(publication));
+}
+
+TEST_F(AeronCArchiveTest, shouldFailForIncorrectInitialCredentials)
+{
+    ASSERT_EQ(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        m_ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &bad_creds));
+
+    ASSERT_EQ(-1, aeron_archive_connect(&m_archive, m_ctx));
 }

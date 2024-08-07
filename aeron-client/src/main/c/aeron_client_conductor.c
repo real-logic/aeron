@@ -166,7 +166,7 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->error_handler_clientd = context->error_handler_clientd;
 
     conductor->error_frame_handler = context->error_frame_handler;
-    conductor->error_handler_clientd = context->error_frame_handler_clientd;
+    conductor->error_frame_handler_clientd = context->error_frame_handler_clientd;
 
     conductor->on_new_publication = context->on_new_publication;
     conductor->on_new_publication_clientd = context->on_new_publication_clientd;
@@ -2564,7 +2564,7 @@ void aeron_client_conductor_forward_error(void *clientd, int64_t key, void *valu
     {
         // TODO: Use a union or a copy...
         conductor->error_frame_handler(
-            conductor->error_handler_clientd, (aeron_publication_error_values_t *)response);
+            conductor->error_frame_handler_clientd, (aeron_publication_error_values_t *)response);
     }
 }
 

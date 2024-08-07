@@ -901,7 +901,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         getenv(AERON_MAX_RETRANSMITS_ENV_VAR),
         _context->max_retransmits,
         1,
-        256);
+        AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS_MAX);
 
     _context->retransmit_unicast_delay_ns = aeron_config_parse_duration_ns(
         AERON_RETRANSMIT_UNICAST_DELAY_ENV_VAR,

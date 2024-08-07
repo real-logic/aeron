@@ -231,19 +231,41 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_descriptor_po
             if (aeron_archive_client_recordingDescriptor_controlSessionId(&recording_descriptor) == poller->control_session_id &&
                 aeron_archive_client_recordingDescriptor_correlationId(&recording_descriptor)== poller->correlation_id)
             {
-                uint64_t len;
+                struct aeron_archive_client_recordingDescriptor_string_view view;
 
-                char stripped_channel[AERON_MAX_PATH];
-                len = aeron_archive_client_recordingDescriptor_get_strippedChannel(&recording_descriptor, stripped_channel, AERON_MAX_PATH);
-                stripped_channel[len] = '\0';
+                char *stripped_channel;
+                size_t stripped_channel_length;
+                char *original_channel;
+                size_t original_channel_length;
+                char *source_identity;
+                size_t source_identity_length;
 
-                char original_channel[AERON_MAX_PATH];
-                len = aeron_archive_client_recordingDescriptor_get_strippedChannel(&recording_descriptor, original_channel, AERON_MAX_PATH);
-                original_channel[len] = '\0';
+                view = aeron_archive_client_recordingDescriptor_get_strippedChannel_as_string_view(&recording_descriptor);
+                stripped_channel_length = view.length;
+                if (aeron_alloc((void **)&stripped_channel, stripped_channel_length + 1) < 0)
+                {
+                    // TODO
+                }
+                memcpy(stripped_channel, view.data, stripped_channel_length);
+                stripped_channel[stripped_channel_length] = '\0';
 
-                char source_identity[AERON_MAX_PATH];
-                len = aeron_archive_client_recordingDescriptor_get_strippedChannel(&recording_descriptor, source_identity, AERON_MAX_PATH);
-                source_identity[len] = '\0';
+                view = aeron_archive_client_recordingDescriptor_get_originalChannel_as_string_view(&recording_descriptor);
+                original_channel_length = view.length;
+                if (aeron_alloc((void **)&original_channel, original_channel_length + 1) < 0)
+                {
+                    // TODO
+                }
+                memcpy(original_channel, view.data, original_channel_length);
+                original_channel[original_channel_length] = '\0';
+
+                view = aeron_archive_client_recordingDescriptor_get_sourceIdentity_as_string_view(&recording_descriptor);
+                source_identity_length = view.length;
+                if (aeron_alloc((void **)&source_identity, source_identity_length + 1) < 0)
+                {
+                    // TODO
+                }
+                memcpy(source_identity, view.data, source_identity_length);
+                source_identity[source_identity_length] = '\0';
 
                 poller->recording_descriptor_consumer(
                     poller->control_session_id,
@@ -260,9 +282,16 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_descriptor_po
                     aeron_archive_client_recordingDescriptor_sessionId(&recording_descriptor),
                     aeron_archive_client_recordingDescriptor_streamId(&recording_descriptor),
                     stripped_channel,
+                    stripped_channel_length,
                     original_channel,
+                    original_channel_length,
                     source_identity,
+                    source_identity_length,
                     poller->recording_descriptor_consumer_clientd);
+
+                aeron_free(stripped_channel);
+                aeron_free(original_channel);
+                aeron_free(source_identity);
 
                 if (0 == --poller->remaining_record_count)
                 {

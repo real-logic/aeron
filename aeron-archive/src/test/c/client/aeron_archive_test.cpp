@@ -373,11 +373,14 @@ public:
 
 typedef struct recording_descriptor_consumer_clientd_stct
 {
-    bool verify_recording_id;
+    bool verify_recording_id = false;
     int64_t recording_id;
-    bool verify_stream_id;
+    bool verify_stream_id = false;
     int32_t stream_id;
-    bool verify_start_equals_stop_position;
+    bool verify_start_equals_stop_position = false;
+    bool verify_session_id = false;
+    int32_t session_id;
+    const char *original_channel = nullptr;
 }
 recording_descriptor_consumer_clientd_t;
 
@@ -396,8 +399,11 @@ static void recording_descriptor_consumer(
     int32_t session_id,
     int32_t stream_id,
     const char *stripped_channel,
+    size_t stripped_channel_length,
     const char *original_channel,
+    size_t original_channel_length,
     const char *source_identity,
+    size_t source_identity_length,
     void *clientd)
 {
     auto *cd = (recording_descriptor_consumer_clientd_t *)clientd;
@@ -413,6 +419,16 @@ static void recording_descriptor_consumer(
     if (cd->verify_start_equals_stop_position)
     {
         EXPECT_EQ(start_position, stop_position);
+    }
+    if (cd->verify_session_id)
+    {
+        EXPECT_EQ(cd->session_id, session_id);
+    }
+    if (nullptr != cd->original_channel)
+    {
+        fprintf(stderr, "%zu %zu\n", strlen(cd->original_channel), strlen(original_channel));
+        EXPECT_EQ(strlen(cd->original_channel), strlen(original_channel));
+        EXPECT_STREQ(cd->original_channel, original_channel);
     }
 
     fprintf(stderr, "GOT THE LIST RECORDING CALLBACK\n");
@@ -452,6 +468,7 @@ static void recording_subscription_descriptor_consumer(
     int64_t subscription_id,
     int32_t stream_id,
     const char *stripped_channel,
+    size_t stripped_channel_length,
     void *clientd)
 {
     fprintf(stderr, "GOT THE LIST RECORDING SUBSCRIPTION CALLBACK\n");
@@ -607,7 +624,6 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
     clientd.recording_id = found_recording_id;
     clientd.verify_stream_id = true;
     clientd.stream_id = m_recordingStreamId;
-    clientd.verify_start_equals_stop_position = false;
 
     EXPECT_EQ(0, aeron_archive_list_recording(
         &count,
@@ -947,8 +963,6 @@ TEST_F(AeronCArchiveTest, shouldRecordThenReplayThenTruncate)
     int32_t count;
 
     recording_descriptor_consumer_clientd_t clientd;
-    clientd.verify_recording_id = false;
-    clientd.verify_stream_id = false;
     clientd.verify_start_equals_stop_position = true;
 
     EXPECT_EQ(0, aeron_archive_list_recording(
@@ -1520,8 +1534,6 @@ TEST_F(AeronCArchiveTest, shouldPurgeStoppedRecording)
     int32_t count = 1234; // <-- just to make sure later when it's zero it's because it was explicitly set to 0.
 
     recording_descriptor_consumer_clientd_t clientd;
-    clientd.verify_recording_id = false;
-    clientd.verify_stream_id = false;
     clientd.verify_start_equals_stop_position = true;
 
     EXPECT_EQ(0, aeron_archive_list_recording(
@@ -1531,4 +1543,127 @@ TEST_F(AeronCArchiveTest, shouldPurgeStoppedRecording)
         recording_descriptor_consumer,
         &clientd));
     EXPECT_EQ(0, count);
+}
+
+TEST_F(AeronCArchiveTest, shouldReadRecordingDescriptor)
+{
+    int32_t session_id;
+
+    connect();
+
+    aeron_publication_t *publication = addPublication(m_aeron, m_recordingChannel, m_recordingStreamId);
+
+    session_id = aeron_publication_session_id(publication);
+
+    int64_t subscription_id;
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id,
+        m_archive,
+        m_recordingChannel.c_str(),
+        m_recordingStreamId,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        false));
+
+    setupCounters(session_id);
+
+    EXPECT_EQ(0, aeron_archive_stop_recording(
+        m_archive,
+        subscription_id));
+
+    int32_t count = 1234;
+
+    recording_descriptor_consumer_clientd_t clientd;
+    clientd.verify_recording_id = true;
+    clientd.recording_id = m_recording_id_from_counter;
+    clientd.verify_stream_id = true;
+    clientd.stream_id = m_recordingStreamId;
+    clientd.verify_session_id = true;
+    clientd.session_id = session_id;
+    clientd.original_channel = m_recordingChannel.c_str();
+
+    EXPECT_EQ(0, aeron_archive_list_recording(
+        &count,
+        m_archive,
+        m_recording_id_from_counter,
+        recording_descriptor_consumer,
+        &clientd));
+    EXPECT_EQ(1, count);
+}
+
+TEST_F(AeronCArchiveTest, shouldReadJumboRecordingDescriptor)
+{
+    int32_t session_id;
+    int64_t stop_position;
+
+    std::string recordingChannel = "aeron:udp?endpoint=localhost:3333|term-length=64k|alias=";
+    recordingChannel.append(2000, 'X');
+
+    connect();
+
+    int64_t subscription_id;
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id,
+        m_archive,
+        recordingChannel.c_str(),
+        m_recordingStreamId,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        false));
+
+    {
+        aeron_subscription_t *subscription = addSubscription(recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(m_aeron, recordingChannel, m_recordingStreamId);
+
+        session_id = aeron_publication_session_id(publication);
+
+        setupCounters(session_id);
+
+        offerMessages(publication);
+        consumeMessages(subscription);
+
+        stop_position = aeron_publication_position(publication);
+
+        waitUntilCaughtUp(stop_position);
+
+        int64_t found_recording_position;
+        EXPECT_EQ(0, aeron_archive_get_recording_position(
+            &found_recording_position,
+            m_archive,
+            m_recording_id_from_counter));
+        EXPECT_EQ(stop_position, found_recording_position);
+
+        int64_t found_stop_position;
+        EXPECT_EQ(0, aeron_archive_get_stop_position(
+            &found_stop_position,
+            m_archive,
+            m_recording_id_from_counter));
+        EXPECT_EQ(AERON_NULL_VALUE, found_stop_position);
+    }
+
+    EXPECT_EQ(0, aeron_archive_stop_recording(
+        m_archive,
+        subscription_id));
+
+    int64_t found_stop_position;
+    EXPECT_EQ(0, aeron_archive_get_stop_position(
+        &found_stop_position,
+        m_archive,
+        m_recording_id_from_counter));
+    EXPECT_EQ(stop_position, found_stop_position);
+
+    int32_t count = 1234;
+
+    recording_descriptor_consumer_clientd_t clientd;
+    clientd.verify_recording_id = true;
+    clientd.recording_id = m_recording_id_from_counter;
+    clientd.verify_stream_id = true;
+    clientd.stream_id = m_recordingStreamId;
+    clientd.original_channel = recordingChannel.c_str();
+
+    EXPECT_EQ(0, aeron_archive_list_recording(
+        &count,
+        m_archive,
+        m_recording_id_from_counter,
+        recording_descriptor_consumer,
+        &clientd));
+    EXPECT_EQ(1, count);
 }

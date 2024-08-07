@@ -231,11 +231,19 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
             if (aeron_archive_client_recordingSubscriptionDescriptor_controlSessionId(&recording_subscription_descriptor) == poller->control_session_id &&
                 aeron_archive_client_recordingSubscriptionDescriptor_correlationId(&recording_subscription_descriptor)== poller->correlation_id)
             {
-                uint64_t len;
+                struct aeron_archive_client_recordingSubscriptionDescriptor_string_view view;
 
-                char stripped_channel[AERON_MAX_PATH];
-                len = aeron_archive_client_recordingSubscriptionDescriptor_get_strippedChannel(&recording_subscription_descriptor, stripped_channel, AERON_MAX_PATH);
-                stripped_channel[len] = '\0';
+                char *stripped_channel;
+                size_t stripped_channel_length;
+
+                view = aeron_archive_client_recordingSubscriptionDescriptor_get_strippedChannel_as_string_view(&recording_subscription_descriptor);
+                stripped_channel_length = view.length;
+                if (aeron_alloc((void **)&stripped_channel, stripped_channel_length + 1) < 0)
+                {
+                    // TODO
+                }
+                memcpy(stripped_channel, view.data, stripped_channel_length);
+                stripped_channel[stripped_channel_length] = '\0';
 
                 poller->recording_subscription_descriptor_consumer(
                     poller->control_session_id,
@@ -243,7 +251,10 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
                     aeron_archive_client_recordingSubscriptionDescriptor_subscriptionId(&recording_subscription_descriptor),
                     aeron_archive_client_recordingSubscriptionDescriptor_streamId(&recording_subscription_descriptor),
                     stripped_channel,
+                    stripped_channel_length,
                     poller->recording_subscription_descriptor_consumer_clientd);
+
+                aeron_free(stripped_channel);
 
                 if (0 == --poller->remaining_subscription_count)
                 {

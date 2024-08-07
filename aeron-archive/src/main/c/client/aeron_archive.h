@@ -65,8 +65,11 @@ typedef void (*aeron_archive_recording_descriptor_consumer_func_t)(
     int32_t session_id,
     int32_t stream_id,
     const char *stripped_channel,
+    size_t stripped_channel_length,
     const char *original_channel,
+    size_t original_channel_length,
     const char *source_identity,
+    size_t source_identity_length,
     void *clientd);
 
 typedef void (*aeron_archive_recording_subscription_descriptor_consumer_func_t)(
@@ -75,6 +78,7 @@ typedef void (*aeron_archive_recording_subscription_descriptor_consumer_func_t)(
     int64_t subscription_id,
     int32_t stream_id,
     const char *stripped_channel,
+    size_t stripped_channel_length,
     void *clientd);
 
 typedef enum aeron_archive_source_location_en

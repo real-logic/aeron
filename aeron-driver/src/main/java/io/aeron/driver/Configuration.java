@@ -874,9 +874,18 @@ public final class Configuration
     public static final long UNTETHERED_RESTING_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
     /**
-     * Default max number of active retransmissions per connected stream.
+     * Property name of the max number of active retransmissions tracked for udp streams with group semantics.
      */
+    @Config
+    public static final String MAX_RETRANSMITS_PROP_NAME = "aeron.retransmits.active.max";
+
+    /**
+     * Default max number of active retransmissions per connected stream udp stream with group semantics.
+     */
+    @Config
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
+
+    public static final int MAX_RETRANSMITS_MAX = 256;
 
     /**
      * Property name for the class used to validate if a driver should terminate based on token.
@@ -1369,6 +1378,19 @@ public final class Configuration
     public static long untetheredRestingTimeoutNs()
     {
         return getDurationInNanos(UNTETHERED_RESTING_TIMEOUT_PROP_NAME, UNTETHERED_RESTING_TIMEOUT_DEFAULT_NS);
+    }
+
+    /**
+     * Max number of active retransmissions tracked for udp streams with group semantics.
+     *
+     * @return max retransmits
+     * @see #MAX_RETRANSMITS_PROP_NAME
+     */
+    public static int maxRetransmits()
+    {
+        return Integer.min(
+            Integer.max(getInteger(MAX_RETRANSMITS_PROP_NAME, MAX_RETRANSMITS_DEFAULT), 1),
+            MAX_RETRANSMITS_MAX);
     }
 
     /**

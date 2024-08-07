@@ -34,13 +34,14 @@ int aeron_retransmit_handler_init(
     uint64_t delay_timeout_ns,
     uint64_t linger_timeout_ns,
     bool has_group_semantics,
+    uint32_t max_retransmits,
     int64_t *retransmit_overflow_counter)
 {
     handler->invalid_packets_counter = invalid_packets_counter;
     handler->delay_timeout_ns = delay_timeout_ns;
     handler->linger_timeout_ns = linger_timeout_ns;
     handler->has_group_semantics = has_group_semantics;
-    handler->max_retransmits = has_group_semantics ? AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS : 1;
+    handler->max_retransmits = has_group_semantics ? max_retransmits : 1;
     handler->retransmit_overflow_counter = retransmit_overflow_counter;
 
     assert(NULL != retransmit_overflow_counter);

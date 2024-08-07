@@ -178,6 +178,7 @@ typedef struct aeron_driver_context_stct
     uint32_t network_publication_max_messages_per_send;     /* aeron.network.publication.max.messages.per.send = 2 */
     uint32_t resource_free_limit;                           /* aeron.driver.resource.free.limit = 10 */
     uint32_t async_executor_threads;                        /* aeron.driver.async.executor.threads = 1 */
+    uint32_t max_retransmits;                               /* aeron.retransmits.active.max = 16 */
 
     int32_t conductor_cpu_affinity_no;                      /* aeron.conductor.cpu.affinity = -1 */
     int32_t receiver_cpu_affinity_no;                       /* aeron.receiver.cpu.affinity = -1 */

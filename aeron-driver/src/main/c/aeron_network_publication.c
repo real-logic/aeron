@@ -150,6 +150,7 @@ int aeron_network_publication_create(
         context->retransmit_unicast_delay_ns,
         context->retransmit_unicast_linger_ns,
         aeron_udp_channel_has_group_semantics(endpoint->conductor_fields.udp_channel),
+        params->has_max_retransmits ? params->max_retransmits : context->max_retransmits,
         retransmit_overflow_counter) < 0)
     {
         aeron_free(_pub->log_file_name);

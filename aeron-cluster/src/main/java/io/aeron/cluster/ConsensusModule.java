@@ -20,12 +20,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.codecs.AdminRequestDecoder;
-import io.aeron.cluster.codecs.AdminRequestType;
-import io.aeron.cluster.codecs.BackupQueryDecoder;
-import io.aeron.cluster.codecs.HeartbeatRequestDecoder;
-import io.aeron.cluster.codecs.MessageHeaderDecoder;
-import io.aeron.cluster.codecs.StandbySnapshotDecoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
 import io.aeron.config.Config;
@@ -35,11 +30,7 @@ import io.aeron.driver.NameResolver;
 import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
-import io.aeron.security.Authenticator;
-import io.aeron.security.AuthenticatorSupplier;
-import io.aeron.security.AuthorisationService;
-import io.aeron.security.AuthorisationServiceSupplier;
-import io.aeron.security.DefaultAuthenticatorSupplier;
+import io.aeron.security.*;
 import io.aeron.version.Versioned;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -126,7 +117,12 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Terminal state.
          */
-        CLOSED(6);
+        CLOSED(6),
+
+        /**
+         * Appoint new leader wait election.
+         */
+        APPOINT_LEADER(7);
 
         static final State[] STATES = values();
 

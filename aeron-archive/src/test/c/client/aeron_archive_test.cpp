@@ -329,6 +329,30 @@ public:
         return true;
     }
 
+    void startDestArchive()
+    {
+        char aeron_dir[100];
+        aeron_default_path(aeron_dir, 100);
+        std::string dest_aeron_dir = std::string(aeron_dir) + "_dest";
+
+        const std::string archiveDir = m_archiveDir + AERON_FILE_SEP + "dest";
+        const std::string controlChannel = "aeron:udp?endpoint=localhost:8011";
+        const std::string replicationChannel = "aeron:udp?endpoint=localhost:8012";
+
+        m_dest_archive = std::make_shared<TestArchive>(
+            dest_aeron_dir, archiveDir, m_stream, controlChannel, replicationChannel, -7777);
+
+        ASSERT_EQ(0, aeron_archive_context_init(&m_dest_ctx));
+        ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(m_dest_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+        ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+            m_ctx,
+            encoded_credentials_supplier,
+            nullptr,
+            nullptr,
+            &default_creds_clientd));
+        EXPECT_EQ(0, aeron_archive_context_set_control_request_channel(m_dest_ctx, controlChannel.c_str()));
+    }
+
 protected:
     const std::string m_archiveDir = ARCHIVE_DIR;
 
@@ -346,6 +370,7 @@ protected:
     std::ostringstream m_stream;
 
     std::shared_ptr<TestArchive> m_test_archive;
+    std::shared_ptr<TestArchive> m_dest_archive;
 
     bool m_debug = true;
 
@@ -355,6 +380,8 @@ protected:
     aeron_archive_context_t *m_ctx = nullptr;
     aeron_archive_t *m_archive = nullptr;
     aeron_t *m_aeron = nullptr;
+
+    aeron_archive_context_t *m_dest_ctx = nullptr;
 };
 
 class AeronCArchiveTest : public AeronCArchiveTestBase, public testing::Test
@@ -385,56 +412,38 @@ typedef struct recording_descriptor_consumer_clientd_stct
 recording_descriptor_consumer_clientd_t;
 
 static void recording_descriptor_consumer(
-    int64_t control_session_id,
-    int64_t correlation_id,
-    int64_t recording_id,
-    int64_t start_timestamp,
-    int64_t stop_timestamp,
-    int64_t start_position,
-    int64_t stop_position,
-    int32_t initial_term_id,
-    int32_t segment_file_length,
-    int32_t term_buffer_length,
-    int32_t mtu_length,
-    int32_t session_id,
-    int32_t stream_id,
-    const char *stripped_channel,
-    size_t stripped_channel_length,
-    const char *original_channel,
-    size_t original_channel_length,
-    const char *source_identity,
-    size_t source_identity_length,
+    aeron_archive_recording_descriptor_t *descriptor,
     void *clientd)
 {
     auto *cd = (recording_descriptor_consumer_clientd_t *)clientd;
 
     if (cd->verify_recording_id)
     {
-        EXPECT_EQ(cd->recording_id, recording_id);
+        EXPECT_EQ(cd->recording_id, descriptor->recording_id);
     }
     if (cd->verify_stream_id)
     {
-        EXPECT_EQ(cd->stream_id, stream_id);
+        EXPECT_EQ(cd->stream_id, descriptor->stream_id);
     }
     if (cd->verify_start_equals_stop_position)
     {
-        EXPECT_EQ(start_position, stop_position);
+        EXPECT_EQ(descriptor->start_position, descriptor->stop_position);
     }
     if (cd->verify_session_id)
     {
-        EXPECT_EQ(cd->session_id, session_id);
+        EXPECT_EQ(cd->session_id, descriptor->session_id);
     }
     if (nullptr != cd->original_channel)
     {
-        fprintf(stderr, "%zu %zu\n", strlen(cd->original_channel), strlen(original_channel));
-        EXPECT_EQ(strlen(cd->original_channel), strlen(original_channel));
-        EXPECT_STREQ(cd->original_channel, original_channel);
+        fprintf(stderr, "%zu %zu\n", strlen(cd->original_channel), strlen(descriptor->original_channel));
+        EXPECT_EQ(strlen(cd->original_channel), strlen(descriptor->original_channel));
+        EXPECT_STREQ(cd->original_channel, descriptor->original_channel);
     }
 
     fprintf(stderr, "GOT THE LIST RECORDING CALLBACK\n");
-    fprintf(stderr, "%s\n", stripped_channel);
-    fprintf(stderr, "%s\n", original_channel);
-    fprintf(stderr, "%s\n", source_identity);
+    fprintf(stderr, "%s\n", descriptor->stripped_channel);
+    fprintf(stderr, "%s\n", descriptor->original_channel);
+    fprintf(stderr, "%s\n", descriptor->source_identity);
 }
 
 struct SubscriptionDescriptor
@@ -463,18 +472,17 @@ struct subscription_descriptor_consumer_clientd
 };
 
 static void recording_subscription_descriptor_consumer(
-    int64_t control_session_id,
-    int64_t correlation_id,
-    int64_t subscription_id,
-    int32_t stream_id,
-    const char *stripped_channel,
-    size_t stripped_channel_length,
+    aeron_archive_recording_subscription_descriptor_t *descriptor,
     void *clientd)
 {
     fprintf(stderr, "GOT THE LIST RECORDING SUBSCRIPTION CALLBACK\n");
 
     auto cd = (subscription_descriptor_consumer_clientd *)clientd;
-    cd->descriptors.emplace_back(control_session_id, correlation_id, subscription_id, stream_id);
+    cd->descriptors.emplace_back(
+        descriptor->control_session_id,
+        descriptor->correlation_id,
+        descriptor->subscription_id,
+        descriptor->stream_id);
 }
 
 TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)

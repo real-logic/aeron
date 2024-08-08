@@ -190,6 +190,7 @@ int aeron_archive_replay_merge_close(aeron_archive_replay_merge_t *replay_merge)
         {
             // TODO
         }
+
         while (NULL != replay_merge->async_destination)
         {
             aeron_archive_idle(replay_merge->aeron_archive);
@@ -216,6 +217,7 @@ int aeron_archive_replay_merge_close(aeron_archive_replay_merge_t *replay_merge)
             {
                 // TODO
             }
+
             while (NULL != replay_merge->async_destination)
             {
                 aeron_archive_idle(replay_merge->aeron_archive);
@@ -244,7 +246,7 @@ int aeron_archive_replay_merge_do_work(int *work_count_p, aeron_archive_replay_m
 {
     if (aeron_archive_replay_merge_handle_async_destination(replay_merge) < 0)
     {
-        // TODO
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -413,10 +415,7 @@ static int aeron_archive_replay_merge_get_recording_position(int *work_count_p, 
 
         if (found_response)
         {
-            replay_merge->next_target_position =
-                aeron_archive_control_response_poller_relevant_id(
-                    aeron_archive_control_response_poller(
-                        replay_merge->aeron_archive));
+            replay_merge->next_target_position = aeron_archive_control_response_poller(replay_merge->aeron_archive)->relevant_id;
 
             replay_merge->active_correlation_id = AERON_NULL_VALUE;
 
@@ -499,10 +498,7 @@ static int aeron_archive_replay_merge_replay(int *work_count_p, aeron_archive_re
         if (found_response)
         {
             replay_merge->is_replay_active = true;
-            replay_merge->replay_session_id =
-                aeron_archive_control_response_poller_relevant_id(
-                    aeron_archive_control_response_poller(
-                        replay_merge->aeron_archive));
+            replay_merge->replay_session_id = aeron_archive_control_response_poller(replay_merge->aeron_archive)->relevant_id;
             replay_merge->time_of_last_progress_ms = now_ms;
             replay_merge->active_correlation_id = AERON_NULL_VALUE;
 
@@ -594,11 +590,7 @@ static int aeron_archive_replay_merge_attempt_live_join(int *work_count_p, aeron
 
         if (found_response)
         {
-            replay_merge->next_target_position =
-                aeron_archive_control_response_poller_relevant_id(
-                    aeron_archive_control_response_poller(
-                        replay_merge->aeron_archive));
-
+            replay_merge->next_target_position = aeron_archive_control_response_poller(replay_merge->aeron_archive)->relevant_id;
             replay_merge->active_correlation_id = AERON_NULL_VALUE;
 
             if (AERON_NULL_VALUE != replay_merge->next_target_position)
@@ -716,16 +708,16 @@ static int aeron_archive_replay_merge_poll_for_response(bool *found_response_p, 
     aeron_archive_control_response_poller_t *poller = aeron_archive_control_response_poller(replay_merge->aeron_archive);
 
     if (aeron_archive_control_response_poller_poll(poller) > 0 &&
-        aeron_archive_control_response_poller_is_poll_complete(poller) &&
-        aeron_archive_control_response_poller_control_session_id(poller) == replay_merge->control_session_id)
+        poller->is_poll_complete &&
+        poller->control_session_id == replay_merge->control_session_id)
     {
-        if (aeron_archive_control_response_poller_is_code_error(poller))
+        if (poller->is_code_error)
         {
             // TODO AERON_SET_ERR()
             return -1;
         }
 
-        *found_response_p = aeron_archive_control_response_poller_correlation_id(poller) == replay_merge->active_correlation_id;
+        *found_response_p = poller->correlation_id == replay_merge->active_correlation_id;
     }
     else
     {

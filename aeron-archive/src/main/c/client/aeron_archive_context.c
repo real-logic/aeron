@@ -149,6 +149,26 @@ int aeron_archive_context_set_credentials_supplier(
     return 0;
 }
 
+int aeron_archive_context_set_control_request_channel(
+    aeron_archive_context_t *ctx,
+    const char *control_request_channel)
+{
+    strncpy(ctx->control_request_channel, control_request_channel, sizeof(ctx->control_request_channel));
+
+    return 0;
+}
+
+int aeron_archive_context_set_recording_signal_consumer(
+    aeron_archive_context_t *ctx,
+    aeron_archive_recording_signal_consumer_func_t on_recording_signal,
+    void *clientd)
+{
+    ctx->on_recording_signal = on_recording_signal;
+    ctx->on_recording_signal_clientd;
+
+    return 0;
+}
+
 void aeron_archive_context_idle(aeron_archive_context_t *ctx)
 {
     ctx->idle_strategy_func(ctx->idle_strategy_state, 0);

@@ -38,6 +38,9 @@ struct aeron_archive_context_stct
     void *idle_strategy_state;
 
     aeron_archive_credentials_supplier_t credentials_supplier;
+
+    aeron_archive_recording_signal_consumer_func_t on_recording_signal;
+    void *on_recording_signal_clientd;
 };
 
 int aeron_archive_context_conclude(aeron_archive_context_t *ctx);

@@ -333,46 +333,46 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
     {
         aeron_archive_control_response_poller_poll(poller);
 
-        if (aeron_archive_control_response_poller_is_poll_complete(poller) &&
-            aeron_archive_control_response_poller_correlation_id(poller) == async->correlation_id)
+        if (poller->is_poll_complete &&
+            poller->correlation_id == async->correlation_id)
         {
-            async->control_session_id = aeron_archive_control_response_poller_control_session_id(poller);
+            async->control_session_id = poller->control_session_id;
 
-            if (aeron_archive_control_response_poller_was_challenged(poller))
+            if (poller->was_challenged)
             {
                 async->encoded_credentials_from_challenge =
                     aeron_archive_credentials_supplier_on_challenge(
                         &async->ctx->credentials_supplier,
-                        aeron_archive_control_response_poller_encoded_challenge(poller));
+                        &poller->encoded_challenge);
 
                 async->correlation_id = aeron_next_correlation_id(async->aeron);
                 async->state = SEND_CHALLENGE_RESPONSE;
             }
             else
             {
-                if (!aeron_archive_control_response_poller_is_code_ok(poller))
+                if (!poller->is_code_ok)
                 {
-                    if (aeron_archive_control_response_poller_is_code_error(poller))
+                    if (poller->is_code_error)
                     {
                         aeron_archive_proxy_close_session(async->archive_proxy, async->control_session_id);
-                        AERON_SET_ERR(-1, "%s", aeron_archive_control_response_poller_error_message(poller));
+                        AERON_SET_ERR(-1, "%s", poller->error_message);
                         goto cleanup;
                     }
 
                     aeron_archive_proxy_close_session(async->archive_proxy, async->control_session_id);
-                    AERON_SET_ERR(-1, "unexpected response code: code=%i", aeron_archive_control_response_poller_code_value(poller));
+                    AERON_SET_ERR(-1, "unexpected response code: code=%i", poller->code_value);
                     goto cleanup;
                 }
 
                 if (AWAIT_ARCHIVE_ID_RESPONSE == async->state)
                 {
-                    int64_t archive_id = aeron_archive_control_response_poller_relevant_id(poller);
+                    int64_t archive_id = poller->relevant_id;
 
                     return aeron_archive_async_connect_transition_to_done(aeron_archive, async, archive_id);
                 }
                 else // AWAIT_CONNECT_RESPONSE or AWAIT_CHALLENGE_RESPONSE
                 {
-                    int32_t archive_protocol_version = aeron_archive_control_response_poller_version(poller);
+                    int32_t archive_protocol_version = poller->version;
 
                     if (archive_protocol_version < aeron_archive_protocol_version_with_archive_id())
                     {

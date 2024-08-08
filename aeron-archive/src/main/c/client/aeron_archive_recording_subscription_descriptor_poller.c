@@ -16,32 +16,15 @@
 
 #include "aeron_archive.h"
 #include "aeron_archive_recording_subscription_descriptor_poller.h"
+#include "aeron_archive_recording_signal.h"
 
 #include "c/aeron_archive_client/messageHeader.h"
 #include "c/aeron_archive_client/controlResponse.h"
 #include "c/aeron_archive_client/recordingSubscriptionDescriptor.h"
 #include "c/aeron_archive_client/recordingSignalEvent.h"
-#include "c/aeron_archive_client/controlResponseCode.h"
 
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
-
-struct aeron_archive_recording_subscription_descriptor_poller_stct
-{
-    aeron_archive_context_t *ctx;
-    aeron_subscription_t *subscription;
-    int64_t control_session_id;
-
-    int fragment_limit;
-    aeron_controlled_fragment_assembler_t *fragment_assembler;
-
-    int64_t correlation_id;
-    int32_t remaining_subscription_count;
-    aeron_archive_recording_subscription_descriptor_consumer_func_t recording_subscription_descriptor_consumer;
-    void *recording_subscription_descriptor_consumer_clientd;
-
-    bool is_dispatch_complete;
-};
 
 aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_descriptor_poller_on_fragment(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);
 
@@ -119,16 +102,6 @@ int aeron_archive_recording_subscription_descriptor_poller_poll(aeron_archive_re
         aeron_controlled_fragment_assembler_handler,
         poller->fragment_assembler,
         poller->fragment_limit);
-}
-
-int32_t aeron_archive_recording_subscription_descriptor_poller_remaining_subscription_count(aeron_archive_recording_subscription_descriptor_poller_t *poller)
-{
-    return poller->remaining_subscription_count;
-}
-
-bool aeron_archive_recording_subscription_descriptor_poller_is_dispatch_complete(aeron_archive_recording_subscription_descriptor_poller_t *poller)
-{
-    return poller->is_dispatch_complete;
 }
 
 /* ************* */
@@ -233,28 +206,27 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
             {
                 struct aeron_archive_client_recordingSubscriptionDescriptor_string_view view;
 
-                char *stripped_channel;
-                size_t stripped_channel_length;
+                aeron_archive_recording_subscription_descriptor_t descriptor;
 
                 view = aeron_archive_client_recordingSubscriptionDescriptor_get_strippedChannel_as_string_view(&recording_subscription_descriptor);
-                stripped_channel_length = view.length;
-                if (aeron_alloc((void **)&stripped_channel, stripped_channel_length + 1) < 0)
+                descriptor.stripped_channel_length = view.length;
+                if (aeron_alloc((void **)&descriptor.stripped_channel, descriptor.stripped_channel_length + 1) < 0)
                 {
                     // TODO
                 }
-                memcpy(stripped_channel, view.data, stripped_channel_length);
-                stripped_channel[stripped_channel_length] = '\0';
+                memcpy(descriptor.stripped_channel, view.data, descriptor.stripped_channel_length);
+                descriptor.stripped_channel[descriptor.stripped_channel_length] = '\0';
+
+                descriptor.control_session_id = poller->control_session_id;
+                descriptor.correlation_id = poller->correlation_id;
+                descriptor.subscription_id = aeron_archive_client_recordingSubscriptionDescriptor_subscriptionId(&recording_subscription_descriptor);
+                descriptor.stream_id = aeron_archive_client_recordingSubscriptionDescriptor_streamId(&recording_subscription_descriptor);
 
                 poller->recording_subscription_descriptor_consumer(
-                    poller->control_session_id,
-                    poller->correlation_id,
-                    aeron_archive_client_recordingSubscriptionDescriptor_subscriptionId(&recording_subscription_descriptor),
-                    aeron_archive_client_recordingSubscriptionDescriptor_streamId(&recording_subscription_descriptor),
-                    stripped_channel,
-                    stripped_channel_length,
+                    &descriptor,
                     poller->recording_subscription_descriptor_consumer_clientd);
 
-                aeron_free(stripped_channel);
+                aeron_free(descriptor.stripped_channel);
 
                 if (0 == --poller->remaining_subscription_count)
                 {
@@ -269,6 +241,8 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
 
         case AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_EVENT_SBE_TEMPLATE_ID:
         {
+            aeron_archive_recording_signal_dispatch_buffer(poller->ctx, buffer, length);
+
             break;
         }
     }

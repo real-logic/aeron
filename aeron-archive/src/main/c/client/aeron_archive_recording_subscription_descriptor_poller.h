@@ -21,9 +21,26 @@
 
 #include "aeronc.h"
 
-typedef struct aeron_archive_recording_subscription_descriptor_poller_stct aeron_archive_recording_subscription_descriptor_poller_t;
-
 #define AERON_ARCHIVE_RECORDING_SUBSCRIPTION_DESCRIPTOR_POLLER_FRAGMENT_LIMIT_DEFAULT 10
+
+typedef struct aeron_archive_recording_subscription_descriptor_poller_stct
+{
+    aeron_archive_context_t *ctx;
+    aeron_subscription_t *subscription;
+    int64_t control_session_id;
+
+    int fragment_limit;
+    aeron_controlled_fragment_assembler_t *fragment_assembler;
+
+    int64_t correlation_id;
+    int32_t remaining_subscription_count;
+    aeron_archive_recording_subscription_descriptor_consumer_func_t recording_subscription_descriptor_consumer;
+    void *recording_subscription_descriptor_consumer_clientd;
+
+    bool is_dispatch_complete;
+}
+aeron_archive_recording_subscription_descriptor_poller_t;
+
 
 int aeron_archive_recording_subscription_descriptor_poller_create(
     aeron_archive_recording_subscription_descriptor_poller_t **poller,
@@ -42,9 +59,5 @@ void aeron_archive_recording_subscription_descriptor_poller_reset(
     void *recording_subscription_descriptor_consumer_clientd);
 
 int aeron_archive_recording_subscription_descriptor_poller_poll(aeron_archive_recording_subscription_descriptor_poller_t *poller);
-
-int32_t aeron_archive_recording_subscription_descriptor_poller_remaining_subscription_count(aeron_archive_recording_subscription_descriptor_poller_t *poller);
-
-bool aeron_archive_recording_subscription_descriptor_poller_is_dispatch_complete(aeron_archive_recording_subscription_descriptor_poller_t *poller);
 
 #endif // AERON_ARCHIVE_RECORDING_SUBSCRIPTION_DESCRIPTOR_POLLER_H

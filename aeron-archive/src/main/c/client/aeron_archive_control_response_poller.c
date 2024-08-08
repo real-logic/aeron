@@ -25,40 +25,6 @@
 #include "c/aeron_archive_client/challenge.h"
 #include "c/aeron_archive_client/recordingSignalEvent.h"
 
-#define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_MAX_LEN 10000 // TODO
-#define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ENCODED_CHALLENGE_BUFFER_MAX_LEN 10000 // TODO
-
-struct aeron_archive_control_response_poller_stct
-{
-    aeron_subscription_t *subscription;
-    int fragment_limit;
-    aeron_controlled_fragment_assembler_t *fragment_assembler;
-
-    int64_t control_session_id;
-    int64_t correlation_id;
-    int64_t relevant_id;
-    int64_t recording_id;
-    int64_t subscription_id;
-    int64_t position;
-
-    int32_t recording_signal_code;
-    int32_t version;
-
-    char error_message[AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_MAX_LEN];
-    char encoded_challenge_buffer[AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ENCODED_CHALLENGE_BUFFER_MAX_LEN];
-
-    aeron_archive_encoded_credentials_t encoded_challenge;
-
-    int code_value;
-
-    bool is_poll_complete;
-    bool is_code_ok;
-    bool is_code_error;
-    bool is_control_response;
-    bool was_challenged;
-    bool is_recording_signal;
-};
-
 void aeron_archive_control_response_poller_reset(aeron_archive_control_response_poller_t *poller);
 
 aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller_on_fragment(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);
@@ -119,71 +85,6 @@ int aeron_archive_control_response_poller_poll(aeron_archive_control_response_po
         aeron_controlled_fragment_assembler_handler,
         poller->fragment_assembler,
         poller->fragment_limit);
-}
-
-aeron_subscription_t *aeron_archive_control_response_poller_get_subscription(aeron_archive_control_response_poller_t *poller)
-{
-    return poller->subscription;
-}
-
-bool aeron_archive_control_response_poller_is_poll_complete(aeron_archive_control_response_poller_t *poller)
-{
-    return poller->is_poll_complete;
-}
-
-bool aeron_archive_control_response_poller_is_recording_signal(aeron_archive_control_response_poller_t *poller)
-{
-    return poller->is_recording_signal;
-}
-
-bool aeron_archive_control_response_poller_was_challenged(aeron_archive_control_response_poller_t *poller)
-{
-    return poller->was_challenged;
-}
-
-bool aeron_archive_control_response_poller_is_code_ok(aeron_archive_control_response_poller_t *poller)
-{
-    return poller->is_code_ok;
-}
-
-bool aeron_archive_control_response_poller_is_code_error(aeron_archive_control_response_poller_t *poller)
-{
-    return poller->is_code_error;
-}
-
-int aeron_archive_control_response_poller_code_value(aeron_archive_control_response_poller_t *poller)
-{
-    return poller->code_value;
-}
-
-int64_t aeron_archive_control_response_poller_correlation_id(aeron_archive_control_response_poller_t *poller)
-{
-    return poller->correlation_id;
-}
-
-int64_t aeron_archive_control_response_poller_control_session_id(aeron_archive_control_response_poller_t *poller)
-{
-    return poller->control_session_id;
-}
-
-int64_t aeron_archive_control_response_poller_relevant_id(aeron_archive_control_response_poller_t *poller)
-{
-    return poller->relevant_id;
-}
-
-int32_t aeron_archive_control_response_poller_version(aeron_archive_control_response_poller_t *poller)
-{
-    return poller->version;
-}
-
-char *aeron_archive_control_response_poller_error_message(aeron_archive_control_response_poller_t *poller)
-{
-    return poller->error_message;
-}
-
-aeron_archive_encoded_credentials_t *aeron_archive_control_response_poller_encoded_challenge(aeron_archive_control_response_poller_t *poller)
-{
-    return &poller->encoded_challenge;
 }
 
 /* *************** */

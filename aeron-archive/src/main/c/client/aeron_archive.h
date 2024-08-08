@@ -50,35 +50,61 @@ typedef void (*aeron_archive_credentials_free_func_t)(
     aeron_archive_encoded_credentials_t *credentials,
     void *clientd);
 
+typedef struct aeron_archive_recording_descriptor_stct
+{
+    int64_t control_session_id;
+    int64_t correlation_id;
+    int64_t recording_id;
+    int64_t start_timestamp;
+    int64_t stop_timestamp;
+    int64_t start_position;
+    int64_t stop_position;
+    int32_t initial_term_id;
+    int32_t segment_file_length;
+    int32_t term_buffer_length;
+    int32_t mtu_length;
+    int32_t session_id;
+    int32_t stream_id;
+    char *stripped_channel;
+    size_t stripped_channel_length;
+    char *original_channel;
+    size_t original_channel_length;
+    char *source_identity;
+    size_t source_identity_length;
+}
+aeron_archive_recording_descriptor_t;
+
 typedef void (*aeron_archive_recording_descriptor_consumer_func_t)(
-    int64_t control_session_id,
-    int64_t correlation_id,
-    int64_t recording_id,
-    int64_t start_timestamp,
-    int64_t stop_timestamp,
-    int64_t start_position,
-    int64_t stop_position,
-    int32_t initial_term_id,
-    int32_t segment_file_length,
-    int32_t term_buffer_length,
-    int32_t mtu_length,
-    int32_t session_id,
-    int32_t stream_id,
-    const char *stripped_channel,
-    size_t stripped_channel_length,
-    const char *original_channel,
-    size_t original_channel_length,
-    const char *source_identity,
-    size_t source_identity_length,
+    aeron_archive_recording_descriptor_t *recording_descriptor,
     void *clientd);
 
+typedef struct aeron_archive_recording_subscription_descriptor_stct
+{
+    int64_t control_session_id;
+    int64_t correlation_id;
+    int64_t subscription_id;
+    int32_t stream_id;
+    char *stripped_channel;
+    size_t stripped_channel_length;
+}
+aeron_archive_recording_subscription_descriptor_t;
+
 typedef void (*aeron_archive_recording_subscription_descriptor_consumer_func_t)(
-    int64_t control_session_id,
-    int64_t correlation_id,
-    int64_t subscription_id,
-    int32_t stream_id,
-    const char *stripped_channel,
-    size_t stripped_channel_length,
+    aeron_archive_recording_subscription_descriptor_t *recording_subscription_descriptor,
+    void *clientd);
+
+typedef struct aeron_archive_recording_signal_stct
+{
+    int64_t control_session_id;
+    int64_t recording_id;
+    int64_t subscription_id;
+    int64_t position;
+    int32_t recording_signal_code;
+}
+aeron_archive_recording_signal_t;
+
+typedef void (*aeron_archive_recording_signal_consumer_func_t)(
+    aeron_archive_recording_signal_t *recording_signal,
     void *clientd);
 
 typedef enum aeron_archive_source_location_en
@@ -101,6 +127,13 @@ int aeron_archive_context_set_credentials_supplier(
     aeron_archive_credentials_encoded_credentials_supplier_func_t encoded_credentials,
     aeron_archive_credentials_challenge_supplier_func_t  on_challenge,
     aeron_archive_credentials_free_func_t on_free,
+    void *clientd);
+int aeron_archive_context_set_control_request_channel(
+    aeron_archive_context_t *ctx,
+    const char *control_request_channel);
+int aeron_archive_context_set_recording_signal_consumer(
+    aeron_archive_context_t *ctx,
+    aeron_archive_recording_signal_consumer_func_t on_recording_signal,
     void *clientd);
 
 int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_archive_context_t *ctx);

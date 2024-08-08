@@ -93,6 +93,7 @@ SET(SOURCE
     client/aeron_archive_proxy.c
     client/aeron_archive_recording_descriptor_poller.c
     client/aeron_archive_recording_pos.c
+    client/aeron_archive_recording_signal.c
     client/aeron_archive_recording_subscription_descriptor_poller.c
     client/aeron_archive_replay_merge.c
     client/aeron_archive_replay_params.c
@@ -107,6 +108,7 @@ SET(HEADERS
     client/aeron_archive_credentials_supplier.h
     client/aeron_archive_proxy.h
     client/aeron_archive_recording_descriptor_poller.h
+    client/aeron_archive_recording_signal.h
     client/aeron_archive_recording_subscription_descriptor_poller.h
     client/aeron_archive_replay_params.h
 )

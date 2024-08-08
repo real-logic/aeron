@@ -941,6 +941,7 @@ public class Aeron implements AutoCloseable
         private UnavailableImageHandler unavailableImageHandler;
         private AvailableCounterHandler availableCounterHandler;
         private UnavailableCounterHandler unavailableCounterHandler;
+        private PublicationErrorFrameHandler publicationErrorFrameHandler = PublicationErrorFrameHandler.NO_OP;
         private Runnable closeHandler;
         private long keepAliveIntervalNs = Configuration.KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeoutNs = 0;
@@ -1726,6 +1727,31 @@ public class Aeron implements AutoCloseable
         public ThreadFactory threadFactory()
         {
             return threadFactory;
+        }
+
+        /**
+         * Set the handler to receive error frames that have been received by the local driver for publications added by
+         * this client.
+         *
+         * @param publicationErrorFrameHandler to be called back when an error frame is received.
+         * @return this for a fluent API.
+         */
+        public Context publicationErrorFrameHandler(
+            final PublicationErrorFrameHandler publicationErrorFrameHandler)
+        {
+            this.publicationErrorFrameHandler = publicationErrorFrameHandler;
+            return this;
+        }
+
+        /**
+         * Get the handler to receive error frames that have been received by the local driver for publications added by
+         * this client.
+         *
+         * @return the {@link PublicationErrorFrameHandler} to call back on to.
+         */
+        public PublicationErrorFrameHandler publicationErrorFrameHandler()
+        {
+            return this.publicationErrorFrameHandler;
         }
 
         /**

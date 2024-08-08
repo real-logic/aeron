@@ -100,6 +100,11 @@ public class ControlProtocolEvents
      */
     public static final int ADD_STATIC_COUNTER = 0x0F;
 
+    /**
+     * Invalidate an image.
+     */
+    public static final int REJECT_IMAGE = 0x10;
+
     // Media Driver to Clients
 
     /**
@@ -158,4 +163,9 @@ public class ControlProtocolEvents
      * @since 1.45.0
      */
     public static final int ON_STATIC_COUNTER = 0x0F0B;
+
+    /**
+     * Inform clients of error frame received by publication
+     */
+    public static final int ON_PUBLICATION_ERROR = 0x0F0C;
 }

@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.protocol.ErrorFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.ResponseSetupFlyweight;
@@ -44,6 +45,8 @@ public final class ReceiveChannelEndpointThreadLocals
     private final RttMeasurementFlyweight rttMeasurementFlyweight;
     private final ByteBuffer responseSetupBuffer;
     private final ResponseSetupFlyweight responseSetupHeader;
+    private final ByteBuffer errorBuffer;
+    private final ErrorFlyweight errorFlyweight;
     private long nextReceiverId;
 
     /**
@@ -56,7 +59,8 @@ public final class ReceiveChannelEndpointThreadLocals
             BitUtil.align(smLength, CACHE_LINE_LENGTH) +
             BitUtil.align(NakFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH) +
             BitUtil.align(RttMeasurementFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH) +
-            BitUtil.align(ResponseSetupFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
+            BitUtil.align(ResponseSetupFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH) +
+            BitUtil.align(ErrorFlyweight.MAX_ERROR_FRAME_LENGTH, CACHE_LINE_LENGTH);
 
         final UUID uuid = UUID.randomUUID();
         nextReceiverId = uuid.getMostSignificantBits() ^ uuid.getLeastSignificantBits();
@@ -83,6 +87,12 @@ public final class ReceiveChannelEndpointThreadLocals
         responseSetupBuffer = byteBuffer.slice();
         responseSetupHeader = new ResponseSetupFlyweight(responseSetupBuffer);
 
+        final int errorOffset = responseSetupOffset + BitUtil.align(
+            ResponseSetupFlyweight.HEADER_LENGTH, FRAME_ALIGNMENT);
+        byteBuffer.limit(errorOffset + ErrorFlyweight.MAX_ERROR_FRAME_LENGTH).position(errorOffset);
+        errorBuffer = byteBuffer.slice();
+        errorFlyweight = new ErrorFlyweight(errorBuffer);
+
         statusMessageFlyweight
             .version(HeaderFlyweight.CURRENT_VERSION)
             .headerType(HeaderFlyweight.HDR_TYPE_SM)
@@ -101,6 +111,11 @@ public final class ReceiveChannelEndpointThreadLocals
         responseSetupHeader
             .version(HeaderFlyweight.CURRENT_VERSION)
             .headerType(HeaderFlyweight.HDR_TYPE_RSP_SETUP)
+            .frameLength(ResponseSetupFlyweight.HEADER_LENGTH);
+
+        errorFlyweight
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .headerType(HeaderFlyweight.HDR_TYPE_ERR)
             .frameLength(ResponseSetupFlyweight.HEADER_LENGTH);
     }
 
@@ -182,6 +197,26 @@ public final class ReceiveChannelEndpointThreadLocals
     public ResponseSetupFlyweight responseSetupHeader()
     {
         return responseSetupHeader;
+    }
+
+    /**
+     * Buffer for writing the Error messages to send.
+     *
+     * @return buffer for writing the error messages to send.
+     */
+    public ByteBuffer errorBuffer()
+    {
+        return errorBuffer;
+    }
+
+    /**
+     * Flyweight over the {@link #errorBuffer()}
+     *
+     * @return flyweight over the {@link #errorBuffer()}
+     */
+    public ErrorFlyweight errorFlyweight()
+    {
+        return errorFlyweight;
     }
 
     /**

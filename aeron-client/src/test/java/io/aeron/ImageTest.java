@@ -35,6 +35,7 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static org.agrona.BitUtil.align;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
@@ -608,6 +609,27 @@ class ImageTest
             any(UnsafeBuffer.class), eq(initialOffset + HEADER_LENGTH), eq(DATA.length), any(Header.class));
         inOrder.verify(position).setOrdered(TERM_BUFFER_LENGTH);
     }
+
+    @Test
+    void shouldRejectFragment()
+    {
+        final int initialOffset = TERM_BUFFER_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
+        final long initialPosition = computePosition(
+            INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        position.setOrdered(initialPosition);
+        final Image image = createImage();
+
+        insertDataFrame(INITIAL_TERM_ID, initialOffset);
+        insertPaddingFrame(INITIAL_TERM_ID, initialOffset + ALIGNED_FRAME_LENGTH);
+
+        assertEquals(initialPosition, image.position());
+
+        final String reason = "this is frame is to be rejected";
+        image.reject(reason);
+
+        verify(subscription).rejectImage(image.correlationId(), image.position(), reason);
+    }
+
 
     private Image createImage()
     {

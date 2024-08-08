@@ -80,7 +80,6 @@ class ReceiverLivenessTrackerTest
         assertFalse(receiverLivenessTracker.hasReceivers());
     }
 
-
     @Test
     void shouldNotBeLiveIfReceiverRemoved()
     {
@@ -104,4 +103,29 @@ class ReceiverLivenessTrackerTest
         assertFalse(receiverLivenessTracker.hasReceivers());
     }
 
+    @Test
+    void shouldReturnFalseIfAlreadyRemoved()
+    {
+        final long receiverId1 = 10001;
+        final long receiverId2 = 10002;
+        final long receiverId3 = 10003;
+        final long nowNs = 10000000000L;
+
+        final ReceiverLivenessTracker receiverLivenessTracker = new ReceiverLivenessTracker();
+        receiverLivenessTracker.onStatusMessage(receiverId1, nowNs);
+        receiverLivenessTracker.onStatusMessage(receiverId2, nowNs);
+        receiverLivenessTracker.onStatusMessage(receiverId3, nowNs);
+
+        assertTrue(receiverLivenessTracker.onRemoteClose(receiverId1));
+        assertFalse(receiverLivenessTracker.onRemoteClose(receiverId1));
+        assertTrue(receiverLivenessTracker.hasReceivers());
+
+        assertTrue(receiverLivenessTracker.onRemoteClose(receiverId2));
+        assertFalse(receiverLivenessTracker.onRemoteClose(receiverId2));
+        assertTrue(receiverLivenessTracker.hasReceivers());
+
+        assertTrue(receiverLivenessTracker.onRemoteClose(receiverId3));
+        assertFalse(receiverLivenessTracker.onRemoteClose(receiverId3));
+        assertFalse(receiverLivenessTracker.hasReceivers());
+    }
 }

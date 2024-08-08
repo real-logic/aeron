@@ -788,6 +788,16 @@ public final class Image
         return length;
     }
 
+    /**
+     * Force the driver to disconnect this image from the remote publication.
+     *
+     * @param reason an error message to be forwarded back to the publication.
+     */
+    public void reject(final String reason)
+    {
+        subscription.rejectImage(correlationId, position(), reason);
+    }
+
     private UnsafeBuffer activeTermBuffer(final long position)
     {
         return termBuffers[LogBufferDescriptor.indexByPosition(position, positionBitsToShift)];

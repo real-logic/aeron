@@ -893,8 +893,11 @@ final class ConsensusModuleAgent
         {
             if (this.state == ConsensusModule.State.APPOINT_LEADER)
             {
-                this.enterElection(true, "appoint leader member id : " + this.currentAppointedLeaderId);
-                this.currentAppointedLeaderId = NULL_VALUE;
+                if (this.currentAppointedLeaderId == followerMemberId)
+                {
+                    this.enterElection(true, "appoint leader member id : " + this.currentAppointedLeaderId);
+                    this.currentAppointedLeaderId = NULL_VALUE;
+                }
                 return;
             }
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
@@ -3182,6 +3185,7 @@ final class ConsensusModuleAgent
         }
         this.enterElection(true, "appoint leader member id : " + appointedLeaderId);
         this.currentAppointedLeaderId = NULL_VALUE;
+        this.state(ConsensusModule.State.ACTIVE);
     }
 
     private void clearSessionsAfter(final long logPosition)

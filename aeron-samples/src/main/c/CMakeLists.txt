@@ -26,8 +26,6 @@ else()
     set(CLIENT_LINK_LIB "aeron_static")
 endif ()
 
-include_directories(${AERON_CLIENT_SOURCE_PATH})
-
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
 set(SOURCES
@@ -38,15 +36,25 @@ set(HEADERS
     sample_util.h)
 
 add_executable(basic_publisher basic_publisher.c ${HEADERS} ${SOURCES})
+add_executable(aeron::basic_publisher ALIAS basic_publisher)
 add_executable(basic_subscriber basic_subscriber.c ${HEADERS} ${SOURCES})
+add_executable(aeron::basic_subscriber ALIAS basic_subscriber)
 add_executable(basic_mds_subscriber basic_mds_subscriber.c ${HEADERS} ${SOURCES})
+add_executable(aeron::basic_mds_subscriber ALIAS basic_mds_subscriber)
 add_executable(rate_subscriber rate_subscriber.c ${HEADERS} ${SOURCES})
+add_executable(aeron::rate_subscriber ALIAS rate_subscriber)
 add_executable(streaming_publisher streaming_publisher.c ${HEADERS} ${SOURCES})
+add_executable(aeron::streaming_publisher ALIAS streaming_publisher)
 add_executable(streaming_exclusive_publisher streaming_exclusive_publisher.c ${HEADERS} ${SOURCES})
+add_executable(aeron::streaming_exclusive_publisher ALIAS streaming_exclusive_publisher)
 add_executable(cpong cpong.c ${HEADERS} ${SOURCES})
+add_executable(aeron::cpong ALIAS cpong)
 add_executable(cping cping.c ${HEADERS} ${SOURCES})
+add_executable(aeron::cping ALIAS cping)
 add_executable(response_client response/response_client.c ${HEADERS} ${SOURCES})
+add_executable(aeron::response_client ALIAS response_client)
 add_executable(response_server response/response_server.c ${HEADERS} ${SOURCES})
+add_executable(aeron::response_server ALIAS response_server)
 
 if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     add_executable(ping_pong_raw raw/ping_pong_raw.c)
@@ -88,15 +96,19 @@ target_link_libraries(response_server
 add_dependencies(cping hdr_histogram)
 
 add_executable(AeronStat aeron_stat.c ${HEADERS})
+add_executable(aeron::AeronStat ALIAS AeronStat)
 target_link_libraries(AeronStat ${CLIENT_LINK_LIB})
 
 add_executable(DriverTool driver_tool.c ${HEADERS})
+add_executable(aeron::DriverTool ALIAS DriverTool)
 target_link_libraries(DriverTool ${CLIENT_LINK_LIB})
 
 add_executable(ErrorStat error_stat.c ${HEADERS})
+add_executable(aeron::ErrorStat ALIAS ErrorStat)
 target_link_libraries(ErrorStat ${CLIENT_LINK_LIB})
 
 add_executable(LossStat loss_stat.c ${HEADERS})
+add_executable(aeron::LossStat ALIAS LossStat)
 target_link_libraries(LossStat ${CLIENT_LINK_LIB})
 
 if (AERON_INSTALL_TARGETS)
@@ -115,5 +127,6 @@ if (AERON_INSTALL_TARGETS)
         DriverTool
         ErrorStat
         LossStat
+        EXPORT aeron-targets
         DESTINATION bin)
 endif ()

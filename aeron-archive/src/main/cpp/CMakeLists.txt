@@ -98,7 +98,9 @@ SET(HEADERS
 
 # static library
 add_library(aeron_archive_client STATIC ${SOURCE} ${HEADERS})
+add_library(aeron::aeron_archive_client ALIAS aeron_archive_client)
 add_library(aeron_archive_client_wrapper STATIC ${SOURCE} ${HEADERS})
+add_library(aeron::aeron_archive_client_wrapper ALIAS aeron_archive_client_wrapper)
 
 add_dependencies(aeron_archive_client codecs)
 add_dependencies(aeron_archive_client_wrapper codecs)
@@ -126,11 +128,10 @@ target_link_libraries(aeron_archive_client_wrapper
 
 if (AERON_INSTALL_TARGETS)
     install(
-        TARGETS aeron_archive_client aeron_archive_client_wrapper
-        EXPORT AeronTargets
+        TARGETS aeron_archive_client
+        EXPORT aeron-targets
         RUNTIME DESTINATION lib
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
     install(DIRECTORY ./ DESTINATION include FILES_MATCHING PATTERN "*.h")
-    install(DIRECTORY ${ARCHIVE_CODEC_TARGET_DIR}/ DESTINATION include FILES_MATCHING PATTERN "*.h")
 endif ()

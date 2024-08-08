@@ -349,20 +349,24 @@ SET(HEADERS
     aeronmd.h)
 
 add_library(aeron_driver SHARED ${SOURCE} ${HEADERS})
+add_library(aeron::aeron_driver ALIAS aeron_driver)
 target_include_directories(aeron_driver PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR};${AERON_C_CLIENT_SOURCE_PATH}>"
     "$<INSTALL_INTERFACE:include/aeronmd;include/aeron>")
 
 add_library(aeron_driver_static STATIC ${SOURCE} ${HEADERS})
+add_library(aeron::aeron_driver_static ALIAS aeron_driver_static)
 target_include_directories(aeron_driver_static PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR};${AERON_C_CLIENT_SOURCE_PATH}>"
     "$<INSTALL_INTERFACE:include/aeronmd;include/aeron>")
 
 add_executable(aeronmd aeronmd.c)
+add_executable(aeron::aeronmd ALIAS aeronmd)
 target_include_directories(aeronmd
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
 
 add_executable(aeronmd_s aeronmd.c)
+add_executable(aeron::aeronmd_s ALIAS aeronmd_s)
 target_include_directories(aeronmd_s
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${AERON_C_CLIENT_SOURCE_PATH})
 
@@ -441,10 +445,10 @@ if (AERON_INSTALL_TARGETS)
     endif ()
     install(
         TARGETS aeron_driver aeron_driver_static
-        EXPORT AeronTargets
+        EXPORT aeron-targets
         RUNTIME DESTINATION lib
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
-    install(TARGETS aeronmd aeronmd_s DESTINATION bin)
+    install(TARGETS aeronmd aeronmd_s EXPORT aeron-targets DESTINATION bin)
     install(DIRECTORY ./ DESTINATION include/aeronmd FILES_MATCHING PATTERN "*.h")
 endif ()

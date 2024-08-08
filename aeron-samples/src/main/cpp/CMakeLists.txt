@@ -30,129 +30,110 @@ set(HEADERS
     RateReporter.h)
 
 add_executable(BasicPublisher BasicPublisher.cpp ${HEADERS})
+add_executable(aeron::BasicPublisher ALIAS BasicPublisher)
 add_executable(BasicSubscriber BasicSubscriber.cpp ${HEADERS})
+add_executable(aeron::BasicSubscriber ALIAS BasicSubscriber)
 add_executable(StreamingPublisher StreamingPublisher.cpp ${HEADERS})
+add_executable(aeron::StreamingPublisher ALIAS StreamingPublisher)
 add_executable(RateSubscriber RateSubscriber.cpp ${HEADERS})
+add_executable(aeron::RateSubscriber ALIAS RateSubscriber)
 add_executable(Pong Pong.cpp ${HEADERS})
+add_executable(aeron::Pong ALIAS Pong)
 add_executable(Ping Ping.cpp ${HEADERS})
+add_executable(aeron::Ping ALIAS Ping)
 add_executable(BasicPublisherW BasicPublisher.cpp ${HEADERS})
+add_executable(aeron::BasicPublisherW ALIAS BasicPublisherW)
 add_executable(BasicSubscriberW BasicSubscriber.cpp ${HEADERS})
+add_executable(aeron::BasicSubscriberW ALIAS BasicSubscriberW)
 add_executable(StreamingPublisherW StreamingPublisher.cpp ${HEADERS})
+add_executable(aeron::StreamingPublisherW ALIAS StreamingPublisherW)
 add_executable(RateSubscriberW RateSubscriber.cpp ${HEADERS})
+add_executable(aeron::RateSubscriberW ALIAS RateSubscriberW)
 add_executable(PongW Pong.cpp ${HEADERS})
+add_executable(aeron::PongW ALIAS PongW)
 add_executable(PingW Ping.cpp ${HEADERS})
+add_executable(aeron::PingW ALIAS PingW)
 add_executable(TimeTests raw/TimeTests.cpp ${HEADERS})
+add_executable(aeron::TimeTests ALIAS TimeTests)
 add_executable(Throughput Throughput.cpp ${HEADERS})
+add_executable(aeron::Throughput ALIAS Throughput)
 add_executable(ExclusiveThroughput ExclusiveThroughput.cpp ${HEADERS})
+add_executable(aeron::ExclusiveThroughput ALIAS ExclusiveThroughput)
 add_executable(PingPong PingPong.cpp ${HEADERS})
+add_executable(aeron::PingPong ALIAS PingPong)
 add_executable(PingPongW PingPong.cpp ${HEADERS})
+add_executable(aeron::PingPongW ALIAS PingPongW)
 add_executable(ExclusivePingPong ExclusivePingPong.cpp ${HEADERS})
+add_executable(aeron::ExclusivePingPong ALIAS ExclusivePingPong)
 add_executable(ExclusivePingPongW ExclusivePingPong.cpp ${HEADERS})
+add_executable(aeron::ExclusivePingPongW ALIAS ExclusivePingPongW)
 
-target_include_directories(BasicPublisher
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(BasicPublisher
     ${CLIENT_LINK_LIB})
 
-target_include_directories(BasicSubscriber
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(BasicSubscriber
     ${CLIENT_LINK_LIB})
 
-target_include_directories(StreamingPublisher
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(StreamingPublisher
     ${CLIENT_LINK_LIB})
 
-target_include_directories(RateSubscriber
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(RateSubscriber
     ${CLIENT_LINK_LIB})
 
-target_include_directories(Pong
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(Pong
     ${CLIENT_LINK_LIB})
 
-target_include_directories(Ping
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(Ping
     ${CLIENT_LINK_LIB}
     hdr_histogram_static)
 add_dependencies(Ping hdr_histogram)
 
-target_include_directories(BasicPublisherW
-    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
 target_link_libraries(BasicPublisherW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
 
-target_include_directories(BasicSubscriberW
-    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
 target_link_libraries(BasicSubscriberW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
 
-target_include_directories(StreamingPublisherW
-    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
 target_link_libraries(StreamingPublisherW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
 
-target_include_directories(RateSubscriberW
-    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
 target_link_libraries(RateSubscriberW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
 
-target_include_directories(PongW
-    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
 target_link_libraries(PongW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB})
 
-target_include_directories(PingW
-    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
 target_link_libraries(PingW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB}
     hdr_histogram_static)
 add_dependencies(PingW hdr_histogram)
 
-target_include_directories(Throughput
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(Throughput
     ${CLIENT_LINK_LIB})
 
-target_include_directories(ExclusiveThroughput
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(ExclusiveThroughput
     ${CLIENT_LINK_LIB})
 
-target_include_directories(PingPong
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(PingPong
     ${CLIENT_LINK_LIB}
     hdr_histogram_static)
 add_dependencies(PingPong hdr_histogram)
 
-target_include_directories(PingPongW
-    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
 target_link_libraries(PingPongW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB}
     hdr_histogram_static)
 add_dependencies(PingPongW hdr_histogram)
 
-target_include_directories(ExclusivePingPong
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(ExclusivePingPong
     ${CLIENT_LINK_LIB}
     hdr_histogram_static)
 add_dependencies(ExclusivePingPong hdr_histogram)
 
-target_include_directories(ExclusivePingPongW
-    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH} ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
 target_link_libraries(ExclusivePingPongW
     ${CLIENT_WRAPPER_LINK_LIB} ${C_CLIENT_LINK_LIB}
     hdr_histogram_static)
 add_dependencies(ExclusivePingPongW hdr_histogram)
 
-target_include_directories(TimeTests
-    PUBLIC ${AERON_CLIENT_SOURCE_PATH})
 target_link_libraries(TimeTests
     ${CMAKE_THREAD_LIBS_INIT})
 
@@ -177,5 +158,6 @@ if (AERON_INSTALL_TARGETS)
         PongW
         PingPongW
         ExclusivePingPongW
+        EXPORT aeron-targets
         DESTINATION bin)
 endif ()

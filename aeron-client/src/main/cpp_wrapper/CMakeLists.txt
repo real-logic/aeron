@@ -78,10 +78,11 @@ SET(HEADERS
 
 # header only library
 add_library(aeron_client_wrapper INTERFACE)
+add_library(aeron::aeron_client_wrapper ALIAS aeron_client_wrapper)
 target_include_directories(aeron_client_wrapper
     INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/wrapper>")
 
-target_sources(aeron_client_wrapper INTERFACE FILE_SET HEADERS FILES ${HEADERS})
+#target_sources(aeron_client_wrapper INTERFACE FILE_SET HEADERS FILES ${HEADERS})
 
 if (MSVC)
     string(REPLACE "/" "\\\\" NATIVE_PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}")
@@ -99,6 +100,6 @@ target_link_libraries(aeron_client_wrapper INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 if (AERON_INSTALL_TARGETS)
     install(
         TARGETS aeron_client_wrapper
-        EXPORT AeronTargets
-        FILE_SET HEADERS DESTINATION include/wrapper)
+        EXPORT aeron-targets)
+    install(DIRECTORY ./ DESTINATION include/wrapper FILES_MATCHING PATTERN "*.h")
 endif ()

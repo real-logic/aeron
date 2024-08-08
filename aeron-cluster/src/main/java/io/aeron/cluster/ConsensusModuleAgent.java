@@ -897,6 +897,7 @@ final class ConsensusModuleAgent
                 {
                     this.enterElection(true, "appoint leader member id : " + this.currentAppointedLeaderId);
                     this.currentAppointedLeaderId = NULL_VALUE;
+                    this.state(ConsensusModule.State.ACTIVE);
                 }
                 return;
             }
@@ -3185,7 +3186,6 @@ final class ConsensusModuleAgent
         }
         this.enterElection(true, "appoint leader member id : " + appointedLeaderId);
         this.currentAppointedLeaderId = NULL_VALUE;
-        this.state(ConsensusModule.State.ACTIVE);
     }
 
     private void clearSessionsAfter(final long logPosition)

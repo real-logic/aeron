@@ -534,6 +534,13 @@ public:
         return *this;
     }
 
+    /**
+     * Set handler to receive notifications when a publication error is received for a publication that this client
+     * is interested in.
+     *
+     * @param handler
+     * @return reference to this Context instance.
+     */
     inline this_t &errorFrameHandler(on_publication_error_frame_t &handler)
     {
         m_onErrorFrameHandler = handler;

@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
@@ -256,6 +257,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Close session and release associated resources.
      */
+    @Override
     public void close()
     {
         if (null != publication && publication.isConnected() && !isClosed)
@@ -626,6 +628,67 @@ public final class AeronCluster implements AutoCloseable
         controlledFragmentAssembler.clear();
         egressListener.onNewLeader(clusterSessionId, leadershipTermId, leaderMemberId, ingressEndpoints);
         controlledEgressListener.onNewLeader(clusterSessionId, leadershipTermId, leaderMemberId, ingressEndpoints);
+    }
+
+    /**
+     * Sends an admin request to appoint leader in the cluster. This request requires elevated privileges.
+     *
+     * @param correlationId for the request.
+     * @param memberId      of appointed leader.
+     * @return {@code true} if the request was sent or {@code false} otherwise.
+     * @see EgressListener#onAdminResponse(long, long, AdminRequestType, AdminResponseCode, String, DirectBuffer, int, int)
+     * @see ControlledEgressListener#onAdminResponse(long, long, AdminRequestType, AdminResponseCode, String, DirectBuffer, int, int)
+     */
+    public boolean sendAdminRequestToAppointLeader(final long correlationId, final int memberId)
+    {
+        idleStrategy.reset();
+        int attempts = SEND_ATTEMPTS;
+        final UnsafeBuffer payload = new UnsafeBuffer(new byte[SIZE_OF_INT]);
+        payload.putInt(0, memberId);
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
+            AdminRequestEncoder.BLOCK_LENGTH +
+            AdminRequestEncoder.payloadHeaderLength() +
+            SIZE_OF_INT;
+
+        while (true)
+        {
+            final long position = publication.tryClaim(length, bufferClaim);
+            if (position > 0)
+            {
+                adminRequestEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .leadershipTermId(leadershipTermId)
+                    .clusterSessionId(clusterSessionId)
+                    .correlationId(correlationId)
+                    .requestType(AdminRequestType.APPOINT_LEADER)
+                    .putPayload(payload, 0, SIZE_OF_INT);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            if (position == Publication.CLOSED)
+            {
+                throw new ClusterException("ingress publication is closed");
+            }
+
+            if (position == Publication.MAX_POSITION_EXCEEDED)
+            {
+                throw new ClusterException("max position exceeded: term-length=" + publication.termBufferLength());
+            }
+
+            if (--attempts <= 0)
+            {
+                break;
+            }
+
+            idleStrategy.idle();
+            invokeInvokers();
+        }
+
+        return false;
     }
 
     static Int2ObjectHashMap<MemberIngress> parseIngressEndpoints(final Context ctx, final String endpoints)
@@ -1250,6 +1313,7 @@ public final class AeronCluster implements AutoCloseable
          *
          * @return a shallow copy of the object.
          */
+        @Override
         public Context clone()
         {
             try
@@ -1785,6 +1849,7 @@ public final class AeronCluster implements AutoCloseable
         /**
          * {@inheritDoc}
          */
+        @Override
         public String toString()
         {
             return "AeronCluster.Context" +
@@ -1882,6 +1947,7 @@ public final class AeronCluster implements AutoCloseable
         /**
          * Close allocated resources. Must be called on error. On success this is a no op.
          */
+        @Override
         public void close()
         {
             if (State.DONE != state)
@@ -2293,6 +2359,7 @@ public final class AeronCluster implements AutoCloseable
             this.endpoint = endpoint;
         }
 
+        @Override
         public void close()
         {
             if (null != publication)
@@ -2307,6 +2374,7 @@ public final class AeronCluster implements AutoCloseable
             publication = null;
         }
 
+        @Override
         public String toString()
         {
             return "MemberIngress{" +

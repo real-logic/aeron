@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.ClusterEventEncoder.*;
-import static io.aeron.agent.ClusterEventEncoder.MAX_REASON_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.STATE_SEPARATOR;
 import static io.aeron.agent.CommonEventEncoder.enumName;

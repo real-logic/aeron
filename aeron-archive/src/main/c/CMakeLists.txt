@@ -97,6 +97,7 @@ SET(SOURCE
     client/aeron_archive_recording_subscription_descriptor_poller.c
     client/aeron_archive_replay_merge.c
     client/aeron_archive_replay_params.c
+    client/aeron_archive_replication_params.c
 )
 
 SET(HEADERS

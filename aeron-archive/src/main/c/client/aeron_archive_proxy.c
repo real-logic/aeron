@@ -40,6 +40,7 @@
 #include "c/aeron_archive_client/stopReplayRequest.h"
 #include "c/aeron_archive_client/listRecordingSubscriptionsRequest.h"
 #include "c/aeron_archive_client/purgeRecordingRequest.h"
+#include "c/aeron_archive_client/replicateRequest2.h"
 
 #define AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH (8 * 1024)
 
@@ -562,6 +563,61 @@ bool aeron_archive_proxy_purge_recording(
     return aeron_archive_proxy_offer(
         archive_proxy,
         aeron_archive_client_purgeRecordingRequest_encoded_length(&codec));
+}
+
+bool aeron_archive_proxy_replicate(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t src_recording_id,
+    int32_t src_control_stream_id,
+    const char *src_control_channel,
+    aeron_archive_replication_params_t *params)
+{
+    struct aeron_archive_client_replicateRequest2 codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_replicateRequest2_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_replicateRequest2_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_replicateRequest2_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_replicateRequest2_set_srcRecordingId(&codec, src_recording_id);
+    aeron_archive_client_replicateRequest2_set_dstRecordingId(&codec, params->dst_recording_id);
+    aeron_archive_client_replicateRequest2_set_stopPosition(&codec, params->stop_position);
+    aeron_archive_client_replicateRequest2_set_channelTagId(&codec, params->channel_tag_id);
+    aeron_archive_client_replicateRequest2_set_subscriptionTagId(&codec, params->subscription_tag_id);
+    aeron_archive_client_replicateRequest2_set_srcControlStreamId(&codec, src_control_stream_id);
+    aeron_archive_client_replicateRequest2_set_fileIoMaxLength(&codec, params->file_io_max_length);
+    aeron_archive_client_replicateRequest2_set_replicationSessionId(&codec, params->replication_session_id);
+
+    aeron_archive_client_replicateRequest2_put_srcControlChannel(
+        &codec,
+        src_control_channel,
+        strlen(src_control_channel));
+    aeron_archive_client_replicateRequest2_put_liveDestination(
+        &codec,
+        params->live_destination,
+        strlen(params->live_destination));
+    aeron_archive_client_replicateRequest2_put_replicationChannel(
+        &codec,
+        params->replication_channel,
+        strlen(params->replication_channel));
+    aeron_archive_client_replicateRequest2_put_encodedCredentials(
+        &codec,
+        NULL == params->encoded_credentials ? "" : params->encoded_credentials->data,
+        NULL == params->encoded_credentials ? 0 : params->encoded_credentials->length);
+    aeron_archive_client_replicateRequest2_put_srcResponseChannel(
+        &codec,
+        params->src_response_channel,
+        strlen(params->src_response_channel));
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_replicateRequest2_encoded_length(&codec));
 }
 
 /* ************* */

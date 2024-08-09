@@ -88,7 +88,7 @@ public:
         aeron_default_path(aeron_dir, 100);
 
         std::string sourceArchiveDir = m_archiveDir + AERON_FILE_SEP + "source";
-        m_test_archive = std::make_shared<TestArchive>(
+        m_testArchive = std::make_shared<TestArchive>(
             aeron_dir,
             sourceArchiveDir,
             std::cout,
@@ -106,6 +106,14 @@ public:
         if (nullptr != m_ctx)
         {
             ASSERT_EQ(0, aeron_archive_context_close(m_ctx));
+        }
+        if (nullptr != m_dest_archive)
+        {
+            ASSERT_EQ(0, aeron_archive_close(m_dest_archive));
+        }
+        if (nullptr != m_dest_ctx)
+        {
+            ASSERT_EQ(0, aeron_archive_context_close(m_dest_ctx));
         }
     }
 
@@ -154,14 +162,14 @@ public:
         return subscription;
     }
 
-    aeron_publication_t *addPublication(aeron_t *aeron, std::string channel, int32_t stream_id)
+    aeron_publication_t *addPublication(std::string channel, int32_t stream_id)
     {
         aeron_async_add_publication_t *async_add_publication;
         aeron_publication_t *publication = nullptr;
 
         if (aeron_async_add_publication(
             &async_add_publication,
-            aeron,
+            m_aeron,
             channel.c_str(),
             stream_id) < 0)
         {
@@ -339,13 +347,13 @@ public:
         const std::string controlChannel = "aeron:udp?endpoint=localhost:8011";
         const std::string replicationChannel = "aeron:udp?endpoint=localhost:8012";
 
-        m_dest_archive = std::make_shared<TestArchive>(
+        m_destTestArchive = std::make_shared<TestArchive>(
             dest_aeron_dir, archiveDir, m_stream, controlChannel, replicationChannel, -7777);
 
         ASSERT_EQ(0, aeron_archive_context_init(&m_dest_ctx));
         ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(m_dest_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
         ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
-            m_ctx,
+            m_dest_ctx,
             encoded_credentials_supplier,
             nullptr,
             nullptr,
@@ -369,8 +377,8 @@ protected:
 
     std::ostringstream m_stream;
 
-    std::shared_ptr<TestArchive> m_test_archive;
-    std::shared_ptr<TestArchive> m_dest_archive;
+    std::shared_ptr<TestArchive> m_testArchive;
+    std::shared_ptr<TestArchive> m_destTestArchive;
 
     bool m_debug = true;
 
@@ -382,6 +390,7 @@ protected:
     aeron_t *m_aeron = nullptr;
 
     aeron_archive_context_t *m_dest_ctx = nullptr;
+    aeron_archive_t *m_dest_archive = nullptr;
 };
 
 class AeronCArchiveTest : public AeronCArchiveTestBase, public testing::Test
@@ -561,7 +570,7 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
 
     {
         aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
-        aeron_publication_t *publication = addPublication(m_aeron, m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(m_recordingChannel, m_recordingStreamId);
 
         session_id = aeron_publication_session_id(publication);
 
@@ -660,7 +669,7 @@ TEST_F(AeronCArchiveTest, shouldRecordThenReplay)
 
     {
         aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
-        aeron_publication_t *publication = addPublication(m_aeron, m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(m_recordingChannel, m_recordingStreamId);
 
         session_id = aeron_publication_session_id(publication);
 
@@ -767,7 +776,7 @@ TEST_F(AeronCArchiveTest, shouldRecordThenBoundedReplay)
     {
 
         aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
-        aeron_publication_t *publication = addPublication(m_aeron, m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(m_recordingChannel, m_recordingStreamId);
 
         session_id = aeron_publication_session_id(publication);
 
@@ -870,7 +879,7 @@ TEST_F(AeronCArchiveTest, shouldRecordThenReplayThenTruncate)
 
     {
         aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
-        aeron_publication_t *publication = addPublication(m_aeron, m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(m_recordingChannel, m_recordingStreamId);
 
         session_id = aeron_publication_session_id(publication);
 
@@ -1000,7 +1009,7 @@ TEST_F(AeronCArchiveTest, shouldRecordAndCancelReplayEarly)
 
     {
         aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
-        aeron_publication_t *publication = addPublication(m_aeron, m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(m_recordingChannel, m_recordingStreamId);
 
         session_id = aeron_publication_session_id(publication);
 
@@ -1076,7 +1085,7 @@ TEST_F(AeronCArchiveTest, shouldReplayRecordingFromLateJoinPosition)
 
     {
         aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
-        aeron_publication_t *publication = addPublication(m_aeron, m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(m_recordingChannel, m_recordingStreamId);
 
         session_id = aeron_publication_session_id(publication);
 
@@ -1281,7 +1290,7 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
     connect();
 
-    aeron_publication_t *publication = addPublication(m_aeron, publication_channel, m_recordingStreamId);
+    aeron_publication_t *publication = addPublication(publication_channel, m_recordingStreamId);
 
     int32_t session_id = aeron_publication_session_id(publication);
 
@@ -1486,7 +1495,7 @@ TEST_F(AeronCArchiveTest, shouldPurgeStoppedRecording)
 
     {
         aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
-        aeron_publication_t *publication = addPublication(m_aeron, m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(m_recordingChannel, m_recordingStreamId);
 
         session_id = aeron_publication_session_id(publication);
 
@@ -1559,7 +1568,7 @@ TEST_F(AeronCArchiveTest, shouldReadRecordingDescriptor)
 
     connect();
 
-    aeron_publication_t *publication = addPublication(m_aeron, m_recordingChannel, m_recordingStreamId);
+    aeron_publication_t *publication = addPublication(m_recordingChannel, m_recordingStreamId);
 
     session_id = aeron_publication_session_id(publication);
 
@@ -1619,7 +1628,7 @@ TEST_F(AeronCArchiveTest, shouldReadJumboRecordingDescriptor)
 
     {
         aeron_subscription_t *subscription = addSubscription(recordingChannel, m_recordingStreamId);
-        aeron_publication_t *publication = addPublication(m_aeron, recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(recordingChannel, m_recordingStreamId);
 
         session_id = aeron_publication_session_id(publication);
 
@@ -1674,4 +1683,135 @@ TEST_F(AeronCArchiveTest, shouldReadJumboRecordingDescriptor)
         recording_descriptor_consumer,
         &clientd));
     EXPECT_EQ(1, count);
+}
+
+typedef struct recording_signal_consumer_clientd_stct
+{
+    std::set<std::int32_t> signals;
+}
+recording_signal_consumer_clientd_t;
+
+void recording_signal_consumer(
+    aeron_archive_recording_signal_t *signal,
+    void *clientd)
+{
+    auto cd = (recording_signal_consumer_clientd_t *)clientd;
+
+    fprintf(stderr, " ---- GOT A RECORDING SIGNAL :: code=%i\n", signal->recording_signal_code);
+
+    cd->signals.insert(signal->recording_signal_code);
+}
+
+TEST_F(AeronCArchiveTest, shouldRecordReplicateThenReplay)
+{
+    int32_t session_id;
+    int64_t stop_position;
+
+    startDestArchive();
+
+    recording_signal_consumer_clientd_t rsc_cd;
+    rsc_cd.signals.clear();
+
+    EXPECT_EQ(0, aeron_archive_context_set_recording_signal_consumer(m_dest_ctx, recording_signal_consumer, &rsc_cd));
+
+    connect();
+
+    ASSERT_EQ(0, aeron_archive_connect(&m_dest_archive, m_dest_ctx));
+
+    ASSERT_EQ(42, aeron_archive_get_archive_id(m_archive));
+    ASSERT_EQ(-7777, aeron_archive_get_archive_id(m_dest_archive));
+
+    int64_t subscription_id;
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id,
+        m_archive,
+        m_recordingChannel.c_str(),
+        m_recordingStreamId,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        false));
+
+    {
+        aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(m_recordingChannel, m_recordingStreamId);
+
+        session_id = aeron_publication_session_id(publication);
+
+        setupCounters(session_id);
+        /* TODO
+        EXPECT_TRUE(RecordingPos::isActive(countersReader, counterId, recordingId));
+        EXPECT_EQ(counterId, RecordingPos::findCounterIdByRecordingId(countersReader, recordingId));
+        EXPECT_EQ("aeron:ipc", RecordingPos::getSourceIdentity(countersReader, counterId));
+         */
+
+        offerMessages(publication);
+        consumeMessages(subscription);
+
+        stop_position = aeron_publication_position(publication);
+
+        waitUntilCaughtUp(stop_position);
+    }
+
+    EXPECT_EQ(0, aeron_archive_stop_recording(
+        m_archive,
+        subscription_id));
+
+    int64_t found_stop_position;
+    do {
+        EXPECT_EQ(0, aeron_archive_get_stop_position(
+            &found_stop_position,
+            m_archive,
+            m_recording_id_from_counter));
+
+        idle();
+    }
+    while (found_stop_position != stop_position);
+
+    aeron_archive_replication_params_t replication_params;
+    aeron_archive_replication_params_init(&replication_params);
+
+    // TODO when I forgot to set this, I didn't see an error pop out anywhere.
+    // I'd expect that whatever failure occurred would somehow become visible.
+    // It's quite possible that the lack of visibility is because my error handling code isn't complete.
+    replication_params.encoded_credentials = &default_creds;
+
+    EXPECT_EQ(0, aeron_archive_replicate(
+        m_dest_archive,
+        m_recording_id_from_counter,
+        aeron_archive_context_get_control_request_stream_id(m_ctx),
+        aeron_archive_context_get_control_request_channel(m_ctx),
+        &replication_params));
+
+    while (0 == rsc_cd.signals.count(AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_SYNC))
+    {
+        aeron_archive_poll_for_recording_signals(nullptr, m_dest_archive);
+
+        aeron_archive_poll_for_recording_signals(nullptr, m_archive);
+
+        idle();
+    }
+
+    int64_t position = 0;
+    int64_t length = stop_position - position;
+
+    aeron_subscription_t *subscription = addSubscription(m_replayChannel, m_replayStreamId);
+
+    aeron_archive_replay_params_t replay_params;
+    aeron_archive_replay_params_init(&replay_params);
+
+    replay_params.position = position;
+    replay_params.length = length;
+    replay_params.file_io_max_length = 4096;
+
+    ASSERT_EQ(0, aeron_archive_start_replay(
+        nullptr,
+        m_archive,
+        m_recording_id_from_counter,
+        m_replayChannel.c_str(),
+        m_replayStreamId,
+        &replay_params));
+
+    consumeMessages(subscription);
+
+    aeron_image_t *image = aeron_subscription_image_at_index(subscription, 0);
+    EXPECT_EQ(stop_position, aeron_image_position(image));
 }

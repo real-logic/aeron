@@ -205,6 +205,42 @@ int64_t aeron_archive_next_correlation_id(aeron_archive_t *aeron_archive)
     return aeron_next_correlation_id(aeron_archive->aeron);
 }
 
+int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *aeron_archive)
+{
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int32_t count = 0;
+    int rc = 0;
+
+    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
+
+    if (aeron_archive_control_response_poller_poll(poller) != 0 &&
+        poller->is_poll_complete)
+    {
+        if (poller->is_control_response && poller->is_code_error)
+        {
+            // TODO
+            rc = -1;
+        }
+        else if (poller->is_recording_signal)
+        {
+            aeron_archive_dispatch_recording_signal(aeron_archive);
+
+            count++;
+        }
+    }
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    if (NULL != count_p)
+    {
+        *count_p = count;
+    }
+
+    return rc;
+}
+
+
 int aeron_archive_start_recording(
     int64_t *subscription_id_p,
     aeron_archive_t *aeron_archive,
@@ -726,6 +762,43 @@ int aeron_archive_purge_recording(
         NULL,
         aeron_archive,
         "AeronArchive::purgeRecording",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+int aeron_archive_replicate(
+    aeron_archive_t *aeron_archive,
+    int64_t src_recording_id,
+    int32_t src_control_stream_id,
+    const char *src_control_channel,
+    aeron_archive_replication_params_t *params)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_replicate(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        src_recording_id,
+        src_control_stream_id,
+        src_control_channel,
+        params))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        NULL,
+        aeron_archive,
+        "AeronArchive::replicate",
         correlation_id);
 
     aeron_mutex_unlock(&aeron_archive->lock);

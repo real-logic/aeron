@@ -164,9 +164,19 @@ int aeron_archive_context_set_recording_signal_consumer(
     void *clientd)
 {
     ctx->on_recording_signal = on_recording_signal;
-    ctx->on_recording_signal_clientd;
+    ctx->on_recording_signal_clientd = clientd;
 
     return 0;
+}
+
+int32_t aeron_archive_context_get_control_request_stream_id(aeron_archive_context_t *ctx)
+{
+    return ctx->control_request_stream_id;
+}
+
+const char *aeron_archive_context_get_control_request_channel(aeron_archive_context_t *ctx)
+{
+    return ctx->control_request_channel;
 }
 
 void aeron_archive_context_idle(aeron_archive_context_t *ctx)

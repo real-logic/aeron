@@ -46,7 +46,8 @@ int aeron_uri_string_builder_init_on_string(aeron_uri_string_builder_t *builder,
 
     size_t max_len = uri_length > AERON_MAX_PATH ? AERON_MAX_PATH : uri_length;
 
-    strncpy(buffer, uri, max_len + 1);
+    strncpy(buffer, uri, max_len);
+    buffer[uri_length] = '\0';
 
     char *ptr = buffer;
     char *end_ptr = NULL;

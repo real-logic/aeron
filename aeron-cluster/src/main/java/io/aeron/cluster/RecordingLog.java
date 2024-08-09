@@ -23,6 +23,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.SemanticVersion;
 import org.agrona.Strings;
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.Long2LongHashMap;
@@ -50,6 +51,9 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.lang.Math.max;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.*;
 
@@ -68,12 +72,13 @@ import static org.agrona.BitUtil.*;
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                  0xFFA3F010 (Magic Number)                    |
- *  |                                                               |
+ *  |                        0xFFA3F010 (Magic Number)              |
+ *  |                        0x00000000                             |
  *  +---------------------------------------------------------------+
  *  |                          Version                              |
  *  +---------------------------------------------------------------+
- *  |                          Reserved                             |
+ *  |                      Reserved (52 bytes)                    ...
+ *  ...                                                             |
  *  +---------------------------------------------------------------+
  * </pre>
  * Recording log entry as follows:
@@ -117,7 +122,13 @@ import static org.agrona.BitUtil.*;
 public final class RecordingLog implements AutoCloseable
 {
     public static final long MAGIC_NUMBER = 0xFFA3F010_00000000L;
-    private static final int HEADER_SIZE = 64;
+    public static final int HEADER_SIZE = 64;
+    public static final int MAJOR_VERSION = 0;
+    public static final int MINOR_VERSION = 1;
+    public static final int PATCH_VERSION = 0;
+    public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
+    private static final int MAGIC_NUMBER_OFFSET = 0;
+    private static final int VERSION_OFFSET = MAGIC_NUMBER_OFFSET + SIZE_OF_LONG;
 
     /**
      * Representation of the entry in the {@link RecordingLog}.
@@ -646,6 +657,9 @@ public final class RecordingLog implements AutoCloseable
      */
     public static final String RECORDING_LOG_FILE_NAME = "recording.log";
 
+    static final String RECORDING_LOG_MIGRATED_FILE_NAME = RECORDING_LOG_FILE_NAME + ".migrated";
+    static final String RECORDING_LOG_NEW_FILE_NAME = RECORDING_LOG_FILE_NAME + ".new";
+
     /**
      * The log entry is for a recording of messages within a leadership term to the log.
      */
@@ -785,6 +799,7 @@ public final class RecordingLog implements AutoCloseable
             if (isNewFile)
             {
                 syncDirectory(parentDir);
+                writeHeader(fileChannel);
             }
             else
             {
@@ -800,54 +815,6 @@ public final class RecordingLog implements AutoCloseable
         {
             throw new ClusterException(ex);
         }
-    }
-
-    private void checkForVersionAndMigrate(final File logFile) throws IOException
-    {
-        if (requiresMigration(logFile))
-        {
-            final File oldMigratedFile = new File(logFile.getParentFile(), RECORDING_LOG_FILE_NAME + ".migrated");
-            if (!logFile.renameTo(oldMigratedFile))
-            {
-                throw new IOException("Unable to backup old file to new one");
-            }
-
-            final File newFile = new File(logFile.getParentFile(), RECORDING_LOG_FILE_NAME);
-            final MutableDirectBuffer header = new UnsafeBuffer(new byte[HEADER_SIZE]);
-            // TODO: Offset constants
-            header.putLong(0, MAGIC_NUMBER, LITTLE_ENDIAN);
-            header.putInt(8, 0 /* TODO: version */, LITTLE_ENDIAN);
-
-            try (FileOutputStream outputStream = new FileOutputStream(newFile))
-            {
-                outputStream.write(header.byteArray());
-                Files.copy(oldMigratedFile.toPath(), outputStream);
-            }
-        }
-    }
-
-    private boolean requiresMigration(final File logFile) throws IOException
-    {
-        if (logFile.length() < HEADER_SIZE)
-        {
-            return true;
-        }
-
-        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), READ))
-        {
-            return isMagicNumberInvalid(fileChannel);
-        }
-    }
-
-    private static boolean isMagicNumberInvalid(final FileChannel fileChannel) throws IOException
-    {
-        final DirectBuffer header = new UnsafeBuffer(ByteBuffer.allocateDirect(HEADER_SIZE));
-        if (HEADER_SIZE != fileChannel.read(header.byteBuffer()))
-        {
-            throw new IOException("Unable to read header");
-        }
-        final long magicNumber = header.getLong(0, LITTLE_ENDIAN);
-        return magicNumber != MAGIC_NUMBER;
     }
 
     /**
@@ -1882,6 +1849,73 @@ public final class RecordingLog implements AutoCloseable
 
         byteBuffer.position(consumed);
         return consumed;
+    }
+
+    private void applyHeader(final MutableDirectBuffer header)
+    {
+        header.putLong(MAGIC_NUMBER_OFFSET, MAGIC_NUMBER, LITTLE_ENDIAN);
+        header.putInt(VERSION_OFFSET, SEMANTIC_VERSION, LITTLE_ENDIAN);
+    }
+
+    private void writeHeader(final FileChannel fileChannel) throws IOException
+    {
+        final ByteBuffer headerBuffer = ByteBuffer.allocateDirect(HEADER_SIZE);
+        final MutableDirectBuffer header = new UnsafeBuffer(headerBuffer);
+        applyHeader(header);
+
+        if (HEADER_SIZE != fileChannel.write(headerBuffer))
+        {
+            throw new IOException("Failed to write full header");
+        }
+    }
+
+    private void checkForVersionAndMigrate(final File logFile) throws IOException
+    {
+        if (requiresMigration(logFile))
+        {
+            final File oldMigratedFile = new File(logFile.getParentFile(), RECORDING_LOG_MIGRATED_FILE_NAME);
+            Files.copy(logFile.toPath(), oldMigratedFile.toPath(), COPY_ATTRIBUTES, REPLACE_EXISTING);
+
+            final File newFile = new File(logFile.getParentFile(), RECORDING_LOG_NEW_FILE_NAME);
+            Files.deleteIfExists(newFile.toPath());
+
+            final MutableDirectBuffer header = new UnsafeBuffer(new byte[HEADER_SIZE]);
+            applyHeader(header);
+
+            try (FileOutputStream outputStream = new FileOutputStream(newFile, false))
+            {
+                outputStream.write(header.byteArray());
+                Files.copy(oldMigratedFile.toPath(), outputStream);
+            }
+
+            Files.move(
+                newFile.toPath(), new File(logFile.getParentFile(), RECORDING_LOG_FILE_NAME).toPath(),
+                ATOMIC_MOVE, REPLACE_EXISTING);
+        }
+    }
+
+    private boolean requiresMigration(final File logFile) throws IOException
+    {
+        if (logFile.length() < HEADER_SIZE)
+        {
+            return true;
+        }
+
+        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), READ))
+        {
+            return isMagicNumberInvalid(fileChannel);
+        }
+    }
+
+    private static boolean isMagicNumberInvalid(final FileChannel fileChannel) throws IOException
+    {
+        final DirectBuffer header = new UnsafeBuffer(ByteBuffer.allocateDirect(HEADER_SIZE));
+        if (HEADER_SIZE != fileChannel.read(header.byteBuffer()))
+        {
+            throw new IOException("Unable to read header");
+        }
+        final long magicNumber = header.getLong(0, LITTLE_ENDIAN);
+        return magicNumber != MAGIC_NUMBER;
     }
 
     private static void syncDirectory(final File dir)

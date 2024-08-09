@@ -15,29 +15,33 @@
  */
 package io.aeron.cluster;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
+import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_SNAPSHOT;
+import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_STANDBY_SNAPSHOT;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_TERM;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RecordingLogVersioningTest
 {
     private static final byte[] CHARACTER_TABLE = new byte[27];
     public static final long FIXED_SEED_FOR_CONSISTENT_DATA = 892374458763L;
+
+    @TempDir File tempDirA;
+    @TempDir File tempDirB;
 
     static
     {
@@ -60,7 +64,7 @@ public class RecordingLogVersioningTest
         private final int serviceId;
         private final String endpoint;
 
-        public TestEntry(
+        TestEntry(
             final int entryType,
             final long recordingId,
             final long leadershipTermId,
@@ -140,13 +144,19 @@ public class RecordingLogVersioningTest
         return entries;
     }
 
-    @SuppressWarnings("checkstyle:MethodName")
     @Test
-    @Disabled // Used to generate existing data.
-    void generateRecordingLogForVersionTest_1_45()
+    void verifyDataRemainsConsistent()
     {
-        final File parentDir = new File("src/test/resources/v1_45_x");
-        try (UnversionedRecordingLog recordingLog = new UnversionedRecordingLog(parentDir, true))
+        assertEquals(generateData(), generateData());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = { true, false })
+    void shouldLoadOldVersionAndMigrate(final boolean hasPartiallyProcessedFiles) throws IOException
+    {
+        assertNotEquals(tempDirA, tempDirB);
+
+        try (UnversionedRecordingLog recordingLog = new UnversionedRecordingLog(tempDirA, true))
         {
             for (final TestEntry testEntry : generateData())
             {
@@ -160,17 +170,20 @@ public class RecordingLogVersioningTest
                     testEntry.serviceId,
                     testEntry.endpoint);
             }
-            final List<UnversionedRecordingLog.Entry> entries = recordingLog.entries();
-            final String s = entries.toString();
-            System.out.println(s);
         }
-    }
 
-    private static void appendToRecordingLog(final RecordingLog recordingLog, final List<TestEntry> testEntries)
-    {
-        for (final TestEntry testEntry : testEntries)
+        if (hasPartiallyProcessedFiles)
         {
-            recordingLog.append(
+            Files.createFile(new File(tempDirA, RecordingLog.RECORDING_LOG_MIGRATED_FILE_NAME).toPath());
+            Files.createFile(new File(tempDirA, RecordingLog.RECORDING_LOG_NEW_FILE_NAME).toPath());
+        }
+
+        final RecordingLog recordingLogMigrated = new RecordingLog(tempDirA, false);
+        final RecordingLog recordingLogNew = new RecordingLog(tempDirB, true);
+
+        for (final TestEntry testEntry : generateData())
+        {
+            recordingLogNew.append(
                 testEntry.entryType,
                 testEntry.recordingId,
                 testEntry.leadershipTermId,
@@ -180,28 +193,6 @@ public class RecordingLogVersioningTest
                 testEntry.serviceId,
                 testEntry.endpoint);
         }
-    }
-
-    @Test
-    void verifyDataRemainsConsistent()
-    {
-        assertEquals(generateData(), generateData());
-    }
-
-    @Test
-    void shouldLoadOldVersionAndMigrate(@TempDir final File tempDirA, @TempDir final File tempDirB) throws IOException
-    {
-        assertNotEquals(tempDirA, tempDirB);
-
-        final File parentDir = new File("src/test/resources/v1_45_x");
-        final File oldFile = new File(parentDir, RecordingLog.RECORDING_LOG_FILE_NAME);
-        final File tempOldFile = new File(tempDirA, RecordingLog.RECORDING_LOG_FILE_NAME);
-
-        Files.copy(oldFile.toPath(), tempOldFile.toPath());
-
-        final RecordingLog recordingLogMigrated = new RecordingLog(tempDirA, false);
-        final RecordingLog recordingLogNew = new RecordingLog(tempDirB, true);
-        appendToRecordingLog(recordingLogNew, generateData());
 
         assertEquals(recordingLogMigrated.entries(), recordingLogNew.entries());
     }
@@ -213,8 +204,8 @@ public class RecordingLogVersioningTest
         switch (type)
         {
             case 0: return ENTRY_TYPE_TERM;
-            case 1: return RecordingLog.ENTRY_TYPE_SNAPSHOT;
-            case 2: return RecordingLog.ENTRY_TYPE_STANDBY_SNAPSHOT;
+            case 1: return ENTRY_TYPE_SNAPSHOT;
+            case 2: return ENTRY_TYPE_STANDBY_SNAPSHOT;
         }
 
         throw new IllegalStateException();
@@ -222,7 +213,7 @@ public class RecordingLogVersioningTest
 
     private String endpoint(final Random r, final int type, final byte[] bs)
     {
-        if (RecordingLog.ENTRY_TYPE_STANDBY_SNAPSHOT == type)
+        if (ENTRY_TYPE_STANDBY_SNAPSHOT == type)
         {
             final int length = 50 + r.nextInt(50);
             for (int i = 0; i < length; i++)

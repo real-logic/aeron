@@ -670,6 +670,7 @@ class RecordingLogTest
 
             recordingLog.reload();
 
+            assertEquals(sortedList.size(), recordingLog.entries().size());
             assertEquals(sortedList, recordingLog.entries()); // reload from disc and re-sort
         }
     }

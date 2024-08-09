@@ -357,6 +357,38 @@ if (AERON_BUILD_DOCUMENTATION AND DOXYGEN_FOUND)
 endif ()
 
 ##########################################################
+# export targets
+
+if (AERON_INSTALL_TARGETS)
+    include(CMakePackageConfigHelpers)
+
+    install(
+        EXPORT aeron-targets
+        FILE aeron-targets.cmake
+        NAMESPACE aeron::
+        DESTINATION lib/cmake/aeron)
+
+    write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/aeron-config-version.cmake"
+        VERSION "${AERON_VERSION_FROM_FILE}"
+        COMPATIBILITY AnyNewerVersion)
+
+    configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/aeron-config.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/aeron-config.cmake"
+        INSTALL_DESTINATION lib/cmake/aeron)
+
+    install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/aeron-config.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/aeron-config-version.cmake"
+        DESTINATION lib/cmake/aeron)
+
+    export(EXPORT aeron-targets
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/aeron-targets.cmake"
+        NAMESPACE aeron::)
+endif ()
+
+##########################################################
 # package target
 
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
@@ -367,33 +399,3 @@ set(CPACK_PACKAGE_VERSION_PATCH "${aeron_VERSION_PATCH}")
 set(CPACK_GENERATOR "TGZ;STGZ")
 include(CPack)
 
-##########################################################
-# export targets
-if (AERON_INSTALL_TARGETS)
-    include(CMakePackageConfigHelpers)
-
-    install(
-        EXPORT AeronTargets
-        FILE AeronTargets.cmake
-        NAMESPACE Aeron::
-        DESTINATION lib/cmake/Aeron)
-
-    write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/AeronConfigVersion.cmake"
-        VERSION "${AERON_VERSION_FROM_FILE}"
-        COMPATIBILITY ExactVersion)
-
-    configure_package_config_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
-        "${CMAKE_CURRENT_BINARY_DIR}/AeronConfig.cmake"
-        INSTALL_DESTINATION lib/cmake/Aeron)
-
-    install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/AeronConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/AeronConfigVersion.cmake"
-        DESTINATION lib/cmake/Aeron)
-
-    export(EXPORT AeronTargets
-        FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/AeronTargets.cmake"
-        NAMESPACE Aeron::)
-endif ()

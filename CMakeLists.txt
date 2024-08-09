@@ -236,6 +236,7 @@ set(AERON_C_CLIENT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/mai
 set(AERON_DRIVER_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-driver/src/main/c")
 
 set(AERON_ARCHIVE_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/main/cpp")
+set(AERON_C_ARCHIVE_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/main/c")
 
 if (AERON_TESTS)
     set(AERON_CLIENT_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/test/cpp")
@@ -243,6 +244,7 @@ if (AERON_TESTS)
     set(AERON_C_CLIENT_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/test/c")
     set(AERON_CLIENT_WRAPPER_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/test/cpp_wrapper")
     set(AERON_ARCHIVE_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/test/cpp")
+    set(AERON_C_ARCHIVE_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/test/c")
     set(AERON_SYSTEM_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-system-tests")
 endif ()
 
@@ -315,10 +317,12 @@ endif (BUILD_AERON_DRIVER)
 
 if (BUILD_AERON_ARCHIVE_API)
     set(ARCHIVE_CODEC_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+    set(ARCHIVE_C_CODEC_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/c")
     set(ARCHIVE_CODEC_SCHEMA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/main/resources/archive")
     set(ARCHIVE_CODEC_WORKING_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
     add_subdirectory(${AERON_ARCHIVE_SOURCE_PATH})
+    add_subdirectory(${AERON_C_ARCHIVE_SOURCE_PATH})
     set(AERON_ALL_JAR "${CMAKE_CURRENT_SOURCE_DIR}/aeron-all/build/libs/aeron-all-${AERON_VERSION_TXT}.jar")
     set(AERON_AGENT_JAR "${CMAKE_CURRENT_SOURCE_DIR}/aeron-agent/build/libs/aeron-agent-${AERON_VERSION_TXT}.jar")
 
@@ -336,6 +340,7 @@ if (BUILD_AERON_ARCHIVE_API)
 
     if (AERON_TESTS)
         add_subdirectory(${AERON_ARCHIVE_TEST_PATH})
+        add_subdirectory(${AERON_C_ARCHIVE_TEST_PATH})
     endif ()
 endif (BUILD_AERON_ARCHIVE_API)
 ##########################################################

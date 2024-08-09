@@ -196,6 +196,7 @@ int aeron_udp_uri_parse(char *uri, aeron_udp_channel_params_t *params)
     params->bind_interface = NULL;
     params->ttl = NULL;
     params->control = NULL;
+    params->control_mode = NULL;
     params->channel_tag = NULL;
     params->entity_tag = NULL;
 

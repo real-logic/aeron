@@ -491,6 +491,19 @@ int aeron_counters_reader_counter_type_id(
     return 0;
 }
 
+int aeron_counters_reader_metadata_key(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, uint8_t **key_p)
+{
+    if (NULL == key_p || counter_id < 0 || counter_id > counters_reader->max_counter_id)
+    {
+        return -1;
+    }
+
+    *key_p = counters_reader->metadata + AERON_COUNTER_METADATA_OFFSET(counter_id) + AERON_COUNTER_KEY_OFFSET;
+
+    return 0;
+}
+
 int aeron_counters_reader_counter_label(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, char *buffer, size_t buffer_length)
 {

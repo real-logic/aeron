@@ -103,6 +103,7 @@ set(SOURCE
     util/aeron_strutil.c
     util/aeron_symbol_table.c
     uri/aeron_uri.c
+    uri/aeron_uri_string_builder.c
     aeron_agent.c
     aeron_alloc.c
     aeron_client.c
@@ -177,6 +178,7 @@ set(HEADERS
     util/aeron_strutil.h
     util/aeron_symbol_table.h
     uri/aeron_uri.h
+    uri/aeron_uri_string_builder.h
     aeron_agent.h
     aeron_alloc.h
     aeron_client.h

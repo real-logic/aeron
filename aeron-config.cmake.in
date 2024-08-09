@@ -6,4 +6,4 @@ find_package(Java)
 
 include("${CMAKE_CURRENT_LIST_DIR}/aeron-targets.cmake")
 
-check_required_components(Aeron)
+check_required_components(aeron)

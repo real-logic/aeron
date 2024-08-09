@@ -34,13 +34,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
+import java.util.concurrent.CountDownLatch;
+
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
 class ClusterWithNoServicesTest
 {
-    private final ConsensusModuleExtension consensusModuleExtensionSpy = spy(new TestConsensusModuleExtension());
+    private final CountDownLatch latch = new CountDownLatch(1);
+    private final ConsensusModuleExtension consensusModuleExtensionSpy = spy(new TestConsensusModuleExtension(latch));
     private ClusteredMediaDriver clusteredMediaDriver;
     private AeronCluster aeronCluster;
 
@@ -62,12 +65,13 @@ class ClusterWithNoServicesTest
 
     @Test
     @InterruptAfter(10)
-    void shouldConnectAndSendKeepAliveWithExtensionLoaded()
+    void shouldConnectAndSendKeepAliveWithExtensionLoaded() throws InterruptedException
     {
         clusteredMediaDriver = launchCluster();
         aeronCluster = connectClient();
 
         assertTrue(aeronCluster.sendKeepAlive());
+        latch.await();
 
         final InOrder inOrder = inOrder(consensusModuleExtensionSpy);
         inOrder.verify(consensusModuleExtensionSpy).onStart(any(ConsensusModuleControl.class), isNull());
@@ -115,6 +119,13 @@ class ClusterWithNoServicesTest
 
     static final class TestConsensusModuleExtension implements ConsensusModuleExtension
     {
+        private final CountDownLatch latch;
+
+        TestConsensusModuleExtension(final CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
         public int supportedSchemaId()
         {
             return 0;
@@ -169,6 +180,7 @@ class ClusterWithNoServicesTest
 
         public void onSessionOpened(final long clusterSessionId)
         {
+            latch.countDown();
         }
 
         public void onSessionClosed(final long clusterSessionId)

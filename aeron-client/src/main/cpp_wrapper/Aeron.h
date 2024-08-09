@@ -82,7 +82,6 @@ public:
         aeron_on_close_client_pair_t closePair = {emptyCallback, nullptr};
         aeron_add_close_handler(m_aeron, &closePair);
         aeron_close(m_aeron);
-//        aeron_context_close(m_context.m_context);
 
         m_availableCounterHandlers.clear();
         m_unavailableCounterHandlers.clear();
@@ -1048,7 +1047,7 @@ private:
         callback();
     }
 
-    static void emptyCallback(void *clientd)
+    static void emptyCallback(void * /* clientd */)
     {
     }
 };

@@ -179,8 +179,8 @@ public final class MediaDriver implements AutoCloseable
                     sharedInvoker = null;
                     break;
 
-                default:
                 case DEDICATED:
+                default:
                     senderRunner = new AgentRunner(ctx.senderIdleStrategy(), errorHandler, errorCounter, sender);
                     receiverRunner = new AgentRunner(ctx.receiverIdleStrategy(), errorHandler, errorCounter, receiver);
                     conductorRunner = new AgentRunner(

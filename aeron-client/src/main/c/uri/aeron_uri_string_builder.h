@@ -41,6 +41,7 @@ int aeron_uri_string_builder_close(aeron_uri_string_builder_t *builder);
 // a _put with a value of NULL will clear the entry
 int aeron_uri_string_builder_put(aeron_uri_string_builder_t *builder, const char *key, const char *value);
 int aeron_uri_string_builder_put_int32(aeron_uri_string_builder_t *builder, const char *key, int32_t value);
+int aeron_uri_string_builder_put_int64(aeron_uri_string_builder_t *builder, const char *key, int64_t value);
 
 const char *aeron_uri_string_builder_get(aeron_uri_string_builder_t *builder, const char *key);
 

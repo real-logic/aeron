@@ -158,6 +158,15 @@ int aeron_archive_context_set_control_request_channel(
     return 0;
 }
 
+int aeron_archive_context_set_control_response_channel(
+    aeron_archive_context_t *ctx,
+    const char *control_response_channel)
+{
+    strncpy(ctx->control_response_channel, control_response_channel, sizeof(ctx->control_response_channel));
+
+    return 0;
+}
+
 int aeron_archive_context_set_recording_signal_consumer(
     aeron_archive_context_t *ctx,
     aeron_archive_recording_signal_consumer_func_t on_recording_signal,

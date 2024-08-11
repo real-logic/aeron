@@ -407,6 +407,10 @@ public:
     }
 };
 
+class AeronCArchiveIdTest : public AeronCArchiveTestBase, public testing::Test
+{
+};
+
 typedef struct recording_descriptor_consumer_clientd_stct
 {
     bool verify_recording_id = false;
@@ -1737,11 +1741,33 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateThenReplay)
         session_id = aeron_publication_session_id(publication);
 
         setupCounters(session_id);
-        /* TODO
-        EXPECT_TRUE(RecordingPos::isActive(countersReader, counterId, recordingId));
-        EXPECT_EQ(counterId, RecordingPos::findCounterIdByRecordingId(countersReader, recordingId));
-        EXPECT_EQ("aeron:ipc", RecordingPos::getSourceIdentity(countersReader, counterId));
-         */
+
+        bool is_active;
+        EXPECT_EQ(0, aeron_archive_recording_pos_is_active(
+            &is_active,
+            m_counters_reader,
+            m_counter_id,
+            m_recording_id_from_counter));
+        EXPECT_TRUE(is_active);
+
+        EXPECT_EQ(m_counter_id, aeron_archive_recording_pos_find_counter_id_by_recording_id(
+            m_counters_reader,
+            m_recording_id_from_counter));
+
+        {
+            int32_t sib_len = 1000;
+            const char source_identity_buffer[1000] = { '\0' };
+
+            EXPECT_EQ(0,
+                aeron_archive_recording_pos_get_source_identity(
+                    m_counters_reader,
+                    m_counter_id,
+                    source_identity_buffer,
+                    &sib_len));
+            fprintf(stderr, "SI :: %s (len: %i)\n", source_identity_buffer, sib_len);
+            EXPECT_EQ(9, sib_len);
+            EXPECT_STREQ("aeron:ipc", source_identity_buffer);
+        }
 
         offerMessages(publication);
         consumeMessages(subscription);
@@ -1785,8 +1811,6 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateThenReplay)
     {
         aeron_archive_poll_for_recording_signals(nullptr, m_dest_archive);
 
-        aeron_archive_poll_for_recording_signals(nullptr, m_archive);
-
         idle();
     }
 
@@ -1814,4 +1838,172 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateThenReplay)
 
     aeron_image_t *image = aeron_subscription_image_at_index(subscription, 0);
     EXPECT_EQ(stop_position, aeron_image_position(image));
+}
+
+TEST_F(AeronCArchiveTest, shouldRecordReplicateTwice)
+{
+    int32_t session_id;
+    int64_t stop_position;
+
+    startDestArchive();
+
+    recording_signal_consumer_clientd_t rsc_cd;
+    rsc_cd.signals.clear();
+
+    EXPECT_EQ(0, aeron_archive_context_set_recording_signal_consumer(m_dest_ctx, recording_signal_consumer, &rsc_cd));
+
+    connect();
+
+    ASSERT_EQ(0, aeron_archive_connect(&m_dest_archive, m_dest_ctx));
+
+    ASSERT_EQ(42, aeron_archive_get_archive_id(m_archive));
+    ASSERT_EQ(-7777, aeron_archive_get_archive_id(m_dest_archive));
+
+    int64_t subscription_id;
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id,
+        m_archive,
+        m_recordingChannel.c_str(),
+        m_recordingStreamId,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        false));
+
+    int64_t halfway_position;
+
+    {
+        aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(m_recordingChannel, m_recordingStreamId);
+
+        session_id = aeron_publication_session_id(publication);
+
+        setupCounters(session_id);
+
+        bool is_active;
+        EXPECT_EQ(0, aeron_archive_recording_pos_is_active(
+            &is_active,
+            m_counters_reader,
+            m_counter_id,
+            m_recording_id_from_counter));
+        EXPECT_TRUE(is_active);
+
+        EXPECT_EQ(m_counter_id, aeron_archive_recording_pos_find_counter_id_by_recording_id(
+            m_counters_reader,
+            m_recording_id_from_counter));
+
+        {
+            int32_t sib_len = 1000;
+            const char source_identity_buffer[1000] = { '\0' };
+
+            EXPECT_EQ(0,
+                aeron_archive_recording_pos_get_source_identity(
+                    m_counters_reader,
+                    m_counter_id,
+                    source_identity_buffer,
+                    &sib_len));
+            fprintf(stderr, "SI :: %s (len: %i)\n", source_identity_buffer, sib_len);
+            EXPECT_EQ(9, sib_len);
+            EXPECT_STREQ("aeron:ipc", source_identity_buffer);
+        }
+
+        offerMessages(publication);
+        consumeMessages(subscription);
+        halfway_position = aeron_publication_position(publication);
+        waitUntilCaughtUp(halfway_position);
+
+        offerMessages(publication);
+        consumeMessages(subscription);
+        stop_position = aeron_publication_position(publication);
+        waitUntilCaughtUp(stop_position);
+    }
+
+    EXPECT_EQ(0, aeron_archive_stop_recording(
+        m_archive,
+        subscription_id));
+
+    int64_t found_stop_position;
+    do {
+        EXPECT_EQ(0, aeron_archive_get_stop_position(
+            &found_stop_position,
+            m_archive,
+            m_recording_id_from_counter));
+
+        idle();
+    }
+    while (found_stop_position != stop_position);
+
+    aeron_archive_replication_params_t replication_params1;
+    aeron_archive_replication_params_init(&replication_params1);
+
+    replication_params1.encoded_credentials = &default_creds;
+    replication_params1.stop_position = halfway_position;
+    replication_params1.replication_session_id = 1;
+
+    EXPECT_EQ(0, aeron_archive_replicate(
+        m_dest_archive,
+        m_recording_id_from_counter,
+        aeron_archive_context_get_control_request_stream_id(m_ctx),
+        aeron_archive_context_get_control_request_channel(m_ctx),
+        &replication_params1));
+
+    while (0 == rsc_cd.signals.count(AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_REPLICATE_END))
+    {
+        aeron_archive_poll_for_recording_signals(nullptr, m_dest_archive);
+
+        idle();
+    }
+
+    aeron_archive_replication_params_t replication_params2;
+    aeron_archive_replication_params_init(&replication_params2);
+
+    replication_params2.encoded_credentials = &default_creds;
+    replication_params2.replication_session_id = 2;
+
+    EXPECT_EQ(0, aeron_archive_replicate(
+        m_dest_archive,
+        m_recording_id_from_counter,
+        aeron_archive_context_get_control_request_stream_id(m_ctx),
+        aeron_archive_context_get_control_request_channel(m_ctx),
+        &replication_params2));
+
+    rsc_cd.signals.clear();
+
+    while (0 == rsc_cd.signals.count(AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_REPLICATE_END))
+    {
+        aeron_archive_poll_for_recording_signals(nullptr, m_dest_archive);
+
+        idle();
+    }
+}
+
+TEST_F(AeronCArchiveIdTest, shouldResolveArchiveId)
+{
+    std::int64_t archiveId = 0x4236483BEEF;
+    DoSetUp(archiveId);
+
+    connect();
+
+    aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(m_archive);
+    EXPECT_TRUE(aeron_subscription_is_connected(subscription));
+    EXPECT_EQ(archiveId, aeron_archive_get_archive_id(m_archive));
+
+    DoTearDown();
+}
+
+TEST_F(AeronCArchiveTest, shouldConnectToArchiveWithResponseChannels)
+{
+    ASSERT_EQ(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ(0, aeron_archive_context_set_control_response_channel(
+        m_ctx,
+        "aeron:udp?control-mode=response|control=localhost:10002"));
+    ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        m_ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds_clientd));
+    ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
+
+    aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(m_archive);
+    EXPECT_TRUE(aeron_subscription_is_connected(subscription));
 }

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
+
 #include "aeron_archive.h"
 #include "aeron_archive_client.h"
 #include "aeron_archive_configuration.h"
@@ -25,6 +27,7 @@
 
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
+#include "uri/aeron_uri_string_builder.h"
 
 typedef enum aeron_archive_async_connect_state_en
 {
@@ -100,7 +103,11 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
 
     int64_t subscription_id = aeron_async_add_subscription_get_registration_id(async_add_subscription);
 
-    aeron_archive_check_and_setup_response_channel(ctx, subscription_id);
+    if (aeron_archive_check_and_setup_response_channel(ctx, subscription_id) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
 
     if (aeron_async_add_exclusive_publication(
         &async_add_exclusive_publication,
@@ -401,8 +408,41 @@ cleanup:
 
 int aeron_archive_check_and_setup_response_channel(aeron_archive_context_t *ctx, int64_t subscription_id)
 {
-    // TODO
-    return 0;
+    int rc = 0;
+    aeron_uri_string_builder_t builder;
+
+    fprintf(stderr, "control response channel :: %s\n", ctx->control_response_channel);
+
+    if (aeron_uri_string_builder_init_on_string(&builder, ctx->control_response_channel) < 0)
+    {
+        rc = -1;
+        goto cleanup;
+    }
+
+    const char *control_mode = aeron_uri_string_builder_get(&builder, AERON_UDP_CHANNEL_CONTROL_MODE_KEY);
+
+    if (NULL != control_mode &&
+        strcmp(control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE) == 0)
+    {
+        aeron_uri_string_builder_close(&builder);
+
+        fprintf(stderr, "control request channel (post) :: %s\n", ctx->control_request_channel);
+
+        if (aeron_uri_string_builder_init_on_string(&builder,ctx->control_request_channel) < 0 ||
+            aeron_uri_string_builder_put_int64(&builder,AERON_URI_RESPONSE_CORRELATION_ID_KEY,subscription_id) < 0 ||
+            aeron_uri_string_builder_sprint(&builder,ctx->control_request_channel,sizeof(ctx->control_request_channel)) < 0)
+        {
+            rc = -1;
+            goto cleanup;
+        }
+
+        fprintf(stderr, "control request channel (post) :: %s\n", ctx->control_request_channel);
+    }
+
+cleanup:
+    aeron_uri_string_builder_close(&builder);
+
+    return rc;
 }
 
 int aeron_archive_async_connect_transition_to_done(aeron_archive_t **aeron_archive, aeron_archive_async_connect_t *async, int64_t archive_id)

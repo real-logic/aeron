@@ -184,6 +184,15 @@ int aeron_uri_string_builder_put_int32(aeron_uri_string_builder_t *builder, cons
     return aeron_uri_string_builder_put(builder, key, buffer);
 }
 
+int aeron_uri_string_builder_put_int64(aeron_uri_string_builder_t *builder, const char *key, int64_t value)
+{
+    char buffer[15];
+
+    snprintf(buffer, 15, "%llu", value);
+
+    return aeron_uri_string_builder_put(builder, key, buffer);
+}
+
 const char *aeron_uri_string_builder_get(aeron_uri_string_builder_t *builder, const char *key)
 {
     aeron_uri_string_builder_entry_t *entry = NULL;

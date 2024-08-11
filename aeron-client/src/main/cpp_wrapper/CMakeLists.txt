@@ -82,7 +82,7 @@ add_library(aeron::aeron_client_wrapper ALIAS aeron_client_wrapper)
 target_include_directories(aeron_client_wrapper
     INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/wrapper>")
 
-#target_sources(aeron_client_wrapper INTERFACE FILE_SET HEADERS FILES ${HEADERS})
+target_sources(aeron_client_wrapper INTERFACE "$<BUILD_INTERFACE:${HEADERS}>")
 
 if (MSVC)
     string(REPLACE "/" "\\\\" NATIVE_PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}")

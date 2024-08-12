@@ -350,8 +350,10 @@ final class ConsensusModuleAgent
         {
             if (nowNs >= slowTickDeadlineNs)
             {
-                slowTickDeadlineNs = nowNs + SLOW_TICK_INTERVAL_NS;
-                workCount += slowTickWork(nowNs);
+                final int slowTickWorkCount = slowTickWork(nowNs);
+
+                workCount += slowTickWorkCount;
+                slowTickDeadlineNs = slowTickWorkCount > 0 ? nowNs + 1 : nowNs + SLOW_TICK_INTERVAL_NS;
             }
 
             workCount += consensusAdapter.poll();

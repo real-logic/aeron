@@ -1896,13 +1896,14 @@ public class Aeron implements AutoCloseable
                 }
                 catch (final IOException ex)
                 {
-                    if (ex instanceof FileSystemException)
+                    if (ex instanceof FileSystemException && SystemUtil.isWindows())
                     {
-                        if ("The process cannot access the file because it is being used by another process.".equals(
-                            ((FileSystemException)ex).getReason()))
-                        {
-                            continue; // retry
-                        }
+                        // JDK exception translation does not handle `ERROR_SHARING_VIOLATION (32)` and returns
+                        // FileSystemException with the error "The process cannot access the file because it is being
+                        // used by another process.". Our current thinking is that matching by text is too brittle due
+                        // to error message being locale-sensitive on Windows. Therefore, we are going to retry on any
+                        // FileSystemException when running on Windows.
+                        continue; // retry
                     }
                     final String msg = "cannot open CnC file: " + file.getAbsolutePath() + " reason=" + ex.getMessage();
                     throw new AeronException(msg, ex);

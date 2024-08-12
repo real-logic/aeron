@@ -37,6 +37,7 @@ import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -1895,6 +1896,14 @@ public class Aeron implements AutoCloseable
                 }
                 catch (final IOException ex)
                 {
+                    if (ex instanceof FileSystemException)
+                    {
+                        if ("The process cannot access the file because it is being used by another process.".equals(
+                            ((FileSystemException)ex).getReason()))
+                        {
+                            continue; // retry
+                        }
+                    }
                     final String msg = "cannot open CnC file: " + file.getAbsolutePath() + " reason=" + ex.getMessage();
                     throw new AeronException(msg, ex);
                 }

@@ -21,12 +21,30 @@
 #include "aeronc.h"
 #include "aeron_common.h"
 
+#define AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH (8 * 1024)
+
+struct aeron_archive_proxy_stct
+{
+    aeron_archive_context_t *ctx;
+    aeron_exclusive_publication_t *exclusive_publication;
+    int retry_attempts;
+    // TODO why bake a buffer into the archive_proxy_t?  Couldn't/shouldn't we just toss it on the stack?
+    // This seems odd to me.  ... but that's how it was done in the C++ implementation...
+    uint8_t buffer[AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH];
+};
+
 #define AERON_ARCHIVE_PROXY_RETRY_ATTEMPTS_DEFAULT (3)
 
 typedef struct aeron_archive_proxy_stct aeron_archive_proxy_t;
 
 int aeron_archive_proxy_create(
     aeron_archive_proxy_t **archive_proxy,
+    aeron_archive_context_t *ctx,
+    aeron_exclusive_publication_t *exclusive_publication,
+    int retry_attempts);
+
+int aeron_archive_proxy_init(
+    aeron_archive_proxy_t *archive_proxy,
     aeron_archive_context_t *ctx,
     aeron_exclusive_publication_t *exclusive_publication,
     int retry_attempts);
@@ -149,5 +167,11 @@ bool aeron_archive_proxy_replicate(
     int32_t src_control_stream_id,
     const char *src_control_channel,
     aeron_archive_replication_params_t *params);
+
+bool aeron_archive_request_replay_token(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id);
 
 #endif //AERON_ARCHIVE_PROXY_H

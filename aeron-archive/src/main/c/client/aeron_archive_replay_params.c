@@ -28,6 +28,18 @@ int aeron_archive_replay_params_init(aeron_archive_replay_params_t *params)
     return 0;
 }
 
+int aeron_archive_replay_params_copy(aeron_archive_replay_params_t *dst, aeron_archive_replay_params_t *src)
+{
+    dst->bounding_limit_counter_id = src->bounding_limit_counter_id;
+    dst->file_io_max_length = src->file_io_max_length;
+    dst->position = src->position;
+    dst->length = src->length;
+    dst->replay_token = src->replay_token;
+    dst->subscription_registration_id = src->subscription_registration_id;
+
+    return 0;
+}
+
 bool aeron_archive_replay_params_is_bounded(aeron_archive_replay_params_t *params)
 {
     return AERON_NULL_COUNTER_ID != params->bounding_limit_counter_id;

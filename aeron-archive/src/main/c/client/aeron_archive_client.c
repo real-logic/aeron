@@ -20,10 +20,12 @@
 #include "aeron_archive_context.h"
 #include "aeron_archive_client.h"
 #include "aeron_archive_recording_signal.h"
+#include "aeron_archive_replay_params.h"
 
 #include "aeronc.h"
 #include "aeron_alloc.h"
 #include "aeron_agent.h"
+#include "aeron_counters.h"
 #include "util/aeron_error.h"
 #include "uri/aeron_uri_string_builder.h"
 
@@ -76,6 +78,14 @@ int aeron_archive_poll_for_subscription_descriptors(
     void *recording_subscription_descriptor_consumer_clientd);
 
 void aeron_archive_dispatch_recording_signal(aeron_archive_t *aeron_archive);
+
+int aeron_archive_replay_via_response_channel(
+    aeron_subscription_t **subscription_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    const char *replay_channel,
+    int32_t replay_stream_id,
+    aeron_archive_replay_params_t *params);
 
 /* **************** */
 
@@ -537,8 +547,44 @@ int aeron_archive_replay(
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
 
-    // TODO check replay channel for control mode response
-    // ... but for now assume it's not present
+    {
+        aeron_uri_string_builder_t builder;
+
+        if (aeron_uri_string_builder_init_on_string(&builder, replay_channel) < 0)
+        {
+            aeron_mutex_unlock(&aeron_archive->lock);
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+
+        const char *control_mode = aeron_uri_string_builder_get(&builder, AERON_UDP_CHANNEL_CONTROL_MODE_KEY);
+
+        bool has_control_response_mode =
+            NULL != control_mode &&
+            strcmp(control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE) == 0;
+
+        aeron_uri_string_builder_close(&builder);
+
+        if (has_control_response_mode)
+        {
+            int rc = aeron_archive_replay_via_response_channel(
+                subscription_p,
+                aeron_archive,
+                recording_id,
+                replay_channel,
+                replay_stream_id,
+                params);
+
+            aeron_mutex_unlock(&aeron_archive->lock);
+
+            if (rc < 0)
+            {
+                AERON_APPEND_ERR("%s", "");
+            }
+
+            return rc;
+        }
+    }
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
 
@@ -1088,4 +1134,226 @@ void aeron_archive_dispatch_recording_signal(aeron_archive_t *aeron_archive)
     aeron_archive_recording_signal_dispatch_signal(aeron_archive->ctx, &signal);
 
     aeron_archive->is_in_callback = false;
+}
+
+int aeron_archive_replay_via_response_channel(
+    aeron_subscription_t **subscription_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    const char *replay_channel,
+    int32_t replay_stream_id,
+    aeron_archive_replay_params_t *params)
+{
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_request_replay_token(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id))
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int64_t replay_token;
+    if (aeron_archive_poll_for_response(
+        &replay_token,
+        aeron_archive,
+        "AeronArchive::replayToken",
+        correlation_id) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    aeron_archive_replay_params_t response_channel_replay_params;
+    aeron_archive_replay_params_copy(&response_channel_replay_params, params);
+
+    response_channel_replay_params.replay_token = replay_token;
+
+    int64_t deadline_ns = aeron_nano_clock() + aeron_archive->ctx->message_timeout_ns;
+
+    int64_t subscription_id;
+    aeron_subscription_t *replay_subscription = NULL;
+
+    {
+        aeron_async_add_subscription_t *async;
+
+        if (aeron_async_add_subscription(
+            &async,
+            aeron_archive->aeron,
+            replay_channel,
+            replay_stream_id,
+            NULL, NULL, NULL, NULL) < 0)
+        {
+            // TODO
+        }
+
+        subscription_id = aeron_async_add_subscription_get_registration_id(async);
+
+        if (aeron_async_add_subscription_poll(&replay_subscription, async) < 0)
+        {
+            // TODO
+        }
+
+        while (NULL == replay_subscription)
+        {
+            if (aeron_nano_clock() > deadline_ns)
+            {
+                // TODO
+                return -1;
+            }
+
+            aeron_archive_idle(aeron_archive);
+
+            if (aeron_async_add_subscription_poll(&replay_subscription, async) < 0)
+            {
+                // TODO
+            }
+        }
+    }
+
+    char control_request_channel[AERON_MAX_PATH];
+    aeron_uri_string_builder_t builder;
+
+    bool failure = aeron_uri_string_builder_init_on_string(&builder, aeron_archive->ctx->control_request_channel) < 0 ||
+        aeron_uri_string_builder_put(&builder, AERON_URI_TERM_OFFSET_KEY, NULL) < 0 ||
+        aeron_uri_string_builder_put(&builder, AERON_URI_TERM_ID_KEY, NULL) < 0 ||
+        aeron_uri_string_builder_put(&builder, AERON_URI_INITIAL_TERM_ID_KEY, NULL) < 0 ||
+        aeron_uri_string_builder_put_int64(&builder, AERON_URI_RESPONSE_CORRELATION_ID_KEY, subscription_id) < 0 ||
+        aeron_uri_string_builder_put(&builder, AERON_URI_TERM_LENGTH_KEY, "64k") < 0 ||
+        aeron_uri_string_builder_put(&builder, AERON_URI_SPIES_SIMULATE_CONNECTION_KEY, "false") < 0 ||
+        aeron_uri_string_builder_sprint(&builder, control_request_channel, sizeof(control_request_channel)) < 0;
+
+    aeron_uri_string_builder_close(&builder);
+
+    if (failure)
+    {
+        // TODO
+        return -1;
+    }
+
+    int64_t publication_id;
+    aeron_exclusive_publication_t *exclusive_publication;
+
+    {
+        aeron_async_add_exclusive_publication_t *async;
+
+        if (aeron_async_add_exclusive_publication(
+            &async,
+            aeron_archive->aeron,
+            control_request_channel,
+            aeron_archive->ctx->control_request_stream_id) < 0)
+        {
+            // TODO
+        }
+
+        publication_id = aeron_async_add_exclusive_exclusive_publication_get_registration_id(async);
+
+        if (aeron_async_add_exclusive_publication_poll(&exclusive_publication, async) < 0)
+        {
+            // TODO
+        }
+
+        while (NULL == exclusive_publication)
+        {
+            if (aeron_nano_clock() > deadline_ns)
+            {
+                // TODO
+                return -1;
+            }
+
+            aeron_archive_idle(aeron_archive);
+
+            if (aeron_async_add_exclusive_publication_poll(&exclusive_publication, async) < 0)
+            {
+                // TODO
+            }
+        }
+    }
+
+    // don't call _close() on 'archive_proxy' !!!!
+    aeron_archive_proxy_t archive_proxy;
+
+    if (aeron_archive_proxy_init(
+        &archive_proxy,
+        aeron_archive->ctx,
+        exclusive_publication,
+        AERON_ARCHIVE_PROXY_RETRY_ATTEMPTS_DEFAULT) < 0)
+    {
+        // TODO
+    }
+
+    aeron_counters_reader_t *counters_reader = aeron_counters_reader(aeron_archive->aeron);
+    int pub_limit_counter_id = aeron_counters_reader_find_by_type_id_and_registration_id(
+        counters_reader,
+        AERON_COUNTER_PUBLISHER_LIMIT_TYPE_ID,
+        publication_id);
+
+    while (!aeron_exclusive_publication_is_connected(exclusive_publication))
+    {
+        if (aeron_nano_clock() > deadline_ns)
+        {
+            // TODO
+            return -1;
+        }
+
+        aeron_archive_idle(aeron_archive);
+    }
+
+    int64_t *pub_limit_counter = aeron_counters_reader_addr(counters_reader, pub_limit_counter_id);
+
+    while (0 == *pub_limit_counter)
+    {
+        if (aeron_nano_clock() > deadline_ns)
+        {
+            // TODO
+            return -1;
+        }
+
+        aeron_archive_idle(aeron_archive);
+    }
+
+    correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_replay(
+        &archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id,
+        replay_channel,
+        replay_stream_id,
+        &response_channel_replay_params))
+    {
+        // TODO
+        return -1;
+    }
+
+    if (aeron_archive_poll_for_response(
+        NULL,
+        aeron_archive,
+        "AeronArchive::replay",
+        correlation_id) < 0)
+    {
+       // TODO
+       return -1;
+    }
+
+    while (!aeron_subscription_is_connected(replay_subscription))
+    {
+        if (aeron_nano_clock() > deadline_ns)
+        {
+            // TODO
+            return -1;
+        }
+
+        aeron_archive_idle(aeron_archive);
+    }
+
+    *subscription_p = replay_subscription;
+
+    aeron_exclusive_publication_close(exclusive_publication, NULL, NULL);
+
+    return 0;
 }

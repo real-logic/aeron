@@ -1895,7 +1895,8 @@ public class Aeron implements AutoCloseable
                 }
                 catch (final IOException ex)
                 {
-                    throw new AeronException("cannot open CnC file: " + file.getAbsolutePath(), ex);
+                    final String msg = "cannot open CnC file: " + file.getAbsolutePath() + " reason=" + ex.getMessage();
+                    throw new AeronException(msg, ex);
                 }
             }
         }

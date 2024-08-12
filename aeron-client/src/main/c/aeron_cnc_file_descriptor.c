@@ -59,11 +59,24 @@ aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
 
     if (aeron_map_existing_file(cnc_mmap, filename) < 0)
     {
-        if (ENOENT == errno)
+#if defined(AERON_COMPILER_MSVC)
+        int err = aeron_errcode();
+        if (ERROR_FILE_NOT_FOUND == err ||
+            ERROR_PATH_NOT_FOUND == err ||
+            ERROR_ACCESS_DENIED == err ||
+            ERROR_SHARING_VIOLATION == err)
         {
             aeron_err_clear();
             return AERON_CNC_LOAD_AWAIT_FILE;
         }
+#else
+        int err = aeron_errcode();
+        if (ENOENT == err || EACCES == err)
+        {
+            aeron_err_clear();
+            return AERON_CNC_LOAD_AWAIT_FILE;
+        }
+#endif
 
         AERON_APPEND_ERR("CnC file could not be mmapped: %s", filename);
         return AERON_CNC_LOAD_FAILED;

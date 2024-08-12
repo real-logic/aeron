@@ -79,6 +79,7 @@ public final class ChannelUriStringBuilder
     private Long nakDelay;
     private Long untetheredWindowLimitTimeoutNs;
     private Long untetheredRestingTimeoutNs;
+    private Integer maxRetransmits;
 
     /**
      * Default constructor
@@ -144,6 +145,7 @@ public final class ChannelUriStringBuilder
         nakDelay(channelUri);
         untetheredWindowLimitTimeout(channelUri);
         untetheredRestingTimeout(channelUri);
+        maxRetransmits(channelUri);
     }
 
     /**
@@ -187,6 +189,7 @@ public final class ChannelUriStringBuilder
         channelSendTimestampOffset = null;
         responseEndpoint = null;
         responseCorrelationId = null;
+        maxRetransmits = null;
 
         return this;
     }
@@ -2155,6 +2158,56 @@ public final class ChannelUriStringBuilder
     }
 
     /**
+     * The max number of retransmit actions.
+     *
+     * @param maxRetransmits the max number of retransmit actions.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder maxRetransmits(final Integer maxRetransmits)
+    {
+        this.maxRetransmits = maxRetransmits;
+        return this;
+    }
+
+    /**
+     * The max number of retransmit actions.
+     *
+     * @param channelUri the existing URI to extract the maxRetransmits from.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder maxRetransmits(final ChannelUri channelUri)
+    {
+        final String valueStr = channelUri.get(MAX_RETRANSMITS_PARAM_NAME);
+        if (null == valueStr)
+        {
+            this.maxRetransmits = null;
+            return this;
+        }
+        else
+        {
+            try
+            {
+                return maxRetransmits(Integer.parseInt(valueStr));
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new IllegalArgumentException(
+                    MAX_RETRANSMITS_PARAM_NAME + " must be a number");
+            }
+        }
+    }
+
+    /**
+     * The max number of retransmit actions.
+     *
+     * @return the max number of outstanding retransmit actions
+     */
+    public Integer maxRetransmits()
+    {
+        return maxRetransmits;
+    }
+
+    /**
      * Build a channel URI String for the given parameters.
      *
      * @return a channel URI String for the given parameters.
@@ -2211,6 +2264,7 @@ public final class ChannelUriStringBuilder
         appendParameter(sb, NAK_DELAY_PARAM_NAME, nakDelay);
         appendParameter(sb, UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME, untetheredWindowLimitTimeoutNs);
         appendParameter(sb, UNTETHERED_RESTING_TIMEOUT_PARAM_NAME, untetheredRestingTimeoutNs);
+        appendParameter(sb, MAX_RETRANSMITS_PARAM_NAME, maxRetransmits);
 
         final char lastChar = sb.charAt(sb.length() - 1);
         if (lastChar == '|' || lastChar == '?')

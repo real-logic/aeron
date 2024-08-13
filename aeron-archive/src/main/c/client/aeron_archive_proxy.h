@@ -23,19 +23,16 @@
 
 #define AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH (8 * 1024)
 
-struct aeron_archive_proxy_stct
+typedef struct aeron_archive_proxy_stct
 {
     aeron_archive_context_t *ctx;
     aeron_exclusive_publication_t *exclusive_publication;
     int retry_attempts;
-    // TODO why bake a buffer into the archive_proxy_t?  Couldn't/shouldn't we just toss it on the stack?
-    // This seems odd to me.  ... but that's how it was done in the C++ implementation...
     uint8_t buffer[AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH];
-};
+}
+aeron_archive_proxy_t;
 
 #define AERON_ARCHIVE_PROXY_RETRY_ATTEMPTS_DEFAULT (3)
-
-typedef struct aeron_archive_proxy_stct aeron_archive_proxy_t;
 
 int aeron_archive_proxy_create(
     aeron_archive_proxy_t **archive_proxy,
@@ -50,6 +47,8 @@ int aeron_archive_proxy_init(
     int retry_attempts);
 
 int aeron_archive_proxy_close(aeron_archive_proxy_t *archive_proxy);
+
+int aeron_archive_proxy_delete(aeron_archive_proxy_t *archive_proxy);
 
 bool aeron_archive_proxy_try_connect(
     aeron_archive_proxy_t *archive_proxy,

@@ -245,6 +245,10 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
 
             break;
         }
+
+        default:
+            // do nothing
+            break;
     }
 
     return AERON_ACTION_CONTINUE;

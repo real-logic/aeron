@@ -181,6 +181,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
 
             return AERON_ACTION_BREAK;
         }
+
         case AERON_ARCHIVE_CLIENT_CHALLENGE_SBE_TEMPLATE_ID:
         {
             struct aeron_archive_client_challenge challenge;
@@ -217,6 +218,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
 
             return AERON_ACTION_BREAK;
         }
+
         case AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_EVENT_SBE_TEMPLATE_ID:
         {
             struct aeron_archive_client_recordingSignalEvent recording_signal_event;
@@ -245,6 +247,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
 
             return AERON_ACTION_BREAK;
         }
+
         default:
             // do nothing
             break;

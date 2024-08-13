@@ -90,6 +90,13 @@ int aeron_archive_proxy_close(aeron_archive_proxy_t *archive_proxy)
     aeron_exclusive_publication_close(archive_proxy->exclusive_publication, NULL, NULL);
     archive_proxy->exclusive_publication = NULL;
 
+    return 0;
+}
+
+int aeron_archive_proxy_delete(aeron_archive_proxy_t *archive_proxy)
+{
+    aeron_archive_proxy_close(archive_proxy);
+
     aeron_free(archive_proxy);
 
     return 0;

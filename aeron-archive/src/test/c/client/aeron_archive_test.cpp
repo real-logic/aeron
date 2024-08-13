@@ -41,8 +41,6 @@ fragment_handler_clientd_t;
 
 void fragment_handler(void *clientd, const uint8_t *buffer, size_t length, aeron_header_stct *header)
 {
-    // fprintf(stderr, "got a message!!\n");
-
     auto *cd = (fragment_handler_clientd_t *)clientd;
     cd->received++;
     cd->position = aeron_header_position(header);
@@ -67,7 +65,6 @@ static aeron_archive_encoded_credentials_t *encoded_credentials_supplier(void *c
 
 static aeron_archive_encoded_credentials_t *encoded_credentials_on_challenge(aeron_archive_encoded_credentials_t *encoded_challenge, void *clientd)
 {
-    fprintf(stderr, "GOT THE CHALLENGE CALLBACK\n");
     return ((credentials_supplier_clientd_t *)clientd)->on_challenge_credentials;
 }
 
@@ -415,7 +412,6 @@ public:
                     m_counter_id,
                     source_identity_buffer,
                     &sib_len));
-            fprintf(stderr, "SI :: %s (len: %i)\n", source_identity_buffer, sib_len);
             EXPECT_EQ(9, sib_len);
             EXPECT_STREQ("aeron:ipc", source_identity_buffer);
         }
@@ -523,15 +519,9 @@ static void recording_descriptor_consumer(
     }
     if (nullptr != cd->original_channel)
     {
-        fprintf(stderr, "%zu %zu\n", strlen(cd->original_channel), strlen(descriptor->original_channel));
         EXPECT_EQ(strlen(cd->original_channel), strlen(descriptor->original_channel));
         EXPECT_STREQ(cd->original_channel, descriptor->original_channel);
     }
-
-    fprintf(stderr, "GOT THE LIST RECORDING CALLBACK\n");
-    fprintf(stderr, "%s\n", descriptor->stripped_channel);
-    fprintf(stderr, "%s\n", descriptor->original_channel);
-    fprintf(stderr, "%s\n", descriptor->source_identity);
 }
 
 struct SubscriptionDescriptor
@@ -563,8 +553,6 @@ static void recording_subscription_descriptor_consumer(
     aeron_archive_recording_subscription_descriptor_t *descriptor,
     void *clientd)
 {
-    fprintf(stderr, "GOT THE LIST RECORDING SUBSCRIPTION CALLBACK\n");
-
     auto cd = (subscription_descriptor_consumer_clientd *)clientd;
     cd->descriptors.emplace_back(
         descriptor->control_session_id,
@@ -669,8 +657,6 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
             m_recording_id_from_counter));
         EXPECT_EQ(stop_position, found_recording_position);
 
-        fprintf(stderr, "found recording position %llu\n", found_recording_position);
-
         int64_t found_stop_position;
         EXPECT_EQ(0, aeron_archive_get_stop_position(
             &found_stop_position,
@@ -678,16 +664,12 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
             m_recording_id_from_counter));
         EXPECT_EQ(AERON_NULL_VALUE, found_stop_position);
 
-        fprintf(stderr, "found stop position %llu\n", found_stop_position);
-
         int64_t found_max_recorded_position;
         EXPECT_EQ(0, aeron_archive_get_max_recorded_position(
             &found_max_recorded_position,
             m_archive,
             m_recording_id_from_counter));
         EXPECT_EQ(stop_position, found_max_recorded_position);
-
-        fprintf(stderr, "found max recorded position %llu\n", found_max_recorded_position);
     }
 
     EXPECT_EQ(0, aeron_archive_stop_recording(
@@ -776,7 +758,6 @@ TEST_F(AeronCArchiveTest, shouldRecordThenReplay)
                     m_counter_id,
                     source_identity_buffer,
                     &sib_len));
-            fprintf(stderr, "SI :: %s (len: %i)\n", source_identity_buffer, sib_len);
             EXPECT_EQ(9, sib_len);
             EXPECT_STREQ("aeron:ipc", source_identity_buffer);
         }
@@ -978,8 +959,6 @@ TEST_F(AeronCArchiveTest, shouldRecordThenReplayThenTruncate)
             m_recording_id_from_counter));
         EXPECT_EQ(stop_position, found_recording_position);
 
-        fprintf(stderr, "found recording position %llu\n", found_recording_position);
-
         int64_t found_stop_position;
         EXPECT_EQ(0, aeron_archive_get_stop_position(
             &found_stop_position,
@@ -987,16 +966,12 @@ TEST_F(AeronCArchiveTest, shouldRecordThenReplayThenTruncate)
             m_recording_id_from_counter));
         EXPECT_EQ(AERON_NULL_VALUE, found_stop_position);
 
-        fprintf(stderr, "found stop position %llu\n", found_stop_position);
-
         int64_t found_max_recorded_position;
         EXPECT_EQ(0, aeron_archive_get_max_recorded_position(
             &found_max_recorded_position,
             m_archive,
             m_recording_id_from_counter));
         EXPECT_EQ(stop_position, found_max_recorded_position);
-
-        fprintf(stderr, "found max recorded position %llu\n", found_max_recorded_position);
     }
 
     EXPECT_EQ(0, aeron_archive_stop_recording(
@@ -1329,9 +1304,6 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
         aeron_uri_string_builder_sprint(&builder, publication_channel, AERON_MAX_PATH + 1);
         aeron_uri_string_builder_close(&builder);
-
-        // aeron:udp?control-mode=dynamic|term-length=65536|fc=tagged,g:99901/1,t:5s|control=localhost:23265
-        fprintf(stderr, "pub channel :: %s\n", publication_channel);
     }
 
     {
@@ -1345,8 +1317,6 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
         aeron_uri_string_builder_sprint(&builder, live_destination, AERON_MAX_PATH + 1);
         aeron_uri_string_builder_close(&builder);
-
-        fprintf(stderr, "live destination :: %s\n", live_destination);
     }
 
     {
@@ -1359,8 +1329,6 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
         aeron_uri_string_builder_sprint(&builder, replay_destination, AERON_MAX_PATH + 1);
         aeron_uri_string_builder_close(&builder);
-
-        fprintf(stderr, "replay destination :: %s\n", replay_destination);
     }
 
     const size_t initial_message_count = min_messages_per_term * 3;
@@ -1386,8 +1354,6 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
         aeron_uri_string_builder_sprint(&builder, recording_channel, AERON_MAX_PATH + 1);
         aeron_uri_string_builder_close(&builder);
-
-        fprintf(stderr, "recording channel :: %s\n", recording_channel);
     }
 
     {
@@ -1401,8 +1367,6 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
         aeron_uri_string_builder_sprint(&builder, subscription_channel, AERON_MAX_PATH + 1);
         aeron_uri_string_builder_close(&builder);
-
-        fprintf(stderr, "subscription channel :: %s\n", subscription_channel);
     }
 
     ASSERT_EQ(0, aeron_archive_start_recording(
@@ -1465,8 +1429,6 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
             aeron_uri_string_builder_sprint(&builder, replay_channel, AERON_MAX_PATH + 1);
             aeron_uri_string_builder_close(&builder);
-
-            fprintf(stderr, "replay channel :: %s\n", replay_channel);
         }
 
         aeron_archive_replay_merge_t *replay_merge;
@@ -1775,9 +1737,6 @@ void recording_signal_consumer(
     void *clientd)
 {
     auto cd = (recording_signal_consumer_clientd_t *)clientd;
-
-    fprintf(stderr, " ---- GOT A RECORDING SIGNAL :: code=%i\n", signal->recording_signal_code);
-
     cd->signals.insert(signal->recording_signal_code);
 }
 
@@ -1839,7 +1798,6 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateThenReplay)
                     m_counter_id,
                     source_identity_buffer,
                     &sib_len));
-            fprintf(stderr, "SI :: %s (len: %i)\n", source_identity_buffer, sib_len);
             EXPECT_EQ(9, sib_len);
             EXPECT_STREQ("aeron:ipc", source_identity_buffer);
         }
@@ -1975,7 +1933,6 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateTwice)
                     m_counter_id,
                     source_identity_buffer,
                     &sib_len));
-            fprintf(stderr, "SI :: %s (len: %i)\n", source_identity_buffer, sib_len);
             EXPECT_EQ(9, sib_len);
             EXPECT_STREQ("aeron:ipc", source_identity_buffer);
         }

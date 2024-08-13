@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-
 #include "aeron_archive.h"
 #include "aeron_archive_client.h"
 #include "aeron_archive_configuration.h"
@@ -411,10 +409,9 @@ int aeron_archive_check_and_setup_response_channel(aeron_archive_context_t *ctx,
     int rc = 0;
     aeron_uri_string_builder_t builder;
 
-    fprintf(stderr, "control response channel :: %s\n", ctx->control_response_channel);
-
     if (aeron_uri_string_builder_init_on_string(&builder, ctx->control_response_channel) < 0)
     {
+        AERON_APPEND_ERR("%s", "");
         rc = -1;
         goto cleanup;
     }
@@ -426,17 +423,13 @@ int aeron_archive_check_and_setup_response_channel(aeron_archive_context_t *ctx,
     {
         aeron_uri_string_builder_close(&builder);
 
-        fprintf(stderr, "control request channel (post) :: %s\n", ctx->control_request_channel);
-
         if (aeron_uri_string_builder_init_on_string(&builder,ctx->control_request_channel) < 0 ||
             aeron_uri_string_builder_put_int64(&builder,AERON_URI_RESPONSE_CORRELATION_ID_KEY,subscription_id) < 0 ||
             aeron_uri_string_builder_sprint(&builder,ctx->control_request_channel,sizeof(ctx->control_request_channel)) < 0)
         {
+            AERON_APPEND_ERR("%s", "");
             rc = -1;
-            goto cleanup;
         }
-
-        fprintf(stderr, "control request channel (post) :: %s\n", ctx->control_request_channel);
     }
 
 cleanup:
@@ -523,7 +516,7 @@ int aeron_archive_async_connect_delete(aeron_archive_async_connect_t *async)
 
     if (NULL != async->archive_proxy)
     {
-        aeron_archive_proxy_close(async->archive_proxy);
+        aeron_archive_proxy_delete(async->archive_proxy);
         async->archive_proxy = NULL;
     }
 

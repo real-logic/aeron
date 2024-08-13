@@ -195,8 +195,6 @@ public:
         {
             m_stream << currentTimeMillis() << " [TearDown] Shutting down PID " << m_pid << std::endl;
 
-            std::this_thread::sleep_for(IDLE_SLEEP_S_2);
-
             const std::string aeronPath = m_aeronDir;
             const std::string cncFilename = aeronPath + std::string(1, AERON_FILE_SEP) + "cnc.dat";
 

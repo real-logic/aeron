@@ -2349,17 +2349,15 @@ private:
 
         ArchiveProxy archiveProxy{publication};
 
-        const int pubLmtCounterId = m_aeron->countersReader().findByTypeIdAndRegistrationId(
-            AeronCounters::DRIVER_PUBLISHER_LIMIT_TYPE_ID, publicationId);
-
         while (!publication->isConnected())
         {
-            checkDeadline<IdleStrategy>(deadlineNs, "timed out waiting for replay publication to connect");
+            checkDeadline<IdleStrategy>(deadlineNs, "timed out waiting to establish replay connection");
         }
 
-        while (0 == m_aeron->countersReader().getCounterValue(pubLmtCounterId))
+        while (0 == publication->publicationLimit())
         {
-            checkDeadline<IdleStrategy>(deadlineNs, "timed out waiting for replay publication to have available limit");
+            checkDeadline<IdleStrategy>(
+                deadlineNs, "timed out waiting for replay connection to have available publication limit");
         }
 
         m_lastCorrelationId = m_aeron->nextCorrelationId();

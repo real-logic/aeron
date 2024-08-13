@@ -235,7 +235,6 @@ public:
         size_t start_count = 0,
         const char *message_prefix = "Message ")
     {
-        fprintf(stderr, "OFFER %lu to %lu\n", start_count, message_count);
         for (size_t i = 0; i < message_count; i++)
         {
             size_t index = i + start_count;
@@ -256,7 +255,6 @@ public:
         fragment_handler_clientd_t clientd;
         clientd.received = 0;
 
-        fprintf(stderr, "CONSUME %lu\n", message_count);
         while (clientd.received < message_count)
         {
             if (0 == aeron_subscription_poll(subscription, fragment_handler, (void *)&clientd, 10))
@@ -878,14 +876,14 @@ TEST_F(AeronCArchiveTest, shouldRecordThenBoundedReplay)
     const char *counter_name = "BoundedTestCounter";
 
     aeron_async_add_counter_t *async_add_counter;
-    aeron_async_add_counter(
+    EXPECT_EQ(0, aeron_async_add_counter(
         &async_add_counter,
         m_aeron,
         10001,
         (const uint8_t *)counter_name,
         strlen(counter_name),
         counter_name,
-        strlen(counter_name));
+        strlen(counter_name)));
 
     aeron_counter_t *counter = nullptr;
     aeron_async_add_counter_poll(&counter, async_add_counter);
@@ -2133,4 +2131,216 @@ TEST_F(AeronCArchiveTest, shouldReplayWithResponseChannel)
 
     aeron_image_t *image = aeron_subscription_image_at_index(subscription, 0);
     EXPECT_EQ(stop_position, aeron_image_position(image));
+}
+
+TEST_F(AeronCArchiveTest, shouldBoundedReplayWithResponseChannel)
+{
+    size_t message_count = 1000;
+    const char *response_channel = "aeron:udp?control-mode=response|control=localhost:10002";
+    const std::int64_t key = 1234567890;
+
+    ASSERT_EQ(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ(0, aeron_archive_context_set_control_response_channel(
+        m_ctx,
+        response_channel));
+    ASSERT_EQ(0,
+        aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        m_ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds_clientd));
+    ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
+
+    m_aeron = aeron_archive_get_aeron(m_archive);
+
+    int64_t recording_id, stop_position, halfway_position;
+
+    recordData(&recording_id, &stop_position, &halfway_position, message_count);
+
+    const char *counter_name = "test bounded counter";
+    aeron_async_add_counter_t *async_add_counter;
+    ASSERT_EQ(0, aeron_async_add_counter(
+        &async_add_counter,
+        m_aeron,
+        10001,
+        (const uint8_t *)&key,
+        sizeof(key),
+        counter_name,
+        strlen(counter_name)));
+
+    aeron_counter_t *counter = nullptr;
+    aeron_async_add_counter_poll(&counter, async_add_counter);
+    while (nullptr == counter)
+    {
+        idle();
+        aeron_async_add_counter_poll(&counter, async_add_counter);
+    }
+
+    aeron_counter_set_ordered(aeron_counter_addr(counter), halfway_position);
+
+    int64_t position = 0L;
+    int64_t length = stop_position - position;
+
+    aeron_counter_constants_t counter_constants;
+    aeron_counter_constants(counter, &counter_constants);
+
+    aeron_archive_replay_params_t replay_params;
+    aeron_archive_replay_params_init(&replay_params);
+
+    replay_params.position = position;
+    replay_params.length = length;
+    replay_params.file_io_max_length = 4096;
+    replay_params.bounding_limit_counter_id = counter_constants.counter_id;
+
+    aeron_subscription_t *subscription;
+
+    EXPECT_EQ(0, aeron_archive_replay(
+        &subscription,
+        m_archive,
+        recording_id,
+        response_channel,
+        m_replayStreamId,
+        &replay_params));
+
+    consumeMessages(subscription, message_count / 2);
+
+    aeron_image_t *image = aeron_subscription_image_at_index(subscription, 0);
+    EXPECT_EQ(halfway_position, aeron_image_position(image));
+}
+
+TEST_F(AeronCArchiveTest, shouldStartReplayWithResponseChannel)
+{
+    size_t message_count = 1000;
+    const char *response_channel = "aeron:udp?control-mode=response|control=localhost:10003";
+
+    ASSERT_EQ(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ(0, aeron_archive_context_set_control_response_channel(
+        m_ctx,
+        response_channel));
+    ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        m_ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds_clientd));
+    ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
+
+    m_aeron = aeron_archive_get_aeron(m_archive);
+
+    int64_t recording_id, stop_position, halfway_position;
+
+    recordData(&recording_id, &stop_position, &halfway_position, message_count);
+
+    aeron_subscription_t *subscription = addSubscription(response_channel, m_replayStreamId);
+
+    int64_t position = 0L;
+    int64_t length = stop_position - position;
+
+    aeron_subscription_constants_t subscription_constants;
+    aeron_subscription_constants(subscription, &subscription_constants);
+
+    aeron_archive_replay_params_t replay_params;
+    aeron_archive_replay_params_init(&replay_params);
+
+    replay_params.position = position;
+    replay_params.length = length;
+    replay_params.file_io_max_length = 4096;
+    replay_params.subscription_registration_id = subscription_constants.registration_id;
+
+    EXPECT_EQ(0, aeron_archive_start_replay(
+        nullptr,
+        m_archive,
+        recording_id,
+        response_channel,
+        m_replayStreamId,
+        &replay_params));
+
+    consumeMessages(subscription, message_count);
+
+    aeron_image_t *image = aeron_subscription_image_at_index(subscription, 0);
+    EXPECT_EQ(stop_position, aeron_image_position(image));
+}
+
+TEST_F(AeronCArchiveTest, shouldStartBoundedReplayWithResponseChannel)
+{
+    size_t message_count = 1000;
+    const char *response_channel = "aeron:udp?control-mode=response|control=localhost:10002";
+    const std::int64_t key = 1234567890;
+
+    ASSERT_EQ(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ(0, aeron_archive_context_set_control_response_channel(
+        m_ctx,
+        response_channel));
+    ASSERT_EQ(0,
+        aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        m_ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds_clientd));
+    ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
+
+    m_aeron = aeron_archive_get_aeron(m_archive);
+
+    int64_t recording_id, stop_position, halfway_position;
+
+    recordData(&recording_id, &stop_position, &halfway_position, message_count);
+
+    const char *counter_name = "test bounded counter";
+    aeron_async_add_counter_t *async_add_counter;
+    ASSERT_EQ(0, aeron_async_add_counter(
+        &async_add_counter,
+        m_aeron,
+        10001,
+        (const uint8_t *)&key,
+        sizeof(key),
+        counter_name,
+        strlen(counter_name)));
+
+    aeron_counter_t *counter = nullptr;
+    aeron_async_add_counter_poll(&counter, async_add_counter);
+    while (nullptr == counter)
+    {
+        idle();
+        aeron_async_add_counter_poll(&counter, async_add_counter);
+    }
+
+    aeron_counter_set_ordered(aeron_counter_addr(counter), halfway_position);
+
+    aeron_subscription_t *subscription = addSubscription(response_channel, m_replayStreamId);
+
+    int64_t position = 0L;
+    int64_t length = stop_position - position;
+
+    aeron_counter_constants_t counter_constants;
+    aeron_counter_constants(counter, &counter_constants);
+
+    aeron_subscription_constants_t subscription_constants;
+    aeron_subscription_constants(subscription, &subscription_constants);
+
+    aeron_archive_replay_params_t replay_params;
+    aeron_archive_replay_params_init(&replay_params);
+
+    replay_params.position = position;
+    replay_params.length = length;
+    replay_params.file_io_max_length = 4096;
+    replay_params.bounding_limit_counter_id = counter_constants.counter_id;
+    replay_params.subscription_registration_id = subscription_constants.registration_id;
+
+    EXPECT_EQ(0, aeron_archive_start_replay(
+        nullptr,
+        m_archive,
+        recording_id,
+        response_channel,
+        m_replayStreamId,
+        &replay_params));
+
+    consumeMessages(subscription, message_count / 2);
+
+    aeron_image_t *image = aeron_subscription_image_at_index(subscription, 0);
+    EXPECT_EQ(halfway_position, aeron_image_position(image));
 }

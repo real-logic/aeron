@@ -172,3 +172,17 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateRxTimestampOffset)
         "aeron:udp?endpoint=localhost:9999|media-rcv-ts-offset=reserved");
 }
 
+TEST(ChannelUriStringBuilderTest, shouldHandleMaxRetransmits)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("224.10.9.8:777")
+        .maxRetransmits(123);
+
+    const std::string uriString = builder.build();
+
+    std::shared_ptr<ChannelUri> channelUri = ChannelUri::parse(uriString);
+    ASSERT_NE(std::string::npos, channelUri->toString().find("retransmits-active-max=123"));
+}

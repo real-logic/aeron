@@ -80,7 +80,7 @@ aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
             return AERON_CNC_LOAD_AWAIT_FILE;
         }
 
-        AERON_APPEND_ERR("CnC file could not be mmapped: %s", filename);
+        AERON_APPEND_ERR("CnC file could not be memory mapped: %s", filename);
         return AERON_CNC_LOAD_FAILED;
     }
 

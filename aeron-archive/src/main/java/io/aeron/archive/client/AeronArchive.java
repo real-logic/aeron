@@ -3989,15 +3989,12 @@ public final class AeronArchive implements AutoCloseable
         {
             final ArchiveProxy responseArchiveProxy = new ArchiveProxy(publication);
 
-            final int pubLmtCounterId = aeron.countersReader().findByTypeIdAndRegistrationId(
-                AeronCounters.DRIVER_PUBLISHER_LIMIT_TYPE_ID, publication.registrationId());
-
             final long deadlineNs = aeron.context().nanoClock().nanoTime() + context.messageTimeoutNs();
-            while (!publication.isConnected() || 0 == aeron.countersReader().getCounterValue(pubLmtCounterId))
+            while (!publication.isConnected() || 0 == publication.positionLimit())
             {
                 if (deadlineNs <= aeron.context().nanoClock().nanoTime())
                 {
-                    throw new ArchiveException("timed out wait for replay publication to connect");
+                    throw new ArchiveException("timed out waiting to establish replay connection");
                 }
 
                 idleStrategy.idle();

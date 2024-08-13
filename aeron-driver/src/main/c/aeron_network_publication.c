@@ -273,8 +273,8 @@ int aeron_network_publication_create(
     _pub->term_window_length = (int64_t)aeron_producer_window_length(
         context->publication_window_length, params->term_length);
     _pub->linger_timeout_ns = (int64_t)params->linger_timeout_ns;
-    _pub->untethered_window_limit_timeout_ns = params->untethered_window_limit_timeout_ns;
-    _pub->untethered_resting_timeout_ns = params->untethered_resting_timeout_ns;
+    _pub->untethered_window_limit_timeout_ns = (int64_t)params->untethered_window_limit_timeout_ns;
+    _pub->untethered_resting_timeout_ns = (int64_t)params->untethered_resting_timeout_ns;
     _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
     _pub->connection_timeout_ns = (int64_t)context->publication_connection_timeout_ns;
     _pub->time_of_last_data_or_heartbeat_ns = now_ns - AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;

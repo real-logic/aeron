@@ -320,7 +320,7 @@ TEST_F(PublicationImageTest, shouldTrackActiveTransportAccountBasedOnFrames)
     int32_t session_id = 1000001;
     int64_t registration_id = 0;
 
-    int64_t t0_ns = 2 * m_context->image_liveness_timeout_ns;
+    int64_t t0_ns = static_cast<int64_t>(2 * m_context->image_liveness_timeout_ns);
 
     aeron_udp_channel_t *channel_1;
     aeron_receive_destination_t *dest_1;

@@ -933,7 +933,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->receiver_group_tag.value = aeron_config_parse_int64(
         AERON_NAK_UNICAST_RETRY_DELAY_RATIO_ENV_VAR,
         getenv(AERON_NAK_UNICAST_RETRY_DELAY_RATIO_ENV_VAR),
-        _context->nak_unicast_retry_delay_ratio,
+        (int64_t)_context->nak_unicast_retry_delay_ratio,
         1,
         INT64_MAX);
 

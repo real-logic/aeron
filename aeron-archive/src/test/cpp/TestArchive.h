@@ -270,8 +270,8 @@ private:
     const std::string m_java = JAVA_EXECUTABLE;          // Defined in CMakeLists.txt
     const std::string m_aeronAllJar = AERON_ALL_JAR;     // Defined in CMakeLists.txt
     const std::string m_aeronAgentJar = "-javaagent:" AERON_AGENT_JAR; // Defined in CMakeLists.txt
-    const std::string m_archiveDir;
-    const std::string m_aeronDir;
+    const std::string m_archiveDir = {};
+    const std::string m_aeronDir = {};
     std::ostream &m_stream;
 #if defined(_WIN32)
     intptr_t m_pid = -1;

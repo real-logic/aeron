@@ -176,7 +176,8 @@ TEST_F(ControlledImageFragmentAssemblerTest, shouldReassembleFromTwoFragments)
     bool isCalled = false;
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        const int64_t expectedPosition = startPosition + ::aeron_logbuffer_compute_fragmented_length(length, fragmentLength);
+        const int64_t expectedPosition =
+            startPosition + static_cast<int64_t>(::aeron_logbuffer_compute_fragmented_length(length, fragmentLength));
 
         isCalled = true;
         EXPECT_EQ(length, fragmentLength * 2);
@@ -253,7 +254,8 @@ TEST_F(ControlledImageFragmentAssemblerTest, shouldReassembleFromThreeFragments)
     bool isCalled = false;
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
     {
-        const int64_t expectedPosition = startPosition + ::aeron_logbuffer_compute_fragmented_length(length, fragmentLength);
+        const int64_t expectedPosition =
+            startPosition + static_cast<int64_t>(::aeron_logbuffer_compute_fragmented_length(length, fragmentLength));
 
         isCalled = true;
         EXPECT_EQ(length, fragmentLength * 2 + lastFragmentLength);

@@ -138,7 +138,9 @@ SET(HEADERS
 
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})
+add_library(aeron::aeron_client ALIAS aeron_client)
 add_library(aeron_client_shared SHARED ${SOURCE} ${HEADERS})
+add_library(aeron::aeron_client_shared ALIAS aeron_client_shared)
 
 target_include_directories(aeron_client
     PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include>")
@@ -176,7 +178,7 @@ target_link_libraries(aeron_client_shared
 
 if (AERON_INSTALL_TARGETS)
     install(TARGETS aeron_client_shared aeron_client
-        EXPORT AeronTargets
+        EXPORT aeron-targets
         RUNTIME DESTINATION lib
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)

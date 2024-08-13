@@ -35,7 +35,7 @@ using namespace aeron::util;
 class Header
 {
 public:
-    Header(aeron_header_t *header) : m_header(header)
+    explicit Header(aeron_header_t *header) : m_header(header)
     {
         if (aeron_header_values(m_header, &m_headerValues) < 0)
         {

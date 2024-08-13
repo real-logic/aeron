@@ -31,7 +31,7 @@ typedef struct aeron_image_list_stct
 }
 aeron_image_list_t;
 
-#define AERON_IMAGE_LIST_ALLOC_SIZE(l) (sizeof(aeron_image_list_t) + (l * sizeof(aeron_image_t *)))
+#define AERON_IMAGE_LIST_ALLOC_SIZE(l) (sizeof(aeron_image_list_t) + ((l) * sizeof(aeron_image_t *)))
 
 typedef struct aeron_subscription_stct
 {

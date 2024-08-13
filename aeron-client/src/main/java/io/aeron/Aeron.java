@@ -37,6 +37,7 @@ import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -1893,11 +1894,30 @@ public class Aeron implements AutoCloseable
                 catch (final NoSuchFileException | AccessDeniedException ignore)
                 {
                 }
+                catch (final FileSystemException ex)
+                {
+                    // JDK exception translation does not handle `ERROR_SHARING_VIOLATION (32)` and returns
+                    // FileSystemException with the error "The process cannot access the file because it is being
+                    // used by another process.". Our current thinking is that matching by text is too brittle due
+                    // to error message being locale-sensitive on Windows. Therefore, we are going to retry on any
+                    // FileSystemException when running on Windows.
+                    if (SystemUtil.isWindows())
+                    {
+                        continue;
+                    }
+
+                    throw new AeronException(cncFileErrorMessage(file, ex), ex);
+                }
                 catch (final IOException ex)
                 {
-                    throw new AeronException("cannot open CnC file: " + file.getAbsolutePath(), ex);
+                    throw new AeronException(cncFileErrorMessage(file, ex), ex);
                 }
             }
+        }
+
+        private static String cncFileErrorMessage(final File file, final Exception ex)
+        {
+            return "cannot open CnC file: " + file.getAbsolutePath() + " reason=" + ex.getMessage();
         }
     }
 }

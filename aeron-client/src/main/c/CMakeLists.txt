@@ -199,10 +199,12 @@ set(HEADERS
     aeronc.h)
 
 add_library(aeron SHARED ${SOURCE} ${HEADERS})
+add_library(aeron::aeron ALIAS aeron)
 target_include_directories(aeron
     PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/aeron>")
 
 add_library(aeron_static STATIC ${SOURCE} ${HEADERS})
+add_library(aeron::aeron_static ALIAS aeron_static)
 target_include_directories(aeron_static
     PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/aeron>")
 
@@ -236,7 +238,7 @@ target_link_libraries(
 if (AERON_INSTALL_TARGETS)
     install(
         TARGETS aeron aeron_static
-        EXPORT AeronTargets
+        EXPORT aeron-targets
         RUNTIME DESTINATION lib
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)

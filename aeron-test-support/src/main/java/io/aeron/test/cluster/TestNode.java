@@ -496,39 +496,37 @@ public final class TestNode implements AutoCloseable
                 }
             }
 
-            if (ClusterTests.UNEXPECTED_MSG.equals(message))
+            switch (message)
             {
-                hasReceivedUnexpectedMessage = true;
-                throw new IllegalStateException("unexpected message received");
-            }
+                case ClusterTests.UNEXPECTED_MSG:
+                    hasReceivedUnexpectedMessage = true;
+                    throw new IllegalStateException("unexpected message received");
 
-            if (ClusterTests.TERMINATE_MSG.equals(message))
-            {
-                throw new ClusterTerminationException(false);
-            }
+                case ClusterTests.TERMINATE_MSG:
+                    throw new ClusterTerminationException(false);
 
-            if (ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG.equals(message))
-            {
-                sendServiceIpcMessage(session, buffer, offset, length);
-            }
-            else if (ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG_SKIP_FOLLOWER.equals(message))
-            {
-                simulateBuggyApplicationCodeThatSkipsServiceMessageOnFollower(session, buffer, offset, length);
-            }
-            else
-            {
-                if (ClusterTests.ERROR_MSG.equals(message))
-                {
-                    cluster.context().errorHandler().onError(new Exception(message));
-                }
+                case ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG:
+                    sendServiceIpcMessage(session, buffer, offset, length);
+                    break;
 
-                if (null != session)
-                {
-                    while (session.offer(buffer, offset, length) < 0)
+                case ClusterTests.ECHO_SERVICE_IPC_INGRESS_MSG_SKIP_FOLLOWER:
+                    simulateBuggyApplicationCodeThatSkipsServiceMessageOnFollower(session, buffer, offset, length);
+                    break;
+
+                default:
+                    if (ClusterTests.ERROR_MSG.equals(message))
                     {
-                        idleStrategy.idle();
+                        cluster.context().errorHandler().onError(new Exception(message));
                     }
-                }
+
+                    if (null != session)
+                    {
+                        while (session.offer(buffer, offset, length) < 0)
+                        {
+                            idleStrategy.idle();
+                        }
+                    }
+                    break;
             }
 
             messageCount.incrementAndGet();

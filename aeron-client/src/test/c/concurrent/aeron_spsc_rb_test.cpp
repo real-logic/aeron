@@ -612,10 +612,10 @@ struct aeron_spsc_rb_control_test_clientd_t
 
 aeron_rb_read_action_t controlled_read_with_action(int32_t msg_type_id, const void *data, size_t length, void *clientd)
 {
-    aeron_spsc_rb_control_test_clientd_t* test_clientd = static_cast<aeron_spsc_rb_control_test_clientd_t *>(clientd);
+     auto *test_clientd = static_cast<aeron_spsc_rb_control_test_clientd_t *>(clientd);
     int64_t value = *(int64_t*)data;
-    aeron_rb_read_action_stct action_for_value = value == test_clientd->value ? test_clientd->action_for_value :
-        AERON_RB_CONTINUE;
+    aeron_rb_read_action_stct action_for_value = value == test_clientd->value ?
+        test_clientd->action_for_value : AERON_RB_CONTINUE;
 
     test_clientd->results[test_clientd->result_index] = value;
     test_clientd->result_index++;
@@ -725,11 +725,10 @@ TEST_F(SpscRbTest, shouldContinueControlledRead)
 
 aeron_rb_read_action_t controlled_read_with_commit(int32_t msg_type_id, const void *data, size_t length, void *clientd)
 {
-    aeron_spsc_rb_t *rb = static_cast<aeron_spsc_rb_t *>(clientd);
+    auto *rb = static_cast<aeron_spsc_rb_t *>(clientd);
     int64_t value = *(int64_t*)data;
 
-    aeron_rb_read_action_stct action_for_value = value == 3 ? AERON_RB_COMMIT :
-        AERON_RB_CONTINUE;
+    aeron_rb_read_action_stct action_for_value = value == 3 ? AERON_RB_COMMIT : AERON_RB_CONTINUE;
 
     if (value <= 3)
     {

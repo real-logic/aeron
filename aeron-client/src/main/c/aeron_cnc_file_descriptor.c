@@ -36,6 +36,21 @@ int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)
     return cnc_version;
 }
 
+static bool aeron_cnc_map_file_is_retry_err(int err)
+{
+#if defined(AERON_COMPILER_MSVC)
+    return
+        ERROR_FILE_NOT_FOUND == err ||
+        ERROR_PATH_NOT_FOUND == err ||
+        ERROR_ACCESS_DENIED == err ||
+        ERROR_SHARING_VIOLATION == err;
+#else
+    return
+        ENOENT == err ||
+        EACCES == err;
+#endif
+}
+
 aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
     const char *dir, aeron_mapped_file_t *cnc_mmap, aeron_cnc_metadata_t **metadata)
 {
@@ -59,13 +74,13 @@ aeron_cnc_load_result_t aeron_cnc_map_file_and_load_metadata(
 
     if (aeron_map_existing_file(cnc_mmap, filename) < 0)
     {
-        if (ENOENT == errno)
+        if (aeron_cnc_map_file_is_retry_err(aeron_errcode()))
         {
             aeron_err_clear();
             return AERON_CNC_LOAD_AWAIT_FILE;
         }
 
-        AERON_APPEND_ERR("CnC file could not be mmapped: %s", filename);
+        AERON_APPEND_ERR("CnC file could not be memory mapped: %s", filename);
         return AERON_CNC_LOAD_FAILED;
     }
 

@@ -340,7 +340,7 @@ public:
 
     static bool ipv4_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)
     {
-        struct sockaddr_in addr1, addr2;
+        struct sockaddr_in addr1{}, addr2{};
 
         if (inet_pton(AF_INET, addr1_str, &addr1.sin_addr) != 1 || inet_pton(AF_INET, addr2_str, &addr2.sin_addr) != 1)
         {
@@ -352,7 +352,7 @@ public:
 
     static bool ipv6_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)
     {
-        struct sockaddr_in6 addr1, addr2;
+        struct sockaddr_in6 addr1{}, addr2{};
 
         if (inet_pton(AF_INET6, addr1_str, &addr1.sin6_addr) != 1 ||
             inet_pton(AF_INET6, addr2_str, &addr2.sin6_addr) != 1)
@@ -365,7 +365,7 @@ public:
 
     static size_t ipv6_prefixlen(const char *aadr_str)
     {
-        struct sockaddr_in6 addr;
+        struct sockaddr_in6 addr{};
 
         if (inet_pton(AF_INET6, aadr_str, &addr.sin6_addr) != 1)
         {
@@ -377,7 +377,7 @@ public:
 
     static size_t ipv4_prefixlen(const char *addr_str)
     {
-        struct sockaddr_in addr;
+        struct sockaddr_in addr{};
 
         if (inet_pton(AF_INET, addr_str, &addr.sin_addr) != 1)
         {

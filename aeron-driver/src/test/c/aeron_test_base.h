@@ -31,7 +31,7 @@ public:
     using poll_handler_t = std::function<void(const uint8_t *, size_t, aeron_header_t *)>;
     using image_handler_t = std::function<void(aeron_subscription_t *, aeron_image_t *)>;
 
-    CSystemTestBase(
+    explicit CSystemTestBase(
         std::vector<std::pair<std::string, std::string>> environment = {},
         std::function<void(aeron_driver_context_t *)> setContextFunc = [](aeron_driver_context_t *) {}) :
         m_driver(setContextFunc)

@@ -45,7 +45,7 @@ const char *TERMINATION_KEY = "Exit please";
 class EmbeddedMediaDriver
 {
 public:
-    EmbeddedMediaDriver(std::function<void(aeron_driver_context_t *)> setContextFunc = [](aeron_driver_context_t *) {})
+    explicit EmbeddedMediaDriver(std::function<void(aeron_driver_context_t *)> setContextFunc = [](aeron_driver_context_t *) {})
         : m_setContextFunc(setContextFunc)
     {
     }

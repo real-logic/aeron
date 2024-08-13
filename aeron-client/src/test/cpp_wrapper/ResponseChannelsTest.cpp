@@ -72,7 +72,7 @@ TEST_F(ResponseChannelsTest, shouldConnectResponseChannelUsingConcurrent)
 {
     std::string expectedMessage = "hello world!";
 
-    std::array<std::uint8_t, 1024> buf;
+    std::array<std::uint8_t, 1024> buf{};
     AtomicBuffer message(buf);
     message.putString(0, expectedMessage);
 

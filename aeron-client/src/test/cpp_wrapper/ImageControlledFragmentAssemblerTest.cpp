@@ -23,7 +23,7 @@ extern "C"
 
 void initHeader(std::uint8_t *buffer, size_t length, Header **header)
 {
-    aeron_header_t *aeronHeader = new aeron_header_t{};
+    auto *aeronHeader = new aeron_header_t{};
     aeronHeader->frame = reinterpret_cast<aeron_data_header_t *>(buffer);
     aeronHeader->fragmented_frame_length = NULL_VALUE;
     aeronHeader->initial_term_id = INITIAL_TERM_ID;

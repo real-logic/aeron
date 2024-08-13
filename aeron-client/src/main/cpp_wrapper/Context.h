@@ -211,7 +211,7 @@ public:
         aeron_context_init(&m_context);
     }
 
-    Context(Context &&other) :
+    Context(Context &&other) noexcept :
         m_context(other.m_context),
         m_onAvailableImageHandler(other.m_onAvailableImageHandler),
         m_onUnavailableImageHandler(other.m_onUnavailableImageHandler),

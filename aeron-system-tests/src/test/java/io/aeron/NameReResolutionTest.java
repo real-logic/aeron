@@ -30,6 +30,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -38,13 +39,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.test.driver.RedirectingNameResolver.*;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.greaterThan;
+import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -72,10 +73,13 @@ class NameReResolutionTest
         "aeron:udp?control=" + CONTROL_NAME + ":" + CONTROL_PORT + "|control-mode=dynamic";
     private static final String SUBSCRIPTION_MDS_URI = "aeron:udp?control-mode=manual";
 
+    private static final String ENDPOINT_WITH_DELAYED_CONNECT_NAME = "test.delayed.connect";
+
     private static final String STUB_LOOKUP_CONFIGURATION =
         ENDPOINT_NAME + ",127.0.0.1,127.0.0.2|" +
         CONTROL_NAME + ",127.0.0.1,127.0.0.2|" +
-        ENDPOINT_WITH_ERROR_NAME + ",localhost," + BAD_ADDRESS + "|";
+        ENDPOINT_WITH_ERROR_NAME + ",localhost," + BAD_ADDRESS + "|" +
+        ENDPOINT_WITH_DELAYED_CONNECT_NAME + ",192.168.0.0,127.0.0.1|";
 
     private static final int STREAM_ID = 1001;
 
@@ -458,7 +462,7 @@ class NameReResolutionTest
             client.countersReader(), SystemCounterDescriptor.ERRORS.id(), initialErrorCount, 1);
 
         final Matcher<String> exceptionMessageMatcher =
-            containsString("endpoint=" + ENDPOINT_WITH_ERROR_NAME);
+            CoreMatchers.containsString("endpoint=" + ENDPOINT_WITH_ERROR_NAME);
 
         SystemTests.waitForErrorToOccur(
             client.context().aeronDirectoryName(),
@@ -475,10 +479,53 @@ class NameReResolutionTest
         publication = client.addPublication(PUBLICATION_URI, STREAM_ID);
         publication.close();
 
-        assertThat(countersReader.getCounterValue(NAME_RESOLVER_MAX_TIME.id()), is(greaterThan(0L)));
+        assertThat(countersReader.getCounterValue(NAME_RESOLVER_MAX_TIME.id()), CoreMatchers.is(greaterThan(0L)));
         assertThat(
             countersReader.getCounterValue(NAME_RESOLVER_TIME_THRESHOLD_EXCEEDED.id()),
-            is(greaterThan(thresholdCounter)));
+            CoreMatchers.is(greaterThan(thresholdCounter)));
+    }
+
+    @SlowTest
+    @Test
+    @InterruptAfter(20)
+    void shouldReResolveUnicastAddressWhenSendChannelEndpointIsReused()
+    {
+        TestMediaDriver.notSupportedOnCMediaDriver("not yet implemented");
+
+        subscription = client.addSubscription("aeron:udp?endpoint=127.0.0.1:5555", STREAM_ID);
+
+        final long startTimeNs = System.nanoTime();
+        while (true)
+        {
+            try (Publication pub = client.addPublication(
+                "aeron:udp?endpoint=" + ENDPOINT_WITH_DELAYED_CONNECT_NAME + ":5555", STREAM_ID))
+            {
+                if (null != publication)
+                {
+                    publication.close();
+                    assertTrue(updateNameResolutionStatus(
+                        countersReader, ENDPOINT_WITH_DELAYED_CONNECT_NAME, USE_RE_RESOLUTION_HOST));
+                }
+                publication = pub;
+
+                final long deadlineNs = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
+                do
+                {
+                    if (pub.isConnected())
+                    {
+                        final long timeToReResolutionNs = System.nanoTime() - startTimeNs;
+                        assertTrue(subscription.isConnected());
+                        final long destinationTimeoutNs = TimeUnit.SECONDS.toNanos(5);
+                        assertThat(
+                            timeToReResolutionNs,
+                            CoreMatchers.allOf(greaterThan(destinationTimeoutNs), lessThan(destinationTimeoutNs * 2)));
+                        return;
+                    }
+                    Tests.sleep(100, () -> "Re-resolution not performed");
+                }
+                while (System.nanoTime() < deadlineNs);
+            }
+        }
     }
 
     private static void assumeBindAddressAvailable(final String address)

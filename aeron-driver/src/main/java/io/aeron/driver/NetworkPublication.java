@@ -250,7 +250,6 @@ public final class NetworkPublication
         final long nowNs = cachedNanoClock.nanoTime();
         timeOfLastDataOrHeartbeatNs = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         timeOfLastSetupNs = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
-        timeOfLastStatusMessageNs = nowNs;
 
         positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         this.termWindowLength = termWindowLength;

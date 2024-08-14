@@ -15,6 +15,7 @@
  */
 
 #include "aeron_archive.h"
+#include "aeron_archive_async_connect.h"
 #include "aeron_archive_client.h"
 #include "aeron_archive_configuration.h"
 #include "aeron_archive_context.h"
@@ -51,7 +52,6 @@ struct aeron_archive_async_connect_stct
     int64_t subscription_id;
     aeron_subscription_t *subscription;
     aeron_async_add_exclusive_publication_t *async_add_exclusive_publication;
-    int64_t exclusive_publication_id;
     aeron_exclusive_publication_t *exclusive_publication;
     aeron_archive_encoded_credentials_t *encoded_credentials_from_challenge;
     int64_t deadline_ns;
@@ -68,6 +68,11 @@ int aeron_archive_async_connect_transition_to_done(aeron_archive_t **aeron_archi
 int aeron_archive_async_connect_delete(aeron_archive_async_connect_t *async);
 
 /* *********************** */
+
+uint8_t aeron_archive_async_connect_step(aeron_archive_async_connect_t *async)
+{
+    return async->state;
+}
 
 int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_archive_context_t *ctx)
 {
@@ -117,8 +122,6 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
         return -1;
     }
 
-    int64_t exclusive_publication_id = aeron_async_add_exclusive_exclusive_publication_get_registration_id(async_add_exclusive_publication);
-
     aeron_archive_async_connect_t *_async = NULL;
 
     if (aeron_alloc((void **)&_async, sizeof(aeron_archive_async_connect_t)) < 0)
@@ -134,7 +137,6 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
     _async->subscription_id = subscription_id;
     _async->subscription = NULL;
     _async->async_add_exclusive_publication = async_add_exclusive_publication;
-    _async->exclusive_publication_id = exclusive_publication_id;
     _async->exclusive_publication = NULL;
     _async->encoded_credentials_from_challenge = NULL;
     _async->deadline_ns = aeron_nano_clock() + ctx->message_timeout_ns;

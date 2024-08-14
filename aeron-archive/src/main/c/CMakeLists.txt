@@ -102,6 +102,7 @@ SET(SOURCE
 
 SET(HEADERS
     client/aeron_archive.h
+    client/aeron_archive_async_connect.h
     client/aeron_archive_client.h
     client/aeron_archive_configuration.h
     client/aeron_archive_context.h

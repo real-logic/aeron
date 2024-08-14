@@ -17,6 +17,7 @@
 #include <sys/errno.h>
 
 #include "aeron_archive.h"
+#include "aeron_archive_async_connect.h"
 #include "aeron_archive_context.h"
 #include "aeron_archive_client.h"
 #include "aeron_archive_recording_signal.h"
@@ -105,6 +106,8 @@ int aeron_archive_initiate_replay_via_response_channel(
     int64_t subscription_id,
     int64_t deadline_ns);
 
+int aeron_archive_channel_with_session_id(char *out, size_t out_len, const char *in, int32_t session_id);
+
 /* **************** */
 
 int aeron_archive_connect(aeron_archive_t **aeron_archive_p, aeron_archive_context_t *ctx)
@@ -117,6 +120,7 @@ int aeron_archive_connect(aeron_archive_t **aeron_archive_p, aeron_archive_conte
         return -1;
     }
 
+    uint8_t previous_step = aeron_archive_async_connect_step(async);
     if (aeron_archive_async_connect_poll(aeron_archive_p, async) < 0)
     {
         AERON_APPEND_ERR("%s", "");
@@ -125,7 +129,16 @@ int aeron_archive_connect(aeron_archive_t **aeron_archive_p, aeron_archive_conte
 
     while (NULL == *aeron_archive_p)
     {
-        aeron_archive_context_idle(ctx);
+        if (aeron_archive_async_connect_step(async) == previous_step)
+        {
+            aeron_archive_context_idle(ctx);
+        }
+        else
+        {
+            previous_step = aeron_archive_async_connect_step(async);
+        }
+
+        aeron_archive_context_invoke_aeron_client(ctx);
 
         if (aeron_archive_async_connect_poll(aeron_archive_p, async) < 0)
         {
@@ -264,6 +277,135 @@ int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *
     return rc;
 }
 
+int aeron_archive_add_recorded_publication(
+    aeron_publication_t **publication_p,
+    aeron_archive_t *aeron_archive,
+    const char *channel,
+    int32_t stream_id)
+{
+    aeron_async_add_publication_t *async;
+    aeron_publication_t *_publication = NULL;
+
+    if (aeron_async_add_publication(
+        &async,
+        aeron_archive->aeron,
+        channel,
+        stream_id) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (aeron_async_add_publication_poll(&_publication, async) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+    while (NULL == _publication)
+    {
+        aeron_archive_idle(aeron_archive);
+
+        if (aeron_async_add_publication_poll(&_publication, async) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+    }
+
+    aeron_publication_constants_t constants;
+    aeron_publication_constants(_publication, &constants);
+    if (constants.original_registration_id != constants.registration_id)
+    {
+        // not original
+        AERON_SET_ERR(-1, "publication already added for channel=%s streamId=%llu", channel, stream_id);
+        return -1;
+    }
+
+    char recording_channel[AERON_MAX_PATH];
+    aeron_archive_channel_with_session_id(
+        recording_channel,
+        sizeof(recording_channel),
+        channel,
+        constants.session_id);
+
+    if (aeron_archive_start_recording(
+        NULL,
+        aeron_archive,
+        recording_channel,
+        stream_id,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        false) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    *publication_p = _publication;
+
+    return 0;
+}
+
+int aeron_archive_add_recorded_exclusive_publication(
+    aeron_exclusive_publication_t **exclusive_publication_p,
+    aeron_archive_t *aeron_archive,
+    const char *channel,
+    int32_t stream_id)
+{
+    aeron_async_add_exclusive_publication_t *async;
+    aeron_exclusive_publication_t *_exclusive_publication = NULL;
+
+    if (aeron_async_add_exclusive_publication(
+        &async,
+        aeron_archive->aeron,
+        channel,
+        stream_id) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (aeron_async_add_exclusive_publication_poll(&_exclusive_publication, async) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+    while (NULL == _exclusive_publication)
+    {
+        aeron_archive_idle(aeron_archive);
+
+        if (aeron_async_add_exclusive_publication_poll(&_exclusive_publication, async) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+    }
+
+    aeron_publication_constants_t constants;
+    aeron_exclusive_publication_constants(_exclusive_publication, &constants);
+
+    char recording_channel[AERON_MAX_PATH];
+    aeron_archive_channel_with_session_id(
+        recording_channel,
+        sizeof(recording_channel),
+        channel,
+        constants.session_id);
+
+    if (aeron_archive_start_recording(
+        NULL,
+        aeron_archive,
+        recording_channel,
+        stream_id,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        false) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    *exclusive_publication_p = _exclusive_publication;
+
+    return 0;
+}
 
 int aeron_archive_start_recording(
     int64_t *subscription_id_p,
@@ -399,9 +541,41 @@ int aeron_archive_get_max_recorded_position(
     return rc;
 }
 
-int aeron_archive_stop_recording(
+int aeron_archive_stop_recording_subscription(
     aeron_archive_t *aeron_archive,
     int64_t subscription_id)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_stop_recording_subscription(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        subscription_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        NULL,
+        aeron_archive,
+        "AeronArchive::stopRecordingSubscription",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+int aeron_archive_stop_recording_channel_and_stream(
+    aeron_archive_t *aeron_archive,
+    const char *channel,
+    int32_t stream_id)
 {
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
@@ -412,7 +586,8 @@ int aeron_archive_stop_recording(
         aeron_archive->archive_proxy,
         aeron_archive->control_session_id,
         correlation_id,
-        subscription_id))
+        channel,
+        stream_id))
     {
         aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
@@ -428,6 +603,45 @@ int aeron_archive_stop_recording(
     aeron_mutex_unlock(&aeron_archive->lock);
 
     return rc;
+}
+
+int aeron_archive_stop_recording_publication_constants(
+    aeron_archive_t *aeron_archive,
+    aeron_publication_constants_t *constants)
+{
+    char recording_channel[AERON_MAX_PATH];
+    aeron_archive_channel_with_session_id(
+        recording_channel,
+        sizeof(recording_channel),
+        constants->channel,
+        constants->session_id);
+
+    return aeron_archive_stop_recording_channel_and_stream(
+        aeron_archive,
+        recording_channel,
+        constants->stream_id);
+}
+
+int aeron_archive_stop_recording_publication(
+    aeron_archive_t *aeron_archive,
+    aeron_publication_t *publication)
+{
+    aeron_publication_constants_t constants;
+
+    aeron_publication_constants(publication, &constants);
+
+    return aeron_archive_stop_recording_publication_constants(aeron_archive, &constants);
+}
+
+int aeron_archive_stop_recording_exclusive_publication(
+    aeron_archive_t *aeron_archive,
+    aeron_exclusive_publication_t *exclusive_publication)
+{
+    aeron_publication_constants_t constants;
+
+    aeron_exclusive_publication_constants(exclusive_publication, &constants);
+
+    return aeron_archive_stop_recording_publication_constants(aeron_archive, &constants);
 }
 
 int aeron_archive_find_last_matching_recording(
@@ -499,6 +713,49 @@ int aeron_archive_list_recording(
         "AeronArchive::listRecording",
         correlation_id,
         1,
+        recording_descriptor_consumer,
+        recording_descriptor_consumer_clientd);
+
+    aeron_archive->is_in_callback = false;
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+int aeron_archive_list_recordings(
+    int32_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t from_recording_id,
+    int32_t record_count,
+    aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
+    void *recording_descriptor_consumer_clientd)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_list_recordings(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        from_recording_id,
+        record_count))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    aeron_archive->is_in_callback = true;
+
+    int rc = aeron_archive_poll_for_descriptors(
+        count_p,
+        aeron_archive,
+        "AeronArchive::listRecordings",
+        correlation_id,
+        record_count,
         recording_descriptor_consumer,
         recording_descriptor_consumer_clientd);
 
@@ -965,7 +1222,7 @@ int aeron_archive_poll_next_response(
 
         aeron_archive_idle(aeron_archive);
 
-        // TODO invoke aeron client???
+        aeron_archive_context_invoke_aeron_client(aeron_archive->ctx);
     }
 
     return 0;
@@ -996,7 +1253,7 @@ int aeron_archive_poll_for_response(
         // make sure the session id matches
         if (poller->control_session_id != aeron_archive->control_session_id)
         {
-            // TODO invoke aeron client??
+            aeron_archive_context_invoke_aeron_client(aeron_archive->ctx);
             continue;
         }
 
@@ -1079,7 +1336,7 @@ int aeron_archive_poll_for_descriptors(
             deadline_ns = aeron_nano_clock() + aeron_archive->ctx->message_timeout_ns;
         }
 
-        // TODO invoke aeron client
+        aeron_archive_context_invoke_aeron_client(aeron_archive->ctx);
 
         if (fragments > 0)
         {
@@ -1145,7 +1402,7 @@ int aeron_archive_poll_for_subscription_descriptors(
             deadline_ns = aeron_nano_clock() + aeron_archive->ctx->message_timeout_ns;
         }
 
-        // TODO invoke aeron client
+        aeron_archive_context_invoke_aeron_client(aeron_archive->ctx);
 
         if (fragments > 0)
         {
@@ -1473,4 +1730,18 @@ cleanup_proxy:
 
 cleanup:
     return rc;
+}
+
+int aeron_archive_channel_with_session_id(char *out, size_t out_len, const char *in, int32_t session_id)
+{
+    aeron_uri_string_builder_t builder;
+
+    // TODO error handling
+
+    aeron_uri_string_builder_init_on_string(&builder, in);
+    aeron_uri_string_builder_put_int32(&builder, AERON_URI_SESSION_ID_KEY, session_id);
+    aeron_uri_string_builder_sprint(&builder, out, out_len);
+    aeron_uri_string_builder_close(&builder);
+
+    return 0;
 }

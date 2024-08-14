@@ -39,6 +39,8 @@ typedef void (*aeron_archive_credentials_free_func_t)(
     aeron_archive_encoded_credentials_t *credentials,
     void *clientd);
 
+typedef void (*aeron_archive_delegating_invoker_func_t)(void *clientd);
+
 typedef struct aeron_archive_replay_params_stct
 {
     int32_t bounding_limit_counter_id;
@@ -185,6 +187,18 @@ int aeron_archive_close(aeron_archive_t *aeron_archive);
 
 int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *aeron_archive);
 
+int aeron_archive_add_recorded_publication(
+    aeron_publication_t **publication_p,
+    aeron_archive_t *aeron_archive,
+    const char *channel,
+    int32_t stream_id);
+
+int aeron_archive_add_recorded_exclusive_publication(
+    aeron_exclusive_publication_t **exclusive_publication_p,
+    aeron_archive_t *aeron_archive,
+    const char *channel,
+    int32_t stream_id);
+
 int aeron_archive_start_recording(
     int64_t *subscription_id_p,
     aeron_archive_t *aeron_archive,
@@ -208,9 +222,22 @@ int aeron_archive_get_max_recorded_position(
     aeron_archive_t *aeron_archive,
     int64_t recording_id);
 
-int aeron_archive_stop_recording(
+int aeron_archive_stop_recording_subscription(
     aeron_archive_t *aeron_archive,
     int64_t subscription_id);
+
+int aeron_archive_stop_recording_channel_and_stream(
+    aeron_archive_t *aeron_archive,
+    const char *channel,
+    int32_t stream_id);
+
+int aeron_archive_stop_recording_publication(
+    aeron_archive_t *aeron_archive,
+    aeron_publication_t *publication);
+
+int aeron_archive_stop_recording_exclusive_publication(
+    aeron_archive_t *aeron_archive,
+    aeron_exclusive_publication_t *exclusive_publication);
 
 int aeron_archive_find_last_matching_recording(
     int64_t *recording_id_p,
@@ -224,6 +251,14 @@ int aeron_archive_list_recording(
     int32_t *count_p,
     aeron_archive_t *aeron_archive,
     int64_t recording_id,
+    aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
+    void *recording_descriptor_consumer_clientd);
+
+int aeron_archive_list_recordings(
+    int32_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t from_recording_id,
+    int32_t record_count,
     aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
     void *recording_descriptor_consumer_clientd);
 
@@ -315,5 +350,26 @@ aeron_image_t *aeron_archive_replay_merge_image(aeron_archive_replay_merge_t *re
 bool aeron_archive_replay_merge_is_merged(aeron_archive_replay_merge_t *replay_merge);
 bool aeron_archive_replay_merge_has_failed(aeron_archive_replay_merge_t *replay_merge);
 bool aeron_archive_replay_merge_is_live_added(aeron_archive_replay_merge_t *replay_merge);
+
+/*
+ * TODO
+ * pollForErrorResponse
+ * checkForErrorResponse
+ * extendRecording
+ * tryStopRecording
+ * tryStopRecordingByIdentity
+ * stopAllReplays
+ * listRecordingForUri
+ * getStartPosition
+ * *replicate
+ * taggedReplicate (x2)
+ * stopReplication
+ * tryStopReplication
+ * detachSegments
+ * deleteDetachedSegments
+ * purgeSegments
+ * attachSegments
+ * migrateSegments
+ */
 
 #endif //AERON_ARCHIVE_H

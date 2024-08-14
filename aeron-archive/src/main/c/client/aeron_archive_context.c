@@ -192,3 +192,16 @@ void aeron_archive_context_idle(aeron_archive_context_t *ctx)
 {
     ctx->idle_strategy_func(ctx->idle_strategy_state, 0);
 }
+
+void aeron_archive_context_invoke_aeron_client(aeron_archive_context_t *ctx)
+{
+    if (aeron_context_get_use_conductor_agent_invoker(ctx->aeron_ctx))
+    {
+        // TODO
+    }
+
+    if (NULL != ctx->delegating_invoker_func)
+    {
+        ctx->delegating_invoker_func(ctx->delegating_invoker_func_clientd);
+    }
+}

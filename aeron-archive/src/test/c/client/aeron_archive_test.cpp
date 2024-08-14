@@ -245,6 +245,25 @@ public:
         }
     }
 
+    static void offerMessages(
+        aeron_exclusive_publication_t *exclusive_publication,
+        size_t message_count = 10,
+        size_t start_count = 0,
+        const char *message_prefix = "Message ")
+    {
+        for (size_t i = 0; i < message_count; i++)
+        {
+            size_t index = i + start_count;
+            char message[1000];
+            size_t len = snprintf(message, 1000, "%s%lu", message_prefix, index);
+
+            while (aeron_exclusive_publication_offer(exclusive_publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
+            {
+                aeron_idle_strategy_yielding_idle(nullptr, 0);
+            }
+        }
+    }
+
     static void consumeMessages(
         aeron_subscription_t *subscription,
         size_t message_count = 10)
@@ -427,7 +446,7 @@ public:
 
         waitUntilCaughtUp(*stop_position);
 
-        EXPECT_EQ(0, aeron_archive_stop_recording(
+        EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
             m_archive,
             subscription_id));
     }
@@ -492,6 +511,7 @@ typedef struct recording_descriptor_consumer_clientd_stct
     bool verify_session_id = false;
     int32_t session_id;
     const char *original_channel = nullptr;
+    std::set<std::int32_t> session_ids;
 }
 recording_descriptor_consumer_clientd_t;
 
@@ -522,6 +542,8 @@ static void recording_descriptor_consumer(
         EXPECT_EQ(strlen(cd->original_channel), strlen(descriptor->original_channel));
         EXPECT_STREQ(cd->original_channel, descriptor->original_channel);
     }
+
+    cd->session_ids.insert(descriptor->session_id);
 }
 
 struct SubscriptionDescriptor
@@ -672,7 +694,7 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
         EXPECT_EQ(stop_position, found_max_recorded_position);
     }
 
-    EXPECT_EQ(0, aeron_archive_stop_recording(
+    EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
         m_archive,
         subscription_id));
 
@@ -770,7 +792,7 @@ TEST_F(AeronCArchiveTest, shouldRecordThenReplay)
         waitUntilCaughtUp(stop_position);
     }
 
-    EXPECT_EQ(0, aeron_archive_stop_recording(
+    EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
         m_archive,
         subscription_id));
 
@@ -850,7 +872,7 @@ TEST_F(AeronCArchiveTest, shouldRecordThenBoundedReplay)
         waitUntilCaughtUp(stop_position);
     }
 
-    EXPECT_EQ(0, aeron_archive_stop_recording(
+    EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
         m_archive,
         subscription_id));
 
@@ -974,7 +996,7 @@ TEST_F(AeronCArchiveTest, shouldRecordThenReplayThenTruncate)
         EXPECT_EQ(stop_position, found_max_recorded_position);
     }
 
-    EXPECT_EQ(0, aeron_archive_stop_recording(
+    EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
         m_archive,
         subscription_id));
 
@@ -1052,18 +1074,24 @@ TEST_F(AeronCArchiveTest, shouldRecordAndCancelReplayEarly)
 
     connect();
 
-    int64_t subscription_id;
-    ASSERT_EQ(0, aeron_archive_start_recording(
-        &subscription_id,
-        m_archive,
-        m_recordingChannel.c_str(),
-        m_recordingStreamId,
-        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
-        false));
-
     {
         aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
-        aeron_publication_t *publication = addPublication(m_recordingChannel, m_recordingStreamId);
+
+        aeron_publication_t *publication;
+        EXPECT_EQ(0, aeron_archive_add_recorded_publication(
+            &publication,
+            m_archive,
+            m_recordingChannel.c_str(),
+            m_recordingStreamId));
+
+        {
+            aeron_publication_t *duplicate_publication;
+            EXPECT_EQ(-1, aeron_archive_add_recorded_publication(
+                &duplicate_publication,
+                m_archive,
+                m_recordingChannel.c_str(),
+                m_recordingStreamId));
+        }
 
         session_id = aeron_publication_session_id(publication);
 
@@ -1083,7 +1111,83 @@ TEST_F(AeronCArchiveTest, shouldRecordAndCancelReplayEarly)
             m_recording_id_from_counter));
         EXPECT_EQ(stop_position, found_recording_position);
 
-        EXPECT_EQ(0, aeron_archive_stop_recording(m_archive, subscription_id));
+        EXPECT_EQ(0, aeron_archive_stop_recording_publication(m_archive, publication));
+
+        EXPECT_EQ(0, aeron_archive_get_recording_position(
+            &found_recording_position,
+            m_archive,
+            m_recording_id_from_counter));
+        while (AERON_NULL_VALUE != found_recording_position)
+        {
+            idle();
+
+            EXPECT_EQ(0, aeron_archive_get_recording_position(
+                &found_recording_position,
+                m_archive,
+                m_recording_id_from_counter));
+        }
+    }
+
+    const int64_t position = 0;
+    const int64_t length = stop_position - position;
+    int64_t replay_session_id;
+
+    aeron_archive_replay_params_t replay_params;
+    aeron_archive_replay_params_init(&replay_params);
+
+    replay_params.position = position;
+    replay_params.length = length;
+    replay_params.file_io_max_length = 4096;
+
+    ASSERT_EQ(0, aeron_archive_start_replay(
+        &replay_session_id,
+        m_archive,
+        m_recording_id_from_counter,
+        m_replayChannel.c_str(),
+        m_replayStreamId,
+        &replay_params));
+
+    ASSERT_EQ(0, aeron_archive_stop_replay(m_archive, replay_session_id));
+}
+
+TEST_F(AeronCArchiveTest, shouldRecordAndCancelReplayEarlyWithExclusivePublication)
+{
+    int32_t session_id;
+    int64_t stop_position;
+
+    connect();
+
+    {
+        aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
+
+        aeron_exclusive_publication_t *exclusive_publication;
+        EXPECT_EQ(0, aeron_archive_add_recorded_exclusive_publication(
+            &exclusive_publication,
+            m_archive,
+            m_recordingChannel.c_str(),
+            m_recordingStreamId));
+
+        aeron_publication_constants_t constants;
+        aeron_exclusive_publication_constants(exclusive_publication, &constants);
+        session_id = constants.session_id;
+
+        setupCounters(session_id);
+
+        offerMessages(exclusive_publication);
+        consumeMessages(subscription);
+
+        stop_position = aeron_exclusive_publication_position(exclusive_publication);
+
+        waitUntilCaughtUp(stop_position);
+
+        int64_t found_recording_position;
+        EXPECT_EQ(0, aeron_archive_get_recording_position(
+            &found_recording_position,
+            m_archive,
+            m_recording_id_from_counter));
+        EXPECT_EQ(stop_position, found_recording_position);
+
+        EXPECT_EQ(0, aeron_archive_stop_recording_exclusive_publication(m_archive, exclusive_publication));
 
         EXPECT_EQ(0, aeron_archive_get_recording_position(
             &found_recording_position,
@@ -1247,7 +1351,9 @@ TEST_F(AeronCArchiveTest, shouldListRegisteredRecordingSubscriptions)
     EXPECT_EQ(3, clientd.descriptors.size());
     EXPECT_EQ(3, count_two);
 
-    aeron_archive_stop_recording(m_archive, subscription_id_two);
+    EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
+        m_archive,
+        subscription_id_two));
     clientd.descriptors.clear();
 
     int32_t count_three;
@@ -1564,7 +1670,7 @@ TEST_F(AeronCArchiveTest, shouldPurgeStoppedRecording)
         EXPECT_EQ(AERON_NULL_VALUE, found_stop_position);
     }
 
-    EXPECT_EQ(0, aeron_archive_stop_recording(
+    EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
         m_archive,
         subscription_id));
 
@@ -1624,7 +1730,7 @@ TEST_F(AeronCArchiveTest, shouldReadRecordingDescriptor)
 
     setupCounters(session_id);
 
-    EXPECT_EQ(0, aeron_archive_stop_recording(
+    EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
         m_archive,
         subscription_id));
 
@@ -1643,6 +1749,79 @@ TEST_F(AeronCArchiveTest, shouldReadRecordingDescriptor)
         &count,
         m_archive,
         m_recording_id_from_counter,
+        recording_descriptor_consumer,
+        &clientd));
+    EXPECT_EQ(1, count);
+}
+
+TEST_F(AeronCArchiveTest, shouldFindMultipleRecordingDescriptors)
+{
+    aeron_publication_t *publication;
+    int32_t session_id;
+    int64_t subscription_id;
+
+    std::set<std::int32_t> session_ids;
+
+    connect();
+
+    publication = addPublication(m_recordingChannel, m_recordingStreamId);
+
+    session_id = aeron_publication_session_id(publication);
+    session_ids.insert(session_id);
+
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id,
+        m_archive,
+        m_recordingChannel.c_str(),
+        m_recordingStreamId,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        false));
+
+    setupCounters(session_id);
+
+    EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
+        m_archive,
+        subscription_id));
+
+    const std::string recordingChannel2 = "aeron:udp?endpoint=localhost:3334";
+    publication = addPublication(recordingChannel2, m_recordingStreamId);
+
+    session_id = aeron_publication_session_id(publication);
+    session_ids.insert(session_id);
+
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id,
+        m_archive,
+        recordingChannel2.c_str(),
+        m_recordingStreamId,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        false));
+
+    setupCounters(session_id);
+
+    EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
+        m_archive,
+        subscription_id));
+
+    int32_t count = 1234;
+
+    recording_descriptor_consumer_clientd_t clientd;
+
+    EXPECT_EQ(0, aeron_archive_list_recordings(
+        &count,
+        m_archive,
+        INT64_MIN,
+        10,
+        recording_descriptor_consumer,
+        &clientd));
+    EXPECT_EQ(2, count);
+    EXPECT_EQ(session_ids, clientd.session_ids);
+
+    EXPECT_EQ(0, aeron_archive_list_recordings(
+        &count,
+        m_archive,
+        INT64_MIN,
+        1,
         recording_descriptor_consumer,
         &clientd));
     EXPECT_EQ(1, count);
@@ -1697,7 +1876,7 @@ TEST_F(AeronCArchiveTest, shouldReadJumboRecordingDescriptor)
         EXPECT_EQ(AERON_NULL_VALUE, found_stop_position);
     }
 
-    EXPECT_EQ(0, aeron_archive_stop_recording(
+    EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
         m_archive,
         subscription_id));
 
@@ -1810,7 +1989,7 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateThenReplay)
         waitUntilCaughtUp(stop_position);
     }
 
-    EXPECT_EQ(0, aeron_archive_stop_recording(
+    EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
         m_archive,
         subscription_id));
 
@@ -1948,7 +2127,7 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateTwice)
         waitUntilCaughtUp(stop_position);
     }
 
-    EXPECT_EQ(0, aeron_archive_stop_recording(
+    EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
         m_archive,
         subscription_id));
 

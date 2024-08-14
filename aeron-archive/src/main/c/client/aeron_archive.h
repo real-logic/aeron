@@ -212,6 +212,11 @@ int aeron_archive_get_recording_position(
     aeron_archive_t *aeron_archive,
     int64_t recording_id);
 
+int aeron_archive_get_start_position(
+    int64_t *start_position_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id);
+
 int aeron_archive_get_stop_position(
     int64_t *stop_position_p,
     aeron_archive_t *aeron_archive,
@@ -262,6 +267,16 @@ int aeron_archive_list_recordings(
     aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
     void *recording_descriptor_consumer_clientd);
 
+int aeron_archive_list_recordings_for_uri(
+    int32_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t from_recording_id,
+    int32_t record_count,
+    const char *channel_fragment,
+    int32_t stream_id,
+    aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
+    void *recording_descriptor_consumer_clientd);
+
 int aeron_archive_start_replay(
     int64_t *replay_session_id_p,
     aeron_archive_t *aeron_archive,
@@ -287,6 +302,10 @@ int aeron_archive_truncate_recording(
 int aeron_archive_stop_replay(
     aeron_archive_t *aeron_archive,
     int64_t replay_session_id);
+
+int aeron_archive_stop_all_replays(
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id);
 
 int aeron_archive_list_recording_subscriptions(
     int32_t *count_p,
@@ -359,8 +378,6 @@ bool aeron_archive_replay_merge_is_live_added(aeron_archive_replay_merge_t *repl
  * tryStopRecording
  * tryStopRecordingByIdentity
  * stopAllReplays
- * listRecordingForUri
- * getStartPosition
  * *replicate
  * taggedReplicate (x2)
  * stopReplication

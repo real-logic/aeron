@@ -87,6 +87,12 @@ bool aeron_archive_proxy_get_recording_position(
     int64_t correlation_id,
     int64_t recording_id);
 
+bool aeron_archive_proxy_get_start_position(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id);
+
 bool aeron_archive_proxy_get_stop_position(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
@@ -134,6 +140,15 @@ bool aeron_archive_proxy_list_recordings(
     int64_t from_recording_id,
     int32_t record_count);
 
+bool aeron_archive_proxy_list_recordings_for_uri(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t from_recording_id,
+    int32_t record_count,
+    const char *channel_fragment,
+    int32_t stream_id);
+
 bool aeron_archive_proxy_replay(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
@@ -155,6 +170,12 @@ bool aeron_archive_proxy_stop_replay(
     int64_t control_session_id,
     int64_t correlation_id,
     int64_t replay_session_id);
+
+bool aeron_archive_proxy_stop_all_replays(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id);
 
 bool aeron_archive_proxy_list_recording_subscriptions(
     aeron_archive_proxy_t *archive_proxy,

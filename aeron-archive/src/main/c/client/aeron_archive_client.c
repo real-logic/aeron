@@ -477,6 +477,38 @@ int aeron_archive_get_recording_position(
     return rc;
 }
 
+int aeron_archive_get_start_position(
+    int64_t *start_position_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_get_start_position(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        start_position_p,
+        aeron_archive,
+        "AeronArchive::getStartPosition",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
 int aeron_archive_get_stop_position(
     int64_t *stop_position_p,
     aeron_archive_t *aeron_archive,
@@ -766,6 +798,53 @@ int aeron_archive_list_recordings(
     return rc;
 }
 
+int aeron_archive_list_recordings_for_uri(
+    int32_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t from_recording_id,
+    int32_t record_count,
+    const char *channel_fragment,
+    int32_t stream_id,
+    aeron_archive_recording_descriptor_consumer_func_t recording_descriptor_consumer,
+    void *recording_descriptor_consumer_clientd)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_list_recordings_for_uri(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        from_recording_id,
+        record_count,
+        channel_fragment,
+        stream_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    aeron_archive->is_in_callback = true;
+
+    int rc = aeron_archive_poll_for_descriptors(
+        count_p,
+        aeron_archive,
+        "AeronArchive::listRecordingsForUri",
+        correlation_id,
+        record_count,
+        recording_descriptor_consumer,
+        recording_descriptor_consumer_clientd);
+
+    aeron_archive->is_in_callback = false;
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
 int aeron_archive_start_replay(
     int64_t *replay_session_id_p,
     aeron_archive_t *aeron_archive,
@@ -1035,6 +1114,37 @@ int aeron_archive_stop_replay(
         NULL,
         aeron_archive,
         "AeronArchive::stopReplay",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+int aeron_archive_stop_all_replays(
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_stop_all_replays(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        NULL,
+        aeron_archive,
+        "AeronArchive::stopAllReplays",
         correlation_id);
 
     aeron_mutex_unlock(&aeron_archive->lock);

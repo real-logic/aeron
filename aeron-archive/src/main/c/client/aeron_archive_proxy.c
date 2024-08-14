@@ -29,6 +29,7 @@
 #include "c/aeron_archive_client/closeSessionRequest.h"
 #include "c/aeron_archive_client/startRecordingRequest2.h"
 #include "c/aeron_archive_client/recordingPositionRequest.h"
+#include "c/aeron_archive_client/startPositionRequest.h"
 #include "c/aeron_archive_client/stopPositionRequest.h"
 #include "c/aeron_archive_client/maxRecordedPositionRequest.h"
 #include "c/aeron_archive_client/stopRecordingRequest.h"
@@ -36,10 +37,12 @@
 #include "c/aeron_archive_client/findLastMatchingRecordingRequest.h"
 #include "c/aeron_archive_client/listRecordingRequest.h"
 #include "c/aeron_archive_client/listRecordingsRequest.h"
+#include "c/aeron_archive_client/listRecordingsForUriRequest.h"
 #include "c/aeron_archive_client/boundedReplayRequest.h"
 #include "c/aeron_archive_client/replayRequest.h"
 #include "c/aeron_archive_client/truncateRecordingRequest.h"
 #include "c/aeron_archive_client/stopReplayRequest.h"
+#include "c/aeron_archive_client/stopAllReplaysRequest.h"
 #include "c/aeron_archive_client/listRecordingSubscriptionsRequest.h"
 #include "c/aeron_archive_client/purgeRecordingRequest.h"
 #include "c/aeron_archive_client/replicateRequest2.h"
@@ -267,6 +270,30 @@ bool aeron_archive_proxy_get_recording_position(
         aeron_archive_client_recordingPositionRequest_encoded_length(&codec));
 }
 
+bool aeron_archive_proxy_get_start_position(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id)
+{
+    struct aeron_archive_client_startPositionRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_startPositionRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_startPositionRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_startPositionRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_startPositionRequest_set_recordingId(&codec, recording_id);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_startPositionRequest_encoded_length(&codec));
+}
+
 bool aeron_archive_proxy_get_stop_position(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
@@ -451,6 +478,39 @@ bool aeron_archive_proxy_list_recordings(
         aeron_archive_client_listRecordingsRequest_encoded_length(&codec));
 }
 
+bool aeron_archive_proxy_list_recordings_for_uri(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t from_recording_id,
+    int32_t record_count,
+    const char *channel_fragment,
+    int32_t stream_id)
+{
+    struct aeron_archive_client_listRecordingsForUriRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_listRecordingsForUriRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_listRecordingsForUriRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_listRecordingsForUriRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_listRecordingsForUriRequest_set_fromRecordingId(&codec, from_recording_id);
+    aeron_archive_client_listRecordingsForUriRequest_set_recordCount(&codec, record_count);
+    aeron_archive_client_listRecordingsForUriRequest_set_streamId(&codec, stream_id);
+    aeron_archive_client_listRecordingsForUriRequest_put_channel(
+        &codec,
+        channel_fragment,
+        strlen(channel_fragment));
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_listRecordingsForUriRequest_encoded_length(&codec));
+}
+
 bool aeron_archive_proxy_replay(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,
@@ -566,6 +626,30 @@ bool aeron_archive_proxy_stop_replay(
     return aeron_archive_proxy_offer(
         archive_proxy,
         aeron_archive_client_stopReplayRequest_encoded_length(&codec));
+}
+
+bool aeron_archive_proxy_stop_all_replays(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id)
+{
+    struct aeron_archive_client_stopAllReplaysRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_stopAllReplaysRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_stopAllReplaysRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_stopAllReplaysRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_stopAllReplaysRequest_set_recordingId(&codec, recording_id);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_stopAllReplaysRequest_encoded_length(&codec));
 }
 
 bool aeron_archive_proxy_list_recording_subscriptions(

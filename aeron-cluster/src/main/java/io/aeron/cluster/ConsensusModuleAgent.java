@@ -1754,7 +1754,7 @@ final class ConsensusModuleAgent
             final int fragments = logAdapter.poll(stopPosition);
             final long position = logAdapter.position();
 
-            if (fragments > 0)
+            if (fragments > 0 || logAdapter.isTrailingPadMessage(commitPosition.get()))
             {
                 commitPosition.setOrdered(position);
             }

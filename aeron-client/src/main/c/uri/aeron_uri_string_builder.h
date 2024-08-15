@@ -47,4 +47,10 @@ const char *aeron_uri_string_builder_get(aeron_uri_string_builder_t *builder, co
 
 int aeron_uri_string_builder_sprint(aeron_uri_string_builder_t *builder, char *buffer, size_t buffer_len);
 
+int aeron_uri_string_builder_set_initial_position(
+    aeron_uri_string_builder_t *builder,
+    int64_t position,
+    int32_t initial_term_id,
+    int32_t term_length);
+
 #endif //AERON_URI_STRING_BUILDER_H

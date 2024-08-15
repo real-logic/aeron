@@ -193,6 +193,16 @@ bool aeron_archive_proxy_purge_recording(
     int64_t correlation_id,
     int64_t recording_id);
 
+bool aeron_archive_proxy_extend_recording(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t recording_id,
+    const char *recording_channel,
+    int32_t recording_stream_id,
+    bool local_source,
+    bool auto_stop,
+    int64_t correlation_id,
+    int64_t control_session_id);
+
 bool aeron_archive_proxy_replicate(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,

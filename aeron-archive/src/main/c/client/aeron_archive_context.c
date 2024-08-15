@@ -197,7 +197,7 @@ void aeron_archive_context_invoke_aeron_client(aeron_archive_context_t *ctx)
 {
     if (aeron_context_get_use_conductor_agent_invoker(ctx->aeron_ctx))
     {
-        // TODO
+        aeron_main_do_work(ctx->aeron);
     }
 
     if (NULL != ctx->delegating_invoker_func)

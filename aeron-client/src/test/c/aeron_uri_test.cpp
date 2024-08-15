@@ -487,3 +487,18 @@ TEST_F(UriStringBuilderTest, initOnMalformedStrings)
     EXPECT_EQ(-1, aeron_uri_string_builder_init_on_string(&m_builder, "asdf"));
     EXPECT_EQ(-1, aeron_uri_string_builder_init_on_string(&m_builder, "asdf:asdf"));
 }
+
+TEST_F(UriStringBuilderTest, initialPosition)
+{
+    EXPECT_EQ(0, aeron_uri_string_builder_init_new(&m_builder));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp"));
+
+    int32_t term_length = 1024 * 128;
+    int64_t position = (term_length * 3) + 64;
+
+    EXPECT_EQ(0, aeron_uri_string_builder_set_initial_position(&m_builder, position, 777, term_length));
+
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_MAX_PATH));
+
+    EXPECT_STREQ("aeron:udp?term-id=780|term-length=131072|init-term-id=777|term-offset=64", out_buff);
+}

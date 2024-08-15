@@ -512,6 +512,7 @@ typedef struct recording_descriptor_consumer_clientd_stct
     int32_t session_id;
     const char *original_channel = nullptr;
     std::set<std::int32_t> session_ids;
+    aeron_archive_recording_descriptor_t last_descriptor;
 }
 recording_descriptor_consumer_clientd_t;
 
@@ -544,6 +545,8 @@ static void recording_descriptor_consumer(
     }
 
     cd->session_ids.insert(descriptor->session_id);
+
+    memcpy(&cd->last_descriptor, descriptor, sizeof(aeron_archive_recording_descriptor_t));
 }
 
 struct SubscriptionDescriptor
@@ -2684,4 +2687,119 @@ TEST_F(AeronCArchiveTest, shouldDisconnectAfterStopAllReplays)
     {
         idle();
     }
+}
+
+TEST_F(AeronCArchiveTest, shouldRecordAndExtend)
+{
+    connect();
+
+    {
+        aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
+
+        aeron_publication_t *publication;
+        EXPECT_EQ(0, aeron_archive_add_recorded_publication(
+            &publication,
+            m_archive,
+            m_recordingChannel.c_str(),
+            m_recordingStreamId));
+
+        int32_t session_id = aeron_publication_session_id(publication);
+
+        setupCounters(session_id);
+
+        offerMessages(publication);
+        consumeMessages(subscription);
+
+        int64_t stop_position = aeron_publication_position(publication);
+
+        waitUntilCaughtUp(stop_position);
+
+        EXPECT_EQ(0, aeron_archive_stop_recording_publication(m_archive, publication));
+
+        EXPECT_EQ(0, aeron_subscription_close(subscription, nullptr, nullptr));
+        EXPECT_EQ(0, aeron_publication_close(publication, nullptr, nullptr));
+    }
+
+    recording_descriptor_consumer_clientd_t clientd;
+
+    int32_t count;
+    EXPECT_EQ(0, aeron_archive_list_recording(
+        &count,
+        m_archive,
+        m_recording_id_from_counter,
+        recording_descriptor_consumer,
+        &clientd));
+    EXPECT_EQ(1, count);
+
+    char recordingChannel2[AERON_MAX_PATH];
+
+    aeron_uri_string_builder_t builder;
+    EXPECT_EQ(0, aeron_uri_string_builder_init_on_string(&builder, "aeron:udp?endpoint=localhost:3332"));
+    EXPECT_EQ(0, aeron_uri_string_builder_set_initial_position(
+        &builder,
+        clientd.last_descriptor.stop_position,
+        clientd.last_descriptor.initial_term_id,
+        clientd.last_descriptor.term_buffer_length));
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&builder, recordingChannel2, sizeof(recordingChannel2)));
+    EXPECT_EQ(0, aeron_uri_string_builder_close(&builder));
+
+    {
+        aeron_subscription_t *subscription = addSubscription(recordingChannel2, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(recordingChannel2, m_recordingStreamId);
+
+        int32_t session_id = aeron_publication_session_id(publication);
+
+        int64_t subscription_id;
+        EXPECT_EQ(0, aeron_archive_extend_recording(
+            &subscription_id,
+            m_archive,
+            m_recording_id_from_counter,
+            recordingChannel2,
+            m_recordingStreamId,
+            AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+            false));
+
+        setupCounters(session_id);
+
+        offerMessages(publication);
+        consumeMessages(subscription);
+
+        int64_t stop_position = aeron_publication_position(publication);
+
+        waitUntilCaughtUp(stop_position);
+
+        EXPECT_EQ(0, aeron_archive_stop_recording_channel_and_stream(m_archive, recordingChannel2, m_recordingStreamId));
+
+        EXPECT_EQ(0, aeron_subscription_close(subscription, nullptr, nullptr));
+        EXPECT_EQ(0, aeron_publication_close(publication, nullptr, nullptr));
+    }
+
+    EXPECT_EQ(0, aeron_archive_list_recording(
+        &count,
+        m_archive,
+        m_recording_id_from_counter,
+        recording_descriptor_consumer,
+        &clientd));
+    EXPECT_EQ(1, count);
+
+    aeron_archive_replay_params_t replay_params;
+    aeron_archive_replay_params_init(&replay_params);
+
+    replay_params.position = clientd.last_descriptor.start_position;
+    replay_params.file_io_max_length = 4096;
+
+    aeron_subscription_t *replay_subscription;
+
+    EXPECT_EQ(0, aeron_archive_replay(
+        &replay_subscription,
+        m_archive,
+        m_recording_id_from_counter,
+        m_replayChannel.c_str(),
+        m_replayStreamId,
+        &replay_params));
+
+    consumeMessages(replay_subscription, 20);
+
+    aeron_image_t *image = aeron_subscription_image_at_index(replay_subscription, 0);
+    ASSERT_EQ(clientd.last_descriptor.stop_position, aeron_image_position(image));
 }

@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include "uri/aeron_uri_string_builder.h"
+#include "concurrent/aeron_logbuffer_descriptor.h"
 
 typedef struct aeron_uri_string_builder_entry_stct
 {
@@ -274,6 +275,39 @@ int aeron_uri_string_builder_sprint(aeron_uri_string_builder_t *builder, char *b
         entry == NULL ? "unknown" : entry->value);
 
     aeron_str_to_ptr_hash_map_for_each(&builder->params, aeron_uri_string_builder_print, &ctx);
+
+    return 0;
+}
+
+int aeron_uri_string_builder_set_initial_position(
+    aeron_uri_string_builder_t *builder,
+    int64_t position,
+    int32_t initial_term_id,
+    int32_t term_length)
+{
+    if (position < 0 ||
+        (position & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1)))
+    {
+        AERON_SET_ERR(EINVAL, "position not multiple of FRAME_ALIGNMENT: %llu", position);
+        return -1;
+    }
+
+    if (aeron_logbuffer_check_term_length(term_length) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int bits_to_shift = aeron_number_of_trailing_zeroes_u64(term_length);
+
+    if (aeron_uri_string_builder_put_int32(builder, AERON_URI_TERM_LENGTH_KEY, term_length) < 0 ||
+        aeron_uri_string_builder_put_int32(builder, AERON_URI_INITIAL_TERM_ID_KEY, initial_term_id) < 0 ||
+        aeron_uri_string_builder_put_int32(builder, AERON_URI_TERM_ID_KEY, (position >> bits_to_shift) + initial_term_id) < 0 ||
+        aeron_uri_string_builder_put_int32(builder, AERON_URI_TERM_OFFSET_KEY, position & (term_length - 1)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
 
     return 0;
 }

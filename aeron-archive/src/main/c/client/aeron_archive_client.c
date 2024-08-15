@@ -1232,6 +1232,46 @@ int aeron_archive_purge_recording(
     return rc;
 }
 
+int aeron_archive_extend_recording(
+    int64_t *subscription_id_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    const char *recording_channel,
+    int32_t recording_stream_id,
+    aeron_archive_source_location_t source_location,
+    bool auto_stop)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_extend_recording(
+        aeron_archive->archive_proxy,
+        recording_id,
+        recording_channel,
+        recording_stream_id,
+        source_location == AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        auto_stop,
+        correlation_id,
+        aeron_archive->control_session_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        subscription_id_p,
+        aeron_archive,
+        "AeronArchive::extendRecording",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
 int aeron_archive_replicate(
     aeron_archive_t *aeron_archive,
     int64_t src_recording_id,

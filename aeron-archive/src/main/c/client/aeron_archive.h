@@ -322,6 +322,15 @@ int aeron_archive_purge_recording(
     aeron_archive_t *aeron_archive,
     int64_t recording_id);
 
+int aeron_archive_extend_recording(
+    int64_t *subscription_id_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    const char *recording_channel,
+    int32_t recording_stream_id,
+    aeron_archive_source_location_t source_location,
+    bool auto_stop);
+
 int aeron_archive_replicate(
     aeron_archive_t *aeron_archive,
     int64_t src_recording_id,
@@ -374,10 +383,8 @@ bool aeron_archive_replay_merge_is_live_added(aeron_archive_replay_merge_t *repl
  * TODO
  * pollForErrorResponse
  * checkForErrorResponse
- * extendRecording
  * tryStopRecording
  * tryStopRecordingByIdentity
- * stopAllReplays
  * *replicate
  * taggedReplicate (x2)
  * stopReplication

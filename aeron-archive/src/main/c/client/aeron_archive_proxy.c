@@ -28,6 +28,7 @@
 #include "c/aeron_archive_client/challengeResponse.h"
 #include "c/aeron_archive_client/closeSessionRequest.h"
 #include "c/aeron_archive_client/startRecordingRequest2.h"
+#include "c/aeron_archive_client/extendRecordingRequest2.h"
 #include "c/aeron_archive_client/recordingPositionRequest.h"
 #include "c/aeron_archive_client/startPositionRequest.h"
 #include "c/aeron_archive_client/stopPositionRequest.h"
@@ -711,6 +712,45 @@ bool aeron_archive_proxy_purge_recording(
     return aeron_archive_proxy_offer(
         archive_proxy,
         aeron_archive_client_purgeRecordingRequest_encoded_length(&codec));
+}
+
+bool aeron_archive_proxy_extend_recording(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t recording_id,
+    const char *recording_channel,
+    int32_t recording_stream_id,
+    bool local_source,
+    bool auto_stop,
+    int64_t correlation_id,
+    int64_t control_session_id)
+{
+    struct aeron_archive_client_extendRecordingRequest2 codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_extendRecordingRequest2_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_extendRecordingRequest2_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_extendRecordingRequest2_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_extendRecordingRequest2_set_recordingId(&codec, recording_id);
+    aeron_archive_client_extendRecordingRequest2_set_streamId(&codec, recording_stream_id);
+    aeron_archive_client_extendRecordingRequest2_set_sourceLocation(
+        &codec,
+        local_source ? aeron_archive_client_sourceLocation_LOCAL : aeron_archive_client_sourceLocation_REMOTE);
+    aeron_archive_client_extendRecordingRequest2_set_autoStop(
+        &codec,
+        auto_stop ? aeron_archive_client_booleanType_TRUE : aeron_archive_client_booleanType_FALSE);
+    aeron_archive_client_extendRecordingRequest2_put_channel(
+        &codec,
+        recording_channel,
+        strlen(recording_channel));
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_extendRecordingRequest2_encoded_length(&codec));
 }
 
 bool aeron_archive_proxy_replicate(

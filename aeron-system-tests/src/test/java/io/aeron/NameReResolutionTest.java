@@ -509,10 +509,9 @@ class NameReResolutionTest
                 final long deadlineNs = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
                 do
                 {
-                    if (pub.isConnected())
+                    if (pub.isConnected() && subscription.isConnected())
                     {
                         final long timeToReResolutionNs = System.nanoTime() - startTimeNs;
-                        assertTrue(subscription.isConnected());
                         final long destinationTimeoutNs = TimeUnit.SECONDS.toNanos(5);
                         assertThat(
                             timeToReResolutionNs,

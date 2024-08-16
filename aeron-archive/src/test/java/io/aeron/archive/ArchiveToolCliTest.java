@@ -15,11 +15,8 @@
  */
 package io.aeron.archive;
 
-import io.aeron.driver.MediaDriver;
-import io.aeron.test.TestContexts;
-import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
-import org.junit.jupiter.api.AfterEach;
+import org.agrona.concurrent.SystemEpochClock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -40,19 +37,13 @@ public class ArchiveToolCliTest
     private static final int TERM_LENGTH = MTU_LENGTH * 8;
     private static final int SEGMENT_LENGTH = TERM_LENGTH * 4;
 
-    private File archiveDir;
+    private @TempDir File archiveDir;
     private long currentTimeMillis = 0;
     private final EpochClock epochClock = () -> currentTimeMillis += 100;
-    private ArchivingMediaDriver mediaDriver;
 
     @BeforeEach
-    void before(
-        @TempDir final File aeronDir,
-        @TempDir final File markFileDir,
-        @TempDir final File archiveDir)
+    void before()
     {
-        this.archiveDir = archiveDir;
-
         try (Catalog catalog = new Catalog(archiveDir, null, 0, 1024, epochClock, null, null))
         {
             catalog.addNewRecording(0, NULL_POSITION, 15, NULL_TIMESTAMP, 0,
@@ -65,22 +56,11 @@ public class ArchiveToolCliTest
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "ch2", "ch2?tag=OK", "src2");
         }
 
-        final MediaDriver.Context driverContext = new MediaDriver
-            .Context()
-            .aeronDirectoryName(aeronDir.getAbsolutePath());
-
-        final Archive.Context archiveContext = TestContexts.localhostArchive()
-            .aeronDirectoryName(driverContext.aeronDirectoryName())
-            .archiveDir(archiveDir)
-            .markFileDir(markFileDir);
-
-        mediaDriver = ArchivingMediaDriver.launch(driverContext, archiveContext);
-    }
-
-    @AfterEach
-    void after()
-    {
-        CloseHelper.close(mediaDriver);
+        final SystemEpochClock clock = SystemEpochClock.INSTANCE;
+        final ArchiveMarkFile markFile = new ArchiveMarkFile(
+            new File(archiveDir, ArchiveMarkFile.FILENAME), 1024 * 64, 8192, clock, 1000);
+        markFile.updateActivityTimestamp(clock.time());
+        markFile.signalReady();
     }
 
     @Test
@@ -167,7 +147,6 @@ public class ArchiveToolCliTest
             System.setOut(originalSystemOut);
         }
     }
-
 
     private static final class OutputConsole
     {

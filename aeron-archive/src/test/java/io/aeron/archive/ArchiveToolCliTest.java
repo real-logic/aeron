@@ -15,8 +15,10 @@
  */
 package io.aeron.archive;
 
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.SystemEpochClock;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,6 +40,7 @@ public class ArchiveToolCliTest
     private static final int SEGMENT_LENGTH = TERM_LENGTH * 4;
 
     private @TempDir File archiveDir;
+    private ArchiveMarkFile markFile;
     private long currentTimeMillis = 0;
     private final EpochClock epochClock = () -> currentTimeMillis += 100;
 
@@ -57,10 +60,16 @@ public class ArchiveToolCliTest
         }
 
         final SystemEpochClock clock = SystemEpochClock.INSTANCE;
-        final ArchiveMarkFile markFile = new ArchiveMarkFile(
+        markFile = new ArchiveMarkFile(
             new File(archiveDir, ArchiveMarkFile.FILENAME), 1024 * 64, 8192, clock, 1000);
         markFile.updateActivityTimestamp(clock.time());
         markFile.signalReady();
+    }
+
+    @AfterEach
+    void after()
+    {
+        CloseHelper.close(markFile);
     }
 
     @Test

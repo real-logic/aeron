@@ -66,9 +66,10 @@ int aeron_uri_get_retransmits_active_max_param(aeron_uri_params_t *uri_params, a
         {
             AERON_SET_ERR(
                 EINVAL,
-                "invalid %s, must be > 0 and <= %i",
+                "invalid %s=%llu, must be > 0 and <= %i",
                 AERON_URI_RETRANSMITS_ACTIVE_MAX_KEY,
-                AERON_RETRANSMIT_HANDLER_RETRANSMITS_ACTIVE_MAX);
+                value,
+                AERON_RETRANSMIT_HANDLER_RETRANSMITS_ACTIVE_MAX_MAX);
             return -1;
         }
 

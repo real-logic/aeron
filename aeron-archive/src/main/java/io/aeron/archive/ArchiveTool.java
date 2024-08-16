@@ -1312,12 +1312,8 @@ public class ArchiveTool
         if (INVALID == currentState && !segmentFiles.isEmpty())
         {
             headerEncoder.state(VALID);
-            out.println("(recordingId=" + recordingId + ") OK");
         }
-        else
-        {
-            out.println("(recordingId=" + recordingId + ") state unchanged: " + currentState);
-        }
+        out.println("(recordingId=" + recordingId + ") OK");
     }
 
     private static boolean isPositionInvariantViolated(

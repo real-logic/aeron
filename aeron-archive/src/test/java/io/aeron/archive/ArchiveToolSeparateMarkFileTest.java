@@ -61,7 +61,7 @@ class ArchiveToolSeparateMarkFileTest
             Objects.requireNonNull(driver);
             Objects.requireNonNull(archive);
 
-            ArchiveTool.describeRecording(new PrintStream(new ByteArrayOutputStream()), archiveDir, 0);
+            ArchiveTool.describeAll(new PrintStream(new ByteArrayOutputStream()), archiveDir);
         }
     }
 

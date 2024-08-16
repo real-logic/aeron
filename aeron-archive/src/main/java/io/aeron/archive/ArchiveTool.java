@@ -27,7 +27,6 @@ import org.agrona.*;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -445,9 +444,12 @@ public class ArchiveTool
      */
     public static void describeRecording(final PrintStream out, final File archiveDir, final long recordingId)
     {
-        try (Catalog catalog = openCatalogReadOnly(archiveDir, INSTANCE))
+        try (Catalog catalog = openCatalogWithAllEntries(archiveDir))
         {
-            catalog.forEntry(recordingId, (recordingDescriptorOffset, he, hd, e, d) -> out.println(d));
+            if (!catalog.forEntry(recordingId, (recordingDescriptorOffset, he, hd, e, d) -> out.println(d)))
+            {
+                out.println("unknown recordingId=" + recordingId);
+            }
         }
     }
 
@@ -701,13 +703,9 @@ public class ArchiveTool
      * @param recordingId to revive
      * @throws AeronException if there is no recording with {@code recordingId} in the archive
      */
-    public static void markRecordingValid(
-        final PrintStream out,
-        final File archiveDir,
-        final long recordingId)
+    public static void markRecordingValid(final PrintStream out, final File archiveDir, final long recordingId)
     {
-        try (Catalog catalog = openCatalogWithInvalidEntries(
-            archiveDir, SystemEpochClock.INSTANCE, MIN_CAPACITY, null, null))
+        try (Catalog catalog = openCatalogWithAllEntries(archiveDir))
         {
             final CatalogEntryProcessor catalogEntryProcessor =
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
@@ -731,10 +729,7 @@ public class ArchiveTool
      * @param recordingId to invalidate
      * @throws AeronException if there is no recording with {@code recordingId} in the archive
      */
-    public static void markRecordingInvalid(
-        final PrintStream out,
-        final File archiveDir,
-        final long recordingId)
+    public static void markRecordingInvalid(final PrintStream out, final File archiveDir, final long recordingId)
     {
         try (Catalog catalog = openCatalogReadWrite(archiveDir, INSTANCE, MIN_CAPACITY, null, null))
         {
@@ -968,14 +963,9 @@ public class ArchiveTool
         return new Catalog(archiveDir, epochClock, capacity, true, checksum, versionCheck, false);
     }
 
-    static Catalog openCatalogWithInvalidEntries(
-        final File archiveDir,
-        final EpochClock epochClock,
-        final long capacity,
-        final Checksum checksum,
-        final IntConsumer versionCheck)
+    private static Catalog openCatalogWithAllEntries(final File archiveDir)
     {
-        return new Catalog(archiveDir, epochClock, capacity, true, checksum, versionCheck, true);
+        return new Catalog(archiveDir, INSTANCE, MIN_CAPACITY, true, null, null, true);
     }
 
     private static String validateChecksumClass(final String checksumClassName)
@@ -1689,10 +1679,8 @@ public class ArchiveTool
             "     i.e. outside the start and stop recording range, but are not deleted.%n%n" +
             "  describe: prints out descriptors for all valid recordings in the catalog. " +
             "(Excludes invalidated recordings.)%n%n" +
-            "  describe [recordingId]: prints out descriptor for the specified valid recording the catalog. " +
-            "(Excludes invalidated recordings.)%n%n" +
-            "  describe-all: prints out descriptors for all recordings in the catalog. " +
-            "(Includes invalidated recordings.)%n%n" +
+            "  describe recordingId: prints out descriptor for the specified recording entry in the catalog.%n%n" +
+            "  describe-all: prints out descriptors for all recordings in the catalog.%n%n" +
             "  dump [data fragment limit per recording]: prints descriptor(s)%n" +
             "     in the catalog and associated recorded data.%n%n" +
             "  errors: prints errors for the archive and media driver.%n%n" +

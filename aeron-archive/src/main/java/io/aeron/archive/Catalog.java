@@ -129,7 +129,6 @@ final class Catalog implements AutoCloseable
 
     private final boolean forceWrites;
     private final boolean forceMetadata;
-    private boolean indexInvalid;
     private boolean isClosed;
     private final File catalogFile;
     private final File archiveDir;
@@ -228,7 +227,7 @@ final class Catalog implements AutoCloseable
             }
             firstRecordingDescriptorOffset = CatalogHeaderEncoder.BLOCK_LENGTH;
 
-            buildIndex(true);
+            buildIndex(true, false);
             refreshCatalog(true, checksum, buffer);
         }
         catch (final Exception ex)
@@ -250,12 +249,11 @@ final class Catalog implements AutoCloseable
         final boolean writable,
         final Checksum checksum,
         final IntConsumer versionCheck,
-        final boolean indexInvalid)
+        final boolean indexAll)
     {
         this.archiveDir = archiveDir;
         this.forceWrites = false;
         this.forceMetadata = false;
-        this.indexInvalid = indexInvalid;
         this.epochClock = epochClock;
         this.catalogChannel = null;
         this.checksum = checksum;
@@ -315,7 +313,7 @@ final class Catalog implements AutoCloseable
                 firstRecordingDescriptorOffset = DEFAULT_ALIGNMENT;
             }
 
-            buildIndex(writable);
+            buildIndex(writable, indexAll);
             refreshCatalog(false, null, null);
         }
         catch (final Exception ex)
@@ -946,7 +944,7 @@ final class Catalog implements AutoCloseable
         headerAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
     }
 
-    private void buildIndex(final boolean writable)
+    private void buildIndex(final boolean writable, final boolean indexAll)
     {
         final int endOffset = (int)capacity;
         int offset = firstRecordingDescriptorOffset;
@@ -960,7 +958,7 @@ final class Catalog implements AutoCloseable
             }
 
             recordingId = recordingId(catalogBuffer);
-            if (isValidDescriptor(catalogBuffer) || this.indexInvalid)
+            if (indexAll || isValidDescriptor(catalogBuffer))
             {
                 catalogIndex.add(recordingId, offset);
             }

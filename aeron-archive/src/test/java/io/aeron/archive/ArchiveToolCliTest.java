@@ -25,12 +25,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.*;
-import java.util.Arrays;
 
 import static io.aeron.archive.Catalog.PAGE_SIZE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ArchiveToolCliTest
@@ -83,29 +84,29 @@ public class ArchiveToolCliTest
     }
 
     @Test
-    void describeRecordingShouldDescribeExistingRecording()
+    void describeRecordingShouldDescribeExistingValidRecording()
     {
         final OutputConsole console = runArchiveTool("describe", "1");
-        assertTrue(console.systemOutText().contains("|recordingId=1|"));
+        assertThat(console.systemOutText(), containsString("|recordingId=1|"));
     }
 
     @Test
-    void describeRecordingShouldNotDescribeUnknownRecording()
+    void describeRecordingShouldDescribeExistingInvalidRecording()
+    {
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, 1024, epochClock, null, null))
+        {
+            catalog.invalidateRecording(1);
+        }
+
+        final OutputConsole console = runArchiveTool("describe", "1");
+        assertThat(console.systemOutText(), containsString("|recordingId=1|"));
+    }
+
+    @Test
+    void describeRecordingShouldPrintAMessageOnUnknownRecording()
     {
         final OutputConsole console = runArchiveTool("describe", "10");
-        assertFalse(console.systemOutText().contains("|recordingId="));
-    }
-
-    @Test
-    void describeRecordingsShouldShowAllRecordings()
-    {
-        final OutputConsole console = runArchiveTool("describe");
-
-        final String consoleText = console.systemOutText();
-        assertTrue(consoleText.contains("|recordingId=0|"));
-        assertTrue(consoleText.contains("|recordingId=1|"));
-        assertTrue(consoleText.contains("|recordingId=2|"));
-        assertTrue(consoleText.contains("|recordingId=3|"));
+        assertEquals("unknown recordingId=10" + System.lineSeparator(), console.systemOutText());
     }
 
     @Test
@@ -120,39 +121,30 @@ public class ArchiveToolCliTest
         final OutputConsole console = runArchiveTool("describe");
 
         final String consoleText = console.systemOutText();
-        assertTrue(consoleText.contains("|recordingId=0|"));
-        assertFalse(consoleText.contains("|recordingId=1|"));
-        assertTrue(consoleText.contains("|recordingId=2|"));
-        assertFalse(consoleText.contains("|recordingId=3|"));
+        assertThat(consoleText, allOf(
+            containsString("|recordingId=0|"),
+            containsString("|recordingId=2|"),
+            not(containsString("|recordingId=1|")),
+            not(containsString("|recordingId=3|"))));
     }
 
     @Test
     void describeAllRecordingsShouldShowAllRecordings()
     {
-        final OutputConsole console = runArchiveTool("describe-all");
-
-        final String consoleText = console.systemOutText();
-        assertTrue(consoleText.contains("|recordingId=0|"));
-        assertTrue(consoleText.contains("|recordingId=1|"));
-        assertTrue(consoleText.contains("|recordingId=2|"));
-        assertTrue(consoleText.contains("|recordingId=3|"));
-    }
-
-    @Test
-    void describeAllRecordingsShouldAlsoShowInvalidatedRecordings()
-    {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, 1024, epochClock, null, null))
         {
-            catalog.invalidateRecording(1);
-            catalog.invalidateRecording(3);
+            assertTrue(catalog.invalidateRecording(1));
+            assertTrue(catalog.invalidateRecording(3));
         }
 
         final OutputConsole console = runArchiveTool("describe-all");
 
-        assertTrue(outputMatches(console, ".*?\\|recordingId=0\\|.*?\\|VALID"));
-        assertTrue(outputMatches(console, ".*?\\|recordingId=1\\|.*?\\|INVALID"));
-        assertTrue(outputMatches(console, ".*?\\|recordingId=2\\|.*?\\|VALID"));
-        assertTrue(outputMatches(console, ".*?\\|recordingId=3\\|.*?\\|INVALID"));
+        final String consoleText = console.systemOutText();
+        assertThat(consoleText, allOf(
+            containsString("|recordingId=0|"),
+            containsString("|recordingId=1|"),
+            containsString("|recordingId=2|"),
+            containsString("|recordingId=3|")));
     }
 
     private OutputConsole runArchiveTool(final String... args)
@@ -176,13 +168,6 @@ public class ArchiveToolCliTest
         }
     }
 
-
-    private static boolean outputMatches(final OutputConsole console, final String expected)
-    {
-        return Arrays.stream(console.systemOutText().split(System.lineSeparator()))
-            .filter(s -> s.matches(expected))
-            .count() == 1;
-    }
 
     private static final class OutputConsole
     {

@@ -20,6 +20,21 @@
 #include "aeronc.h"
 #include "aeron_common.h"
 
+#define ARCHIVE_ERROR_CODE_GENERIC (0)
+#define ARCHIVE_ERROR_CODE_ACTIVE_LISTING (1)
+#define ARCHIVE_ERROR_CODE_ACTIVE_RECORDING (2)
+#define ARCHIVE_ERROR_CODE_ACTIVE_SUBSCRIPTION (3)
+#define ARCHIVE_ERROR_CODE_UNKNOWN_SUBSCRIPTION (4)
+#define ARCHIVE_ERROR_CODE_UNKNOWN_RECORDING (5)
+#define ARCHIVE_ERROR_CODE_UNKNOWN_REPLAY (6)
+#define ARCHIVE_ERROR_CODE_MAX_REPLAYS (7)
+#define ARCHIVE_ERROR_CODE_MAX_RECORDINGS (8)
+#define ARCHIVE_ERROR_CODE_INVALID_EXTENSION (9)
+#define ARCHIVE_ERROR_CODE_AUTHENTICATION_REJECTED (10)
+#define ARCHIVE_ERROR_CODE_STORAGE_SPACE (11)
+#define ARCHIVE_ERROR_CODE_UNKNOWN_REPLICATION (12)
+#define ARCHIVE_ERROR_CODE_UNAUTHORISED_ACTION (13)
+
 typedef struct aeron_archive_stct aeron_archive_t;
 typedef struct aeron_archive_context_stct aeron_archive_context_t;
 typedef struct aeron_archive_async_connect_stct aeron_archive_async_connect_t;
@@ -228,6 +243,11 @@ int aeron_archive_get_max_recorded_position(
     int64_t recording_id);
 
 int aeron_archive_stop_recording_subscription(
+    aeron_archive_t *aeron_archive,
+    int64_t subscription_id);
+
+int aeron_archive_try_stop_recording_subscription(
+    bool *stopped_p,
     aeron_archive_t *aeron_archive,
     int64_t subscription_id);
 

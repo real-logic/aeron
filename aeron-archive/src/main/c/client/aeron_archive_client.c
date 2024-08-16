@@ -60,6 +60,12 @@ int aeron_archive_poll_for_response(
     const char *operation_name,
     int64_t correlation_id);
 
+int aeron_archive_poll_for_response_allowing_error(
+    bool *success_p,
+    aeron_archive_t *aeron_archive,
+    const char *operation_name,
+    int64_t correlation_id);
+
 int aeron_archive_poll_for_descriptors(
     int32_t *count_p,
     aeron_archive_t *aeron_archive,
@@ -597,6 +603,38 @@ int aeron_archive_stop_recording_subscription(
         NULL,
         aeron_archive,
         "AeronArchive::stopRecordingSubscription",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+int aeron_archive_try_stop_recording_subscription(
+    bool *stopped_p,
+    aeron_archive_t *aeron_archive,
+    int64_t subscription_id)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_stop_recording_subscription(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        subscription_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response_allowing_error(
+        stopped_p,
+        aeron_archive,
+        "AeronArchive::tryStopRecordingSubscription",
         correlation_id);
 
     aeron_mutex_unlock(&aeron_archive->lock);
@@ -1439,6 +1477,74 @@ int aeron_archive_poll_for_response(
                 *relevant_id_p = poller->relevant_id;
             }
 
+            return 0;
+        }
+    }
+}
+
+int aeron_archive_poll_for_response_allowing_error(
+    bool *success_p,
+    aeron_archive_t *aeron_archive,
+    const char *operation_name,
+    int64_t correlation_id)
+{
+    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
+
+    int64_t deadline_ns = aeron_nano_clock() + aeron_archive->ctx->message_timeout_ns;
+
+    while (true)
+    {
+        if (aeron_archive_poll_next_response(
+            aeron_archive,
+            operation_name,
+            correlation_id,
+            deadline_ns) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+
+        // make sure the session id matches
+        if (poller->control_session_id != aeron_archive->control_session_id)
+        {
+            aeron_archive_context_invoke_aeron_client(aeron_archive->ctx);
+            continue;
+        }
+
+        if (poller->is_code_error)
+        {
+            if (poller->correlation_id == correlation_id)
+            {
+                if (poller->relevant_id == ARCHIVE_ERROR_CODE_UNKNOWN_SUBSCRIPTION)
+                {
+                    *success_p = false;
+                    return 0;
+                }
+
+                // got an error, and the correlation ids match
+                AERON_SET_ERR(
+                    -1,
+                    "response for correlationId=%llu, error: %s",
+                    correlation_id,
+                    poller->error_message);
+                return -1;
+            }
+            /* // TODO
+            else if (error_handler(aeron_archive->ctx) != NULL)
+            {
+
+            }
+             */
+        }
+        else if (poller->correlation_id == correlation_id)
+        {
+            if (!poller->is_code_ok)
+            {
+                AERON_SET_ERR(-1, "unexpected response code: %i", poller->code_value);
+                return -1;
+            }
+
+            *success_p = true;
             return 0;
         }
     }

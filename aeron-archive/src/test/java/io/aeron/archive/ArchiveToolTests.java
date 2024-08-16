@@ -1157,6 +1157,29 @@ class ArchiveToolTests
     }
 
     @Test
+    void verifyShouldNotMarkRecordingAsValidIfNoSegmentFilesAreAttached()
+    {
+        final long recordingId = validRecording4;
+        final ArrayList<String> segmentFiles = listSegmentFiles(archiveDir, recordingId);
+        for (final String segmentFile : segmentFiles)
+        {
+            IoUtil.deleteIfExists(new File(archiveDir, segmentFile));
+        }
+
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
+        {
+            catalog.invalidateRecording(recordingId);
+        }
+
+        assertFalse(verify(out, archiveDir, emptySet(), null, (file) -> true));
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecordingState(catalog, recordingId, INVALID);
+        }
+    }
+
+    @Test
     void verifyRecordingWithoutChecksumClassNameShouldNotVerifyChecksums()
     {
         assertTrue(verifyRecording(

@@ -1308,8 +1308,16 @@ public class ArchiveTool
             encoder.stopTimestamp(epochClock.time());
         }
 
-        headerEncoder.state(VALID);
-        out.println("(recordingId=" + recordingId + ") OK");
+        final RecordingState currentState = headerDecoder.state();
+        if (INVALID == currentState && !segmentFiles.isEmpty())
+        {
+            headerEncoder.state(VALID);
+            out.println("(recordingId=" + recordingId + ") OK");
+        }
+        else
+        {
+            out.println("(recordingId=" + recordingId + ") state unchanged: " + currentState);
+        }
     }
 
     private static boolean isPositionInvariantViolated(

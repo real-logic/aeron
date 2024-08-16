@@ -435,8 +435,8 @@ final class PublicationParams
         if (retransmitsActiveMax < 1 || retransmitsActiveMax > Configuration.RETRANSMITS_ACTIVE_MAX_MAX)
         {
             throw new IllegalArgumentException(
-                "invalid " + RETRANSMITS_ACTIVE_MAX_PARAM_NAME + ", must be > 0 and <= " +
-                    Configuration.RETRANSMITS_ACTIVE_MAX_MAX);
+                "invalid " + RETRANSMITS_ACTIVE_MAX_PARAM_NAME + "=" + retransmitsActiveMax +
+                    ", must be > 0 and <= " + Configuration.RETRANSMITS_ACTIVE_MAX_MAX);
         }
 
         this.hasRetransmitsActiveMax = true;

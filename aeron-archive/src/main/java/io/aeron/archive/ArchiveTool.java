@@ -25,6 +25,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.*;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -444,11 +445,21 @@ public class ArchiveTool
      */
     public static void describeRecording(final PrintStream out, final File archiveDir, final long recordingId)
     {
-        try (Catalog catalog = openCatalogWithAllEntries(archiveDir))
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, INSTANCE, MIN_CAPACITY, null, null))
         {
-            if (!catalog.forEntry(recordingId, (recordingDescriptorOffset, he, hd, e, d) -> out.println(d)))
+            final MutableBoolean found = new MutableBoolean(false);
+            catalog.forEach((recordingDescriptorOffset, headerEnc, headerDec, encoder, decoder) ->
             {
-                out.println("unknown recordingId=" + recordingId);
+                if (decoder.recordingId() == recordingId)
+                {
+                    found.set(true);
+                    out.println(decoder);
+                }
+            });
+
+            if (!found.get())
+            {
+                throw new AeronException("no recording found with recordingId: " + recordingId);
             }
         }
     }
@@ -705,20 +716,7 @@ public class ArchiveTool
      */
     public static void markRecordingValid(final PrintStream out, final File archiveDir, final long recordingId)
     {
-        try (Catalog catalog = openCatalogWithAllEntries(archiveDir))
-        {
-            final CatalogEntryProcessor catalogEntryProcessor =
-                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                {
-                    headerEncoder.state(VALID);
-                    out.println("(recordingId=" + recordingId + ") OK");
-                };
-
-            if (!catalog.forEntry(recordingId, catalogEntryProcessor))
-            {
-                throw new AeronException("no recording found with recordingId: " + recordingId);
-            }
-        }
+        changeRecordingState(out, archiveDir, recordingId, VALID);
     }
 
     /**
@@ -731,20 +729,7 @@ public class ArchiveTool
      */
     public static void markRecordingInvalid(final PrintStream out, final File archiveDir, final long recordingId)
     {
-        try (Catalog catalog = openCatalogReadWrite(archiveDir, INSTANCE, MIN_CAPACITY, null, null))
-        {
-            final CatalogEntryProcessor catalogEntryProcessor =
-                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                {
-                    headerEncoder.state(INVALID);
-                    out.println("(recordingId=" + recordingId + ") OK: Invalidated");
-                };
-
-            if (!catalog.forEntry(recordingId, catalogEntryProcessor))
-            {
-                throw new AeronException("no recording found with recordingId: " + recordingId);
-            }
-        }
+        changeRecordingState(out, archiveDir, recordingId, INVALID);
     }
 
     /**
@@ -960,12 +945,33 @@ public class ArchiveTool
         final Checksum checksum,
         final IntConsumer versionCheck)
     {
-        return new Catalog(archiveDir, epochClock, capacity, true, checksum, versionCheck, false);
+        return new Catalog(archiveDir, epochClock, capacity, true, checksum, versionCheck);
     }
 
-    private static Catalog openCatalogWithAllEntries(final File archiveDir)
+    private static void changeRecordingState(
+        final PrintStream out, final File archiveDir, final long recordingId, final RecordingState targetState)
     {
-        return new Catalog(archiveDir, INSTANCE, MIN_CAPACITY, true, null, null, true);
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, INSTANCE, MIN_CAPACITY, null, null))
+        {
+            final MutableBoolean found = new MutableBoolean(false);
+            catalog.forEach((recordingDescriptorOffset, he, hDecoder, descriptorEncoder, descriptorDecoder) ->
+            {
+                if (descriptorDecoder.recordingId() == recordingId)
+                {
+                    found.set(true);
+                    if (hDecoder.state() != targetState)
+                    {
+                        he.state(targetState);
+                        out.println("(recordingId=" + recordingId + ") changed state to " + targetState);
+                    }
+                }
+            });
+
+            if (!found.get())
+            {
+                throw new AeronException("no recording found with recordingId: " + recordingId);
+            }
+        }
     }
 
     private static String validateChecksumClass(final String checksumClassName)

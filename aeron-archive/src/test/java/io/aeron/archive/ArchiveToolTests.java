@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.codecs.RecordingState;
+import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.collections.MutableBoolean;
@@ -1256,7 +1257,7 @@ class ArchiveToolTests
     {
         final long rec1;
         final long rec2;
-        try (Catalog catalog = new Catalog(archiveDir, epochClock, 1024, true, null, null, false))
+        try (Catalog catalog = new Catalog(archiveDir, epochClock, 1024, true, null, null))
         {
             rec1 = catalog.addNewRecording(0, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 42, 5, "some ch", "some ch", "rec1");
@@ -1300,11 +1301,23 @@ class ArchiveToolTests
         {
             assertTrue(catalog.hasRecording(validRecording3));
         }
+
         markRecordingInvalid(out, archiveDir, validRecording3);
+
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertFalse(catalog.hasRecording(validRecording3));
+            assertRecordingState(catalog, validRecording3, INVALID);
         }
+    }
+
+    @Test
+    void markInvalidThrowsExceptionIfRecordingIsUnknown()
+    {
+        final int recordingId = 100_000;
+        final AeronException exception =
+            assertThrows(AeronException.class, () -> markRecordingInvalid(out, archiveDir, recordingId));
+        assertEquals("ERROR - no recording found with recordingId: " + recordingId, exception.getMessage());
     }
 
     @Test
@@ -1315,11 +1328,22 @@ class ArchiveToolTests
             assertTrue(catalog.invalidateRecording(validRecording6));
             assertRecordingState(catalog, validRecording6, INVALID);
         }
+
         markRecordingValid(out, archiveDir, validRecording6);
+
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertTrue(catalog.hasRecording(validRecording6));
         }
+    }
+
+    @Test
+    void markValidThrowsExceptionIfRecordingIsUnknown()
+    {
+        final long recordingId = Long.MIN_VALUE;
+        final AeronException exception =
+            assertThrows(AeronException.class, () -> markRecordingValid(out, archiveDir, recordingId));
+        assertEquals("ERROR - no recording found with recordingId: " + recordingId, exception.getMessage());
     }
 
     private static List<Arguments> verifyChecksumClassValidation()

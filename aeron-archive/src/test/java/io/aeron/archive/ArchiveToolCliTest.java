@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.exceptions.AeronException;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.SystemEpochClock;
@@ -30,8 +31,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ArchiveToolCliTest
 {
@@ -92,10 +92,11 @@ public class ArchiveToolCliTest
     }
 
     @Test
-    void describeRecordingShouldPrintAMessageOnUnknownRecording()
+    void describeRecordingShouldThrowExceptionOnUnknownRecording()
     {
-        final OutputConsole console = runArchiveTool("describe", "10");
-        assertEquals("unknown recordingId=10" + System.lineSeparator(), console.systemOutText());
+        final AeronException exception =
+            assertThrowsExactly(AeronException.class, () -> runArchiveTool("describe", "10"));
+        assertEquals("ERROR - no recording found with recordingId: 10", exception.getMessage());
     }
 
     @Test

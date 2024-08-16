@@ -120,7 +120,7 @@ class CatalogTest
         IoUtil.deleteIfExists(catalogFile);
         Files.write(catalogFile.toPath(), new byte[oldRecordLength], CREATE_NEW);
 
-        try (Catalog catalog = new Catalog(archiveDir, clock, MIN_CAPACITY, true, null, (version) -> {}, false))
+        try (Catalog catalog = new Catalog(archiveDir, clock, MIN_CAPACITY, true, null, (version) -> {}))
         {
             assertEquals(oldRecordLength, catalog.alignment());
         }
@@ -156,7 +156,7 @@ class CatalogTest
         setNextRecordingId(-1);
 
         final ArchiveException exception = assertThrows(ArchiveException.class,
-            () -> new Catalog(archiveDir, clock, MIN_CAPACITY, true, null, null, false));
+            () -> new Catalog(archiveDir, clock, MIN_CAPACITY, true, null, null));
         assertEquals(
             "ERROR - invalid nextRecordingId: expected value greater or equal to " + (recordingThreeId + 1) +
             ", was -1",

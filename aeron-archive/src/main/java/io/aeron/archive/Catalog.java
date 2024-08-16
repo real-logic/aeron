@@ -227,7 +227,7 @@ final class Catalog implements AutoCloseable
             }
             firstRecordingDescriptorOffset = CatalogHeaderEncoder.BLOCK_LENGTH;
 
-            buildIndex(true, false);
+            buildIndex(true);
             refreshCatalog(true, checksum, buffer);
         }
         catch (final Exception ex)
@@ -239,7 +239,7 @@ final class Catalog implements AutoCloseable
 
     Catalog(final File archiveDir, final EpochClock epochClock)
     {
-        this(archiveDir, epochClock, MIN_CAPACITY, false, null, null, false);
+        this(archiveDir, epochClock, MIN_CAPACITY, false, null, null);
     }
 
     Catalog(
@@ -248,8 +248,7 @@ final class Catalog implements AutoCloseable
         final long catalogCapacity,
         final boolean writable,
         final Checksum checksum,
-        final IntConsumer versionCheck,
-        final boolean indexAll)
+        final IntConsumer versionCheck)
     {
         this.archiveDir = archiveDir;
         this.forceWrites = false;
@@ -313,7 +312,7 @@ final class Catalog implements AutoCloseable
                 firstRecordingDescriptorOffset = DEFAULT_ALIGNMENT;
             }
 
-            buildIndex(writable, indexAll);
+            buildIndex(writable);
             refreshCatalog(false, null, null);
         }
         catch (final Exception ex)
@@ -944,7 +943,7 @@ final class Catalog implements AutoCloseable
         headerAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
     }
 
-    private void buildIndex(final boolean writable, final boolean indexAll)
+    private void buildIndex(final boolean writable)
     {
         final int endOffset = (int)capacity;
         int offset = firstRecordingDescriptorOffset;
@@ -958,7 +957,7 @@ final class Catalog implements AutoCloseable
             }
 
             recordingId = recordingId(catalogBuffer);
-            if (indexAll || isValidDescriptor(catalogBuffer))
+            if (isValidDescriptor(catalogBuffer))
             {
                 catalogIndex.add(recordingId, offset);
             }

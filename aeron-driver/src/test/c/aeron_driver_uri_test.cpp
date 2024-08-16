@@ -334,7 +334,7 @@ TEST_F(DriverUriTest, shouldNotHaveMaxRetransmits)
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8", &m_uri), 0);
     EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
-    EXPECT_FALSE(params.has_max_retransmits);
+    EXPECT_FALSE(params.has_retransmits_active_max);
 }
 
 TEST_F(DriverUriTest, shouldHaveMaxRetransmits)
@@ -343,8 +343,8 @@ TEST_F(DriverUriTest, shouldHaveMaxRetransmits)
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|retransmits-active-max=100", &m_uri), 0);
     EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
-    EXPECT_TRUE(params.has_max_retransmits);
-    EXPECT_EQ(INT64_C(100), params.max_retransmits);
+    EXPECT_TRUE(params.has_retransmits_active_max);
+    EXPECT_EQ(INT64_C(100), params.retransmits_active_max);
 }
 
 TEST_F(DriverUriTest, shouldFailWithNegativeMaxRetransmits)

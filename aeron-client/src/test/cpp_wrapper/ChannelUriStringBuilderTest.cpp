@@ -179,7 +179,7 @@ TEST(ChannelUriStringBuilderTest, shouldHandleMaxRetransmits)
     builder
         .media(UDP_MEDIA)
         .endpoint("224.10.9.8:777")
-        .maxRetransmits(123);
+        .retransmitsActiveMax(123);
 
     const std::string uriString = builder.build();
 

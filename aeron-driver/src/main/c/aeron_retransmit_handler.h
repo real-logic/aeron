@@ -39,8 +39,8 @@ typedef struct aeron_retransmit_action_stct
 }
 aeron_retransmit_action_t;
 
-#define AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS (16)
-#define AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS_MAX (256)
+#define AERON_RETRANSMIT_HANDLER_RETRANSMITS_ACTIVE_MAX (16)
+#define AERON_RETRANSMIT_HANDLER_RETRANSMITS_ACTIVE_MAX_MAX (256)
 
 typedef int (*aeron_retransmit_handler_resend_func_t)(
     void *clientd, int32_t term_id, int32_t term_offset, size_t length);

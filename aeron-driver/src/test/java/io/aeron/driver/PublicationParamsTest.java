@@ -34,25 +34,25 @@ class PublicationParamsTest
         final ChannelUri uri = ChannelUri.parse("aeron:udp?endpoint=localhost:1010");
         final PublicationParams params = PublicationParams.getPublicationParams(uri, ctx, conductor, false);
 
-        assertFalse(params.hasMaxRetransmits);
+        assertFalse(params.hasRetransmitsActiveMax);
     }
 
     @Test
     void hasMaxRetransmits()
     {
         final ChannelUri uri = ChannelUri.parse("aeron:udp?endpoint=localhost:1010|" +
-            CommonContext.MAX_RETRANSMITS_PARAM_NAME + "=100");
+            CommonContext.RETRANSMITS_ACTIVE_MAX_PARAM_NAME + "=100");
         final PublicationParams params = PublicationParams.getPublicationParams(uri, ctx, conductor, false);
 
-        assertTrue(params.hasMaxRetransmits);
-        assertEquals(100, params.maxRetransmits);
+        assertTrue(params.hasRetransmitsActiveMax);
+        assertEquals(100, params.retransmitsActiveMax);
     }
 
     @Test
     void hasNegativeMaxRetransmits()
     {
         final ChannelUri uri = ChannelUri.parse("aeron:udp?endpoint=localhost:1010|" +
-            CommonContext.MAX_RETRANSMITS_PARAM_NAME + "=-1234");
+            CommonContext.RETRANSMITS_ACTIVE_MAX_PARAM_NAME + "=-1234");
         final IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
             () -> PublicationParams.getPublicationParams(uri, ctx, conductor, false));
@@ -64,19 +64,19 @@ class PublicationParamsTest
     void hasTooBigMaxRetransmits()
     {
         final ChannelUri uri = ChannelUri.parse("aeron:udp?endpoint=localhost:1010|" +
-            CommonContext.MAX_RETRANSMITS_PARAM_NAME + "=" + Configuration.MAX_RETRANSMITS_MAX * 2);
+            CommonContext.RETRANSMITS_ACTIVE_MAX_PARAM_NAME + "=" + Configuration.RETRANSMITS_ACTIVE_MAX_MAX * 2);
         final IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
             () -> PublicationParams.getPublicationParams(uri, ctx, conductor, false));
 
-        assertTrue(exception.getMessage().contains("and <= " + Configuration.MAX_RETRANSMITS_MAX));
+        assertTrue(exception.getMessage().contains("and <= " + Configuration.RETRANSMITS_ACTIVE_MAX_MAX));
     }
 
     @Test
     void hasInvalidMaxRetransmits()
     {
         final ChannelUri uri = ChannelUri.parse("aeron:udp?endpoint=localhost:1010|" +
-            CommonContext.MAX_RETRANSMITS_PARAM_NAME + "=notanumber");
+            CommonContext.RETRANSMITS_ACTIVE_MAX_PARAM_NAME + "=notanumber");
         final IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
             () -> PublicationParams.getPublicationParams(uri, ctx, conductor, false));

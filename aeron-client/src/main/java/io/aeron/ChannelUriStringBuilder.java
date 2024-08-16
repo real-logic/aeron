@@ -79,7 +79,7 @@ public final class ChannelUriStringBuilder
     private Long nakDelay;
     private Long untetheredWindowLimitTimeoutNs;
     private Long untetheredRestingTimeoutNs;
-    private Integer maxRetransmits;
+    private Integer retransmitsActiveMax;
 
     /**
      * Default constructor
@@ -145,7 +145,7 @@ public final class ChannelUriStringBuilder
         nakDelay(channelUri);
         untetheredWindowLimitTimeout(channelUri);
         untetheredRestingTimeout(channelUri);
-        maxRetransmits(channelUri);
+        retransmitsActiveMax(channelUri);
     }
 
     /**
@@ -189,7 +189,7 @@ public final class ChannelUriStringBuilder
         channelSendTimestampOffset = null;
         responseEndpoint = null;
         responseCorrelationId = null;
-        maxRetransmits = null;
+        retransmitsActiveMax = null;
 
         return this;
     }
@@ -2160,39 +2160,39 @@ public final class ChannelUriStringBuilder
     /**
      * The max number of retransmit actions.
      *
-     * @param maxRetransmits the max number of retransmit actions.
+     * @param retransmitsActiveMax the max number of retransmit actions.
      * @return this for a fluent API.
      */
-    public ChannelUriStringBuilder maxRetransmits(final Integer maxRetransmits)
+    public ChannelUriStringBuilder retransmitsActiveMax(final Integer retransmitsActiveMax)
     {
-        this.maxRetransmits = maxRetransmits;
+        this.retransmitsActiveMax = retransmitsActiveMax;
         return this;
     }
 
     /**
      * The max number of retransmit actions.
      *
-     * @param channelUri the existing URI to extract the maxRetransmits from.
+     * @param channelUri the existing URI to extract the retransmitsActiveMax from.
      * @return this for a fluent API.
      */
-    public ChannelUriStringBuilder maxRetransmits(final ChannelUri channelUri)
+    public ChannelUriStringBuilder retransmitsActiveMax(final ChannelUri channelUri)
     {
-        final String valueStr = channelUri.get(MAX_RETRANSMITS_PARAM_NAME);
+        final String valueStr = channelUri.get(RETRANSMITS_ACTIVE_MAX_PARAM_NAME);
         if (null == valueStr)
         {
-            this.maxRetransmits = null;
+            this.retransmitsActiveMax = null;
             return this;
         }
         else
         {
             try
             {
-                return maxRetransmits(Integer.parseInt(valueStr));
+                return retransmitsActiveMax(Integer.parseInt(valueStr));
             }
             catch (final NumberFormatException ex)
             {
                 throw new IllegalArgumentException(
-                    MAX_RETRANSMITS_PARAM_NAME + " must be a number");
+                    RETRANSMITS_ACTIVE_MAX_PARAM_NAME + " must be a number", ex);
             }
         }
     }
@@ -2202,9 +2202,9 @@ public final class ChannelUriStringBuilder
      *
      * @return the max number of outstanding retransmit actions
      */
-    public Integer maxRetransmits()
+    public Integer retransmitsActiveMax()
     {
-        return maxRetransmits;
+        return retransmitsActiveMax;
     }
 
     /**
@@ -2264,7 +2264,7 @@ public final class ChannelUriStringBuilder
         appendParameter(sb, NAK_DELAY_PARAM_NAME, nakDelay);
         appendParameter(sb, UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME, untetheredWindowLimitTimeoutNs);
         appendParameter(sb, UNTETHERED_RESTING_TIMEOUT_PARAM_NAME, untetheredRestingTimeoutNs);
-        appendParameter(sb, MAX_RETRANSMITS_PARAM_NAME, maxRetransmits);
+        appendParameter(sb, RETRANSMITS_ACTIVE_MAX_PARAM_NAME, retransmitsActiveMax);
 
         final char lastChar = sb.charAt(sb.length() - 1);
         if (lastChar == '|' || lastChar == '?')

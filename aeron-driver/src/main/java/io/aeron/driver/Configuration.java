@@ -877,15 +877,15 @@ public final class Configuration
      * Property name of the max number of active retransmissions tracked for udp streams with group semantics.
      */
     @Config
-    public static final String MAX_RETRANSMITS_PROP_NAME = "aeron.retransmits.active.max";
+    public static final String RETRANSMITS_ACTIVE_MAX_PROP_NAME = "aeron.retransmits.active.max";
 
     /**
      * Default max number of active retransmissions per connected stream udp stream with group semantics.
      */
     @Config
-    public static final int MAX_RETRANSMITS_DEFAULT = 16;
+    public static final int RETRANSMITS_ACTIVE_MAX_DEFAULT = 16;
 
-    public static final int MAX_RETRANSMITS_MAX = 256;
+    public static final int RETRANSMITS_ACTIVE_MAX_MAX = 256;
 
     /**
      * Property name for the class used to validate if a driver should terminate based on token.
@@ -1384,13 +1384,13 @@ public final class Configuration
      * Max number of active retransmissions tracked for udp streams with group semantics.
      *
      * @return max retransmits
-     * @see #MAX_RETRANSMITS_PROP_NAME
+     * @see #RETRANSMITS_ACTIVE_MAX_PROP_NAME
      */
-    public static int maxRetransmits()
+    public static int retransmitsActiveMax()
     {
         return Integer.min(
-            Integer.max(getInteger(MAX_RETRANSMITS_PROP_NAME, MAX_RETRANSMITS_DEFAULT), 1),
-            MAX_RETRANSMITS_MAX);
+            Integer.max(getInteger(RETRANSMITS_ACTIVE_MAX_PROP_NAME, RETRANSMITS_ACTIVE_MAX_DEFAULT), 1),
+            RETRANSMITS_ACTIVE_MAX_MAX);
     }
 
     /**

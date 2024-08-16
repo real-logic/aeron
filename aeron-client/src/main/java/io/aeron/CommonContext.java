@@ -424,7 +424,7 @@ public class CommonContext implements Cloneable
      *
      * @since 1.45.0
      */
-    public static final String MAX_RETRANSMITS_PARAM_NAME = "retransmits-active-max";
+    public static final String RETRANSMITS_ACTIVE_MAX_PARAM_NAME = "retransmits-active-max";
 
     /**
      * Get the current fallback logger based on the supplied property.

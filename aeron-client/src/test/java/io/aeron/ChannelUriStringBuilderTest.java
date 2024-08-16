@@ -284,12 +284,12 @@ class ChannelUriStringBuilderTest
     void shouldHandleMaxRetransmits()
     {
         assertEquals(20, new ChannelUriStringBuilder()
-            .maxRetransmits(20)
-            .maxRetransmits());
-        assertTrue(new ChannelUriStringBuilder().maxRetransmits(20).build()
-            .contains(CommonContext.MAX_RETRANSMITS_PARAM_NAME + "=20"));
+            .retransmitsActiveMax(20)
+            .retransmitsActiveMax());
+        assertTrue(new ChannelUriStringBuilder().retransmitsActiveMax(20).build()
+            .contains(CommonContext.RETRANSMITS_ACTIVE_MAX_PARAM_NAME + "=20"));
         assertEquals(30, new ChannelUriStringBuilder()
-            .maxRetransmits(ChannelUri.parse(new ChannelUriStringBuilder().maxRetransmits(30).build()))
-            .maxRetransmits());
+            .retransmitsActiveMax(ChannelUri.parse(new ChannelUriStringBuilder().retransmitsActiveMax(30).build()))
+            .retransmitsActiveMax());
     }
 }

@@ -1640,7 +1640,7 @@ public final class DriverConductor implements Agent
                 ctx.retransmitUnicastDelayGenerator(),
                 ctx.retransmitUnicastLingerGenerator(),
                 udpChannel.hasGroupSemantics(),
-                params.hasMaxRetransmits ? params.maxRetransmits : Configuration.maxRetransmits(),
+                params.hasRetransmitsActiveMax ? params.retransmitsActiveMax : Configuration.retransmitsActiveMax(),
                 retransmitOverflowCounter);
 
             final NetworkPublication publication = new NetworkPublication(

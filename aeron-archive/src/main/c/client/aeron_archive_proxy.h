@@ -118,6 +118,12 @@ bool aeron_archive_proxy_stop_recording_subscription(
     int64_t correlation_id,
     int64_t subscription_id);
 
+bool aeron_archive_proxy_stop_recording_by_identity(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id);
+
 bool aeron_archive_proxy_find_last_matching_recording(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,

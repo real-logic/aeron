@@ -387,6 +387,7 @@ public:
     }
 
     void recordData(
+        bool tryStop,
         int64_t *recording_id,
         int64_t *stop_position,
         int64_t *halfway_position,
@@ -446,9 +447,21 @@ public:
 
         waitUntilCaughtUp(*stop_position);
 
-        EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
-            m_archive,
-            subscription_id));
+        if (tryStop)
+        {
+            bool stopped;
+            EXPECT_EQ(0, aeron_archive_try_stop_recording_subscription(
+                &stopped,
+                m_archive,
+                subscription_id));
+            EXPECT_TRUE(stopped);
+        }
+        else
+        {
+            EXPECT_EQ(0, aeron_archive_stop_recording_subscription(
+                m_archive,
+                subscription_id));
+        }
     }
 
 protected:
@@ -496,6 +509,22 @@ public:
         DoTearDown();
     }
 };
+
+class AeronCArchiveParamTest : public AeronCArchiveTestBase, public testing::TestWithParam<bool>
+{
+public:
+    void SetUp() final
+    {
+        DoSetUp();
+    }
+
+    void TearDown() final
+    {
+        DoTearDown();
+    }
+};
+
+INSTANTIATE_TEST_SUITE_P(AeronCArchive, AeronCArchiveParamTest, testing::Values(true, false));
 
 class AeronCArchiveIdTest : public AeronCArchiveTestBase, public testing::Test
 {
@@ -735,6 +764,91 @@ TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
         recording_descriptor_consumer,
         &clientd));
     EXPECT_EQ(1, count);
+}
+
+TEST_F(AeronCArchiveTest, shouldRecordPublicationAndTryStopById)
+{
+    int32_t session_id;
+    int64_t stop_position;
+
+    connect();
+
+    int64_t subscription_id;
+    ASSERT_EQ(0, aeron_archive_start_recording(
+        &subscription_id,
+        m_archive,
+        m_recordingChannel.c_str(),
+        m_recordingStreamId,
+        AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
+        false));
+
+    {
+        aeron_subscription_t *subscription = addSubscription(m_recordingChannel, m_recordingStreamId);
+        aeron_publication_t *publication = addPublication(m_recordingChannel, m_recordingStreamId);
+
+        session_id = aeron_publication_session_id(publication);
+
+        setupCounters(session_id);
+
+        offerMessages(publication);
+        consumeMessages(subscription);
+
+        stop_position = aeron_publication_position(publication);
+
+        waitUntilCaughtUp(stop_position);
+
+        int64_t found_recording_position;
+        EXPECT_EQ(0, aeron_archive_get_recording_position(
+            &found_recording_position,
+            m_archive,
+            m_recording_id_from_counter));
+        EXPECT_EQ(stop_position, found_recording_position);
+
+        int64_t found_stop_position;
+        EXPECT_EQ(0, aeron_archive_get_stop_position(
+            &found_stop_position,
+            m_archive,
+            m_recording_id_from_counter));
+        EXPECT_EQ(AERON_NULL_VALUE, found_stop_position);
+
+        int64_t found_max_recorded_position;
+        EXPECT_EQ(0, aeron_archive_get_max_recorded_position(
+            &found_max_recorded_position,
+            m_archive,
+            m_recording_id_from_counter));
+        EXPECT_EQ(stop_position, found_max_recorded_position);
+    }
+
+    bool stopped;
+    EXPECT_EQ(-1, aeron_archive_try_stop_recording_by_identity(
+        &stopped,
+        m_archive,
+        m_recording_id_from_counter + 5)); // invalid recording id
+
+    EXPECT_EQ(0, aeron_archive_try_stop_recording_by_identity(
+        &stopped,
+        m_archive,
+        m_recording_id_from_counter));
+    EXPECT_TRUE(stopped);
+
+    int64_t found_recording_id;
+    const char *channel_fragment = "endpoint=localhost:3333";
+    EXPECT_EQ(0, aeron_archive_find_last_matching_recording(
+        &found_recording_id,
+        m_archive,
+        0,
+        channel_fragment,
+        m_recordingStreamId,
+        session_id));
+
+    EXPECT_EQ(m_recording_id_from_counter, found_recording_id);
+
+    int64_t found_stop_position;
+    EXPECT_EQ(0, aeron_archive_get_stop_position(
+        &found_stop_position,
+        m_archive,
+        m_recording_id_from_counter));
+    EXPECT_EQ(stop_position, found_stop_position);
 }
 
 TEST_F(AeronCArchiveTest, shouldRecordThenReplay)
@@ -2358,8 +2472,10 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchiveWithResponseChannels)
     EXPECT_TRUE(aeron_subscription_is_connected(subscription));
 }
 
-TEST_F(AeronCArchiveTest, shouldReplayWithResponseChannel)
+TEST_P(AeronCArchiveParamTest, shouldReplayWithResponseChannel)
 {
+    bool tryStop = GetParam();
+
     size_t message_count = 1000;
     const char *response_channel = "aeron:udp?control-mode=response|control=localhost:10002";
 
@@ -2380,7 +2496,7 @@ TEST_F(AeronCArchiveTest, shouldReplayWithResponseChannel)
 
     int64_t recording_id, stop_position, halfway_position;
 
-    recordData(&recording_id, &stop_position, &halfway_position, message_count);
+    recordData(tryStop, &recording_id, &stop_position, &halfway_position, message_count);
 
     int64_t position = 0L;
     int64_t length = stop_position - position;
@@ -2408,8 +2524,10 @@ TEST_F(AeronCArchiveTest, shouldReplayWithResponseChannel)
     EXPECT_EQ(stop_position, aeron_image_position(image));
 }
 
-TEST_F(AeronCArchiveTest, shouldBoundedReplayWithResponseChannel)
+TEST_P(AeronCArchiveParamTest, shouldBoundedReplayWithResponseChannel)
 {
+    bool tryStop = GetParam();
+
     size_t message_count = 1000;
     const char *response_channel = "aeron:udp?control-mode=response|control=localhost:10002";
     const std::int64_t key = 1234567890;
@@ -2432,7 +2550,7 @@ TEST_F(AeronCArchiveTest, shouldBoundedReplayWithResponseChannel)
 
     int64_t recording_id, stop_position, halfway_position;
 
-    recordData(&recording_id, &stop_position, &halfway_position, message_count);
+    recordData(tryStop, &recording_id, &stop_position, &halfway_position, message_count);
 
     const char *counter_name = "test bounded counter";
     aeron_async_add_counter_t *async_add_counter;
@@ -2485,8 +2603,10 @@ TEST_F(AeronCArchiveTest, shouldBoundedReplayWithResponseChannel)
     EXPECT_EQ(halfway_position, aeron_image_position(image));
 }
 
-TEST_F(AeronCArchiveTest, shouldStartReplayWithResponseChannel)
+TEST_P(AeronCArchiveParamTest, shouldStartReplayWithResponseChannel)
 {
+    bool tryStop = GetParam();
+
     size_t message_count = 1000;
     const char *response_channel = "aeron:udp?control-mode=response|control=localhost:10003";
 
@@ -2507,7 +2627,7 @@ TEST_F(AeronCArchiveTest, shouldStartReplayWithResponseChannel)
 
     int64_t recording_id, stop_position, halfway_position;
 
-    recordData(&recording_id, &stop_position, &halfway_position, message_count);
+    recordData(tryStop, &recording_id, &stop_position, &halfway_position, message_count);
 
     aeron_subscription_t *subscription = addSubscription(response_channel, m_replayStreamId);
 
@@ -2539,8 +2659,10 @@ TEST_F(AeronCArchiveTest, shouldStartReplayWithResponseChannel)
     EXPECT_EQ(stop_position, aeron_image_position(image));
 }
 
-TEST_F(AeronCArchiveTest, shouldStartBoundedReplayWithResponseChannel)
+TEST_P(AeronCArchiveParamTest, shouldStartBoundedReplayWithResponseChannel)
 {
+    bool tryStop = GetParam();
+
     size_t message_count = 1000;
     const char *response_channel = "aeron:udp?control-mode=response|control=localhost:10002";
     const std::int64_t key = 1234567890;
@@ -2563,7 +2685,7 @@ TEST_F(AeronCArchiveTest, shouldStartBoundedReplayWithResponseChannel)
 
     int64_t recording_id, stop_position, halfway_position;
 
-    recordData(&recording_id, &stop_position, &halfway_position, message_count);
+    recordData(tryStop, &recording_id, &stop_position, &halfway_position, message_count);
 
     const char *counter_name = "test bounded counter";
     aeron_async_add_counter_t *async_add_counter;
@@ -2689,8 +2811,10 @@ TEST_F(AeronCArchiveTest, shouldDisconnectAfterStopAllReplays)
     }
 }
 
-TEST_F(AeronCArchiveTest, shouldRecordAndExtend)
+TEST_P(AeronCArchiveParamTest, shouldRecordAndExtend)
 {
+    bool tryStop = GetParam();
+
     connect();
 
     {
@@ -2768,7 +2892,16 @@ TEST_F(AeronCArchiveTest, shouldRecordAndExtend)
 
         waitUntilCaughtUp(stop_position);
 
-        EXPECT_EQ(0, aeron_archive_stop_recording_channel_and_stream(m_archive, recordingChannel2, m_recordingStreamId));
+        if (tryStop)
+        {
+            bool stopped;
+            EXPECT_EQ(0, aeron_archive_try_stop_recording_channel_and_stream(&stopped, m_archive, recordingChannel2, m_recordingStreamId));
+            EXPECT_TRUE(stopped);
+        }
+        else
+        {
+            EXPECT_EQ(0, aeron_archive_stop_recording_channel_and_stream(m_archive, recordingChannel2, m_recordingStreamId));
+        }
 
         EXPECT_EQ(0, aeron_subscription_close(subscription, nullptr, nullptr));
         EXPECT_EQ(0, aeron_publication_close(publication, nullptr, nullptr));

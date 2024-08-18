@@ -256,6 +256,17 @@ int aeron_archive_stop_recording_channel_and_stream(
     const char *channel,
     int32_t stream_id);
 
+int aeron_archive_try_stop_recording_channel_and_stream(
+    bool *stopped_p,
+    aeron_archive_t *aeron_archive,
+    const char *channel,
+    int32_t stream_id);
+
+int aeron_archive_try_stop_recording_by_identity(
+    bool *stopped_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id);
+
 int aeron_archive_stop_recording_publication(
     aeron_archive_t *aeron_archive,
     aeron_publication_t *publication);
@@ -403,8 +414,6 @@ bool aeron_archive_replay_merge_is_live_added(aeron_archive_replay_merge_t *repl
  * TODO
  * pollForErrorResponse
  * checkForErrorResponse
- * tryStopRecording
- * tryStopRecordingByIdentity
  * *replicate
  * taggedReplicate (x2)
  * stopReplication

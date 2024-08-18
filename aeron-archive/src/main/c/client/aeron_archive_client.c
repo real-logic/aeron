@@ -675,6 +675,78 @@ int aeron_archive_stop_recording_channel_and_stream(
     return rc;
 }
 
+int aeron_archive_try_stop_recording_channel_and_stream(
+    bool *stopped_p,
+    aeron_archive_t *aeron_archive,
+    const char *channel,
+    int32_t stream_id)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_stop_recording(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        channel,
+        stream_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response_allowing_error(
+        stopped_p,
+        aeron_archive,
+        "AeronArchive::tryStopRecordingChannelAndStream",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+int aeron_archive_try_stop_recording_by_identity(
+    bool *stopped_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_stop_recording_by_identity(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int64_t relevant_id;
+    int rc = aeron_archive_poll_for_response(
+        &relevant_id,
+        aeron_archive,
+        "AeronArchive::tryStopRecordingByIdentity",
+        correlation_id);
+
+    if (rc == 0)
+    {
+        *stopped_p = relevant_id != 0;
+    }
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
 int aeron_archive_stop_recording_publication_constants(
     aeron_archive_t *aeron_archive,
     aeron_publication_constants_t *constants)

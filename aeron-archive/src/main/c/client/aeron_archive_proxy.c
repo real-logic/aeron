@@ -35,6 +35,7 @@
 #include "c/aeron_archive_client/maxRecordedPositionRequest.h"
 #include "c/aeron_archive_client/stopRecordingRequest.h"
 #include "c/aeron_archive_client/stopRecordingSubscriptionRequest.h"
+#include "c/aeron_archive_client/stopRecordingByIdentityRequest.h"
 #include "c/aeron_archive_client/findLastMatchingRecordingRequest.h"
 #include "c/aeron_archive_client/listRecordingRequest.h"
 #include "c/aeron_archive_client/listRecordingsRequest.h"
@@ -394,6 +395,30 @@ bool aeron_archive_proxy_stop_recording_subscription(
     return aeron_archive_proxy_offer(
         archive_proxy,
         aeron_archive_client_stopRecordingSubscriptionRequest_encoded_length(&codec));
+}
+
+bool aeron_archive_proxy_stop_recording_by_identity(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id)
+{
+    struct aeron_archive_client_stopRecordingByIdentityRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_stopRecordingByIdentityRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_stopRecordingByIdentityRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_stopRecordingByIdentityRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_stopRecordingByIdentityRequest_set_recordingId(&codec, recording_id);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_stopRecordingByIdentityRequest_encoded_length(&codec));
 }
 
 bool aeron_archive_proxy_find_last_matching_recording(

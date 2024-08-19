@@ -60,9 +60,20 @@ TEST_F(Int64CounterMapTest, shouldDoPutAndThenGetOnEmptyMap)
     EXPECT_EQ(aeron_int64_counter_map_get(&m_map, key), value);
     EXPECT_EQ(old_value, m_map.initial_value);
     EXPECT_EQ(m_map.size, 1u);
-    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key, m_map.initial_value, &old_value), 0);
-    EXPECT_EQ(old_value, value);
-    EXPECT_EQ(m_map.size, 0u);
+}
+
+TEST_F(Int64CounterMapTest, shouldNotAllowInitialValuePut)
+{
+    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -2, 8, AERON_MAP_DEFAULT_LOAD_FACTOR), 0);
+
+    int64_t old_value = -1000;
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 42, 0, &old_value), 0);
+    EXPECT_EQ(old_value, m_map.initial_value);
+
+    old_value = -5555555;
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, 42, m_map.initial_value, &old_value), -1);
+    EXPECT_EQ(EINVAL, aeron_errcode());
+    EXPECT_EQ(-5555555, old_value);
 }
 
 TEST_F(Int64CounterMapTest, shouldReplaceExistingValueForTheSameKey)

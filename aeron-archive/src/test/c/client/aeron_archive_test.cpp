@@ -2266,6 +2266,7 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateThenReplay)
     replication_params.encoded_credentials = &default_creds;
 
     EXPECT_EQ(0, aeron_archive_replicate(
+        nullptr,
         m_dest_archive,
         m_recording_id_from_counter,
         aeron_archive_context_get_control_request_stream_id(m_ctx),
@@ -2403,6 +2404,7 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateTwice)
     replication_params1.replication_session_id = 1;
 
     EXPECT_EQ(0, aeron_archive_replicate(
+        nullptr,
         m_dest_archive,
         m_recording_id_from_counter,
         aeron_archive_context_get_control_request_stream_id(m_ctx),
@@ -2423,6 +2425,7 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateTwice)
     replication_params2.replication_session_id = 2;
 
     EXPECT_EQ(0, aeron_archive_replicate(
+        nullptr,
         m_dest_archive,
         m_recording_id_from_counter,
         aeron_archive_context_get_control_request_stream_id(m_ctx),

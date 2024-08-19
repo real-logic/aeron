@@ -23,9 +23,6 @@
 
 #define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_FRAGMENT_LIMIT_DEFAULT 10
 
-#define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_MAX_LEN 10000 // TODO
-#define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ENCODED_CHALLENGE_BUFFER_MAX_LEN 10000 // TODO
-
 typedef struct aeron_archive_control_response_poller_stct
 {
     aeron_subscription_t *subscription;
@@ -42,8 +39,11 @@ typedef struct aeron_archive_control_response_poller_stct
     int32_t recording_signal_code;
     int32_t version;
 
-    char error_message[AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_MAX_LEN];
-    char encoded_challenge_buffer[AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ENCODED_CHALLENGE_BUFFER_MAX_LEN];
+    char *error_message;
+    uint32_t error_message_len;
+
+    char *encoded_challenge_buffer;
+    uint32_t encoded_challenge_buffer_len;
 
     aeron_archive_encoded_credentials_t encoded_challenge;
 

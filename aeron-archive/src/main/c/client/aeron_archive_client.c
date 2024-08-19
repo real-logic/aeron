@@ -55,7 +55,7 @@ struct aeron_archive_stct
 };
 
 int aeron_archive_poll_for_response(
-    int64_t *relevant_id,
+    int64_t *relevant_id_p,
     aeron_archive_t *aeron_archive,
     const char *operation_name,
     int64_t correlation_id);
@@ -1383,6 +1383,7 @@ int aeron_archive_extend_recording(
 }
 
 int aeron_archive_replicate(
+    int64_t *replication_id_p,
     aeron_archive_t *aeron_archive,
     int64_t src_recording_id,
     int32_t src_control_stream_id,
@@ -1409,7 +1410,7 @@ int aeron_archive_replicate(
     }
 
     int rc = aeron_archive_poll_for_response(
-        NULL,
+        replication_id_p,
         aeron_archive,
         "AeronArchive::replicate",
         correlation_id);

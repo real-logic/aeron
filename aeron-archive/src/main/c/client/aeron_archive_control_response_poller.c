@@ -25,6 +25,9 @@
 #include "c/aeron_archive_client/challenge.h"
 #include "c/aeron_archive_client/recordingSignalEvent.h"
 
+#define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_INITIAL_LEN 10000
+#define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ENCODED_CHALLENGE_BUFFER_INITIAL_LEN 10000
+
 void aeron_archive_control_response_poller_reset(aeron_archive_control_response_poller_t *poller);
 
 aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller_on_fragment(void *clientd, const uint8_t *buffer, size_t length, aeron_header_t *header);
@@ -56,6 +59,20 @@ int aeron_archive_control_response_poller_create(
         return -1;
     }
 
+    _poller->error_message_len = AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_INITIAL_LEN;
+    if (aeron_alloc((void **)&_poller->error_message, _poller->error_message_len) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    _poller->encoded_challenge_buffer_len = AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ENCODED_CHALLENGE_BUFFER_INITIAL_LEN;
+    if (aeron_alloc((void **)&_poller->encoded_challenge_buffer, _poller->encoded_challenge_buffer_len) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
     aeron_archive_control_response_poller_reset(_poller);
 
     *poller = _poller;
@@ -67,6 +84,14 @@ int aeron_archive_control_response_poller_close(aeron_archive_control_response_p
 {
     aeron_controlled_fragment_assembler_delete(poller->fragment_assembler);
     poller->fragment_assembler = NULL;
+
+    aeron_free(poller->error_message);
+    poller->error_message = NULL;
+    poller->error_message_len = 0;
+
+    aeron_free(poller->encoded_challenge_buffer);
+    poller->encoded_challenge_buffer = NULL;
+    poller->encoded_challenge_buffer_len = 0;
 
     aeron_free(poller);
 
@@ -101,8 +126,8 @@ void aeron_archive_control_response_poller_reset(aeron_archive_control_response_
     poller->recording_signal_code = INT32_MIN;
     poller->version = 0;
 
-    memset(poller->error_message, 0, AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_MAX_LEN);
-    memset(poller->encoded_challenge_buffer, 0, AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ENCODED_CHALLENGE_BUFFER_MAX_LEN);
+    memset(poller->error_message, 0, poller->error_message_len);
+    memset(poller->encoded_challenge_buffer, 0, poller->encoded_challenge_buffer_len);
 
     poller->encoded_challenge.data = NULL;
     poller->encoded_challenge.length = 0;
@@ -171,10 +196,20 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
             poller->is_code_error = poller->code_value == aeron_archive_client_controlResponseCode_ERROR;
             poller->is_code_ok = poller->code_value == aeron_archive_client_controlResponseCode_OK;
 
+            uint32_t error_message_len = aeron_archive_client_controlResponse_errorMessage_length(&control_response);
+            if (error_message_len > poller->error_message_len)
+            {
+                if (aeron_reallocf((void **)&poller->error_message, error_message_len) < 0)
+                {
+                    // TODO
+                }
+                poller->error_message_len = error_message_len;
+            }
+
             aeron_archive_client_controlResponse_get_errorMessage(
                 &control_response,
                 poller->error_message,
-                AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_MAX_LEN);
+                error_message_len);
 
             poller->is_control_response = true;
             poller->is_poll_complete = true;
@@ -204,6 +239,15 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
             poller->is_code_ok = false;
 
             uint32_t encoded_challenge_length = aeron_archive_client_challenge_encodedChallenge_length(&challenge);
+            if (encoded_challenge_length > poller->encoded_challenge_buffer_len)
+            {
+                if (aeron_reallocf((void **)&poller->encoded_challenge_buffer, encoded_challenge_length) < 0)
+                {
+                    // TODO
+                }
+                poller->encoded_challenge_buffer_len = encoded_challenge_length;
+            }
+
             aeron_archive_client_challenge_get_encodedChallenge(
                 &challenge,
                 poller->encoded_challenge_buffer,

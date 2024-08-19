@@ -363,6 +363,7 @@ int aeron_archive_extend_recording(
     bool auto_stop);
 
 int aeron_archive_replicate(
+    int64_t *replication_id_p,
     aeron_archive_t *aeron_archive,
     int64_t src_recording_id,
     int32_t src_control_stream_id,
@@ -414,10 +415,10 @@ bool aeron_archive_replay_merge_is_live_added(aeron_archive_replay_merge_t *repl
  * TODO
  * pollForErrorResponse
  * checkForErrorResponse
- * *replicate
- * taggedReplicate (x2)
+ *
  * stopReplication
  * tryStopReplication
+ *
  * detachSegments
  * deleteDetachedSegments
  * purgeSegments

@@ -73,7 +73,7 @@ public:
         m_nakDelay.reset(nullptr);
         m_untetheredWindowLimitTimeout.reset(nullptr);
         m_untetheredRestingTimeout.reset(nullptr);
-        m_retransmitsActiveMax.reset(nullptr);
+        m_maxResend.reset(nullptr);
 
         return *this;
     }
@@ -406,9 +406,9 @@ public:
         return *this;
     }
 
-    inline this_t &retransmitsActiveMax(std::int32_t retransmitsActiveMax)
+    inline this_t &maxResend(std::int32_t maxResend)
     {
-        m_retransmitsActiveMax.reset(new Value(retransmitsActiveMax));
+        m_maxResend.reset(new Value(maxResend));
         return *this;
     }
 
@@ -505,7 +505,7 @@ public:
         append(sb, NAK_DELAY_PARAM_NAME, m_nakDelay);
         append(sb, UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME, m_untetheredWindowLimitTimeout);
         append(sb, UNTETHERED_RESTING_TIMEOUT_PARAM_NAME, m_untetheredRestingTimeout);
-        append(sb, RETRANSMITS_ACTIVE_MAX_PARAM_NAME, m_retransmitsActiveMax);
+        append(sb, MAX_RESEND_PARAM_NAME, m_maxResend);
 
         std::string result = sb.str();
         const char lastChar = result.back();
@@ -562,7 +562,7 @@ private:
     std::unique_ptr<Value> m_nakDelay;
     std::unique_ptr<Value> m_untetheredWindowLimitTimeout;
     std::unique_ptr<Value> m_untetheredRestingTimeout;
-    std::unique_ptr<Value> m_retransmitsActiveMax;
+    std::unique_ptr<Value> m_maxResend;
     std::unique_ptr<std::string> m_mediaReceiveTimestampOffset;
     std::unique_ptr<std::string> m_channelReceiveTimestampOffset;
     std::unique_ptr<std::string> m_channelSendTimestampOffset;

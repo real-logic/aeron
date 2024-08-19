@@ -71,7 +71,7 @@ static constexpr const char RESPONSE_CORRELATION_ID_PARAM_NAME[] = "response-cor
 static constexpr const char NAK_DELAY_PARAM_NAME[] = "nak-delay";
 static constexpr const char UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME[] = "untethered-window-limit-timeout";
 static constexpr const char UNTETHERED_RESTING_TIMEOUT_PARAM_NAME[] = "untethered-resting-timeout";
-static constexpr const char RETRANSMITS_ACTIVE_MAX_PARAM_NAME[] = "retransmits-active-max";
+static constexpr const char MAX_RESEND_PARAM_NAME[] = "max-resend";
 
 using namespace aeron::util;
 

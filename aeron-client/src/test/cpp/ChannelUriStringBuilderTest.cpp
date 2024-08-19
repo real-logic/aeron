@@ -453,10 +453,10 @@ TEST(ChannelUriStringBuilderTest, shouldHandleMaxRetransmits)
     builder
         .media(UDP_MEDIA)
         .endpoint("224.10.9.8:777")
-        .retransmitsActiveMax(123);
+        .maxResend(123);
 
     const std::string uriString = builder.build();
 
     std::shared_ptr<ChannelUri> channelUri = ChannelUri::parse(uriString);
-    ASSERT_NE(std::string::npos, channelUri->toString().find("retransmits-active-max=123"));
+    ASSERT_NE(std::string::npos, channelUri->toString().find("max-resend=123"));
 }

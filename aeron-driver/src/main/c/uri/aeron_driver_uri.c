@@ -66,7 +66,7 @@ int aeron_uri_get_max_resend_param(aeron_uri_params_t *uri_params, aeron_driver_
         {
             AERON_SET_ERR(
                 EINVAL,
-                "invalid %s=" PRIu64 ", must be > 0 and <= %i",
+                "invalid %s=%" PRIu64 ", must be > 0 and <= %i",
                 AERON_URI_MAX_RESEND_KEY,
                 value,
                 AERON_RETRANSMIT_HANDLER_MAX_RESEND_MAX);

@@ -1754,7 +1754,7 @@ final class ConsensusModuleAgent
             logAdapter.poll(stopPosition);
             final long position = logAdapter.position();
 
-            if (commitPosition.get() < position)
+            if (commitPosition.getWeak() < position)
             {
                 commitPosition.setOrdered(position);
                 workCount++;

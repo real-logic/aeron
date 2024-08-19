@@ -1821,7 +1821,8 @@ public final class ChannelUriStringBuilder
             catch (final NumberFormatException ex)
             {
                 throw new IllegalArgumentException(
-                    "mediaReceiveTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "'");
+                    "mediaReceiveTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "' found: " +
+                    timestampOffset);
             }
         }
 
@@ -1872,7 +1873,8 @@ public final class ChannelUriStringBuilder
             catch (final NumberFormatException ex)
             {
                 throw new IllegalArgumentException(
-                    "channelReceiveTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "'");
+                    "channelReceiveTimestampOffset must be a number or the value '" + RESERVED_OFFSET + "' found: " +
+                    timestampOffset);
             }
         }
 

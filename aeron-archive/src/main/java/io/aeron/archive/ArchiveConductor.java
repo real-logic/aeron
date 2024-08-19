@@ -59,6 +59,7 @@ import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.client.ArchiveException.*;
+import static io.aeron.archive.codecs.RecordingState.DELETED;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.lang.Math.max;
@@ -1079,21 +1080,19 @@ abstract class ArchiveConductor
         if (hasRecording(recordingId, correlationId, controlSession) &&
             isValidPurge(correlationId, controlSession, recordingId))
         {
-            final ArrayDeque<String> files = new ArrayDeque<>();
+            catalog.changeState(recordingId, DELETED);
 
-            if (catalog.invalidateRecording(recordingId))
+            final ArrayDeque<String> files = new ArrayDeque<>();
+            final String[] segmentFiles = archiveDir.list();
+            if (null != segmentFiles)
             {
-                final String[] segmentFiles = archiveDir.list();
-                if (null != segmentFiles)
+                final String prefix = recordingId + "-";
+                for (final String segmentFile : segmentFiles)
                 {
-                    final String prefix = recordingId + "-";
-                    for (final String segmentFile : segmentFiles)
+                    if (segmentFile.startsWith(prefix) &&
+                        (segmentFile.endsWith(RECORDING_SEGMENT_SUFFIX) || segmentFile.endsWith(DELETE_SUFFIX)))
                     {
-                        if (segmentFile.startsWith(prefix) &&
-                            (segmentFile.endsWith(RECORDING_SEGMENT_SUFFIX) || segmentFile.endsWith(DELETE_SUFFIX)))
-                        {
-                            files.addLast(segmentFile);
-                        }
+                        files.addLast(segmentFile);
                     }
                 }
             }

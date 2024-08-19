@@ -46,6 +46,7 @@ import static io.aeron.archive.AbstractListRecordingsSession.MAX_SCANS_PER_WORK_
 import static io.aeron.archive.Catalog.PAGE_SIZE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
+import static io.aeron.archive.codecs.RecordingState.INVALID;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static io.aeron.test.Tests.generateStringWithSuffix;
 import static java.util.Arrays.asList;
@@ -110,10 +111,10 @@ class CatalogWithJumboRecordingsAndGapsTest
                 current = next(current, 3);
             }
 
-            invalidateRecordings(catalog, 0, 3);
-            invalidateRecordings(catalog, 20, 30);
-            invalidateRecordings(catalog, 100, 111);
-            invalidateRecordings(catalog, recordingIds.length - 5, recordingIds.length);
+            changeRecordingsState(catalog, 0, 3);
+            changeRecordingsState(catalog, 20, 30);
+            changeRecordingsState(catalog, 100, 111);
+            changeRecordingsState(catalog, recordingIds.length - 5, recordingIds.length);
         }
 
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
@@ -253,9 +254,9 @@ class CatalogWithJumboRecordingsAndGapsTest
         assertEquals(expectedRecordCount, callCount.get());
     }
 
-    private void invalidateRecordings(final Catalog catalog, final int from, final int to)
+    private void changeRecordingsState(final Catalog catalog, final int from, final int to)
     {
-        IntStream.range(from, to).forEach(i -> catalog.invalidateRecording(recordingIds[i]));
+        IntStream.range(from, to).forEach(i -> catalog.changeState(recordingIds[i], INVALID));
     }
 
     private static List<Arguments> listRecordingsArguments()

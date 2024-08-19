@@ -866,8 +866,7 @@ class ArchiveTest
             MIN_CAPACITY,
             true,
             null,
-            intConsumer,
-            false);
+            intConsumer);
     }
 
     static final class SubscriptionDescriptor

@@ -20,6 +20,7 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.CatalogHeaderEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
+import io.aeron.archive.codecs.RecordingState;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BufferUtil;
 import org.agrona.IoUtil;
@@ -49,8 +50,7 @@ import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.checksum.Checksums.crc32;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
-import static io.aeron.archive.codecs.RecordingState.INVALID;
-import static io.aeron.archive.codecs.RecordingState.VALID;
+import static io.aeron.archive.codecs.RecordingState.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
@@ -120,7 +120,7 @@ class CatalogTest
         IoUtil.deleteIfExists(catalogFile);
         Files.write(catalogFile.toPath(), new byte[oldRecordLength], CREATE_NEW);
 
-        try (Catalog catalog = new Catalog(archiveDir, clock, MIN_CAPACITY, true, null, (version) -> {}, false))
+        try (Catalog catalog = new Catalog(archiveDir, clock, MIN_CAPACITY, true, null, (version) -> {}))
         {
             assertEquals(oldRecordLength, catalog.alignment());
         }
@@ -156,7 +156,7 @@ class CatalogTest
         setNextRecordingId(-1);
 
         final ArchiveException exception = assertThrows(ArchiveException.class,
-            () -> new Catalog(archiveDir, clock, MIN_CAPACITY, true, null, null, false));
+            () -> new Catalog(archiveDir, clock, MIN_CAPACITY, true, null, null));
         assertEquals(
             "ERROR - invalid nextRecordingId: expected value greater or equal to " + (recordingThreeId + 1) +
             ", was -1",
@@ -803,7 +803,7 @@ class CatalogTest
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
-            assertTrue(catalog.invalidateRecording(recordingOneId));
+            assertTrue(catalog.changeState(recordingOneId, INVALID));
 
             assertEquals(NULL_RECORD_ID, catalog.findLast(0, 6, 1, "channelG?tag=f".getBytes(US_ASCII)));
         }
@@ -811,30 +811,30 @@ class CatalogTest
 
     @ParameterizedTest
     @ValueSource(longs = { -1, Long.MAX_VALUE })
-    void invalidRecordingIsANoOpIfUnknownRecordingIdIsSpecified(final long recordingId)
+    void changeStateIsANoOpIfUnknownRecordingStateIdIsSpecified(final long recordingId)
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
-            assertFalse(catalog.invalidateRecording(recordingId));
+            assertFalse(catalog.changeState(recordingId, NULL_VAL));
         }
     }
 
     @Test
-    void invalidRecordingMarksRecordingAsInvalidAndRemovesItFromTheIndexFirstEntry()
+    void changeStateOfTheIndexFirstEntry()
     {
-        testInvalidateRecording(recordingOneId);
+        testChangeState(recordingOneId, DELETED);
     }
 
     @Test
-    void invalidRecordingMarksRecordingAsInvalidAndRemovesItFromTheIndexMiddleEntry()
+    void changeStateOfTheIndexMiddleEntry()
     {
-        testInvalidateRecording(recordingTwoId);
+        testChangeState(recordingTwoId, NULL_VAL);
     }
 
     @Test
-    void invalidRecordingMarksRecordingAsInvalidAndRemovesItFromTheIndexLastEntry()
+    void changeStateOfTheIndexLastEntry()
     {
-        testInvalidateRecording(recordingThreeId);
+        testChangeState(recordingThreeId, INVALID);
     }
 
     @Test
@@ -1295,7 +1295,7 @@ class CatalogTest
             });
     }
 
-    private void testInvalidateRecording(final long recordingId)
+    private void testChangeState(final long recordingId, final RecordingState newState)
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, CAPACITY, clock, null, segmentFileBuffer))
         {
@@ -1309,9 +1309,9 @@ class CatalogTest
                 RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
                 RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
 
-            assertTrue(catalog.invalidateRecording(recordingId));
+            assertTrue(catalog.changeState(recordingId, newState));
 
-            assertEquals(INVALID, recordingDescriptorHeaderDecoder.state());
+            assertEquals(newState, recordingDescriptorHeaderDecoder.state());
             assertEquals(entries - 1, catalog.entryCount());
             assertFalse(catalog.hasRecording(recordingId));
         }

@@ -164,7 +164,7 @@ inline int64_t aeron_int64_counter_map_remove(aeron_int64_counter_map_t *map, in
             break;
         }
 
-        index = (index + 1) & mask;
+        index = (index + 2) & mask;
     }
 
     return value;
@@ -173,14 +173,10 @@ inline int64_t aeron_int64_counter_map_remove(aeron_int64_counter_map_t *map, in
 inline int aeron_int64_counter_map_put(
     aeron_int64_counter_map_t *map, const int64_t key, const int64_t value, int64_t *existing_value)
 {
-    if (value == map->initial_value)
+    if (map->initial_value == value)
     {
-        int64_t old_value = aeron_int64_counter_map_remove(map, key);
-        if (NULL != existing_value)
-        {
-            *existing_value = old_value;
-        }
-        return 0;
+        AERON_SET_ERR(EINVAL, "%s", "cannot accept initialValue");
+        return -1;
     }
 
     size_t mask = map->entries_length - 1;
@@ -189,30 +185,18 @@ inline int aeron_int64_counter_map_put(
     int64_t old_value;
     while (map->initial_value != (old_value = map->entries[index + 1]))
     {
-        if (map->entries[index] == key)
+        if (key == map->entries[index])
         {
-            old_value = map->entries[index + 1];
             break;
         }
 
         index = (index + 2) & mask;
     }
 
-    if (value == map->initial_value)
+    if (old_value == map->initial_value)
     {
-        if (old_value != map->initial_value)
-        {
-            map->size--;
-            aeron_int64_counter_map_compact_chain(map, index);
-        }
-    }
-    else
-    {
-        if (old_value == map->initial_value)
-        {
-            map->size++;
-            map->entries[index] = key;
-        }
+        map->size++;
+        map->entries[index] = key;
     }
 
     map->entries[index + 1] = value;
@@ -243,7 +227,7 @@ inline int64_t aeron_int64_counter_map_get(aeron_int64_counter_map_t *map, const
     int64_t value;
     while (map->initial_value != (value = map->entries[index + 1]))
     {
-        if (map->entries[index] == key)
+        if (key == map->entries[index])
         {
             break;
         }
@@ -263,9 +247,8 @@ inline int aeron_int64_counter_map_get_and_add(
     int64_t old_value;
     while (map->initial_value != (old_value = map->entries[index + 1]))
     {
-        if (map->entries[index] == key)
+        if (key == map->entries[index])
         {
-            old_value = map->entries[index + 1];
             break;
         }
 
@@ -277,7 +260,7 @@ inline int aeron_int64_counter_map_get_and_add(
         int64_t new_value = old_value + delta;
         map->entries[index + 1] = new_value;
 
-        if (old_value == map->initial_value)
+        if (map->initial_value == old_value)
         {
             map->size++;
             map->entries[index] = key;
@@ -293,7 +276,7 @@ inline int aeron_int64_counter_map_get_and_add(
                 }
             }
         }
-        else if (new_value == map->initial_value)
+        else if (map->initial_value == new_value)
         {
             map->size--;
             aeron_int64_counter_map_compact_chain(map, index);

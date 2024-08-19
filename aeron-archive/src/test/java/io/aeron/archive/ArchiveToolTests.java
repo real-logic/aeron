@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.codecs.RecordingState;
+import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.collections.MutableBoolean;
@@ -25,7 +26,9 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -47,8 +50,7 @@ import static io.aeron.archive.ArchiveTool.VerifyOption.VERIFY_ALL_SEGMENT_FILES
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.checksum.Checksums.crc32;
 import static io.aeron.archive.client.AeronArchive.*;
-import static io.aeron.archive.codecs.RecordingState.INVALID;
-import static io.aeron.archive.codecs.RecordingState.VALID;
+import static io.aeron.archive.codecs.RecordingState.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
@@ -875,6 +877,36 @@ class ArchiveToolTests
         }
     }
 
+    @ParameterizedTest
+    @EnumSource(value = RecordingState.class, mode = EnumSource.Mode.EXCLUDE, names = { "VALID", "INVALID" })
+    void verifyRecordingShouldSkipRecordingIfStateIsDeletedOrUnknown(final RecordingState skipState)
+    {
+        final long recordingId = validRecording3;
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
+        {
+            assertTrue(catalog.changeState(recordingId, skipState));
+        }
+
+        assertTrue(verifyRecording(
+            out, archiveDir, recordingId, of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false));
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, recordingId, skipState, 0, 7 * TERM_LENGTH + 96, 7 * TERM_LENGTH + 128,
+                18, NULL_TIMESTAMP, 7, 13, "ch2", "src2");
+        }
+        Mockito.verify(out).println("(recordingId=" + recordingId + ") skipping: " + skipState);
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {-1000, Long.MAX_VALUE})
+    void verifyRecordingShouldThrowExceptionIfRecordingIsUnknown(final long recordingId)
+    {
+        final AeronException exception = assertThrowsExactly(AeronException.class, () -> verifyRecording(
+            out, archiveDir, recordingId, of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false));
+        assertEquals("ERROR - no recording found with recordingId: " + recordingId, exception.getMessage());
+    }
+
     @Test
     void verifyNoOptionsDoNotTruncateOnPageStraddle()
     {
@@ -1001,6 +1033,80 @@ class ArchiveToolTests
         }
 
         Mockito.verify(out, times(24)).println(any(String.class));
+    }
+
+    @Test
+    void verifyAllShouldSkipDeletedRecordings()
+    {
+        final Checksum checksum = crc32();
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, checksum, null))
+        {
+            catalog.forEach(
+                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                catalog.updateChecksum(recordingDescriptorOffset));
+            assertTrue(catalog.changeState(validRecording0, DELETED));
+            assertTrue(catalog.changeState(validRecording3, NULL_VAL));
+            assertTrue(catalog.changeState(validRecording52, DELETED));
+        }
+
+        assertFalse(verify(out, archiveDir, allOf(VerifyOption.class), checksum, epochClock, (file) -> true));
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, invalidRecording0, INVALID, -119969720, NULL_POSITION, NULL_POSITION, 1,
+                NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording1, INVALID, 768794941, FRAME_ALIGNMENT - 7, NULL_POSITION, 2,
+                NULL_TIMESTAMP, 0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording2, INVALID, -1340428433, 1024, FRAME_ALIGNMENT * 2,
+                3, NULL_TIMESTAMP, 0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording3, INVALID, 1464972620, 0, FRAME_ALIGNMENT * 5 + 11,
+                4, NULL_TIMESTAMP, 0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording4, INVALID, 21473288, SEGMENT_LENGTH, NULL_POSITION, 5,
+                NULL_TIMESTAMP, 0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording5, INVALID, -2119992405, 0, SEGMENT_LENGTH, 6, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording6, INVALID, 2054096463, 0, NULL_POSITION, 7, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording7, INVALID, -1050175867, 0, NULL_POSITION, 8, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording8, INVALID, -504693275, 0, NULL_POSITION, 9, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording9, INVALID, -2036430506, 0, NULL_POSITION, 10, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording10, INVALID, -414736820, 128, NULL_POSITION, 11, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording11, INVALID, 1983095657, 0, NULL_POSITION, 12, NULL_TIMESTAMP,
+                5, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording12, INVALID, -1308504240, 0, NULL_POSITION, 13, NULL_TIMESTAMP,
+                9, 6, "ch1", "src1");
+            assertRecording(catalog, invalidRecording13, INVALID, -273182324, 0, NULL_POSITION, 14, NULL_TIMESTAMP,
+                0, 13, "ch1", "src1");
+            assertRecording(catalog, invalidRecording14, INVALID, 213018412, 128, NULL_POSITION, -14,
+                41, -14, 0, "ch1", "src1");
+            assertRecording(catalog, validRecording0, DELETED, 356725588, 0, NULL_POSITION, 15, NULL_TIMESTAMP,
+                0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording1, VALID, -1571032591, 1024, 1024, 16, 100,
+                0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording2, VALID, 114203747, TERM_LENGTH * 3 + 96, TERM_LENGTH * 3 + 96,
+                17, 200, 0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording3, NULL_VAL, 963969455, 7 * TERM_LENGTH + 96, 7 * TERM_LENGTH + 128,
+                18, NULL_TIMESTAMP, 7, 13, "ch2", "src2");
+            assertRecording(catalog, validRecording4, INVALID, 162247708, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
+                22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
+            assertRecording(catalog, validRecording51, VALID, -940881948, 0, 64 + PAGE_SIZE, 20, 777,
+                0, 20, "ch2", "src2");
+            assertRecording(catalog, validRecording52, DELETED, 1046083782, 0, NULL_POSITION, 21, NULL_TIMESTAMP,
+                0, 52, "ch2", "src2");
+            assertRecording(catalog, validRecording53, INVALID, 428178649, 0, NULL_POSITION, 22, NULL_TIMESTAMP,
+                0, 53, "ch2", "src2");
+            assertRecording(catalog, validRecording6, VALID, -175549265, 352, 960, 23, 300, 0, 6, "ch2", "src2");
+        }
+
+        Mockito.verify(out, times(24)).println(any(String.class));
+        Mockito.verify(out).println("(recordingId=" + validRecording0 + ") skipping: DELETED");
+        Mockito.verify(out).println("(recordingId=" + validRecording3 + ") skipping: NULL_VAL");
+        Mockito.verify(out).println("(recordingId=" + validRecording52 + ") skipping: DELETED");
     }
 
     @Test
@@ -1156,6 +1262,29 @@ class ArchiveToolTests
     }
 
     @Test
+    void verifyShouldNotMarkRecordingAsValidIfNoSegmentFilesAreAttached()
+    {
+        final long recordingId = validRecording4;
+        final ArrayList<String> segmentFiles = listSegmentFiles(archiveDir, recordingId);
+        for (final String segmentFile : segmentFiles)
+        {
+            IoUtil.deleteIfExists(new File(archiveDir, segmentFile));
+        }
+
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
+        {
+            assertTrue(catalog.changeState(recordingId, INVALID));
+        }
+
+        assertFalse(verify(out, archiveDir, emptySet(), null, (file) -> true));
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecordingState(catalog, recordingId, INVALID);
+        }
+    }
+
+    @Test
     void verifyRecordingWithoutChecksumClassNameShouldNotVerifyChecksums()
     {
         assertTrue(verifyRecording(
@@ -1181,23 +1310,18 @@ class ArchiveToolTests
     }
 
     @Test
-    void compactDeletesRecordingsInStateInvalidAndDeletesTheCorrespondingSegmentFiles()
+    void compactDeletesRecordingsInStateInvalidAndDeletedAndDeletesTheCorrespondingSegmentFiles()
     {
-        // Mark recording as INVALID without invoking `invalidateRecording` operation
-        verifyRecording(
-            out, archiveDir, validRecording3, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
-
         final File catalogFile = new File(archiveDir, CATALOG_FILE_NAME);
         try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
         {
-            assertEquals(catalogFile.length(), catalog.capacity());
-            assertRecordingState(catalog, validRecording3, INVALID);
-
-            assertTrue(catalog.invalidateRecording(validRecording6));
-            assertRecordingState(catalog, validRecording6, INVALID);
+            assertTrue(catalog.changeState(validRecording1, NULL_VAL));
+            assertTrue(catalog.changeState(validRecording3, INVALID));
+            assertTrue(catalog.changeState(validRecording6, DELETED));
         }
 
         final List<String> segmentFiles = new ArrayList<>();
+        segmentFiles.addAll(listSegmentFiles(archiveDir, validRecording1));
         segmentFiles.addAll(listSegmentFiles(archiveDir, validRecording3));
         segmentFiles.addAll(listSegmentFiles(archiveDir, validRecording6));
 
@@ -1212,10 +1336,11 @@ class ArchiveToolTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertEquals(catalog.capacity(), fileLengthAfterCompact);
+            assertNoRecording(catalog, validRecording1);
             assertNoRecording(catalog, validRecording3);
             assertNoRecording(catalog, validRecording6);
 
-            assertEquals(22, catalog.entryCount());
+            assertEquals(21, catalog.entryCount());
             assertRecording(catalog, validRecording0, VALID, 0, 0, NULL_POSITION, 15, NULL_TIMESTAMP,
                 0, 2, "ch2", "src2");
             assertRecording(catalog, validRecording51, VALID, 0, 0, 64 + PAGE_SIZE, 20, 777,
@@ -1224,7 +1349,7 @@ class ArchiveToolTests
 
         assertTrue(segmentFiles.stream().noneMatch(file -> new File(archiveDir, file).exists()),
             "Segment files not deleted");
-        Mockito.verify(out).println("Compaction result: deleted 2 records and reclaimed 384 bytes");
+        Mockito.verify(out).println("Compaction result: deleted 3 records and reclaimed 576 bytes");
     }
 
     @Test
@@ -1256,14 +1381,14 @@ class ArchiveToolTests
     {
         final long rec1;
         final long rec2;
-        try (Catalog catalog = new Catalog(archiveDir, epochClock, 1024, true, null, null, false))
+        try (Catalog catalog = new Catalog(archiveDir, epochClock, 1024, true, null, null))
         {
             rec1 = catalog.addNewRecording(0, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 42, 5, "some ch", "some ch", "rec1");
 
             rec2 = catalog.addNewRecording(1_000_000, 1024 * 1024 * 1024, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch2", "ch2", "rec2");
-            catalog.invalidateRecording(rec2);
+            assertTrue(catalog.changeState(rec2, INVALID));
         }
 
         final File file11 = createFile(segmentFileName(rec1, -1));
@@ -1300,11 +1425,39 @@ class ArchiveToolTests
         {
             assertTrue(catalog.hasRecording(validRecording3));
         }
+
         markRecordingInvalid(out, archiveDir, validRecording3);
+
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertFalse(catalog.hasRecording(validRecording3));
+            assertRecordingState(catalog, validRecording3, INVALID);
         }
+    }
+
+    @Test
+    void markInvalidThrowsExceptionIfRecordingIsUnknown()
+    {
+        final int recordingId = 100_000;
+        final AeronException exception =
+            assertThrows(AeronException.class, () -> markRecordingInvalid(out, archiveDir, recordingId));
+        assertEquals("ERROR - no recording found with recordingId: " + recordingId, exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = RecordingState.class, mode = EnumSource.Mode.EXCLUDE, names = { "VALID", "INVALID" })
+    void markInvalidThrowsExceptionIfRecordingIsNotValid(final RecordingState offendingState)
+    {
+        final long recordingId = validRecording3;
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
+        {
+            assertTrue(catalog.changeState(recordingId, offendingState));
+        }
+
+        final AeronException exception =
+            assertThrows(AeronException.class, () -> markRecordingInvalid(out, archiveDir, recordingId));
+        assertEquals("ERROR - (recordingId=" + recordingId + ") state transition " + offendingState +
+            " -> INVALID is not allowed", exception.getMessage());
     }
 
     @Test
@@ -1312,14 +1465,41 @@ class ArchiveToolTests
     {
         try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
         {
-            assertTrue(catalog.invalidateRecording(validRecording6));
+            assertTrue(catalog.changeState(validRecording6, INVALID));
             assertRecordingState(catalog, validRecording6, INVALID);
         }
+
         markRecordingValid(out, archiveDir, validRecording6);
+
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertTrue(catalog.hasRecording(validRecording6));
         }
+    }
+
+    @Test
+    void markValidThrowsExceptionIfRecordingIsUnknown()
+    {
+        final long recordingId = Long.MIN_VALUE;
+        final AeronException exception =
+            assertThrows(AeronException.class, () -> markRecordingValid(out, archiveDir, recordingId));
+        assertEquals("ERROR - no recording found with recordingId: " + recordingId, exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = RecordingState.class, mode = EnumSource.Mode.EXCLUDE, names = { "VALID", "INVALID" })
+    void markValidThrowsExceptionIfRecordingIsNotValid(final RecordingState offendingState)
+    {
+        final long recordingId = validRecording3;
+        try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, null, null))
+        {
+            assertTrue(catalog.changeState(recordingId, offendingState));
+        }
+
+        final AeronException exception =
+            assertThrows(AeronException.class, () -> markRecordingValid(out, archiveDir, recordingId));
+        assertEquals("ERROR - (recordingId=" + recordingId + ") state transition " + offendingState +
+            " -> VALID is not allowed", exception.getMessage());
     }
 
     private static List<Arguments> verifyChecksumClassValidation()

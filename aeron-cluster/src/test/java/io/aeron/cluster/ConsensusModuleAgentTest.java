@@ -480,4 +480,32 @@ class ConsensusModuleAgentTest
         assertThrows(ClusterException.class,
             () -> agent.onExtensionMessage(0, 0, SCHEMA_ID, 0, null, 0, 0, null));
     }
+
+    @Test
+    void shouldHandlePaddingMessageAtEndOfTerm()
+    {
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
+        final Counter stateCounter = newCounter("state counter", CLUSTER_CONSENSUS_MODULE_STATE_TYPE_ID);
+        final Counter controlToggle = newCounter("control toggle", CLUSTER_CONTROL_TOGGLE_TYPE_ID);
+
+        controlToggle.set(NEUTRAL.code());
+
+        ctx.moduleStateCounter(stateCounter)
+            .controlToggleCounter(controlToggle)
+            .epochClock(clock)
+            .clusterClock(clock);
+
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
+        Tests.setField(agent, "appendPosition", mock(ReadableCounter.class));
+
+        assertEquals(ConsensusModule.State.INIT.code(), stateCounter.get());
+
+        agent.state(ConsensusModule.State.ACTIVE);
+        agent.role(Cluster.Role.LEADER);
+        assertEquals(ConsensusModule.State.ACTIVE.code(), stateCounter.get());
+
+        final LogAdapter mockLogAdapter = mock(LogAdapter.class);
+
+        agent.replayLogPoll(mockLogAdapter, 65536);
+    }
 }

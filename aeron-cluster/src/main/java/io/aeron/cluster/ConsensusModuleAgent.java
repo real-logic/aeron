@@ -1751,19 +1751,18 @@ final class ConsensusModuleAgent
 
         if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
         {
-            final int fragments = logAdapter.poll(stopPosition);
+            logAdapter.poll(stopPosition);
             final long position = logAdapter.position();
 
-            if (fragments > 0 || logAdapter.isTrailingPadMessage(commitPosition.get()))
+            if (commitPosition.get() < position)
             {
                 commitPosition.setOrdered(position);
+                workCount++;
             }
             else if (logAdapter.isImageClosed() && position < stopPosition)
             {
                 throw new ClusterEvent("unexpected image close when replaying log: position=" + position);
             }
-
-            workCount += fragments;
         }
 
         workCount += consensusModuleAdapter.poll();

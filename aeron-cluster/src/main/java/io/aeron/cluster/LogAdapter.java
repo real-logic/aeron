@@ -291,20 +291,4 @@ final class LogAdapter implements ControlledFragmentHandler
 
         return Action.CONTINUE;
     }
-
-    /**
-     * Determines if the different between the supplied position and the current image position is the last message
-     * in the term and is less than an MTU, suggesting that it is a padding frame.
-     *
-     * @param lastReadPosition the last read position from the image.
-     * @return <code>true</code> if this is the last frame of the message, <code>false</code> otherwise.
-     */
-    public boolean isTrailingPadMessage(final long lastReadPosition)
-    {
-        final long imagePosition = image.position();
-        final long imageOffset = imagePosition & (image.termBufferLength() - 1);
-        final long positionDelta = imagePosition - lastReadPosition;
-
-        return 0 == imageOffset && 0 < positionDelta && positionDelta < image.mtuLength();
-    }
 }

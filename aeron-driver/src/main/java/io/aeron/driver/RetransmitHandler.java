@@ -23,7 +23,7 @@ import org.agrona.concurrent.NanoClock;
  * Tracking and handling of retransmit request, NAKs, for senders, and receivers.
  * <p>
  * When configured for multicast, a max number of retransmits is permitted by
- * {@link Configuration#RETRANSMITS_ACTIVE_MAX_DEFAULT}. Additional received NAKs will be ignored if this maximum is reached.
+ * {@link Configuration#MAX_RESEND_DEFAULT}. Additional received NAKs will be ignored if this maximum is reached.
  * When configured for unicast, a single outstanding retransmit is permitted, and additional received NAKs
  * will be ignored iff they overlap the current retransmit - otherwise the previous retransmit is assumed to have
  * 'worked' and the new NAK will take its place.

@@ -45,8 +45,8 @@ final class PublicationParams
     boolean spiesSimulateConnection;
     boolean isResponse = false;
     long responseCorrelationId = Aeron.NULL_VALUE;
-    boolean hasRetransmitsActiveMax = false;
-    int retransmitsActiveMax = Aeron.NULL_VALUE;
+    boolean hasMaxResend = false;
+    int maxResend = Aeron.NULL_VALUE;
 
     PublicationParams()
     {
@@ -70,7 +70,7 @@ final class PublicationParams
         params.getSpiesSimulateConnection(channelUri, ctx);
         params.getUntetheredWindowLimitTimeout(channelUri, ctx);
         params.getUntetheredRestingTimeout(channelUri, ctx);
-        params.getRetransmitsActiveMax(channelUri);
+        params.getMaxResend(channelUri);
 
         int count = 0;
 
@@ -411,35 +411,35 @@ final class PublicationParams
             channelUri, UNTETHERED_RESTING_TIMEOUT_PARAM_NAME, ctx.untetheredRestingTimeoutNs());
     }
 
-    private void getRetransmitsActiveMax(final ChannelUri channelUri)
+    private void getMaxResend(final ChannelUri channelUri)
     {
-        final String maxRetransmtsString = channelUri.get(RETRANSMITS_ACTIVE_MAX_PARAM_NAME);
+        final String maxRetransmtsString = channelUri.get(MAX_RESEND_PARAM_NAME);
 
         if (maxRetransmtsString == null)
         {
-            this.hasRetransmitsActiveMax = false;
+            this.hasMaxResend = false;
 
             return;
         }
 
         try
         {
-            retransmitsActiveMax = Integer.parseInt(maxRetransmtsString);
+            maxResend = Integer.parseInt(maxRetransmtsString);
         }
         catch (final NumberFormatException ex)
         {
             throw new IllegalArgumentException(
-                "invalid " + RETRANSMITS_ACTIVE_MAX_PARAM_NAME + ", must be a number", ex);
+                "invalid " + MAX_RESEND_PARAM_NAME + ", must be a number", ex);
         }
 
-        if (retransmitsActiveMax < 1 || retransmitsActiveMax > Configuration.RETRANSMITS_ACTIVE_MAX_MAX)
+        if (maxResend < 1 || maxResend > Configuration.MAX_RESEND_MAX)
         {
             throw new IllegalArgumentException(
-                "invalid " + RETRANSMITS_ACTIVE_MAX_PARAM_NAME + "=" + retransmitsActiveMax +
-                    ", must be > 0 and <= " + Configuration.RETRANSMITS_ACTIVE_MAX_MAX);
+                "invalid " + MAX_RESEND_PARAM_NAME + "=" + maxResend +
+                    ", must be > 0 and <= " + Configuration.MAX_RESEND_MAX);
         }
 
-        this.hasRetransmitsActiveMax = true;
+        this.hasMaxResend = true;
     }
 
     private static long parseEntityTag(
@@ -493,8 +493,8 @@ final class PublicationParams
             ", isSparse=" + isSparse +
             ", signalEos=" + signalEos +
             ", spiesSimulateConnection=" + spiesSimulateConnection +
-            ", hasRetransmitsActiveMax=" + hasRetransmitsActiveMax +
-            ", retransmitsActiveMax=" + retransmitsActiveMax +
+            ", hasMaxResend=" + hasMaxResend +
+            ", maxResend=" + maxResend +
             '}';
     }
 }

@@ -235,3 +235,44 @@ TEST_F(Int64CounterMapTest, shouldRemoveIfValueMatches)
         }
     }
 }
+
+TEST_F(Int64CounterMapTest, shouldDeleteEntryWithClashingHashCode)
+{
+    ASSERT_EQ(aeron_int64_counter_map_init(&m_map, -1, 8, 0.6f), 0);
+    const auto mask = m_map.entries_length - 1;
+
+    int64_t key = 0;
+    const size_t last_index = mask - 1;
+    while (aeron_even_hash(++key, mask) != last_index);
+
+    const auto first_key = key;
+    int64_t existing_value = 42;
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, first_key, first_key, &existing_value), 0);
+    EXPECT_EQ(m_map.initial_value, existing_value);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key - 1, key - 1, &existing_value), 0);
+    EXPECT_EQ(m_map.initial_value, existing_value);
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, key + 1, key + 1, &existing_value), 0);
+    EXPECT_EQ(m_map.initial_value, existing_value);
+
+    ASSERT_EQ(m_map.size, 3);
+    ASSERT_EQ(m_map.entries_length, mask + 1);
+
+    int64_t clashing_key = key;
+    while (aeron_even_hash(++clashing_key, mask) != last_index);
+    ASSERT_NE(first_key, clashing_key);
+
+    EXPECT_EQ(aeron_int64_counter_map_put(&m_map, clashing_key, clashing_key, &existing_value), 0);
+    EXPECT_EQ(m_map.initial_value, existing_value);
+    ASSERT_EQ(m_map.size, 4);
+    ASSERT_EQ(m_map.entries_length, mask + 1);
+
+    EXPECT_EQ(aeron_int64_counter_map_remove(&m_map, clashing_key), clashing_key);
+    EXPECT_EQ(aeron_int64_counter_map_get(&m_map, clashing_key), m_map.initial_value);
+    EXPECT_EQ(m_map.size, 3);
+    ASSERT_EQ(m_map.entries_length, mask + 1);
+
+    for (key = first_key - 1; key <= first_key + 1; key++)
+    {
+        EXPECT_EQ(aeron_int64_counter_map_get(&m_map, key), key);
+    }
+}

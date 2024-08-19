@@ -164,7 +164,7 @@ inline int64_t aeron_int64_counter_map_remove(aeron_int64_counter_map_t *map, in
             break;
         }
 
-        index = (index + 1) & mask;
+        index = (index + 2) & mask;
     }
 
     return value;

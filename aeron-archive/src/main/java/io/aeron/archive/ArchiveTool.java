@@ -54,8 +54,7 @@ import static io.aeron.archive.ReplaySession.isInvalidHeader;
 import static io.aeron.archive.checksum.Checksums.newInstance;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
-import static io.aeron.archive.codecs.RecordingState.INVALID;
-import static io.aeron.archive.codecs.RecordingState.VALID;
+import static io.aeron.archive.codecs.RecordingState.*;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
@@ -716,7 +715,7 @@ public class ArchiveTool
      */
     public static void markRecordingValid(final PrintStream out, final File archiveDir, final long recordingId)
     {
-        changeRecordingState(out, archiveDir, recordingId, VALID);
+        changeRecordingState(out, archiveDir, recordingId, INVALID, VALID);
     }
 
     /**
@@ -729,7 +728,7 @@ public class ArchiveTool
      */
     public static void markRecordingInvalid(final PrintStream out, final File archiveDir, final long recordingId)
     {
-        changeRecordingState(out, archiveDir, recordingId, INVALID);
+        changeRecordingState(out, archiveDir, recordingId, VALID, INVALID);
     }
 
     /**
@@ -848,7 +847,7 @@ public class ArchiveTool
                         descriptorDecoder) ->
                         {
                             final int frameLength = headerDecoder.encodedLength() + headerDecoder.length();
-                            if (INVALID == headerDecoder.state())
+                            if (VALID != headerDecoder.state())
                             {
                                 deletedRecords.increment();
                                 reclaimedBytes.addAndGet(frameLength);
@@ -922,9 +921,20 @@ public class ArchiveTool
     {
         try (Catalog catalog = openCatalogReadWrite(archiveDir, epochClock, MIN_CAPACITY, checksum, null))
         {
+            final MutableBoolean foundRecording = new MutableBoolean();
             final MutableInteger errorCount = new MutableInteger();
-            if (!catalog.forEntry(recordingId, createVerifyEntryProcessor(
-                out, archiveDir, options, catalog, checksum, epochClock, errorCount, truncateOnPageStraddle)))
+            final CatalogEntryProcessor delegate = createVerifyEntryProcessor(
+                out, archiveDir, options, catalog, checksum, epochClock, errorCount, truncateOnPageStraddle);
+            catalog.forEach((recordingDescriptorOffset, he, hd, encoder, decoder) ->
+            {
+                if (decoder.recordingId() == recordingId)
+                {
+                    foundRecording.set(true);
+                    delegate.accept(recordingDescriptorOffset, he, hd, encoder, decoder);
+                }
+            });
+
+            if (!foundRecording.get())
             {
                 throw new AeronException("no recording found with recordingId: " + recordingId);
             }
@@ -949,7 +959,11 @@ public class ArchiveTool
     }
 
     private static void changeRecordingState(
-        final PrintStream out, final File archiveDir, final long recordingId, final RecordingState targetState)
+        final PrintStream out,
+        final File archiveDir,
+        final long recordingId,
+        final RecordingState expectedState,
+        final RecordingState targetState)
     {
         try (Catalog catalog = openCatalogReadWrite(archiveDir, INSTANCE, MIN_CAPACITY, null, null))
         {
@@ -959,8 +973,14 @@ public class ArchiveTool
                 if (descriptorDecoder.recordingId() == recordingId)
                 {
                     found.set(true);
-                    if (hDecoder.state() != targetState)
+                    final RecordingState currentState = hDecoder.state();
+                    if (targetState != currentState)
                     {
+                        if (expectedState != currentState)
+                        {
+                            throw new AeronException("(recordingId=" + recordingId + ") state transition " +
+                                currentState + " -> " + targetState + " is not allowed");
+                        }
                         he.state(targetState);
                         out.println("(recordingId=" + recordingId + ") changed state to " + targetState);
                     }
@@ -1189,6 +1209,13 @@ public class ArchiveTool
         final RecordingDescriptorDecoder decoder)
     {
         final long recordingId = decoder.recordingId();
+        final RecordingState state = headerDecoder.state();
+        if (VALID != state && INVALID != state)
+        {
+            out.println("(recordingId=" + recordingId + ") skipping: " + state);
+            return;
+        }
+
         final long startPosition = decoder.startPosition();
         final long stopPosition = decoder.stopPosition();
         if (isPositionInvariantViolated(out, recordingId, startPosition, stopPosition))
@@ -1308,8 +1335,7 @@ public class ArchiveTool
             encoder.stopTimestamp(epochClock.time());
         }
 
-        final RecordingState currentState = headerDecoder.state();
-        if (INVALID == currentState && !segmentFiles.isEmpty())
+        if (INVALID == state && !segmentFiles.isEmpty())
         {
             headerEncoder.state(VALID);
         }
@@ -1682,13 +1708,12 @@ public class ArchiveTool
             "     (e.g. io.aeron.archive.checksum.Crc32).%n" +
             "     Only the last segment file of each recording is processed by default,%n" +
             "     unless flag '-a' is specified in which case all of the segment files are processed.%n%n" +
-            "  compact: compacts Catalog file by removing entries in state `INVALID` and deleting the%n" +
+            "  compact: compacts Catalog file by removing entries in non-valid state and deleting the%n" +
             "     corresponding segment files.%n%n" +
             "  count-entries: queries the number of `VALID` recording entries in the catalog.%n%n" +
             "  delete-orphaned-segments: deletes orphaned recording segments that have been detached,%n" +
             "     i.e. outside the start and stop recording range, but are not deleted.%n%n" +
-            "  describe: prints out descriptors for all valid recordings in the catalog. " +
-            "(Excludes invalidated recordings.)%n%n" +
+            "  describe: prints out descriptors for all valid recordings in the catalog.%n%n" +
             "  describe recordingId: prints out descriptor for the specified recording entry in the catalog.%n%n" +
             "  describe-all: prints out descriptors for all recordings in the catalog.%n%n" +
             "  dump [data fragment limit per recording]: prints descriptor(s)%n" +

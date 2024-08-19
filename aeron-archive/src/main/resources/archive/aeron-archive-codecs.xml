@@ -52,6 +52,7 @@
         <enum name="RecordingState" encodingType="int32" description="State of a recording in the Catalog.">
             <validValue name="INVALID" description="Recording is invalid.">0</validValue>
             <validValue name="VALID" description="Recording is valid.">1</validValue>
+            <validValue name="DELETED" description="Recording was deleted." sinceVersion="10">2</validValue>
         </enum>
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
         <type name="version_t" primitiveType="int32" presence="optional" nullValue="0" minValue="2" maxValue="16777215"

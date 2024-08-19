@@ -40,7 +40,6 @@ import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.archive.codecs.RecordingDescriptorDecoder.*;
-import static io.aeron.archive.codecs.RecordingState.INVALID;
 import static io.aeron.archive.codecs.RecordingState.VALID;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -776,7 +775,7 @@ final class Catalog implements AutoCloseable
         return nativeOrder() == BYTE_ORDER ? stopPosition : Long.reverseBytes(stopPosition);
     }
 
-    boolean invalidateRecording(final long recordingId)
+    boolean changeState(final long recordingId, final RecordingState newState)
     {
         if (recordingId >= 0)
         {
@@ -785,7 +784,7 @@ final class Catalog implements AutoCloseable
             {
                 fieldAccessBuffer.putInt(
                     (int)offset + RecordingDescriptorHeaderEncoder.stateEncodingOffset(),
-                    INVALID.value(),
+                    newState.value(),
                     BYTE_ORDER);
 
                 forceWrites(catalogChannel);

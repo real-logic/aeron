@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.archive.codecs.RecordingState;
 import io.aeron.exceptions.AeronException;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
@@ -23,12 +24,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.*;
 
 import static io.aeron.archive.Catalog.PAGE_SIZE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
+import static io.aeron.archive.codecs.RecordingState.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -72,19 +76,13 @@ public class ArchiveToolCliTest
         CloseHelper.close(markFile);
     }
 
-    @Test
-    void describeRecordingShouldDescribeExistingValidRecording()
-    {
-        final OutputConsole console = runArchiveTool("describe", "1");
-        assertThat(console.systemOutText(), containsString("|recordingId=1|"));
-    }
-
-    @Test
-    void describeRecordingShouldDescribeExistingInvalidRecording()
+    @ParameterizedTest
+    @EnumSource(RecordingState.class)
+    void describeRecordingShouldDescribeExistingRecording(final RecordingState state)
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, 1024, epochClock, null, null))
         {
-            catalog.invalidateRecording(1);
+            assertTrue(catalog.changeState(1, state));
         }
 
         final OutputConsole console = runArchiveTool("describe", "1");
@@ -100,20 +98,21 @@ public class ArchiveToolCliTest
     }
 
     @Test
-    void describeRecordingsShouldNotShowInvalidatedRecordings()
+    void describeRecordingsShouldNotShowNonValidRecordings()
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, 1024, epochClock, null, null))
         {
-            catalog.invalidateRecording(1);
-            catalog.invalidateRecording(3);
+            assertTrue(catalog.changeState(1, DELETED));
+            assertTrue(catalog.changeState(3, INVALID));
+            assertTrue(catalog.changeState(0, NULL_VAL));
         }
 
         final OutputConsole console = runArchiveTool("describe");
 
         final String consoleText = console.systemOutText();
         assertThat(consoleText, allOf(
-            containsString("|recordingId=0|"),
             containsString("|recordingId=2|"),
+            not(containsString("|recordingId=0|")),
             not(containsString("|recordingId=1|")),
             not(containsString("|recordingId=3|"))));
     }
@@ -123,8 +122,9 @@ public class ArchiveToolCliTest
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, 1024, epochClock, null, null))
         {
-            assertTrue(catalog.invalidateRecording(1));
-            assertTrue(catalog.invalidateRecording(3));
+            assertTrue(catalog.changeState(1, DELETED));
+            assertTrue(catalog.changeState(2, INVALID));
+            assertTrue(catalog.changeState(3, NULL_VAL));
         }
 
         final OutputConsole console = runArchiveTool("describe-all");

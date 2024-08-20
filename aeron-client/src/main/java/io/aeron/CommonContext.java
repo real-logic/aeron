@@ -420,6 +420,13 @@ public class CommonContext implements Cloneable
     public static final String UNTETHERED_RESTING_TIMEOUT_PARAM_NAME = "untethered-resting-timeout";
 
     /**
+     * Parameter name to set the max number of outstanding active retransmits for a publication
+     *
+     * @since 1.45.0
+     */
+    public static final String MAX_RESEND_PARAM_NAME = "max-resend";
+
+    /**
      * Get the current fallback logger based on the supplied property.
      *
      * @return the configured PrintStream.

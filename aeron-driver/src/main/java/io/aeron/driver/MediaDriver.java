@@ -481,6 +481,7 @@ public final class MediaDriver implements AutoCloseable
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
         private int resourceFreeLimit = Configuration.resourceFreeLimit();
         private int asyncTaskExecutorThreads = Configuration.asyncTaskExecutorThreads();
+        private int maxResend = Configuration.maxResend();
 
         private Long receiverGroupTag = Configuration.groupTag();
         private long flowControlGroupTag = Configuration.flowControlGroupTag();
@@ -2292,6 +2293,32 @@ public final class MediaDriver implements AutoCloseable
         public Context asyncTaskExecutor(final Executor asyncTaskExecutor)
         {
             this.asyncTaskExecutor = asyncTaskExecutor;
+            return this;
+        }
+
+        /**
+         * Returns the number of outstanding retransmits.
+         *
+         * @return number of outstanding retransmits.
+         * @see Configuration#MAX_RESEND_PROP_NAME
+         * @since 1.45.0
+         */
+        @Config
+        public int maxResend()
+        {
+            return maxResend;
+        }
+
+        /**
+         * Sets the number of outstanding retransmits.
+         *
+         * @param maxResend number of outstanding retransmits allowed.
+         * @return this for a fluent API.
+         * @since 1.45.0
+         */
+        public Context maxResend(final int maxResend)
+        {
+            this.maxResend = maxResend;
             return this;
         }
 
@@ -4362,6 +4389,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    resourceFreeLimit=" + resourceFreeLimit +
                 "\n    asyncTaskExecutorThreads=" + asyncTaskExecutorThreads +
                 "\n    asyncTaskExecutor=" + asyncTaskExecutor +
+                "\n    maxResend=" + maxResend +
                 "\n}";
         }
     }

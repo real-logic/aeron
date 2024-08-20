@@ -445,3 +445,18 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateControlMode)
     builder.clear().media("ipc");
     ASSERT_EQ(builder.build(), "aeron:ipc");
 }
+
+TEST(ChannelUriStringBuilderTest, shouldHandleMaxRetransmits)
+{
+    ChannelUriStringBuilder builder;
+
+    builder
+        .media(UDP_MEDIA)
+        .endpoint("224.10.9.8:777")
+        .maxResend(123);
+
+    const std::string uriString = builder.build();
+
+    std::shared_ptr<ChannelUri> channelUri = ChannelUri::parse(uriString);
+    ASSERT_NE(std::string::npos, channelUri->toString().find("max-resend=123"));
+}

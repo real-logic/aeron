@@ -41,6 +41,8 @@ typedef struct aeron_driver_uri_publication_params_stct
     int32_t session_id;
     int64_t entity_tag;
     int64_t response_correlation_id;
+    bool has_max_resend;
+    uint32_t max_resend;
 }
 aeron_driver_uri_publication_params_t;
 

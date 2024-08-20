@@ -1483,6 +1483,171 @@ int aeron_archive_try_stop_replication(
     return rc;
 }
 
+int aeron_archive_detach_segments(
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    int64_t new_start_position)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_detach_segments(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id,
+        new_start_position))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        NULL,
+        aeron_archive,
+        "AeronArchive::detachSegments",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+int aeron_archive_delete_detached_segments(
+    int64_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_delete_detached_segments(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        count_p,
+        aeron_archive,
+        "AeronArchive::deleteDetachedSegments",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+int aeron_archive_purge_segments(
+    int64_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    int64_t new_start_position)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_purge_segments(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id,
+        new_start_position))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        count_p,
+        aeron_archive,
+        "AeronArchive::purgeSegments",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+int aeron_archive_attach_segments(
+    int64_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_attach_segments(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        recording_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        count_p,
+        aeron_archive,
+        "AeronArchive::attachSegments",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+int aeron_archive_migrate_segments(
+    int64_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t src_recording_id,
+    int64_t dst_recording_id)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+
+    if (!aeron_archive_proxy_migrate_segments(
+        aeron_archive->archive_proxy,
+        aeron_archive->control_session_id,
+        correlation_id,
+        src_recording_id,
+        dst_recording_id))
+    {
+        aeron_mutex_unlock(&aeron_archive->lock);
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    int rc = aeron_archive_poll_for_response(
+        count_p,
+        aeron_archive,
+        "AeronArchive::migrateSegments",
+        correlation_id);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive)
 {
     return aeron_archive->aeron;

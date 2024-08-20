@@ -50,6 +50,11 @@
 #include "c/aeron_archive_client/replicateRequest2.h"
 #include "c/aeron_archive_client/stopReplicationRequest.h"
 #include "c/aeron_archive_client/replayTokenRequest.h"
+#include "c/aeron_archive_client/detachSegmentsRequest.h"
+#include "c/aeron_archive_client/deleteDetachedSegmentsRequest.h"
+#include "c/aeron_archive_client/purgeSegmentsRequest.h"
+#include "c/aeron_archive_client/attachSegmentsRequest.h"
+#include "c/aeron_archive_client/migrateSegmentsRequest.h"
 
 int64_t aeron_archive_proxy_offer_once(aeron_archive_proxy_t *archive_proxy, size_t length);
 
@@ -881,6 +886,132 @@ bool aeron_archive_request_replay_token(
     return aeron_archive_proxy_offer(
         archive_proxy,
         aeron_archive_client_replayTokenRequest_encoded_length(&codec));
+}
+
+bool aeron_archive_proxy_detach_segments(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id,
+    int64_t new_start_position)
+{
+    struct aeron_archive_client_detachSegmentsRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_detachSegmentsRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_detachSegmentsRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_detachSegmentsRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_detachSegmentsRequest_set_recordingId(&codec, recording_id);
+    aeron_archive_client_detachSegmentsRequest_set_newStartPosition(&codec, new_start_position);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_detachSegmentsRequest_encoded_length(&codec));
+}
+
+bool aeron_archive_proxy_delete_detached_segments(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id)
+{
+    struct aeron_archive_client_deleteDetachedSegmentsRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_deleteDetachedSegmentsRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_deleteDetachedSegmentsRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_deleteDetachedSegmentsRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_deleteDetachedSegmentsRequest_set_recordingId(&codec, recording_id);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_deleteDetachedSegmentsRequest_encoded_length(&codec));
+}
+
+bool aeron_archive_proxy_purge_segments(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id,
+    int64_t new_start_position)
+{
+    struct aeron_archive_client_purgeSegmentsRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_purgeSegmentsRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_purgeSegmentsRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_purgeSegmentsRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_purgeSegmentsRequest_set_recordingId(&codec, recording_id);
+    aeron_archive_client_purgeSegmentsRequest_set_newStartPosition(&codec, new_start_position);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_purgeSegmentsRequest_encoded_length(&codec));
+}
+
+bool aeron_archive_proxy_attach_segments(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t recording_id)
+{
+    struct aeron_archive_client_attachSegmentsRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_attachSegmentsRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_attachSegmentsRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_attachSegmentsRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_attachSegmentsRequest_set_recordingId(&codec, recording_id);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_attachSegmentsRequest_encoded_length(&codec));
+}
+
+bool aeron_archive_proxy_migrate_segments(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t src_recording_id,
+    int64_t dst_recording_id)
+{
+    struct aeron_archive_client_migrateSegmentsRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_migrateSegmentsRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_migrateSegmentsRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_migrateSegmentsRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_migrateSegmentsRequest_set_srcRecordingId(&codec, src_recording_id);
+    aeron_archive_client_migrateSegmentsRequest_set_dstRecordingId(&codec, dst_recording_id);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_migrateSegmentsRequest_encoded_length(&codec));
 }
 
 /* ************* */

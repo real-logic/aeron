@@ -379,6 +379,33 @@ int aeron_archive_try_stop_replication(
     aeron_archive_t *aeron_archive,
     int64_t replication_id);
 
+int aeron_archive_detach_segments(
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    int64_t new_start_position);
+
+int aeron_archive_delete_detached_segments(
+    int64_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id);
+
+int aeron_archive_purge_segments(
+    int64_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    int64_t new_start_position);
+
+int aeron_archive_attach_segments(
+    int64_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id);
+
+int aeron_archive_migrate_segments(
+    int64_t *count_p,
+    aeron_archive_t *aeron_archive,
+    int64_t src_recording_id,
+    int64_t dst_recording_id);
+
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
 int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
 aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);
@@ -424,12 +451,6 @@ bool aeron_archive_replay_merge_is_live_added(aeron_archive_replay_merge_t *repl
  * TODO
  * pollForErrorResponse
  * checkForErrorResponse
- *
- * detachSegments
- * deleteDetachedSegments
- * purgeSegments
- * attachSegments
- * migrateSegments
  */
 
 #endif //AERON_ARCHIVE_H

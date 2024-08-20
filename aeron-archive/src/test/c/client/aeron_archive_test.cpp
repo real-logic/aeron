@@ -68,6 +68,23 @@ static aeron_archive_encoded_credentials_t *encoded_credentials_on_challenge(aer
     return ((credentials_supplier_clientd_t *)clientd)->on_challenge_credentials;
 }
 
+typedef struct recording_signal_consumer_clientd_stct
+{
+    std::set<std::int32_t> signals;
+}
+    recording_signal_consumer_clientd_t;
+
+void recording_signal_consumer(
+    aeron_archive_recording_signal_t *signal,
+    void *clientd)
+{
+    auto cd = (recording_signal_consumer_clientd_t *)clientd;
+    cd->signals.insert(signal->recording_signal_code);
+
+    // fprintf(stderr, "RECORDING SIGNAL CODE :: %i\n", signal->recording_signal_code);
+}
+
+
 class AeronCArchiveTestBase
 {
 public:
@@ -119,7 +136,7 @@ public:
         aeron_idle_strategy_sleeping_idle((void *)&m_idle_duration_ns, 0);
     }
 
-    void connect()
+    void connect(void *recording_signal_consumer_clientd = nullptr)
     {
         ASSERT_EQ(0, aeron_archive_context_init(&m_ctx));
         ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
@@ -129,6 +146,15 @@ public:
             nullptr,
             nullptr,
             &default_creds_clientd));
+
+        if (nullptr != recording_signal_consumer_clientd)
+        {
+            EXPECT_EQ(0, aeron_archive_context_set_recording_signal_consumer(
+                m_ctx,
+                recording_signal_consumer,
+                recording_signal_consumer_clientd));
+        }
+
         ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
 
         m_aeron = aeron_archive_get_aeron(m_archive);
@@ -237,6 +263,23 @@ public:
             size_t index = i + start_count;
             char message[1000];
             size_t len = snprintf(message, 1000, "%s%lu", message_prefix, index);
+
+            while (aeron_publication_offer(publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
+            {
+                aeron_idle_strategy_yielding_idle(nullptr, 0);
+            }
+        }
+    }
+
+    static void offerMessagesToPosition(
+        aeron_publication_t *publication,
+        int64_t minimum_position,
+        const char *message_prefix = "Message ")
+    {
+        for (size_t i = 0; aeron_publication_position(publication) < minimum_position; i++)
+        {
+            char message[1000];
+            size_t len = snprintf(message, 1000, "%s%lu", message_prefix, i);
 
             while (aeron_publication_offer(publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
             {
@@ -2158,22 +2201,6 @@ TEST_F(AeronCArchiveTest, shouldReadJumboRecordingDescriptor)
     EXPECT_EQ(1, count);
 }
 
-typedef struct recording_signal_consumer_clientd_stct
-{
-    std::set<std::int32_t> signals;
-}
-recording_signal_consumer_clientd_t;
-
-void recording_signal_consumer(
-    aeron_archive_recording_signal_t *signal,
-    void *clientd)
-{
-    auto cd = (recording_signal_consumer_clientd_t *)clientd;
-    cd->signals.insert(signal->recording_signal_code);
-
-    fprintf(stderr, "RECORDING SIGNAL CODE :: %i\n", signal->recording_signal_code);
-}
-
 TEST_F(AeronCArchiveTest, shouldRecordReplicateThenReplay)
 {
     int32_t session_id;
@@ -3051,4 +3078,219 @@ TEST_P(AeronCArchiveParamTest, shouldRecordAndExtend)
 
     aeron_image_t *image = aeron_subscription_image_at_index(replay_subscription, 0);
     ASSERT_EQ(clientd.last_descriptor.stop_position, aeron_image_position(image));
+}
+
+#define TERM_LENGTH AERON_LOGBUFFER_TERM_MIN_LENGTH
+#define SEGMENT_LENGTH (TERM_LENGTH * 2)
+#define MTU_LENGTH 1024
+
+TEST_F(AeronCArchiveTest, shouldPurgeSegments)
+{
+    int32_t session_id;
+    int64_t stop_position;
+
+    recording_signal_consumer_clientd_t rsc_cd;
+
+    connect(&rsc_cd);
+
+    char publication_channel[AERON_MAX_PATH];
+    {
+        aeron_uri_string_builder_t builder;
+
+        aeron_uri_string_builder_init_new(&builder);
+
+        aeron_uri_string_builder_put(&builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp");
+        aeron_uri_string_builder_put(&builder, AERON_UDP_CHANNEL_ENDPOINT_KEY, "localhost:3333");
+        aeron_uri_string_builder_put_int32(&builder, AERON_URI_TERM_LENGTH_KEY, TERM_LENGTH);
+        aeron_uri_string_builder_put_int32(&builder, AERON_URI_MTU_LENGTH_KEY, MTU_LENGTH);
+
+        aeron_uri_string_builder_sprint(&builder, publication_channel, AERON_MAX_PATH);
+        aeron_uri_string_builder_close(&builder);
+    }
+
+    aeron_publication_t *publication;
+    EXPECT_EQ(0, aeron_archive_add_recorded_publication(
+        &publication,
+        m_archive,
+        publication_channel,
+        m_recordingStreamId));
+
+    session_id = aeron_publication_session_id(publication);
+
+    setupCounters(session_id);
+
+    int64_t targetPosition = (SEGMENT_LENGTH * 3L) + 1;
+    offerMessagesToPosition(publication, targetPosition);
+
+    stop_position = aeron_publication_position(publication);
+
+    waitUntilCaughtUp(stop_position);
+
+    int64_t start_position = 0;
+    int64_t segment_file_base_position = aeron_archive_segment_file_base_position(
+        start_position,
+        SEGMENT_LENGTH * 2L,
+        TERM_LENGTH,
+        SEGMENT_LENGTH);
+
+    int64_t count;
+    ASSERT_EQ(0, aeron_archive_purge_segments(
+        &count,
+        m_archive,
+        m_recording_id_from_counter,
+        segment_file_base_position));
+
+    while (0 == rsc_cd.signals.count(AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_DELETE))
+    {
+        aeron_archive_poll_for_recording_signals(nullptr, m_archive);
+
+        idle();
+    }
+
+    ASSERT_EQ(2, count);
+
+    ASSERT_EQ(0, aeron_archive_get_start_position(&start_position, m_archive, m_recording_id_from_counter));
+    ASSERT_EQ(start_position, segment_file_base_position);
+}
+
+TEST_F(AeronCArchiveTest, shouldDetachAndDeleteSegments)
+{
+    int32_t session_id;
+    int64_t stop_position;
+
+    recording_signal_consumer_clientd_t rsc_cd;
+
+    connect(&rsc_cd);
+
+    char publication_channel[AERON_MAX_PATH];
+    {
+        aeron_uri_string_builder_t builder;
+
+        aeron_uri_string_builder_init_new(&builder);
+
+        aeron_uri_string_builder_put(&builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp");
+        aeron_uri_string_builder_put(&builder, AERON_UDP_CHANNEL_ENDPOINT_KEY, "localhost:3333");
+        aeron_uri_string_builder_put_int32(&builder, AERON_URI_TERM_LENGTH_KEY, TERM_LENGTH);
+        aeron_uri_string_builder_put_int32(&builder, AERON_URI_MTU_LENGTH_KEY, MTU_LENGTH);
+
+        aeron_uri_string_builder_sprint(&builder, publication_channel, AERON_MAX_PATH);
+        aeron_uri_string_builder_close(&builder);
+    }
+
+    aeron_publication_t *publication;
+    EXPECT_EQ(0, aeron_archive_add_recorded_publication(
+        &publication,
+        m_archive,
+        publication_channel,
+        m_recordingStreamId));
+
+    session_id = aeron_publication_session_id(publication);
+
+    setupCounters(session_id);
+
+    int64_t targetPosition = (SEGMENT_LENGTH * 4L) + 1;
+    offerMessagesToPosition(publication, targetPosition);
+
+    stop_position = aeron_publication_position(publication);
+
+    waitUntilCaughtUp(stop_position);
+
+    int64_t start_position = 0;
+    int64_t segment_file_base_position = aeron_archive_segment_file_base_position(
+        start_position,
+        SEGMENT_LENGTH * 3L,
+        TERM_LENGTH,
+        SEGMENT_LENGTH);
+
+    ASSERT_EQ(0, aeron_archive_detach_segments(
+        m_archive,
+        m_recording_id_from_counter,
+        segment_file_base_position));
+
+    int64_t count;
+    ASSERT_EQ(0, aeron_archive_delete_detached_segments(
+        &count,
+        m_archive,
+        m_recording_id_from_counter));
+
+    while (0 == rsc_cd.signals.count(AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_DELETE))
+    {
+        aeron_archive_poll_for_recording_signals(nullptr, m_archive);
+
+        idle();
+    }
+
+    ASSERT_EQ(3, count);
+
+    ASSERT_EQ(0, aeron_archive_get_start_position(&start_position, m_archive, m_recording_id_from_counter));
+    ASSERT_EQ(start_position, segment_file_base_position);
+}
+
+TEST_F(AeronCArchiveTest, shouldDetachAndReattachSegments)
+{
+    int32_t session_id;
+    int64_t stop_position;
+
+    recording_signal_consumer_clientd_t rsc_cd;
+
+    connect(&rsc_cd);
+
+    char publication_channel[AERON_MAX_PATH];
+    {
+        aeron_uri_string_builder_t builder;
+
+        aeron_uri_string_builder_init_new(&builder);
+
+        aeron_uri_string_builder_put(&builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp");
+        aeron_uri_string_builder_put(&builder, AERON_UDP_CHANNEL_ENDPOINT_KEY, "localhost:3333");
+        aeron_uri_string_builder_put_int32(&builder, AERON_URI_TERM_LENGTH_KEY, TERM_LENGTH);
+        aeron_uri_string_builder_put_int32(&builder, AERON_URI_MTU_LENGTH_KEY, MTU_LENGTH);
+
+        aeron_uri_string_builder_sprint(&builder, publication_channel, AERON_MAX_PATH);
+        aeron_uri_string_builder_close(&builder);
+    }
+
+    aeron_publication_t *publication;
+    EXPECT_EQ(0, aeron_archive_add_recorded_publication(
+        &publication,
+        m_archive,
+        publication_channel,
+        m_recordingStreamId));
+
+    session_id = aeron_publication_session_id(publication);
+
+    setupCounters(session_id);
+
+    int64_t targetPosition = (SEGMENT_LENGTH * 5L) + 1;
+    offerMessagesToPosition(publication, targetPosition);
+
+    stop_position = aeron_publication_position(publication);
+
+    waitUntilCaughtUp(stop_position);
+
+    int64_t start_position = 0;
+    int64_t segment_file_base_position = aeron_archive_segment_file_base_position(
+        start_position,
+        SEGMENT_LENGTH * 4L,
+        TERM_LENGTH,
+        SEGMENT_LENGTH);
+
+    ASSERT_EQ(0, aeron_archive_detach_segments(
+        m_archive,
+        m_recording_id_from_counter,
+        segment_file_base_position));
+
+    ASSERT_EQ(0, aeron_archive_get_start_position(&start_position, m_archive, m_recording_id_from_counter));
+    ASSERT_EQ(start_position, segment_file_base_position);
+
+    int64_t count;
+    ASSERT_EQ(0, aeron_archive_attach_segments(
+        &count,
+        m_archive,
+        m_recording_id_from_counter));
+
+    ASSERT_EQ(4, count);
+
+    ASSERT_EQ(0, aeron_archive_get_start_position(&start_position, m_archive, m_recording_id_from_counter));
+    ASSERT_EQ(start_position, 0);
 }

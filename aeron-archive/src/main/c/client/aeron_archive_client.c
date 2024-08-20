@@ -1648,6 +1648,19 @@ int aeron_archive_migrate_segments(
     return rc;
 }
 
+int64_t aeron_archive_segment_file_base_position(
+    int64_t start_position,
+    int64_t position,
+    int32_t term_buffer_length,
+    int32_t segment_file_length)
+{
+    int64_t start_term_base_position = start_position - (start_position & (term_buffer_length - 1));
+    int64_t length_from_base_position = position - start_term_base_position;
+    int64_t segments = (length_from_base_position - (length_from_base_position & (segment_file_length - 1)));
+
+    return start_term_base_position + segments;
+}
+
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive)
 {
     return aeron_archive->aeron;

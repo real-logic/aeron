@@ -2928,6 +2928,11 @@ final class ConsensusModuleAgent
                 tracker.verify();
                 tracker.reset();
             }
+
+            if (null != consensusModuleExtension)
+            {
+                consensusModuleExtension.onStart(this, image);
+            }
         }
 
         timerService.currentTime(clusterClock.time());
@@ -3232,6 +3237,12 @@ final class ConsensusModuleAgent
             recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             snapshotState(publication, logPosition, leadershipTermId);
+
+            if (null != consensusModuleExtension)
+            {
+                consensusModuleExtension.onTakeSnapshot(publication);
+            }
+
             awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
         }
         catch (final ArchiveException ex)

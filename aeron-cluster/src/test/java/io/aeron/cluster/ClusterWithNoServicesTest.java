@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
@@ -188,6 +189,10 @@ class ClusterWithNoServicesTest
         }
 
         public void onPrepareForNewLeadership()
+        {
+        }
+
+        public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
         }
     }

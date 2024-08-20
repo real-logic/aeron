@@ -48,6 +48,7 @@
 #include "c/aeron_archive_client/listRecordingSubscriptionsRequest.h"
 #include "c/aeron_archive_client/purgeRecordingRequest.h"
 #include "c/aeron_archive_client/replicateRequest2.h"
+#include "c/aeron_archive_client/stopReplicationRequest.h"
 #include "c/aeron_archive_client/replayTokenRequest.h"
 
 int64_t aeron_archive_proxy_offer_once(aeron_archive_proxy_t *archive_proxy, size_t length);
@@ -831,6 +832,31 @@ bool aeron_archive_proxy_replicate(
     return aeron_archive_proxy_offer(
         archive_proxy,
         aeron_archive_client_replicateRequest2_encoded_length(&codec));
+}
+
+
+bool aeron_archive_proxy_stop_replication(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t replication_id)
+{
+    struct aeron_archive_client_stopReplicationRequest codec;
+    struct aeron_archive_client_messageHeader hdr;
+
+    aeron_archive_client_stopReplicationRequest_wrap_and_apply_header(
+        &codec,
+        (char *)archive_proxy->buffer,
+        0,
+        AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH,
+        &hdr);
+    aeron_archive_client_stopReplicationRequest_set_controlSessionId(&codec, control_session_id);
+    aeron_archive_client_stopReplicationRequest_set_correlationId(&codec, correlation_id);
+    aeron_archive_client_stopReplicationRequest_set_replicationId(&codec, replication_id);
+
+    return aeron_archive_proxy_offer(
+        archive_proxy,
+        aeron_archive_client_stopReplicationRequest_encoded_length(&codec));
 }
 
 bool aeron_archive_request_replay_token(

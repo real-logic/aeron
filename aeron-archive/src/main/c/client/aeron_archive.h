@@ -370,6 +370,15 @@ int aeron_archive_replicate(
     const char *src_control_channel,
     aeron_archive_replication_params_t *params);
 
+int aeron_archive_stop_replication(
+    aeron_archive_t *aeron_archive,
+    int64_t replication_id);
+
+int aeron_archive_try_stop_replication(
+    bool *stopped_p,
+    aeron_archive_t *aeron_archive,
+    int64_t replication_id);
+
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
 int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
 aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);
@@ -415,9 +424,6 @@ bool aeron_archive_replay_merge_is_live_added(aeron_archive_replay_merge_t *repl
  * TODO
  * pollForErrorResponse
  * checkForErrorResponse
- *
- * stopReplication
- * tryStopReplication
  *
  * detachSegments
  * deleteDetachedSegments

@@ -218,6 +218,12 @@ bool aeron_archive_proxy_replicate(
     const char *src_control_channel,
     aeron_archive_replication_params_t *params);
 
+bool aeron_archive_proxy_stop_replication(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id,
+    int64_t correlation_id,
+    int64_t replication_id);
+
 bool aeron_archive_request_replay_token(
     aeron_archive_proxy_t *archive_proxy,
     int64_t control_session_id,

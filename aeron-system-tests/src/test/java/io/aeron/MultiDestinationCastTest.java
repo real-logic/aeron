@@ -44,7 +44,9 @@ import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -533,6 +535,93 @@ class MultiDestinationCastTest
                 assertFalse(subWrong.isConnected());
                 Tests.sleep(1);
             }
+        }
+    }
+
+    @Test
+    @InterruptAfter(5)
+    @SlowTest
+    void shouldAllowMdcDestinationEndpointsToBeShared()
+    {
+        launch(Tests::onError);
+
+        try (
+            Publication mdcA = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
+            Publication mdcB = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID + 1);
+            Subscription subA = clientB.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
+            Subscription subB = clientB.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID + 1))
+        {
+            mdcA.addDestination(SUB1_MDC_MANUAL_URI);
+            mdcB.addDestination(SUB1_MDC_MANUAL_URI);
+            Tests.awaitConnected(mdcA);
+            Tests.awaitConnected(mdcB);
+            Tests.awaitConnected(subA);
+            Tests.awaitConnected(subB);
+
+            while (mdcA.offer(buffer, 0, buffer.capacity()) < 0L)
+            {
+                Tests.yield();
+            }
+
+            pollForFragment(subA, fragmentHandlerA);
+            assertNoFragmentsReceived(subB, 1_000L);
+
+            while (mdcB.offer(buffer, 0, buffer.capacity()) < 0L)
+            {
+                Tests.yield();
+            }
+
+            pollForFragment(subB, fragmentHandlerA);
+            assertNoFragmentsReceived(subA, 1_000L);
+        }
+    }
+
+    @Test
+    @InterruptAfter(5)
+    void shouldRemoveDestinationUsingRegistrationId()
+    {
+        launch(Tests::onError);
+
+        try (
+            Publication mdc = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
+            Subscription sub1 = clientB.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
+            Subscription sub2 = clientB.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID))
+        {
+            mdc.addDestination(SUB1_MDC_MANUAL_URI);
+            final long registrationId = mdc.addDestination2(SUB2_MDC_MANUAL_URI);
+
+            Tests.await("Connections", mdc::isConnected, sub1::isConnected, sub2::isConnected);
+
+            while (mdc.offer(buffer, 0, buffer.capacity()) < 0L)
+            {
+                Tests.yield();
+            }
+
+            pollForFragment(sub1, fragmentHandlerA);
+            pollForFragment(sub2, fragmentHandlerB);
+
+//            mdc.removeDestination(SUB2_MDC_MANUAL_URI);
+            mdc.removeDestination(registrationId);
+
+            Tests.await("Disconnected", () -> !sub2.isConnected());
+
+            while (mdc.offer(buffer, 0, buffer.capacity()) < 0L)
+            {
+                Tests.yield();
+            }
+
+            pollForFragment(sub1, fragmentHandlerA);
+            assertNoFragmentsReceived(sub2, 1_000L);
+        }
+    }
+
+    private static void assertNoFragmentsReceived(final Subscription subB, final long noMessageTimeout)
+    {
+        final long t0 = System.currentTimeMillis();
+        while (System.currentTimeMillis() - t0 < noMessageTimeout)
+        {
+            assertEquals(0, subB.poll((a, b, c, d) -> {}, 10));
+            Tests.yield();
         }
     }
 

@@ -808,6 +808,24 @@ final class ClientConductor implements Agent
         }
     }
 
+    long addDestination2(final long registrationId, final String endpointChannel)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            final long correlationId = driverProxy.addDestination(registrationId, endpointChannel);
+            awaitResponse(correlationId);
+            return correlationId;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
     void removeDestination(final long registrationId, final String endpointChannel)
     {
         clientLock.lock();

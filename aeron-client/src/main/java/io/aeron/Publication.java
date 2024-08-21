@@ -571,6 +571,22 @@ public abstract class Publication implements AutoCloseable
     }
 
     /**
+     * Add destination and return the associated registration id.
+     *
+     * @param endpointChannel for the destination to add
+     * @return registrationId of the destination.
+     */
+    public long addDestination2(final String endpointChannel)
+    {
+        if (isClosed)
+        {
+            throw new AeronException("Publication is closed");
+        }
+
+        return conductor.addDestination2(originalRegistrationId, endpointChannel);
+    }
+
+    /**
      * Remove a previously added destination manually from a multi-destination-cast Publication.
      *
      * @param endpointChannel for the destination to remove.
@@ -583,6 +599,21 @@ public abstract class Publication implements AutoCloseable
         }
 
         conductor.removeDestination(originalRegistrationId, endpointChannel);
+    }
+
+    /**
+     * Remove a previously added destination manually from a multi-destination-cast Publication.
+     *
+     * @param registrationId for the destination to remove.
+     */
+    public void removeDestination(final long registrationId)
+    {
+        if (isClosed)
+        {
+            throw new AeronException("Publication is closed");
+        }
+
+//        conductor.removeDestination(originalRegistrationId, registrationId);
     }
 
     /**

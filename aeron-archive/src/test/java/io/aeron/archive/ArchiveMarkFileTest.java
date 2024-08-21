@@ -15,8 +15,10 @@
  */
 package io.aeron.archive;
 
+import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
+import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.test.TestContexts;
 import org.agrona.MarkFile;
 import org.agrona.concurrent.SystemEpochClock;
@@ -94,6 +96,51 @@ class ArchiveMarkFileTest
         }
     }
 
+    @Test
+    @SuppressWarnings("try")
+    void anErrorOnStartupShouldNotLeaveAnUninitilisedMarkFile(final @TempDir File tempDir)
+    {
+        System.setProperty(CommonContext.DRIVER_TIMEOUT_PROP_NAME, "100");
+
+        final File aeronDir = new File(tempDir, "aeron");
+        final File archiveDir = new File(tempDir, "archive_dir");
+        final File archiveMarkFile = new File(archiveDir, ArchiveMarkFile.FILENAME);
+
+        final MediaDriver.Context driverContext = new MediaDriver.Context()
+            .aeronDirectoryName(aeronDir.getAbsolutePath());
+        final Archive.Context archiveContext = TestContexts.localhostArchive()
+            .aeronDirectoryName(driverContext.aeronDirectoryName())
+            .archiveDir(archiveDir)
+            .markFileDir(archiveMarkFile.getParentFile())
+            .epochClock(SystemEpochClock.INSTANCE);
+
+        // Force an error on startup by attempting to start an archive without a media driver.
+        try (Archive ignored = Archive.launch(archiveContext.clone()))
+        {
+            fail("Expected archive to timeout as no media driver is running.");
+        }
+        catch (final DriverTimeoutException ex)
+        {
+            // Should be able to read the mark file and the activity timestamp should not have been set.
+            try (ArchiveMarkFile testMarkFile = new ArchiveMarkFile(archiveContext.clone()))
+            {
+                assertEquals(0, testMarkFile.activityTimestampVolatile());
+            }
+        }
+        finally
+        {
+            System.clearProperty(CommonContext.DRIVER_TIMEOUT_PROP_NAME);
+        }
+
+        // Should be able to successfully start the archive
+        try (MediaDriver ignored1 = MediaDriver.launch(driverContext.clone());
+            Archive archive = Archive.launch(archiveContext.clone()))
+        {
+            assertTrue(archiveMarkFile.exists());
+            final long activityTimestamp = archive.context().archiveMarkFile().activityTimestampVolatile();
+            assertTrue(activityTimestamp > 0);
+        }
+    }
 
     @Test
     @DisabledForJreRange(min = JRE.JAVA_21)

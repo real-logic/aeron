@@ -42,7 +42,8 @@ struct aeron_archive_context_stct
     aeron_archive_recording_signal_consumer_func_t on_recording_signal;
     void *on_recording_signal_clientd;
 
-    // TODO error handler
+    aeron_error_handler_t error_handler;
+    void *error_handler_clientd;
 
     aeron_archive_delegating_invoker_func_t delegating_invoker_func;
     void *delegating_invoker_func_clientd;

@@ -202,6 +202,9 @@ int aeron_archive_close(aeron_archive_t *aeron_archive);
 
 int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *aeron_archive);
 
+int aeron_archive_poll_for_error_response(aeron_archive_t *aeron_archive, char *buffer, size_t buffer_length);
+int aeron_archive_check_for_error_response(aeron_archive_t *aeron_archive);
+
 int aeron_archive_add_recorded_publication(
     aeron_publication_t **publication_p,
     aeron_archive_t *aeron_archive,
@@ -452,11 +455,5 @@ aeron_image_t *aeron_archive_replay_merge_image(aeron_archive_replay_merge_t *re
 bool aeron_archive_replay_merge_is_merged(aeron_archive_replay_merge_t *replay_merge);
 bool aeron_archive_replay_merge_has_failed(aeron_archive_replay_merge_t *replay_merge);
 bool aeron_archive_replay_merge_is_live_added(aeron_archive_replay_merge_t *replay_merge);
-
-/*
- * TODO
- * pollForErrorResponse
- * checkForErrorResponse
- */
 
 #endif //AERON_ARCHIVE_H

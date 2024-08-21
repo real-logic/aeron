@@ -15,6 +15,8 @@
  */
 
 #include <sys/errno.h>
+#include <stdio.h>
+#include <inttypes.h>
 
 #include "aeron_archive.h"
 #include "aeron_archive_async_connect.h"
@@ -113,6 +115,8 @@ int aeron_archive_initiate_replay_via_response_channel(
     int64_t deadline_ns);
 
 int aeron_archive_channel_with_session_id(char *out, size_t out_len, const char *in, int32_t session_id);
+
+void aeron_archive_handle_control_response_with_error_handler(aeron_archive_t *aeron_archive);
 
 /* **************** */
 
@@ -279,6 +283,107 @@ int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *
     {
         *count_p = count;
     }
+
+    return rc;
+}
+
+int aeron_archive_poll_for_error_response(aeron_archive_t *aeron_archive, char *buffer, size_t buffer_length)
+{
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    if (!aeron_subscription_is_connected(aeron_archive->subscription))
+    {
+        snprintf(buffer, buffer_length, "not connected");
+
+        goto cleanup;
+    }
+
+    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
+
+    if (aeron_archive_control_response_poller_poll(poller) != 0 &&
+        poller->is_poll_complete &&
+        poller->control_session_id == aeron_archive->control_session_id)
+    {
+        if (poller->is_control_response &&
+            poller->is_code_error)
+        {
+            snprintf(buffer, buffer_length, "%.*s", poller->error_message_len, poller->error_message);
+
+            goto cleanup;
+        }
+        else
+        {
+            if (poller->is_recording_signal)
+            {
+                aeron_archive_dispatch_recording_signal(aeron_archive);
+            }
+        }
+    }
+
+    snprintf(buffer, buffer_length, "");
+
+cleanup:
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return 0;
+}
+
+int aeron_archive_check_for_error_response(aeron_archive_t *aeron_archive)
+{
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int rc = 0;
+
+    if (!aeron_subscription_is_connected(aeron_archive->subscription))
+    {
+        if (NULL == aeron_archive->ctx->error_handler)
+        {
+            AERON_SET_ERR(-1, "%s", "not connected");
+            rc = -1;
+        }
+        else
+        {
+            aeron_archive->ctx->error_handler(
+                aeron_archive->ctx->error_handler_clientd,
+                -1,
+                "not connected");
+        }
+
+        goto cleanup;
+    }
+
+    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
+
+    if (aeron_archive_control_response_poller_poll(poller) != 0 &&
+        poller->is_poll_complete &&
+        poller->control_session_id == aeron_archive->control_session_id)
+    {
+        if (poller->is_control_response &&
+            poller->is_code_error)
+        {
+            if (NULL == aeron_archive->ctx->error_handler)
+            {
+                AERON_SET_ERR(
+                    (int32_t)poller->relevant_id,
+                    "correlation_id=%" PRIi64 " %.*s",
+                    poller->correlation_id,
+                    poller->error_message_len,
+                    poller->error_message);
+                rc = -1;
+            }
+            else
+            {
+                aeron_archive_handle_control_response_with_error_handler(aeron_archive);
+            }
+        }
+        else if (poller->is_recording_signal)
+        {
+            aeron_archive_dispatch_recording_signal(aeron_archive);
+        }
+    }
+
+cleanup:
+    aeron_mutex_unlock(&aeron_archive->lock);
 
     return rc;
 }
@@ -1771,12 +1876,10 @@ int aeron_archive_poll_for_response(
                     poller->error_message);
                 return -1;
             }
-            /* // TODO
-            else if (error_handler(aeron_archive->ctx) != NULL)
+            else if (NULL != aeron_archive->ctx->error_handler)
             {
-
+                aeron_archive_handle_control_response_with_error_handler(aeron_archive);
             }
-             */
         }
         else if (poller->correlation_id == correlation_id)
         {
@@ -1843,12 +1946,10 @@ int aeron_archive_poll_for_response_allowing_error(
                     poller->error_message);
                 return -1;
             }
-            /* // TODO
-            else if (error_handler(aeron_archive->ctx) != NULL)
+            else if (NULL != aeron_archive->ctx->error_handler)
             {
-
+                aeron_archive_handle_control_response_with_error_handler(aeron_archive);
             }
-             */
         }
         else if (poller->correlation_id == correlation_id)
         {
@@ -2314,4 +2415,31 @@ int aeron_archive_channel_with_session_id(char *out, size_t out_len, const char 
     aeron_uri_string_builder_close(&builder);
 
     return 0;
+}
+
+// This assumes there's already been a check for the presence of the error_handler
+void aeron_archive_handle_control_response_with_error_handler(aeron_archive_t *aeron_archive)
+{
+    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
+
+    char *error_message;
+
+    size_t len = poller->error_message_len + 50; // for the correlation id and room for some whitespace
+
+    aeron_alloc((void **)&error_message, len);
+
+    snprintf(
+        error_message,
+        len,
+        "correlation_id=%" PRIi64 " %.*s",
+        poller->correlation_id,
+        poller->error_message_len,
+        poller->error_message);
+
+    aeron_archive->ctx->error_handler(
+        aeron_archive->ctx->error_handler_clientd,
+        (int32_t)poller->relevant_id,
+        error_message);
+
+    aeron_free(error_message);
 }

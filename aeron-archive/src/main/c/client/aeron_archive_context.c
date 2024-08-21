@@ -100,6 +100,9 @@ int aeron_archive_context_conclude(aeron_archive_context_t *ctx)
         ctx->owns_aeron_client = true;
     }
 
+    ctx->error_handler = aeron_context_get_error_handler(ctx->aeron_ctx);
+    ctx->error_handler_clientd = aeron_context_get_error_handler_clientd(ctx->aeron_ctx);
+
     return 0;
 
 cleanup:

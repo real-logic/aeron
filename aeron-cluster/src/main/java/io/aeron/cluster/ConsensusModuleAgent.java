@@ -1393,25 +1393,7 @@ final class ConsensusModuleAgent
         {
             if (ConsensusModule.State.SNAPSHOT == state)
             {
-                final ServiceAck[] serviceAcks = pollServiceAcks(logPosition, serviceId);
-                ++serviceAckId;
-                takeSnapshot(timestamp, logPosition, serviceAcks);
-                totalSnapshotDurationTracker.onSnapshotEnd(clusterClock.timeNanos());
-
-                if (null != clusterTermination)
-                {
-                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
-                    clusterTermination.deadlineNs(clusterClock.timeNanos() + ctx.terminationTimeoutNs());
-                    state(ConsensusModule.State.TERMINATING);
-                }
-                else
-                {
-                    state(ConsensusModule.State.ACTIVE);
-                    if (Cluster.Role.LEADER == role)
-                    {
-                        ClusterControl.ToggleState.reset(controlToggle);
-                    }
-                }
+                snapshotOnServiceAck(logPosition, timestamp, serviceId);
             }
             else if (ConsensusModule.State.QUITTING == state)
             {
@@ -3208,24 +3190,58 @@ final class ConsensusModuleAgent
         }
     }
 
-    private void takeSnapshot(final long timestamp, final long logPosition, final ServiceAck[] serviceAcks)
+    private void snapshotOnServiceAck(final long logPosition, final long timestamp, final int ackingServiceId)
     {
-        boolean hasSnapshotErrors = false;
+        final ServiceAck[] serviceAcks = pollServiceAcks(logPosition, ackingServiceId);
+        ++serviceAckId;
+
+        if (isSnapshotSetComplete(serviceAcks))
+        {
+            takeSnapshot(timestamp, logPosition, serviceAcks);
+        }
+
+        final long nowNs = clusterClock.timeNanos();
+        for (int i = 0, size = sessions.size(); i < size; i++)
+        {
+            sessions.get(i).timeOfLastActivityNs(nowNs);
+        }
+
+        totalSnapshotDurationTracker.onSnapshotEnd(clusterClock.timeNanos());
+
+        if (null != clusterTermination)
+        {
+            serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
+            clusterTermination.deadlineNs(clusterClock.timeNanos() + ctx.terminationTimeoutNs());
+            state(ConsensusModule.State.TERMINATING);
+        }
+        else
+        {
+            state(ConsensusModule.State.ACTIVE);
+            if (Cluster.Role.LEADER == role)
+            {
+                ClusterControl.ToggleState.reset(controlToggle);
+            }
+        }
+    }
+
+    private boolean isSnapshotSetComplete(final ServiceAck[] serviceAcks)
+    {
+        boolean isSetComplete = true;
         for (int serviceId = serviceAcks.length - 1; serviceId >= 0; serviceId--)
         {
             final long snapshotId = serviceAcks[serviceId].relevantId();
             if (NULL_VALUE == snapshotId)
             {
                 ctx.errorLog().record(new ClusterEvent("service=" + serviceId + " failed to take snapshot"));
-                hasSnapshotErrors = true;
+                isSetComplete = false;
             }
         }
 
-        if (hasSnapshotErrors)
-        {
-            return;
-        }
+        return isSetComplete;
+    }
 
+    private void takeSnapshot(final long timestamp, final long logPosition, final ServiceAck[] serviceAcks)
+    {
         final long recordingId;
         try (ExclusivePublication publication = aeron.addExclusivePublication(
             ctx.snapshotChannel(), ctx.snapshotStreamId()))
@@ -3271,12 +3287,6 @@ final class ConsensusModuleAgent
         recordingLog.force(ctx.fileSyncLevel());
         recoveryPlan = recordingLog.createRecoveryPlan(archive, serviceCount, Aeron.NULL_VALUE);
         ctx.snapshotCounter().incrementOrdered();
-
-        final long nowNs = clusterClock.timeNanos();
-        for (int i = 0, size = sessions.size(); i < size; i++)
-        {
-            sessions.get(i).timeOfLastActivityNs(nowNs);
-        }
     }
 
     private void awaitRecordingComplete(

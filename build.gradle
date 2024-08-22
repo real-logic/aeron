@@ -187,6 +187,7 @@ subprojects {
         toolchain {
             languageVersion = JavaLanguageVersion.of(buildJavaVersion)
         }
+        sourceCompatibility = "1.8"
     }
 
     group = aeronGroup

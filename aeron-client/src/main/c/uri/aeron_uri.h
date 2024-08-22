@@ -34,6 +34,8 @@ typedef struct aeron_uri_params_stct
 }
 aeron_uri_params_t;
 
+#define AERON_IPC_CHANNEL "aeron:ipc"
+
 #define AERON_UDP_CHANNEL_RELIABLE_KEY "reliable"
 #define AERON_UDP_CHANNEL_TTL_KEY "ttl"
 

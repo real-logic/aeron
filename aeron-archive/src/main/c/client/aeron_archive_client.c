@@ -262,12 +262,25 @@ int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *
     aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
 
     if (aeron_archive_control_response_poller_poll(poller) != 0 &&
-        poller->is_poll_complete)
+        poller->is_poll_complete &&
+        poller->control_session_id == aeron_archive->control_session_id)
     {
         if (poller->is_control_response && poller->is_code_error)
         {
-            // TODO
-            rc = -1;
+            if (NULL == aeron_archive->ctx->error_handler)
+            {
+                AERON_SET_ERR(
+                    (int32_t)poller->relevant_id,
+                    "correlation_id=%" PRIi64 " %.*s",
+                    poller->correlation_id,
+                    poller->error_message_len,
+                    poller->error_message);
+                rc = -1;
+            }
+            else
+            {
+                aeron_archive_handle_control_response_with_error_handler(aeron_archive);
+            }
         }
         else if (poller->is_recording_signal)
         {
@@ -2016,7 +2029,7 @@ int aeron_archive_poll_for_descriptors(
 
         if (!aeron_subscription_is_connected(aeron_archive->subscription))
         {
-            // TODO
+            AERON_SET_ERR(-1, "%s", "not connected");
             return -1;
         }
 

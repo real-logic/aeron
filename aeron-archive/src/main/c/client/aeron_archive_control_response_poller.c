@@ -164,7 +164,8 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
 
     if (schema_id != aeron_archive_client_messageHeader_sbe_schema_id())
     {
-        // TODO
+        AERON_SET_ERR(-1, "found schema id: %i that doesn't match expected id: %i", schema_id, aeron_archive_client_messageHeader_sbe_schema_id());
+        return AERON_ACTION_BREAK;
     }
 
     uint16_t template_id = aeron_archive_client_messageHeader_templateId(&hdr);
@@ -190,7 +191,8 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
 
             if (!aeron_archive_client_controlResponse_code(&control_response, &poller->code_value))
             {
-                // TODO
+                AERON_SET_ERR(-1, "%s", "unable to read control response code");
+                return AERON_ACTION_BREAK;
             }
 
             poller->is_code_error = poller->code_value == aeron_archive_client_controlResponseCode_ERROR;
@@ -201,7 +203,8 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
             {
                 if (aeron_reallocf((void **)&poller->error_message, error_message_len) < 0)
                 {
-                    // TODO
+                    AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate error_message");
+                    return AERON_ACTION_BREAK;
                 }
                 poller->error_message_len = error_message_len;
             }
@@ -243,7 +246,8 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
             {
                 if (aeron_reallocf((void **)&poller->encoded_challenge_buffer, encoded_challenge_length) < 0)
                 {
-                    // TODO
+                    AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate encoded_challenge_buffer");
+                    return AERON_ACTION_BREAK;
                 }
                 poller->encoded_challenge_buffer_len = encoded_challenge_length;
             }
@@ -283,7 +287,8 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
 
             if (!aeron_archive_client_recordingSignalEvent_signal(&recording_signal_event, &poller->recording_signal_code))
             {
-                // TODO
+                AERON_SET_ERR(-1, "%s", "unable to read recording signal code");
+                return AERON_ACTION_BREAK;
             }
 
             poller->is_recording_signal = true;

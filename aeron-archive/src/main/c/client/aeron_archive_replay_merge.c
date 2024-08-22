@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <inttypes.h>
+
 #include "aeron_archive.h"
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
@@ -96,11 +98,28 @@ int aeron_archive_replay_merge_init(
     long long epoch_clock,
     int64_t merge_progress_timeout_ms)
 {
+    {
+        aeron_subscription_constants_t constants;
+        aeron_subscription_constants(subscription, &constants);
+
+        size_t len = sizeof(AERON_IPC_CHANNEL) - 1;
+        if (strncmp(constants.channel, AERON_IPC_CHANNEL, len) == 0 ||
+            strncmp(replay_channel, AERON_IPC_CHANNEL, len) == 0 ||
+            strncmp(replay_destination, AERON_IPC_CHANNEL, len) == 0 ||
+            strncmp(live_destination, AERON_IPC_CHANNEL, len) == 0)
+        {
+            AERON_SET_ERR(EINVAL, "%s", "IPC merging is not supported");
+            return -1;
+        }
+
+        if (NULL == strstr(constants.channel, "control-mode=manual"))
+        {
+            AERON_SET_ERR(EINVAL, "Subscription URI must have 'control-mode=manual' uri=%s", constants.channel);
+            return -1;
+        }
+    }
+
     aeron_archive_replay_merge_t *_replay_merge;
-
-    // TODO check for IPC
-
-    // TODO check for subscription->channel control-mode=manual
 
     if (aeron_alloc((void **)&_replay_merge, sizeof(aeron_archive_replay_merge_t)) < 0)
     {
@@ -161,7 +180,10 @@ int aeron_archive_replay_merge_init(
         _replay_merge->subscription,
         _replay_merge->replay_destination) < 0)
     {
-        // TODO
+        aeron_uri_string_builder_close(&_replay_merge->replay_channel_builder);
+        aeron_free(_replay_merge);
+
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
@@ -188,7 +210,8 @@ int aeron_archive_replay_merge_close(aeron_archive_replay_merge_t *replay_merge)
     {
         if (aeron_archive_replay_merge_handle_async_destination(replay_merge) < 0)
         {
-            // TODO
+            AERON_APPEND_ERR("%s", "");
+            return -1;
         }
 
         while (NULL != replay_merge->async_destination)
@@ -197,7 +220,8 @@ int aeron_archive_replay_merge_close(aeron_archive_replay_merge_t *replay_merge)
 
             if (aeron_archive_replay_merge_handle_async_destination(replay_merge) < 0)
             {
-                // TODO
+                AERON_APPEND_ERR("%s", "");
+                return -1;
             }
         }
 
@@ -209,13 +233,14 @@ int aeron_archive_replay_merge_close(aeron_archive_replay_merge_t *replay_merge)
                 replay_merge->subscription,
                 replay_merge->replay_destination) < 0)
             {
-                // TODO
+                AERON_APPEND_ERR("%s", "");
                 return -1;
             }
 
             if (aeron_archive_replay_merge_handle_async_destination(replay_merge) < 0)
             {
-                // TODO
+                AERON_APPEND_ERR("%s", "");
+                return -1;
             }
 
             while (NULL != replay_merge->async_destination)
@@ -224,7 +249,8 @@ int aeron_archive_replay_merge_close(aeron_archive_replay_merge_t *replay_merge)
 
                 if (aeron_archive_replay_merge_handle_async_destination(replay_merge) < 0)
                 {
-                    // TODO
+                    AERON_APPEND_ERR("%s", "");
+                    return -1;
                 }
             }
         }
@@ -296,7 +322,7 @@ int aeron_archive_replay_merge_do_work(int *work_count_p, aeron_archive_replay_m
     if (check_progress &&
         now_ms > (replay_merge->time_of_last_progress_ms + replay_merge->merge_progress_timeout_ms))
     {
-        // TODO AERON_SET_ERR()
+        AERON_SET_ERR(ETIMEDOUT, "%s", "replay_merge no progress: state=%i", replay_merge->state);
         return -1;
     }
 
@@ -343,20 +369,19 @@ bool aeron_archive_replay_merge_is_live_added(aeron_archive_replay_merge_t *repl
 
 static int aeron_archive_replay_merge_resolve_replay_port(int *work_count_p, aeron_archive_replay_merge_t *replay_merge, long long now_ms)
 {
-    int work_count = 0;
     char resolved_endpoint[AERON_MAX_PATH];
 
     int rc = aeron_subscription_resolved_endpoint(replay_merge->subscription, resolved_endpoint, AERON_MAX_PATH);
 
     if (rc < 0)
     {
-        // TODO
+        AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
     if (rc == 0) // not found
     {
-        // TODO
+        *work_count_p = 0;
         return 0;
     }
 
@@ -366,11 +391,22 @@ static int aeron_archive_replay_merge_resolve_replay_port(int *work_count_p, aer
 
         if (NULL == p)
         {
-            // TODO
+            AERON_SET_ERR(-1, "malformed endpoint missing semicolon: resolved_endpoint=%s", resolved_endpoint);
             return -1;
         }
 
-        char *dest = &replay_merge->replay_endpoint[strlen(replay_merge->replay_endpoint) - 2];
+        size_t dest_idx = strlen(replay_merge->replay_endpoint) - 2;
+        char *dest = &replay_merge->replay_endpoint[dest_idx];
+
+        if (dest_idx + strlen(p) >= sizeof(replay_merge->replay_endpoint))
+        {
+            AERON_SET_ERR(
+                -1,
+                "resolved endpoint is too long: replay_endpoint=%s resolved_endpoint=%s",
+                replay_merge->replay_endpoint,
+                resolved_endpoint);
+            return -1;
+        }
 
         strncpy(dest, p, strlen(p));
 
@@ -383,10 +419,12 @@ static int aeron_archive_replay_merge_resolve_replay_port(int *work_count_p, aer
 
         aeron_archive_replay_merge_set_state(replay_merge, GET_RECORDING_POSITION);
 
-        work_count += 1;
+        *work_count_p = 1;
     }
-
-    *work_count_p = work_count;
+    else
+    {
+        *work_count_p = 0;
+    }
 
     return 0;
 }
@@ -409,7 +447,7 @@ static int aeron_archive_replay_merge_get_recording_position(int *work_count_p, 
 
         if (aeron_archive_replay_merge_poll_for_response(&found_response, replay_merge) < 0)
         {
-            // TODO
+            AERON_APPEND_ERR("%s", "");
             return -1;
         }
 
@@ -491,7 +529,7 @@ static int aeron_archive_replay_merge_replay(int *work_count_p, aeron_archive_re
 
         if (aeron_archive_replay_merge_poll_for_response(&found_response, replay_merge) < 0)
         {
-            // TODO
+            AERON_APPEND_ERR("%s", "");
             return -1;
         }
 
@@ -548,7 +586,7 @@ static int aeron_archive_replay_merge_catchup(int *work_count_p, aeron_archive_r
         }
         else if (aeron_image_is_closed(replay_merge->image))
         {
-            // TODO
+            AERON_SET_ERR(ETIMEDOUT, "%s", "replay merge image closed unexpectedly");
             return -1;
         }
     }
@@ -584,7 +622,7 @@ static int aeron_archive_replay_merge_attempt_live_join(int *work_count_p, aeron
 
         if (aeron_archive_replay_merge_poll_for_response(&found_response, replay_merge) < 0)
         {
-            // TODO
+            AERON_APPEND_ERR("%s", "");
             return -1;
         }
 
@@ -609,7 +647,7 @@ static int aeron_archive_replay_merge_attempt_live_join(int *work_count_p, aeron
                             replay_merge->subscription,
                             replay_merge->live_destination) < 0)
                         {
-                            // TODO
+                            AERON_APPEND_ERR("%s", "");
                             return -1;
                         }
 
@@ -625,7 +663,7 @@ static int aeron_archive_replay_merge_attempt_live_join(int *work_count_p, aeron
                             replay_merge->subscription,
                             replay_merge->replay_destination) < 0)
                         {
-                            // TODO
+                            AERON_APPEND_ERR("%s", "");
                             return -1;
                         }
 
@@ -713,7 +751,12 @@ static int aeron_archive_replay_merge_poll_for_response(bool *found_response_p, 
     {
         if (poller->is_code_error)
         {
-            // TODO AERON_SET_ERR()
+            AERON_SET_ERR(
+                (int32_t)poller->relevant_id,
+                "correlation_id=%" PRIi64 " %.*s",
+                poller->correlation_id,
+                poller->error_message_len,
+                poller->error_message);
             return -1;
         }
 

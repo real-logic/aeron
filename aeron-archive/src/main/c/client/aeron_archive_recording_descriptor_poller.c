@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
+#include <inttypes.h>
+
 #include "aeron_archive.h"
+#include "aeron_archive_context.h"
 #include "aeron_archive_recording_descriptor_poller.h"
 #include "aeron_archive_recording_signal.h"
 
@@ -128,7 +132,8 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_descriptor_po
 
     if (schema_id != aeron_archive_client_messageHeader_sbe_schema_id())
     {
-        // TODO
+        AERON_SET_ERR(-1, "found schema id: %i that doesn't match expected id: %i", schema_id, aeron_archive_client_messageHeader_sbe_schema_id());
+        return AERON_ACTION_BREAK;
     }
 
     uint16_t template_id = aeron_archive_client_messageHeader_templateId(&hdr);
@@ -153,7 +158,8 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_descriptor_po
 
                 if (!aeron_archive_client_controlResponse_code(&control_response, &code))
                 {
-                    // TODO
+                    AERON_SET_ERR(-1, "%s", "unable to read control response code");
+                    return AERON_ACTION_BREAK;
                 }
 
                 int64_t correlation_id = aeron_archive_client_controlResponse_correlationId(&control_response);
@@ -170,19 +176,43 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_descriptor_po
                 {
                     if (correlation_id == poller->correlation_id)
                     {
-                        // TODO how do I 'throw an exception'...
-                        // ... probably have to write the response error message to the poller,
-                        // if controlled_poll returns -1 (hopefully it does on an ABORT?) check for the error message?
-                        // Or... maybe just ALWAYS check for an error?
+                        struct aeron_archive_client_controlResponse_string_view string_view =
+                            aeron_archive_client_controlResponse_get_errorMessage_as_string_view(&control_response);
 
-                        return AERON_ACTION_ABORT;
+                        AERON_SET_ERR(
+                            (int32_t)aeron_archive_client_controlResponse_relevantId(&control_response),
+                            "correlation_id=%" PRIi64 " %.*s",
+                            correlation_id,
+                            string_view.length,
+                            string_view.data);
+                        return AERON_ACTION_BREAK;
                     }
-                    /*
-                    else if (poller->ctx->error_handler != null)
+                    else if (NULL != poller->ctx->error_handler)
                     {
+                        char *error_message;
 
+                        struct aeron_archive_client_controlResponse_string_view string_view =
+                            aeron_archive_client_controlResponse_get_errorMessage_as_string_view(&control_response);
+
+                        size_t len = string_view.length + 50; // for the correlation id and room for some whitespace
+
+                        aeron_alloc((void **)&error_message, len);
+
+                        snprintf(
+                            error_message,
+                            len,
+                            "correlation_id=%" PRIi64 " %.*s",
+                            poller->correlation_id,
+                            (int)string_view.length,
+                            string_view.data);
+
+                        poller->ctx->error_handler(
+                            poller->ctx->error_handler_clientd,
+                            (int32_t)aeron_archive_client_controlResponse_relevantId(&control_response),
+                            error_message);
+
+                        aeron_free(error_message);
                     }
-                     */
                 }
             }
 

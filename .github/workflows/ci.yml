@@ -234,13 +234,13 @@ jobs:
           name: crash-logs-gcc-2004-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.file }}
 
-  cpp-gcc-2204-build:
-    name: C++ GCC ${{ matrix.version }} (Ubuntu 22.04)
+  cpp-gcc-2404-build:
+    name: C++ GCC ${{ matrix.version }} (Ubuntu 24.04)
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        version: [ '11', '12', '13' ]
+        version: [ '11', '12', '13', '14' ]
     env:
       CC: gcc-${{ matrix.version }}
       CXX: g++-${{ matrix.version }}
@@ -293,7 +293,7 @@ jobs:
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v4
         with:
-          name: crash-logs-gcc-2204-${{ matrix.version }}
+          name: crash-logs-gcc-2404-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-gcc-rocky-build:
@@ -390,8 +390,8 @@ jobs:
           name: crash-logs-clang-2004-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.file }}
 
-  cpp-clang-ubuntu-2204-build:
-    name: C++ Clang ${{ matrix.version }} (Ubuntu 22.04)
+  cpp-clang-ubuntu-2404-build:
+    name: C++ Clang ${{ matrix.version }} (Ubuntu 24.04)
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -451,7 +451,7 @@ jobs:
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v4
         with:
-          name: crash-logs-clang-2204-${{ matrix.version }}
+          name: crash-logs-clang-2404-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-clang-debug-build:

@@ -141,7 +141,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '13' ]
+        version: [ '14' ]
     env:
       CC: gcc-${{ matrix.version }}
       CXX: g++-${{ matrix.version }}
@@ -288,11 +288,11 @@ jobs:
 
   cpp-sanitize-gcc:
     name: C++ Sanitise Build GCC ${{ matrix.version }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        version: [ '13' ]
+        version: [ '14' ]
     env:
       CC: gcc-${{ matrix.version }}
       CXX: g++-${{ matrix.version }}

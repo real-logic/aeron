@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
@@ -29,21 +30,25 @@ import io.aeron.test.cluster.ClusterTests;
 
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
 import java.util.concurrent.CountDownLatch;
 
+import static io.aeron.cluster.ClusterWithNoServicesTest.TestConsensusModuleExtension.LatchTrigger.SESSION_OPENED;
+import static io.aeron.cluster.ClusterWithNoServicesTest.TestConsensusModuleExtension.LatchTrigger.TAKE_SNAPSHOT;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
 class ClusterWithNoServicesTest
 {
-    private final CountDownLatch latch = new CountDownLatch(1);
-    private final ConsensusModuleExtension consensusModuleExtensionSpy = spy(new TestConsensusModuleExtension(latch));
     private ClusteredMediaDriver clusteredMediaDriver;
     private AeronCluster aeronCluster;
 
@@ -67,23 +72,45 @@ class ClusterWithNoServicesTest
     @InterruptAfter(10)
     void shouldConnectAndSendKeepAliveWithExtensionLoaded() throws InterruptedException
     {
-        clusteredMediaDriver = launchCluster();
+        final CountDownLatch latch = new CountDownLatch(1);
+        final ConsensusModuleExtension consensusModuleExtension = spy(
+            new TestConsensusModuleExtension(latch, SESSION_OPENED));
+
+        clusteredMediaDriver = launchCluster(consensusModuleExtension);
         aeronCluster = connectClient();
 
         assertTrue(aeronCluster.sendKeepAlive());
         latch.await();
 
-        final InOrder inOrder = inOrder(consensusModuleExtensionSpy);
-        inOrder.verify(consensusModuleExtensionSpy).onStart(any(ConsensusModuleControl.class), isNull());
-        inOrder.verify(consensusModuleExtensionSpy).onElectionComplete(any(ConsensusControlState.class));
-        inOrder.verify(consensusModuleExtensionSpy, atLeastOnce()).doWork(anyLong());
+        final InOrder inOrder = inOrder(consensusModuleExtension);
+        inOrder.verify(consensusModuleExtension).onStart(any(ConsensusModuleControl.class), isNull());
+        inOrder.verify(consensusModuleExtension).onElectionComplete(any(ConsensusControlState.class));
+        inOrder.verify(consensusModuleExtension, atLeastOnce()).doWork(anyLong());
 
-        verify(consensusModuleExtensionSpy).onSessionOpened(anyLong());
+        verify(consensusModuleExtension).onSessionOpened(anyLong());
 
         ClusterTests.failOnClusterError();
     }
 
-    private ClusteredMediaDriver launchCluster()
+    @Test
+    @InterruptAfter(10)
+    @Disabled
+    void shouldSnapshotAndRecoverState() throws InterruptedException
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        clusteredMediaDriver = launchCluster(new TestConsensusModuleExtension(latch, TAKE_SNAPSHOT));
+        aeronCluster = connectClient();
+
+        final AtomicCounter controlToggle = getClusterControlToggle();
+        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+
+        latch.await();
+
+        ClusterTests.failOnClusterError();
+    }
+
+    private ClusteredMediaDriver launchCluster(final ConsensusModuleExtension consensusModuleExtension)
     {
         return ClusteredMediaDriver.launch(
             new MediaDriver.Context()
@@ -102,7 +129,7 @@ class ClusterWithNoServicesTest
                 .clusterMembers(ClusterTestConstants.CLUSTER_MEMBERS)
                 .ingressChannel("aeron:udp")
                 .serviceCount(0)
-                .consensusModuleExtension(consensusModuleExtensionSpy)
+                .consensusModuleExtension(consensusModuleExtension)
                 .logChannel("aeron:ipc")
                 .replicationChannel("aeron:udp?endpoint=localhost:0")
                 .deleteDirOnStart(true));
@@ -117,13 +144,30 @@ class ClusterWithNoServicesTest
                 .egressChannel("aeron:udp?endpoint=localhost:0"));
     }
 
+    public AtomicCounter getClusterControlToggle()
+    {
+        final CountersReader counters = clusteredMediaDriver.mediaDriver().context().countersManager();
+        final int clusterId = clusteredMediaDriver.consensusModule().context().clusterId();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters, clusterId);
+        assertNotNull(controlToggle);
+
+        return controlToggle;
+    }
+
     static final class TestConsensusModuleExtension implements ConsensusModuleExtension
     {
-        private final CountDownLatch latch;
+        enum LatchTrigger
+        {
+            SESSION_OPENED, TAKE_SNAPSHOT
+        }
 
-        TestConsensusModuleExtension(final CountDownLatch latch)
+        private final CountDownLatch latch;
+        private final LatchTrigger latchTrigger;
+
+        TestConsensusModuleExtension(final CountDownLatch latch, final LatchTrigger latchTrigger)
         {
             this.latch = latch;
+            this.latchTrigger = latchTrigger;
         }
 
         public int supportedSchemaId()
@@ -158,7 +202,7 @@ class ClusterWithNoServicesTest
             final int length,
             final Header header)
         {
-            return null;
+            return ControlledFragmentHandler.Action.CONTINUE;
         }
 
         public ControlledFragmentHandler.Action onLogExtensionMessage(
@@ -171,7 +215,7 @@ class ClusterWithNoServicesTest
             final int length,
             final Header header)
         {
-            return null;
+            return ControlledFragmentHandler.Action.CONTINUE;
         }
 
         public void close()
@@ -180,7 +224,10 @@ class ClusterWithNoServicesTest
 
         public void onSessionOpened(final long clusterSessionId)
         {
-            latch.countDown();
+            if (SESSION_OPENED == latchTrigger)
+            {
+                latch.countDown();
+            }
         }
 
         public void onSessionClosed(final long clusterSessionId)
@@ -189,6 +236,14 @@ class ClusterWithNoServicesTest
 
         public void onPrepareForNewLeadership()
         {
+        }
+
+        public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
+        {
+            if (TAKE_SNAPSHOT == latchTrigger)
+            {
+                latch.countDown();
+            }
         }
     }
 }

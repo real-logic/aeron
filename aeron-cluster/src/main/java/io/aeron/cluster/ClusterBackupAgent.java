@@ -841,10 +841,13 @@ public final class ClusterBackupAgent implements Agent
                     workCount++;
                 }
             }
-            else if (pollForResponse(clusterArchive, correlationId))
+            else if (NULL_VALUE == liveLogReplaySessionId)
             {
-                liveLogReplaySessionId = clusterArchive.controlResponsePoller().relevantId();
-                timeOfLastProgressMs = nowMs;
+                if (pollForResponse(clusterArchive, correlationId))
+                {
+                    liveLogReplaySessionId = clusterArchive.controlResponsePoller().relevantId();
+                    timeOfLastProgressMs = nowMs;
+                }
             }
             else if (NULL_COUNTER_ID == liveLogRecCounterId)
             {
@@ -858,7 +861,6 @@ public final class ClusterBackupAgent implements Agent
                     liveLogRecordingId = RecordingPos.getRecordingId(countersReader, liveLogRecCounterId);
                     timeOfLastBackupQueryMs = nowMs;
                     timeOfLastProgressMs = nowMs;
-
                     state(UPDATE_RECORDING_LOG, nowMs);
                 }
             }

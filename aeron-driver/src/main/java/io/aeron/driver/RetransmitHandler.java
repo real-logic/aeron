@@ -19,13 +19,11 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 
-import static io.aeron.driver.Configuration.MAX_RETRANSMITS_DEFAULT;
-
 /**
  * Tracking and handling of retransmit request, NAKs, for senders, and receivers.
  * <p>
  * When configured for multicast, a max number of retransmits is permitted by
- * {@link Configuration#MAX_RETRANSMITS_DEFAULT}. Additional received NAKs will be ignored if this maximum is reached.
+ * {@link Configuration#MAX_RESEND_DEFAULT}. Additional received NAKs will be ignored if this maximum is reached.
  * When configured for unicast, a single outstanding retransmit is permitted, and additional received NAKs
  * will be ignored iff they overlap the current retransmit - otherwise the previous retransmit is assumed to have
  * 'worked' and the new NAK will take its place.
@@ -50,6 +48,7 @@ public final class RetransmitHandler
      * @param delayGenerator            to use for delay determination.
      * @param lingerTimeoutGenerator    to use for linger timeout.
      * @param hasGroupSemantics         indicates multicast/MDC semantics.
+     * @param maxRetransmits            max retransmits for when group semantics is enabled
      * @param retransmitOverflowCounter counter to track overflows.
      */
     public RetransmitHandler(
@@ -58,6 +57,7 @@ public final class RetransmitHandler
         final FeedbackDelayGenerator delayGenerator,
         final FeedbackDelayGenerator lingerTimeoutGenerator,
         final boolean hasGroupSemantics,
+        final int maxRetransmits,
         final AtomicCounter retransmitOverflowCounter)
     {
         this.nanoClock = nanoClock;
@@ -67,10 +67,10 @@ public final class RetransmitHandler
         this.hasGroupSemantics = hasGroupSemantics;
         this.retransmitOverflowCounter = retransmitOverflowCounter;
 
-        final int maxRetransmits = this.hasGroupSemantics ? MAX_RETRANSMITS_DEFAULT : 1;
+        final int actualMaxRetransmits = this.hasGroupSemantics ? maxRetransmits : 1;
 
-        retransmitActionPool = new RetransmitAction[maxRetransmits];
-        for (int i = 0; i < maxRetransmits; i++)
+        retransmitActionPool = new RetransmitAction[actualMaxRetransmits];
+        for (int i = 0; i < actualMaxRetransmits; i++)
         {
             retransmitActionPool[i] = new RetransmitAction();
         }

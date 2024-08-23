@@ -638,6 +638,14 @@ int aeron_driver_context_set_nak_unicast_retry_delay_ratio(aeron_driver_context_
 uint64_t aeron_driver_context_get_nak_unicast_retry_delay_ratio(aeron_driver_context_t *context);
 
 /**
+ * Max number of active retransmissions tracked for udp streams with group semantics.
+ */
+#define AERON_MAX_RESEND_ENV_VAR "AERON_MAX_RESEND"
+
+int aeron_driver_context_set_max_resend(aeron_driver_context_t *context, uint32_t value);
+uint32_t aeron_driver_context_get_max_resend(aeron_driver_context_t *context);
+
+/**
  * How long to delay before sending a retransmit following a NAK.
  */
 #define AERON_RETRANSMIT_UNICAST_DELAY_ENV_VAR "AERON_RETRANSMIT_UNICAST_DELAY"

@@ -57,11 +57,10 @@ def aeronVersion = file('version.txt').text.trim()
 
 def agronaVersion = '1.22.0'
 def agronaVersionRange = '[1.22.0,2.0[' // allow any release >= 1.22.0 and < 2.0.0
-def sbeVersion = '1.32.1'
+def sbeVersion = '1.32.2'
 def checkstyleVersion = '9.3'
 def hamcrestVersion = '3.0'
 def junitVersion = '5.11.0'
-def junitPlatformVersion = '1.11.0'
 def mockitoVersion = '4.11.0'
 def byteBuddyVersion = '1.14.19'
 def findbugsAnnotationsVersion = '3.0.1'
@@ -181,6 +180,7 @@ subprojects {
         testImplementation "org.mockito:mockito-core:${mockitoVersion}"
         testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 
     java {
@@ -1137,7 +1137,6 @@ project(':aeron-system-tests') {
         testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testImplementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
-        testRuntimeOnly "org.junit.platform:junit-platform-console-standalone:${junitPlatformVersion}"
         testCompileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
         if (buildJavaVersion == 8) {
             def jdkHome = toolchainLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()

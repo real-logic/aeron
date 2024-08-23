@@ -15,7 +15,9 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ExclusivePublication;
 import io.aeron.Image;
+import io.aeron.Publication;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -148,7 +150,19 @@ public interface ConsensusModuleExtension extends AutoCloseable
     void onSessionClosed(long clusterSessionId);
 
     /**
-     * callback when preparing for a new leader - before election
+     * Callback when preparing for a new Raft leadership term - before election.
      */
     void onPrepareForNewLeadership();
+
+    /**
+     * The extension should take a snapshot and store its state to the provided archive {@link ExclusivePublication}.
+     * <p>
+     * <b>Note:</b> As this is a potentially long-running operation the implementation should use
+     * {@link Cluster#idleStrategy()} and then occasionally call {@link org.agrona.concurrent.IdleStrategy#idle()} or
+     * {@link org.agrona.concurrent.IdleStrategy#idle(int)},
+     * especially when the snapshot {@link ExclusivePublication} returns {@link Publication#BACK_PRESSURED}.
+     *
+     * @param snapshotPublication to which the state should be recorded.
+     */
+    void onTakeSnapshot(ExclusivePublication snapshotPublication);
 }

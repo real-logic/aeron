@@ -77,6 +77,7 @@ aeron_uri_params_t;
 #define AERON_URI_NAK_DELAY_KEY "nak-delay"
 #define AERON_URI_UNTETHERED_WINDOW_LIMIT_TIMEOUT_KEY "untethered-window-limit-timeout"
 #define AERON_URI_UNTETHERED_RESTING_TIMEOUT_KEY "untethered-resting-timeout"
+#define AERON_URI_MAX_RESEND_KEY "max-resend"
 #define AERON_URI_INVALID_TAG (-1)
 
 typedef struct aeron_udp_channel_params_stct

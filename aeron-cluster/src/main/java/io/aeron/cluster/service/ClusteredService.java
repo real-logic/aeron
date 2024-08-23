@@ -92,7 +92,7 @@ public interface ClusteredService
     void onTimerEvent(long correlationId, long timestamp);
 
     /**
-     * The service should take a snapshot and store its state to the provided archive {@link Publication}.
+     * The service should take a snapshot and store its state to the provided archive {@link ExclusivePublication}.
      * <p>
      * <b>Note:</b> As this is a potentially long-running operation the implementation should use
      * {@link Cluster#idleStrategy()} and then occasionally call {@link org.agrona.concurrent.IdleStrategy#idle()} or

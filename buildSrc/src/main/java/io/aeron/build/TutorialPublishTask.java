@@ -120,7 +120,8 @@ public class TutorialPublishTask extends DefaultTask
     public void publish() throws Exception
     {
         final String wikiUri = getWikiUri();
-        final File directory = new File(getProject().getBuildDir(), "tmp/tutorialPublish");
+        final File directory =
+            new File(getProject().getLayout().getBuildDirectory().getAsFile().get(), "tmp/tutorialPublish");
         // Use Personal Access Token or GITHUB_TOKEN for workflows
         final CredentialsProvider credentialsProvider = new UsernamePasswordCredentialsProvider(apiKey, "");
 

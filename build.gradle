@@ -25,6 +25,8 @@ buildscript {
 }
 
 plugins {
+    id 'application'
+    id 'base'
     id 'java-library'
     id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
     id 'biz.aQute.bnd.builder' version '6.4.0' apply false
@@ -172,6 +174,7 @@ allprojects {
 }
 
 subprojects {
+    apply plugin: 'base'
     apply plugin: 'java-library'
     apply plugin: 'checkstyle'
 
@@ -332,24 +335,19 @@ subprojects {
         options.charSet = 'UTF-8'
         options.links("https://www.javadoc.io/doc/org.agrona/agrona/${agronaVersion}/")
 
-        if (buildJavaVersion > 21) { // early access JavaDoc location is different
+        if (buildJavaVersion >= 23) { // early access JavaDoc location is different
             options.links("https://download.java.net/java/early_access/jdk${buildJavaVersion}/docs/api/")
         }
-        else if (buildJavaVersion >= 11) {
+        else {
             options.links("https://docs.oracle.com/en/java/javase/${buildJavaVersion}/docs/api/")
         }
-        else {
-            options.links("https://docs.oracle.com/javase/${buildJavaVersion}/docs/api/")
-        }
 
-        if (buildJavaVersion >= 10) {
-            options.addBooleanOption 'html5', true
-        }
+        options.addBooleanOption('html5', true)
     }
 
     tasks.register('testJar', Jar) {
         dependsOn 'testClasses'
-        archiveClassifier.set("test-${project.archivesBaseName}")
+        archiveClassifier.set("test-${base.archivesName}")
         from sourceSets.test.output
     }
 
@@ -531,7 +529,9 @@ project(':aeron-driver') {
     apply plugin: 'application'
     apply plugin: 'biz.aQute.bnd.builder'
 
-    mainClassName = 'io.aeron.driver.MediaDriver'
+    application {
+        mainClass.set('io.aeron.driver.MediaDriver')
+    }
 
     dependencies {
         api project(':aeron-client')
@@ -1340,6 +1340,6 @@ tasks.named('dependencyUpdates').configure {
 }
 
 wrapper {
-    gradleVersion = '8.1.1'
+    gradleVersion = '8.10'
     distributionType = 'ALL'
 }

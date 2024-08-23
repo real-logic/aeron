@@ -3,7 +3,7 @@ repositories {
 }
 
 def asciidoctorjVersion = '2.5.13'
-def jgitVersion = '5.13.2.202306221912-r'
+def jgitVersion = '6.10.0.202406032230-r'
 def asmVersion = '9.7'
 
 configurations.configureEach {

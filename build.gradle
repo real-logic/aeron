@@ -63,7 +63,7 @@ def sbeVersion = '1.32.2'
 def checkstyleVersion = '9.3'
 def hamcrestVersion = '3.0'
 def junitVersion = '5.11.0'
-def mockitoVersion = '4.11.0'
+def mockitoVersion = '5.12.0'
 def byteBuddyVersion = '1.15.0'
 def findbugsAnnotationsVersion = '3.0.1'
 def hdrHistogramVersion = '2.2.2'
@@ -431,7 +431,7 @@ project(':aeron-client') {
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
     jar {
@@ -538,7 +538,7 @@ project(':aeron-driver') {
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
     jar {
@@ -640,7 +640,7 @@ project(':aeron-archive') {
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
         testImplementation files('build/classes/java/generatedTest')
     }
 
@@ -810,7 +810,7 @@ project(':aeron-cluster') {
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
     def generatedDir = file("${buildDir}/generated-src")
@@ -1122,7 +1122,7 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-cluster')
         testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testImplementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
         testCompileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
         if (buildJavaVersion == 8) {
             def jdkHome = toolchainLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()

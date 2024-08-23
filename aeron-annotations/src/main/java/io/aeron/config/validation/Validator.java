@@ -20,6 +20,7 @@ import io.aeron.config.DefaultType;
 import io.aeron.config.ExpectedCConfig;
 import io.aeron.validation.Grep;
 
+import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -195,6 +196,8 @@ final class Validator
 
         try
         {
+            scriptEngine.getContext().setAttribute("INT32_MAX", Integer.MAX_VALUE, ScriptContext.ENGINE_SCOPE);
+
             final String evaluatedFoundDefaultString = scriptEngine.eval(
                 "AERON_TERM_BUFFER_LENGTH_DEFAULT = (16 * 1024 * 1024);\n" + // this feels like a (very) bad idea
                 "(" + foundDefaultString + ").toFixed(0)" // avoid scientific notation

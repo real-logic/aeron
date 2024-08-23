@@ -67,6 +67,7 @@ def mockitoVersion = '5.12.0'
 def byteBuddyVersion = '1.15.0'
 def findbugsAnnotationsVersion = '3.0.1'
 def hdrHistogramVersion = '2.2.2'
+def nashornVersion = '15.4'
 def gitCommitHash = io.aeron.build.GithubUtil.currentGitHash("${projectDir}")
 
 ext {
@@ -364,6 +365,10 @@ project(':aeron-annotations') {
     apply plugin: 'maven-publish'
     apply plugin: 'signing'
     apply plugin: 'biz.aQute.bnd.builder'
+
+    dependencies {
+        implementation "org.openjdk.nashorn:nashorn-core:${nashornVersion}"
+    }
 
     jar {
         bundle {

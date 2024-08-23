@@ -36,15 +36,9 @@ public final class Checksums
      * Returns an instance of {@link Checksum} that computes CRC-32C checksums.
      *
      * @return CRC-32C implementation.
-     * @throws IllegalStateException if invoked on a JDK 8.
      */
     public static Checksum crc32c()
     {
-        if (null == Crc32c.INSTANCE)
-        {
-            throw new IllegalStateException("CRC-32C is not available on the current JDK!");
-        }
-
         return Crc32c.INSTANCE;
     }
 

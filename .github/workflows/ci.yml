@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '17', '21' ]
+        java: [ '17', '21' ]
         os: [ 'ubuntu-22.04', 'windows-latest', 'macos-14' ]
     steps:
       - name: Checkout code
@@ -69,11 +69,11 @@ jobs:
           java -Xinternalversion
           echo "BUILD_JAVA_HOME=$env:JAVA_HOME" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
           echo "BUILD_JAVA_VERSION=${{ matrix.java }}" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
+          java-version: 17
       - name: Setup small temp file system (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -125,7 +125,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8' ]
+        java: [ '17' ]
         os: [ 'ubuntu-22.04' ]
     steps:
       - name: Checkout code
@@ -208,16 +208,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+          java-version: 17
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
@@ -266,16 +261,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+          java-version: 17
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
@@ -372,16 +362,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+          java-version: 17
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
@@ -432,16 +417,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+          java-version: 17
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
@@ -501,16 +481,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+          java-version: 17
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
@@ -557,16 +532,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+          java-version: 17
       - name: Setup small temp file system and localhost name
         run: |
           sudo sed -i bak "s/localhost/localhost $(hostname)/" /etc/hosts
@@ -612,16 +582,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=$env:JAVA_HOME" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "BUILD_JAVA_VERSION=8" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          java-version: 17
       - name: Setup small temp file system
         run: |
           $current_size = (Get-PartitionSupportedSize -DiskNumber 1 -PartitionNumber 1)

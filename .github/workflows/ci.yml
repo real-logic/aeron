@@ -34,7 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '17', '21' ]
-        os: [ 'ubuntu-22.04', 'windows-latest', 'macos-14' ]
+        os: [ 'ubuntu-24.04', 'windows-latest', 'macos-latest' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -126,7 +126,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '17' ]
-        os: [ 'ubuntu-22.04' ]
+        os: [ 'ubuntu-24.04' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -236,7 +236,7 @@ jobs:
 
   cpp-gcc-2204-build:
     name: C++ GCC ${{ matrix.version }} (Ubuntu 22.04)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -298,7 +298,7 @@ jobs:
 
   cpp-gcc-rocky-build:
     name: C++ Rocky 8
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -392,7 +392,7 @@ jobs:
 
   cpp-clang-ubuntu-2204-build:
     name: C++ Clang ${{ matrix.version }} (Ubuntu 22.04)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -456,7 +456,7 @@ jobs:
 
   cpp-clang-debug-build:
     name: C++ Clang ${{ matrix.version }} debug build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -511,7 +511,7 @@ jobs:
 
   cpp-xcode-build:
     name: C++ Xcode (macOS)
-    runs-on: macos-14
+    runs-on: macos-latest
     env:
       CC: clang
       CXX: clang++

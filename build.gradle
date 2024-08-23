@@ -219,7 +219,6 @@ subprojects {
 
     tasks.withType(Test).configureEach { test ->
         if (buildJavaVersion >= 9) {
-            jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/java.util.zip=ALL-UNNAMED')
         }
         if (buildJavaVersion >= 21) {

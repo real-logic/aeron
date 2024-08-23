@@ -15,14 +15,10 @@
  */
 package io.aeron.samples.raw;
 
-import org.agrona.nio.NioSelectedKeySet;
-
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
-import java.nio.channels.Selector;
 
 /**
  * Common configuration and functions used across raw samples.
@@ -54,38 +50,6 @@ public class Common
      */
     public static final String PONG_DEST = System.getProperty("io.aeron.raw.pong.dest", "localhost");
 
-    static final Field SELECTED_KEYS_FIELD;
-    static final Field PUBLIC_SELECTED_KEYS_FIELD;
-
-    static
-    {
-        Field selectKeysField = null;
-        Field publicSelectKeysField = null;
-
-        try
-        {
-            try (Selector selector = Selector.open())
-            {
-                final Class<?> clazz = Class.forName(
-                    "sun.nio.ch.SelectorImpl", false, ClassLoader.getSystemClassLoader());
-                if (clazz.isAssignableFrom(selector.getClass()))
-                {
-                    selectKeysField = clazz.getDeclaredField("selectedKeys");
-                    selectKeysField.setAccessible(true);
-
-                    publicSelectKeysField = clazz.getDeclaredField("publicSelectedKeys");
-                    publicSelectKeysField.setAccessible(true);
-                }
-            }
-        }
-        catch (final Exception ignore)
-        {
-        }
-
-        SELECTED_KEYS_FIELD = selectKeysField;
-        PUBLIC_SELECTED_KEYS_FIELD = publicSelectKeysField;
-    }
-
     static void init(final DatagramChannel channel) throws IOException
     {
         channel.configureBlocking(false);
@@ -97,27 +61,5 @@ public class Common
         channel.configureBlocking(false);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         channel.connect(sendAddress);
-    }
-
-    static NioSelectedKeySet keySet(final Selector selector)
-    {
-        NioSelectedKeySet tmpSet = null;
-
-        if (null != PUBLIC_SELECTED_KEYS_FIELD)
-        {
-            try
-            {
-                tmpSet = new NioSelectedKeySet();
-
-                SELECTED_KEYS_FIELD.set(selector, tmpSet);
-                PUBLIC_SELECTED_KEYS_FIELD.set(selector, tmpSet);
-            }
-            catch (final Exception ignore)
-            {
-                tmpSet = null;
-            }
-        }
-
-        return tmpSet;
     }
 }

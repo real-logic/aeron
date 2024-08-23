@@ -488,8 +488,9 @@ project(':aeron-client') {
         sign publishing.publications.aeronClient
     }
 
+    def configInfoFile = "${layout.buildDirectory.get()}/generated/sources/headers/java/main/config-info.dat"
+
     tasks.register('validateConfigExpectations', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
         def sourceDir = 'src/main/c'
 
         inputs.files(configInfoFile)
@@ -500,8 +501,7 @@ project(':aeron-client') {
     }
 
     tasks.register('generateConfigDoc', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
-        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+        def generatedDocFile = "${layout.buildDirectory.get()}/generated-doc/out.md"
 
         inputs.files(configInfoFile)
         outputs.files(generatedDocFile)
@@ -512,7 +512,7 @@ project(':aeron-client') {
     }
 
     tasks.register('validateCounterExpectations', JavaExec) {
-        def counterInfoFile = 'build/generated/sources/headers/java/main/counter-info.dat'
+        def counterInfoFile = "${layout.buildDirectory.get()}/generated/sources/headers/java/main/counter-info.dat"
         def sourceDir = 'src/main/c'
 
         inputs.files(counterInfoFile)
@@ -601,7 +601,7 @@ project(':aeron-driver') {
     }
 
     tasks.register('validateConfigExpectations', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
+        def configInfoFile = "${layout.buildDirectory.get()}/generated/sources/headers/java/main/config-info.dat"
         def sourceDir = 'src/main/c'
 
         inputs.files(configInfoFile)
@@ -612,8 +612,8 @@ project(':aeron-driver') {
     }
 
     tasks.register('generateConfigDoc', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
-        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+        def configInfoFile = "${layout.buildDirectory.get()}/generated/sources/headers/java/main/config-info.dat"
+        def generatedDocFile = "${layout.buildDirectory.get()}/generated-doc/out.md"
 
         inputs.files(configInfoFile)
         outputs.files(generatedDocFile)
@@ -644,8 +644,8 @@ project(':aeron-archive') {
         testImplementation files('build/classes/java/generatedTest')
     }
 
-    def generatedSrcDir = file("${buildDir}/generated-src")
-    def generatedTestDir = file("${buildDir}/generated-test")
+    def generatedSrcDir = file("${layout.buildDirectory.get()}/generated-src")
+    def generatedTestDir = file("${layout.buildDirectory.get()}/generated-test")
 
     sourceSets {
         generated {
@@ -782,8 +782,8 @@ project(':aeron-archive') {
     }
 
     tasks.register('generateConfigDoc', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
-        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+        def configInfoFile = "${layout.buildDirectory.get()}/generated/sources/headers/java/main/config-info.dat"
+        def generatedDocFile = "${layout.buildDirectory.get()}/generated-doc/out.md"
 
         inputs.files(configInfoFile)
         outputs.files(generatedDocFile)
@@ -813,7 +813,7 @@ project(':aeron-cluster') {
         testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
-    def generatedDir = file("${buildDir}/generated-src")
+    def generatedDir = file("${layout.buildDirectory.get()}/generated-src")
     sourceSets {
         generated {
             java.srcDir generatedDir
@@ -914,8 +914,8 @@ project(':aeron-cluster') {
     }
 
     tasks.register('generateConfigDoc', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
-        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+        def configInfoFile = "${layout.buildDirectory.get()}/generated/sources/headers/java/main/config-info.dat"
+        def generatedDocFile = "${layout.buildDirectory.get()}/generated-doc/out.md"
 
         inputs.files(configInfoFile)
         outputs.files(generatedDocFile)
@@ -1099,7 +1099,7 @@ project(':aeron-samples') {
     }
 
     tasks.register('removeWikiDirectory', Delete) {
-        delete "${buildDir}/tmp/tutorialPublish"
+        delete "${layout.buildDirectory.get()}/tmp/tutorialPublish"
     }
 
     tasks.register('tutorialPublish', io.aeron.build.TutorialPublishTask) {
@@ -1299,7 +1299,7 @@ project(':aeron-all') {
 }
 
 tasks.register('testReport', TestReport) {
-    destinationDirectory = file("${buildDir}/reports/allTests")
+    destinationDirectory = file("${layout.buildDirectory.get()}/reports/allTests")
     // Include the results from the `test` task in all sub-projects
     testResults.setFrom(subprojects*.test)
 }

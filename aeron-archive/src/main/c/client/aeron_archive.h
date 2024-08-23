@@ -17,6 +17,11 @@
 #ifndef AERON_ARCHIVE_H
 #define AERON_ARCHIVE_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include "aeronc.h"
 #include "aeron_common.h"
 
@@ -485,5 +490,9 @@ aeron_image_t *aeron_archive_replay_merge_image(aeron_archive_replay_merge_t *re
 bool aeron_archive_replay_merge_is_merged(aeron_archive_replay_merge_t *replay_merge);
 bool aeron_archive_replay_merge_has_failed(aeron_archive_replay_merge_t *replay_merge);
 bool aeron_archive_replay_merge_is_live_added(aeron_archive_replay_merge_t *replay_merge);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //AERON_ARCHIVE_H

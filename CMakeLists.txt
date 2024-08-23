@@ -300,16 +300,14 @@ if (AERON_BUILD_SAMPLES)
 #    FetchContent_MakeAvailable(hdr_histogram)
 endif ()
 
-
-add_subdirectory(${AERON_C_CLIENT_SOURCE_PATH})
-
 add_subdirectory(${AERON_CLIENT_SOURCE_PATH})
 add_subdirectory(${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+add_subdirectory(${AERON_C_CLIENT_SOURCE_PATH})
 
 if (AERON_TESTS)
     add_subdirectory(${AERON_CLIENT_TEST_PATH})
-    add_subdirectory(${AERON_C_CLIENT_TEST_PATH})
     add_subdirectory(${AERON_CLIENT_WRAPPER_TEST_PATH})
+    add_subdirectory(${AERON_C_CLIENT_TEST_PATH})
 endif ()
 if (AERON_BUILD_SAMPLES)
     add_subdirectory(${AERON_SAMPLES_PATH})

@@ -115,26 +115,45 @@ SET(HEADERS
     client/aeron_archive_replay_params.h
 )
 
-# static library
-add_library(aeron_archive_c_client STATIC ${SOURCE} ${HEADERS})
+# shared library
+add_library(aeron_archive_c_client SHARED ${SOURCE} ${HEADERS})
+add_library(aeron::aeron_archive_c_client ALIAS aeron_archive_c_client)
 
 add_dependencies(aeron_archive_c_client c_codecs)
 
 target_include_directories(aeron_archive_c_client
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-    PUBLIC ${AERON_C_CLIENT_SOURCE_PATH}
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/archive>"
     PRIVATE ${ARCHIVE_CODEC_TARGET_DIR})
+
+target_link_libraries(aeron_archive_c_client
+    PRIVATE aeron
+    INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+
+# static library
+add_library(aeron_archive_c_client_static STATIC ${SOURCE} ${HEADERS})
+add_library(aeron::aeron_archive_c_client_static ALIAS aeron_archive_c_client_static)
+
+add_dependencies(aeron_archive_c_client_static c_codecs)
+
+target_include_directories(aeron_archive_c_client_static
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/archive>"
+    PRIVATE ${ARCHIVE_CODEC_TARGET_DIR})
+
+target_link_libraries(aeron_archive_c_client_static
+    PRIVATE aeron_static
+    INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 if (NOT WIN32)
     set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
     set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 endif ()
 
-target_link_libraries(aeron_archive_c_client
-    PRIVATE aeron_client
-    INTERFACE ${CMAKE_THREAD_LIBS_INIT})
-
 if (AERON_INSTALL_TARGETS)
-    install(TARGETS aeron_archive_c_client ARCHIVE DESTINATION lib)
-    install(DIRECTORY . DESTINATION include FILES_MATCHING PATTERN "*.h")
+    install(
+        TARGETS aeron_archive_c_client aeron_archive_c_client_static
+        EXPORT archive-targets
+        RUNTIME DESTINATION lib
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+    install(DIRECTORY ./ DESTINATION include/archive FILES_MATCHING PATTERN "*.h")
 endif ()

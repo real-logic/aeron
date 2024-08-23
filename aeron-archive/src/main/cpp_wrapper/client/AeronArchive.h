@@ -16,13 +16,37 @@
 #ifndef AERON_ARCHIVE_AERON_ARCHIVE_H
 #define AERON_ARCHIVE_AERON_ARCHIVE_H
 
+#include "client/aeron_archive.h"
+#include "aeron_common.h"
+
 namespace aeron { namespace archive { namespace client
 {
 
-std::string something()
+class Context
 {
-    return std::string("here");
-}
+public:
+
+private:
+    //aeron_archive_context_t m_ctx;
+};
+
+class AsyncConnect
+{
+public:
+
+private:
+    //aeron_archive_context_t m_ctx;
+};
+
+class AeronArchive
+{
+public:
+
+    static std::shared_ptr<AsyncConnect> asyncConnect(Context ctx)
+    {
+    }
+};
+
 
 }}}
 

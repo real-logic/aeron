@@ -446,11 +446,15 @@ int aeron_archive_add_recorded_publication(
     }
 
     char recording_channel[AERON_MAX_PATH];
-    aeron_archive_channel_with_session_id(
+    if (aeron_archive_channel_with_session_id(
         recording_channel,
         sizeof(recording_channel),
         channel,
-        constants.session_id);
+        constants.session_id) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
 
     if (aeron_archive_start_recording(
         NULL,
@@ -508,11 +512,15 @@ int aeron_archive_add_recorded_exclusive_publication(
     aeron_exclusive_publication_constants(_exclusive_publication, &constants);
 
     char recording_channel[AERON_MAX_PATH];
-    aeron_archive_channel_with_session_id(
+    if (aeron_archive_channel_with_session_id(
         recording_channel,
         sizeof(recording_channel),
         channel,
-        constants.session_id);
+        constants.session_id) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
 
     if (aeron_archive_start_recording(
         NULL,
@@ -870,11 +878,15 @@ int aeron_archive_stop_recording_publication_constants(
     aeron_publication_constants_t *constants)
 {
     char recording_channel[AERON_MAX_PATH];
-    aeron_archive_channel_with_session_id(
+    if (aeron_archive_channel_with_session_id(
         recording_channel,
         sizeof(recording_channel),
         constants->channel,
-        constants->session_id);
+        constants->session_id) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
 
     return aeron_archive_stop_recording_channel_and_stream(
         aeron_archive,
@@ -2418,16 +2430,19 @@ cleanup:
 
 int aeron_archive_channel_with_session_id(char *out, size_t out_len, const char *in, int32_t session_id)
 {
+    int rc = 0;
     aeron_uri_string_builder_t builder;
 
-    // TODO error handling
+    if (aeron_uri_string_builder_init_on_string(&builder, in) < 0 ||
+        aeron_uri_string_builder_put_int32(&builder, AERON_URI_SESSION_ID_KEY, session_id) < 0 ||
+        aeron_uri_string_builder_sprint(&builder, out, out_len) < 0)
+    {
+        rc = -1;
+    }
 
-    aeron_uri_string_builder_init_on_string(&builder, in);
-    aeron_uri_string_builder_put_int32(&builder, AERON_URI_SESSION_ID_KEY, session_id);
-    aeron_uri_string_builder_sprint(&builder, out, out_len);
     aeron_uri_string_builder_close(&builder);
 
-    return 0;
+    return rc;
 }
 
 // This assumes there's already been a check for the presence of the error_handler

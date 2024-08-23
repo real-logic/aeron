@@ -56,10 +56,6 @@ int aeron_archive_context_init(aeron_archive_context_t **ctx)
 
     _ctx->message_timeout_ns = AERON_ARCHIVE_CONTEXT_MESSAGE_TIMEOUT_NS_DEFAULT;
 
-    /*
-     * TODO here's where we'd read env variables to overwrite the defaults
-     */
-
     *ctx = _ctx;
 
     return 0;
@@ -119,11 +115,134 @@ cleanup:
     return -1;
 }
 
+void aeron_archive_context_idle(aeron_archive_context_t *ctx)
+{
+    ctx->idle_strategy_func(ctx->idle_strategy_state, 0);
+}
+
+void aeron_archive_context_invoke_aeron_client(aeron_archive_context_t *ctx)
+{
+    if (aeron_context_get_use_conductor_agent_invoker(ctx->aeron_ctx))
+    {
+        aeron_main_do_work(ctx->aeron);
+    }
+
+    if (NULL != ctx->delegating_invoker_func)
+    {
+        ctx->delegating_invoker_func(ctx->delegating_invoker_func_clientd);
+    }
+}
+
+int aeron_archive_context_set_aeron(aeron_archive_context_t *ctx, aeron_t *aeron)
+{
+    ctx->aeron = aeron;
+
+    return 0;
+}
+
+aeron_t *aeron_archive_context_get_aeron(aeron_archive_context_t *ctx)
+{
+    return ctx->aeron;
+}
+
+int aeron_archive_context_set_aeron_context(aeron_archive_context_t *ctx, aeron_context_t *aeron_ctx)
+{
+    ctx->aeron_ctx = aeron_ctx;
+
+    return 0;
+}
+
+aeron_context_t *aeron_archive_context_get_aeron_context(aeron_archive_context_t *ctx)
+{
+    return ctx->aeron_ctx;
+}
+
+int aeron_archive_context_set_owns_aeron_client(aeron_archive_context_t *ctx, bool owns_aeron_client)
+{
+    ctx->owns_aeron_client = owns_aeron_client;
+
+    return 0;
+}
+
+bool aeron_archive_context_get_owns_aeron_client(aeron_archive_context_t *ctx)
+{
+    return ctx->owns_aeron_client;
+}
+
+int aeron_archive_context_set_aeron_directory_name(aeron_archive_context_t *ctx, const char *aeron_directory_name)
+{
+    strncpy(ctx->aeron_directory_name, aeron_directory_name, sizeof(ctx->aeron_directory_name));
+
+    return 0;
+}
+
+const char *aeron_archive_context_get_aeron_directory_name(aeron_archive_context_t *ctx)
+{
+    return ctx->aeron_directory_name;
+}
+
+int aeron_archive_context_set_control_request_channel(
+    aeron_archive_context_t *ctx,
+    const char *control_request_channel)
+{
+    strncpy(ctx->control_request_channel, control_request_channel, sizeof(ctx->control_request_channel));
+
+    return 0;
+}
+
+const char *aeron_archive_context_get_control_request_channel(aeron_archive_context_t *ctx)
+{
+    return ctx->control_request_channel;
+}
+
+int aeron_archive_context_set_control_request_stream_id(aeron_archive_context_t *ctx, int32_t control_request_stream_id)
+{
+    ctx->control_request_stream_id = control_request_stream_id;
+
+    return 0;
+}
+
+int32_t aeron_archive_context_get_control_request_stream_id(aeron_archive_context_t *ctx)
+{
+    return ctx->control_request_stream_id;
+}
+
+int aeron_archive_context_set_control_response_channel(
+    aeron_archive_context_t *ctx,
+    const char *control_response_channel)
+{
+    strncpy(ctx->control_response_channel, control_response_channel, sizeof(ctx->control_response_channel));
+
+    return 0;
+}
+
+const char *aeron_archive_context_get_control_response_channel(aeron_archive_context_t *ctx)
+{
+    return ctx->control_response_channel;
+}
+
+int aeron_archive_context_set_control_response_stream_id(aeron_archive_context_t *ctx, int32_t control_response_stream_id)
+{
+    ctx->control_response_stream_id = control_response_stream_id;
+
+    return 0;
+}
+
+int32_t aeron_archive_context_get_control_response_stream_id(aeron_archive_context_t *ctx)
+{
+    return ctx->control_response_stream_id;
+}
+
 int aeron_archive_context_set_message_timeout_ns(aeron_archive_context_t *ctx, int64_t message_timeout_ns)
 {
     ctx->message_timeout_ns = message_timeout_ns;
 
     return 0;
+}
+
+int64_t aeron_archive_context_get_message_timeout_ns(aeron_archive_context_t *ctx)
+{
+    return ctx->message_timeout_ns;
 }
 
 int aeron_archive_context_set_idle_strategy(
@@ -152,24 +271,6 @@ int aeron_archive_context_set_credentials_supplier(
     return 0;
 }
 
-int aeron_archive_context_set_control_request_channel(
-    aeron_archive_context_t *ctx,
-    const char *control_request_channel)
-{
-    strncpy(ctx->control_request_channel, control_request_channel, sizeof(ctx->control_request_channel));
-
-    return 0;
-}
-
-int aeron_archive_context_set_control_response_channel(
-    aeron_archive_context_t *ctx,
-    const char *control_response_channel)
-{
-    strncpy(ctx->control_response_channel, control_response_channel, sizeof(ctx->control_response_channel));
-
-    return 0;
-}
-
 int aeron_archive_context_set_recording_signal_consumer(
     aeron_archive_context_t *ctx,
     aeron_archive_recording_signal_consumer_func_t on_recording_signal,
@@ -181,30 +282,24 @@ int aeron_archive_context_set_recording_signal_consumer(
     return 0;
 }
 
-int32_t aeron_archive_context_get_control_request_stream_id(aeron_archive_context_t *ctx)
+int aeron_archive_context_set_error_handler(
+    aeron_archive_context_t *ctx,
+    aeron_error_handler_t error_handler,
+    void *clientd)
 {
-    return ctx->control_request_stream_id;
+    ctx->error_handler = error_handler;
+    ctx->error_handler_clientd = clientd;
+
+    return 0;
 }
 
-const char *aeron_archive_context_get_control_request_channel(aeron_archive_context_t *ctx)
+int aeron_archive_context_set_delegating_invoker(
+    aeron_archive_context_t *ctx,
+    aeron_archive_delegating_invoker_func_t delegating_invoker_func,
+    void *clientd)
 {
-    return ctx->control_request_channel;
-}
+    ctx->delegating_invoker_func = delegating_invoker_func;
+    ctx->delegating_invoker_func_clientd = clientd;
 
-void aeron_archive_context_idle(aeron_archive_context_t *ctx)
-{
-    ctx->idle_strategy_func(ctx->idle_strategy_state, 0);
-}
-
-void aeron_archive_context_invoke_aeron_client(aeron_archive_context_t *ctx)
-{
-    if (aeron_context_get_use_conductor_agent_invoker(ctx->aeron_ctx))
-    {
-        aeron_main_do_work(ctx->aeron);
-    }
-
-    if (NULL != ctx->delegating_invoker_func)
-    {
-        ctx->delegating_invoker_func(ctx->delegating_invoker_func_clientd);
-    }
+    return 0;
 }

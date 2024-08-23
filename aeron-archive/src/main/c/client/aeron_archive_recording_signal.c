@@ -18,8 +18,9 @@
 #include "aeron_archive_context.h"
 
 #include "c/aeron_archive_client/recordingSignalEvent.h"
+#include "util/aeron_error.h"
 
-void aeron_archive_recording_signal_dispatch_buffer(aeron_archive_context_t *ctx, const uint8_t* buffer, size_t length)
+int aeron_archive_recording_signal_dispatch_buffer(aeron_archive_context_t *ctx, const uint8_t* buffer, size_t length)
 {
     if (NULL != ctx->on_recording_signal)
     {
@@ -44,11 +45,14 @@ void aeron_archive_recording_signal_dispatch_buffer(aeron_archive_context_t *ctx
             &recording_signal_event,
             &signal.recording_signal_code))
         {
-            // TODO
+            AERON_SET_ERR(-1, "%s", "unable to read recording signal code");
+            return -1;
         }
 
         ctx->on_recording_signal(&signal, ctx->on_recording_signal_clientd);
     }
+
+    return 0;
 }
 
 void aeron_archive_recording_signal_dispatch_signal(aeron_archive_context_t *ctx, aeron_archive_recording_signal_t *signal)

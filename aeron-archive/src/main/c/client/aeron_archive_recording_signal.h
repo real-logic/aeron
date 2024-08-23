@@ -19,7 +19,7 @@
 
 #include "aeron_archive.h"
 
-void aeron_archive_recording_signal_dispatch_buffer(aeron_archive_context_t *ctx, const uint8_t* buffer, size_t length);
+int aeron_archive_recording_signal_dispatch_buffer(aeron_archive_context_t *ctx, const uint8_t* buffer, size_t length);
 
 void aeron_archive_recording_signal_dispatch_signal(aeron_archive_context_t *ctx, aeron_archive_recording_signal_t *signal);
 

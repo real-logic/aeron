@@ -67,8 +67,7 @@ typedef struct aeron_archive_replay_params_stct
 }
 aeron_archive_replay_params_t;
 
-// TODO should all the replay/replication params be in these structs?
-// Maybe required params should be listed on the function and optional ones are in the struct?
+int aeron_archive_replay_params_init(aeron_archive_replay_params_t *params);
 
 typedef struct aeron_archive_replication_params_stct
 {
@@ -84,6 +83,8 @@ typedef struct aeron_archive_replication_params_stct
     aeron_archive_encoded_credentials_t *encoded_credentials;
 }
 aeron_archive_replication_params_t;
+
+int aeron_archive_replication_params_init(aeron_archive_replication_params_t *params);
 
 typedef struct aeron_archive_recording_descriptor_stct
 {
@@ -163,35 +164,66 @@ typedef enum aeron_archive_client_recording_signal_en
 }
 aeron_archive_client_recording_signal_t;
 
+/* context */
+
 int aeron_archive_context_init(aeron_archive_context_t **ctx);
 int aeron_archive_context_close(aeron_archive_context_t *ctx);
 
-// TODO implement a full complement of setters/getters
+int aeron_archive_context_set_aeron(aeron_archive_context_t *ctx, aeron_t *aeron);
+aeron_t *aeron_archive_context_get_aeron(aeron_archive_context_t *ctx);
+
+int aeron_archive_context_set_aeron_context(aeron_archive_context_t *ctx, aeron_context_t *aeron_ctx);
+aeron_context_t *aeron_archive_context_get_aeron_context(aeron_archive_context_t *ctx);
+
+int aeron_archive_context_set_owns_aeron_client(aeron_archive_context_t *ctx, bool owns_aeron_client);
+bool aeron_archive_context_get_owns_aeron_client(aeron_archive_context_t *ctx);
+
+int aeron_archive_context_set_aeron_directory_name(aeron_archive_context_t *ctx, const char *aeron_directory_name);
+const char *aeron_archive_context_get_aeron_directory_name(aeron_archive_context_t *ctx);
+
+int aeron_archive_context_set_control_request_channel(aeron_archive_context_t *ctx, const char *control_request_channel);
+const char *aeron_archive_context_get_control_request_channel(aeron_archive_context_t *ctx);
+
+int aeron_archive_context_set_control_request_stream_id(aeron_archive_context_t *ctx, int32_t control_request_stream_id);
+int32_t aeron_archive_context_get_control_request_stream_id(aeron_archive_context_t *ctx);
+
+int aeron_archive_context_set_control_response_channel(aeron_archive_context_t *ctx, const char *control_response_channel);
+const char *aeron_archive_context_get_control_response_channel(aeron_archive_context_t *ctx);
+
+int aeron_archive_context_set_control_response_stream_id(aeron_archive_context_t *ctx, int32_t control_response_stream_id);
+int32_t aeron_archive_context_get_control_response_stream_id(aeron_archive_context_t *ctx);
 
 int aeron_archive_context_set_message_timeout_ns(aeron_archive_context_t *ctx, int64_t message_timeout_ns);
+int64_t aeron_archive_context_get_message_timeout_ns(aeron_archive_context_t *ctx);
+
 int aeron_archive_context_set_idle_strategy(
     aeron_archive_context_t *ctx,
     aeron_idle_strategy_func_t idle_strategy_func,
     void *idle_strategy_state);
+
 int aeron_archive_context_set_credentials_supplier(
     aeron_archive_context_t *ctx,
     aeron_archive_credentials_encoded_credentials_supplier_func_t encoded_credentials,
     aeron_archive_credentials_challenge_supplier_func_t on_challenge,
     aeron_archive_credentials_free_func_t on_free,
     void *clientd);
-int aeron_archive_context_set_control_request_channel(
-    aeron_archive_context_t *ctx,
-    const char *control_request_channel);
-int aeron_archive_context_set_control_response_channel(
-    aeron_archive_context_t *ctx,
-    const char *control_response_channel);
+
 int aeron_archive_context_set_recording_signal_consumer(
     aeron_archive_context_t *ctx,
     aeron_archive_recording_signal_consumer_func_t on_recording_signal,
     void *clientd);
 
-int32_t aeron_archive_context_get_control_request_stream_id(aeron_archive_context_t *ctx);
-const char *aeron_archive_context_get_control_request_channel(aeron_archive_context_t *ctx);
+int aeron_archive_context_set_error_handler(
+    aeron_archive_context_t *ctx,
+    aeron_error_handler_t error_handler,
+    void *clientd);
+
+int aeron_archive_context_set_delegating_invoker(
+    aeron_archive_context_t *ctx,
+    aeron_archive_delegating_invoker_func_t delegating_invoker_func,
+    void *clientd);
+
+/* client */
 
 int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_archive_context_t *ctx);
 int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_archive_async_connect_t *async);
@@ -200,8 +232,11 @@ int aeron_archive_connect(aeron_archive_t **aeron_archive, aeron_archive_context
 
 int aeron_archive_close(aeron_archive_t *aeron_archive);
 
-int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *aeron_archive);
+aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
+int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
+aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);
 
+int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *aeron_archive);
 int aeron_archive_poll_for_error_response(aeron_archive_t *aeron_archive, char *buffer, size_t buffer_length);
 int aeron_archive_check_for_error_response(aeron_archive_t *aeron_archive);
 
@@ -415,18 +450,13 @@ int64_t aeron_archive_segment_file_base_position(
     int32_t term_buffer_length,
     int32_t segment_file_length);
 
-aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
-int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
-aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);
-
-int aeron_archive_replay_params_init(aeron_archive_replay_params_t *params);
-int aeron_archive_replication_params_init(aeron_archive_replication_params_t *params);
-
 int32_t aeron_archive_recording_pos_find_counter_id_by_recording_id(aeron_counters_reader_t *counters_reader, int64_t recording_id);
 int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters_reader_t *counters_reader, int32_t session_id);
 int64_t aeron_archive_recording_pos_get_recording_id(aeron_counters_reader_t *counters_reader, int32_t counter_id);
 int aeron_archive_recording_pos_get_source_identity(aeron_counters_reader_t *counters_reader, int32_t counter_id, const char *dst, int32_t *len_p);
 int aeron_archive_recording_pos_is_active(bool *is_active, aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t recording_id);
+
+/* replay/merge */
 
 typedef struct aeron_archive_replay_merge_stct aeron_archive_replay_merge_t;
 

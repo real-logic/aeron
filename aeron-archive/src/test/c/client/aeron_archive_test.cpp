@@ -2289,9 +2289,6 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateThenReplay)
     aeron_archive_replication_params_t replication_params;
     aeron_archive_replication_params_init(&replication_params);
 
-    // TODO when I forgot to set this, I didn't see an error pop out anywhere.
-    // I'd expect that whatever failure occurred would somehow become visible.
-    // It's quite possible that the lack of visibility is because my error handling code isn't complete.
     replication_params.encoded_credentials = &default_creds;
 
     EXPECT_EQ(0, aeron_archive_replicate(

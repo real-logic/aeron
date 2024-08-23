@@ -275,7 +275,11 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
 
         case AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_EVENT_SBE_TEMPLATE_ID:
         {
-            aeron_archive_recording_signal_dispatch_buffer(poller->ctx, buffer, length);
+            if (aeron_archive_recording_signal_dispatch_buffer(poller->ctx, buffer, length) < 0)
+            {
+                AERON_APPEND_ERR("%s", "");
+                return AERON_ACTION_BREAK;
+            }
 
             break;
         }

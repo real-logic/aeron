@@ -60,8 +60,7 @@ jobs:
           java-version: 17
 
       - name: Install compiler
-        run: |
-          sudo apt-get install -y g++-${{ matrix.version }}
+        run: sudo apt-get install -y g++-14
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3

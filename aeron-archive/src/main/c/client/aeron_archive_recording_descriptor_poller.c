@@ -121,12 +121,16 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_descriptor_po
 
     struct aeron_archive_client_messageHeader hdr;
 
-    aeron_archive_client_messageHeader_wrap(
+    if (aeron_archive_client_messageHeader_wrap(
         &hdr,
         (char *)buffer,
         0,
         aeron_archive_client_messageHeader_sbe_schema_version(),
-        length);
+        length) == NULL)
+    {
+        AERON_SET_ERR(errno, "%s", "unable to wrap buffer");
+        return AERON_ACTION_BREAK;
+    }
 
     uint16_t schema_id = aeron_archive_client_messageHeader_schemaId(&hdr);
 

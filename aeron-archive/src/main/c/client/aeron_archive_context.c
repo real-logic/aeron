@@ -171,7 +171,7 @@ bool aeron_archive_context_get_owns_aeron_client(aeron_archive_context_t *ctx)
 
 int aeron_archive_context_set_aeron_directory_name(aeron_archive_context_t *ctx, const char *aeron_directory_name)
 {
-    strncpy(ctx->aeron_directory_name, aeron_directory_name, sizeof(ctx->aeron_directory_name));
+    snprintf(ctx->aeron_directory_name, sizeof(ctx->aeron_directory_name), "%s", aeron_directory_name);
 
     return 0;
 }
@@ -185,7 +185,7 @@ int aeron_archive_context_set_control_request_channel(
     aeron_archive_context_t *ctx,
     const char *control_request_channel)
 {
-    strncpy(ctx->control_request_channel, control_request_channel, sizeof(ctx->control_request_channel));
+    snprintf(ctx->control_request_channel, sizeof(ctx->control_request_channel), "%s", control_request_channel);
 
     return 0;
 }
@@ -211,7 +211,7 @@ int aeron_archive_context_set_control_response_channel(
     aeron_archive_context_t *ctx,
     const char *control_response_channel)
 {
-    strncpy(ctx->control_response_channel, control_response_channel, sizeof(ctx->control_response_channel));
+    snprintf(ctx->control_response_channel, sizeof(ctx->control_response_channel), "%s", control_response_channel);
 
     return 0;
 }

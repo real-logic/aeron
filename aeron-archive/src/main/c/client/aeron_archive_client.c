@@ -333,7 +333,10 @@ int aeron_archive_poll_for_error_response(aeron_archive_t *aeron_archive, char *
         }
     }
 
-    snprintf(buffer, buffer_length, "");
+    if (buffer_length > 0)
+    {
+        buffer[0] = '\0';
+    }
 
 cleanup:
     aeron_mutex_unlock(&aeron_archive->lock);

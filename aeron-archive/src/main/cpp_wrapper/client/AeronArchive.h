@@ -45,6 +45,7 @@ public:
 
     static std::shared_ptr<AsyncConnect> asyncConnect(Context ctx)
     {
+        return nullptr;
     }
 };
 

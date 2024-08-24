@@ -24,6 +24,7 @@
 typedef struct aeron_uri_string_builder_stct
 {
     aeron_str_to_ptr_hash_map_t params;
+    bool closed;
 }
 aeron_uri_string_builder_t;
 

@@ -67,7 +67,7 @@ public:
 
     void asdf()
     {
-        fprintf(stderr, "did it work?? :: %s\n", something().c_str());
+        //fprintf(stderr, "did it work?? :: %s\n", something().c_str());
     }
 
     /*

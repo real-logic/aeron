@@ -31,6 +31,8 @@ int aeron_uri_string_builder_init_new(aeron_uri_string_builder_t *builder)
 {
     aeron_str_to_ptr_hash_map_init(&builder->params, 64, AERON_MAP_DEFAULT_LOAD_FACTOR);
 
+    builder->closed = false;
+
     return 0;
 }
 
@@ -41,16 +43,14 @@ static int aeron_uri_string_builder_params_func(void *clientd, const char *key, 
 
 int aeron_uri_string_builder_init_on_string(aeron_uri_string_builder_t *builder, const char *uri)
 {
+    int rc = 0;
     aeron_uri_string_builder_init_new(builder);
 
     size_t uri_length = strlen(uri);
 
-    char buffer[AERON_MAX_PATH + 1];
-
-    size_t max_len = uri_length > AERON_MAX_PATH ? AERON_MAX_PATH : uri_length;
-
-    strncpy(buffer, uri, max_len);
-    buffer[uri_length] = '\0';
+    char *buffer;
+    aeron_alloc((void **)&buffer, uri_length + 1);
+    strncpy(buffer, uri, uri_length + 1);
 
     char *ptr = buffer;
     char *end_ptr = NULL;
@@ -61,7 +61,7 @@ int aeron_uri_string_builder_init_on_string(aeron_uri_string_builder_t *builder,
         if (end_ptr == NULL)
         {
             AERON_SET_ERR(EINVAL, "%s", "uri must start with '[prefix:]aeron:[media]'");
-            return -1;
+            goto error_cleanup;
         }
 
         // replace ':' after prefix with NULL character
@@ -76,7 +76,7 @@ int aeron_uri_string_builder_init_on_string(aeron_uri_string_builder_t *builder,
     if (strncmp("aeron:", ptr, 6) != 0)
     {
         AERON_SET_ERR(EINVAL, "%s", "uri found without 'aeron:'");
-        return -1;
+        goto error_cleanup;
     }
 
     // *ptr == "aeron:"
@@ -96,10 +96,23 @@ int aeron_uri_string_builder_init_on_string(aeron_uri_string_builder_t *builder,
 
     if (NULL == end_ptr)
     {
-        return 0;
+        goto cleanup;
     }
 
-    return aeron_uri_parse_params(end_ptr + 1, aeron_uri_string_builder_params_func, builder);
+    if (aeron_uri_parse_params(end_ptr + 1, aeron_uri_string_builder_params_func, builder) == 0)
+    {
+        goto cleanup;
+    }
+
+error_cleanup:
+    aeron_uri_string_builder_close(builder);
+
+    rc = -1;
+
+cleanup:
+    aeron_free(buffer);
+
+    return rc;
 }
 
 static void aeron_uri_string_builder_entry_delete(void *clientd, const char *key, size_t key_len, void *value)
@@ -109,9 +122,14 @@ static void aeron_uri_string_builder_entry_delete(void *clientd, const char *key
 
 int aeron_uri_string_builder_close(aeron_uri_string_builder_t *builder)
 {
-    aeron_str_to_ptr_hash_map_for_each(&builder->params, aeron_uri_string_builder_entry_delete, NULL);
+    if (!builder->closed)
+    {
+        aeron_str_to_ptr_hash_map_for_each(&builder->params, aeron_uri_string_builder_entry_delete, NULL);
 
-    aeron_str_to_ptr_hash_map_delete(&builder->params);
+        aeron_str_to_ptr_hash_map_delete(&builder->params);
+    }
+
+    builder->closed = true;
 
     return 0;
 }

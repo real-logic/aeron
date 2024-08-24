@@ -15,6 +15,8 @@
  */
 
 #include <stdio.h>
+#include <inttypes.h>
+
 #include "uri/aeron_uri_string_builder.h"
 #include "concurrent/aeron_logbuffer_descriptor.h"
 
@@ -189,7 +191,7 @@ int aeron_uri_string_builder_put_int64(aeron_uri_string_builder_t *builder, cons
 {
     char buffer[15];
 
-    snprintf(buffer, 15, "%llu", value);
+    snprintf(buffer, 15, "%" PRIi64, value);
 
     return aeron_uri_string_builder_put(builder, key, buffer);
 }
@@ -288,7 +290,7 @@ int aeron_uri_string_builder_set_initial_position(
     if (position < 0 ||
         (position & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1)))
     {
-        AERON_SET_ERR(EINVAL, "position not multiple of FRAME_ALIGNMENT: %llu", position);
+        AERON_SET_ERR(EINVAL, "position not multiple of FRAME_ALIGNMENT: %" PRIi64, position);
         return -1;
     }
 

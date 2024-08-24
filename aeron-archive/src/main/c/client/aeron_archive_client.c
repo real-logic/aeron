@@ -441,7 +441,7 @@ int aeron_archive_add_recorded_publication(
     if (constants.original_registration_id != constants.registration_id)
     {
         // not original
-        AERON_SET_ERR(-1, "publication already added for channel=%s streamId=%llu", channel, stream_id);
+        AERON_SET_ERR(-1, "publication already added for channel=%s streamId=%" PRIi32, channel, stream_id);
         return -1;
     }
 
@@ -1848,7 +1848,7 @@ int aeron_archive_poll_next_response(
 
         if (aeron_nano_clock() > deadline_ns)
         {
-            AERON_SET_ERR(ETIMEDOUT, "%s awaiting response - correlationId=%llu", operation_name, correlation_id);
+            AERON_SET_ERR(ETIMEDOUT, "%s awaiting response - correlationId=%" PRIi64, operation_name, correlation_id);
             return -1;
         }
 
@@ -1896,7 +1896,7 @@ int aeron_archive_poll_for_response(
                 // got an error, and the correlation ids match
                 AERON_SET_ERR(
                     -1,
-                    "response for correlationId=%llu, error: %s",
+                    "response for correlationId=%" PRIi64 ", error: %s",
                     correlation_id,
                     poller->error_message);
                 return -1;
@@ -1966,7 +1966,7 @@ int aeron_archive_poll_for_response_allowing_error(
                 // got an error, and the correlation ids match
                 AERON_SET_ERR(
                     -1,
-                    "response for correlationId=%llu, error: %s",
+                    "response for correlationId=%" PRIi64 ", error: %s",
                     correlation_id,
                     poller->error_message);
                 return -1;
@@ -2047,7 +2047,7 @@ int aeron_archive_poll_for_descriptors(
 
         if (aeron_nano_clock() > deadline_ns)
         {
-            AERON_SET_ERR(ETIMEDOUT, "%s awaiting recording descriptors - correlationId=%llu", operation_name, correlation_id);
+            AERON_SET_ERR(ETIMEDOUT, "%s awaiting recording descriptors - correlationId=%" PRIi64, operation_name, correlation_id);
             return -1;
         }
 
@@ -2113,7 +2113,7 @@ int aeron_archive_poll_for_subscription_descriptors(
 
         if (aeron_nano_clock() > deadline_ns)
         {
-            AERON_SET_ERR(ETIMEDOUT, "%s awaiting recording descriptors - correlationId=%llu", operation_name, correlation_id);
+            AERON_SET_ERR(ETIMEDOUT, "%s awaiting recording descriptors - correlationId=%" PRIi64, operation_name, correlation_id);
             return -1;
         }
 

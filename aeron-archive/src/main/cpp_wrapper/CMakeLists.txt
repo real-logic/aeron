@@ -45,6 +45,6 @@ target_link_libraries(aeron_archive_wrapper INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 if (AERON_INSTALL_TARGETS)
     install(
         TARGETS aeron_archive_wrapper
-        EXPORT archive-targets)
+        EXPORT aeron-targets)
     install(DIRECTORY ./ DESTINATION include/wrapper FILES_MATCHING PATTERN "*.h")
 endif ()

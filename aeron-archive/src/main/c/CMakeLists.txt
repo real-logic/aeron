@@ -122,7 +122,7 @@ add_library(aeron::aeron_archive_c_client ALIAS aeron_archive_c_client)
 add_dependencies(aeron_archive_c_client c_codecs)
 
 target_include_directories(aeron_archive_c_client
-    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/archive>"
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/aeron>"
     PRIVATE ${ARCHIVE_CODEC_TARGET_DIR})
 
 target_link_libraries(aeron_archive_c_client
@@ -136,7 +136,7 @@ add_library(aeron::aeron_archive_c_client_static ALIAS aeron_archive_c_client_st
 add_dependencies(aeron_archive_c_client_static c_codecs)
 
 target_include_directories(aeron_archive_c_client_static
-    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/archive>"
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/aeron>"
     PRIVATE ${ARCHIVE_CODEC_TARGET_DIR})
 
 target_link_libraries(aeron_archive_c_client_static
@@ -151,9 +151,9 @@ endif ()
 if (AERON_INSTALL_TARGETS)
     install(
         TARGETS aeron_archive_c_client aeron_archive_c_client_static
-        EXPORT archive-targets
+        EXPORT aeron-targets
         RUNTIME DESTINATION lib
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
-    install(DIRECTORY ./ DESTINATION include/archive FILES_MATCHING PATTERN "*.h")
+    install(DIRECTORY ./ DESTINATION include/aeron FILES_MATCHING PATTERN "*.h")
 endif ()

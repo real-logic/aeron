@@ -16,8 +16,9 @@
 #ifndef AERON_ARCHIVE_AERON_ARCHIVE_H
 #define AERON_ARCHIVE_AERON_ARCHIVE_H
 
-#include "client/aeron_archive.h"
 #include "aeron_common.h"
+//#include "client/aeron_archive.h"
+//#include "aeron_archive.h"
 
 namespace aeron { namespace archive { namespace client
 {

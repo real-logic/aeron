@@ -719,8 +719,7 @@ project(':aeron-archive') {
     def generatedCDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated/c")
     tasks.register('generateCCodecs', JavaExec) {
         mainClass.set('uk.co.real_logic.sbe.SbeTool')
-        //classpath = configurations.codecGeneration
-        classpath = files(['/Users/natebradac/src/real-logic/simple-binary-encoding/sbe-tool/build/libs/sbe-tool-1.33.0-SNAPSHOT.jar']) + configurations.codecGeneration
+        classpath = configurations.codecGeneration
         systemProperties(
             'sbe.output.dir': generatedCDir,
             'sbe.target.language': 'C',

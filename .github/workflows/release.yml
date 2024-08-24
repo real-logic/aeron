@@ -71,12 +71,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+          java-version: 17
       - name: Publish with Gradle
         run: ./gradlew publish
         env:

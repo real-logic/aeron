@@ -18,11 +18,11 @@ RUN apt-get update && apt-get install -y \
 
 RUN curl -s https://repos.azul.com/azul-repo.key | gpg --dearmor -o /usr/share/keyrings/azul.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/azul.gpg] https://repos.azul.com/zulu/deb stable main" | tee /etc/apt/sources.list.d/zulu.list && \
-    apt-get update && apt-get install -y zulu-8
+    apt-get update && apt-get install -y zulu-17
 
-ENV JAVA_HOME=/usr/lib/jvm/zulu8 \
-    BUILD_JAVA_HOME=/usr/lib/jvm/zulu8 \
-    BUILD_JAVA_VERSION=8 \
+ENV JAVA_HOME=/usr/lib/jvm/zulu17 \
+    BUILD_JAVA_HOME=/usr/lib/jvm/zulu17 \
+    BUILD_JAVA_VERSION=17 \
     GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail"
 
 ARG USER_ID="1000"

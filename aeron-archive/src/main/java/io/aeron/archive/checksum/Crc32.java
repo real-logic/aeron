@@ -31,19 +31,10 @@ final class Crc32 implements Checksum
 
     static
     {
-        Method method = lookupMethod("updateByteBuffer0"); // JDK 9+
-        if (null == method)
-        {
-            method = lookupMethod("updateByteBuffer"); // JDK 8
-            if (null == method)
-            {
-                throw new Error("Failed to find method to compute a checksum from a ByteBuffer on " +
-                    CRC32.class.getName() + " class.");
-            }
-        }
-
         try
         {
+            final Method method =
+                CRC32.class.getDeclaredMethod("updateByteBuffer0", int.class, long.class, int.class, int.class);
             method.setAccessible(true);
             MethodHandle methodHandle = MethodHandles.lookup().unreflect(method);
             methodHandle = MethodHandles.insertArguments(methodHandle, 0, 0);
@@ -51,19 +42,7 @@ final class Crc32 implements Checksum
         }
         catch (final Exception ex)
         {
-            throw new Error("Failed to acquire method handle for " + method, ex);
-        }
-    }
-
-    private static Method lookupMethod(final String name)
-    {
-        try
-        {
-            return CRC32.class.getDeclaredMethod(name, int.class, long.class, int.class, int.class);
-        }
-        catch (final NoSuchMethodException ignore)
-        {
-            return null;
+            throw new Error(ex);
         }
     }
 

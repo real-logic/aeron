@@ -2,9 +2,9 @@ repositories {
     mavenCentral()
 }
 
-def asciidoctorjVersion = '2.5.10'
-def jgitVersion = '5.13.2.202306221912-r'
-def asmVersion = '9.6'
+def asciidoctorjVersion = '2.5.13'
+def jgitVersion = '6.10.0.202406032230-r'
+def asmVersion = '9.7'
 
 configurations.configureEach {
     resolutionStrategy.eachDependency { details ->

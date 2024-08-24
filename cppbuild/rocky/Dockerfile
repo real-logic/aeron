@@ -3,8 +3,7 @@ FROM rockylinux:${VERSION} as builder
 
 ARG GCC_VERSION="10"
 
-RUN yum update -y && yum install -y https://cdn.azul.com/zulu/bin/zulu-repo-1.0.0-1.noarch.rpm && \
-    yum update -y && yum install -y \
+RUN yum update -y && yum install -y \
     scl-utils \
     gcc-toolset-${GCC_VERSION}-gcc \
     gcc-toolset-${GCC_VERSION}-gcc-c++ \
@@ -15,11 +14,11 @@ RUN yum update -y && yum install -y https://cdn.azul.com/zulu/bin/zulu-repo-1.0.
     git \
     findutils \
     openssl-devel \
-    zulu-8
+    java-17-openjdk-devel
 
-ENV JAVA_HOME=/usr/lib/jvm/zulu-8 \
-    BUILD_JAVA_HOME=/usr/lib/jvm/zulu-8 \
-    BUILD_JAVA_VERSION=8 \
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk \
+    BUILD_JAVA_HOME=/usr/lib/jvm/java-17-openjdk \
+    BUILD_JAVA_VERSION=17 \
     GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail" \
     GCC_VERSION=${GCC_VERSION}
 

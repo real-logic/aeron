@@ -18,8 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8' ]
-        os: ['ubuntu-22.04' ]
+        os: ['ubuntu-24.04' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,6 +40,6 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: ${{ matrix.java }}
+          java-version: 17
       - name: Build with Gradle
         run: ./gradlew tutorialPublish -Paeron.ci.apiKey=${{ secrets.WIKI_PAGE_TOKEN }} --stacktrace

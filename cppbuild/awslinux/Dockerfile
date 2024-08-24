@@ -1,8 +1,7 @@
 ARG VERSION="2023"
 FROM amazonlinux:${VERSION} as builder
 
-RUN yum update && yum install -y https://cdn.azul.com/zulu/bin/zulu-repo-1.0.0-1.noarch.rpm && \
-    yum update && yum install -y \
+RUN yum update && yum install -y \
     gcc \
     g++ \
     make \
@@ -11,13 +10,13 @@ RUN yum update && yum install -y https://cdn.azul.com/zulu/bin/zulu-repo-1.0.0-1
     libbsd-devel \
     libuuid-devel \
     git \
-    zulu-8 \
+    java-17-openjdk-devel \
     doxygen \
     python3
 
-ENV JAVA_HOME=/usr/lib/jvm/zulu-8 \
-    BUILD_JAVA_HOME=/usr/lib/jvm/zulu-8 \
-    BUILD_JAVA_VERSION=8 \
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk \
+    BUILD_JAVA_HOME=/usr/lib/jvm/java-17-openjdk \
+    BUILD_JAVA_VERSION=17 \
     GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail"
 
 ARG USER_ID="1000"

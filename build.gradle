@@ -18,16 +18,14 @@ buildscript {
         gradlePluginPortal()
         mavenCentral()
     }
-    dependencies {
-        classpath 'org.ow2.asm:asm:9.7'
-        classpath 'org.ow2.asm:asm-commons:9.7'
-    }
 }
 
 plugins {
+    id 'application'
+    id 'base'
     id 'java-library'
-    id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
-    id 'biz.aQute.bnd.builder' version '6.4.0' apply false
+    id 'com.gradleup.shadow' version '8.3.0' apply false
+    id 'biz.aQute.bnd.builder' version '7.0.0' apply false
     id 'com.github.ben-manes.versions' version '0.51.0'
 }
 
@@ -55,16 +53,18 @@ def toolchainLauncher = javaToolchains.launcherFor {
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
-def agronaVersion = '1.22.0'
-def agronaVersionRange = '[1.22.0,2.0[' // allow any release >= 1.22.0 and < 2.0.0
-def sbeVersion = '1.32.2'
+def agronaVersion = '1.23.0'
+def agronaVersionRange = "[${agronaVersion},2.0["
+def sbeVersion = '1.33.0'
 def checkstyleVersion = '9.3'
 def hamcrestVersion = '3.0'
 def junitVersion = '5.11.0'
-def mockitoVersion = '4.11.0'
-def byteBuddyVersion = '1.14.19'
+def mockitoVersion = '5.12.0'
+def byteBuddyVersion = '1.15.0'
+def asmVersion = '9.7'
 def findbugsAnnotationsVersion = '3.0.1'
 def hdrHistogramVersion = '2.2.2'
+def nashornVersion = '15.4'
 def gitCommitHash = io.aeron.build.GithubUtil.currentGitHash("${projectDir}")
 
 ext {
@@ -162,7 +162,12 @@ allprojects {
 
             force "org.agrona:agrona:${agronaVersion}",
                   "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
-                  "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
+                  "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}",
+                  "org.ow2.asm:asm:${asmVersion}",
+                  "org.ow2.asm:asm-analysis:${asmVersion}",
+                  "org.ow2.asm:asm-commons:${asmVersion}",
+                  "org.ow2.asm:asm-tree:${asmVersion}",
+                  "org.ow2.asm:asm-util:${asmVersion}"
         }
     }
 
@@ -172,14 +177,16 @@ allprojects {
 }
 
 subprojects {
+    apply plugin: 'base'
     apply plugin: 'java-library'
     apply plugin: 'checkstyle'
 
     dependencies {
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
         testImplementation "org.mockito:mockito-core:${mockitoVersion}"
-        testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+        testImplementation platform("org.junit:junit-bom:${junitVersion}")
+        testImplementation "org.junit.jupiter:junit-jupiter-params"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 
@@ -187,6 +194,7 @@ subprojects {
         toolchain {
             languageVersion = JavaLanguageVersion.of(buildJavaVersion)
         }
+        sourceCompatibility = JavaVersion.VERSION_17
     }
 
     group = aeronGroup
@@ -215,7 +223,6 @@ subprojects {
 
     tasks.withType(Test).configureEach { test ->
         if (buildJavaVersion >= 9) {
-            jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/java.util.zip=ALL-UNNAMED')
         }
         if (buildJavaVersion >= 21) {
@@ -332,24 +339,19 @@ subprojects {
         options.charSet = 'UTF-8'
         options.links("https://www.javadoc.io/doc/org.agrona/agrona/${agronaVersion}/")
 
-        if (buildJavaVersion > 21) { // early access JavaDoc location is different
+        if (buildJavaVersion >= 23) { // early access JavaDoc location is different
             options.links("https://download.java.net/java/early_access/jdk${buildJavaVersion}/docs/api/")
         }
-        else if (buildJavaVersion >= 11) {
+        else {
             options.links("https://docs.oracle.com/en/java/javase/${buildJavaVersion}/docs/api/")
         }
-        else {
-            options.links("https://docs.oracle.com/javase/${buildJavaVersion}/docs/api/")
-        }
 
-        if (buildJavaVersion >= 10) {
-            options.addBooleanOption 'html5', true
-        }
+        options.addBooleanOption('html5', true)
     }
 
     tasks.register('testJar', Jar) {
         dependsOn 'testClasses'
-        archiveClassifier.set("test-${project.archivesBaseName}")
+        archiveClassifier.set("test-${base.archivesName}")
         from sourceSets.test.output
     }
 
@@ -366,6 +368,10 @@ project(':aeron-annotations') {
     apply plugin: 'maven-publish'
     apply plugin: 'signing'
     apply plugin: 'biz.aQute.bnd.builder'
+
+    dependencies {
+        implementation "org.openjdk.nashorn:nashorn-core:${nashornVersion}"
+    }
 
     jar {
         bundle {
@@ -433,7 +439,7 @@ project(':aeron-client') {
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
     jar {
@@ -490,8 +496,9 @@ project(':aeron-client') {
         sign publishing.publications.aeronClient
     }
 
+    def configInfoFile = "${layout.buildDirectory.get()}/generated/sources/headers/java/main/config-info.dat"
+
     tasks.register('validateConfigExpectations', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
         def sourceDir = 'src/main/c'
 
         inputs.files(configInfoFile)
@@ -502,8 +509,7 @@ project(':aeron-client') {
     }
 
     tasks.register('generateConfigDoc', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
-        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+        def generatedDocFile = "${layout.buildDirectory.get()}/generated-doc/out.md"
 
         inputs.files(configInfoFile)
         outputs.files(generatedDocFile)
@@ -514,7 +520,7 @@ project(':aeron-client') {
     }
 
     tasks.register('validateCounterExpectations', JavaExec) {
-        def counterInfoFile = 'build/generated/sources/headers/java/main/counter-info.dat'
+        def counterInfoFile = "${layout.buildDirectory.get()}/generated/sources/headers/java/main/counter-info.dat"
         def sourceDir = 'src/main/c'
 
         inputs.files(counterInfoFile)
@@ -531,14 +537,16 @@ project(':aeron-driver') {
     apply plugin: 'application'
     apply plugin: 'biz.aQute.bnd.builder'
 
-    mainClassName = 'io.aeron.driver.MediaDriver'
+    application {
+        mainClass.set('io.aeron.driver.MediaDriver')
+    }
 
     dependencies {
         api project(':aeron-client')
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
     jar {
@@ -601,7 +609,7 @@ project(':aeron-driver') {
     }
 
     tasks.register('validateConfigExpectations', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
+        def configInfoFile = "${layout.buildDirectory.get()}/generated/sources/headers/java/main/config-info.dat"
         def sourceDir = 'src/main/c'
 
         inputs.files(configInfoFile)
@@ -612,8 +620,8 @@ project(':aeron-driver') {
     }
 
     tasks.register('generateConfigDoc', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
-        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+        def configInfoFile = "${layout.buildDirectory.get()}/generated/sources/headers/java/main/config-info.dat"
+        def generatedDocFile = "${layout.buildDirectory.get()}/generated-doc/out.md"
 
         inputs.files(configInfoFile)
         outputs.files(generatedDocFile)
@@ -640,12 +648,12 @@ project(':aeron-archive') {
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
         testImplementation files('build/classes/java/generatedTest')
     }
 
-    def generatedSrcDir = file("${buildDir}/generated-src")
-    def generatedTestDir = file("${buildDir}/generated-test")
+    def generatedSrcDir = file("${layout.buildDirectory.get()}/generated-src")
+    def generatedTestDir = file("${layout.buildDirectory.get()}/generated-test")
 
     sourceSets {
         generated {
@@ -796,8 +804,8 @@ project(':aeron-archive') {
     }
 
     tasks.register('generateConfigDoc', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
-        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+        def configInfoFile = "${layout.buildDirectory.get()}/generated/sources/headers/java/main/config-info.dat"
+        def generatedDocFile = "${layout.buildDirectory.get()}/generated-doc/out.md"
 
         inputs.files(configInfoFile)
         outputs.files(generatedDocFile)
@@ -824,10 +832,10 @@ project(':aeron-cluster') {
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
-    def generatedDir = file("${buildDir}/generated-src")
+    def generatedDir = file("${layout.buildDirectory.get()}/generated-src")
     sourceSets {
         generated {
             java.srcDir generatedDir
@@ -928,8 +936,8 @@ project(':aeron-cluster') {
     }
 
     tasks.register('generateConfigDoc', JavaExec) {
-        def configInfoFile = 'build/generated/sources/headers/java/main/config-info.dat'
-        def generatedDocFile = "${buildDir}/generated-doc/out.md"
+        def configInfoFile = "${layout.buildDirectory.get()}/generated/sources/headers/java/main/config-info.dat"
+        def generatedDocFile = "${layout.buildDirectory.get()}/generated-doc/out.md"
 
         inputs.files(configInfoFile)
         outputs.files(generatedDocFile)
@@ -943,7 +951,7 @@ project(':aeron-cluster') {
 project(':aeron-agent') {
     apply plugin: 'maven-publish'
     apply plugin: 'signing'
-    apply plugin: 'com.github.johnrengelman.shadow'
+    apply plugin: 'com.gradleup.shadow'
 
     def aeronClientProject = project(':aeron-client')
     def aeronDriverProject = project(':aeron-driver')
@@ -1113,7 +1121,7 @@ project(':aeron-samples') {
     }
 
     tasks.register('removeWikiDirectory', Delete) {
-        delete "${buildDir}/tmp/tutorialPublish"
+        delete "${layout.buildDirectory.get()}/tmp/tutorialPublish"
     }
 
     tasks.register('tutorialPublish', io.aeron.build.TutorialPublishTask) {
@@ -1125,7 +1133,7 @@ project(':aeron-samples') {
 }
 
 project(':aeron-system-tests') {
-    apply plugin: 'com.github.johnrengelman.shadow'
+    apply plugin: 'com.gradleup.shadow'
 
     dependencies {
         testImplementation project(':aeron-archive')
@@ -1136,7 +1144,7 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-cluster')
         testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
         testImplementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
         testCompileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
         if (buildJavaVersion == 8) {
             def jdkHome = toolchainLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
@@ -1178,8 +1186,9 @@ project(':aeron-test-support') {
         implementation project(':aeron-client')
         implementation project(':aeron-cluster')
         implementation project(':aeron-samples')
-        implementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
-        implementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
+        implementation platform("org.junit:junit-bom:${junitVersion}")
+        implementation "org.junit.jupiter:junit-jupiter-api"
+        implementation "org.junit.jupiter:junit-jupiter-params"
         implementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
@@ -1218,7 +1227,7 @@ project(':aeron-test-support') {
 project(':aeron-all') {
     apply plugin: 'maven-publish'
     apply plugin: 'signing'
-    apply plugin: 'com.github.johnrengelman.shadow'
+    apply plugin: 'com.gradleup.shadow'
 
     def aeronClientProject = project(':aeron-client')
     def aeronDriverProject = project(':aeron-driver')
@@ -1313,7 +1322,7 @@ project(':aeron-all') {
 }
 
 tasks.register('testReport', TestReport) {
-    destinationDirectory = file("${buildDir}/reports/allTests")
+    destinationDirectory = file("${layout.buildDirectory.get()}/reports/allTests")
     // Include the results from the `test` task in all sub-projects
     testResults.setFrom(subprojects*.test)
 }
@@ -1354,6 +1363,6 @@ tasks.named('dependencyUpdates').configure {
 }
 
 wrapper {
-    gradleVersion = '8.1.1'
+    gradleVersion = '8.10'
     distributionType = 'ALL'
 }

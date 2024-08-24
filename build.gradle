@@ -58,7 +58,7 @@ def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
 def agronaVersion = '1.23.0'
-def agronaVersionRange = '[1.23.0,2.0[' // allow any release >= 1.23.0 and < 2.0.0
+def agronaVersionRange = "[${agronaVersion},2.0["
 def sbeVersion = '1.33.0'
 def checkstyleVersion = '9.3'
 def hamcrestVersion = '3.0'
@@ -182,8 +182,9 @@ subprojects {
     dependencies {
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
         testImplementation "org.mockito:mockito-core:${mockitoVersion}"
-        testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+        testImplementation platform("org.junit:junit-bom:${junitVersion}")
+        testImplementation "org.junit.jupiter:junit-jupiter-params"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 
@@ -1169,8 +1170,9 @@ project(':aeron-test-support') {
         implementation project(':aeron-client')
         implementation project(':aeron-cluster')
         implementation project(':aeron-samples')
-        implementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
-        implementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
+        implementation platform("org.junit:junit-bom:${junitVersion}")
+        implementation "org.junit.jupiter:junit-jupiter-api"
+        implementation "org.junit.jupiter:junit-jupiter-params"
         implementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 

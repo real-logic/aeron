@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_H
-#define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_H
+#ifndef AERON_C_ARCHIVE_CONTROL_RESPONSE_POLLER_H
+#define AERON_C_ARCHIVE_CONTROL_RESPONSE_POLLER_H
 
 #include "aeron_archive.h"
 
@@ -67,4 +67,4 @@ int aeron_archive_control_response_poller_close(aeron_archive_control_response_p
 
 int aeron_archive_control_response_poller_poll(aeron_archive_control_response_poller_t *poller);
 
-#endif // AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_H
+#endif // AERON_C_ARCHIVE_CONTROL_RESPONSE_POLLER_H

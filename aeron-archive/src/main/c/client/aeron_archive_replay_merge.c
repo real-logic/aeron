@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include <inttypes.h>
 
 #include "aeron_archive.h"
@@ -47,9 +48,9 @@ struct aeron_archive_replay_merge_stct
     aeron_archive_proxy_t *archive_proxy;
     int64_t control_session_id;
     aeron_uri_string_builder_t replay_channel_builder;
-    char replay_destination[AERON_MAX_PATH + 1];
+    char replay_destination[AERON_MAX_PATH];
     char replay_endpoint[AERON_MAX_PATH];
-    char live_destination[AERON_MAX_PATH + 1];
+    char live_destination[AERON_MAX_PATH];
     int64_t recording_id;
     int64_t start_position;
     long long epoch_clock;
@@ -141,10 +142,11 @@ int aeron_archive_replay_merge_init(
 
         aeron_uri_string_builder_init_on_string(&builder, replay_destination);
 
-        strncpy(
+        snprintf(
             _replay_merge->replay_endpoint,
-            aeron_uri_string_builder_get(&builder, AERON_UDP_CHANNEL_ENDPOINT_KEY),
-            AERON_MAX_PATH);
+            sizeof(_replay_merge->replay_endpoint),
+            "%s",
+            aeron_uri_string_builder_get(&builder, AERON_UDP_CHANNEL_ENDPOINT_KEY));
 
         aeron_uri_string_builder_close(&builder);
     }
@@ -166,8 +168,17 @@ int aeron_archive_replay_merge_init(
         }
     }
 
-    strncpy(_replay_merge->replay_destination, replay_destination, AERON_MAX_PATH + 1);
-    strncpy(_replay_merge->live_destination, live_destination, AERON_MAX_PATH + 1);
+    snprintf(
+        _replay_merge->replay_destination,
+        sizeof(_replay_merge->replay_destination),
+        "%s",
+        replay_destination);
+
+    snprintf(
+        _replay_merge->live_destination,
+        sizeof(_replay_merge->live_destination),
+        "%s",
+        live_destination);
 
     _replay_merge->recording_id = recording_id;
     _replay_merge->start_position = start_position;
@@ -408,7 +419,7 @@ static int aeron_archive_replay_merge_resolve_replay_port(int *work_count_p, aer
             return -1;
         }
 
-        strncpy(dest, p, strlen(p));
+        snprintf(dest, sizeof(replay_merge->replay_endpoint) - dest_idx, "%s", p);
 
         aeron_uri_string_builder_put(
             &replay_merge->replay_channel_builder,

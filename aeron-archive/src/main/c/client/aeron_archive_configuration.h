@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_ARCHIVE_CONFIGURATION_H
-#define AERON_ARCHIVE_CONFIGURATION_H
+#ifndef AERON_C_ARCHIVE_CONFIGURATION_H
+#define AERON_C_ARCHIVE_CONFIGURATION_H
 
 #include "aeron_archive_proxy.h"
 
@@ -27,4 +27,4 @@ int32_t aeron_archive_semantic_version(void);
 
 int32_t aeron_archive_protocol_version_with_archive_id(void);
 
-#endif //AERON_ARCHIVE_CONFIGURATION_H
+#endif //AERON_C_ARCHIVE_CONFIGURATION_H

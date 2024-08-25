@@ -127,6 +127,7 @@ target_include_directories(aeron_archive_c_client
 
 target_link_libraries(
     aeron_archive_c_client
+    aeron
     ${CMAKE_THREAD_LIBS_INIT})
 
 # static library
@@ -140,7 +141,8 @@ target_include_directories(aeron_archive_c_client_static
     PRIVATE ${ARCHIVE_CODEC_TARGET_DIR})
 
 target_link_libraries(
-    aeron_archive_c_client_static INTERFACE
+    aeron_archive_c_client_static
+    aeron_static
     ${CMAKE_THREAD_LIBS_INIT})
 
 if (NOT WIN32)

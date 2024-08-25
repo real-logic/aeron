@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
+import java.sql.Time;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -71,6 +72,7 @@ class MultiDestinationCastTest
     private static final int FRAGMENT_LIMIT = 10;
 
     private final MediaDriver.Context driverBContext = new MediaDriver.Context();
+    private final MediaDriver.Context driverAContext = new MediaDriver.Context();
 
     private Aeron clientA;
     private Aeron clientB;
@@ -96,8 +98,7 @@ class MultiDestinationCastTest
 
         buffer.putInt(0, 1);
 
-        final MediaDriver.Context driverAContext = new MediaDriver.Context()
-            .errorHandler(errorHandler)
+        driverAContext.errorHandler(errorHandler)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .threadingMode(ThreadingMode.SHARED);
@@ -576,9 +577,13 @@ class MultiDestinationCastTest
     }
 
     @Test
-    @InterruptAfter(20)
+    @InterruptAfter(10)
+    @SlowTest
     void shouldRemoveDestinationUsingRegistrationId()
     {
+        driverAContext.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(1));
+        driverBContext.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(1));
+
         launch(Tests::onError);
 
         try (

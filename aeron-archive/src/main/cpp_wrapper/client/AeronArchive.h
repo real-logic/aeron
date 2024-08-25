@@ -17,8 +17,7 @@
 #define AERON_ARCHIVE_AERON_ARCHIVE_H
 
 #include "aeron_common.h"
-//#include "client/aeron_archive.h"
-//#include "aeron_archive.h"
+#include "client/aeron_archive.h"
 
 namespace aeron { namespace archive { namespace client
 {
@@ -28,7 +27,7 @@ class Context
 public:
 
 private:
-    //aeron_archive_context_t m_ctx;
+    aeron_archive_context_t *m_ctx;
 };
 
 class AsyncConnect

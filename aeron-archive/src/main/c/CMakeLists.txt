@@ -125,9 +125,9 @@ target_include_directories(aeron_archive_c_client
     PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/aeron>"
     PRIVATE ${ARCHIVE_CODEC_TARGET_DIR})
 
-target_link_libraries(aeron_archive_c_client
-    PRIVATE aeron
-    INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(
+    aeron_archive_c_client
+    ${CMAKE_THREAD_LIBS_INIT})
 
 # static library
 add_library(aeron_archive_c_client_static STATIC ${SOURCE} ${HEADERS})
@@ -139,9 +139,9 @@ target_include_directories(aeron_archive_c_client_static
     PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/aeron>"
     PRIVATE ${ARCHIVE_CODEC_TARGET_DIR})
 
-target_link_libraries(aeron_archive_c_client_static
-    PRIVATE aeron_static
-    INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(
+    aeron_archive_c_client_static INTERFACE
+    ${CMAKE_THREAD_LIBS_INIT})
 
 if (NOT WIN32)
     set(CMAKE_THREAD_PREFER_PTHREAD TRUE)

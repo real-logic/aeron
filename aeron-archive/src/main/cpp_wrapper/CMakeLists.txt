@@ -25,7 +25,11 @@ SET(HEADERS
 add_library(aeron_archive_wrapper INTERFACE)
 add_library(aeron::aeron_archive_wrapper ALIAS aeron_archive_wrapper)
 target_include_directories(aeron_archive_wrapper
-    INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include/wrapper>")
+    INTERFACE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    "$<BUILD_INTERFACE:${AERON_C_ARCHIVE_SOURCE_PATH}>"
+    "$<INSTALL_INTERFACE:include/wrapper>"
+)
 
 target_sources(aeron_archive_wrapper INTERFACE "$<BUILD_INTERFACE:${HEADERS}>")
 

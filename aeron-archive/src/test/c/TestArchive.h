@@ -22,7 +22,6 @@
 
 extern "C"
 {
-#include "spawn.h"
 #include <atomic>
 }
 
@@ -85,6 +84,7 @@ static int aeron_test_archive_delete_directory(const char *dir)
 }
 #else
 #include "ftw.h"
+#include "spawn.h"
 static bool aeron_file_exists(const char *path)
 {
     struct stat stat_info = {};

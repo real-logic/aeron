@@ -164,7 +164,9 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
             {
                 int code;
 
-                if (!aeron_archive_client_controlResponse_code(&control_response, &code))
+                if (!aeron_archive_client_controlResponse_code(
+                    &control_response,
+                    (enum aeron_archive_client_controlResponseCode *)&code))
                 {
                     AERON_SET_ERR(-1, "%s", "unable to read control response code");
                     return AERON_ACTION_BREAK;

@@ -43,7 +43,7 @@ int aeron_archive_recording_signal_dispatch_buffer(aeron_archive_context_t *ctx,
 
         if (!aeron_archive_client_recordingSignalEvent_signal(
             &recording_signal_event,
-            &signal.recording_signal_code))
+            (enum aeron_archive_client_recordingSignal *)&signal.recording_signal_code))
         {
             AERON_SET_ERR(-1, "%s", "unable to read recording signal code");
             return -1;

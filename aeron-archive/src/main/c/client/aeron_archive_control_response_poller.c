@@ -193,7 +193,9 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
             poller->relevant_id = aeron_archive_client_controlResponse_relevantId(&control_response);
             poller->version = aeron_archive_client_controlResponse_version(&control_response);
 
-            if (!aeron_archive_client_controlResponse_code(&control_response, &poller->code_value))
+            if (!aeron_archive_client_controlResponse_code(
+                &control_response,
+                (enum aeron_archive_client_controlResponseCode *)&poller->code_value))
             {
                 AERON_SET_ERR(-1, "%s", "unable to read control response code");
                 return AERON_ACTION_BREAK;
@@ -289,7 +291,9 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
             poller->subscription_id = aeron_archive_client_recordingSignalEvent_subscriptionId(&recording_signal_event);
             poller->position = aeron_archive_client_recordingSignalEvent_position(&recording_signal_event);
 
-            if (!aeron_archive_client_recordingSignalEvent_signal(&recording_signal_event, &poller->recording_signal_code))
+            if (!aeron_archive_client_recordingSignalEvent_signal(
+                &recording_signal_event,
+                (enum aeron_archive_client_recordingSignal *)&poller->recording_signal_code))
             {
                 AERON_SET_ERR(-1, "%s", "unable to read recording signal code");
                 return AERON_ACTION_BREAK;

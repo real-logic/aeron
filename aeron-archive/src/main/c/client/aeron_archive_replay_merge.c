@@ -333,7 +333,7 @@ int aeron_archive_replay_merge_do_work(int *work_count_p, aeron_archive_replay_m
     if (check_progress &&
         now_ms > (replay_merge->time_of_last_progress_ms + replay_merge->merge_progress_timeout_ms))
     {
-        AERON_SET_ERR(ETIMEDOUT, "%s", "replay_merge no progress: state=%i", replay_merge->state);
+        AERON_SET_ERR(ETIMEDOUT, "replay_merge no progress: state=%i", replay_merge->state);
         return -1;
     }
 

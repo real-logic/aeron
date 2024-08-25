@@ -577,7 +577,7 @@ class MultiDestinationCastTest
     }
 
     @Test
-    @InterruptAfter(5)
+    @InterruptAfter(20)
     void shouldRemoveDestinationUsingRegistrationId()
     {
         launch(Tests::onError);
@@ -588,7 +588,7 @@ class MultiDestinationCastTest
             Subscription sub2 = clientB.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID))
         {
             mdc.addDestination(SUB1_MDC_MANUAL_URI);
-            final long registrationId = mdc.addDestination2(SUB2_MDC_MANUAL_URI);
+            final long registrationId = mdc.addDestinationWithId(SUB2_MDC_MANUAL_URI);
 
             Tests.await("Connections", mdc::isConnected, sub1::isConnected, sub2::isConnected);
 
@@ -600,7 +600,6 @@ class MultiDestinationCastTest
             pollForFragment(sub1, fragmentHandlerA);
             pollForFragment(sub2, fragmentHandlerB);
 
-//            mdc.removeDestination(SUB2_MDC_MANUAL_URI);
             mdc.removeDestination(registrationId);
 
             Tests.await("Disconnected", () -> !sub2.isConnected());

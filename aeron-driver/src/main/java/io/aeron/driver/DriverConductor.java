@@ -943,7 +943,7 @@ public final class DriverConductor implements Agent
         sendChannelEndpoint.validateAllowsManualControl();
 
         final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri, nameResolver);
-        senderProxy.addDestination(sendChannelEndpoint, channelUri, dstAddress);
+        senderProxy.addDestination(sendChannelEndpoint, channelUri, dstAddress, correlationId);
         clientProxy.operationSucceeded(correlationId);
     }
 
@@ -972,6 +972,33 @@ public final class DriverConductor implements Agent
         final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
         final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri, nameResolver);
         senderProxy.removeDestination(sendChannelEndpoint, channelUri, dstAddress);
+        clientProxy.operationSucceeded(correlationId);
+    }
+
+    void onRemoveSendDestination(
+        final long publicationRegistrationId, final long destinationRegistrationId, final long correlationId)
+    {
+        SendChannelEndpoint sendChannelEndpoint = null;
+
+        for (int i = 0, size = networkPublications.size(); i < size; i++)
+        {
+            final NetworkPublication publication = networkPublications.get(i);
+
+            if (publicationRegistrationId == publication.registrationId())
+            {
+                sendChannelEndpoint = publication.channelEndpoint();
+                break;
+            }
+        }
+
+        if (null == sendChannelEndpoint)
+        {
+            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "unknown publication: " + publicationRegistrationId);
+        }
+
+        sendChannelEndpoint.validateAllowsManualControl();
+
+        senderProxy.removeDestination(sendChannelEndpoint, destinationRegistrationId);
         clientProxy.operationSucceeded(correlationId);
     }
 

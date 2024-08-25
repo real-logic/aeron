@@ -808,7 +808,7 @@ final class ClientConductor implements Agent
         }
     }
 
-    long addDestination2(final long registrationId, final String endpointChannel)
+    long addDestinationWithId(final long registrationId, final String endpointChannel)
     {
         clientLock.lock();
         try
@@ -835,6 +835,22 @@ final class ClientConductor implements Agent
             ensureNotReentrant();
 
             awaitResponse(driverProxy.removeDestination(registrationId, endpointChannel));
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void removeDestination(final long publicationRegistrationId, final long destinationRegistrationId)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            awaitResponse(driverProxy.removeDestination(publicationRegistrationId, destinationRegistrationId));
         }
         finally
         {

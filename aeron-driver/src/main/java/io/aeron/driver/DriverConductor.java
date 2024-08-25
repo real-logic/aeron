@@ -993,7 +993,8 @@ public final class DriverConductor implements Agent
 
         if (null == sendChannelEndpoint)
         {
-            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "unknown publication: " + publicationRegistrationId);
+            throw new ControlProtocolException(
+                UNKNOWN_PUBLICATION, "unknown publication: " + publicationRegistrationId);
         }
 
         sendChannelEndpoint.validateAllowsManualControl();

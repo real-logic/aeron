@@ -295,7 +295,7 @@ final class ClientCommandAdapter implements ControlledMessageHandler
                     correlationId = destinationByIdMessageFlyweight.correlationId();
                     final long clientId = destinationByIdMessageFlyweight.clientId();
                     conductor.onRemoveSendDestination(
-                        destinationByIdMessageFlyweight.publicationRegistrationId(),
+                        destinationByIdMessageFlyweight.resourceRegistrationId(),
                         destinationByIdMessageFlyweight.destinationRegistrationId(),
                         destinationByIdMessageFlyweight.correlationId());
 

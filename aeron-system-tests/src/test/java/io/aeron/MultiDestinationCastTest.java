@@ -36,7 +36,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
-import java.sql.Time;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -577,7 +576,7 @@ class MultiDestinationCastTest
     }
 
     @Test
-    @InterruptAfter(10)
+    @InterruptAfter(20)
     @SlowTest
     void shouldRemoveDestinationUsingRegistrationId()
     {

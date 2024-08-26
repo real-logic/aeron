@@ -34,7 +34,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  |                    Command Correlation ID                     |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                   Publication Correlation ID                  |
+ *  |                    Resource Correlation ID                    |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                   Destination Correlation ID                  |
@@ -44,8 +44,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class DestinationByIdMessageFlyweight extends CorrelatedMessageFlyweight
 {
-    private static final int PUBLICATION_REGISTRATION_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
-    private static final int DESTINATION_REGISTRATION_ID_OFFSET = PUBLICATION_REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int RESOURCE_REGISTRATION_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
+    private static final int DESTINATION_REGISTRATION_ID_OFFSET = RESOURCE_REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
     public static final int MESSAGE_LENGTH = LENGTH + (2 * SIZE_OF_LONG);
 
     /**
@@ -63,24 +63,26 @@ public class DestinationByIdMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * return correlation id used in registration field.
+     * Get the registration id used for the resource that the destination has been registered to. Typically, a
+     * subscription or publication.
      *
-     * @return correlation id field.
+     * @return resource registration id field.
      */
-    public long publicationRegistrationId()
+    public long resourceRegistrationId()
     {
-        return buffer.getLong(offset + PUBLICATION_REGISTRATION_ID_OFFSET);
+        return buffer.getLong(offset + RESOURCE_REGISTRATION_ID_OFFSET);
     }
 
     /**
-     * set registration correlation id field.
+     * Set the registration id used for the resource that the destination has been registered to. Typically, a
+     * subscription or publication.
      *
-     * @param correlationId field value.
+     * @param registrationId field value.
      * @return this for a fluent API.
      */
-    public DestinationByIdMessageFlyweight publicationRegistrationId(final long correlationId)
+    public DestinationByIdMessageFlyweight resourceRegistrationId(final long registrationId)
     {
-        buffer.putLong(offset + PUBLICATION_REGISTRATION_ID_OFFSET, correlationId);
+        buffer.putLong(offset + RESOURCE_REGISTRATION_ID_OFFSET, registrationId);
 
         return this;
     }

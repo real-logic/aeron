@@ -282,7 +282,7 @@ public final class DriverProxy
 
         destinationByIdMessage
             .wrap(toDriverCommandBuffer.buffer(), index)
-            .publicationRegistrationId(publicationRegistrationId)
+            .resourceRegistrationId(publicationRegistrationId)
             .destinationRegistrationId(destinationRegistrationId)
             .clientId(clientId)
             .correlationId(correlationId);

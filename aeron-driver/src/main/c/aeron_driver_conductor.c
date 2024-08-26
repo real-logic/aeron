@@ -4838,7 +4838,7 @@ int aeron_driver_conductor_on_remove_receive_send_destination_by_id(
     {
         aeron_network_publication_t *publication = conductor->network_publications.array[i].publication;
 
-        if (command->publication_registration_id == publication->conductor_fields.managed_resource.registration_id)
+        if (command->resource_registration_id == publication->conductor_fields.managed_resource.registration_id)
         {
             endpoint = publication->endpoint;
             break;
@@ -4851,7 +4851,7 @@ int aeron_driver_conductor_on_remove_receive_send_destination_by_id(
             -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
             "unknown remove destination, client_id=%" PRId64 " registration_id=%" PRId64,
             command->correlated.client_id,
-            command->publication_registration_id);
+            command->resource_registration_id);
 
         goto cleanup;
     }
@@ -4861,7 +4861,7 @@ int aeron_driver_conductor_on_remove_receive_send_destination_by_id(
         AERON_SET_ERR(
             EINVAL,
             "channel does not allow manual control of destinations: %" PRId64,
-            command->publication_registration_id);
+            command->resource_registration_id);
         goto cleanup;
     }
 

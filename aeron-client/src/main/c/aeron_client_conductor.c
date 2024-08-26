@@ -1281,6 +1281,86 @@ static void aeron_client_conductor_on_cmd_destination(const void *clientd, const
     async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
 }
 
+static void aeron_client_conductor_on_cmd_destination_by_id(const void *clientd, const void *item, int32_t msg_type_id)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_async_destination_t *async = (aeron_async_destination_t *)item;
+
+    int64_t resource_registration_id = 0;
+    switch (async->resource.base_resource->type)
+    {
+        case AERON_CLIENT_TYPE_PUBLICATION:
+            resource_registration_id = async->resource.publication->registration_id;
+            break;
+
+        case AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION:
+            resource_registration_id = async->resource.exclusive_publication->registration_id;
+            break;
+
+        case AERON_CLIENT_TYPE_SUBSCRIPTION:
+            resource_registration_id = async->resource.subscription->registration_id;
+            break;
+
+        case AERON_CLIENT_TYPE_IMAGE:
+        case AERON_CLIENT_TYPE_LOGBUFFER:
+        case AERON_CLIENT_TYPE_COUNTER:
+        case AERON_CLIENT_TYPE_DESTINATION:
+        {
+            char err_buffer[AERON_MAX_PATH];
+            snprintf(
+                err_buffer, sizeof(err_buffer) - 1, "DESTINATION command invalid resource (%s:%d)", __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, EINVAL, err_buffer);
+            return;
+        }
+    }
+
+    const size_t command_length = sizeof(aeron_destination_by_id_command_t);
+    int ensure_capacity_result = 0;
+    int rb_offer_fail_count = 0;
+
+    int32_t offset;
+    while ((offset = aeron_mpsc_rb_try_claim(
+        &conductor->to_driver_buffer,
+        msg_type_id,
+        command_length)) < 0)
+    {
+        if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
+        {
+            char err_buffer[AERON_MAX_PATH];
+
+            snprintf(
+                err_buffer, sizeof(err_buffer) - 1, "DESTINATION command could not be sent (%s:%d)", __FILE__, __LINE__);
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
+            return;
+        }
+
+        sched_yield();
+    }
+
+    uint8_t *ptr = (conductor->to_driver_buffer.buffer + offset);
+    aeron_destination_by_id_command_t *command = (aeron_destination_by_id_command_t *)ptr;
+    command->correlated.correlation_id = async->registration_id;
+    command->correlated.client_id = conductor->client_id;
+    command->resource_registration_id = resource_registration_id;
+    command->destination_registration_id = resource_registration_id;
+
+    aeron_mpsc_rb_commit(&conductor->to_driver_buffer, offset);
+
+    AERON_ARRAY_ENSURE_CAPACITY(
+        ensure_capacity_result, conductor->registering_resources, aeron_client_registering_resource_entry_t);
+    if (ensure_capacity_result < 0)
+    {
+        char err_buffer[AERON_MAX_PATH];
+
+        snprintf(err_buffer, sizeof(err_buffer) - 1, "DESTINATION registering_resources: %s", aeron_errmsg());
+        conductor->error_handler(conductor->error_handler_clientd, aeron_errcode(), err_buffer);
+        return;
+    }
+
+    conductor->registering_resources.array[conductor->registering_resources.length++].resource = async;
+    async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
+}
+
 void aeron_client_conductor_on_cmd_add_destination(void *clientd, void *item)
 {
     aeron_client_conductor_on_cmd_destination(clientd, item, AERON_COMMAND_ADD_DESTINATION);
@@ -1289,6 +1369,11 @@ void aeron_client_conductor_on_cmd_add_destination(void *clientd, void *item)
 void aeron_client_conductor_on_cmd_remove_destination(void *clientd, void *item)
 {
     aeron_client_conductor_on_cmd_destination(clientd, item, AERON_COMMAND_REMOVE_DESTINATION);
+}
+
+void aeron_client_conductor_on_cmd_remove_destination_by_id(void *clientd, void *item)
+{
+    aeron_client_conductor_on_cmd_destination_by_id(clientd, item, AERON_COMMAND_REMOVE_DESTINATION_BY_ID);
 }
 
 void aeron_client_conductor_on_cmd_add_rcv_destination(void *clientd, void *item)
@@ -1959,6 +2044,51 @@ static int aeron_client_conductor_async_destination(
     return 0;
 }
 
+static int aeron_client_conductor_async_destination_by_id(
+    aeron_async_destination_t **async,
+    union aeron_client_registering_resource_un *resource,
+    int64_t destination_registration_id,
+    aeron_client_conductor_t *conductor,
+    void (*destination_func)(void *clientd, void *command))
+{
+    aeron_async_destination_by_id_t *cmd = NULL;
+    *async = NULL;
+
+    if (aeron_alloc((void **)&cmd, sizeof(aeron_async_destination_by_id_t)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Unable to allocate destination");
+        return -1;
+    }
+
+    cmd->command_base.func = destination_func;
+    cmd->command_base.item = NULL;
+    memcpy(&cmd->resource, resource, sizeof(union aeron_client_registering_resource_un));
+    cmd->error_message = NULL;
+    cmd->destination_registration_id = destination_registration_id;
+    cmd->registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_buffer);
+    cmd->registration_status = AERON_CLIENT_AWAITING_MEDIA_DRIVER;
+    cmd->type = AERON_CLIENT_TYPE_DESTINATION;
+
+    if (conductor->invoker_mode)
+    {
+        *async = cmd;
+        destination_func(conductor, cmd);
+    }
+    else
+    {
+        if (aeron_client_conductor_command_offer(conductor->command_queue, cmd) < 0)
+        {
+            aeron_free(cmd->uri);
+            aeron_free(cmd);
+            return -1;
+        }
+
+        *async = cmd;
+    }
+
+    return 0;
+}
+
 int aeron_client_conductor_async_add_publication_destination(
     aeron_async_destination_t **async,
     aeron_client_conductor_t *conductor,
@@ -1985,6 +2115,23 @@ int aeron_client_conductor_async_remove_publication_destination(
         async, &resource, uri, conductor, aeron_client_conductor_on_cmd_remove_destination);
 }
 
+int aeron_client_conductor_async_remove_publication_destination_by_id(
+    aeron_async_destination_t **async,
+    aeron_client_conductor_t *conductor,
+    aeron_publication_t *publication,
+    int64_t destination_registration_id)
+{
+    union aeron_client_registering_resource_un resource;
+    resource.publication = publication;
+
+    return aeron_client_conductor_async_destination_by_id(
+        async,
+        &resource,
+        destination_registration_id,
+        conductor,
+        aeron_client_conductor_on_cmd_remove_destination_by_id);
+}
+
 int aeron_client_conductor_async_add_exclusive_publication_destination(
     aeron_async_destination_t **async,
     aeron_client_conductor_t *conductor,
@@ -2009,6 +2156,23 @@ int aeron_client_conductor_async_remove_exclusive_publication_destination(
 
     return aeron_client_conductor_async_destination(
         async, &resource, uri, conductor, aeron_client_conductor_on_cmd_remove_destination);
+}
+
+int aeron_client_conductor_async_remove_exclusive_publication_destination_by_id(
+    aeron_async_destination_t **async,
+    aeron_client_conductor_t *conductor,
+    aeron_exclusive_publication_t *publication,
+    int64_t destination_registration_id)
+{
+    union aeron_client_registering_resource_un resource;
+    resource.exclusive_publication = publication;
+
+    return aeron_client_conductor_async_destination_by_id(
+        async,
+        &resource,
+        destination_registration_id,
+        conductor,
+        aeron_client_conductor_on_cmd_remove_destination_by_id);
 }
 
 int aeron_client_conductor_async_add_subscription_destination(

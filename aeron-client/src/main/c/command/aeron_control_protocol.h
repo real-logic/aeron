@@ -161,7 +161,7 @@ aeron_destination_command_t;
 typedef struct aeron_destination_by_id_command_stct
 {
     aeron_correlated_command_t correlated;
-    int64_t publication_registration_id;
+    int64_t resource_registration_id;
     int64_t destination_registration_id;
 }
 aeron_destination_by_id_command_t;

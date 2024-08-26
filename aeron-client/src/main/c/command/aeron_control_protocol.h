@@ -35,6 +35,7 @@
 #define AERON_COMMAND_REMOVE_RCV_DESTINATION (0x0D)
 #define AERON_COMMAND_TERMINATE_DRIVER (0x0E)
 #define AERON_COMMAND_ADD_STATIC_COUNTER (0x0F)
+#define AERON_COMMAND_REMOVE_DESTINATION_BY_ID (0x10)
 
 #define AERON_RESPONSE_ON_ERROR (0x0F01)
 #define AERON_RESPONSE_ON_AVAILABLE_IMAGE (0x0F02)
@@ -156,6 +157,14 @@ typedef struct aeron_destination_command_stct
     int32_t channel_length;
 }
 aeron_destination_command_t;
+
+typedef struct aeron_destination_by_id_command_stct
+{
+    aeron_correlated_command_t correlated;
+    int64_t publication_registration_id;
+    int64_t destination_registration_id;
+}
+aeron_destination_by_id_command_t;
 
 typedef struct aeron_counter_command_stct
 {

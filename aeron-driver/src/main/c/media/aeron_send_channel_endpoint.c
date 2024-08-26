@@ -603,12 +603,16 @@ extern bool aeron_send_channel_endpoint_has_sender_released(aeron_send_channel_e
 extern int aeron_send_channel_endpoint_add_destination(
     aeron_send_channel_endpoint_t *endpoint,
     aeron_uri_t *uri,
-    struct sockaddr_storage *addr);
+    struct sockaddr_storage *addr,
+    int64_t destination_registration_id);
 
 extern int aeron_send_channel_endpoint_remove_destination(
     aeron_send_channel_endpoint_t *endpoint,
     struct sockaddr_storage *addr,
     aeron_uri_t **removed_uri);
+
+extern int aeron_send_channel_endpoint_remove_destination_by_id(
+    aeron_send_channel_endpoint_t *endpoint, int64_t registration_destination_id, aeron_uri_t **removed_uri);
 
 extern bool aeron_send_channel_endpoint_tags_match(
     aeron_send_channel_endpoint_t *endpoint, aeron_udp_channel_t *channel);

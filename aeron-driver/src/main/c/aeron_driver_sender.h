@@ -99,6 +99,7 @@ void aeron_driver_sender_on_add_publication(void *clientd, void *command);
 void aeron_driver_sender_on_remove_publication(void *clientd, void *command);
 void aeron_driver_sender_on_add_destination(void *clientd, void *command);
 void aeron_driver_sender_on_remove_destination(void *clientd, void *command);
+void aeron_driver_sender_on_remove_destination_by_id(void *clientd, void *command);
 void aeron_driver_sender_on_resolution_change(void *clientd, void *command);
 
 int aeron_driver_sender_do_send(aeron_driver_sender_t *sender, int64_t now_ns);

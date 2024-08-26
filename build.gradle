@@ -56,7 +56,7 @@ def aeronVersion = file('version.txt').text.trim()
 def agronaVersion = '1.23.0'
 def agronaVersionRange = "[${agronaVersion},2.0["
 def sbeVersion = '1.33.0'
-def checkstyleVersion = '9.3'
+def checkstyleVersion = '10.18.0'
 def hamcrestVersion = '3.0'
 def junitVersion = '5.11.0'
 def mockitoVersion = '5.12.0'
@@ -167,7 +167,12 @@ allprojects {
                   "org.ow2.asm:asm-analysis:${asmVersion}",
                   "org.ow2.asm:asm-commons:${asmVersion}",
                   "org.ow2.asm:asm-tree:${asmVersion}",
-                  "org.ow2.asm:asm-util:${asmVersion}"
+                  "org.ow2.asm:asm-util:${asmVersion}",
+                  // patching conflicting Checkstyle dependencies
+                  "org.codehaus.plexus:plexus-utils:3.3.0",
+                  "org.apache.commons:commons-lang3:3.8.1",
+                  "org.apache.httpcomponents:httpcore:4.4.14",
+                  "commons-codec:commons-codec:1.15"
         }
     }
 

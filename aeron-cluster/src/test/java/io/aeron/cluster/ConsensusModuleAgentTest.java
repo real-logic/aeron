@@ -29,6 +29,7 @@ import static org.mockito.Mockito.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
+import io.aeron.cluster.client.ClusterEvent;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.CountedErrorHandler;
@@ -45,7 +46,6 @@ import org.mockito.Mockito;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.codecs.EventCode;
@@ -473,12 +473,15 @@ class ConsensusModuleAgentTest
     void shouldThrowExceptionOnUnknownSchemaAndNoAdapter()
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
-        ctx.epochClock(clock).clusterClock(clock);
+        final CountedErrorHandler mockErrorHandler = mock(CountedErrorHandler.class);
+        ctx.countedErrorHandler(mockErrorHandler)
+            .epochClock(clock)
+            .clusterClock(clock);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
 
-        assertThrows(ClusterException.class,
-            () -> agent.onExtensionMessage(0, 0, SCHEMA_ID, 0, null, 0, 0, null));
+        agent.onExtensionMessage(0, 0, SCHEMA_ID, 0, null, 0, 0, null);
+        verify(mockErrorHandler).onError(any(ClusterEvent.class));
     }
 
     @Test

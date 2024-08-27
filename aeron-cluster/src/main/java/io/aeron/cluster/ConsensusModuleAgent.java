@@ -542,8 +542,13 @@ final class ConsensusModuleAgent
             return consensusModuleExtension.onIngressExtensionMessage(
                 actingBlockLength, templateId, schemaId, actingVersion, buffer, offset, length, header);
         }
+        else
+        {
+            ctx.countedErrorHandler().onError(new ClusterEvent(
+                "expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId));
 
-        throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+            return ControlledFragmentHandler.Action.CONTINUE;
+        }
     }
 
     public void onLoadEndSnapshot(final DirectBuffer buffer, final int offset, final int length)

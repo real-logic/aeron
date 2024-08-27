@@ -24,7 +24,30 @@ public class CounterInfo implements Serializable
 {
     private static final long serialVersionUID = -5863246029522577056L;
 
+    /**
+     * Counter name.
+     */
     public final String name;
+
+    /**
+     * Counter id.
+     */
+    public int id;
+
+    /**
+     * Counter description.
+     */
+    public String counterDescription;
+
+    /**
+     * Whether counter exists in the C media driver.
+     */
+    public boolean existsInC = true;
+
+    /**
+     * Expected name in the C media driver.
+     */
+    public String expectedCName;
 
     /**
      */
@@ -40,12 +63,4 @@ public class CounterInfo implements Serializable
     {
         this.name = name;
     }
-
-    public int id;
-
-    public String counterDescription;
-
-    public boolean existsInC = true;
-
-    public String expectedCName;
 }

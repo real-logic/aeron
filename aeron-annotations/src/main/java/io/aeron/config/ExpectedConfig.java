@@ -23,6 +23,9 @@ public class ExpectedConfig implements Serializable
 {
     private static final long serialVersionUID = -2025994445988286324L;
 
+    /**
+     * C config.
+     */
     public final ExpectedCConfig c;
 
     ExpectedConfig()

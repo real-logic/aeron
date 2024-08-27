@@ -45,20 +45,59 @@ import static io.aeron.Aeron.NULL_VALUE;
  */
 public final class ClusterMarkFile implements AutoCloseable
 {
+    /**
+     * Major version.
+     */
     public static final int MAJOR_VERSION = 0;
+    /**
+     * Minor version.
+     */
     public static final int MINOR_VERSION = 3;
+    /**
+     * Patch version.
+     */
     public static final int PATCH_VERSION = 0;
+    /**
+     * Full semantic version.
+     */
     public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
 
+    /**
+     * Length of the {@code header} section.
+     */
     public static final int HEADER_LENGTH = 8 * 1024;
+    /**
+     * Special version to indicate that component failed to start.
+     */
     public static final int VERSION_FAILED = -1;
+    /**
+     * Min length for the error log buffer.
+     */
     public static final int ERROR_BUFFER_MIN_LENGTH = 1024 * 1024;
+    /**
+     * Max allowed length for the error log buffer.
+     */
     public static final int ERROR_BUFFER_MAX_LENGTH = Integer.MAX_VALUE - HEADER_LENGTH;
 
+    /**
+     * File extension used by the mark file.
+     */
     public static final String FILE_EXTENSION = ".dat";
+    /**
+     * File extension used by the link file.
+     */
     public static final String LINK_FILE_EXTENSION = ".lnk";
+    /**
+     * Mark file name.
+     */
     public static final String FILENAME = "cluster-mark" + FILE_EXTENSION;
+    /**
+     * Link file name.
+     */
     public static final String LINK_FILENAME = "cluster-mark" + LINK_FILE_EXTENSION;
+    /**
+     * Service mark file name.
+     */
     public static final String SERVICE_FILENAME_PREFIX = "cluster-mark-service-";
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();

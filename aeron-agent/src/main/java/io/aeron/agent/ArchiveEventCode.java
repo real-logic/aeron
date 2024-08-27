@@ -28,86 +28,211 @@ import static io.aeron.agent.ArchiveEventDissector.*;
  */
 public enum ArchiveEventCode implements EventCode
 {
+    /**
+     * Archive logging event for {@code connect} command.
+     */
     CMD_IN_CONNECT(1, ConnectRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code close-session} command.
+     */
     CMD_IN_CLOSE_SESSION(2, CloseSessionRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code start-recording} command.
+     */
     CMD_IN_START_RECORDING(3, StartRecordingRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code stop-recording} command.
+     */
     CMD_IN_STOP_RECORDING(4, StopRecordingRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code replay} command.
+     */
     CMD_IN_REPLAY(5, ReplayRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code stop-replay} command.
+     */
     CMD_IN_STOP_REPLAY(6, StopReplayRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code list-recordings} command.
+     */
     CMD_IN_LIST_RECORDINGS(7, ListRecordingsRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code list-recordings-by-uri} command.
+     */
     CMD_IN_LIST_RECORDINGS_FOR_URI(8, ListRecordingsForUriRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code list-recording} command.
+     */
     CMD_IN_LIST_RECORDING(9, ListRecordingRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code extend-recording} command.
+     */
     CMD_IN_EXTEND_RECORDING(10, ExtendRecordingRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code recording-position} command.
+     */
     CMD_IN_RECORDING_POSITION(11, RecordingPositionRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code truncate-recording} command.
+     */
     CMD_IN_TRUNCATE_RECORDING(12, TruncateRecordingRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code stop-recording-subscription} command.
+     */
     CMD_IN_STOP_RECORDING_SUBSCRIPTION(13, StopRecordingSubscriptionRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code stop-position} command.
+     */
     CMD_IN_STOP_POSITION(14, StopPositionRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code find-last-matching-recording} command.
+     */
     CMD_IN_FIND_LAST_MATCHING_RECORD(15, FindLastMatchingRecordingRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code list-recording-subscriptions} command.
+     */
     CMD_IN_LIST_RECORDING_SUBSCRIPTIONS(16, ListRecordingSubscriptionsRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code start-bounded-replay} command.
+     */
     CMD_IN_START_BOUNDED_REPLAY(17, BoundedReplayRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code stop-all-replays} command.
+     */
     CMD_IN_STOP_ALL_REPLAYS(18, StopAllReplaysRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code replicate} command.
+     */
     CMD_IN_REPLICATE(19, ReplicateRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code stop-replication} command.
+     */
     CMD_IN_STOP_REPLICATION(20, StopReplicationRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code start-position} command.
+     */
     CMD_IN_START_POSITION(21, StartPositionRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code detach-segments} command.
+     */
     CMD_IN_DETACH_SEGMENTS(22, DetachSegmentsRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code delete-detached-segments} command.
+     */
     CMD_IN_DELETE_DETACHED_SEGMENTS(23, DeleteDetachedSegmentsRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code purge-segments} command.
+     */
     CMD_IN_PURGE_SEGMENTS(24, PurgeSegmentsRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code attach-segments} command.
+     */
     CMD_IN_ATTACH_SEGMENTS(25, AttachSegmentsRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code migrate-segments} command.
+     */
     CMD_IN_MIGRATE_SEGMENTS(26, MigrateSegmentsRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code auth-connect} command.
+     */
     CMD_IN_AUTH_CONNECT(27, AuthConnectRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code keep-alive} command.
+     */
     CMD_IN_KEEP_ALIVE(28, KeepAliveRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code tagged-replicate} command.
+     */
     CMD_IN_TAGGED_REPLICATE(29, TaggedReplicateRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
-
+    /**
+     * Archive logging event for Archive response.
+     */
     CMD_OUT_RESPONSE(30, ControlResponseDecoder.TEMPLATE_ID,
         (event, buffer, offset, builder) -> dissectControlResponse(buffer, offset, builder)),
-
+    /**
+     * Archive logging event for {@code start-recording2} command.
+     */
     CMD_IN_START_RECORDING2(31, StartRecordingRequest2Decoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code extend-recording2} command.
+     */
     CMD_IN_EXTEND_RECORDING2(32, ExtendRecordingRequest2Decoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code stop-recording-by-identity} command.
+     */
     CMD_IN_STOP_RECORDING_BY_IDENTITY(33, StopRecordingByIdentityRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
-
+    /**
+     * Archive logging event for replication state change.
+     */
     REPLICATION_SESSION_STATE_CHANGE(34, -1,
         (event, buffer, offset, builder) -> dissectReplicationSessionStateChange(buffer, offset, builder)),
+    /**
+     * Archive logging event for control session state change.
+     */
     CONTROL_SESSION_STATE_CHANGE(35, -1,
         (event, buffer, offset, builder) -> dissectControlSessionStateChange(buffer, offset, builder)),
+    /**
+     * Archive logging event for replay session error.
+     */
     REPLAY_SESSION_ERROR(36, -1,
         (event, buffer, offset, builder) -> dissectReplaySessionError(buffer, offset, builder)),
+    /**
+     * Archive logging event for Catalog resize.
+     */
     CATALOG_RESIZE(37, -1,
         (event, buffer, offset, builder) -> dissectCatalogResize(buffer, offset, builder)),
-
+    /**
+     * Archive logging event for {@code purge-recording} command.
+     */
     CMD_IN_PURGE_RECORDING(38, PurgeRecordingRequestDecoder.TEMPLATE_ID,
         ArchiveEventDissector::dissectControlRequest),
+    /**
+     * Archive logging event for {@code replicate2} command.
+     */
     CMD_IN_REPLICATE2(39, ReplicateRequest2Decoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
-
+    /**
+     * Archive logging event for recording signal.
+     */
     RECORDING_SIGNAL(40, RecordingSignalEventDecoder.TEMPLATE_ID,
         (event, buffer, offset, builder) -> dissectRecordingSignal(buffer, offset, builder)),
-
+    /**
+     * Archive logging event for replication session done.
+     */
     REPLICATION_SESSION_DONE(
         41, -1, (event, buffer, offset, builder) -> dissectReplicationSessionDone(buffer, offset, builder)),
-
+    /**
+     * Archive logging event for {@code request-replay-token}.
+     */
     CMD_IN_REQUEST_REPLAY_TOKEN(
         42, ReplayTokenRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest),
-
+    /**
+     * Archive logging event for replay state change.
+     */
     REPLAY_SESSION_STATE_CHANGE(43, -1,
         (event, buffer, offset, builder) -> dissectReplaySessionStateChange(buffer, offset, builder)),
-
+    /**
+     * Archive logging event for recording state change.
+     */
     RECORDING_SESSION_STATE_CHANGE(44, -1,
         (event, buffer, offset, builder) -> dissectRecordingSessionStateChange(buffer, offset, builder)),
-
+    /**
+     * Archive logging event for {@code max-recorded-position} command.
+     */
     CMD_IN_MAX_RECORDED_POSITION(
         45, MaxRecordedPositionRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::dissectControlRequest);
 

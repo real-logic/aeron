@@ -1822,12 +1822,33 @@ public final class AeronCluster implements AutoCloseable
          */
         public enum State
         {
+            /**
+             * Create egress subscription.
+             */
             CREATE_EGRESS_SUBSCRIPTION(-1),
+            /**
+             * Create ingress publication.
+             */
             CREATE_INGRESS_PUBLICATIONS(0),
+            /**
+             * Await ingress publication connected.
+             */
             AWAIT_PUBLICATION_CONNECTED(1),
+            /**
+             * Send message to Cluster.
+             */
             SEND_MESSAGE(2),
+            /**
+             * Poll for Cluster response.
+             */
             POLL_RESPONSE(3),
+            /**
+             * Initialize internal state.
+             */
             CONCLUDE_CONNECT(4),
+            /**
+             * Connection established.
+             */
             DONE(5);
 
             private static final State[] STATES = values();

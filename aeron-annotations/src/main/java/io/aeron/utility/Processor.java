@@ -53,17 +53,38 @@ public abstract class Processor extends AbstractProcessor
         printNotes = System.getProperty(getPrintNotesPropertyName(), "false").equalsIgnoreCase("true");
         errorKind =
             System.getProperty(getFailOnErrorPropertyName(), "false").equalsIgnoreCase("true") ?
-            Diagnostic.Kind.ERROR :
-            Diagnostic.Kind.NOTE;
+                Diagnostic.Kind.ERROR :
+                Diagnostic.Kind.NOTE;
         super.init(processingEnv);
     }
 
+    /**
+     * Get enabled property name.
+     *
+     * @return enabled property name.
+     */
     protected abstract String getEnabledPropertyName();
 
+    /**
+     * Get print notes property name.
+     *
+     * @return print notes property name.
+     */
     protected abstract String getPrintNotesPropertyName();
 
+    /**
+     * Get fail on error property name.
+     *
+     * @return fail on error property name.
+     */
     protected abstract String getFailOnErrorPropertyName();
 
+    /**
+     * Process annotations.
+     *
+     * @param annotations to be processed.
+     * @param roundEnv    environment info.
+     */
     protected abstract void doProcess(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv);
 
     @Override
@@ -77,6 +98,12 @@ public abstract class Processor extends AbstractProcessor
         return false;
     }
 
+    /**
+     * Get doc comment.
+     *
+     * @param element element.
+     * @return comment.
+     */
     protected String getDocComment(final Element element)
     {
         final String description = processingEnv.getElementUtils().getDocComment(element);
@@ -89,21 +116,43 @@ public abstract class Processor extends AbstractProcessor
         return description.trim();
     }
 
+    /**
+     * On error hook.
+     *
+     * @param errMsg string.
+     */
     protected void error(final String errMsg)
     {
         error(errMsg, null);
     }
 
+    /**
+     * Error hook with extra context.
+     *
+     * @param errMsg  message.
+     * @param element element.
+     */
     protected void error(final String errMsg, final Element element)
     {
         printMessage(errorKind, errMsg, element);
     }
 
+    /**
+     * Add a note.
+     *
+     * @param msg note.
+     */
     protected void note(final String msg)
     {
         note(msg, null);
     }
 
+    /**
+     * Add note to an element.
+     *
+     * @param msg     note.
+     * @param element element.
+     */
     protected void note(final String msg, final Element element)
     {
         if (printNotes)

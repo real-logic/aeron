@@ -885,6 +885,9 @@ public final class Configuration
     @Config
     public static final int MAX_RESEND_DEFAULT = 16;
 
+    /**
+     * Maximum value for the active retransmissions per connected stream udp stream with group semantics.
+     */
     public static final int MAX_RESEND_MAX = 256;
 
     /**

@@ -50,6 +50,9 @@ public final class EventLogAgent
      * Event reader {@link Agent} which consumes the {@link EventConfiguration#EVENT_RING_BUFFER} to output log events.
      */
     public static final String READER_CLASSNAME_PROP_NAME = READER_CLASSNAME;
+    /**
+     * Default value for the log reader agent.
+     */
     public static final String READER_CLASSNAME_DEFAULT = "io.aeron.agent.EventLogReaderAgent";
 
     private static final long SLEEP_PERIOD_MS = 1L;

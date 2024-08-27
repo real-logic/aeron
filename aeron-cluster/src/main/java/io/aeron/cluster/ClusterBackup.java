@@ -1522,7 +1522,6 @@ public final class ClusterBackup implements AutoCloseable
          * String representing the cluster members consensus endpoints.
          * <p>
          * {@code "endpoint,endpoint,endpoint"}
-         * <p>
          *
          * @param endpoints which are to be contacted for joining the cluster.
          * @return this for a fluent API.

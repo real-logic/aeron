@@ -2387,7 +2387,6 @@ public final class ConsensusModule implements AutoCloseable
          * String representing the cluster members consensus endpoints used to request to join the cluster.
          * <p>
          * {@code "endpoint,endpoint,endpoint"}
-         * <p>
          *
          * @param endpoints which are to be contacted for joining the cluster.
          * @return this for a fluent API.

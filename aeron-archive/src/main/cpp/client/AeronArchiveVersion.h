@@ -18,6 +18,13 @@
 
 #include "string"
 
+#ifdef major
+#undef major
+#endif
+#ifdef minor
+#undef minor
+#endif
+
 namespace aeron { namespace archive { namespace client
 {
 

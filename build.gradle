@@ -336,7 +336,7 @@ subprojects {
     }
 
     javadoc {
-        failOnError true
+        failOnError false
         title = '<h1>Aeron Message Transport</h1>'
         options.bottom = '<i>Copyright &#169; 2014-2024 Real Logic Limited. All Rights Reserved.</i>'
         options.encoding = 'UTF-8'

@@ -389,6 +389,7 @@ public final class DriverConductor implements Agent
 
     void onPublicationError(
         final long registrationId,
+        final long destinationRegistrationId,
         final int sessionId,
         final int streamId,
         final long receiverId,
@@ -399,7 +400,15 @@ public final class DriverConductor implements Agent
     {
         recordError(new AeronException(errorMessage, AeronException.Category.WARN));
         clientProxy.onPublicationErrorFrame(
-            registrationId, sessionId, streamId, receiverId, groupId, srcAddress, errorCode, errorMessage);
+            registrationId,
+            destinationRegistrationId,
+            sessionId,
+            streamId,
+            receiverId,
+            groupId,
+            srcAddress,
+            errorCode,
+            errorMessage);
     }
 
     void onReResolveEndpoint(

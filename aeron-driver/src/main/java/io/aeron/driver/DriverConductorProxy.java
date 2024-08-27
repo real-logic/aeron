@@ -249,6 +249,7 @@ public final class DriverConductorProxy
 
     void onPublicationError(
         final long registrationId,
+        final long destinationRegistrationId,
         final int sessionId,
         final int streamId,
         final long receiverId,
@@ -261,6 +262,7 @@ public final class DriverConductorProxy
         {
             driverConductor.onPublicationError(
                 registrationId,
+                destinationRegistrationId,
                 sessionId,
                 streamId,
                 receiverId,
@@ -273,6 +275,7 @@ public final class DriverConductorProxy
         {
             offer(() -> driverConductor.onPublicationError(
                 registrationId,
+                destinationRegistrationId,
                 sessionId,
                 streamId,
                 receiverId,

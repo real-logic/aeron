@@ -426,16 +426,13 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
         errorMessagesReceived.incrementOrdered();
 
-        if (null != multiSndDestination)
-        {
-            // TODO: What do we need to do here???
-//            multiSndDestination.onStatusMessage(msg, srcAddress);
-        }
+        final long destinationRegistrationId = (null != multiSndDestination) ?
+            multiSndDestination.findRegistrationId(msg, srcAddress) : Aeron.NULL_VALUE;
 
         final NetworkPublication publication = publicationBySessionAndStreamId.get(compoundKey(sessionId, streamId));
         if (null != publication)
         {
-            publication.onError(msg, srcAddress, conductorProxy);
+            publication.onError(msg, srcAddress, destinationRegistrationId, conductorProxy);
         }
     }
 
@@ -738,6 +735,11 @@ abstract class MultiSndDestination extends MultiSndDestinationRhsPadding
 
         return bytesSent;
     }
+
+    public long findRegistrationId(final ErrorFlyweight msg, final InetSocketAddress srcAddress)
+    {
+        return Aeron.NULL_VALUE;
+    }
 }
 
 class ManualSndMultiDestination extends MultiSndDestination
@@ -754,20 +756,15 @@ class ManualSndMultiDestination extends MultiSndDestination
 
         for (final Destination destination : destinations)
         {
-            if (destination.isReceiverIdValid &&
-                receiverId == destination.receiverId &&
-                address.getPort() == destination.port)
+            if (destination.isMatch(msg.receiverId(), address))
             {
+                if (!destination.isReceiverIdValid)
+                {
+                    destination.receiverId = receiverId;
+                    destination.isReceiverIdValid = true;
+                }
+
                 destination.timeOfLastActivityNs = nowNs;
-                break;
-            }
-            else if (!destination.isReceiverIdValid &&
-                address.getPort() == destination.port &&
-                address.getAddress().equals(destination.address.getAddress()))
-            {
-                destination.timeOfLastActivityNs = nowNs;
-                destination.receiverId = receiverId;
-                destination.isReceiverIdValid = true;
                 break;
             }
         }
@@ -906,6 +903,19 @@ class ManualSndMultiDestination extends MultiSndDestination
                 destination.port = newAddress.getPort();
             }
         }
+    }
+
+    public long findRegistrationId(final ErrorFlyweight msg, final InetSocketAddress address)
+    {
+        for (final Destination destination : destinations)
+        {
+            if (destination.isMatch(msg.receiverId(), address))
+            {
+                return destination.registrationId;
+            }
+        }
+
+        return Aeron.NULL_VALUE;
     }
 }
 
@@ -1100,5 +1110,13 @@ final class Destination extends DestinationRhsPadding
         this.address = address;
         this.port = address.getPort();
         this.registrationId = registrationId;
+    }
+
+    boolean isMatch(final long receiverId, final InetSocketAddress address)
+    {
+        return
+            (isReceiverIdValid && receiverId == this.receiverId && address.getPort() == this.port) ||
+            (!isReceiverIdValid &&
+                address.getPort() == this.port && address.getAddress().equals(this.address.getAddress()));
     }
 }

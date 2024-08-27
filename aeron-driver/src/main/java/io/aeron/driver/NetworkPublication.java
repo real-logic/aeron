@@ -484,13 +484,15 @@ public final class NetworkPublication
     /**
      * Process an error message from a receiver.
      *
-     * @param msg            flyweight over the network packet.
-     * @param srcAddress     that the setup message has come from.
-     * @param conductorProxy to send messages back to the conductor.
+     * @param msg                       flyweight over the network packet.
+     * @param srcAddress                that the setup message has come from.
+     * @param destinationRegistrationId registrationId of the relevant MDC destination or {@link Aeron#NULL_VALUE}
+     * @param conductorProxy            to send messages back to the conductor.
      */
     public void onError(
         final ErrorFlyweight msg,
         final InetSocketAddress srcAddress,
+        final long destinationRegistrationId,
         final DriverConductorProxy conductorProxy)
     {
         flowControl.onError(msg, srcAddress, cachedNanoClock.nanoTime());
@@ -498,6 +500,7 @@ public final class NetworkPublication
         {
             conductorProxy.onPublicationError(
                 registrationId,
+                destinationRegistrationId,
                 msg.sessionId(),
                 msg.streamId(),
                 msg.receiverId(),

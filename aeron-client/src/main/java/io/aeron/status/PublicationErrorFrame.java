@@ -28,6 +28,7 @@ public class PublicationErrorFrame implements Cloneable
     private int sessionId;
     private int streamId;
     private long receiverId;
+    private long destinationRegistrationId;
     private Long groupTag;
     private int errorCode;
     private String errorMessage;
@@ -115,6 +116,17 @@ public class PublicationErrorFrame implements Cloneable
     }
 
     /**
+     * The registrationId of the destination. Only used with manual MDC publications. Will be
+     * {@link io.aeron.Aeron#NULL_VALUE} otherwise.
+     *
+     * @return registrationId of the destination or {@link io.aeron.Aeron#NULL_VALUE}.
+     */
+    public long destinationRegistrationId()
+    {
+        return destinationRegistrationId;
+    }
+
+    /**
      * Set the fields of the publication error frame from the flyweight.
      *
      * @param frameFlyweight that was received from the client message buffer.
@@ -130,6 +142,7 @@ public class PublicationErrorFrame implements Cloneable
         sourceAddress = frameFlyweight.sourceAddress();
         errorCode = frameFlyweight.errorCode().value();
         errorMessage = frameFlyweight.errorMessage();
+        destinationRegistrationId = frameFlyweight.destinationRegistrationId();
 
         return this;
     }

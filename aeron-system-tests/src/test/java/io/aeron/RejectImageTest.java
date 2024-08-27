@@ -318,10 +318,12 @@ public class RejectImageTest
     {
         context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
 
+        final QueuedErrorFrameHandler errorFrameHandler = new QueuedErrorFrameHandler();
         final TestMediaDriver driver = launch();
 
         final Aeron.Context ctx = new Aeron.Context()
-            .aeronDirectoryName(driver.aeronDirectoryName());
+            .aeronDirectoryName(driver.aeronDirectoryName())
+            .publicationErrorFrameHandler(errorFrameHandler);
 
         final AtomicInteger imageAvailable = new AtomicInteger(0);
         final AtomicInteger imageUnavailable = new AtomicInteger(0);
@@ -336,7 +338,7 @@ public class RejectImageTest
                 (image) -> imageAvailable.incrementAndGet(),
                 (image) -> imageUnavailable.incrementAndGet()))
         {
-            pub.addDestination(channel);
+            final long destinationRegistrationId = pub.asyncAddDestination(channel);
 
             Tests.awaitConnected(pub);
             Tests.awaitConnected(sub);
@@ -389,6 +391,16 @@ public class RejectImageTest
             {
                 Tests.yield();
             }
+
+            PublicationErrorFrame errorFrame;
+            while (null == (errorFrame = errorFrameHandler.poll()))
+            {
+                Tests.yield();
+            }
+
+            assertEquals(reason, errorFrame.errorMessage());
+            assertEquals(pub.registrationId(), errorFrame.registrationId());
+            assertEquals(destinationRegistrationId, errorFrame.destinationRegistrationId());
         }
     }
 
@@ -438,7 +450,7 @@ public class RejectImageTest
 
             final AeronException ex = assertThrows(AeronException.class, () -> sub.imageAtIndex(0)
                 .reject(rejectionReason));
-            System.out.println(ex.getMessage());
+            assertThat(ex.getMessage(), containsString("Unable to resolve image for correlationId"));
         }
     }
 

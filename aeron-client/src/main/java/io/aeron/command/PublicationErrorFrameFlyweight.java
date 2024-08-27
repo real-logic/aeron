@@ -34,6 +34,9 @@ import java.net.UnknownHostException;
  *  |                 Publication Registration Id                   |
  *  |                                                               |
  *  +---------------------------------------------------------------+
+ *  |                 Destination Registration Id                   |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
  *  |                          Session ID                           |
  *  +---------------------------------------------------------------+
  *  |                           Stream ID                           |
@@ -65,7 +68,8 @@ public class PublicationErrorFrameFlyweight
     private static final int REGISTRATION_ID_OFFSET = 0;
     private static final int IPV6_ADDRESS_LENGTH = 16;
     private static final int IPV4_ADDRESS_LENGTH = BitUtil.SIZE_OF_INT;
-    private static final int SESSION_ID_OFFSET = REGISTRATION_ID_OFFSET + BitUtil.SIZE_OF_LONG;
+    private static final int DESTINATION_REGISTRATION_ID_OFFSET = REGISTRATION_ID_OFFSET + BitUtil.SIZE_OF_LONG;
+    private static final int SESSION_ID_OFFSET = DESTINATION_REGISTRATION_ID_OFFSET + BitUtil.SIZE_OF_LONG;
     private static final int STREAM_ID_OFFSET = SESSION_ID_OFFSET + BitUtil.SIZE_OF_INT;
     private static final int RECEIVER_ID_OFFSET = STREAM_ID_OFFSET + BitUtil.SIZE_OF_INT;
     private static final int GROUP_TAG_OFFSET = RECEIVER_ID_OFFSET + BitUtil.SIZE_OF_LONG;
@@ -114,6 +118,30 @@ public class PublicationErrorFrameFlyweight
     public PublicationErrorFrameFlyweight registrationId(final long registrationId)
     {
         buffer.putLong(offset + REGISTRATION_ID_OFFSET, registrationId);
+        return this;
+    }
+
+    /**
+     * Return registration id of the destination that received the error frame. This will only be set if the publication
+     * is using manual MDC.
+     *
+     * @return registration ID of the publication or {@link io.aeron.Aeron#NULL_VALUE}
+     */
+    public long destinationRegistrationId()
+    {
+        return buffer.getLong(offset + DESTINATION_REGISTRATION_ID_OFFSET);
+    }
+
+    /**
+     * Set the registration ID of the destination that received the error frame. Use {@link io.aeron.Aeron#NULL_VALUE}
+     * if not set.
+     *
+     * @param registrationId of the destination.
+     * @return this for a fluent API.
+     */
+    public PublicationErrorFrameFlyweight destinationRegistrationId(final long registrationId)
+    {
+        buffer.putLong(offset + DESTINATION_REGISTRATION_ID_OFFSET, registrationId);
         return this;
     }
 

@@ -74,7 +74,7 @@ final class ClientProxy
 
     void onPublicationErrorFrame(
         final long registrationId,
-        final int sessionId,
+        final long destinationRegistrationId, final int sessionId,
         final int streamId,
         final long receiverId,
         final Long groupTag,
@@ -84,6 +84,7 @@ final class ClientProxy
     {
         publicationErrorFrame
             .registrationId(registrationId)
+            .destinationRegistrationId(destinationRegistrationId)
             .sessionId(sessionId)
             .streamId(streamId)
             .receiverId(receiverId)

@@ -13,42 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_ARCHIVE_AERON_ARCHIVE_H
-#define AERON_ARCHIVE_AERON_ARCHIVE_H
+#ifndef AERON_ARCHIVE_WRAPPER_UTIL_EXCEPTIONS_H
+#define AERON_ARCHIVE_WRAPPER_UTIL_EXCEPTIONS_H
 
-//#include "aeron_common.h"
-//#include "client/aeron_archive.h"
+#include "util/Exceptions.h"
 
-namespace aeron { namespace archive { namespace client
+namespace aeron { namespace util
 {
 
-class Context
-{
-public:
+AERON_DECLARE_SOURCED_EXCEPTION(ArchiveException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 
-private:
-    //aeron_archive_context_t *m_ctx;
-};
+#define ARCHIVE_MAP_TO_SOURCED_EXCEPTION_AND_THROW(code, message) AERON_MAP_TO_SOURCED_EXCEPTION_AND_THROW_WITH_DEFAULT(code, message, ArchiveException)
 
-class AsyncConnect
-{
-public:
+#define ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW ARCHIVE_MAP_TO_SOURCED_EXCEPTION_AND_THROW(aeron_errcode(), aeron_errmsg())
 
-private:
-    //aeron_archive_context_t m_ctx;
-};
+}}
 
-class AeronArchive
-{
-public:
-
-    static std::shared_ptr<AsyncConnect> asyncConnect(Context ctx)
-    {
-        return nullptr;
-    }
-};
-
-
-}}}
-
-#endif //AERON_ARCHIVE_AERON_ARCHIVE_H
+#endif // AERON_ARCHIVE_WRAPPER_UTIL_EXCEPTIONS_H

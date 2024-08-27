@@ -138,7 +138,7 @@ AERON_DECLARE_SOURCED_EXCEPTION(UnknownSubscriptionException, ExceptionCategory:
 AERON_DECLARE_SOURCED_EXCEPTION(ReentrantException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 AERON_DECLARE_SOURCED_EXCEPTION(UnsupportedOperationException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 
-#define AERON_MAP_TO_SOURCED_EXCEPTION_AND_THROW(code, message)                     \
+#define AERON_MAP_TO_SOURCED_EXCEPTION_AND_THROW_WITH_DEFAULT(code, message, defaultException)  \
 do                                                                                  \
 {                                                                                   \
     switch (code)                                                                   \
@@ -165,10 +165,12 @@ do                                                                              
                                                                                     \
         case ETIMEDOUT:                                                             \
         default:                                                                    \
-            throw AeronException(message, SOURCEINFO);                              \
+            throw defaultException(message, SOURCEINFO);                            \
     }                                                                               \
 }                                                                                   \
-while (0)                                                                           \
+while (0)
+
+#define AERON_MAP_TO_SOURCED_EXCEPTION_AND_THROW(code, message) AERON_MAP_TO_SOURCED_EXCEPTION_AND_THROW_WITH_DEFAULT(code, message, AeronException)
 
 #define AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW AERON_MAP_TO_SOURCED_EXCEPTION_AND_THROW(aeron_errcode(), aeron_errmsg())
 

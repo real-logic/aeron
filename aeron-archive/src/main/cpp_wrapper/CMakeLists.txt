@@ -19,15 +19,20 @@ if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
 endif ()
 
 SET(HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/client/AeronArchive.h)
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/archive/AeronArchive.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/archive/ArchiveContext.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/archive/CredentialsSupplier.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/util/ArchiveExceptions.h
+)
 
 # header only library
 add_library(aeron_archive_wrapper INTERFACE)
 add_library(aeron::aeron_archive_wrapper ALIAS aeron_archive_wrapper)
 target_include_directories(aeron_archive_wrapper
     INTERFACE
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    #"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
     "$<BUILD_INTERFACE:${AERON_C_ARCHIVE_SOURCE_PATH}>"
+    "$<BUILD_INTERFACE:${AERON_CLIENT_WRAPPER_SOURCE_PATH}>"
     "$<INSTALL_INTERFACE:include/wrapper>"
 )
 

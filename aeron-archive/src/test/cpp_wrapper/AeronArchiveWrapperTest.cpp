@@ -23,16 +23,18 @@
 
 #include <gtest/gtest.h>
 
-#include "client/AeronArchive.h"
+#include "client/archive/AeronArchive.h"
+#include "client/archive/CredentialsSupplier.h"
 /*
 #include "client/RecordingPos.h"
 #include "client/ReplayMerge.h"
 #include "concurrent/YieldingIdleStrategy.h"
-#include "concurrent/SleepingIdleStrategy.h"
 #include "ChannelUriStringBuilder.h"
-#include "CncFileReader.h"
 #include "aeron_archive_client/RecordingSignal.h"
  */
+
+#include "concurrent/SleepingIdleStrategy.h"
+#include "CncFileReader.h"
 
 #if defined(__linux__) || defined(Darwin)
 #include <unistd.h>
@@ -47,17 +49,17 @@ typedef intptr_t pid_t;
 #error "must spawn Java Archive per test"
 #endif
 
-//#include "TestArchive.h"
+#include "TestArchive.h"
 
 using namespace aeron;
 //using namespace aeron::util;
 //using namespace aeron::concurrent;
 using namespace aeron::archive::client;
 
-class AeronArchiveTestBase
+class AeronArchiveWrapperTestBase
 {
 public:
-    ~AeronArchiveTestBase()
+    ~AeronArchiveWrapperTestBase()
     {
         if (m_debug)
         {
@@ -65,24 +67,27 @@ public:
         }
     }
 
-    void asdf()
-    {
-        //fprintf(stderr, "did it work?? :: %s\n", something().c_str());
-    }
-
-    /*
     void DoSetUp(std::int64_t archiveId = 42)
     {
         std::string sourceArchiveDir = m_archiveDir + AERON_FILE_SEP + "source";
         m_archive = std::make_shared<TestArchive>(m_context.aeronDirectoryName(), sourceArchiveDir, std::cout, "aeron:udp?endpoint=localhost:8010", "aeron:udp?endpoint=localhost:0", archiveId);
 
         setCredentials(m_context);
+
+        m_context.idleStrategy<AeronArchiveWrapperTestBase>();
+    }
+
+    void idle(int work_count)
+    {
+        std::cout << "whoah!!\n";
+        sched_yield();
     }
 
     void DoTearDown()
     {
     }
 
+    /*
     static std::shared_ptr<Publication> addPublication(Aeron &aeron, const std::string &channel, std::int32_t streamId)
     {
         std::int64_t publicationId = aeron.addPublication(channel, streamId);
@@ -326,7 +331,6 @@ public:
 protected:
     const std::string m_java = JAVA_EXECUTABLE;
     const std::string m_aeronAllJar = AERON_ALL_JAR;
-    const std::string m_archiveDir = ARCHIVE_DIR;
 
     const std::string m_recordingChannel = "aeron:udp?endpoint=localhost:3333";
     const std::int32_t m_recordingStreamId = 33;
@@ -336,17 +340,17 @@ protected:
     const int m_fragmentLimit = 10;
 
     std::shared_ptr<TestArchive> m_destArchive;
-    std::shared_ptr<TestArchive> m_archive;
     AeronArchive::Context_t m_destContext;
-    AeronArchive::Context_t m_context;
      */
+    std::shared_ptr<TestArchive> m_archive;
+    const std::string m_archiveDir = ARCHIVE_DIR;
+    aeron::archive::client::Context m_context;
 
     std::ostringstream m_stream;
     bool m_debug = true;
 
 private:
 
-    /*
     static void setCredentials(AeronArchive::Context_t &context)
     {
         auto onEncodedCredentials =
@@ -363,26 +367,27 @@ private:
 
         context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
     }
-     */
 };
 
-class AeronArchiveTest : public AeronArchiveTestBase, public testing::Test
+class AeronArchiveWrapperTest : public AeronArchiveWrapperTestBase, public testing::Test
 {
 public:
     void SetUp() final
     {
-        //DoSetUp();
+        DoSetUp();
     }
 
     void TearDown() final
     {
-        //DoTearDown();
+        DoTearDown();
     }
 };
 
-TEST_F(AeronArchiveTest, what)
+TEST_F(AeronArchiveWrapperTest, what)
 {
-    asdf();
+    aeron::archive::client::Context ctx;
+
+    std::cout << "here";
 }
 
 /*
@@ -405,39 +410,34 @@ public:
 };
 
 INSTANTIATE_TEST_SUITE_P(AeronArchive, AeronArchiveParamTest, testing::Values(true, false));
+ */
 
-TEST_F(AeronArchiveTest, shouldAsyncConnectToArchive)
+TEST_F(AeronArchiveWrapperTest, shouldAsyncConnectToArchive)
 {
     SleepingIdleStrategy idleStrategy(IDLE_SLEEP_MS_1);
     std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect(m_context);
-    std::uint8_t previousStep = asyncConnect->step();
 
     std::shared_ptr<AeronArchive> aeronArchive = asyncConnect->poll();
     while (!aeronArchive)
     {
-        if (asyncConnect->step() == previousStep)
-        {
-            idleStrategy.idle();
-        }
-        else
-        {
-            idleStrategy.reset();
-            previousStep = asyncConnect->step();
-        }
+        idleStrategy.idle();
 
         aeronArchive = asyncConnect->poll();
     }
 
-    EXPECT_TRUE(aeronArchive->controlResponsePoller().subscription()->isConnected());
+    EXPECT_TRUE(aeronArchive->controlResponseSubscription()->isConnected());
     EXPECT_EQ(42, aeronArchive->archiveId());
 }
 
-TEST_F(AeronArchiveTest, shouldConnectToArchive)
+
+TEST_F(AeronArchiveWrapperTest, shouldConnectToArchive)
 {
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
-    EXPECT_TRUE(aeronArchive->controlResponsePoller().subscription()->isConnected());
+    EXPECT_TRUE(aeronArchive->controlResponseSubscription()->isConnected());
 }
+
+/*
 
 TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
 {

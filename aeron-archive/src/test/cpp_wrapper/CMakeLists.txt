@@ -14,6 +14,15 @@
 # limitations under the License.
 #
 
+find_package(Java REQUIRED)
+
+add_definitions(-DAERON_ALL_JAR="${AERON_ALL_JAR}")
+add_definitions(-DAERON_AGENT_JAR="${AERON_AGENT_JAR}")
+add_definitions(-DJAVA_EXECUTABLE="${Java_JAVA_EXECUTABLE}")
+add_definitions(-DARCHIVE_DIR="${CMAKE_CURRENT_BINARY_DIR}/archive")
+add_definitions(-DJAVA_MAJOR_VERSION=${Java_VERSION_MAJOR})
+add_definitions(-DJAVA_MINOR_VERSION=${Java_VERSION_MINOR})
+
 set(TEST_HEADERS)
 
 include_directories(${AERON_ARCHIVE_WRAPPER_SOURCE_PATH})
@@ -21,12 +30,13 @@ include_directories(${AERON_ARCHIVE_WRAPPER_SOURCE_PATH})
 function(aeron_archive_wrapper_test name file)
     set(wrapper_name "${name}W")
     add_executable(${wrapper_name} ${file} ${TEST_HEADERS})
-    add_dependencies(${wrapper_name} gmock)
-    target_link_libraries(${wrapper_name} aeron_archive_wrapper aeron_driver gmock_main ${CMAKE_THREAD_LIBS_INIT})
+    add_dependencies(${wrapper_name} aeron_archive_c_client gmock)
+    target_include_directories(${name} PUBLIC ${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+    target_link_libraries(${wrapper_name} aeron_archive_c_client aeron_archive_wrapper aeron_driver gmock_main ${CMAKE_THREAD_LIBS_INIT})
     target_compile_definitions(${wrapper_name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     add_test(NAME ${wrapper_name} COMMAND ${wrapper_name})
 endfunction()
 
 if (AERON_UNIT_TESTS)
-    aeron_archive_wrapper_test(archiveTest client/AeronArchiveTest.cpp)
+    aeron_archive_wrapper_test(archiveTest AeronArchiveWrapperTest.cpp)
 endif ()

@@ -262,7 +262,7 @@ public:
         {
             size_t index = i + start_count;
             char message[1000];
-            size_t len = snprintf(message, 1000, "%s%lu", message_prefix, index);
+            size_t len = snprintf(message, 1000, "%s%zu", message_prefix, index);
 
             while (aeron_publication_offer(publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
             {
@@ -279,7 +279,7 @@ public:
         for (size_t i = 0; aeron_publication_position(publication) < minimum_position; i++)
         {
             char message[1000];
-            size_t len = snprintf(message, 1000, "%s%lu", message_prefix, i);
+            size_t len = snprintf(message, 1000, "%s%zu", message_prefix, i);
 
             while (aeron_publication_offer(publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
             {
@@ -298,7 +298,7 @@ public:
         {
             size_t index = i + start_count;
             char message[1000];
-            size_t len = snprintf(message, 1000, "%s%lu", message_prefix, index);
+            size_t len = snprintf(message, 1000, "%s%zu", message_prefix, index);
 
             while (aeron_exclusive_publication_offer(exclusive_publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
             {
@@ -360,7 +360,7 @@ public:
         for (size_t i = *messages_published; i < total_message_count; i++)
         {
             char message[1000];
-            size_t len = snprintf(message, 1000, "%s%lu", message_prefix, i);
+            size_t len = snprintf(message, 1000, "%s%zu", message_prefix, i);
 
             while (aeron_publication_offer(publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
             {

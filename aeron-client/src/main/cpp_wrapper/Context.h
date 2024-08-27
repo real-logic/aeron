@@ -564,6 +564,12 @@ public:
         return { path, 0, length };
     }
 
+    // TODO find a better way to expose this to ONLY the archive cpp_wrapper?
+    inline aeron_context_t *context() const
+    {
+        return m_context;
+    }
+
 private:
     aeron_context_t *m_context = nullptr;
     on_available_image_t m_onAvailableImageHandler = defaultOnAvailableImageHandler;

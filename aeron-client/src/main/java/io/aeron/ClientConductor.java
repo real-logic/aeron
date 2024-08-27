@@ -926,6 +926,24 @@ final class ClientConductor implements Agent
         }
     }
 
+    long asyncRemoveDestination(final long registrationId, final long destinationRegistrationId)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            final long correlationId = driverProxy.removeDestination(registrationId, destinationRegistrationId);
+            asyncCommandIdSet.add(correlationId);
+            return correlationId;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
     long asyncAddRcvDestination(final long registrationId, final String endpointChannel)
     {
         clientLock.lock();

@@ -140,8 +140,12 @@ class MultiDestinationCastTest
 
     @Test
     @InterruptAfter(10)
+    @SlowTest
     void shouldSpinUpAndShutdownWithManual()
     {
+        driverAContext.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(1));
+        driverBContext.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(1));
+
         launch(Tests::onError);
 
         final String taggedMdcUri = new ChannelUriStringBuilder(PUB_MDC_MANUAL_URI).tags(
@@ -163,6 +167,10 @@ class MultiDestinationCastTest
         }
 
         assertFalse(clientA.isCommandActive(correlationId));
+
+        final long removeCorrelationId = publication.asyncRemoveDestination(SUB2_MDC_MANUAL_URI);
+        Tests.await("Remove Active", () -> !clientA.isCommandActive(removeCorrelationId));
+        Tests.await("Subscription disconnect", () -> subscriptionB.hasNoImages());
     }
 
     @Test
@@ -590,8 +598,12 @@ class MultiDestinationCastTest
             Subscription sub1 = clientB.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
             Subscription sub2 = clientB.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID))
         {
-            mdc.addDestination(SUB1_MDC_MANUAL_URI);
-            final long registrationId = mdc.addDestinationWithId(SUB2_MDC_MANUAL_URI);
+            final long registrationId1 = mdc.asyncAddDestination(SUB1_MDC_MANUAL_URI);
+            final long registrationId2 = mdc.asyncAddDestination(SUB2_MDC_MANUAL_URI);
+            while (clientA.isCommandActive(registrationId2))
+            {
+                Tests.yield();
+            }
 
             Tests.await("Connections", mdc::isConnected, sub1::isConnected, sub2::isConnected);
 
@@ -603,7 +615,7 @@ class MultiDestinationCastTest
             pollForFragment(sub1, fragmentHandlerA);
             pollForFragment(sub2, fragmentHandlerB);
 
-            mdc.removeDestination(registrationId);
+            mdc.removeDestination(registrationId2);
 
             Tests.await("Disconnected", () -> !sub2.isConnected());
 
@@ -614,6 +626,10 @@ class MultiDestinationCastTest
 
             pollForFragment(sub1, fragmentHandlerA);
             assertNoFragmentsReceived(sub2, 1_000L);
+
+            final long correlationId = mdc.asyncRemoveDestination(registrationId1);
+            Tests.await("Command Active", () -> !clientA.isCommandActive(correlationId));
+            Tests.await("Disconnected", () -> !sub1.isConnected(), () -> !mdc.isConnected());
         }
     }
 

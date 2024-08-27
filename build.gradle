@@ -221,6 +221,8 @@ subprojects {
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
         options.deprecation = true
+        options.compilerArgs.add('--release')
+        options.compilerArgs.add(java.sourceCompatibility.majorVersion)
         options.compilerArgs.addAll(['-Xlint:all,-processing', '-Werror']) // Enable all warnings and treat them as errors
         options.compilerArgs.add("-Aio.aeron.version=${aeronVersion}")
         options.compilerArgs.add("-Aio.aeron.gitsha=${gitCommitHash}")
@@ -334,7 +336,7 @@ subprojects {
     }
 
     javadoc {
-        failOnError false
+        failOnError true
         title = '<h1>Aeron Message Transport</h1>'
         options.bottom = '<i>Copyright &#169; 2014-2024 Real Logic Limited. All Rights Reserved.</i>'
         options.encoding = 'UTF-8'
@@ -349,7 +351,14 @@ subprojects {
             options.links("https://docs.oracle.com/en/java/javase/${buildJavaVersion}/docs/api/")
         }
 
-        options.addBooleanOption('html5', true)
+        exclude 'io/aeron/archive/codecs/**'
+        exclude 'io/aeron/cluster/codecs/**'
+        exclude 'io/aeron/samples/**'
+        exclude 'io/aeron/test/**'
+
+        options.addStringOption('-release', java.sourceCompatibility.majorVersion)
+        options.addBooleanOption('Werror', true)
+        options.addBooleanOption('Xdoclint:all', true)
     }
 
     tasks.register('testJar', Jar) {

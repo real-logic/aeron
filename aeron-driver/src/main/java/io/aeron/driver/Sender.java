@@ -189,15 +189,23 @@ public final class Sender extends SenderRhsPadding implements Agent
     }
 
     void onAddDestination(
-        final SendChannelEndpoint channelEndpoint, final ChannelUri channelUri, final InetSocketAddress address)
+        final SendChannelEndpoint channelEndpoint,
+        final ChannelUri channelUri,
+        final InetSocketAddress address,
+        final long registrationId)
     {
-        channelEndpoint.addDestination(channelUri, address);
+        channelEndpoint.addDestination(channelUri, address, registrationId);
     }
 
     void onRemoveDestination(
         final SendChannelEndpoint channelEndpoint, final ChannelUri channelUri, final InetSocketAddress address)
     {
         channelEndpoint.removeDestination(channelUri, address);
+    }
+
+    void onRemoveDestination(final SendChannelEndpoint channelEndpoint, final long destinationRegistrationId)
+    {
+        channelEndpoint.removeDestination(destinationRegistrationId);
     }
 
     void onResolutionChange(

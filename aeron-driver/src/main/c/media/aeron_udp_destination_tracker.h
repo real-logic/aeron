@@ -29,6 +29,7 @@ typedef struct aeron_udp_destination_entry_stct
     int64_t time_of_last_activity_ns;
     int64_t destination_timeout_ns;
     int64_t receiver_id;
+    int64_t registration_id;
     bool is_receiver_id_valid;
     aeron_uri_t *uri;
     struct sockaddr_storage addr;
@@ -80,12 +81,16 @@ int aeron_udp_destination_tracker_manual_add_destination(
     aeron_udp_destination_tracker_t *tracker,
     int64_t now_ns,
     aeron_uri_t *uri,
-    struct sockaddr_storage *addr);
+    struct sockaddr_storage *addr,
+    int64_t destination_registration_id);
 
 int aeron_udp_destination_tracker_remove_destination(
     aeron_udp_destination_tracker_t *tracker,
     struct sockaddr_storage *addr,
     aeron_uri_t **removed_uri);
+
+int aeron_udp_destination_tracker_remove_destination_by_id(
+    aeron_udp_destination_tracker_t *tracker, int64_t destination_registration_id, aeron_uri_t **removed_uri);
 
 void aeron_udp_destination_tracker_check_for_re_resolution(
     aeron_udp_destination_tracker_t *tracker,

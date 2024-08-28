@@ -78,6 +78,7 @@ typedef struct aeron_client_registering_resource_stct
 
     char *error_message;
     char *uri;
+    int64_t destination_registration_id;
     int64_t registration_id;
     long long registration_deadline_ns;
     int32_t error_code;
@@ -323,6 +324,12 @@ int aeron_client_conductor_async_remove_publication_destination(
     aeron_publication_t *publication,
     const char *uri);
 
+int aeron_client_conductor_async_remove_publication_destination_by_id(
+    aeron_async_destination_t **async,
+    aeron_client_conductor_t *conductor,
+    aeron_publication_t *publication,
+    int64_t destination_registration_id);
+
 int aeron_client_conductor_async_add_exclusive_publication_destination(
     aeron_async_destination_t **async,
     aeron_client_conductor_t *conductor,
@@ -334,6 +341,12 @@ int aeron_client_conductor_async_remove_exclusive_publication_destination(
     aeron_client_conductor_t *conductor,
     aeron_exclusive_publication_t *publication,
     const char *uri);
+
+int aeron_client_conductor_async_remove_exclusive_publication_destination_by_id(
+    aeron_async_destination_t **async,
+    aeron_client_conductor_t *conductor,
+    aeron_exclusive_publication_t *publication,
+    int64_t destination_registration_id);
 
 int aeron_client_conductor_async_add_subscription_destination(
     aeron_async_destination_t **async,

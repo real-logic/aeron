@@ -91,15 +91,18 @@ final class SenderProxy extends CommandProxy
     }
 
     void addDestination(
-        final SendChannelEndpoint channelEndpoint, final ChannelUri channelUri, final InetSocketAddress address)
+        final SendChannelEndpoint channelEndpoint,
+        final ChannelUri channelUri,
+        final InetSocketAddress address,
+        final long registrationId)
     {
         if (notConcurrent())
         {
-            sender.onAddDestination(channelEndpoint, channelUri, address);
+            sender.onAddDestination(channelEndpoint, channelUri, address, registrationId);
         }
         else
         {
-            offer(() -> sender.onAddDestination(channelEndpoint, channelUri, address));
+            offer(() -> sender.onAddDestination(channelEndpoint, channelUri, address, registrationId));
         }
     }
 
@@ -113,6 +116,19 @@ final class SenderProxy extends CommandProxy
         else
         {
             offer(() -> sender.onRemoveDestination(channelEndpoint, channelUri, address));
+        }
+    }
+
+    void removeDestination(
+        final SendChannelEndpoint channelEndpoint, final long destinationRegistrationId)
+    {
+        if (notConcurrent())
+        {
+            sender.onRemoveDestination(channelEndpoint, destinationRegistrationId);
+        }
+        else
+        {
+            offer(() -> sender.onRemoveDestination(channelEndpoint, destinationRegistrationId));
         }
     }
 

@@ -27,6 +27,8 @@ namespace aeron { namespace archive { namespace client
 
 class Context
 {
+    friend class AeronArchive;
+
 public:
     Context()
     {
@@ -53,7 +55,7 @@ public:
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        this->idleStrategy();
+        this->idleStrategy(defaultIdleStrategy);
     }
 
     ~Context()
@@ -82,26 +84,18 @@ public:
         m_credentialsSupplier.m_onFree = credentialsSupplier.m_onFree;
     }
 
-    template<typename IdleStrategy = aeron::concurrent::YieldingIdleStrategy>
-    void idleStrategy()
+    template<typename IdleStrategy>
+    void idleStrategy(IdleStrategy &idleStrategy)
     {
-        // TODO I have no idea what is happening here...
-
-        IdleStrategy idleStrategy;
-
-        m_idleFunc = [&idleStrategy](int work_count){
-            idleStrategy.idle(work_count);
-        };
+        m_idleFunc = [&idleStrategy](int work_count){ idleStrategy.idle(work_count); };
     }
 
-    aeron_archive_context_t *m_ctx = nullptr; // TODO this should be private
-
 private:
+    aeron_archive_context_t *m_ctx = nullptr;
     CredentialsSupplier m_credentialsSupplier;
-
     aeron_archive_encoded_credentials_t m_lastEncodedCredentials = {};
-
     std::function<void(int work_count)> m_idleFunc;
+    YieldingIdleStrategy defaultIdleStrategy;
 
     static aeron_archive_encoded_credentials_t *encodedCredentialsFunc(void *clientd)
     {

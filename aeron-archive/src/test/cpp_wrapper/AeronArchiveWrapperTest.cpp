@@ -74,13 +74,7 @@ public:
 
         setCredentials(m_context);
 
-        m_context.idleStrategy<AeronArchiveWrapperTestBase>();
-    }
-
-    void idle(int work_count)
-    {
-        std::cout << "whoah!!\n";
-        sched_yield();
+        m_context.idleStrategy(m_idleStrategy);
     }
 
     void DoTearDown()
@@ -348,6 +342,7 @@ protected:
 
     std::ostringstream m_stream;
     bool m_debug = true;
+    SleepingIdleStrategy m_idleStrategy = SleepingIdleStrategy(IDLE_SLEEP_MS_1);
 
 private:
 
@@ -435,6 +430,7 @@ TEST_F(AeronArchiveWrapperTest, shouldConnectToArchive)
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
     EXPECT_TRUE(aeronArchive->controlResponseSubscription()->isConnected());
+    EXPECT_EQ(42, aeronArchive->archiveId());
 }
 
 /*

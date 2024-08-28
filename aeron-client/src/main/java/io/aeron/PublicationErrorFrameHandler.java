@@ -22,12 +22,10 @@ import io.aeron.status.PublicationErrorFrame;
  */
 public interface PublicationErrorFrameHandler
 {
-    PublicationErrorFrameHandler NO_OP = new PublicationErrorFrameHandler()
-    {
-        public void onPublicationError(final PublicationErrorFrame errorFrame)
-        {
-        }
-    };
+    /**
+     * Default no-op error frame handler.
+     */
+    PublicationErrorFrameHandler NO_OP = errorFrame -> {};
 
     /**
      * Called when an error frame for a publication is received by the local driver and needs to be propagated to the

@@ -396,7 +396,7 @@ class ConsensusModuleAgentTest
         inOrder.verify(mockLogPublisher).appendClusterAction(
             anyLong(), anyLong(), eq(ClusterAction.SNAPSHOT), eq(CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT));
 
-        agent.onReplayClusterAction(-1, ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT);
+        agent.onReplayClusterAction(-1, 2048, 0, ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT);
         assertEquals(ConsensusModule.State.ACTIVE.code(), stateCounter.get());
     }
 

@@ -1504,7 +1504,12 @@ final class ConsensusModuleAgent
         }
     }
 
-    void onReplayClusterAction(final long leadershipTermId, final ClusterAction action, final int flags)
+    void onReplayClusterAction(
+        final long leadershipTermId,
+        final long logPosition,
+        final long timestamp,
+        final ClusterAction action,
+        final int flags)
     {
         if (leadershipTermId == this.leadershipTermId)
         {

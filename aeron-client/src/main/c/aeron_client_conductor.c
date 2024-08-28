@@ -1201,24 +1201,25 @@ void aeron_client_conductor_on_cmd_add_static_counter(void *clientd, void *item)
     async->registration_deadline_ns = (long long)(conductor->nano_clock() + conductor->driver_timeout_ns);
 }
 
-static void aeron_client_conductor_on_cmd_destination(const void *clientd, const void *item, int32_t msg_type_id)
+static int aeron_client_conductor_get_async_registration_id(
+    aeron_client_conductor_t *conductor,
+    aeron_client_registering_resource_t *async,
+    int64_t *resource_registration_id)
 {
-    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
-    aeron_async_destination_t *async = (aeron_async_destination_t *)item;
+    int result = 0;
 
-    int64_t resource_registration_id = 0;
     switch (async->resource.base_resource->type)
     {
         case AERON_CLIENT_TYPE_PUBLICATION:
-            resource_registration_id = async->resource.publication->registration_id;
+            *resource_registration_id = async->resource.publication->registration_id;
             break;
 
         case AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION:
-            resource_registration_id = async->resource.exclusive_publication->registration_id;
+            *resource_registration_id = async->resource.exclusive_publication->registration_id;
             break;
 
         case AERON_CLIENT_TYPE_SUBSCRIPTION:
-            resource_registration_id = async->resource.subscription->registration_id;
+            *resource_registration_id = async->resource.subscription->registration_id;
             break;
 
         case AERON_CLIENT_TYPE_IMAGE:
@@ -1230,8 +1231,22 @@ static void aeron_client_conductor_on_cmd_destination(const void *clientd, const
             snprintf(
                 err_buffer, sizeof(err_buffer) - 1, "DESTINATION command invalid resource (%s:%d)", __FILE__, __LINE__);
             conductor->error_handler(conductor->error_handler_clientd, EINVAL, err_buffer);
-            return;
+            result = -1;
         }
+    }
+
+    return result;
+}
+
+static void aeron_client_conductor_on_cmd_destination(const void *clientd, const void *item, int32_t msg_type_id)
+{
+    aeron_client_conductor_t *conductor = (aeron_client_conductor_t *)clientd;
+    aeron_async_destination_t *async = (aeron_async_destination_t *)item;
+
+    int64_t resource_registration_id = 0;
+    if (aeron_client_conductor_get_async_registration_id(conductor, async, &resource_registration_id) < 0)
+    {
+        return;
     }
 
     const size_t command_length = sizeof(aeron_destination_command_t) + async->uri_length;
@@ -1287,31 +1302,9 @@ static void aeron_client_conductor_on_cmd_destination_by_id(const void *clientd,
     aeron_async_destination_t *async = (aeron_async_destination_t *)item;
 
     int64_t resource_registration_id = 0;
-    switch (async->resource.base_resource->type)
+    if (aeron_client_conductor_get_async_registration_id(conductor, async, &resource_registration_id) < 0)
     {
-        case AERON_CLIENT_TYPE_PUBLICATION:
-            resource_registration_id = async->resource.publication->registration_id;
-            break;
-
-        case AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION:
-            resource_registration_id = async->resource.exclusive_publication->registration_id;
-            break;
-
-        case AERON_CLIENT_TYPE_SUBSCRIPTION:
-            resource_registration_id = async->resource.subscription->registration_id;
-            break;
-
-        case AERON_CLIENT_TYPE_IMAGE:
-        case AERON_CLIENT_TYPE_LOGBUFFER:
-        case AERON_CLIENT_TYPE_COUNTER:
-        case AERON_CLIENT_TYPE_DESTINATION:
-        {
-            char err_buffer[AERON_MAX_PATH];
-            snprintf(
-                err_buffer, sizeof(err_buffer) - 1, "DESTINATION command invalid resource (%s:%d)", __FILE__, __LINE__);
-            conductor->error_handler(conductor->error_handler_clientd, EINVAL, err_buffer);
-            return;
-        }
+        return;
     }
 
     const size_t command_length = sizeof(aeron_destination_by_id_command_t);

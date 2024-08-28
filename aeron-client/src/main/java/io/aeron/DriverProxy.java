@@ -262,7 +262,6 @@ public final class DriverProxy
         return correlationId;
     }
 
-
     /**
      * Remove a destination from the send channel of an existing MDC Publication.
      *

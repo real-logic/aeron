@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Publication;
+import io.aeron.cluster.client.ClusterEvent;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
@@ -216,7 +217,7 @@ final class ServiceProxy implements AutoCloseable
             }
             while (--attempts > 0);
 
-            errorHandler.onError(new ClusterException(
+            errorHandler.onError(new ClusterEvent(
                 "failed to send service termination position: result=" + result, AeronException.Category.WARN));
         }
     }

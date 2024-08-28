@@ -31,6 +31,10 @@ public final class SampleAuthenticator implements Authenticator
     private static final String CREDENTIALS_STRING_REQUIRING_CHALLENGE = "admin:adminC";
     private static final String CHALLENGE_CREDENTIALS_STRING = "admin:CSadmin";
     private static final String CHALLENGE_STRING = "challenge!";
+
+    /**
+     * A sample principal representing an administrator.
+     */
     public static final String PRINCIPAL = "admin";
 
     enum SessionState

@@ -269,7 +269,11 @@ final class LogAdapter implements ControlledFragmentHandler
                     clusterActionRequestDecoder.flags() : ConsensusModule.CLUSTER_ACTION_FLAGS_DEFAULT;
 
                 consensusModuleAgent.onReplayClusterAction(
-                    clusterActionRequestDecoder.leadershipTermId(), clusterActionRequestDecoder.action(), flags);
+                    clusterActionRequestDecoder.leadershipTermId(),
+                    clusterActionRequestDecoder.logPosition(),
+                    clusterActionRequestDecoder.timestamp(),
+                    clusterActionRequestDecoder.action(),
+                    flags);
                 return Action.BREAK;
 
             case NewLeadershipTermEventDecoder.TEMPLATE_ID:

@@ -22,6 +22,7 @@ import org.agrona.concurrent.IdleStrategy;
 /**
  * Configuration used for samples with defaults which can be overridden by system properties.
  */
+@SuppressWarnings("JavadocVariable")
 public class SampleConfiguration
 {
     public static final String CHANNEL_PROP = "aeron.sample.channel";

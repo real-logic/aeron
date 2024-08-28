@@ -20,7 +20,14 @@ package io.aeron.samples.echo.api;
  */
 public class ProvisioningConstants
 {
+    /**
+     * TODO
+     */
     public static final String IO_AERON_TYPE_PROVISIONING_NAME_TESTING = "io.aeron:type=Provisioning,name=testing";
+
+    /**
+     * TODO
+     */
     public static final String IO_AERON_TYPE_ECHO_PAIR_PREFIX = "io.aeron:type=EchoPair,name=";
 
     /**

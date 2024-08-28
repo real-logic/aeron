@@ -46,6 +46,10 @@ public class DestinationByIdMessageFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int RESOURCE_REGISTRATION_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int DESTINATION_REGISTRATION_ID_OFFSET = RESOURCE_REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
+
+    /**
+     * Length of the encoded message in bytes.
+     */
     public static final int MESSAGE_LENGTH = LENGTH + (2 * SIZE_OF_LONG);
 
     /**

@@ -32,11 +32,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("checkstyle:Indentation")
-public class SimpleAuthorisationServiceTest
+class SimpleAuthorisationServiceTest
 {
-    public static final int ARCHIVE_PROTOCOL_ID = MessageHeaderDecoder.SCHEMA_ID;
-    public static final int CLUSTER_PROTOCOL_ID = io.aeron.cluster.codecs.MessageHeaderDecoder.SCHEMA_ID;
-    public static final int OTHER_PROTOCOL_ID = 873648576;
+    private static final int ARCHIVE_PROTOCOL_ID = MessageHeaderDecoder.SCHEMA_ID;
+    private static final int CLUSTER_PROTOCOL_ID = io.aeron.cluster.codecs.MessageHeaderDecoder.SCHEMA_ID;
+    private static final int OTHER_PROTOCOL_ID = 873648576;
 
     @ParameterizedTest
     @ValueSource(booleans = { true, false })

@@ -1396,32 +1396,23 @@ final class ConsensusModuleAgent
 
         if (ServiceAck.hasReached(logPosition, serviceAckId, serviceAckQueues))
         {
-            if (ConsensusModule.State.SNAPSHOT == state)
+            switch (state)
             {
-                snapshotOnServiceAck(logPosition, timestamp, serviceId);
-            }
-            else if (ConsensusModule.State.QUITTING == state)
-            {
-                closeAndTerminate();
-            }
-            else if (ConsensusModule.State.TERMINATING == state)
-            {
-                if (null == clusterTermination)
-                {
-                    consensusPublisher.terminationAck(
-                        leaderMember.publication(), leadershipTermId, logPosition, memberId);
-                    recordingLog.commitLogPosition(leadershipTermId, logPosition);
+                case SNAPSHOT:
+                    ++serviceAckId;
+                    snapshotOnServiceAck(logPosition, timestamp, pollServiceAcks(logPosition, serviceId));
+                    break;
+
+                case QUITTING:
                     closeAndTerminate();
-                }
-                else
-                {
-                    clusterTermination.onServicesTerminated();
-                    if (clusterTermination.canTerminate(activeMembers, clusterClock.timeNanos()))
-                    {
-                        recordingLog.commitLogPosition(leadershipTermId, logPosition);
-                        closeAndTerminate();
-                    }
-                }
+                    break;
+
+                case TERMINATING:
+                    terminateOnServiceAck(logPosition);
+                    break;
+
+                default:
+                    break;
             }
         }
     }
@@ -3200,11 +3191,8 @@ final class ConsensusModuleAgent
         }
     }
 
-    private void snapshotOnServiceAck(final long logPosition, final long timestamp, final int ackingServiceId)
+    private void snapshotOnServiceAck(final long logPosition, final long timestamp, final ServiceAck[] serviceAcks)
     {
-        final ServiceAck[] serviceAcks = pollServiceAcks(logPosition, ackingServiceId);
-        ++serviceAckId;
-
         if (isSnapshotSetComplete(serviceAcks))
         {
             takeSnapshot(timestamp, logPosition, serviceAcks);
@@ -3402,6 +3390,26 @@ final class ConsensusModuleAgent
         tryStopLogRecording();
         state(ConsensusModule.State.CLOSED);
         throw new ClusterTerminationException(false);
+    }
+
+    private void terminateOnServiceAck(final long logPosition)
+    {
+        if (null == clusterTermination)
+        {
+            consensusPublisher.terminationAck(
+                leaderMember.publication(), leadershipTermId, logPosition, memberId);
+            recordingLog.commitLogPosition(leadershipTermId, logPosition);
+            closeAndTerminate();
+        }
+        else
+        {
+            clusterTermination.onServicesTerminated();
+            if (clusterTermination.canTerminate(activeMembers, clusterClock.timeNanos()))
+            {
+                recordingLog.commitLogPosition(leadershipTermId, logPosition);
+                closeAndTerminate();
+            }
+        }
     }
 
     private void tryStopLogRecording()

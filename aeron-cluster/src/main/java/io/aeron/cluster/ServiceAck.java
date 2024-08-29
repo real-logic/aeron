@@ -24,6 +24,8 @@ import java.util.ArrayDeque;
  */
 final class ServiceAck
 {
+    static final ServiceAck[] EMPTY_SERVICE_ACKS = new ServiceAck[0];
+
     private final long ackId;
     private final long logPosition;
     private final long relevantId;

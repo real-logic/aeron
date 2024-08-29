@@ -33,7 +33,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -94,8 +93,7 @@ class ClusterWithNoServicesTest
 
     @Test
     @InterruptAfter(10)
-    @Disabled
-    void shouldSnapshotAndRecoverState() throws InterruptedException
+    void shouldSnapshotExtensionState() throws InterruptedException
     {
         final CountDownLatch latch = new CountDownLatch(1);
 

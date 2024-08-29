@@ -131,7 +131,18 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
     }
 
     _async->state = ADD_PUBLICATION;
-    _async->ctx = ctx;
+
+    if (aeron_archive_context_duplicate(&_async->ctx, ctx) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        aeron_free(_async);
+        return -1;
+    }
+
+    // TODO need to think through this a bit more.  Make sure to properly handle
+    // all the combinations of incoming contexts (owns vs. !owns, aeron already created, etc..
+    aeron_archive_context_set_owns_aeron_client(ctx, false);
+
     _async->aeron = aeron;
     _async->async_add_subscription = async_add_subscription;
     _async->subscription_id = subscription_id;
@@ -495,6 +506,7 @@ int aeron_archive_async_connect_transition_to_done(aeron_archive_t **aeron_archi
         async->exclusive_publication = NULL;
         async->archive_proxy = NULL;
         async->control_response_poller = NULL;
+        async->ctx = NULL;
     }
 
     aeron_archive_async_connect_delete(async);
@@ -533,6 +545,11 @@ int aeron_archive_async_connect_delete(aeron_archive_async_connect_t *async)
         aeron_archive_credentials_supplier_on_free(
             &async->ctx->credentials_supplier,
             async->encoded_credentials_from_challenge);
+    }
+
+    if (NULL != async->ctx)
+    {
+        aeron_archive_context_close(async->ctx);
     }
 
     aeron_free(async);

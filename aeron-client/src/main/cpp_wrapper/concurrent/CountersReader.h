@@ -281,6 +281,11 @@ public:
     static constexpr std::int32_t MAX_LABEL_LENGTH = AERON_COUNTER_MAX_LABEL_LENGTH;
     static constexpr std::int32_t MAX_KEY_LENGTH = AERON_COUNTER_MAX_KEY_LENGTH;
 
+    inline aeron_counters_reader_t *countersReader() const
+    {
+        return m_countersReader;
+    }
+
 protected:
     aeron_counters_reader_t *m_countersReader;
     aeron_counters_reader_buffers_t m_buffers;

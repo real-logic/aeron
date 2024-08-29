@@ -37,25 +37,7 @@ public:
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        if (aeron_archive_context_set_credentials_supplier(
-            m_ctx,
-            encodedCredentialsFunc,
-            onChallengeFunc,
-            onFreeFunc,
-            (void *)this) < 0)
-        {
-            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
-
-        if (aeron_archive_context_set_idle_strategy(
-            m_ctx,
-            idle,
-            (void *)this) < 0)
-        {
-            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
-
-        this->idleStrategy(defaultIdleStrategy);
+        setupContext();
     }
 
     ~Context()
@@ -71,6 +53,8 @@ public:
 
     void setAeronContext(const aeron::Context &ctx)
     {
+        // TODO should probably hang on to the wrapper context as well
+
         if (aeron_archive_context_set_aeron_context(m_ctx, ctx.context()) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -90,12 +74,57 @@ public:
         m_idleFunc = [&idleStrategy](int work_count){ idleStrategy.idle(work_count); };
     }
 
+    std::shared_ptr<Aeron> aeron()
+    {
+        return m_aeron;
+    }
+
+    void setAeron(std::shared_ptr<Aeron> aeron)
+    {
+        m_aeron = std::move(aeron);
+    }
+
 private:
-    aeron_archive_context_t *m_ctx = nullptr;
+    aeron_archive_context_t *m_ctx = nullptr; // backing C struct
+
     CredentialsSupplier m_credentialsSupplier;
     aeron_archive_encoded_credentials_t m_lastEncodedCredentials = {};
+
     std::function<void(int work_count)> m_idleFunc;
-    YieldingIdleStrategy defaultIdleStrategy;
+    YieldingIdleStrategy m_defaultIdleStrategy;
+
+    std::shared_ptr<Aeron> m_aeron = nullptr;
+
+    // This Context is created after connect succeeds and wraps around a context_t created in the C layer
+    explicit Context(
+        aeron_archive_context_t *archive_context) :
+        m_ctx(archive_context)
+    {
+        setupContext();
+    }
+
+    void setupContext()
+    {
+        if (aeron_archive_context_set_credentials_supplier(
+            m_ctx,
+            encodedCredentialsFunc,
+            onChallengeFunc,
+            onFreeFunc,
+            (void *)this) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        if (aeron_archive_context_set_idle_strategy(
+            m_ctx,
+            idle,
+            (void *)this) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        this->idleStrategy(m_defaultIdleStrategy);
+    }
 
     static aeron_archive_encoded_credentials_t *encodedCredentialsFunc(void *clientd)
     {
@@ -134,7 +163,6 @@ private:
     }
 
 };
-
 
 }}}
 

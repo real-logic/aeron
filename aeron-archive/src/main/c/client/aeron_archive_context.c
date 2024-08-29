@@ -80,6 +80,24 @@ int aeron_archive_context_close(aeron_archive_context_t *ctx)
     return 0;
 }
 
+int aeron_archive_context_duplicate(aeron_archive_context_t **dest_p, aeron_archive_context_t *src)
+{
+    aeron_archive_context_t *_ctx = NULL;
+
+    if (aeron_alloc((void **)&_ctx, sizeof(aeron_archive_context_t)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Unable to allocate aeron_archive_context_init");
+        return -1;
+    }
+
+    // TODO probably should be wiser about this, but for now, memcpy it is!!!
+    memcpy(_ctx, src, sizeof(aeron_archive_context_t));
+
+    *dest_p = _ctx;
+
+    return 0;
+}
+
 int aeron_archive_context_conclude(aeron_archive_context_t *ctx)
 {
     if (NULL == ctx->aeron)

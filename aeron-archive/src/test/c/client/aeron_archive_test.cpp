@@ -673,6 +673,10 @@ TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
         nullptr,
         &default_creds_clientd));
     ASSERT_EQ(0, aeron_archive_async_connect(&async, ctx));
+
+    // the ctx passed into async_connect gets duplicated, so it should be safe to delete it now
+    ASSERT_EQ(0, aeron_archive_context_close(ctx));
+
     ASSERT_EQ(0, aeron_archive_async_connect_poll(&archive, async));
 
     while (nullptr == archive)
@@ -688,7 +692,6 @@ TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
     ASSERT_EQ(42, aeron_archive_get_archive_id(archive));
 
     ASSERT_EQ(0, aeron_archive_close(archive));
-    ASSERT_EQ(0, aeron_archive_context_close(ctx));
 }
 
 TEST_F(AeronCArchiveTest, shouldConnectToArchive)
@@ -705,6 +708,7 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchive)
         nullptr,
         &default_creds_clientd));
     ASSERT_EQ(0, aeron_archive_connect(&archive, ctx));
+    ASSERT_EQ(0, aeron_archive_context_close(ctx));
     connect();
 
     aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
@@ -713,7 +717,6 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchive)
     ASSERT_EQ(42, aeron_archive_get_archive_id(archive));
 
     ASSERT_EQ(0, aeron_archive_close(archive));
-    ASSERT_EQ(0, aeron_archive_context_close(ctx));
 }
 
 TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)

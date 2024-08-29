@@ -43,9 +43,11 @@ do { \
 
 struct aeron_archive_stct
 {
+    bool owns_ctx;
     aeron_archive_context_t *ctx;
     aeron_mutex_t lock;
     aeron_archive_proxy_t *archive_proxy;
+    bool owns_control_response_subscription;
     aeron_subscription_t *subscription; // shared by various pollers
     aeron_archive_control_response_poller_t *control_response_poller;
     aeron_archive_recording_descriptor_poller_t *recording_descriptor_poller;
@@ -185,11 +187,13 @@ int aeron_archive_create(
         return -1;
     }
 
+    _aeron_archive->owns_ctx = true;
     _aeron_archive->ctx = ctx;
 
     aeron_mutex_init(&_aeron_archive->lock, NULL);
 
     _aeron_archive->archive_proxy = archive_proxy;
+    _aeron_archive->owns_control_response_subscription = true;
     _aeron_archive->subscription = subscription;
     _aeron_archive->control_response_poller = control_response_poller;
     _aeron_archive->recording_descriptor_poller = recording_descriptor_poller;
@@ -217,8 +221,17 @@ int aeron_archive_close(aeron_archive_t *aeron_archive)
     aeron_archive_recording_subscription_descriptor_poller_close(aeron_archive->recording_subscription_descriptor_poller);
     aeron_archive->recording_subscription_descriptor_poller = NULL;
 
-    aeron_subscription_close(aeron_archive->subscription, NULL, NULL);
+    if (aeron_archive->owns_control_response_subscription)
+    {
+        aeron_subscription_close(aeron_archive->subscription, NULL, NULL);
+    }
     aeron_archive->subscription = NULL;
+
+    if (aeron_archive->owns_ctx)
+    {
+        aeron_archive_context_close(aeron_archive->ctx);
+    }
+    aeron_archive->ctx = NULL;
 
     aeron_mutex_destroy(&aeron_archive->lock);
 
@@ -1794,6 +1807,18 @@ int64_t aeron_archive_segment_file_base_position(
     return start_term_base_position + segments;
 }
 
+aeron_archive_context_t *aeron_archive_get_archive_context(aeron_archive_t *aeron_archive)
+{
+    return aeron_archive->ctx;
+}
+
+aeron_archive_context_t *aeron_archive_get_and_own_archive_context(aeron_archive_t *aeron_archive)
+{
+    aeron_archive->owns_ctx = false;
+
+    return aeron_archive->ctx;
+}
+
 aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive)
 {
     return aeron_archive->aeron;
@@ -1806,6 +1831,13 @@ int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive)
 
 aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive)
 {
+    return aeron_archive->subscription;
+}
+
+aeron_subscription_t *aeron_archive_get_and_own_control_response_subscription(aeron_archive_t *aeron_archive)
+{
+    aeron_archive->owns_control_response_subscription = false;
+
     return aeron_archive->subscription;
 }
 

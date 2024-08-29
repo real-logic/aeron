@@ -49,6 +49,8 @@ struct aeron_archive_context_stct
     void *delegating_invoker_func_clientd;
 };
 
+int aeron_archive_context_duplicate(aeron_archive_context_t **dest_p, aeron_archive_context_t *src);
+
 int aeron_archive_context_conclude(aeron_archive_context_t *ctx);
 
 void aeron_archive_context_idle(aeron_archive_context_t *ctx);

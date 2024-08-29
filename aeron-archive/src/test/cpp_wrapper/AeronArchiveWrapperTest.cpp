@@ -25,6 +25,8 @@
 
 #include "client/archive/AeronArchive.h"
 #include "client/archive/CredentialsSupplier.h"
+#include "client/archive/RecordingPos.h"
+
 /*
 #include "client/RecordingPos.h"
 #include "client/ReplayMerge.h"
@@ -81,7 +83,6 @@ public:
     {
     }
 
-    /*
     static std::shared_ptr<Publication> addPublication(Aeron &aeron, const std::string &channel, std::int32_t streamId)
     {
         std::int64_t publicationId = aeron.addPublication(channel, streamId);
@@ -172,6 +173,8 @@ public:
 
         ASSERT_EQ(received, messageCount);
     }
+
+    /*
 
     std::int64_t consumeMessagesExpectingBound(
         Subscription &subscription,
@@ -326,16 +329,18 @@ protected:
     const std::string m_java = JAVA_EXECUTABLE;
     const std::string m_aeronAllJar = AERON_ALL_JAR;
 
-    const std::string m_recordingChannel = "aeron:udp?endpoint=localhost:3333";
-    const std::int32_t m_recordingStreamId = 33;
     const std::string m_replayChannel = "aeron:udp?endpoint=localhost:6666";
     const std::int32_t m_replayStreamId = 66;
 
-    const int m_fragmentLimit = 10;
 
     std::shared_ptr<TestArchive> m_destArchive;
     AeronArchive::Context_t m_destContext;
      */
+
+    const int m_fragmentLimit = 10;
+    const std::string m_recordingChannel = "aeron:udp?endpoint=localhost:3333";
+    const std::int32_t m_recordingStreamId = 33;
+
     std::shared_ptr<TestArchive> m_archive;
     const std::string m_archiveDir = ARCHIVE_DIR;
     aeron::archive::client::Context m_context;
@@ -420,7 +425,7 @@ TEST_F(AeronArchiveWrapperTest, shouldAsyncConnectToArchive)
         aeronArchive = asyncConnect->poll();
     }
 
-    EXPECT_TRUE(aeronArchive->controlResponseSubscription()->isConnected());
+    EXPECT_TRUE(aeronArchive->controlResponseSubscription().isConnected());
     EXPECT_EQ(42, aeronArchive->archiveId());
 }
 
@@ -429,13 +434,11 @@ TEST_F(AeronArchiveWrapperTest, shouldConnectToArchive)
 {
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
-    EXPECT_TRUE(aeronArchive->controlResponseSubscription()->isConnected());
+    EXPECT_TRUE(aeronArchive->controlResponseSubscription().isConnected());
     EXPECT_EQ(42, aeronArchive->archiveId());
 }
 
-/*
-
-TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
+TEST_F(AeronArchiveWrapperTest, shouldRecordPublicationAndFindRecording)
 {
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
@@ -511,6 +514,7 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
     EXPECT_EQ(count, 1);
 }
 
+/*
 TEST_P(AeronArchiveParamTest, shouldRecordThenReplay)
 {
     const bool useParams = GetParam();

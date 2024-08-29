@@ -533,7 +533,12 @@ int aeron_send_channel_endpoint_on_error(
 {
     aeron_error_t *error = (aeron_error_t *)buffer;
 
-    // TODO: handle multi-destination messages
+    int64_t destination_registration_id = AERON_NULL_VALUE;
+    if (NULL != endpoint->destination_tracker)
+    {
+        destination_registration_id = aeron_udp_destination_tracker_find_registration_id(
+            endpoint->destination_tracker, buffer, length, addr);
+    }
 
     int64_t key_value = aeron_map_compound_key(error->stream_id, error->session_id);
     aeron_network_publication_t *publication = aeron_int64_to_ptr_hash_map_get(
@@ -542,7 +547,8 @@ int aeron_send_channel_endpoint_on_error(
 
     if (NULL != publication)
     {
-        aeron_network_publication_on_error(publication, buffer, length, addr, conductor_proxy);
+        aeron_network_publication_on_error(
+            publication, destination_registration_id, buffer, length, addr, conductor_proxy);
     }
 
     return result;

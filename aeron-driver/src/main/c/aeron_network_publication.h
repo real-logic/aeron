@@ -183,6 +183,7 @@ void aeron_network_publication_on_status_message(
 
 void aeron_network_publication_on_error(
     aeron_network_publication_t *publication,
+    int64_t destination_registration_id,
     const uint8_t *buffer,
     size_t length,
     struct sockaddr_storage *src_address,

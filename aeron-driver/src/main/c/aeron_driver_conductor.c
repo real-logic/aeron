@@ -2578,6 +2578,7 @@ void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
     aeron_publication_error_t *response = (aeron_publication_error_t *)buffer;
     response->error_code = error->error_code;
     response->registration_id = error->registration_id;
+    response->destination_registration_id = error->destination_registration_id;
     response->session_id = error->session_id;
     response->stream_id = error->stream_id;
     response->receiver_id = error->receiver_id;

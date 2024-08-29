@@ -223,6 +223,7 @@ aeron_reject_image_command_t;
 struct aeron_publication_error_stct
 {
     int64_t registration_id;
+    int64_t destination_registration_id;
     int32_t session_id;
     int32_t stream_id;
     int64_t receiver_id;

@@ -265,6 +265,7 @@ void aeron_driver_conductor_proxy_on_release_resource(
 void aeron_driver_conductor_proxy_on_publication_error(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     const int64_t registration_id,
+    const int64_t destination_registration_id,
     int32_t session_id,
     int32_t stream_id,
     int64_t receiver_id,
@@ -281,6 +282,7 @@ void aeron_driver_conductor_proxy_on_publication_error(
     error->base.func = aeron_driver_conductor_on_publication_error;
     error->base.item = NULL;
     error->registration_id = registration_id;
+    error->destination_registration_id = destination_registration_id;
     error->session_id = session_id;
     error->stream_id = stream_id;
     error->receiver_id = receiver_id;

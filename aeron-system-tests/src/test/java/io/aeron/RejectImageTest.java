@@ -510,6 +510,7 @@ public class RejectImageTest
 
             assertEquals(reason, errorFrame.errorMessage());
             assertEquals(pub.registrationId(), errorFrame.registrationId());
+            assertEquals(Aeron.NULL_VALUE, errorFrame.destinationRegistrationId());
             assertEquals(pub.streamId(), errorFrame.streamId());
             assertEquals(pub.sessionId(), errorFrame.sessionId());
             assertEquals(groupTag, errorFrame.groupTag());

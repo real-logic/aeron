@@ -62,6 +62,7 @@ import java.net.UnknownHostException;
  * ...                                                              |
  *  +---------------------------------------------------------------+
  * </pre>
+ * @since 1.47.0
  */
 public class PublicationErrorFrameFlyweight
 {

@@ -171,6 +171,7 @@ public class ControlProtocolEvents
 
     /**
      * Inform clients of error frame received by publication
+     * @since 1.47.0
      */
     public static final int ON_PUBLICATION_ERROR = 0x0F0C;
 }

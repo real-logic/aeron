@@ -1736,6 +1736,7 @@ public class Aeron implements AutoCloseable
          *
          * @param publicationErrorFrameHandler to be called back when an error frame is received.
          * @return this for a fluent API.
+         * @since 1.47.0
          */
         public Context publicationErrorFrameHandler(
             final PublicationErrorFrameHandler publicationErrorFrameHandler)
@@ -1749,6 +1750,7 @@ public class Aeron implements AutoCloseable
          * this client.
          *
          * @return the {@link PublicationErrorFrameHandler} to call back on to.
+         * @since 1.47.0
          */
         public PublicationErrorFrameHandler publicationErrorFrameHandler()
         {

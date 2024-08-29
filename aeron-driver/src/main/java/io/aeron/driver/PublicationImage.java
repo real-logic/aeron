@@ -592,10 +592,6 @@ public final class PublicationImage
 
         if (null != rejectionReason)
         {
-            if (isEndOfStream)
-            {
-                System.out.println("Invalidated end of stream");
-            }
             return 0;
         }
 

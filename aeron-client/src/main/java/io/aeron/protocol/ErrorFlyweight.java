@@ -50,6 +50,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  *    ...                                                             |
  *    +---------------------------------------------------------------+
  * </pre>
+ * @since 1.47.0
  */
 public class ErrorFlyweight extends HeaderFlyweight
 {

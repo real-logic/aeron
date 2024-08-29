@@ -19,6 +19,7 @@ import io.aeron.status.PublicationErrorFrame;
 
 /**
  * Interface for handling various error frame messages for publications.
+ * @since 1.47.0
  */
 public interface PublicationErrorFrameHandler
 {

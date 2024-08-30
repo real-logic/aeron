@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.archive.ArchiveThreadingMode;
@@ -26,6 +27,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.TestContexts;
+import io.aeron.test.Tests;
 import io.aeron.test.cluster.ClusterTests;
 
 import org.agrona.CloseHelper;
@@ -104,6 +106,7 @@ class ClusterWithNoServicesTest
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
         latch.await();
+        awaitSnapshotCount(1);
 
         ClusterTests.failOnClusterError();
     }
@@ -150,6 +153,15 @@ class ClusterWithNoServicesTest
         assertNotNull(controlToggle);
 
         return controlToggle;
+    }
+
+    private void awaitSnapshotCount(final int count)
+    {
+        final Counter snapshotCounter = clusteredMediaDriver.consensusModule().context().snapshotCounter();
+        while (snapshotCounter.get() < count)
+        {
+            Tests.yield();
+        }
     }
 
     static final class TestConsensusModuleExtension implements ConsensusModuleExtension

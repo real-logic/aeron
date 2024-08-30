@@ -26,23 +26,63 @@
 namespace aeron { namespace archive { namespace client
 {
 
-typedef std::function<void(
-    std::int64_t controlSessionId,
-    std::int64_t correlationId,
-    std::int64_t recordingId,
-    std::int64_t startTimestamp,
-    std::int64_t stopTimestamp,
-    std::int64_t startPosition,
-    std::int64_t stopPosition,
-    std::int32_t initialTermId,
-    std::int32_t segmentFileLength,
-    std::int32_t termBufferLength,
-    std::int32_t mtuLength,
-    std::int32_t sessionId,
-    std::int32_t streamId,
-    const std::string &strippedChannel,
-    const std::string &originalChannel,
-    const std::string &sourceIdentity)> recording_descriptor_consumer_t;
+struct RecordingDescriptor
+{
+    RecordingDescriptor(
+        std::int64_t controlSessionId,
+        std::int64_t correlationId,
+        std::int64_t recordingId,
+        std::int64_t startTimestamp,
+        std::int64_t stopTimestamp,
+        std::int64_t startPosition,
+        std::int64_t stopPosition,
+        std::int32_t initialTermId,
+        std::int32_t segmentFileLength,
+        std::int32_t termBufferLength,
+        std::int32_t mtuLength,
+        std::int32_t sessionId,
+        std::int32_t streamId,
+        const std::string &strippedChannel,
+        const std::string &originalChannel,
+        const std::string &sourceIdentity) :
+        m_controlSessionId(controlSessionId),
+        m_correlationId(correlationId),
+        m_recordingId(recordingId),
+        m_startTimestamp(startTimestamp),
+        m_stopTimestamp(stopTimestamp),
+        m_startPosition(startPosition),
+        m_stopPosition(stopPosition),
+        m_initialTermId(initialTermId),
+        m_segmentFileLength(segmentFileLength),
+        m_termBufferLength(termBufferLength),
+        m_mtuLength(mtuLength),
+        m_sessionId(sessionId),
+        m_streamId(streamId),
+        m_strippedChannel(strippedChannel),
+        m_originalChannel(originalChannel),
+        m_sourceIdentity(sourceIdentity)
+    {
+    }
+
+    std::int64_t m_controlSessionId;
+    std::int64_t m_correlationId;
+    std::int64_t m_recordingId;
+    std::int64_t m_startTimestamp;
+    std::int64_t m_stopTimestamp;
+    std::int64_t m_startPosition;
+    std::int64_t m_stopPosition;
+    std::int32_t m_initialTermId;
+    std::int32_t m_segmentFileLength;
+    std::int32_t m_termBufferLength;
+    std::int32_t m_mtuLength;
+    std::int32_t m_sessionId;
+    std::int32_t m_streamId;
+    const std::string m_strippedChannel;
+    const std::string m_originalChannel;
+    const std::string m_sourceIdentity;
+};
+
+typedef std::function<void(RecordingDescriptor &recordingDescriptor)> recording_descriptor_consumer_t;
 
 using namespace aeron::util;
 
@@ -271,7 +311,7 @@ public:
 private:
     explicit AeronArchive(
         aeron_archive_t *aeron_archive,
-        const std::shared_ptr<Aeron> originalAeron) :
+        const std::shared_ptr<Aeron> &originalAeron) :
         m_aeron_archive_t(aeron_archive),
         m_archiveCtxW(aeron_archive_get_and_own_archive_context(m_aeron_archive_t))
     {
@@ -300,7 +340,7 @@ private:
     {
         recording_descriptor_consumer_t &consumer = *reinterpret_cast<recording_descriptor_consumer_t *>(clientd);
 
-        consumer(
+        RecordingDescriptor descriptor(
             recording_descriptor->control_session_id,
             recording_descriptor->correlation_id,
             recording_descriptor->recording_id,
@@ -317,6 +357,8 @@ private:
             recording_descriptor->stripped_channel,
             recording_descriptor->original_channel,
             recording_descriptor->source_identity);
+
+        consumer(descriptor);
     }
 };
 

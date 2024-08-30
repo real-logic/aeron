@@ -384,10 +384,6 @@ public:
     }
 };
 
-class AeronArchiveWrapperTestNoSetup : public AeronArchiveWrapperTestBase, public testing::Test
-{
-};
-
 /*
 class AeronArchiveWrapperIdTest : public AeronArchiveWrapperTestBase, public testing::Test
 {
@@ -521,26 +517,10 @@ TEST_F(AeronArchiveWrapperTest, shouldRecordPublicationAndFindRecording)
 
     const std::int32_t count = aeronArchive->listRecording(
         recordingId,
-        [&](
-            std::int64_t controlSessionId,
-            std::int64_t correlationId,
-            std::int64_t recordingId1,
-            std::int64_t startTimestamp,
-            std::int64_t stopTimestamp,
-            std::int64_t startPosition,
-            std::int64_t newStopPosition,
-            std::int32_t initialTermId,
-            std::int32_t segmentFileLength,
-            std::int32_t termBufferLength,
-            std::int32_t mtuLength,
-            std::int32_t sessionId1,
-            std::int32_t streamId,
-            const std::string &strippedChannel,
-            const std::string &originalChannel,
-            const std::string &sourceIdentity)
+        [&](RecordingDescriptor recordingDescriptor)
         {
-            EXPECT_EQ(recordingId, recordingId1);
-            EXPECT_EQ(streamId, m_recordingStreamId);
+            EXPECT_EQ(recordingId, recordingDescriptor.m_recordingId);
+            EXPECT_EQ(recordingDescriptor.m_streamId, m_recordingStreamId);
 
             std::cerr << "got the callback!\n";
         });

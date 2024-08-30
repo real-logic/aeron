@@ -41,6 +41,7 @@ import org.mockito.InOrder;
 
 import java.util.concurrent.CountDownLatch;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
@@ -50,7 +51,7 @@ class ClusterWithNoServicesTest
 {
     enum LatchTrigger
     {
-        SESSION_OPENED, TAKE_SNAPSHOT
+        SESSION_OPENED, SNAPSHOT_TAKEN, CLOSED
     }
 
     private ClusteredMediaDriver clusteredMediaDriver;
@@ -102,7 +103,7 @@ class ClusterWithNoServicesTest
     {
         final CountDownLatch latch = new CountDownLatch(1);
 
-        clusteredMediaDriver = launchCluster(new TestConsensusModuleExtension(latch, LatchTrigger.TAKE_SNAPSHOT));
+        clusteredMediaDriver = launchCluster(new TestConsensusModuleExtension(latch, LatchTrigger.SNAPSHOT_TAKEN));
         aeronCluster = connectClient();
 
         final AtomicCounter controlToggle = getClusterControlToggle();
@@ -110,6 +111,42 @@ class ClusterWithNoServicesTest
 
         latch.await();
         awaitSnapshotCount(1);
+
+        ClusterTests.failOnClusterError();
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldShutdownWithExtension() throws InterruptedException
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        clusteredMediaDriver = launchCluster(new TestConsensusModuleExtension(latch, LatchTrigger.CLOSED));
+        aeronCluster = connectClient();
+
+        final AtomicCounter controlToggle = getClusterControlToggle();
+        assertTrue(ClusterControl.ToggleState.SHUTDOWN.toggle(controlToggle));
+
+        awaitSnapshotCount(1);
+        latch.await();
+
+        ClusterTests.failOnClusterError();
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldAbortWithExtension() throws InterruptedException
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        clusteredMediaDriver = launchCluster(new TestConsensusModuleExtension(latch, LatchTrigger.CLOSED));
+        aeronCluster = connectClient();
+
+        final AtomicCounter controlToggle = getClusterControlToggle();
+        assertTrue(ClusterControl.ToggleState.ABORT.toggle(controlToggle));
+
+        latch.await();
+        assertEquals(0L, clusteredMediaDriver.consensusModule().context().snapshotCounter().get());
 
         ClusterTests.failOnClusterError();
     }
@@ -158,10 +195,10 @@ class ClusterWithNoServicesTest
         return controlToggle;
     }
 
-    private void awaitSnapshotCount(final int count)
+    private void awaitSnapshotCount(final int snapshotCount)
     {
         final Counter snapshotCounter = clusteredMediaDriver.consensusModule().context().snapshotCounter();
-        while (snapshotCounter.get() < count)
+        while (snapshotCounter.get() < snapshotCount)
         {
             Tests.yield();
         }
@@ -228,6 +265,10 @@ class ClusterWithNoServicesTest
 
         public void close()
         {
+            if (LatchTrigger.CLOSED == latchTrigger)
+            {
+                latch.countDown();
+            }
         }
 
         public void onSessionOpened(final long clusterSessionId)
@@ -248,7 +289,7 @@ class ClusterWithNoServicesTest
 
         public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
-            if (LatchTrigger.TAKE_SNAPSHOT == latchTrigger)
+            if (LatchTrigger.SNAPSHOT_TAKEN == latchTrigger)
             {
                 latch.countDown();
             }

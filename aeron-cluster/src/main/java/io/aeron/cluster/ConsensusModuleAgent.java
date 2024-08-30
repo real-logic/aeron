@@ -2345,8 +2345,15 @@ final class ConsensusModuleAgent
             {
                 if (NULL_POSITION != terminationPosition && logAdapter.position() >= terminationPosition)
                 {
-                    serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
                     state(ConsensusModule.State.TERMINATING);
+                    if (serviceCount > 0)
+                    {
+                        serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
+                    }
+                    else
+                    {
+                        terminateOnServiceAck(logAdapter.position());
+                    }
                 }
                 else
                 {
@@ -2427,7 +2434,7 @@ final class ConsensusModuleAgent
                     {
                         final long position = logPublisher.position();
 
-                        clusterTermination = new ClusterTermination(nowNs + ctx.terminationTimeoutNs());
+                        clusterTermination = new ClusterTermination(nowNs + ctx.terminationTimeoutNs(), serviceCount);
                         clusterTermination.terminationPosition(
                             ctx.countedErrorHandler(),
                             consensusPublisher,
@@ -2451,7 +2458,7 @@ final class ConsensusModuleAgent
                 {
                     final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
                     final long position = logPublisher.position();
-                    clusterTermination = new ClusterTermination(nowNs + ctx.terminationTimeoutNs());
+                    clusterTermination = new ClusterTermination(nowNs + ctx.terminationTimeoutNs(), serviceCount);
                     clusterTermination.terminationPosition(
                         errorHandler, consensusPublisher, activeMembers, thisMember, leadershipTermId, position);
                     terminationPosition = position;
@@ -3426,7 +3433,10 @@ final class ConsensusModuleAgent
     private void unexpectedTermination()
     {
         aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
-        serviceProxy.terminationPosition(0, ctx.countedErrorHandler());
+        if (serviceCount > 0)
+        {
+            serviceProxy.terminationPosition(0, ctx.countedErrorHandler());
+        }
         tryStopLogRecording();
         state(ConsensusModule.State.CLOSED);
         throw new ClusterTerminationException(false);

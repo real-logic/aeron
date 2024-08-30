@@ -65,8 +65,10 @@ class RecordingReplicatorTest
     private static final String DST_ARCHIVE_REPLICATION_CHANNEL =
         "aeron:udp?alias=dst-replication-channel|endpoint=localhost:9999";
     private static final int TERM_BUFFER_LENGTH = 128 * 1024;
+
     @RegisterExtension
     final SystemTestWatcher testWatcher = new SystemTestWatcher();
+
     private TestMediaDriver srcMediaDriver;
     private TestMediaDriver dstMediaDriver;
     private Archive srcArchive;
@@ -209,8 +211,8 @@ class RecordingReplicatorTest
         try (ExclusivePublication publication = aeronArchive.addRecordedExclusivePublication(channel, streamId))
         {
             final CountersReader counters = aeronArchive.context().aeron().countersReader();
-            final int counterId =
-                Tests.awaitRecordingCounterId(counters, publication.sessionId(), aeronArchive.archiveId());
+            final int counterId = Tests.awaitRecordingCounterId(
+                counters, publication.sessionId(), aeronArchive.archiveId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
             final BufferClaim bufferClaim = new BufferClaim();
 
@@ -262,6 +264,11 @@ class RecordingReplicatorTest
 
         assertEquals(1, srcAeronArchive.listRecording(srcRecordingId, collector.reset()));
         final RecordingDescriptor srcRecording = collector.descriptors().get(0).retain();
+
+        while (dstAeronArchive.getStopPosition(dstRecordingId) == AeronArchive.NULL_POSITION)
+        {
+            Tests.yield();
+        }
 
         assertEquals(1, dstAeronArchive.listRecording(dstRecordingId, collector.reset()));
         final RecordingDescriptor dstRecording = collector.descriptors().get(0).retain();

@@ -61,7 +61,6 @@ public final class ClusterMarkFile implements AutoCloseable
      * Full semantic version.
      */
     public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
-
     /**
      * Length of the {@code header} section.
      */
@@ -78,7 +77,6 @@ public final class ClusterMarkFile implements AutoCloseable
      * Max allowed length for the error log buffer.
      */
     public static final int ERROR_BUFFER_MAX_LENGTH = Integer.MAX_VALUE - HEADER_LENGTH;
-
     /**
      * File extension used by the mark file.
      */

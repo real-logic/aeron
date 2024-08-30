@@ -25,8 +25,99 @@ public class ConfigInfo implements Serializable
 {
     private static final long serialVersionUID = 6600224566064248728L;
 
+    /**
+     * Id.
+     */
     public final String id;
+    /**
+     * List of expectations.
+     */
     public final ExpectedConfig expectations;
+
+    /**
+     * Whether property was found.
+     */
+    public boolean foundPropertyName = false;
+    /**
+     * Whether default was found.
+     */
+    public boolean foundDefault = false;
+    /**
+     * Property description.
+     */
+    public String propertyNameDescription;
+    /**
+     * Property field name.
+     */
+    public String propertyNameFieldName;
+    /**
+     * Property class name.
+     */
+    public String propertyNameClassName;
+    /**
+     * Property name.
+     */
+    public String propertyName;
+    /**
+     * Default description.
+     */
+    public String defaultDescription;
+    /**
+     * Default field name.
+     */
+    public String defaultFieldName;
+    /**
+     * Default class name.
+     */
+    public String defaultClassName;
+    /**
+     * Default value.
+     */
+    public String defaultValue;
+    /**
+     * Default value string.
+     */
+    public String defaultValueString;
+    /**
+     * Default value type.
+     */
+    public DefaultType defaultValueType = DefaultType.UNDEFINED;
+    /**
+     * Default override type.
+     */
+    public String overrideDefaultValue;
+    /**
+     * Default override type value.
+     */
+    public DefaultType overrideDefaultValueType = DefaultType.UNDEFINED;
+    /**
+     * Uri param.
+     */
+    public String uriParam;
+    /**
+     * Whether property has context.
+     */
+    public boolean hasContext = true;
+    /**
+     * Context.
+     */
+    public String context;
+    /**
+     * Context description.
+     */
+    public String contextDescription;
+    /**
+     * Is time value.
+     */
+    public Boolean isTimeValue;
+    /**
+     * Time unit.
+     */
+    public TimeUnit timeUnit;
+    /**
+     * Whether property is deprecated.
+     */
+    public boolean deprecated = false;
 
     /**
      * @param id the unique identifier for this block o' config information
@@ -36,45 +127,4 @@ public class ConfigInfo implements Serializable
         this.id = id;
         expectations = new ExpectedConfig();
     }
-
-    public boolean foundPropertyName = false;
-    public boolean foundDefault = false;
-
-    public String propertyNameDescription;
-
-    public String propertyNameFieldName;
-
-    public String propertyNameClassName;
-
-    public String propertyName;
-
-    public String defaultDescription;
-
-    public String defaultFieldName;
-
-    public String defaultClassName;
-
-    public String defaultValue;
-
-    public String defaultValueString;
-
-    public DefaultType defaultValueType = DefaultType.UNDEFINED;
-
-    public String overrideDefaultValue;
-
-    public DefaultType overrideDefaultValueType = DefaultType.UNDEFINED;
-
-    public String uriParam;
-
-    public boolean hasContext = true;
-
-    public String context;
-
-    public String contextDescription;
-
-    public Boolean isTimeValue;
-
-    public TimeUnit timeUnit;
-
-    public boolean deprecated = false;
 }

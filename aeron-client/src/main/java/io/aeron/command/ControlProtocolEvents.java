@@ -100,6 +100,11 @@ public class ControlProtocolEvents
      */
     public static final int ADD_STATIC_COUNTER = 0x0F;
 
+    /**
+     * Remove a destination by registration id.
+     */
+    public static final int REMOVE_DESTINATION_BY_ID = 0x10;
+
     // Media Driver to Clients
 
     /**

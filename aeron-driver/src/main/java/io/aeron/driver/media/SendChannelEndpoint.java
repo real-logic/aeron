@@ -494,10 +494,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
      *
      * @param channelUri for the destination to be added.
      * @param address    of the destination to be added.
+     * @param registrationId of the destination.
      */
-    public void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
+    public void addDestination(final ChannelUri channelUri, final InetSocketAddress address, final long registrationId)
     {
-        multiSndDestination.addDestination(channelUri, address);
+        multiSndDestination.addDestination(channelUri, address, registrationId);
     }
 
     /**
@@ -509,6 +510,16 @@ public class SendChannelEndpoint extends UdpChannelTransport
     public void removeDestination(final ChannelUri channelUri, final InetSocketAddress address)
     {
         multiSndDestination.removeDestination(channelUri, address);
+    }
+
+    /**
+     * Remove a destination from an MDC channel.
+     *
+     * @param destinationRegistrationId the registration id of the destination.
+     */
+    public void removeDestination(final long destinationRegistrationId)
+    {
+        multiSndDestination.removeDestination(destinationRegistrationId);
     }
 
     /**
@@ -630,11 +641,15 @@ abstract class MultiSndDestination extends MultiSndDestinationRhsPadding
 
     abstract void onStatusMessage(StatusMessageFlyweight msg, InetSocketAddress address);
 
-    void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
+    void addDestination(final ChannelUri channelUri, final InetSocketAddress address, final long registrationId)
     {
     }
 
     void removeDestination(final ChannelUri channelUri, final InetSocketAddress address)
+    {
+    }
+
+    void removeDestination(final long destinationRegistrationId)
     {
     }
 
@@ -761,11 +776,11 @@ class ManualSndMultiDestination extends MultiSndDestination
         return bytesToSend;
     }
 
-    void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
+    void addDestination(final ChannelUri channelUri, final InetSocketAddress address, final long registrationId)
     {
-        destinations = ArrayUtil.add(
-            destinations,
-            new Destination(nanoClock.nanoTime(), channelUri.get(CommonContext.ENDPOINT_PARAM_NAME), address));
+        final Destination destination = new Destination(
+            nanoClock.nanoTime(), channelUri.get(CommonContext.ENDPOINT_PARAM_NAME), address, registrationId);
+        destinations = ArrayUtil.add(destinations, destination);
         destinationsCounter.setOrdered(destinations.length);
     }
 
@@ -776,6 +791,36 @@ class ManualSndMultiDestination extends MultiSndDestination
         for (final Destination destination : destinations)
         {
             if (destination.address.equals(address))
+            {
+                found = true;
+                break;
+            }
+
+            index++;
+        }
+
+        if (found)
+        {
+            if (1 == destinations.length)
+            {
+                destinations = EMPTY_DESTINATIONS;
+            }
+            else
+            {
+                destinations = ArrayUtil.remove(destinations, index);
+            }
+        }
+
+        destinationsCounter.setOrdered(destinations.length);
+    }
+
+    void removeDestination(final long destinationRegistrationId)
+    {
+        boolean found = false;
+        int index = 0;
+        for (final Destination destination : destinations)
+        {
+            if (destination.registrationId == destinationRegistrationId)
             {
                 found = true;
                 break;
@@ -990,6 +1035,7 @@ abstract class DestinationRhsPadding extends DestinationHotFields
 final class Destination extends DestinationRhsPadding
 {
     long receiverId;
+    final long registrationId;
     boolean isReceiverIdValid;
     int port;
     InetSocketAddress address;
@@ -1003,9 +1049,10 @@ final class Destination extends DestinationRhsPadding
         this.endpoint = null;
         this.address = address;
         this.port = address.getPort();
+        this.registrationId = Aeron.NULL_VALUE;
     }
 
-    Destination(final long nowMs, final String endpoint, final InetSocketAddress address)
+    Destination(final long nowMs, final String endpoint, final InetSocketAddress address, final long registrationId)
     {
         this.timeOfLastActivityNs = nowMs;
         this.receiverId = 0;
@@ -1013,5 +1060,6 @@ final class Destination extends DestinationRhsPadding
         this.endpoint = endpoint;
         this.address = address;
         this.port = address.getPort();
+        this.registrationId = registrationId;
     }
 }

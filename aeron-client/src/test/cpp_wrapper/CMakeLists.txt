@@ -59,6 +59,8 @@ if (AERON_UNIT_TESTS)
     aeron_client_wrapper_test(multiDestinationCast MultiDestinationTest.cpp)
     aeron_client_native_test(multiDestinationCast MultiDestinationTest.cpp)
 
+    aeron_client_wrapper_test(multiDestinationByIdTest MultiDestinationByIdTest.cpp)
+
     aeron_client_wrapper_test(livenessTimeoutTest LivenessTimeoutTest.cpp)
     aeron_client_native_test(livenessTimeoutTest LivenessTimeoutTest.cpp)
 

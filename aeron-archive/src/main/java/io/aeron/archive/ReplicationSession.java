@@ -96,7 +96,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private ExclusivePublication responsePublication = null;
     private ArchiveProxy responseArchiveProxy = null;
 
-
     ReplicationSession(
         final long srcRecordingId,
         final long dstRecordingId,

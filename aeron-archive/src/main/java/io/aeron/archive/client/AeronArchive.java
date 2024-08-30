@@ -3554,15 +3554,45 @@ public final class AeronArchive implements AutoCloseable
          */
         public enum State
         {
+            /**
+             * Initial state of adding a publication for control request channel.
+             */
             ADD_PUBLICATION(0),
+            /**
+             * Await publication being added.
+             */
             AWAIT_PUBLICATION_CONNECTED(1),
+            /**
+             * Sending {@code connect} request to the Archive.
+             */
             SEND_CONNECT_REQUEST(2),
+            /**
+             * Await response subscription connected.
+             */
             AWAIT_SUBSCRIPTION_CONNECTED(3),
+            /**
+             * Await connect response.
+             */
             AWAIT_CONNECT_RESPONSE(4),
+            /**
+             * Send {@code archive-id} request.
+             */
             SEND_ARCHIVE_ID_REQUEST(5),
+            /**
+             * Await response for the {@code archive-id} request.
+             */
             AWAIT_ARCHIVE_ID_RESPONSE(6),
+            /**
+             * Archive connection established.
+             */
             DONE(7),
+            /**
+             * Sending a challenge response.
+             */
             SEND_CHALLENGE_RESPONSE(8),
+            /**
+             * Await challenge response.
+             */
             AWAIT_CHALLENGE_RESPONSE(9);
 
             final int step;

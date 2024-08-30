@@ -20,10 +20,6 @@ import io.aeron.config.DefaultType;
 import io.aeron.config.ExpectedCConfig;
 import io.aeron.validation.Grep;
 
-import javax.script.ScriptContext;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -39,13 +35,11 @@ final class Validator
     }
 
     private final String sourceDir;
-    private final ScriptEngine scriptEngine;
     private final ValidationReport report;
 
     private Validator(final String sourceDir)
     {
         this.sourceDir = sourceDir;
-        this.scriptEngine = new ScriptEngineManager().getEngineByName("JavaScript");
         this.report = new ValidationReport();
     }
 
@@ -194,33 +188,13 @@ final class Validator
             .replaceAll("([0-9]+)LL", "$1")
             .replaceAll("([0-9]+)L", "$1");
 
-        try
+        if (foundDefaultString.equals(c.defaultValue))
         {
-            scriptEngine.getContext().setAttribute("INT32_MAX", Integer.MAX_VALUE, ScriptContext.ENGINE_SCOPE);
-
-            final String evaluatedFoundDefaultString = scriptEngine.eval(
-                "AERON_TERM_BUFFER_LENGTH_DEFAULT = (16 * 1024 * 1024);\n" + // this feels like a (very) bad idea
-                "(" + foundDefaultString + ").toFixed(0)" // avoid scientific notation
-            ).toString();
-
-            if (evaluatedFoundDefaultString.equals(c.defaultValue))
-            {
-                validation.valid("Expected Default '" + foundDefaultString + "'" +
-                    (foundDefaultString.equals(evaluatedFoundDefaultString) ?
-                    "" : " (" + evaluatedFoundDefaultString + ")") +
-                    " found in " + location);
-            }
-            else
-            {
-                validation.invalid("found " + foundDefaultString +
-                    " (" + evaluatedFoundDefaultString + ") but expected " + c.defaultValue);
-            }
+            validation.valid("Expected Default '" + foundDefaultString + "' found in " + location);
         }
-        catch (final ScriptException e)
+        else
         {
-            validation.invalid("Expected Default - unable to evaluate expression '" +
-                originalFoundDefaultString + "' in " + location);
-            e.printStackTrace(validation.out());
+            validation.invalid("found " + foundDefaultString + " but expected " + c.defaultValue);
         }
     }
 }

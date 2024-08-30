@@ -640,6 +640,41 @@ public:
     }
 
     /**
+     * Remove a previously added destination manually from a multi-destination-cast Publication.
+     *
+     * @param destinationRegistrationId for the destination to remove
+     * @return async object to track the progress of the command
+     */
+    AsyncDestination *removeDestinationAsync(std::int64_t destinationRegistrationId)
+    {
+        AsyncDestination *async = nullptr;
+        if (aeron_publication_async_remove_destination_by_id(
+            &async, m_aeron, m_publication, destinationRegistrationId) < 0)
+        {
+            AERON_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return async;
+    }
+
+    /**
+     * Remove a previously added destination manually from a multi-destination-cast Publication by destinationRegistrationId.
+     *
+     * @param destinationRegistrationId for the destination to remove
+     * @return correlation id for the remove command
+     */
+    std::int64_t removeDestination(std::int64_t destinationRegistrationId)
+    {
+        AsyncDestination *async = removeDestinationAsync(destinationRegistrationId);
+        std::int64_t correlationId = aeron_async_destination_get_registration_id(async);
+
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+        m_pendingDestinations[correlationId] = async;
+
+        return correlationId;
+    }
+
+    /**
      * Retrieve the status of the associated add or remove destination operation with the given correlationId.
      *
      * This method is non-blocking.

@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.archive.ArchiveThreadingMode;
@@ -26,6 +27,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.TestContexts;
+import io.aeron.test.Tests;
 import io.aeron.test.cluster.ClusterTests;
 
 import org.agrona.CloseHelper;
@@ -33,15 +35,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
 import java.util.concurrent.CountDownLatch;
 
-import static io.aeron.cluster.ClusterWithNoServicesTest.TestConsensusModuleExtension.LatchTrigger.SESSION_OPENED;
-import static io.aeron.cluster.ClusterWithNoServicesTest.TestConsensusModuleExtension.LatchTrigger.TAKE_SNAPSHOT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
@@ -49,6 +49,11 @@ import static org.mockito.Mockito.*;
 @ExtendWith(InterruptingTestCallback.class)
 class ClusterWithNoServicesTest
 {
+    enum LatchTrigger
+    {
+        SESSION_OPENED, SNAPSHOT_TAKEN, CLOSED
+    }
+
     private ClusteredMediaDriver clusteredMediaDriver;
     private AeronCluster aeronCluster;
 
@@ -74,7 +79,7 @@ class ClusterWithNoServicesTest
     {
         final CountDownLatch latch = new CountDownLatch(1);
         final ConsensusModuleExtension consensusModuleExtension = spy(
-            new TestConsensusModuleExtension(latch, SESSION_OPENED));
+            new TestConsensusModuleExtension(latch, LatchTrigger.SESSION_OPENED));
 
         clusteredMediaDriver = launchCluster(consensusModuleExtension);
         aeronCluster = connectClient();
@@ -94,18 +99,54 @@ class ClusterWithNoServicesTest
 
     @Test
     @InterruptAfter(10)
-    @Disabled
-    void shouldSnapshotAndRecoverState() throws InterruptedException
+    void shouldSnapshotExtensionState() throws InterruptedException
     {
         final CountDownLatch latch = new CountDownLatch(1);
 
-        clusteredMediaDriver = launchCluster(new TestConsensusModuleExtension(latch, TAKE_SNAPSHOT));
+        clusteredMediaDriver = launchCluster(new TestConsensusModuleExtension(latch, LatchTrigger.SNAPSHOT_TAKEN));
         aeronCluster = connectClient();
 
         final AtomicCounter controlToggle = getClusterControlToggle();
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
         latch.await();
+        awaitSnapshotCount(1);
+
+        ClusterTests.failOnClusterError();
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldShutdownWithExtension() throws InterruptedException
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        clusteredMediaDriver = launchCluster(new TestConsensusModuleExtension(latch, LatchTrigger.CLOSED));
+        aeronCluster = connectClient();
+
+        final AtomicCounter controlToggle = getClusterControlToggle();
+        assertTrue(ClusterControl.ToggleState.SHUTDOWN.toggle(controlToggle));
+
+        awaitSnapshotCount(1);
+        latch.await();
+
+        ClusterTests.failOnClusterError();
+    }
+
+    @Test
+    @InterruptAfter(10)
+    void shouldAbortWithExtension() throws InterruptedException
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        clusteredMediaDriver = launchCluster(new TestConsensusModuleExtension(latch, LatchTrigger.CLOSED));
+        aeronCluster = connectClient();
+
+        final AtomicCounter controlToggle = getClusterControlToggle();
+        assertTrue(ClusterControl.ToggleState.ABORT.toggle(controlToggle));
+
+        latch.await();
+        assertEquals(0L, clusteredMediaDriver.consensusModule().context().snapshotCounter().get());
 
         ClusterTests.failOnClusterError();
     }
@@ -154,13 +195,17 @@ class ClusterWithNoServicesTest
         return controlToggle;
     }
 
+    private void awaitSnapshotCount(final int snapshotCount)
+    {
+        final Counter snapshotCounter = clusteredMediaDriver.consensusModule().context().snapshotCounter();
+        while (snapshotCounter.get() < snapshotCount)
+        {
+            Tests.yield();
+        }
+    }
+
     static final class TestConsensusModuleExtension implements ConsensusModuleExtension
     {
-        enum LatchTrigger
-        {
-            SESSION_OPENED, TAKE_SNAPSHOT
-        }
-
         private final CountDownLatch latch;
         private final LatchTrigger latchTrigger;
 
@@ -220,11 +265,15 @@ class ClusterWithNoServicesTest
 
         public void close()
         {
+            if (LatchTrigger.CLOSED == latchTrigger)
+            {
+                latch.countDown();
+            }
         }
 
         public void onSessionOpened(final long clusterSessionId)
         {
-            if (SESSION_OPENED == latchTrigger)
+            if (LatchTrigger.SESSION_OPENED == latchTrigger)
             {
                 latch.countDown();
             }
@@ -240,7 +289,7 @@ class ClusterWithNoServicesTest
 
         public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
-            if (TAKE_SNAPSHOT == latchTrigger)
+            if (LatchTrigger.SNAPSHOT_TAKEN == latchTrigger)
             {
                 latch.countDown();
             }

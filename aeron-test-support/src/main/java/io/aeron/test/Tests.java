@@ -590,6 +590,17 @@ public class Tests
         }
     }
 
+    public static void await(final String message, final BooleanSupplier... elements)
+    {
+        for (final BooleanSupplier element : elements)
+        {
+            while (!element.getAsBoolean())
+            {
+                Tests.yieldingIdle(message);
+            }
+        }
+    }
+
     /**
      * Await a Publication having an available windows for sending by yielding and checking for thread interrupt.
      *

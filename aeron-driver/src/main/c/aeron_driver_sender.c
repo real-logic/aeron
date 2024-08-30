@@ -331,7 +331,8 @@ void aeron_driver_sender_on_add_destination(void *clientd, void *command)
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
     aeron_command_destination_t *cmd = (aeron_command_destination_t *)command;
 
-    if (aeron_send_channel_endpoint_add_destination(cmd->endpoint, cmd->uri, &cmd->control_address) < 0)
+    if (aeron_send_channel_endpoint_add_destination(
+        cmd->endpoint, cmd->uri, &cmd->control_address, cmd->destination_registration_id) < 0)
     {
         AERON_APPEND_ERR("%s", "sender on_add_destination");
         aeron_driver_sender_log_error(sender);
@@ -345,6 +346,25 @@ void aeron_driver_sender_on_remove_destination(void *clientd, void *command)
     aeron_uri_t *old_uri = NULL;
 
     if (aeron_send_channel_endpoint_remove_destination(cmd->endpoint, &cmd->control_address, &old_uri) < 0)
+    {
+        AERON_APPEND_ERR("%s", "sender on_remove_destination");
+        aeron_driver_sender_log_error(sender);
+    }
+
+    if (NULL != old_uri)
+    {
+        aeron_driver_conductor_proxy_on_delete_send_destination(sender->context->conductor_proxy, old_uri);
+    }
+}
+
+void aeron_driver_sender_on_remove_destination_by_id(void *clientd, void *command)
+{
+    aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
+    aeron_command_destination_by_id_t *cmd = (aeron_command_destination_by_id_t *)command;
+    aeron_uri_t *old_uri = NULL;
+
+    if (aeron_send_channel_endpoint_remove_destination_by_id(
+        cmd->endpoint, cmd->destination_registration_id, &old_uri) < 0)
     {
         AERON_APPEND_ERR("%s", "sender on_remove_destination");
         aeron_driver_sender_log_error(sender);

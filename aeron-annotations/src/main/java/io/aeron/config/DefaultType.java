@@ -24,11 +24,29 @@ import java.util.Objects;
  */
 public enum DefaultType
 {
+    /**
+     * Type is undefined.
+     */
     UNDEFINED("", "", false),
+    /**
+     * Boolean type.
+     */
     BOOLEAN("java.lang.Boolean", "Boolean", false),
+    /**
+     * Int32 type.
+     */
     INT("java.lang.Integer", "Integer", true),
+    /**
+     * Int64 type.
+     */
     LONG("java.lang.Long", "Long", true),
+    /**
+     * Floating point type.
+     */
     DOUBLE("java.lang.Double", "Double", true),
+    /**
+     * String type.
+     */
     STRING("java.lang.String", "String", false);
 
     private static final Map<String, DefaultType> BY_CANONICAL_NAME = new HashMap<>();

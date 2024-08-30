@@ -56,15 +56,14 @@ def aeronVersion = file('version.txt').text.trim()
 def agronaVersion = '1.23.0'
 def agronaVersionRange = "[${agronaVersion},2.0["
 def sbeVersion = '1.33.0'
-def checkstyleVersion = '9.3'
+def checkstyleVersion = '10.18.0'
 def hamcrestVersion = '3.0'
 def junitVersion = '5.11.0'
-def mockitoVersion = '5.12.0'
-def byteBuddyVersion = '1.15.0'
+def mockitoVersion = '5.13.0'
+def byteBuddyVersion = '1.15.1'
 def asmVersion = '9.7'
 def findbugsAnnotationsVersion = '3.0.1'
 def hdrHistogramVersion = '2.2.2'
-def nashornVersion = '15.4'
 def gitCommitHash = io.aeron.build.GithubUtil.currentGitHash("${projectDir}")
 
 ext {
@@ -167,7 +166,12 @@ allprojects {
                   "org.ow2.asm:asm-analysis:${asmVersion}",
                   "org.ow2.asm:asm-commons:${asmVersion}",
                   "org.ow2.asm:asm-tree:${asmVersion}",
-                  "org.ow2.asm:asm-util:${asmVersion}"
+                  "org.ow2.asm:asm-util:${asmVersion}",
+                  // patching conflicting Checkstyle dependencies
+                  "org.codehaus.plexus:plexus-utils:3.3.0",
+                  "org.apache.commons:commons-lang3:3.8.1",
+                  "org.apache.httpcomponents:httpcore:4.4.14",
+                  "commons-codec:commons-codec:1.15"
         }
     }
 
@@ -216,15 +220,15 @@ subprojects {
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
         options.deprecation = true
+        options.compilerArgs.add('--release')
+        options.compilerArgs.add(java.sourceCompatibility.majorVersion)
         options.compilerArgs.addAll(['-Xlint:all,-processing', '-Werror']) // Enable all warnings and treat them as errors
         options.compilerArgs.add("-Aio.aeron.version=${aeronVersion}")
         options.compilerArgs.add("-Aio.aeron.gitsha=${gitCommitHash}")
     }
 
     tasks.withType(Test).configureEach { test ->
-        if (buildJavaVersion >= 9) {
-            jvmArgs('--add-opens', 'java.base/java.util.zip=ALL-UNNAMED')
-        }
+        jvmArgs('--add-opens', 'java.base/java.util.zip=ALL-UNNAMED')
         if (buildJavaVersion >= 21) {
             jvmArgs('-XX:+EnableDynamicAgentLoading')
         }
@@ -346,7 +350,14 @@ subprojects {
             options.links("https://docs.oracle.com/en/java/javase/${buildJavaVersion}/docs/api/")
         }
 
-        options.addBooleanOption('html5', true)
+        exclude 'io/aeron/archive/codecs/**'
+        exclude 'io/aeron/cluster/codecs/**'
+        exclude 'io/aeron/samples/**'
+        exclude 'io/aeron/test/**'
+
+        options.addStringOption('-release', java.sourceCompatibility.majorVersion)
+        options.addBooleanOption('Werror', true)
+        options.addBooleanOption('Xdoclint:all', true)
     }
 
     tasks.register('testJar', Jar) {
@@ -368,10 +379,6 @@ project(':aeron-annotations') {
     apply plugin: 'maven-publish'
     apply plugin: 'signing'
     apply plugin: 'biz.aQute.bnd.builder'
-
-    dependencies {
-        implementation "org.openjdk.nashorn:nashorn-core:${nashornVersion}"
-    }
 
     jar {
         bundle {

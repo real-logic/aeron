@@ -36,6 +36,7 @@ public final class DriverProxy
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
     private final DestinationMessageFlyweight destinationMessage = new DestinationMessageFlyweight();
+    private final DestinationByIdMessageFlyweight destinationByIdMessage = new DestinationByIdMessageFlyweight();
     private final CounterMessageFlyweight counterMessage = new CounterMessageFlyweight();
     private final StaticCounterMessageFlyweight staticCounterMessageFlyweight = new StaticCounterMessageFlyweight();
     private final RingBuffer toDriverCommandBuffer;
@@ -253,6 +254,35 @@ public final class DriverProxy
             .wrap(toDriverCommandBuffer.buffer(), index)
             .registrationCorrelationId(registrationId)
             .channel(endpointChannel)
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        toDriverCommandBuffer.commit(index);
+
+        return correlationId;
+    }
+
+    /**
+     * Remove a destination from the send channel of an existing MDC Publication.
+     *
+     * @param publicationRegistrationId  of the Publication.
+     * @param destinationRegistrationId used for the {@link #addDestination(long, String)} command.
+     * @return the correlation id for the command.
+     */
+    public long removeDestination(final long publicationRegistrationId, final long destinationRegistrationId)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+        final int index = toDriverCommandBuffer.tryClaim(
+            REMOVE_DESTINATION_BY_ID, DestinationByIdMessageFlyweight.MESSAGE_LENGTH);
+        if (index < 0)
+        {
+            throw new AeronException("could not write remove destination command");
+        }
+
+        destinationByIdMessage
+            .wrap(toDriverCommandBuffer.buffer(), index)
+            .resourceRegistrationId(publicationRegistrationId)
+            .destinationRegistrationId(destinationRegistrationId)
             .clientId(clientId)
             .correlationId(correlationId);
 

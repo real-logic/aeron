@@ -3317,6 +3317,21 @@ aeron_rb_read_action_t aeron_driver_conductor_on_command(
             break;
         }
 
+        case AERON_COMMAND_REMOVE_DESTINATION_BY_ID:
+        {
+            aeron_destination_by_id_command_t *command = (aeron_destination_by_id_command_t *)message;
+
+            if (length < sizeof(aeron_destination_by_id_command_t ))
+            {
+                goto malformed_command;
+            }
+
+            correlation_id = command->correlated.correlation_id;
+
+            aeron_driver_conductor_on_remove_receive_send_destination_by_id(conductor, command);
+            break;
+        }
+
         default:
             AERON_SET_ERR(-AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID, "command=%d unknown", msg_type_id);
             aeron_driver_conductor_log_error(conductor);
@@ -4576,7 +4591,12 @@ int aeron_driver_conductor_on_add_send_destination_complete(
     aeron_name_resolver_async_resolve_t *async_resolve = on_execute_clientd;
 
     aeron_driver_sender_proxy_on_add_destination(
-        conductor->context->sender_proxy, async_command->endpoint, async_command->uri, &async_resolve->sockaddr);
+        conductor->context->sender_proxy,
+        async_command->endpoint,
+        async_command->uri,
+        &async_resolve->sockaddr,
+        command->correlated.correlation_id);
+
     aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
 
     return 0;
@@ -4805,6 +4825,53 @@ int aeron_driver_conductor_on_remove_send_destination(
 
 cleanup:
     aeron_uri_close(&uri_params);
+    return rc;
+}
+
+int aeron_driver_conductor_on_remove_receive_send_destination_by_id(
+    aeron_driver_conductor_t *conductor, aeron_destination_by_id_command_t *command)
+{
+    int rc = -1;
+    aeron_send_channel_endpoint_t *endpoint = NULL;
+
+    for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
+    {
+        aeron_network_publication_t *publication = conductor->network_publications.array[i].publication;
+
+        if (command->resource_registration_id == publication->conductor_fields.managed_resource.registration_id)
+        {
+            endpoint = publication->endpoint;
+            break;
+        }
+    }
+
+    if (NULL == endpoint)
+    {
+        AERON_SET_ERR(
+            -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
+            "unknown remove destination, client_id=%" PRId64 " registration_id=%" PRId64,
+            command->correlated.client_id,
+            command->resource_registration_id);
+
+        goto cleanup;
+    }
+
+    if (NULL == endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "channel does not allow manual control of destinations: %" PRId64,
+            command->resource_registration_id);
+        goto cleanup;
+    }
+
+    aeron_driver_sender_proxy_on_remove_destination_by_id(
+        conductor->context->sender_proxy, endpoint, command->destination_registration_id);
+    aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
+
+    rc = 0;
+
+cleanup:
     return rc;
 }
 

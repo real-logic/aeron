@@ -480,6 +480,9 @@ int aeron_driver_conductor_on_add_send_destination(
 int aeron_driver_conductor_on_remove_send_destination(
     aeron_driver_conductor_t *conductor, aeron_destination_command_t *command);
 
+int aeron_driver_conductor_on_remove_receive_send_destination_by_id(
+    aeron_driver_conductor_t *conductor, aeron_destination_by_id_command_t *command);
+
 int aeron_driver_conductor_on_add_receive_ipc_destination(
     aeron_driver_conductor_t *conductor,
     aeron_destination_command_t *command);

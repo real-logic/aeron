@@ -808,6 +808,24 @@ final class ClientConductor implements Agent
         }
     }
 
+    long addDestinationWithId(final long registrationId, final String endpointChannel)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            final long correlationId = driverProxy.addDestination(registrationId, endpointChannel);
+            awaitResponse(correlationId);
+            return correlationId;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
     void removeDestination(final long registrationId, final String endpointChannel)
     {
         clientLock.lock();
@@ -817,6 +835,22 @@ final class ClientConductor implements Agent
             ensureNotReentrant();
 
             awaitResponse(driverProxy.removeDestination(registrationId, endpointChannel));
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void removeDestination(final long publicationRegistrationId, final long destinationRegistrationId)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            awaitResponse(driverProxy.removeDestination(publicationRegistrationId, destinationRegistrationId));
         }
         finally
         {
@@ -883,6 +917,24 @@ final class ClientConductor implements Agent
             ensureNotReentrant();
 
             final long correlationId = driverProxy.removeDestination(registrationId, endpointChannel);
+            asyncCommandIdSet.add(correlationId);
+            return correlationId;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    long asyncRemoveDestination(final long registrationId, final long destinationRegistrationId)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            final long correlationId = driverProxy.removeDestination(registrationId, destinationRegistrationId);
             asyncCommandIdSet.add(correlationId);
             return correlationId;
         }

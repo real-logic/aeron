@@ -78,6 +78,7 @@ typedef struct aeron_client_registering_resource_stct aeron_async_add_exclusive_
 typedef struct aeron_client_registering_resource_stct aeron_async_add_subscription_t;
 typedef struct aeron_client_registering_resource_stct aeron_async_add_counter_t;
 typedef struct aeron_client_registering_resource_stct aeron_async_destination_t;
+typedef struct aeron_client_registering_resource_stct aeron_async_destination_by_id_t;
 
 typedef struct aeron_image_fragment_assembler_stct aeron_image_fragment_assembler_t;
 typedef struct aeron_image_controlled_fragment_assembler_stct aeron_image_controlled_fragment_assembler_t;
@@ -1146,6 +1147,20 @@ int aeron_publication_async_remove_destination(
     aeron_async_destination_t **async, aeron_t *client, aeron_publication_t *publication, const char *uri);
 
 /**
+ * Remove a destination manually from a multi-destination-cast publication.
+ *
+ * @param async object to use for polling completion.
+ * @param publication to remove destination from.
+ * @param destination_registration_id for the destination to remove.
+ * @return 0 for success and -1 for error.
+ */
+int aeron_publication_async_remove_destination_by_id(
+    aeron_async_destination_t **async,
+    aeron_t *client,
+    aeron_publication_t *publication,
+    int64_t destination_registration_id);
+
+/**
  * Poll the completion of the add/remove of a destination to/from a publication.
  *
  * @param async to check for completion.
@@ -1180,6 +1195,20 @@ int aeron_exclusive_publication_async_remove_destination(
     aeron_t *client,
     aeron_exclusive_publication_t *publication,
     const char *uri);
+
+/**
+ * Remove a destination manually from a multi-destination-cast publication.
+ *
+ * @param async object to use for polling completion.
+ * @param publication to remove destination from.
+ * @param destination_registration_id for the destination to remove.
+ * @return 0 for success and -1 for error.
+ */
+int aeron_exclusive_publication_async_remove_destination_by_id(
+    aeron_async_destination_t **async,
+    aeron_t *client,
+    aeron_exclusive_publication_t *publication,
+    int64_t destination_registration_id);
 
 /**
  * Poll the completion of the add/remove of a destination to/from an exclusive publication.

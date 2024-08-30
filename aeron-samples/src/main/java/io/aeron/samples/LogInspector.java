@@ -36,23 +36,35 @@ import static java.lang.Math.min;
 public class LogInspector
 {
     /**
-     * Data format for fragments which can be ASCII or HEX.
+     * Data format property name for fragments which can be ASCII or HEX.
      */
     public static final String AERON_LOG_DATA_FORMAT_PROP_NAME = "aeron.log.inspector.data.format";
+
+    /**
+     * Data format for fragments which can be ASCII or HEX.
+     */
     public static final String AERON_LOG_DATA_FORMAT = System.getProperty(
         AERON_LOG_DATA_FORMAT_PROP_NAME, "hex").toLowerCase();
 
     /**
-     * Should the default header be skipped for output.
+     * Property name for if the default header should be skipped for output.
      */
     public static final String AERON_LOG_SKIP_DEFAULT_HEADER_PROP_NAME = "aeron.log.inspector.skipDefaultHeader";
+
+    /**
+     * Should the default header be skipped for output.
+     */
     public static final boolean AERON_LOG_SKIP_DEFAULT_HEADER =
         "true".equals(System.getProperty(AERON_LOG_SKIP_DEFAULT_HEADER_PROP_NAME));
 
     /**
-     * Should zeros be skipped in the output to reduce noise.
+     * Property name for if zeros should be skipped in the output to reduce noise.
      */
     public static final String AERON_LOG_SCAN_OVER_ZEROES_PROP_NAME = "aeron.log.inspector.scanOverZeroes";
+
+    /**
+     * Should zeros be skipped in the output to reduce noise.
+     */
     public static final boolean AERON_LOG_SCAN_OVER_ZEROES =
         "true".equals(System.getProperty(AERON_LOG_SCAN_OVER_ZEROES_PROP_NAME));
 

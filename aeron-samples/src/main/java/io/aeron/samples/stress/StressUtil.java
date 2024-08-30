@@ -31,27 +31,27 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 public class StressUtil
 {
-    public static final int BASE_PORT = 9000;
-    public static final int BASE_STREAM_ID = 10000;
-    public static final int UNICAST_REQ_OFFSET = 1;
-    public static final int UNICAST_RSP_OFFSET = 2;
-    public static final int UNICAST_STREAM_ID_OFFSET = 1;
-    public static final int MDC_STREAM_ID_OFFSET = 2;
-    public static final int UNICAST_STREAM_ID = BASE_STREAM_ID + UNICAST_STREAM_ID_OFFSET;
-    public static final int MDC_STREAM_ID = BASE_STREAM_ID + MDC_STREAM_ID_OFFSET;
-    public static final int MDC_REQ_OFFSET_1 = 3;
-    public static final int MDC_REQ_OFFSET_2 = 4;
-    public static final int MDC_REQ_CONTROL_OFFSET = 5;
-    public static final int MDC_RSP_OFFSET_1 = 6;
-    public static final int MDC_RSP_OFFSET_2 = 7;
-    public static final int MDC_RSP_CONTROL_OFFSET = 8;
-    public static final long RSP_GROUP_TAG = 1001;
-    public static final long REQ_GROUP_TAG = 1002;
-    public static final int SERVER_RECV_COUNT = 1000;
-    public static final int SERVER_SEND_COUNT = 1001;
-    public static final int CLIENT_RECV_COUNT = 1002;
-    public static final int CLIENT_SEND_COUNT = 1003;
-    public static final List<Integer> MTU_LENGTHS = Arrays.asList(
+    static final int BASE_PORT = 9000;
+    static final int BASE_STREAM_ID = 10000;
+    static final int UNICAST_REQ_OFFSET = 1;
+    static final int UNICAST_RSP_OFFSET = 2;
+    static final int UNICAST_STREAM_ID_OFFSET = 1;
+    static final int MDC_STREAM_ID_OFFSET = 2;
+    static final int UNICAST_STREAM_ID = BASE_STREAM_ID + UNICAST_STREAM_ID_OFFSET;
+    static final int MDC_STREAM_ID = BASE_STREAM_ID + MDC_STREAM_ID_OFFSET;
+    static final int MDC_REQ_OFFSET_1 = 3;
+    static final int MDC_REQ_OFFSET_2 = 4;
+    static final int MDC_REQ_CONTROL_OFFSET = 5;
+    static final int MDC_RSP_OFFSET_1 = 6;
+    static final int MDC_RSP_OFFSET_2 = 7;
+    static final int MDC_RSP_CONTROL_OFFSET = 8;
+    static final long RSP_GROUP_TAG = 1001;
+    static final long REQ_GROUP_TAG = 1002;
+    static final int SERVER_RECV_COUNT = 1000;
+    static final int SERVER_SEND_COUNT = 1001;
+    static final int CLIENT_RECV_COUNT = 1002;
+    static final int CLIENT_SEND_COUNT = 1003;
+    static final List<Integer> MTU_LENGTHS = Arrays.asList(
         1408, 4000, 8192, 1 << 14, 1 << 15, MAX_UDP_PAYLOAD_LENGTH);
 
     /**

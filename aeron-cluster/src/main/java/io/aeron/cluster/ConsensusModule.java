@@ -27,7 +27,12 @@ import io.aeron.cluster.codecs.HeartbeatRequestDecoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.StandbySnapshotDecoder;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
-import io.aeron.cluster.service.*;
+import io.aeron.cluster.service.ClusterMarkFile;
+import io.aeron.cluster.service.ClusterCounters;
+import io.aeron.cluster.service.ClusteredServiceContainer;
+import io.aeron.cluster.service.ClusterClock;
+import io.aeron.cluster.service.SnapshotDurationTracker;
+
 import io.aeron.config.Config;
 import io.aeron.config.DefaultType;
 import io.aeron.driver.DutyCycleTracker;
@@ -50,6 +55,7 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -64,8 +70,6 @@ import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_CLIENT_TIME
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.COMMIT_POSITION_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
-import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.*;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 import static org.agrona.SystemUtil.*;
@@ -254,10 +258,10 @@ public final class ConsensusModule implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            if (null != ctx.markFile)
+            if (null != ctx.clusterMarkFile())
             {
-                ctx.markFile.signalFailedStart();
-                ctx.markFile.force();
+                ctx.clusterMarkFile().signalFailedStart();
+                ctx.clusterMarkFile().force();
             }
 
             CloseHelper.quietClose(ctx::close);
@@ -608,7 +612,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Type id of a recovery state counter.
          */
-        public static final int RECOVERY_STATE_TYPE_ID = RecoveryState.RECOVERY_STATE_TYPE_ID;
+        public static final int RECOVERY_STATE_TYPE_ID = AeronCounters.CLUSTER_RECOVERY_STATE_TYPE_ID;
 
         /**
          * Counter type id for count of snapshots taken.
@@ -1074,7 +1078,8 @@ public final class ConsensusModule implements AutoCloseable
          */
         public static String snapshotChannel()
         {
-            return System.getProperty(SNAPSHOT_CHANNEL_PROP_NAME, SNAPSHOT_CHANNEL_DEFAULT);
+            return System.getProperty(
+                ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME, SNAPSHOT_CHANNEL_DEFAULT);
         }
 
         /**
@@ -1086,7 +1091,8 @@ public final class ConsensusModule implements AutoCloseable
          */
         public static int snapshotStreamId()
         {
-            return Integer.getInteger(SNAPSHOT_STREAM_ID_PROP_NAME, SNAPSHOT_STREAM_ID_DEFAULT);
+            return Integer.getInteger(
+                ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME, SNAPSHOT_STREAM_ID_DEFAULT);
         }
 
         /**
@@ -1208,8 +1214,8 @@ public final class ConsensusModule implements AutoCloseable
          */
         public static long totalSnapshotDurationThresholdNs()
         {
-            return getDurationInNanos(TOTAL_SNAPSHOT_DURATION_THRESHOLD_PROP_NAME,
-                TOTAL_SNAPSHOT_DURATION_THRESHOLD_DEFAULT_NS);
+            return getDurationInNanos(
+                TOTAL_SNAPSHOT_DURATION_THRESHOLD_PROP_NAME, TOTAL_SNAPSHOT_DURATION_THRESHOLD_DEFAULT_NS);
         }
 
         /**
@@ -1689,7 +1695,7 @@ public final class ConsensusModule implements AutoCloseable
                     ClusterComponentType.CONSENSUS_MODULE,
                     errorBufferLength,
                     epochClock,
-                    LIVENESS_TIMEOUT_MS);
+                    ClusteredServiceContainer.Configuration.LIVENESS_TIMEOUT_MS);
             }
 
             MarkFile.ensureMarkFileLink(
@@ -1717,7 +1723,7 @@ public final class ConsensusModule implements AutoCloseable
 
             if (null == errorLog)
             {
-                errorLog = new DistinctErrorLog(markFile.errorBuffer(), epochClock, US_ASCII);
+                errorLog = new DistinctErrorLog(markFile.errorBuffer(), epochClock, StandardCharsets.US_ASCII);
             }
 
             errorHandler = CommonContext.setupErrorHandler(errorHandler, errorLog);
@@ -2387,7 +2393,6 @@ public final class ConsensusModule implements AutoCloseable
          * String representing the cluster members consensus endpoints used to request to join the cluster.
          * <p>
          * {@code "endpoint,endpoint,endpoint"}
-         * <p>
          *
          * @param endpoints which are to be contacted for joining the cluster.
          * @return this for a fluent API.
@@ -3587,7 +3592,7 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the counter for the current state of an election
+         * Get the counter for the current state of an election.
          *
          * @return the counter for the current state of an election.
          * @see ElectionState
@@ -4424,16 +4429,17 @@ public final class ConsensusModule implements AutoCloseable
         private void validateLogChannel()
         {
             final ChannelUri logChannelUri = ChannelUri.parse(logChannel);
-            verifyNotPresent(logChannelUri, "logChannel", INITIAL_TERM_ID_PARAM_NAME);
-            verifyNotPresent(logChannelUri, "logChannel", TERM_ID_PARAM_NAME);
-            verifyNotPresent(logChannelUri, "logChannel", TERM_OFFSET_PARAM_NAME);
-        }
-
-        private static void verifyNotPresent(final ChannelUri channelUri, final String name, final String paramName)
-        {
-            if (channelUri.containsKey(paramName))
+            if (logChannelUri.containsKey(INITIAL_TERM_ID_PARAM_NAME))
             {
-                throw new ConfigurationException(name + " must not contain: " + paramName);
+                throw new ConfigurationException("logChannel must not contain: " + INITIAL_TERM_ID_PARAM_NAME);
+            }
+            if (logChannelUri.containsKey(TERM_ID_PARAM_NAME))
+            {
+                throw new ConfigurationException("logChannel must not contain: " + TERM_ID_PARAM_NAME);
+            }
+            if (logChannelUri.containsKey(TERM_OFFSET_PARAM_NAME))
+            {
+                throw new ConfigurationException("logChannel must not contain: " + TERM_OFFSET_PARAM_NAME);
             }
         }
 

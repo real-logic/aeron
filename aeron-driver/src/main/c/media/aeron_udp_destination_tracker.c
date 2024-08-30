@@ -219,7 +219,8 @@ int aeron_udp_destination_tracker_add_destination(
     bool is_receiver_id_valid,
     int64_t now_ns,
     aeron_uri_t *uri,
-    struct sockaddr_storage *addr)
+    struct sockaddr_storage *addr,
+    int64_t destination_registration_id)
 {
     int result = 0;
 
@@ -229,6 +230,7 @@ int aeron_udp_destination_tracker_add_destination(
         aeron_udp_destination_entry_t *entry = &tracker->destinations.array[tracker->destinations.length++];
 
         entry->receiver_id = receiver_id;
+        entry->registration_id = destination_registration_id;
         entry->is_receiver_id_valid = is_receiver_id_valid;
         entry->time_of_last_activity_ns = now_ns;
         entry->destination_timeout_ns = AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS;
@@ -277,7 +279,8 @@ int aeron_udp_destination_tracker_on_status_message(
 
     if (is_dynamic_control_mode && !is_existing)
     {
-        result = aeron_udp_destination_tracker_add_destination(tracker, receiver_id, true, now_ns, NULL, addr);
+        result = aeron_udp_destination_tracker_add_destination(
+            tracker, receiver_id, true, now_ns, NULL, addr, AERON_NULL_VALUE);
     }
 
     return result;
@@ -287,14 +290,16 @@ int aeron_udp_destination_tracker_manual_add_destination(
     aeron_udp_destination_tracker_t *tracker,
     int64_t now_ns,
     aeron_uri_t *uri,
-    struct sockaddr_storage *addr)
+    struct sockaddr_storage *addr,
+    int64_t destination_registration_id)
 {
     if (!tracker->is_manual_control_mode)
     {
         return 0;
     }
 
-    return aeron_udp_destination_tracker_add_destination(tracker, now_ns, 0, false, uri, addr);
+    return aeron_udp_destination_tracker_add_destination(
+        tracker, now_ns, 0, false, uri, addr, destination_registration_id);
 }
 
 int aeron_udp_destination_tracker_address_compare(struct sockaddr_storage *lhs, struct sockaddr_storage *rhs)
@@ -319,6 +324,33 @@ int aeron_udp_destination_tracker_remove_destination(
         aeron_udp_destination_entry_t *entry = &tracker->destinations.array[i];
 
         if (aeron_udp_destination_tracker_address_compare(&entry->addr, addr) == 0)
+        {
+            *removed_uri = entry->uri;
+
+            aeron_array_fast_unordered_remove(
+                (uint8_t *)tracker->destinations.array,
+                sizeof(aeron_udp_destination_entry_t),
+                (size_t)i,
+                (size_t)last_index);
+
+            tracker->destinations.length--;
+            break;
+        }
+    }
+
+    aeron_counter_set_ordered(tracker->num_destinations_addr, (int64_t)tracker->destinations.length);
+
+    return 0;
+}
+
+int aeron_udp_destination_tracker_remove_destination_by_id(
+    aeron_udp_destination_tracker_t *tracker, int64_t destination_registration_id, aeron_uri_t **removed_uri)
+{
+    for (int last_index = (int)tracker->destinations.length - 1, i = last_index; i >= 0; i--)
+    {
+        aeron_udp_destination_entry_t *entry = &tracker->destinations.array[i];
+
+        if (entry->registration_id == destination_registration_id)
         {
             *removed_uri = entry->uri;
 

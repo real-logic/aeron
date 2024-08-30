@@ -30,7 +30,18 @@ public @interface Config
      */
     enum Type
     {
-        UNDEFINED, PROPERTY_NAME, DEFAULT
+        /**
+         * Undefined.
+         */
+        UNDEFINED,
+        /**
+         * Property.
+         */
+        PROPERTY_NAME,
+        /**
+         * Default value.
+         */
+        DEFAULT
     }
 
     /**
@@ -114,15 +125,26 @@ public @interface Config
     String defaultValueString() default "";
 
     /**
-     * Used to indicate whether or not the default value is a time value
+     * Used to indicate whether the default value is a time value.
      */
     enum IsTimeValue
     {
-        UNDEFINED, TRUE, FALSE
+        /**
+         * Undefined.
+         */
+        UNDEFINED,
+        /**
+         * True.
+         */
+        TRUE,
+        /**
+         * False.
+         */
+        FALSE
     }
 
     /**
-     * @return whether or not the default value is a time value
+     * @return whether the default value is a time value
      */
     IsTimeValue isTimeValue() default IsTimeValue.UNDEFINED;
 
@@ -132,7 +154,7 @@ public @interface Config
     TimeUnit timeUnit() default TimeUnit.NANOSECONDS;
 
     /**
-     * @return whether or not this config option has a 'context'
+     * @return whether this config option has a 'context'
      */
     boolean hasContext() default true;
 }

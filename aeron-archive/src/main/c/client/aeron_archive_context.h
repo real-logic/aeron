@@ -23,7 +23,6 @@
 struct aeron_archive_context_stct
 {
     aeron_t *aeron;
-    aeron_context_t *aeron_ctx;
     char aeron_directory_name[AERON_MAX_PATH];
     bool owns_aeron_client;
 

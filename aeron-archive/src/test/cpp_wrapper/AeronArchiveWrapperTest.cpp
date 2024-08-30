@@ -349,7 +349,6 @@ protected:
     bool m_debug = true;
     SleepingIdleStrategy m_idleStrategy = SleepingIdleStrategy(IDLE_SLEEP_MS_1);
 
-private:
 
     static void setCredentials(AeronArchive::Context_t &context)
     {
@@ -367,6 +366,8 @@ private:
 
         context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
     }
+
+private:
 };
 
 class AeronArchiveWrapperTest : public AeronArchiveWrapperTestBase, public testing::Test
@@ -383,15 +384,12 @@ public:
     }
 };
 
-TEST_F(AeronArchiveWrapperTest, what)
+class AeronArchiveWrapperTestNoSetup : public AeronArchiveWrapperTestBase, public testing::Test
 {
-    aeron::archive::client::Context ctx;
-
-    std::cout << "here";
-}
+};
 
 /*
-class AeronArchiveIdTest : public AeronArchiveTestBase, public testing::Test
+class AeronArchiveWrapperIdTest : public AeronArchiveWrapperTestBase, public testing::Test
 {
 };
 
@@ -429,9 +427,43 @@ TEST_F(AeronArchiveWrapperTest, shouldAsyncConnectToArchive)
     EXPECT_EQ(42, aeronArchive->archiveId());
 }
 
+TEST_F(AeronArchiveWrapperTest, shouldAsyncConnectToArchiveWithPrebuiltAeron)
+{
+    aeron::Context aeronCtx;
+    aeronCtx.aeronDir(m_context.aeronDirectoryName());
+    auto aeron = std::make_shared<Aeron>(aeronCtx);
+    m_context.setAeron(aeron);
+
+    SleepingIdleStrategy idleStrategy(IDLE_SLEEP_MS_1);
+    std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect(m_context);
+
+    std::shared_ptr<AeronArchive> aeronArchive = asyncConnect->poll();
+    while (!aeronArchive)
+    {
+        idleStrategy.idle();
+
+        aeronArchive = asyncConnect->poll();
+    }
+
+    EXPECT_TRUE(aeronArchive->controlResponseSubscription().isConnected());
+    EXPECT_EQ(42, aeronArchive->archiveId());
+}
 
 TEST_F(AeronArchiveWrapperTest, shouldConnectToArchive)
 {
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+
+    EXPECT_TRUE(aeronArchive->controlResponseSubscription().isConnected());
+    EXPECT_EQ(42, aeronArchive->archiveId());
+}
+
+TEST_F(AeronArchiveWrapperTest, shouldConnectToArchiveWithPrebuiltAeron)
+{
+    aeron::Context aeronCtx;
+    aeronCtx.aeronDir(m_context.aeronDirectoryName());
+    auto aeron = std::make_shared<Aeron>(aeronCtx);
+    m_context.setAeron(aeron);
+
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
     EXPECT_TRUE(aeronArchive->controlResponseSubscription().isConnected());
@@ -509,6 +541,8 @@ TEST_F(AeronArchiveWrapperTest, shouldRecordPublicationAndFindRecording)
         {
             EXPECT_EQ(recordingId, recordingId1);
             EXPECT_EQ(streamId, m_recordingStreamId);
+
+            std::cerr << "got the callback!\n";
         });
 
     EXPECT_EQ(count, 1);

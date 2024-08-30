@@ -45,6 +45,7 @@ struct aeron_archive_replay_merge_stct
 {
     aeron_subscription_t *subscription;
     aeron_archive_t *aeron_archive;
+    aeron_t *aeron;
     aeron_archive_proxy_t *archive_proxy;
     int64_t control_session_id;
     aeron_uri_string_builder_t replay_channel_builder;
@@ -130,6 +131,7 @@ int aeron_archive_replay_merge_init(
 
     _replay_merge->subscription = subscription;
     _replay_merge->aeron_archive = aeron_archive;
+    _replay_merge->aeron = aeron_archive_context_get_aeron(aeron_archive_get_archive_context(aeron_archive));
     _replay_merge->archive_proxy = aeron_archive_proxy(aeron_archive);
     _replay_merge->control_session_id = aeron_archive_control_session_id(aeron_archive);
 
@@ -187,7 +189,7 @@ int aeron_archive_replay_merge_init(
 
     if (aeron_subscription_async_add_destination(
         &_replay_merge->async_destination,
-        aeron_archive_get_aeron(_replay_merge->aeron_archive),
+        _replay_merge->aeron,
         _replay_merge->subscription,
         _replay_merge->replay_destination) < 0)
     {
@@ -217,7 +219,7 @@ int aeron_archive_replay_merge_init(
 
 int aeron_archive_replay_merge_close(aeron_archive_replay_merge_t *replay_merge)
 {
-    if (!aeron_is_closed(aeron_archive_get_aeron(replay_merge->aeron_archive)))
+    if (!aeron_is_closed(replay_merge->aeron))
     {
         if (aeron_archive_replay_merge_handle_async_destination(replay_merge) < 0)
         {
@@ -240,7 +242,7 @@ int aeron_archive_replay_merge_close(aeron_archive_replay_merge_t *replay_merge)
         {
             if (aeron_subscription_async_remove_destination(
                 &replay_merge->async_destination,
-                aeron_archive_get_aeron(replay_merge->aeron_archive),
+                replay_merge->aeron,
                 replay_merge->subscription,
                 replay_merge->replay_destination) < 0)
             {
@@ -654,7 +656,7 @@ static int aeron_archive_replay_merge_attempt_live_join(int *work_count_p, aeron
                     {
                         if (aeron_subscription_async_add_destination(
                             &replay_merge->async_destination,
-                            aeron_archive_get_aeron(replay_merge->aeron_archive),
+                            replay_merge->aeron,
                             replay_merge->subscription,
                             replay_merge->live_destination) < 0)
                         {
@@ -670,7 +672,7 @@ static int aeron_archive_replay_merge_attempt_live_join(int *work_count_p, aeron
                     {
                         if (aeron_subscription_async_remove_destination(
                             &replay_merge->async_destination,
-                            aeron_archive_get_aeron(replay_merge->aeron_archive),
+                            replay_merge->aeron,
                             replay_merge->subscription,
                             replay_merge->replay_destination) < 0)
                         {

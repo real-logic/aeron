@@ -211,6 +211,13 @@ public:
         aeron_context_init(&m_context);
     }
 
+    /// @cond HIDDEN_SYMBOLS
+    explicit Context(aeron_context_t *context)
+    {
+        m_context = context;
+    }
+    /// @endcond
+
     Context(Context &&other) noexcept :
         m_context(other.m_context),
         m_onAvailableImageHandler(other.m_onAvailableImageHandler),
@@ -562,12 +569,6 @@ public:
         }
 
         return { path, 0, length };
-    }
-
-    // TODO find a better way to expose this to ONLY the archive cpp_wrapper?
-    inline aeron_context_t *context() const
-    {
-        return m_context;
     }
 
 private:

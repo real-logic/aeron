@@ -90,95 +90,64 @@ public:
 
             m_async = nullptr; // _poll() just free'd this up
 
-            // C always creates a new aeron_archive_context_t, so lets get it and wrap it up in a C++ Context
-            auto *duplicatedCtx = new Context( aeron_archive_get_and_own_archive_context(aeron_archive));
-
-            return std::shared_ptr<AeronArchive>(new AeronArchive(aeron_archive, duplicatedCtx, m_aeron));
+            return std::shared_ptr<AeronArchive>(new AeronArchive(aeron_archive, std::move(m_aeronW)));
         }
 
     private:
         explicit AsyncConnect(
             Context &ctx) :
             m_async(nullptr),
-            m_aeron(ctx.aeron())
+            m_aeronW(ctx.aeron())
         {
-            if (aeron_archive_async_connect(&m_async, ctx.m_ctx) < 0)
+            // async_connect makes a copy of the underlying aeron_archive_context_t
+            if (aeron_archive_async_connect(&m_async, ctx.m_aeron_archive_ctx_t) < 0)
             {
                 ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
             }
         }
 
         aeron_archive_async_connect_t *m_async;
-        std::shared_ptr<Aeron> m_aeron;
+        std::shared_ptr<Aeron> m_aeronW;
     };
 
     static std::shared_ptr<AsyncConnect> asyncConnect(Context &ctx)
     {
-        // TODO remove this - let the C layer do all this work, and then add constructors for C++ wrapper objects
-        // to allow us to just slide in the underlying C structs after they've been constructed
-        //ensureAeronClient(ctx);
-
-        // TODO if there's an Aeron and an aeron::Context attached to the passed in archive::Context, we need to grab and store
-        // those C++ wrapper objects - after the connect completes, the newly created archive::Context needs the Aeron and aeron::Context
-        // to be re-attached.
-
-        // TODO if there is NOT an Aeron here, that's fine - we just need to make sure that we build a new one
-        // once the connect completes.  In that case, that Aeron should NOT own the underlying aeron_t - i.e. that
-        // aeron_t will be owned by the AeronArchive.  If/when someone calls ownsAeron(false), we'll have to simultaneously
-        // set some sort of 'owns_aeron_t(true) on the Aeron object.
-
         return std::shared_ptr<AsyncConnect>(new AsyncConnect(ctx));
     }
 
     static std::shared_ptr<AeronArchive> connect(Context &ctx)
     {
-        //ensureAeronClient(ctx);
-
         aeron_archive_t *aeron_archive = nullptr;
 
-        if (aeron_archive_connect(&aeron_archive, ctx.m_ctx) < 0)
+        if (aeron_archive_connect(&aeron_archive, ctx.m_aeron_archive_ctx_t) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        auto *duplicatedCtx = new Context( aeron_archive_get_and_own_archive_context(aeron_archive));
-
-        return std::shared_ptr<AeronArchive>(new AeronArchive(aeron_archive, duplicatedCtx, ctx.aeron()));
+        return std::shared_ptr<AeronArchive>(new AeronArchive(aeron_archive, ctx.aeron()));
     }
 
     ~AeronArchive()
     {
-        // TODO make sure we clean things up in the correct order
-
+        // make sure to clean things up in the correct order
         m_controlResponseSubscription = nullptr;
 
-        // TODO release the Aeron? (if we have one?  We should always have one)
-
-        aeron_archive_close(m_aeron_archive);
+        aeron_archive_close(m_aeron_archive_t);
     }
 
     Subscription &controlResponseSubscription()
     {
-        // TODO continue to do this lazily?  Or always do this once connect completes?
-        if (nullptr == m_controlResponseSubscription)
-        {
-            m_controlResponseSubscription = std::make_unique<Subscription>(
-                aeron_archive_get_aeron(m_aeron_archive),
-                aeron_archive_get_and_own_control_response_subscription(m_aeron_archive),
-                nullptr);
-        }
-
         return *m_controlResponseSubscription;
     }
 
     Context &context()
     {
-        return *m_ctx;
+        return m_archiveCtxW;
     }
 
     std::int64_t archiveId()
     {
-        return aeron_archive_get_archive_id(m_aeron_archive);
+        return aeron_archive_get_archive_id(m_aeron_archive_t);
     }
 
     inline std::int64_t startRecording(
@@ -191,7 +160,7 @@ public:
 
         if (aeron_archive_start_recording(
             &subscription_id,
-            m_aeron_archive,
+            m_aeron_archive_t,
             channel.c_str(),
             streamId,
             sourceLocation == SourceLocation::LOCAL ?
@@ -209,7 +178,10 @@ public:
     {
         int64_t recording_position;
 
-        if (aeron_archive_get_recording_position(&recording_position, m_aeron_archive, recordingId) < 0)
+        if (aeron_archive_get_recording_position(
+            &recording_position,
+            m_aeron_archive_t,
+            recordingId) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
@@ -221,7 +193,10 @@ public:
     {
         int64_t stop_position;
 
-        if (aeron_archive_get_stop_position(&stop_position, m_aeron_archive, recordingId) < 0)
+        if (aeron_archive_get_stop_position(
+            &stop_position,
+            m_aeron_archive_t,
+            recordingId) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
@@ -233,7 +208,10 @@ public:
     {
         int64_t max_recorded_position;
 
-        if (aeron_archive_get_max_recorded_position(&max_recorded_position, m_aeron_archive, recordingId) < 0)
+        if (aeron_archive_get_max_recorded_position(
+            &max_recorded_position,
+            m_aeron_archive_t,
+            recordingId) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
@@ -243,7 +221,9 @@ public:
 
     inline void stopRecording(std::int64_t subscriptionId)
     {
-        if (aeron_archive_stop_recording_subscription(m_aeron_archive, subscriptionId) < 0)
+        if (aeron_archive_stop_recording_subscription(
+            m_aeron_archive_t,
+            subscriptionId) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
@@ -259,7 +239,7 @@ public:
 
         if (aeron_archive_find_last_matching_recording(
             &recording_id,
-            m_aeron_archive,
+            m_aeron_archive_t,
             minRecordingId,
             channelFragment.c_str(),
             streamId,
@@ -277,7 +257,7 @@ public:
 
         if (aeron_archive_list_recording(
             &count,
-            m_aeron_archive,
+            m_aeron_archive_t,
             recordingId,
             recording_descriptor_consumer_func,
             const_cast<void *>(reinterpret_cast<const void *>(&consumer))) < 0)
@@ -291,49 +271,28 @@ public:
 private:
     explicit AeronArchive(
         aeron_archive_t *aeron_archive,
-        Context *ctx,
         const std::shared_ptr<Aeron> originalAeron) :
-        m_aeron_archive(aeron_archive),
-        m_ctx(std::unique_ptr<Context>(ctx))
+        m_aeron_archive_t(aeron_archive),
+        m_archiveCtxW(aeron_archive_get_and_own_archive_context(m_aeron_archive_t))
     {
-        if (nullptr == originalAeron)
-        {
-            // TODO create a new one using the underlying aeron_t
-            aeron_t *aeron = getAeronT();
-            // TODO need to find an aeron::Context
-            //m_aeron = new Aeron(nullptr, aeron);
-        }
-        else
-        {
-            m_aeron = originalAeron;
-        }
+        // The following line divorces the aeron_t from the underlying aeron_archive
+        aeron_archive_context_set_owns_aeron_client(m_archiveCtxW.m_aeron_archive_ctx_t, false);
 
+        // Can't get the aeron_t via 'm_archiveCtxW.aeron()->aeron()' because m_archiveCtxW doesn't have an aeron set yet.
+        // So use the C functions to acquire the underlying aeron_t.
+        auto *aeron = aeron_archive_context_get_aeron(aeron_archive_get_archive_context(aeron_archive));
+
+        m_archiveCtxW.setAeron(nullptr == originalAeron ? std::make_shared<Aeron>(aeron) : originalAeron);
+
+        m_controlResponseSubscription = std::make_unique<Subscription>(
+            aeron,
+            aeron_archive_get_and_own_control_response_subscription(m_aeron_archive_t),
+            nullptr);
     }
 
-    aeron_t *getAeronT()
-    {
-        return aeron_archive_get_aeron(m_aeron_archive);
-    }
-
-    aeron_archive_t *m_aeron_archive = nullptr;
-
-    std::shared_ptr<Aeron> m_aeron = nullptr;
-
-    std::unique_ptr<Context> m_ctx = nullptr;
-
+    aeron_archive_t *m_aeron_archive_t = nullptr;
+    Context m_archiveCtxW;
     std::unique_ptr<Subscription> m_controlResponseSubscription = nullptr;
-
-    /*
-    static void ensureAeronClient(Context &ctx)
-    {
-        if (nullptr == ctx.aeron())
-        {
-            auto aeronContext = aeron::Context();
-            aeronContext.aeronDir(ctx.aeronDirectoryName());
-            ctx.setAeron(std::make_shared<Aeron>(aeronContext));
-        }
-    }
-     */
 
     static void recording_descriptor_consumer_func(
         aeron_archive_recording_descriptor_t *recording_descriptor,

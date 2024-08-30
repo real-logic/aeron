@@ -77,14 +77,13 @@ public:
         aeron_start(m_aeron);
     }
 
-    Aeron(Context &context, aeron_t *aeron) :
-        m_context(std::move(context)),
+    explicit Aeron(aeron_t *aeron) :
+        m_context(aeron_context(aeron)),
         m_aeron(aeron),
         m_countersReader(aeron_counters_reader(m_aeron)),
         m_clientConductor(m_aeron),
         m_conductorInvoker(m_clientConductor, m_context.m_exceptionHandler)
     {
-        // TODO
     }
 
     ~Aeron()

@@ -67,11 +67,12 @@ int aeron_archive_context_close(aeron_archive_context_t *ctx)
     {
         if (ctx->owns_aeron_client)
         {
+            aeron_context_t *aeron_ctx = aeron_context(ctx->aeron);
+
             aeron_close(ctx->aeron);
             ctx->aeron = NULL;
 
-            aeron_context_close(ctx->aeron_ctx);
-            ctx->aeron_ctx = NULL;
+            aeron_context_close(aeron_ctx);
         }
 
         aeron_free(ctx);
@@ -102,9 +103,11 @@ int aeron_archive_context_conclude(aeron_archive_context_t *ctx)
 {
     if (NULL == ctx->aeron)
     {
-        if (aeron_context_init(&ctx->aeron_ctx) < 0 ||
-            aeron_context_set_dir(ctx->aeron_ctx, ctx->aeron_directory_name) < 0 ||
-            aeron_init(&ctx->aeron, ctx->aeron_ctx) < 0 ||
+        aeron_context_t *aeron_ctx;
+
+        if (aeron_context_init(&aeron_ctx) < 0 ||
+            aeron_context_set_dir(aeron_ctx, ctx->aeron_directory_name) < 0 ||
+            aeron_init(&ctx->aeron, aeron_ctx) < 0 ||
             aeron_start(ctx->aeron) < 0)
         {
             AERON_APPEND_ERR("%s", "");
@@ -114,8 +117,8 @@ int aeron_archive_context_conclude(aeron_archive_context_t *ctx)
         ctx->owns_aeron_client = true;
     }
 
-    ctx->error_handler = aeron_context_get_error_handler(ctx->aeron_ctx);
-    ctx->error_handler_clientd = aeron_context_get_error_handler_clientd(ctx->aeron_ctx);
+    ctx->error_handler = aeron_context_get_error_handler(aeron_context(ctx->aeron));
+    ctx->error_handler_clientd = aeron_context_get_error_handler_clientd(aeron_context(ctx->aeron));
 
     return 0;
 
@@ -123,11 +126,6 @@ cleanup:
     if (NULL != ctx->aeron)
     {
         aeron_close(ctx->aeron);
-    }
-
-    if (NULL != ctx->aeron_ctx)
-    {
-        aeron_context_close(ctx->aeron_ctx);
     }
 
     return -1;
@@ -140,7 +138,7 @@ void aeron_archive_context_idle(aeron_archive_context_t *ctx)
 
 void aeron_archive_context_invoke_aeron_client(aeron_archive_context_t *ctx)
 {
-    if (aeron_context_get_use_conductor_agent_invoker(ctx->aeron_ctx))
+    if (aeron_context_get_use_conductor_agent_invoker(aeron_context(ctx->aeron)))
     {
         aeron_main_do_work(ctx->aeron);
     }
@@ -161,18 +159,6 @@ int aeron_archive_context_set_aeron(aeron_archive_context_t *ctx, aeron_t *aeron
 aeron_t *aeron_archive_context_get_aeron(aeron_archive_context_t *ctx)
 {
     return ctx->aeron;
-}
-
-int aeron_archive_context_set_aeron_context(aeron_archive_context_t *ctx, aeron_context_t *aeron_ctx)
-{
-    ctx->aeron_ctx = aeron_ctx;
-
-    return 0;
-}
-
-aeron_context_t *aeron_archive_context_get_aeron_context(aeron_archive_context_t *ctx)
-{
-    return ctx->aeron_ctx;
 }
 
 int aeron_archive_context_set_owns_aeron_client(aeron_archive_context_t *ctx, bool owns_aeron_client)

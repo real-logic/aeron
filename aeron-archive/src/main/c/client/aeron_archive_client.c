@@ -52,7 +52,6 @@ struct aeron_archive_stct
     aeron_archive_control_response_poller_t *control_response_poller;
     aeron_archive_recording_descriptor_poller_t *recording_descriptor_poller;
     aeron_archive_recording_subscription_descriptor_poller_t *recording_subscription_descriptor_poller;
-    aeron_t *aeron;
     int64_t control_session_id;
     int64_t archive_id;
     bool is_in_callback;
@@ -198,7 +197,6 @@ int aeron_archive_create(
     _aeron_archive->control_response_poller = control_response_poller;
     _aeron_archive->recording_descriptor_poller = recording_descriptor_poller;
     _aeron_archive->recording_subscription_descriptor_poller = recording_subscription_descriptor_poller;
-    _aeron_archive->aeron = aeron;
     _aeron_archive->control_session_id = control_session_id;
     _aeron_archive->archive_id = archive_id;
     _aeron_archive->is_in_callback = false;
@@ -262,7 +260,7 @@ int64_t aeron_archive_control_session_id(aeron_archive_t *aeron_archive)
 
 int64_t aeron_archive_next_correlation_id(aeron_archive_t *aeron_archive)
 {
-    return aeron_next_correlation_id(aeron_archive->aeron);
+    return aeron_next_correlation_id(aeron_archive->ctx->aeron);
 }
 
 int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *aeron_archive)
@@ -428,7 +426,7 @@ int aeron_archive_add_recorded_publication(
 
     if (aeron_async_add_publication(
         &async,
-        aeron_archive->aeron,
+        aeron_archive->ctx->aeron,
         channel,
         stream_id) < 0)
     {
@@ -500,7 +498,7 @@ int aeron_archive_add_recorded_exclusive_publication(
 
     if (aeron_async_add_exclusive_publication(
         &async,
-        aeron_archive->aeron,
+        aeron_archive->ctx->aeron,
         channel,
         stream_id) < 0)
     {
@@ -1273,7 +1271,7 @@ int aeron_archive_replay(
 
     if (aeron_async_add_subscription(
         &async_add_subscription,
-        aeron_archive->aeron,
+        aeron_archive->ctx->aeron,
         replay_channel_with_sid,
         replay_stream_id,
         NULL,
@@ -1819,11 +1817,6 @@ aeron_archive_context_t *aeron_archive_get_and_own_archive_context(aeron_archive
     return aeron_archive->ctx;
 }
 
-aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive)
-{
-    return aeron_archive->aeron;
-}
-
 int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive)
 {
     return aeron_archive->archive_id;
@@ -2188,7 +2181,7 @@ int aeron_archive_replay_via_response_channel(
     aeron_async_add_subscription_t *async;
     if (aeron_async_add_subscription(
         &async,
-        aeron_archive->aeron,
+        aeron_archive->ctx->aeron,
         replay_channel,
         replay_stream_id,
         NULL, NULL, NULL, NULL) < 0)
@@ -2349,7 +2342,7 @@ int aeron_archive_initiate_replay_via_response_channel(
     aeron_async_add_exclusive_publication_t *async;
     if (aeron_async_add_exclusive_publication(
         &async,
-        aeron_archive->aeron,
+        aeron_archive->ctx->aeron,
         control_request_channel,
         aeron_archive->ctx->control_request_stream_id) < 0)
     {
@@ -2398,7 +2391,7 @@ int aeron_archive_initiate_replay_via_response_channel(
         goto cleanup;
     }
 
-    aeron_counters_reader_t *counters_reader = aeron_counters_reader(aeron_archive->aeron);
+    aeron_counters_reader_t *counters_reader = aeron_counters_reader(aeron_archive->ctx->aeron);
     int pub_limit_counter_id = aeron_counters_reader_find_by_type_id_and_registration_id(
         counters_reader,
         AERON_COUNTER_PUBLISHER_LIMIT_TYPE_ID,

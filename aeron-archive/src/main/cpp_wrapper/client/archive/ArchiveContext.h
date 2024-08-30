@@ -32,7 +32,7 @@ class Context
 public:
     Context()
     {
-        if (aeron_archive_context_init(&m_ctx) < 0)
+        if (aeron_archive_context_init(&m_aeron_archive_ctx_t) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
@@ -42,23 +42,28 @@ public:
 
     ~Context()
     {
-        aeron_archive_context_close(m_ctx);
-        m_ctx = nullptr;
+        aeron_archive_context_close(m_aeron_archive_ctx_t);
+        m_aeron_archive_ctx_t = nullptr;
     }
 
     std::string aeronDirectoryName()
     {
-        return { aeron_archive_context_get_aeron_directory_name(m_ctx) };
+        return { aeron_archive_context_get_aeron_directory_name(m_aeron_archive_ctx_t) };
     }
 
-    void setAeronContext(const aeron::Context &ctx)
+    std::shared_ptr<Aeron> aeron()
     {
-        // TODO should probably hang on to the wrapper context as well
+        return m_aeronW;
+    }
 
-        if (aeron_archive_context_set_aeron_context(m_ctx, ctx.context()) < 0)
+    void setAeron(std::shared_ptr<Aeron> aeron)
+    {
+        if (aeron_archive_context_set_aeron(m_aeron_archive_ctx_t,aeron->aeron()) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+
+        m_aeronW = std::move(aeron);
     }
 
     void credentialsSupplier(const CredentialsSupplier &credentialsSupplier)
@@ -74,18 +79,8 @@ public:
         m_idleFunc = [&idleStrategy](int work_count){ idleStrategy.idle(work_count); };
     }
 
-    std::shared_ptr<Aeron> aeron()
-    {
-        return m_aeron;
-    }
-
-    void setAeron(std::shared_ptr<Aeron> aeron)
-    {
-        m_aeron = std::move(aeron);
-    }
-
 private:
-    aeron_archive_context_t *m_ctx = nullptr; // backing C struct
+    aeron_archive_context_t *m_aeron_archive_ctx_t = nullptr; // backing C struct
 
     CredentialsSupplier m_credentialsSupplier;
     aeron_archive_encoded_credentials_t m_lastEncodedCredentials = {};
@@ -93,12 +88,12 @@ private:
     std::function<void(int work_count)> m_idleFunc;
     YieldingIdleStrategy m_defaultIdleStrategy;
 
-    std::shared_ptr<Aeron> m_aeron = nullptr;
+    std::shared_ptr<Aeron> m_aeronW = nullptr;
 
     // This Context is created after connect succeeds and wraps around a context_t created in the C layer
     explicit Context(
         aeron_archive_context_t *archive_context) :
-        m_ctx(archive_context)
+        m_aeron_archive_ctx_t(archive_context)
     {
         setupContext();
     }
@@ -106,7 +101,7 @@ private:
     void setupContext()
     {
         if (aeron_archive_context_set_credentials_supplier(
-            m_ctx,
+            m_aeron_archive_ctx_t,
             encodedCredentialsFunc,
             onChallengeFunc,
             onFreeFunc,
@@ -116,7 +111,7 @@ private:
         }
 
         if (aeron_archive_context_set_idle_strategy(
-            m_ctx,
+            m_aeron_archive_ctx_t,
             idle,
             (void *)this) < 0)
         {

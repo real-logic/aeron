@@ -157,7 +157,7 @@ public:
 
         ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
 
-        m_aeron = aeron_archive_get_aeron(m_archive);
+        m_aeron = aeron_archive_context_get_aeron(m_ctx);
     }
 
     aeron_subscription_t *addSubscription(std::string channel, int32_t stream_id)
@@ -686,12 +686,67 @@ TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
         ASSERT_NE(-1, aeron_archive_async_connect_poll(&archive, async));
     }
 
+    ctx = aeron_archive_get_archive_context(archive);
+    ASSERT_TRUE(aeron_archive_context_get_owns_aeron_client(ctx));
+
     aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
     ASSERT_TRUE(aeron_subscription_is_connected(subscription));
 
     ASSERT_EQ(42, aeron_archive_get_archive_id(archive));
 
     ASSERT_EQ(0, aeron_archive_close(archive));
+}
+
+TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchiveWithPrebuiltAeron)
+{
+    aeron_archive_context_t *ctx;
+    aeron_archive_async_connect_t *async;
+    aeron_archive_t *archive = nullptr;
+
+    aeron_context_t *aeron_ctx;
+    aeron_t *aeron;
+
+    ASSERT_EQ(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds_clientd));
+
+    ASSERT_EQ(0, aeron_context_init(&aeron_ctx));
+    ASSERT_EQ(0, aeron_context_set_dir(aeron_ctx, aeron_archive_context_get_aeron_directory_name(ctx)));
+    ASSERT_EQ(0, aeron_init(&aeron, aeron_ctx));
+    ASSERT_EQ(0, aeron_start(aeron));
+
+    ASSERT_EQ(0, aeron_archive_context_set_aeron(ctx, aeron));
+    ASSERT_EQ(0, aeron_archive_async_connect(&async, ctx));
+
+    // the ctx passed into async_connect gets duplicated, so it should be safe to delete it now
+    ASSERT_EQ(0, aeron_archive_context_close(ctx));
+
+    ASSERT_EQ(0, aeron_archive_async_connect_poll(&archive, async));
+
+    while (nullptr == archive)
+    {
+        idle();
+
+        ASSERT_NE(-1, aeron_archive_async_connect_poll(&archive, async));
+    }
+
+    ctx = aeron_archive_get_archive_context(archive);
+    ASSERT_FALSE(aeron_archive_context_get_owns_aeron_client(ctx));
+
+    aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
+    ASSERT_TRUE(aeron_subscription_is_connected(subscription));
+
+    ASSERT_EQ(42, aeron_archive_get_archive_id(archive));
+
+    ASSERT_EQ(0, aeron_archive_close(archive));
+
+    ASSERT_EQ(0, aeron_close(aeron));
+    ASSERT_EQ(0, aeron_context_close(aeron_ctx));
 }
 
 TEST_F(AeronCArchiveTest, shouldConnectToArchive)
@@ -709,7 +764,9 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchive)
         &default_creds_clientd));
     ASSERT_EQ(0, aeron_archive_connect(&archive, ctx));
     ASSERT_EQ(0, aeron_archive_context_close(ctx));
-    connect();
+
+    ctx = aeron_archive_get_archive_context(archive);
+    ASSERT_TRUE(aeron_archive_context_get_owns_aeron_client(ctx));
 
     aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
     ASSERT_TRUE(aeron_subscription_is_connected(subscription));
@@ -717,6 +774,46 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchive)
     ASSERT_EQ(42, aeron_archive_get_archive_id(archive));
 
     ASSERT_EQ(0, aeron_archive_close(archive));
+}
+
+TEST_F(AeronCArchiveTest, shouldConnectToArchiveWithPrebuiltAeron)
+{
+    aeron_archive_context_t *ctx;
+    aeron_archive_t *archive = nullptr;
+
+    aeron_context_t *aeron_ctx;
+    aeron_t *aeron;
+
+    ASSERT_EQ(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ(0, aeron_archive_context_set_credentials_supplier(
+        ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds_clientd));
+
+    ASSERT_EQ(0, aeron_context_init(&aeron_ctx));
+    ASSERT_EQ(0, aeron_context_set_dir(aeron_ctx, aeron_archive_context_get_aeron_directory_name(ctx)));
+    ASSERT_EQ(0, aeron_init(&aeron, aeron_ctx));
+    ASSERT_EQ(0, aeron_start(aeron));
+
+    ASSERT_EQ(0, aeron_archive_context_set_aeron(ctx, aeron));
+    ASSERT_EQ(0, aeron_archive_connect(&archive, ctx));
+    ASSERT_EQ(0, aeron_archive_context_close(ctx));
+
+    ctx = aeron_archive_get_archive_context(archive);
+    ASSERT_FALSE(aeron_archive_context_get_owns_aeron_client(ctx));
+
+    aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
+    ASSERT_TRUE(aeron_subscription_is_connected(subscription));
+
+    ASSERT_EQ(42, aeron_archive_get_archive_id(archive));
+
+    ASSERT_EQ(0, aeron_archive_close(archive));
+
+    ASSERT_EQ(0, aeron_close(aeron));
+    ASSERT_EQ(0, aeron_context_close(aeron_ctx));
 }
 
 TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
@@ -2637,7 +2734,7 @@ TEST_P(AeronCArchiveParamTest, shouldReplayWithResponseChannel)
         &default_creds_clientd));
     ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
 
-    m_aeron = aeron_archive_get_aeron(m_archive);
+    m_aeron = aeron_archive_context_get_aeron(m_ctx);
 
     int64_t recording_id, stop_position, halfway_position;
 
@@ -2691,7 +2788,7 @@ TEST_P(AeronCArchiveParamTest, shouldBoundedReplayWithResponseChannel)
         &default_creds_clientd));
     ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
 
-    m_aeron = aeron_archive_get_aeron(m_archive);
+    m_aeron = aeron_archive_context_get_aeron(m_ctx);
 
     int64_t recording_id, stop_position, halfway_position;
 
@@ -2768,7 +2865,7 @@ TEST_P(AeronCArchiveParamTest, shouldStartReplayWithResponseChannel)
         &default_creds_clientd));
     ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
 
-    m_aeron = aeron_archive_get_aeron(m_archive);
+    m_aeron = aeron_archive_context_get_aeron(m_ctx);
 
     int64_t recording_id, stop_position, halfway_position;
 
@@ -2826,7 +2923,7 @@ TEST_P(AeronCArchiveParamTest, shouldStartBoundedReplayWithResponseChannel)
         &default_creds_clientd));
     ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
 
-    m_aeron = aeron_archive_get_aeron(m_archive);
+    m_aeron = aeron_archive_context_get_aeron(m_ctx);
 
     int64_t recording_id, stop_position, halfway_position;
 
@@ -2904,7 +3001,7 @@ TEST_F(AeronCArchiveTest, shouldDisconnectAfterStopAllReplays)
         &default_creds_clientd));
     ASSERT_EQ(0, aeron_archive_connect(&m_archive, m_ctx));
 
-    m_aeron = aeron_archive_get_aeron(m_archive);
+    m_aeron = aeron_archive_context_get_aeron(m_ctx);
 
     addSubscription(m_recordingChannel, m_recordingStreamId);
 

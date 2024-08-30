@@ -177,9 +177,6 @@ int aeron_archive_context_close(aeron_archive_context_t *ctx);
 int aeron_archive_context_set_aeron(aeron_archive_context_t *ctx, aeron_t *aeron);
 aeron_t *aeron_archive_context_get_aeron(aeron_archive_context_t *ctx);
 
-int aeron_archive_context_set_aeron_context(aeron_archive_context_t *ctx, aeron_context_t *aeron_ctx);
-aeron_context_t *aeron_archive_context_get_aeron_context(aeron_archive_context_t *ctx);
-
 int aeron_archive_context_set_owns_aeron_client(aeron_archive_context_t *ctx, bool owns_aeron_client);
 bool aeron_archive_context_get_owns_aeron_client(aeron_archive_context_t *ctx);
 
@@ -240,7 +237,6 @@ int aeron_archive_close(aeron_archive_t *aeron_archive);
 aeron_archive_context_t *aeron_archive_get_archive_context(aeron_archive_t *aeron_archive);
 aeron_archive_context_t *aeron_archive_get_and_own_archive_context(aeron_archive_t *aeron_archive);
 
-aeron_t *aeron_archive_get_aeron(aeron_archive_t *aeron_archive);
 int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
 
 aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);

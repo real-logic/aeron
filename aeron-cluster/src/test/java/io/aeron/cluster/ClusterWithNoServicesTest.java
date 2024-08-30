@@ -41,8 +41,6 @@ import org.mockito.InOrder;
 
 import java.util.concurrent.CountDownLatch;
 
-import static io.aeron.cluster.ClusterWithNoServicesTest.TestConsensusModuleExtension.LatchTrigger.SESSION_OPENED;
-import static io.aeron.cluster.ClusterWithNoServicesTest.TestConsensusModuleExtension.LatchTrigger.TAKE_SNAPSHOT;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
@@ -50,6 +48,11 @@ import static org.mockito.Mockito.*;
 @ExtendWith(InterruptingTestCallback.class)
 class ClusterWithNoServicesTest
 {
+    enum LatchTrigger
+    {
+        SESSION_OPENED, TAKE_SNAPSHOT
+    }
+
     private ClusteredMediaDriver clusteredMediaDriver;
     private AeronCluster aeronCluster;
 
@@ -75,7 +78,7 @@ class ClusterWithNoServicesTest
     {
         final CountDownLatch latch = new CountDownLatch(1);
         final ConsensusModuleExtension consensusModuleExtension = spy(
-            new TestConsensusModuleExtension(latch, SESSION_OPENED));
+            new TestConsensusModuleExtension(latch, LatchTrigger.SESSION_OPENED));
 
         clusteredMediaDriver = launchCluster(consensusModuleExtension);
         aeronCluster = connectClient();
@@ -99,7 +102,7 @@ class ClusterWithNoServicesTest
     {
         final CountDownLatch latch = new CountDownLatch(1);
 
-        clusteredMediaDriver = launchCluster(new TestConsensusModuleExtension(latch, TAKE_SNAPSHOT));
+        clusteredMediaDriver = launchCluster(new TestConsensusModuleExtension(latch, LatchTrigger.TAKE_SNAPSHOT));
         aeronCluster = connectClient();
 
         final AtomicCounter controlToggle = getClusterControlToggle();
@@ -166,11 +169,6 @@ class ClusterWithNoServicesTest
 
     static final class TestConsensusModuleExtension implements ConsensusModuleExtension
     {
-        enum LatchTrigger
-        {
-            SESSION_OPENED, TAKE_SNAPSHOT
-        }
-
         private final CountDownLatch latch;
         private final LatchTrigger latchTrigger;
 
@@ -234,7 +232,7 @@ class ClusterWithNoServicesTest
 
         public void onSessionOpened(final long clusterSessionId)
         {
-            if (SESSION_OPENED == latchTrigger)
+            if (LatchTrigger.SESSION_OPENED == latchTrigger)
             {
                 latch.countDown();
             }
@@ -250,7 +248,7 @@ class ClusterWithNoServicesTest
 
         public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
-            if (TAKE_SNAPSHOT == latchTrigger)
+            if (LatchTrigger.TAKE_SNAPSHOT == latchTrigger)
             {
                 latch.countDown();
             }

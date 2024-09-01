@@ -55,6 +55,7 @@ final class DriverEventDissector
     private static final SubscriptionReadyFlyweight SUBSCRIPTION_READY = new SubscriptionReadyFlyweight();
     private static final ClientTimeoutFlyweight CLIENT_TIMEOUT = new ClientTimeoutFlyweight();
     private static final TerminateDriverFlyweight TERMINATE_DRIVER = new TerminateDriverFlyweight();
+    private static final DestinationByIdMessageFlyweight DESTINATION_BY_ID = new DestinationByIdMessageFlyweight();
 
     static final String CONTEXT = "DRIVER";
 
@@ -212,6 +213,11 @@ final class DriverEventDissector
             case CMD_IN_TERMINATE_DRIVER:
                 TERMINATE_DRIVER.wrap(buffer, offset + encodedLength);
                 dissectTerminateDriver(builder);
+                break;
+
+            case CMD_IN_REMOVE_DESTINATION_BY_ID:
+                DESTINATION_BY_ID.wrap(buffer, offset + encodedLength);
+                dissectDestinationById(builder);
                 break;
 
             default:
@@ -765,5 +771,12 @@ final class DriverEventDissector
         builder
             .append("clientId=").append(TERMINATE_DRIVER.clientId())
             .append(" tokenBufferLength=").append(TERMINATE_DRIVER.tokenBufferLength());
+    }
+
+    private static void dissectDestinationById(final StringBuilder builder)
+    {
+        builder
+            .append("resourceRegistrationId=").append(DESTINATION_BY_ID.resourceRegistrationId())
+            .append(" destinationRegistrationId=").append(DESTINATION_BY_ID.destinationRegistrationId());
     }
 }

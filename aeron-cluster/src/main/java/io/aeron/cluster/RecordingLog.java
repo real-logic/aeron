@@ -121,12 +121,12 @@ import static org.agrona.BitUtil.*;
  */
 public final class RecordingLog implements AutoCloseable
 {
-    public static final long MAGIC_NUMBER = 0xFFA3F010_00000000L;
-    public static final int HEADER_SIZE = 64;
-    public static final int MAJOR_VERSION = 0;
-    public static final int MINOR_VERSION = 1;
-    public static final int PATCH_VERSION = 0;
-    public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
+    static final long MAGIC_NUMBER = 0xFFA3F010_00000000L;
+    static final int HEADER_SIZE = 64;
+    static final int MAJOR_VERSION = 0;
+    static final int MINOR_VERSION = 1;
+    static final int PATCH_VERSION = 0;
+    static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
     private static final int MAGIC_NUMBER_OFFSET = 0;
     private static final int VERSION_OFFSET = MAGIC_NUMBER_OFFSET + SIZE_OF_LONG;
 

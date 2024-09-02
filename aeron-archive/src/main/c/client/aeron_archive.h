@@ -394,6 +394,7 @@ int aeron_archive_list_recording_subscriptions(
     void *recording_subscription_descriptor_consumer_clientd);
 
 int aeron_archive_purge_recording(
+    int64_t *deleted_segments_count_p,
     aeron_archive_t *aeron_archive,
     int64_t recording_id);
 
@@ -459,7 +460,7 @@ int64_t aeron_archive_segment_file_base_position(
 int32_t aeron_archive_recording_pos_find_counter_id_by_recording_id(aeron_counters_reader_t *counters_reader, int64_t recording_id);
 int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters_reader_t *counters_reader, int32_t session_id);
 int64_t aeron_archive_recording_pos_get_recording_id(aeron_counters_reader_t *counters_reader, int32_t counter_id);
-int aeron_archive_recording_pos_get_source_identity(aeron_counters_reader_t *counters_reader, int32_t counter_id, const char *dst, int32_t *len_p);
+int aeron_archive_recording_pos_get_source_identity(aeron_counters_reader_t *counters_reader, int32_t counter_id, const char *dst, size_t *len_p);
 int aeron_archive_recording_pos_is_active(bool *is_active, aeron_counters_reader_t *counters_reader, int32_t counter_id, int64_t recording_id);
 
 /* replay/merge */

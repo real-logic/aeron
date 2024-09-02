@@ -26,12 +26,14 @@
 #include "client/archive/AeronArchive.h"
 #include "client/archive/CredentialsSupplier.h"
 #include "client/archive/RecordingPos.h"
+#include "client/archive/ReplayMerge.h"
+#include "client/archive/ReplayParams.h"
+
+#include "ChannelUriStringBuilder.h"
 
 /*
-#include "client/RecordingPos.h"
 #include "client/ReplayMerge.h"
 #include "concurrent/YieldingIdleStrategy.h"
-#include "ChannelUriStringBuilder.h"
 #include "aeron_archive_client/RecordingSignal.h"
  */
 
@@ -174,8 +176,6 @@ public:
         ASSERT_EQ(received, messageCount);
     }
 
-    /*
-
     std::int64_t consumeMessagesExpectingBound(
         Subscription &subscription,
         std::int64_t boundPosition,
@@ -272,6 +272,8 @@ public:
         return true;
     }
 
+    /*
+
     void startDestArchive()
     {
         const std::string aeronDir = aeron::Context::defaultAeronPath() + "_dest";
@@ -329,17 +331,17 @@ protected:
     const std::string m_java = JAVA_EXECUTABLE;
     const std::string m_aeronAllJar = AERON_ALL_JAR;
 
-    const std::string m_replayChannel = "aeron:udp?endpoint=localhost:6666";
-    const std::int32_t m_replayStreamId = 66;
-
-
     std::shared_ptr<TestArchive> m_destArchive;
     AeronArchive::Context_t m_destContext;
      */
 
+
     const int m_fragmentLimit = 10;
     const std::string m_recordingChannel = "aeron:udp?endpoint=localhost:3333";
     const std::int32_t m_recordingStreamId = 33;
+
+    const std::string m_replayChannel = "aeron:udp?endpoint=localhost:6666";
+    const std::int32_t m_replayStreamId = 66;
 
     std::shared_ptr<TestArchive> m_archive;
     const std::string m_archiveDir = ARCHIVE_DIR;
@@ -517,21 +519,17 @@ TEST_F(AeronArchiveWrapperTest, shouldRecordPublicationAndFindRecording)
 
     const std::int32_t count = aeronArchive->listRecording(
         recordingId,
-        [&](RecordingDescriptor recordingDescriptor)
+        [&](const RecordingDescriptor &recordingDescriptor)
         {
             EXPECT_EQ(recordingId, recordingDescriptor.m_recordingId);
             EXPECT_EQ(recordingDescriptor.m_streamId, m_recordingStreamId);
-
-            std::cerr << "got the callback!\n";
         });
 
     EXPECT_EQ(count, 1);
 }
 
-/*
-TEST_P(AeronArchiveParamTest, shouldRecordThenReplay)
+TEST_F(AeronArchiveWrapperTest, shouldRecordThenReplay)
 {
-    const bool useParams = GetParam();
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
     std::int32_t sessionId;
@@ -584,28 +582,19 @@ TEST_P(AeronArchiveParamTest, shouldRecordThenReplay)
         std::shared_ptr<Subscription> subscription = addSubscription(
             *aeronArchive->context().aeron(), m_replayChannel, m_replayStreamId);
 
-        if (useParams)
-        {
-            aeronArchive->startReplay(
-                recordingId,
-                m_replayChannel,
-                m_replayStreamId,
-                ReplayParams().position(position).length(length).fileIoMaxLength(4096));
-        }
-        else
-        {
-            aeronArchive->startReplay(recordingId, position, length, m_replayChannel, m_replayStreamId);
-        }
+        aeronArchive->startReplay(
+            recordingId,
+            m_replayChannel,
+            m_replayStreamId,
+            ReplayParams().position(position).length(length).fileIoMaxLength(4096));
 
         consumeMessages(*subscription, messageCount, messagePrefix);
         EXPECT_EQ(stopPosition, subscription->imageByIndex(0)->position());
     }
 }
 
-TEST_P(AeronArchiveParamTest, shouldRecordThenBoundedReplay)
+TEST_F(AeronArchiveWrapperTest, shouldRecordThenBoundedReplay)
 {
-    const bool useParams = GetParam();
-
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
     std::int32_t sessionId;
@@ -665,23 +654,15 @@ TEST_P(AeronArchiveParamTest, shouldRecordThenBoundedReplay)
         std::shared_ptr<Subscription> subscription = addSubscription(
             *aeronArchive->context().aeron(), m_replayChannel, m_replayStreamId);
 
-        if (useParams)
-        {
-            aeronArchive->startReplay(
-                recordingIdFromCounter,
-                m_replayChannel,
-                m_replayStreamId,
-                ReplayParams()
-                    .position(position)
-                    .length(length)
-                    .boundingLimitCounterId(counter->id())
-                    .fileIoMaxLength(4096));
-        }
-        else
-        {
-            aeronArchive->startBoundedReplay(
-                recordingIdFromCounter, position, length, counter->id(), m_replayChannel, m_replayStreamId);
-        }
+        aeronArchive->startReplay(
+            recordingIdFromCounter,
+            m_replayChannel,
+            m_replayStreamId,
+            ReplayParams()
+                .position(position)
+                .length(length)
+                .boundingLimitCounterId(counter->id())
+                .fileIoMaxLength(4096));
 
         const std::int64_t positionConsumed = consumeMessagesExpectingBound(
             *subscription, position + boundedLength, messagePrefix, 1000);
@@ -691,10 +672,8 @@ TEST_P(AeronArchiveParamTest, shouldRecordThenBoundedReplay)
     }
 }
 
-
-TEST_P(AeronArchiveParamTest, shouldRecordThenReplayThenTruncate)
+TEST_F(AeronArchiveWrapperTest, shouldRecordThenReplayThenTruncate)
 {
-    const bool useParams = GetParam();
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
     std::int32_t sessionId;
@@ -747,19 +726,12 @@ TEST_P(AeronArchiveParamTest, shouldRecordThenReplayThenTruncate)
     {
         const std::int64_t length = stopPosition - position;
         std::shared_ptr<Subscription> subscription;
-        if (useParams)
-        {
-            subscription = aeronArchive->replay<BackoffIdleStrategy>(
-                recordingId,
-                m_replayChannel,
-                m_replayStreamId,
-                ReplayParams().position(position).length(length).fileIoMaxLength(4096));
-        }
-        else
-        {
-            subscription = aeronArchive->replay(
-                recordingId, position, length, m_replayChannel, m_replayStreamId);
-        }
+
+        subscription = aeronArchive->replay(
+            recordingId,
+            m_replayChannel,
+            m_replayStreamId,
+            ReplayParams().position(position).length(length).fileIoMaxLength(4096));
 
         consumeMessages(*subscription, messageCount, messagePrefix);
         EXPECT_EQ(stopPosition, subscription->imageByIndex(0)->position());
@@ -769,33 +741,16 @@ TEST_P(AeronArchiveParamTest, shouldRecordThenReplayThenTruncate)
 
     const std::int32_t count = aeronArchive->listRecording(
         recordingId,
-        [](
-            std::int64_t controlSessionId,
-            std::int64_t correlationId,
-            std::int64_t recordingId1,
-            std::int64_t startTimestamp,
-            std::int64_t stopTimestamp,
-            std::int64_t startPosition,
-            std::int64_t newStopPosition,
-            std::int32_t initialTermId,
-            std::int32_t segmentFileLength,
-            std::int32_t termBufferLength,
-            std::int32_t mtuLength,
-            std::int32_t sessionId1,
-            std::int32_t streamId,
-            const std::string &strippedChannel,
-            const std::string &originalChannel,
-            const std::string &sourceIdentity)
+        [&](const RecordingDescriptor &recordingDescriptor)
         {
-            EXPECT_EQ(startPosition, newStopPosition);
+            EXPECT_EQ(recordingDescriptor.m_startPosition, recordingDescriptor.m_stopPosition);
         });
 
     EXPECT_EQ(count, 1);
 }
 
-TEST_P(AeronArchiveParamTest, shouldRecordAndCancelReplayEarly)
+TEST_F(AeronArchiveWrapperTest, shouldRecordAndCancelReplayEarly)
 {
-    const bool useParams = GetParam();
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
     std::int64_t recordingId;
@@ -839,25 +794,17 @@ TEST_P(AeronArchiveParamTest, shouldRecordAndCancelReplayEarly)
     const std::int64_t length = stopPosition - position;
 
     std::int64_t replaySessionId;
-    if (useParams)
-    {
-        replaySessionId = aeronArchive->startReplay(
-            recordingId,
-            m_replayChannel,
-            m_replayStreamId,
-            ReplayParams().position(position).length(length).fileIoMaxLength(4096));
-    }
-    else
-    {
-        replaySessionId = aeronArchive->startReplay(recordingId, position, length, m_replayChannel, m_replayStreamId);
-    }
+    replaySessionId = aeronArchive->startReplay(
+        recordingId,
+        m_replayChannel,
+        m_replayStreamId,
+        ReplayParams().position(position).length(length).fileIoMaxLength(4096));
 
     aeronArchive->stopReplay(replaySessionId);
 }
 
-TEST_P(AeronArchiveParamTest, shouldReplayRecordingFromLateJoinPosition)
+TEST_F(AeronArchiveWrapperTest, shouldReplayRecordingFromLateJoinPosition)
 {
-    const bool useParams = GetParam();
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
 
@@ -890,19 +837,12 @@ TEST_P(AeronArchiveParamTest, shouldReplayRecordingFromLateJoinPosition)
         {
             std::shared_ptr<Subscription> replaySubscription;
 
-            if (useParams)
-            {
-                replaySubscription = aeronArchive->replay(
-                    recordingId,
-                    m_replayChannel,
-                    m_replayStreamId,
-                    ReplayParams().position(currentPosition).fileIoMaxLength(4096));
-            }
-            else
-            {
-                replaySubscription = aeronArchive->replay(
-                    recordingId, currentPosition, NULL_LENGTH, m_replayChannel, m_replayStreamId);
-            }
+            replaySubscription = aeronArchive->replay(
+                recordingId,
+                m_replayChannel,
+                m_replayStreamId,
+                ReplayParams().position(currentPosition).fileIoMaxLength(4096));
+
             offerMessages(*publication, messageCount, messagePrefix);
             consumeMessages(*subscription, messageCount, messagePrefix);
             consumeMessages(*replaySubscription, messageCount, messagePrefix);
@@ -913,38 +853,14 @@ TEST_P(AeronArchiveParamTest, shouldReplayRecordingFromLateJoinPosition)
     }
 }
 
-struct SubscriptionDescriptor
+TEST_F(AeronArchiveWrapperTest, shouldListRegisteredRecordingSubscriptions)
 {
-    const std::int64_t m_controlSessionId;
-    const std::int64_t m_correlationId;
-    const std::int64_t m_subscriptionId;
-    const std::int32_t m_streamId;
+    std::vector<RecordingSubscriptionDescriptor> descriptors;
 
-    SubscriptionDescriptor(
-        std::int64_t controlSessionId,
-        std::int64_t correlationId,
-        std::int64_t subscriptionId,
-        std::int32_t streamId) :
-        m_controlSessionId(controlSessionId),
-        m_correlationId(correlationId),
-        m_subscriptionId(subscriptionId),
-        m_streamId(streamId)
-    {
-    }
-};
-
-TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
-{
-    std::vector<SubscriptionDescriptor> descriptors;
     recording_subscription_descriptor_consumer_t consumer =
-        [&descriptors](
-            std::int64_t controlSessionId,
-            std::int64_t correlationId,
-            std::int64_t subscriptionId,
-            std::int32_t streamId,
-            const std::string &strippedChannel)
+        [&descriptors](const RecordingSubscriptionDescriptor &descriptor)
         {
-            descriptors.emplace_back(controlSessionId, correlationId, subscriptionId, streamId);
+            descriptors.emplace_back(descriptor);
         };
 
     const std::int32_t expectedStreamId = 7;
@@ -987,15 +903,15 @@ TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
     EXPECT_EQ(1L, std::count_if(
         descriptors.begin(),
         descriptors.end(),
-        [=](const SubscriptionDescriptor &descriptor){ return descriptor.m_subscriptionId == subIdOne; }));
+        [=](const RecordingSubscriptionDescriptor &descriptor){ return descriptor.m_subscriptionId == subIdOne; }));
 
     EXPECT_EQ(1L, std::count_if(
         descriptors.begin(),
         descriptors.end(),
-        [=](const SubscriptionDescriptor &descriptor){ return descriptor.m_subscriptionId == subIdThree; }));
+        [=](const RecordingSubscriptionDescriptor &descriptor){ return descriptor.m_subscriptionId == subIdThree; }));
 }
 
-TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
+TEST_F(AeronArchiveWrapperTest, shouldMergeFromReplayToLive)
 {
     const std::size_t termLength = 64 * 1024;
     const std::string messagePrefix = "Message ";
@@ -1120,7 +1036,7 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     EXPECT_EQ(receivedPosition, publication->position());
 }
 
-TEST_F(AeronArchiveTest, shouldExceptionForIncorrectInitialCredentials)
+TEST_F(AeronArchiveWrapperTest, shouldExceptionForIncorrectInitialCredentials)
 {
     auto onEncodedCredentials =
         []() -> std::pair<const char *, std::uint32_t>
@@ -1143,7 +1059,7 @@ TEST_F(AeronArchiveTest, shouldExceptionForIncorrectInitialCredentials)
         ArchiveException);
 }
 
-TEST_F(AeronArchiveTest, shouldBeAbleToHandleBeingChallenged)
+TEST_F(AeronArchiveWrapperTest, shouldBeAbleToHandleBeingChallenged)
 {
     auto onEncodedCredentials =
         []() -> std::pair<const char *, std::uint32_t>
@@ -1177,7 +1093,7 @@ TEST_F(AeronArchiveTest, shouldBeAbleToHandleBeingChallenged)
         });
 }
 
-TEST_F(AeronArchiveTest, shouldExceptionForIncorrectChallengeCredentials)
+TEST_F(AeronArchiveWrapperTest, shouldExceptionForIncorrectChallengeCredentials)
 {
     auto onEncodedCredentials =
         []() -> std::pair<const char *, std::uint32_t>
@@ -1212,7 +1128,7 @@ TEST_F(AeronArchiveTest, shouldExceptionForIncorrectChallengeCredentials)
         ArchiveException);
 }
 
-TEST_F(AeronArchiveTest, shouldPurgeStoppedRecording)
+TEST_F(AeronArchiveWrapperTest, shouldPurgeStoppedRecording)
 {
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
@@ -1260,27 +1176,11 @@ TEST_F(AeronArchiveTest, shouldPurgeStoppedRecording)
     EXPECT_EQ(recordingIdFromCounter, recordingId);
     EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), stopPosition);
 
-    aeronArchive->purgeRecording(recordingId);
+    EXPECT_EQ(1, aeronArchive->purgeRecording(recordingId));
 
     const std::int32_t count = aeronArchive->listRecording(
         recordingId,
-        [](
-            std::int64_t controlSessionId,
-            std::int64_t correlationId,
-            std::int64_t recordingId1,
-            std::int64_t startTimestamp,
-            std::int64_t stopTimestamp,
-            std::int64_t startPosition,
-            std::int64_t newStopPosition,
-            std::int32_t initialTermId,
-            std::int32_t segmentFileLength,
-            std::int32_t termBufferLength,
-            std::int32_t mtuLength,
-            std::int32_t sessionId1,
-            std::int32_t streamId,
-            const std::string &strippedChannel,
-            const std::string &originalChannel,
-            const std::string &sourceIdentity)
+        [&](const RecordingDescriptor &recordingDescriptor)
         {
             FAIL();
         });
@@ -1288,7 +1188,7 @@ TEST_F(AeronArchiveTest, shouldPurgeStoppedRecording)
     EXPECT_EQ(count, 0);
 }
 
-TEST_F(AeronArchiveTest, shouldReadRecordingDescriptor)
+TEST_F(AeronArchiveWrapperTest, shouldReadRecordingDescriptor)
 {
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
     std::shared_ptr<Aeron> aeron = aeronArchive->context().aeron();
@@ -1313,34 +1213,18 @@ TEST_F(AeronArchiveTest, shouldReadRecordingDescriptor)
 
     const std::int32_t count = aeronArchive->listRecording(
         recordingId,
-        [&](
-            std::int64_t controlSessionId,
-            std::int64_t correlationId,
-            std::int64_t recordingId1,
-            std::int64_t startTimestamp,
-            std::int64_t stopTimestamp,
-            std::int64_t startPosition,
-            std::int64_t newStopPosition,
-            std::int32_t initialTermId,
-            std::int32_t segmentFileLength,
-            std::int32_t termBufferLength,
-            std::int32_t mtuLength,
-            std::int32_t sessionId1,
-            std::int32_t streamId,
-            const std::string &strippedChannel,
-            const std::string &originalChannel,
-            const std::string &sourceIdentity)
+        [&](const RecordingDescriptor &recordingDescriptor)
         {
-            EXPECT_EQ(sessionId, sessionId1);
-            EXPECT_EQ(recordingId, recordingId1);
-            EXPECT_EQ(streamId, m_recordingStreamId);
-            EXPECT_EQ(originalChannel, m_recordingChannel);
+            EXPECT_EQ(recordingDescriptor.m_sessionId, sessionId);
+            EXPECT_EQ(recordingDescriptor.m_recordingId, recordingId);
+            EXPECT_EQ(recordingDescriptor.m_streamId, m_recordingStreamId);
+            EXPECT_EQ(recordingDescriptor.m_originalChannel, m_recordingChannel);
         });
 
     EXPECT_EQ(count, 1);
 }
 
-TEST_F(AeronArchiveTest, shouldReadJumboRecordingDescriptor)
+TEST_F(AeronArchiveWrapperTest, shouldReadJumboRecordingDescriptor)
 {
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
@@ -1388,31 +1272,17 @@ TEST_F(AeronArchiveTest, shouldReadJumboRecordingDescriptor)
 
     const std::int32_t count = aeronArchive->listRecording(
         recordingId,
-        [&](
-            std::int64_t controlSessionId,
-            std::int64_t correlationId,
-            std::int64_t recordingId1,
-            std::int64_t startTimestamp,
-            std::int64_t stopTimestamp,
-            std::int64_t startPosition,
-            std::int64_t newStopPosition,
-            std::int32_t initialTermId,
-            std::int32_t segmentFileLength,
-            std::int32_t termBufferLength,
-            std::int32_t mtuLength,
-            std::int32_t sessionId1,
-            std::int32_t streamId,
-            const std::string &strippedChannel,
-            const std::string &originalChannel,
-            const std::string &sourceIdentity)
+        [&](const RecordingDescriptor &recordingDescriptor)
         {
-            EXPECT_EQ(recordingId, recordingId1);
-            EXPECT_EQ(streamId, m_recordingStreamId);
-            EXPECT_EQ(originalChannel, recordingChannel);
+            EXPECT_EQ(recordingDescriptor.m_recordingId, recordingId);
+            EXPECT_EQ(recordingDescriptor.m_streamId, m_recordingStreamId);
+            EXPECT_EQ(recordingDescriptor.m_originalChannel, recordingChannel);
         });
 
     EXPECT_EQ(count, 1);
 }
+
+/*
 
 TEST_F(AeronArchiveTest, shouldRecordReplicateThenReplay)
 {

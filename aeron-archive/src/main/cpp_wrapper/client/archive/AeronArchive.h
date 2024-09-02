@@ -16,15 +16,22 @@
 #ifndef AERON_ARCHIVE_WRAPPER_H
 #define AERON_ARCHIVE_WRAPPER_H
 
+#include <utility>
+
 #include "client/aeron_archive.h"
 
 #include "Aeron.h"
 #include "client/util/ArchiveExceptions.h"
 
 #include "ArchiveContext.h"
+#include "ReplayParams.h"
 
 namespace aeron { namespace archive { namespace client
 {
+
+constexpr const std::int64_t NULL_POSITION = aeron::NULL_VALUE;
+
+constexpr const std::int64_t NULL_LENGTH = aeron::NULL_VALUE;
 
 struct RecordingDescriptor
 {
@@ -42,9 +49,9 @@ struct RecordingDescriptor
         std::int32_t mtuLength,
         std::int32_t sessionId,
         std::int32_t streamId,
-        const std::string &strippedChannel,
-        const std::string &originalChannel,
-        const std::string &sourceIdentity) :
+        std::string strippedChannel,
+        std::string originalChannel,
+        std::string sourceIdentity) :
         m_controlSessionId(controlSessionId),
         m_correlationId(correlationId),
         m_recordingId(recordingId),
@@ -58,9 +65,9 @@ struct RecordingDescriptor
         m_mtuLength(mtuLength),
         m_sessionId(sessionId),
         m_streamId(streamId),
-        m_strippedChannel(strippedChannel),
-        m_originalChannel(originalChannel),
-        m_sourceIdentity(sourceIdentity)
+        m_strippedChannel(std::move(strippedChannel)),
+        m_originalChannel(std::move(originalChannel)),
+        m_sourceIdentity(std::move(sourceIdentity))
     {
     }
 
@@ -84,10 +91,37 @@ struct RecordingDescriptor
 
 typedef std::function<void(RecordingDescriptor &recordingDescriptor)> recording_descriptor_consumer_t;
 
+struct RecordingSubscriptionDescriptor
+{
+    RecordingSubscriptionDescriptor(
+        std::int64_t controlSessionId,
+        std::int64_t correlationId,
+        std::int64_t subscriptionId,
+        std::int32_t streamId,
+        std::string strippedChannel) :
+        m_controlSessionId(controlSessionId),
+        m_correlationId(correlationId),
+        m_subscriptionId(subscriptionId),
+        m_streamId(streamId),
+        m_strippedChannel(std::move(strippedChannel))
+    {
+    }
+
+    std::int64_t m_controlSessionId;
+    std::int64_t m_correlationId;
+    std::int64_t m_subscriptionId;
+    std::int32_t m_streamId;
+    const std::string m_strippedChannel;
+};
+
+typedef std::function<void(RecordingSubscriptionDescriptor &recordingSubscriptionDescriptor)> recording_subscription_descriptor_consumer_t;
+
 using namespace aeron::util;
 
 class AeronArchive
 {
+
+    friend class ReplayMerge;
 
 public:
     using Context_t = aeron::archive::client::Context;
@@ -101,7 +135,6 @@ public:
         /// Source is remote to the archive and will be recorded using a network Subscription.
         REMOTE = 1
     };
-
 
     class AsyncConnect
     {
@@ -269,6 +302,16 @@ public:
         }
     }
 
+    inline void stopRecording(std::shared_ptr<Publication> publication)
+    {
+        if (aeron_archive_stop_recording_publication(
+            m_aeron_archive_t,
+            publication->publication()) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+    }
+
     inline std::int64_t findLastMatchingRecording(
         std::int64_t minRecordingId,
         const std::string &channelFragment,
@@ -308,6 +351,132 @@ public:
         return count;
     }
 
+    inline std::int64_t startReplay(
+        std::int64_t recordingId,
+        const std::string &replayChannel,
+        std::int32_t replayStreamId,
+        ReplayParams &replayParams)
+    {
+        int64_t replay_session_id;
+
+        if (aeron_archive_start_replay(
+            &replay_session_id,
+            m_aeron_archive_t,
+            recordingId,
+            replayChannel.c_str(),
+            replayStreamId,
+            replayParams.params()) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return replay_session_id;
+    }
+
+    inline std::shared_ptr<Subscription> replay(
+        std::int64_t recordingId,
+        const std::string &replayChannel,
+        std::int32_t replayStreamId,
+        ReplayParams &replayParams)
+    {
+        aeron_subscription_t *subscription;
+
+        if (aeron_archive_replay(
+            &subscription,
+            m_aeron_archive_t,
+            recordingId,
+            replayChannel.c_str(),
+            replayStreamId,
+            replayParams.params()) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return std::make_shared<Subscription>(m_archiveCtxW.aeron()->aeron(), subscription, nullptr);
+    }
+
+    inline std::int64_t truncateRecording(std::int64_t recordingId, std::int64_t position)
+    {
+        int64_t count;
+
+        if (aeron_archive_truncate_recording(
+            &count,
+            m_aeron_archive_t,
+            recordingId,
+            position) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return count;
+    }
+
+    inline std::shared_ptr<Publication> addRecordedPublication(const std::string &channel, std::int32_t streamId)
+    {
+        aeron_publication_t *publication;
+
+        if (aeron_archive_add_recorded_publication(
+            &publication,
+            m_aeron_archive_t,
+            channel.c_str(),
+            streamId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return std::make_shared<Publication>(m_archiveCtxW.aeron()->aeron(), publication);
+    }
+
+    inline void stopReplay(std::int64_t replaySessionId)
+    {
+        if (aeron_archive_stop_replay(m_aeron_archive_t, replaySessionId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+    }
+
+    inline std::int32_t listRecordingSubscriptions(
+        std::int32_t pseudoIndex,
+        std::int32_t subscriptionCount,
+        const std::string &channelFragment,
+        std::int32_t streamId,
+        bool applyStreamId,
+        const recording_subscription_descriptor_consumer_t &consumer)
+    {
+        int32_t count;
+
+        if (aeron_archive_list_recording_subscriptions(
+            &count,
+            m_aeron_archive_t,
+            pseudoIndex,
+            subscriptionCount,
+            channelFragment.c_str(),
+            streamId,
+            applyStreamId,
+            recording_subscription_descriptor_consumer_func,
+            const_cast<void *>(reinterpret_cast<const void *>(&consumer))) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return count;
+    }
+
+    inline std::int64_t purgeRecording(std::int64_t recordingId)
+    {
+        int64_t deletedSegmentsCount;
+
+        if (aeron_archive_purge_recording(
+            &deletedSegmentsCount,
+            m_aeron_archive_t,
+            recordingId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return deletedSegmentsCount;
+    }
+
 private:
     explicit AeronArchive(
         aeron_archive_t *aeron_archive,
@@ -338,7 +507,7 @@ private:
         aeron_archive_recording_descriptor_t *recording_descriptor,
         void *clientd)
     {
-        recording_descriptor_consumer_t &consumer = *reinterpret_cast<recording_descriptor_consumer_t *>(clientd);
+        auto consumer = *reinterpret_cast<recording_descriptor_consumer_t *>(clientd);
 
         RecordingDescriptor descriptor(
             recording_descriptor->control_session_id,
@@ -357,6 +526,22 @@ private:
             recording_descriptor->stripped_channel,
             recording_descriptor->original_channel,
             recording_descriptor->source_identity);
+
+        consumer(descriptor);
+    }
+
+    static void recording_subscription_descriptor_consumer_func(
+        aeron_archive_recording_subscription_descriptor_t *recording_subscription_descriptor,
+        void *clientd)
+    {
+        auto consumer = *reinterpret_cast<recording_subscription_descriptor_consumer_t *>(clientd);
+
+        RecordingSubscriptionDescriptor descriptor(
+            recording_subscription_descriptor->control_session_id,
+            recording_subscription_descriptor->correlation_id,
+            recording_subscription_descriptor->subscription_id,
+            recording_subscription_descriptor->stream_id,
+            recording_subscription_descriptor->stripped_channel);
 
         consumer(descriptor);
     }

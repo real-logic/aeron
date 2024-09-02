@@ -1456,6 +1456,7 @@ int aeron_archive_list_recording_subscriptions(
 }
 
 int aeron_archive_purge_recording(
+    int64_t *deleted_segments_count_p,
     aeron_archive_t *aeron_archive,
     int64_t recording_id)
 {
@@ -1476,7 +1477,7 @@ int aeron_archive_purge_recording(
     }
 
     int rc = aeron_archive_poll_for_response(
-        NULL,
+        deleted_segments_count_p,
         aeron_archive,
         "AeronArchive::purgeRecording",
         correlation_id);

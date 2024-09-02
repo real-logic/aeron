@@ -125,7 +125,7 @@ int64_t aeron_archive_recording_pos_get_recording_id(aeron_counters_reader_t *co
     return key->recording_id;
 }
 
-int aeron_archive_recording_pos_get_source_identity(aeron_counters_reader_t *counters_reader, int32_t counter_id, const char *dst, int32_t *len_p)
+int aeron_archive_recording_pos_get_source_identity(aeron_counters_reader_t *counters_reader, int32_t counter_id, const char *dst, size_t *len_p)
 {
     int32_t state, type_id;
     struct aeron_archive_recording_pos_key_defn *key;
@@ -142,7 +142,7 @@ int aeron_archive_recording_pos_get_source_identity(aeron_counters_reader_t *cou
         AERON_ARCHIVE_RECORDING_POSITION_TYPE_ID == type_id)
     {
         // use the shorter of the two
-        *len_p = key->source_identity_length < *len_p ? key->source_identity_length : *len_p;
+        *len_p = key->source_identity_length < (int32_t)*len_p ? key->source_identity_length : *len_p;
 
         // the source_identity string comes right after the key definition
         memcpy((void *)dst,((uint8_t *)key + sizeof(struct aeron_archive_recording_pos_key_defn)),*len_p);

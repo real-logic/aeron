@@ -23,6 +23,8 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/client/archive/ArchiveContext.h
     ${CMAKE_CURRENT_SOURCE_DIR}/client/archive/CredentialsSupplier.h
     ${CMAKE_CURRENT_SOURCE_DIR}/client/archive/RecordingPos.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/archive/ReplayMerge.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/archive/ReplayParams.h
     ${CMAKE_CURRENT_SOURCE_DIR}/client/util/ArchiveExceptions.h
 )
 

@@ -34,6 +34,40 @@ inline static std::int32_t findCounterIdBySessionId(CountersReader &countersRead
     return aeron_archive_recording_pos_find_counter_id_by_session_id(countersReader.countersReader(), sessionId);
 }
 
+inline static std::int32_t findCounterIdByRecordingId(CountersReader &countersReader, std::int64_t recordingId)
+{
+    return aeron_archive_recording_pos_find_counter_id_by_recording_id(countersReader.countersReader(), recordingId);
+}
+
+inline static std::string getSourceIdentity(CountersReader &countersReader, std::int32_t counterId)
+{
+    size_t sib_len = 1000;
+    const char source_identity_buffer[1000] = { '\0' };
+
+    if (aeron_archive_recording_pos_get_source_identity(
+        countersReader.countersReader(),
+        counterId,
+        source_identity_buffer,
+        &sib_len) < 0)
+    {
+        ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+    }
+
+    return { source_identity_buffer, sib_len };
+}
+
+inline static bool isActive(CountersReader &countersReader, std::int32_t counterId, std::int64_t recordingId)
+{
+    bool isActive;
+
+    if (aeron_archive_recording_pos_is_active(&isActive, countersReader.countersReader(), counterId, recordingId) < 0)
+    {
+        ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+    }
+
+    return isActive;
+}
+
 }
 
 }}}

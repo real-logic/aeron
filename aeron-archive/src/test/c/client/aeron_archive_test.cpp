@@ -466,7 +466,7 @@ public:
             m_recording_id_from_counter));
 
         {
-            int32_t sib_len = 1000;
+            size_t sib_len = 1000;
             const char source_identity_buffer[1000] = { '\0' };
 
             EXPECT_EQ(0,
@@ -1031,7 +1031,7 @@ TEST_F(AeronCArchiveTest, shouldRecordThenReplay)
             m_recording_id_from_counter));
 
         {
-            int32_t sib_len = 1000;
+            size_t sib_len = 1000;
             const char source_identity_buffer[1000] = { '\0' };
 
             EXPECT_EQ(0,
@@ -1802,7 +1802,7 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
         m_recording_id_from_counter));
 
     {
-        int32_t sib_len = 1000;
+        size_t sib_len = 1000;
         const char source_identity_buffer[1000] = { '\0' };
 
         EXPECT_EQ(0,
@@ -1997,7 +1997,9 @@ TEST_F(AeronCArchiveTest, shouldPurgeStoppedRecording)
         m_recording_id_from_counter));
     EXPECT_EQ(stop_position, found_stop_position);
 
-    EXPECT_EQ(0, aeron_archive_purge_recording(m_archive, m_recording_id_from_counter));
+    int64_t deleted_segments_count;
+    EXPECT_EQ(0, aeron_archive_purge_recording(&deleted_segments_count, m_archive, m_recording_id_from_counter));
+    EXPECT_EQ(1, deleted_segments_count);
 
     int32_t count = 1234; // <-- just to make sure later when it's zero it's because it was explicitly set to 0.
 
@@ -2352,7 +2354,7 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateThenReplay)
             m_recording_id_from_counter));
 
         {
-            int32_t sib_len = 1000;
+            size_t sib_len = 1000;
             const char source_identity_buffer[1000] = { '\0' };
 
             EXPECT_EQ(0,
@@ -2596,7 +2598,7 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateTwice)
             m_recording_id_from_counter));
 
         {
-            int32_t sib_len = 1000;
+            size_t sib_len = 1000;
             const char source_identity_buffer[1000] = { '\0' };
 
             EXPECT_EQ(0,

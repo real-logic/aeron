@@ -313,17 +313,25 @@ public abstract class AbstractMinMulticastFlowControl
         }
     }
 
+    /**
+     * Process an error frame from a downstream receiver.
+     *
+     * @param error             flyweight over the error frame.
+     * @param receiverAddress   of the receiver.
+     * @param timeNs            current time in nanoseconds.
+     * @param hasMatchingTag    if the error message comes from a receiver with a tag matching the group.
+     */
     protected void processError(
         final ErrorFlyweight error,
         final InetSocketAddress receiverAddress,
         final long timeNs,
-        final boolean matchesTag)
+        final boolean hasMatchingTag)
     {
         final long receiverId = error.receiverId();
 
         for (final Receiver receiver : receivers)
         {
-            if (matchesTag && receiverId == receiver.receiverId)
+            if (hasMatchingTag && receiverId == receiver.receiverId)
             {
                 receiver.eosFlagged = true;
             }

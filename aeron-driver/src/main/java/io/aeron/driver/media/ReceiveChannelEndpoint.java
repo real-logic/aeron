@@ -67,6 +67,9 @@ abstract class ReceiveChannelEndpointLhsPadding extends UdpChannelTransport
 
 abstract class ReceiveChannelEndpointHotFields extends ReceiveChannelEndpointLhsPadding
 {
+    /**
+     * Counter for the number of errors frames send back by this channel endpoint.
+     */
     protected final AtomicCounter errorFramesSent;
     long timeOfLastActivityNs;
 

@@ -79,10 +79,11 @@ typedef enum aeron_driver_agent_event_enum
     AERON_DRIVER_EVENT_SEND_NAK_MESSAGE = 54,
     AERON_DRIVER_EVENT_RESEND = 55,
     AERON_DRIVER_EVENT_CMD_IN_REMOVE_DESTINATION_BY_ID = 56,
+    AERON_DRIVER_EVENT_CMD_IN_REJECT_IMAGE = 57,
 
     // C-specific events. Note: event IDs are dynamic to avoid gaps in the sparse arrays.
-    AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR = 57,
-    AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT = 58,
+    AERON_DRIVER_EVENT_ADD_DYNAMIC_DISSECTOR = 58,
+    AERON_DRIVER_EVENT_DYNAMIC_DISSECTOR_EVENT = 59,
 }
 aeron_driver_agent_event_t;
 

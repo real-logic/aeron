@@ -705,7 +705,6 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
     AERON_GET_VOLATILE(change_number, image->end_sm_change);
     const bool has_sm_timed_out = now_ns > (image->time_of_last_sm_ns + image->sm_timeout_ns);
 
-    // TODO: Send error frame instead.
     if (NULL != image->invalidation_reason)
     {
         if (has_sm_timed_out)

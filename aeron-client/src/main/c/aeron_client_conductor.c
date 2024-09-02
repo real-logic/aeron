@@ -2562,11 +2562,54 @@ void aeron_client_conductor_forward_error(void *clientd, int64_t key, void *valu
 
     if (is_publication || is_exclusive_publication)
     {
-        // TODO: Use a union or a copy...
         conductor->error_frame_handler(
             conductor->error_frame_handler_clientd, (aeron_publication_error_values_t *)response);
     }
 }
+
+#ifdef _MSC_VER
+#define _Static_assert static_assert
+#endif
+
+_Static_assert(
+    sizeof(aeron_publication_error_t) == sizeof(aeron_publication_error_values_t),
+    "sizeof(aeron_publication_error_t) must be equal to sizeof(aeron_publication_error_values_t)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, registration_id) == offsetof(aeron_publication_error_values_t, registration_id),
+    "offsetof(aeron_publication_error_t, registration_id) must match offsetof(aeron_publication_error_values_t, registration_id)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, destination_registration_id) == offsetof(aeron_publication_error_values_t, destination_registration_id),
+    "offsetof(aeron_publication_error_t, destination_registration_id) must match offsetof(aeron_publication_error_values_t, destination_registration_id)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, session_id) == offsetof(aeron_publication_error_values_t, session_id),
+    "offsetof(aeron_publication_error_t, session_id) must match offsetof(aeron_publication_error_values_t, session_id)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, stream_id) == offsetof(aeron_publication_error_values_t, stream_id),
+    "offsetof(aeron_publication_error_t, stream_id) must match offsetof(aeron_publication_error_values_t, stream_id)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, receiver_id) == offsetof(aeron_publication_error_values_t, receiver_id),
+    "offsetof(aeron_publication_error_t, receiver_id) must match offsetof(aeron_publication_error_values_t, receiver_id)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, group_tag) == offsetof(aeron_publication_error_values_t, group_tag),
+    "offsetof(aeron_publication_error_t, group_tag) must match offsetof(aeron_publication_error_values_t, group_tag)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, address_type) == offsetof(aeron_publication_error_values_t, address_type),
+    "offsetof(aeron_publication_error_t, address_type) must match offsetof(aeron_publication_error_values_t, address_type)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, source_port) == offsetof(aeron_publication_error_values_t, source_port),
+    "offsetof(aeron_publication_error_t, address_port) must match offsetof(aeron_publication_error_values_t, address_port)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, source_address) == offsetof(aeron_publication_error_values_t, source_address),
+    "offsetof(aeron_publication_error_t, source_address) must match offsetof(aeron_publication_error_values_t, source_address)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, error_code) == offsetof(aeron_publication_error_values_t, error_code),
+    "offsetof(aeron_publication_error_t, error_code) must match offsetof(aeron_publication_error_values_t, error_code)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, error_message_length) == offsetof(aeron_publication_error_values_t, error_message_length),
+    "offsetof(aeron_publication_error_t, error_message_length) must match offsetof(aeron_publication_error_values_t, error_message_length)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, error_message) == offsetof(aeron_publication_error_values_t, error_message),
+    "offsetof(aeron_publication_error_t, error_message) must match offsetof(aeron_publication_error_values_t, error_message)");
 
 int aeron_client_conductor_on_error_frame(aeron_client_conductor_t *conductor, aeron_publication_error_t *response)
 {

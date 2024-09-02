@@ -342,7 +342,7 @@ void *aeron_context_get_error_handler_clientd(aeron_context_t *context)
     return NULL != context ? context->error_handler_clientd : NULL;
 }
 
-int aeron_context_set_error_frame_handler(aeron_context_t *context, aeron_error_frame_handler_t handler, void *clientd)
+int aeron_context_set_publication_error_frame_handler(aeron_context_t *context, aeron_publication_error_frame_handler_t handler, void *clientd)
 {
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
@@ -351,12 +351,12 @@ int aeron_context_set_error_frame_handler(aeron_context_t *context, aeron_error_
     return 0;
 }
 
-aeron_error_frame_handler_t aeron_context_get_error_frame_handler(aeron_context_t *context)
+aeron_publication_error_frame_handler_t aeron_context_get_publication_error_frame_handler(aeron_context_t *context)
 {
     return NULL != context ? context->error_frame_handler : NULL;
 }
 
-void *aeron_context_get_error_frame_handler_clientd(aeron_context_t *context)
+void *aeron_context_get_publication_error_frame_handler_clientd(aeron_context_t *context)
 {
     return NULL != context ? context->error_frame_handler_clientd : NULL;
 }

@@ -226,7 +226,7 @@ typedef struct aeron_client_conductor_stct
     aeron_error_handler_t error_handler;
     void *error_handler_clientd;
 
-    aeron_error_frame_handler_t error_frame_handler;
+    aeron_publication_error_frame_handler_t error_frame_handler;
     void *error_frame_handler_clientd;
 
     aeron_on_new_publication_t on_new_publication;

@@ -229,8 +229,8 @@ struct aeron_publication_error_stct
     int64_t receiver_id;
     int64_t group_tag;
     int16_t address_type;
-    uint16_t address_port;
-    uint8_t address[16];
+    uint16_t source_port;
+    uint8_t source_address[16];
     int32_t error_code;
     int32_t error_message_length;
     uint8_t error_message[1];

@@ -2584,25 +2584,25 @@ void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
     response->receiver_id = error->receiver_id;
     response->group_tag = error->group_tag;
 
-    memset(&response->address[0], 0, sizeof(response->address));
+    memset(&response->source_address[0], 0, sizeof(response->source_address));
     if (AF_INET == error->src_address.ss_family)
     {
         struct sockaddr_in *src_addr_in = (struct sockaddr_in *)&error->src_address;
         response->address_type = AERON_RESPONSE_ADDRESS_TYPE_IPV4;
-        response->address_port = ntohs(src_addr_in->sin_port);
-        memcpy(&response->address[0], &src_addr_in->sin_addr, sizeof(src_addr_in->sin_addr));
+        response->source_port = ntohs(src_addr_in->sin_port);
+        memcpy(&response->source_address[0], &src_addr_in->sin_addr, sizeof(src_addr_in->sin_addr));
     }
     else if (AF_INET6 == error->src_address.ss_family)
     {
         struct sockaddr_in6 *src_addr_in6 = (struct sockaddr_in6 *)&error->src_address;
         response->address_type = AERON_RESPONSE_ADDRESS_TYPE_IPV6;
-        response->address_port = ntohs(src_addr_in6->sin6_port);
-        memcpy(&response->address[0], &src_addr_in6->sin6_addr, sizeof(src_addr_in6->sin6_addr));
+        response->source_port = ntohs(src_addr_in6->sin6_port);
+        memcpy(&response->source_address[0], &src_addr_in6->sin6_addr, sizeof(src_addr_in6->sin6_addr));
     }
     else
     {
         response->address_type = 0;
-        response->address_port = 0;
+        response->source_port = 0;
     }
 
     response->error_message_length = error->error_length;

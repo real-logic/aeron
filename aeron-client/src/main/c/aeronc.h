@@ -156,7 +156,7 @@ typedef void (*aeron_error_handler_t)(void *clientd, int errcode, const char *me
  * The data passed to this callback will only be valid for the lifetime of the callback. The user should use
  * <code>aeron_publication_error_values_copy</code> if they require the data to live longer than that.
  */
-typedef void (*aeron_error_frame_handler_t)(void *clientd, aeron_publication_error_values_t *error_frame);
+typedef void (*aeron_publication_error_frame_handler_t)(void *clientd, aeron_publication_error_values_t *error_frame);
 
 /**
  * Copy an existing aeron_publication_error_values_t to the supplied pointer. The caller is responsible for freeing the
@@ -184,9 +184,9 @@ int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handle
 aeron_error_handler_t aeron_context_get_error_handler(aeron_context_t *context);
 void *aeron_context_get_error_handler_clientd(aeron_context_t *context);
 
-int aeron_context_set_error_frame_handler(aeron_context_t *context, aeron_error_frame_handler_t handler, void *clientd);
-aeron_error_frame_handler_t aeron_context_get_error_frame_handler(aeron_context_t *context);
-void *aeron_context_get_error_frame_handler_clientd(aeron_context_t *context);
+int aeron_context_set_publication_error_frame_handler(aeron_context_t *context, aeron_publication_error_frame_handler_t handler, void *clientd);
+aeron_publication_error_frame_handler_t aeron_context_get_publication_error_frame_handler(aeron_context_t *context);
+void *aeron_context_get_publication_error_frame_handler_clientd(aeron_context_t *context);
 
 /**
  * Function called by aeron_client_t to deliver notification that the media driver has added an aeron_publication_t

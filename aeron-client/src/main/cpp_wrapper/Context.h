@@ -657,7 +657,7 @@ private:
             throw IllegalArgumentException(std::string(aeron_errmsg()), SOURCEINFO);
         }
 
-        if (aeron_context_set_error_frame_handler(
+        if (aeron_context_set_publication_error_frame_handler(
             m_context,
             errorFrameHandlerCallback,
             const_cast<void *>(reinterpret_cast<const void *>(&m_onErrorFrameHandler))) < 0)

@@ -130,6 +130,7 @@ static aeron_driver_agent_log_event_t log_events[] =
         { "NAME_RESOLUTION_HOST_NAME",            AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "SEND_NAK_MESSAGE",                     AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "RESEND",                               AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "CMD_IN_REMOVE_DESTINATION_BY_ID",      AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
         { "ADD_DYNAMIC_DISSECTOR",                AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "DYNAMIC_DISSECTOR_EVENT",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
     };
@@ -596,6 +597,9 @@ static aeron_driver_agent_event_t command_id_to_driver_event_id(const int32_t ms
 
         case AERON_RESPONSE_ON_CLIENT_TIMEOUT:
             return AERON_DRIVER_EVENT_CMD_OUT_ON_CLIENT_TIMEOUT;
+
+        case AERON_COMMAND_REMOVE_DESTINATION_BY_ID:
+            return AERON_DRIVER_EVENT_CMD_IN_REMOVE_DESTINATION_BY_ID;
 
         default:
             return AERON_DRIVER_EVENT_UNKNOWN_EVENT;
@@ -1537,6 +1541,19 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
                 "clientId=%" PRId64 " tokenBufferLength=%d",
                 command->correlated.client_id,
                 command->token_length);
+            break;
+        }
+
+        case AERON_COMMAND_REMOVE_DESTINATION_BY_ID:
+        {
+            aeron_destination_by_id_command_t *command = (aeron_destination_by_id_command_t *)message;
+
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "resourceRegistrationId=%" PRId64 "  destinationRegistrationId=%" PRId64,
+                command->resource_registration_id,
+                command->destination_registration_id);
             break;
         }
 

@@ -93,16 +93,25 @@ public class RejectImageTest
 
     private static final class QueuedErrorFrameHandler implements PublicationErrorFrameHandler
     {
+        private final AtomicInteger counter = new AtomicInteger(0);
         private final OneToOneConcurrentArrayQueue<PublicationErrorFrame> errorFrameQueue =
             new OneToOneConcurrentArrayQueue<>(512);
 
         public void onPublicationError(final PublicationErrorFrame errorFrame)
         {
-            errorFrameQueue.offer(errorFrame.clone());
+            if (!errorFrameQueue.offer(errorFrame.clone()))
+            {
+                counter.incrementAndGet();
+            }
         }
 
         PublicationErrorFrame poll()
         {
+            if (counter.get() > 0)
+            {
+                throw new RuntimeException("Failed to offer to the errorFrameQueue in the test");
+            }
+
             return errorFrameQueue.poll();
         }
     }
@@ -426,6 +435,32 @@ public class RejectImageTest
             Tests.awaitConnected(sub);
 
             assertThrows(AeronException.class, () -> sub.imageAtIndex(0).reject(tooLongReason));
+        }
+    }
+
+
+    @Test
+    @InterruptAfter(10)
+    void shouldErrorIfRejectionReasonIsTooLongForLocalBuffer()
+    {
+        context.imageLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(3));
+        final byte[] bytes = new byte[1024 * 1024];
+        Arrays.fill(bytes, (byte)'x');
+        final String tooLongReason = new String(bytes, US_ASCII);
+
+        final TestMediaDriver driver = launch();
+
+        final Aeron.Context ctx = new Aeron.Context()
+            .aeronDirectoryName(driver.aeronDirectoryName());
+
+        try (Aeron aeron = Aeron.connect(ctx);
+            Publication pub = aeron.addPublication(channel, streamId);
+            Subscription sub = aeron.addSubscription(channel, streamId))
+        {
+            Tests.awaitConnected(pub);
+            Tests.awaitConnected(sub);
+
+            assertThrows(IllegalArgumentException.class, () -> sub.imageAtIndex(0).reject(tooLongReason));
         }
     }
 

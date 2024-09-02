@@ -220,7 +220,7 @@ public enum DriverEventCode implements EventCode
     /**
      * Reject image command received by the driver.
      */
-    CMD_IN_REJECT_IMAGE(56, DriverEventDissector::dissectCommand);
+    CMD_IN_REJECT_IMAGE(57, DriverEventDissector::dissectCommand);
 
     static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
 

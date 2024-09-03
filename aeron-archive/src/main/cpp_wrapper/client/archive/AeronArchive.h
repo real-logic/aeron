@@ -25,6 +25,7 @@
 
 #include "ArchiveContext.h"
 #include "ReplayParams.h"
+#include "ReplicationParams.h"
 
 namespace aeron { namespace archive { namespace client
 {
@@ -163,14 +164,16 @@ public:
 
             m_async = nullptr; // _poll() just free'd this up
 
-            return std::shared_ptr<AeronArchive>(new AeronArchive(aeron_archive, std::move(m_aeronW)));
+            return std::shared_ptr<AeronArchive>(
+                new AeronArchive(aeron_archive, m_aeronW, m_recordingSignalConsumer));
         }
 
     private:
         explicit AsyncConnect(
             Context &ctx) :
             m_async(nullptr),
-            m_aeronW(ctx.aeron())
+            m_aeronW(ctx.aeron()),
+            m_recordingSignalConsumer(ctx.m_recordingSignalConsumer)
         {
             // async_connect makes a copy of the underlying aeron_archive_context_t
             if (aeron_archive_async_connect(&m_async, ctx.m_aeron_archive_ctx_t) < 0)
@@ -181,6 +184,7 @@ public:
 
         aeron_archive_async_connect_t *m_async;
         std::shared_ptr<Aeron> m_aeronW;
+        const recording_signal_consumer_t m_recordingSignalConsumer;
     };
 
     static std::shared_ptr<AsyncConnect> asyncConnect(Context &ctx)
@@ -197,7 +201,8 @@ public:
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        return std::shared_ptr<AeronArchive>(new AeronArchive(aeron_archive, ctx.aeron()));
+        return std::shared_ptr<AeronArchive>(
+            new AeronArchive(aeron_archive, ctx.aeron(), ctx.m_recordingSignalConsumer));
     }
 
     ~AeronArchive()
@@ -477,10 +482,45 @@ public:
         return deletedSegmentsCount;
     }
 
+    inline std::int64_t replicate(
+        std::int64_t srcRecordingId,
+        std::int32_t srcControlStreamId,
+        const std::string &srcControlChannel,
+        ReplicationParams &replicationParams)
+    {
+        int64_t replicationId;
+
+       if (aeron_archive_replicate(
+           &replicationId,
+           m_aeron_archive_t,
+           srcRecordingId,
+           srcControlStreamId,
+           srcControlChannel.c_str(),
+           replicationParams.params()) < 0)
+       {
+           ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+       }
+
+       return replicationId;
+    }
+
+    inline std::int32_t pollForRecordingSignals()
+    {
+        int32_t count;
+
+        if (aeron_archive_poll_for_recording_signals(&count, m_aeron_archive_t) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return count;
+    }
+
 private:
     explicit AeronArchive(
         aeron_archive_t *aeron_archive,
-        const std::shared_ptr<Aeron> &originalAeron) :
+        const std::shared_ptr<Aeron> &originalAeron,
+        const recording_signal_consumer_t &recordingSignalConsumer) :
         m_aeron_archive_t(aeron_archive),
         m_archiveCtxW(aeron_archive_get_and_own_archive_context(m_aeron_archive_t))
     {
@@ -492,6 +532,7 @@ private:
         auto *aeron = aeron_archive_context_get_aeron(aeron_archive_get_archive_context(aeron_archive));
 
         m_archiveCtxW.setAeron(nullptr == originalAeron ? std::make_shared<Aeron>(aeron) : originalAeron);
+        m_archiveCtxW.recordingSignalConsumer(recordingSignalConsumer);
 
         m_controlResponseSubscription = std::make_unique<Subscription>(
             aeron,

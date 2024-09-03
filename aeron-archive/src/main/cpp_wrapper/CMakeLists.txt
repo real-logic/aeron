@@ -25,6 +25,7 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/client/archive/RecordingPos.h
     ${CMAKE_CURRENT_SOURCE_DIR}/client/archive/ReplayMerge.h
     ${CMAKE_CURRENT_SOURCE_DIR}/client/archive/ReplayParams.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/archive/ReplicationParams.h
     ${CMAKE_CURRENT_SOURCE_DIR}/client/util/ArchiveExceptions.h
 )
 

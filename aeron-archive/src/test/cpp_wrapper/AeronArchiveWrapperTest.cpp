@@ -28,6 +28,7 @@
 #include "client/archive/RecordingPos.h"
 #include "client/archive/ReplayMerge.h"
 #include "client/archive/ReplayParams.h"
+#include "client/archive/ReplicationParams.h"
 
 #include "ChannelUriStringBuilder.h"
 
@@ -272,8 +273,6 @@ public:
         return true;
     }
 
-    /*
-
     void startDestArchive()
     {
         const std::string aeronDir = aeron::Context::defaultAeronPath() + "_dest";
@@ -281,10 +280,12 @@ public:
         const std::string controlChannel = "aeron:udp?endpoint=localhost:8011";
         const std::string replicationChannel = "aeron:udp?endpoint=localhost:8012";
         m_destArchive = std::make_shared<TestArchive>(
-            aeronDir, archiveDir, m_stream, controlChannel, replicationChannel, -7777);
+            aeronDir, archiveDir, std::cout, controlChannel, replicationChannel, -7777);
         m_destContext.controlRequestChannel(controlChannel);
         setCredentials(m_destContext);
     }
+
+    /*
 
     std::tuple<std::int64_t, std::int64_t, std::int64_t> recordData(
         AeronArchive &aeronArchive,
@@ -331,10 +332,10 @@ protected:
     const std::string m_java = JAVA_EXECUTABLE;
     const std::string m_aeronAllJar = AERON_ALL_JAR;
 
-    std::shared_ptr<TestArchive> m_destArchive;
-    AeronArchive::Context_t m_destContext;
      */
 
+    std::shared_ptr<TestArchive> m_destArchive;
+    AeronArchive::Context_t m_destContext;
 
     const int m_fragmentLimit = 10;
     const std::string m_recordingChannel = "aeron:udp?endpoint=localhost:3333";
@@ -1282,9 +1283,7 @@ TEST_F(AeronArchiveWrapperTest, shouldReadJumboRecordingDescriptor)
     EXPECT_EQ(count, 1);
 }
 
-/*
-
-TEST_F(AeronArchiveTest, shouldRecordReplicateThenReplay)
+TEST_F(AeronArchiveWrapperTest, shouldRecordReplicateThenReplay)
 {
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
@@ -1296,14 +1295,9 @@ TEST_F(AeronArchiveTest, shouldRecordReplicateThenReplay)
 
     std::set<std::int32_t> signals;
 
-    auto signalConsumer = [&](
-        std::int64_t controlSessionId,
-        std::int64_t recordingId,
-        std::int64_t subscriptionId,
-        std::int64_t position,
-        std::int32_t recordingSignalCode) -> void
+    auto signalConsumer = [&](RecordingSignal recordingSignal) -> void
     {
-        signals.insert(recordingSignalCode);
+        signals.insert(recordingSignal.m_recordingSignalCode);
     };
 
     m_destContext.recordingSignalConsumer(signalConsumer);
@@ -1379,6 +1373,8 @@ TEST_F(AeronArchiveTest, shouldRecordReplicateThenReplay)
     consumeMessages(*subscription, messageCount, messagePrefix);
     EXPECT_EQ(stopPosition, subscription->imageByIndex(0)->position());
 }
+
+/*
 
 TEST_F(AeronArchiveTest, shouldRecordReplicateTwice)
 {

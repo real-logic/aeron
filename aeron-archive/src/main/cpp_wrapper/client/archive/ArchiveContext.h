@@ -25,6 +25,44 @@
 namespace aeron { namespace archive { namespace client
 {
 
+struct RecordingSignal
+{
+    enum Value
+    {
+        START = INT32_C(0),
+        STOP = INT32_C(1),
+        EXTEND = INT32_C(2),
+        REPLICATE = INT32_C(3),
+        MERGE = INT32_C(4),
+        SYNC = INT32_C(5),
+        DELETE = INT32_C(6),
+        REPLICATE_END = INT32_C(7),
+        NULL_VALUE = INT32_MIN
+    };
+
+    RecordingSignal(
+        std::int64_t controlSessionId,
+        std::int64_t recordingId,
+        std::int64_t subscriptionId,
+        std::int64_t position,
+        std::int32_t recordingSignalCode) :
+        m_controlSessionId(controlSessionId),
+        m_recordingId(recordingId),
+        m_subscriptionId(subscriptionId),
+        m_position(position),
+        m_recordingSignalCode(recordingSignalCode)
+    {
+    }
+
+    std::int64_t m_controlSessionId;
+    std::int64_t m_recordingId;
+    std::int64_t m_subscriptionId;
+    std::int64_t m_position;
+    std::int32_t m_recordingSignalCode;
+};
+
+typedef  std::function<void(RecordingSignal &recordingSignal)> recording_signal_consumer_t;
+
 class Context
 {
     friend class AeronArchive;
@@ -44,6 +82,30 @@ public:
     {
         aeron_archive_context_close(m_aeron_archive_ctx_t);
         m_aeron_archive_ctx_t = nullptr;
+    }
+
+    inline std::string controlRequestChannel() const
+    {
+        return aeron_archive_context_get_control_request_channel(m_aeron_archive_ctx_t);
+    }
+
+    inline Context &controlRequestChannel(const std::string &channel)
+    {
+        aeron_archive_context_set_control_request_channel(m_aeron_archive_ctx_t, channel.c_str());
+        return *this;
+    }
+
+    /*
+    inline on_recording_signal_t recordingSignalConsumer() const
+    {
+        return m_onRecordingSignal;
+    }
+     */
+
+    inline Context &recordingSignalConsumer(const recording_signal_consumer_t &consumer)
+    {
+        m_recordingSignalConsumer = consumer;
+        return *this;
     }
 
     std::string aeronDirectoryName()
@@ -79,6 +141,11 @@ public:
         m_idleFunc = [&idleStrategy](int work_count){ idleStrategy.idle(work_count); };
     }
 
+    inline std::int32_t controlRequestStreamId() const
+    {
+        return aeron_archive_context_get_control_request_stream_id(m_aeron_archive_ctx_t);
+    }
+
 private:
     aeron_archive_context_t *m_aeron_archive_ctx_t = nullptr; // backing C struct
 
@@ -89,6 +156,8 @@ private:
     YieldingIdleStrategy m_defaultIdleStrategy;
 
     std::shared_ptr<Aeron> m_aeronW = nullptr;
+
+    recording_signal_consumer_t m_recordingSignalConsumer = nullptr;
 
     // This Context is created after connect succeeds and wraps around a context_t created in the C layer
     explicit Context(
@@ -113,6 +182,14 @@ private:
         if (aeron_archive_context_set_idle_strategy(
             m_aeron_archive_ctx_t,
             idle,
+            (void *)this) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        if (aeron_archive_context_set_recording_signal_consumer(
+            m_aeron_archive_ctx_t,
+            recording_signal_consumer_func,
             (void *)this) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -155,6 +232,25 @@ private:
         auto ctx = (Context *)clientd;
 
         ctx->m_idleFunc(work_count);
+    }
+
+    static void recording_signal_consumer_func(
+        aeron_archive_recording_signal_t *recording_signal,
+        void *clientd)
+    {
+        auto ctx = (Context *)clientd;
+
+        if (nullptr != ctx->m_recordingSignalConsumer)
+        {
+            RecordingSignal signal(
+                recording_signal->control_session_id,
+                recording_signal->recording_id,
+                recording_signal->subscription_id,
+                recording_signal->position,
+                recording_signal->recording_signal_code);
+
+            ctx->m_recordingSignalConsumer(signal);
+        }
     }
 
 };

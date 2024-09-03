@@ -285,8 +285,6 @@ public:
         setCredentials(m_destContext);
     }
 
-    /*
-
     std::tuple<std::int64_t, std::int64_t, std::int64_t> recordData(
         AeronArchive &aeronArchive,
         size_t messageCount,
@@ -329,10 +327,8 @@ public:
     }
 
 protected:
-    const std::string m_java = JAVA_EXECUTABLE;
-    const std::string m_aeronAllJar = AERON_ALL_JAR;
-
-     */
+    //const std::string m_java = JAVA_EXECUTABLE;
+    //const std::string m_aeronAllJar = AERON_ALL_JAR;
 
     std::shared_ptr<TestArchive> m_destArchive;
     AeronArchive::Context_t m_destContext;
@@ -387,10 +383,11 @@ public:
     }
 };
 
-/*
 class AeronArchiveWrapperIdTest : public AeronArchiveWrapperTestBase, public testing::Test
 {
 };
+
+/*
 
 class AeronArchiveParamTest : public AeronArchiveTestBase, public testing::TestWithParam<bool>
 {
@@ -1374,9 +1371,7 @@ TEST_F(AeronArchiveWrapperTest, shouldRecordReplicateThenReplay)
     EXPECT_EQ(stopPosition, subscription->imageByIndex(0)->position());
 }
 
-/*
-
-TEST_F(AeronArchiveTest, shouldRecordReplicateTwice)
+TEST_F(AeronArchiveWrapperTest, shouldRecordReplicateTwice)
 {
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
@@ -1389,14 +1384,9 @@ TEST_F(AeronArchiveTest, shouldRecordReplicateTwice)
 
     std::set<std::int32_t> signals;
 
-    auto signalConsumer = [&](
-        std::int64_t controlSessionId,
-        std::int64_t recordingId,
-        std::int64_t subscriptionId,
-        std::int64_t position,
-        std::int32_t recordingSignalCode) -> void
+    auto signalConsumer = [&](RecordingSignal recordingSignal) -> void
     {
-        signals.insert(recordingSignalCode);
+        signals.insert(recordingSignal.m_recordingSignalCode);
     };
 
     m_destContext.recordingSignalConsumer(signalConsumer);
@@ -1482,27 +1472,27 @@ TEST_F(AeronArchiveTest, shouldRecordReplicateTwice)
     }
 }
 
-TEST_F(AeronArchiveIdTest, shouldResolveArchiveId)
+TEST_F(AeronArchiveWrapperIdTest, shouldResolveArchiveId)
 {
     std::int64_t archiveId = 0x4236483BEEF;
     DoSetUp(archiveId);
 
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
-    EXPECT_TRUE(aeronArchive->controlResponsePoller().subscription()->isConnected());
+    EXPECT_TRUE(aeronArchive->controlResponseSubscription().isConnected());
     EXPECT_EQ(archiveId, aeronArchive->archiveId());
 
     DoTearDown();
 }
 
-TEST_F(AeronArchiveTest, shouldConnectToArchiveWithResponseChannels)
+TEST_F(AeronArchiveWrapperTest, shouldConnectToArchiveWithResponseChannels)
 {
     m_context.controlResponseChannel("aeron:udp?control-mode=response|control=localhost:10002");
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
-    EXPECT_TRUE(aeronArchive->controlResponsePoller().subscription()->isConnected());
+    EXPECT_TRUE(aeronArchive->controlResponseSubscription().isConnected());
 }
 
-TEST_F(AeronArchiveTest, shouldReplayWithResponseChannel)
+TEST_F(AeronArchiveWrapperTest, shouldReplayWithResponseChannel)
 {
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 1000;
@@ -1530,7 +1520,7 @@ TEST_F(AeronArchiveTest, shouldReplayWithResponseChannel)
     EXPECT_EQ(stopPosition, subscription->imageByIndex(0)->position());
 }
 
-TEST_F(AeronArchiveTest, shouldBoundedReplayWithResponseChannel)
+TEST_F(AeronArchiveWrapperTest, shouldBoundedReplayWithResponseChannel)
 {
     YieldingIdleStrategy idle;
     const std::string messagePrefix = "Message ";
@@ -1576,7 +1566,7 @@ TEST_F(AeronArchiveTest, shouldBoundedReplayWithResponseChannel)
     EXPECT_EQ(halfwayPosition, subscription->imageByIndex(0)->position());
 }
 
-TEST_F(AeronArchiveTest, shouldStartReplayWithResponseChannel)
+TEST_F(AeronArchiveWrapperTest, shouldStartReplayWithResponseChannel)
 {
     YieldingIdleStrategy idle;
     const std::string messagePrefix = "Message ";
@@ -1616,7 +1606,7 @@ TEST_F(AeronArchiveTest, shouldStartReplayWithResponseChannel)
     EXPECT_EQ(stopPosition, subscription->imageByIndex(0)->position());
 }
 
-TEST_F(AeronArchiveTest, shouldStartBoundedReplayWithResponseChannel)
+TEST_F(AeronArchiveWrapperTest, shouldStartBoundedReplayWithResponseChannel)
 {
     YieldingIdleStrategy idle;
     const std::string messagePrefix = "Message ";
@@ -1671,4 +1661,3 @@ TEST_F(AeronArchiveTest, shouldStartBoundedReplayWithResponseChannel)
     consumeMessages(*subscription, messageCount / 2, messagePrefix);
     EXPECT_EQ(halfwayPosition, subscription->imageByIndex(0)->position());
 }
- */

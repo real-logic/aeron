@@ -95,6 +95,12 @@ public:
         return *this;
     }
 
+    inline Context &controlResponseChannel(const std::string &channel)
+    {
+        aeron_archive_context_set_control_response_channel(m_aeron_archive_ctx_t, channel.c_str());
+        return *this;
+    }
+
     /*
     inline on_recording_signal_t recordingSignalConsumer() const
     {

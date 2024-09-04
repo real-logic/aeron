@@ -718,6 +718,13 @@ public:
     }
     /// @endcond
 
+    /// @cond HIDDEN_SYMBOLS
+    aeron_exclusive_publication_t *publication()
+    {
+        return m_publication;
+    }
+    /// @endcond
+
 private:
     aeron_t *m_aeron = nullptr;
     aeron_exclusive_publication_t *m_publication = nullptr;

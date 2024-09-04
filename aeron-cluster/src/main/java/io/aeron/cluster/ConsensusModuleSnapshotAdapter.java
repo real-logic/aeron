@@ -44,11 +44,21 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
     private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(this);
     private final Image image;
     private final ConsensusModuleSnapshotListener listener;
+    private final boolean isExtensionSnapshot;
 
     ConsensusModuleSnapshotAdapter(final Image image, final ConsensusModuleSnapshotListener listener)
     {
+        this(image, listener, false);
+    }
+
+    ConsensusModuleSnapshotAdapter(
+        final Image image,
+        final ConsensusModuleSnapshotListener listener,
+        final boolean isExtensionSnapshot)
+    {
         this.image = image;
         this.listener = listener;
+        this.isExtensionSnapshot = isExtensionSnapshot;
     }
 
     boolean isDone()
@@ -69,6 +79,10 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
         final int schemaId = messageHeaderDecoder.schemaId();
         if (MessageHeaderDecoder.SCHEMA_ID != schemaId)
         {
+            if (isExtensionSnapshot)
+            {
+                return Action.ABORT;
+            }
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 

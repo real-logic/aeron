@@ -590,7 +590,13 @@ final class ConsensusModuleAgent
         final int length)
     {
         this.nextSessionId = nextSessionId;
-        pendingServiceMessageTrackers[0].loadState(nextServiceSessionId, logServiceSessionId, pendingMessageCapacity);
+        if (pendingServiceMessageTrackers.length > 0)
+        {
+            pendingServiceMessageTrackers[0].loadState(
+                nextServiceSessionId,
+                logServiceSessionId,
+                pendingMessageCapacity);
+        }
     }
 
     public void onLoadPendingMessageTracker(
@@ -2924,7 +2930,8 @@ final class ConsensusModuleAgent
         try (Subscription subscription = aeron.addSubscription(replayChannel, streamId))
         {
             final Image image = awaitImage(sessionId, subscription);
-            final ConsensusModuleSnapshotAdapter adapter = new ConsensusModuleSnapshotAdapter(image, this);
+            final ConsensusModuleSnapshotAdapter adapter =
+                new ConsensusModuleSnapshotAdapter(image, this, null != consensusModuleExtension);
 
             while (true)
             {

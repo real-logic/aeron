@@ -16,6 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.UdpChannel;
+import io.aeron.protocol.ErrorFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import io.aeron.test.Tests;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -26,8 +27,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
+import static io.aeron.protocol.ErrorFlyweight.MAX_ERROR_FRAME_LENGTH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -171,6 +174,53 @@ class TaggedMulticastFlowControlTest
         assertEquals(termOffset2 + WINDOW_LENGTH, onStatusMessage(flowControl, 3, termOffset2, senderLimit, 123L));
     }
 
+    @Test
+    void shouldRemoveEntryFromFlowControlOnEndOfStream()
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(
+            "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=min,g:123/2");
+
+        flowControl.initialize(
+            newContext(), countersManager, udpChannel, 0, 0, 0, 0, 0);
+
+        final int senderLimit = 5000;
+        final int termOffset1 = WINDOW_LENGTH;
+        final int termOffset2 = WINDOW_LENGTH + 1;
+        final int termOffset3 = WINDOW_LENGTH + 2;
+
+        assertEquals(senderLimit, onStatusMessage(flowControl, 1, termOffset1, senderLimit, 123L));
+        assertEquals(termOffset1 + WINDOW_LENGTH, onStatusMessage(flowControl, 2, termOffset2, senderLimit, 123L));
+        assertEquals(termOffset1 + WINDOW_LENGTH, onStatusMessage(flowControl, 3, termOffset3, senderLimit, 123L));
+
+        final long publicationLimit = onEosStatusMessage(flowControl, 1, termOffset1, senderLimit, 123L);
+
+        assertEquals(termOffset1 + WINDOW_LENGTH, publicationLimit);
+        assertEquals(termOffset2 + WINDOW_LENGTH, onIdle(flowControl, senderLimit));
+    }
+
+    @Test
+    void shouldRemoveEntryFromFlowControlOnError()
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(
+            "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=min,g:123/2");
+
+        flowControl.initialize(
+            newContext(), countersManager, udpChannel, 0, 0, 0, 0, 0);
+
+        final int senderLimit = 5000;
+        final int termOffset1 = WINDOW_LENGTH;
+        final int termOffset2 = WINDOW_LENGTH + 1;
+        final int termOffset3 = WINDOW_LENGTH + 2;
+
+        assertEquals(senderLimit, onStatusMessage(flowControl, 1, termOffset1, senderLimit, 123L));
+        assertEquals(termOffset1 + WINDOW_LENGTH, onStatusMessage(flowControl, 2, termOffset2, senderLimit, 123L));
+        assertEquals(termOffset1 + WINDOW_LENGTH, onStatusMessage(flowControl, 3, termOffset3, senderLimit, 123L));
+
+        onErrorMessage(flowControl, 1, 123L);
+
+        assertEquals(termOffset2 + WINDOW_LENGTH, onIdle(flowControl, senderLimit));
+    }
+
     private long onStatusMessage(
         final TaggedMulticastFlowControl flowControl,
         final long receiverId,
@@ -178,13 +228,48 @@ class TaggedMulticastFlowControlTest
         final long senderLimit,
         final Long groupTag)
     {
-        final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
-        statusMessageFlyweight.wrap(new byte[1024]);
+        return onStatusMessage(flowControl, receiverId, termOffset, senderLimit, groupTag, false);
+    }
+
+    private long onEosStatusMessage(
+        final TaggedMulticastFlowControl flowControl,
+        final long receiverId,
+        final int termOffset,
+        final long senderLimit,
+        final Long groupTag)
+    {
+        return onStatusMessage(flowControl, receiverId, termOffset, senderLimit, groupTag, true);
+    }
+
+    private void onErrorMessage(
+        final TaggedMulticastFlowControl flowControl,
+        final long receiverId,
+        final Long groupTag)
+    {
+        final ErrorFlyweight error = new ErrorFlyweight(ByteBuffer.allocate(MAX_ERROR_FRAME_LENGTH));
+        error
+            .receiverId(receiverId)
+            .groupTag(groupTag);
+
+        flowControl.onError(error, null, 0);
+    }
+
+    private static long onStatusMessage(
+        final TaggedMulticastFlowControl flowControl,
+        final long receiverId,
+        final int termOffset,
+        final long senderLimit,
+        final Long groupTag,
+        final boolean isEos)
+    {
+        final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight(ByteBuffer.allocate(1024));
+        final short flags = (isEos ? StatusMessageFlyweight.END_OF_STREAM_FLAG : 0);
 
         statusMessageFlyweight.receiverId(receiverId);
         statusMessageFlyweight.consumptionTermId(0);
         statusMessageFlyweight.consumptionTermOffset(termOffset);
         statusMessageFlyweight.groupTag(groupTag);
+        statusMessageFlyweight.flags(flags);
         statusMessageFlyweight.receiverWindowLength(WINDOW_LENGTH);
 
         return flowControl.onStatusMessage(statusMessageFlyweight, null, senderLimit, 0, 0, 0);

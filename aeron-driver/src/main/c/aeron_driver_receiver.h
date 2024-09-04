@@ -123,6 +123,8 @@ void aeron_driver_receiver_on_remove_matching_state(void *clientd, void *item);
 
 void aeron_driver_receiver_on_resolution_change(void *clientd, void *item);
 
+void aeron_driver_receiver_on_invalidate_image(void *clientd, void *item);
+
 int aeron_driver_receiver_add_pending_setup(
     aeron_driver_receiver_t *receiver,
     aeron_receive_channel_endpoint_t *endpoint,

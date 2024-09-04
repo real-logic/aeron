@@ -100,6 +100,22 @@ struct aeron_command_release_resource_stct
 };
 typedef struct aeron_command_release_resource_stct aeron_command_release_resource_t;
 
+struct aeron_command_publication_error_stct
+{
+    aeron_command_base_t base;
+    int64_t registration_id;
+    int64_t destination_registration_id;
+    int32_t session_id;
+    int32_t stream_id;
+    int64_t receiver_id;
+    int64_t group_tag;
+    struct sockaddr_storage src_address;
+    int32_t error_code;
+    int32_t error_length;
+    uint8_t error_text[1];
+};
+typedef struct aeron_command_publication_error_stct aeron_command_publication_error_t;
+
 void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     aeron_driver_conductor_proxy_t *conductor_proxy,
     int32_t session_id,
@@ -156,5 +172,17 @@ void aeron_driver_conductor_proxy_on_release_resource(
     void *managed_resource,
     aeron_driver_conductor_resource_type_t resource_type);
 
+void aeron_driver_conductor_proxy_on_publication_error(
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    const int64_t registration_id,
+    const int64_t destination_registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    int64_t receiver_id,
+    int64_t group_tag,
+    struct sockaddr_storage *src_address,
+    int32_t error_code,
+    int32_t error_length,
+    const uint8_t *error_text);
 
 #endif //AERON_DRIVER_CONDUCTOR_PROXY_H

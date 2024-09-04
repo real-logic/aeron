@@ -226,6 +226,9 @@ typedef struct aeron_client_conductor_stct
     aeron_error_handler_t error_handler;
     void *error_handler_clientd;
 
+    aeron_publication_error_frame_handler_t error_frame_handler;
+    void *error_frame_handler_clientd;
+
     aeron_on_new_publication_t on_new_publication;
     void *on_new_publication_clientd;
 
@@ -384,6 +387,7 @@ int aeron_client_conductor_on_unavailable_counter(
 int aeron_client_conductor_on_static_counter(aeron_client_conductor_t *conductor, aeron_static_counter_response_t *response);
 
 int aeron_client_conductor_on_client_timeout(aeron_client_conductor_t *conductor, aeron_client_timeout_t *response);
+int aeron_client_conductor_on_error_frame(aeron_client_conductor_t *conductor, aeron_publication_error_t *response);
 
 int aeron_client_conductor_get_or_create_log_buffer(
     aeron_client_conductor_t *conductor,
@@ -404,6 +408,13 @@ int aeron_client_conductor_offer_destination_command(
     int32_t command_type,
     const char *uri,
     int64_t *correlation_id);
+
+int aeron_client_conductor_reject_image(
+    aeron_client_conductor_t *conductor,
+    int64_t image_correlation_id,
+    int64_t position,
+    const char *reason,
+    int32_t command_type);
 
 inline int aeron_counter_heartbeat_timestamp_find_counter_id_by_registration_id(
     aeron_counters_reader_t *counters_reader, int32_t type_id, int64_t registration_id)

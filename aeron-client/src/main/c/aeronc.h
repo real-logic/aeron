@@ -34,6 +34,9 @@ extern "C"
 #define AERON_CLIENT_ERROR_BUFFER_FULL (-1003)
 #define AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN (64)
 
+#define AERON_RESPONSE_ADDRESS_TYPE_IPV4 (0x1)
+#define AERON_RESPONSE_ADDRESS_TYPE_IPV6 (0x2)
+
 typedef struct aeron_context_stct aeron_context_t;
 typedef struct aeron_stct aeron_t;
 typedef struct aeron_buffer_claim_stct aeron_buffer_claim_t;
@@ -64,6 +67,23 @@ typedef struct aeron_header_values_stct
     size_t position_bits_to_shift;
 }
 aeron_header_values_t;
+
+struct aeron_publication_error_values_stct
+{
+    int64_t registration_id;
+    int64_t destination_registration_id;
+    int32_t session_id;
+    int32_t stream_id;
+    int64_t receiver_id;
+    int64_t group_tag;
+    int16_t address_type;
+    uint16_t source_port;
+    uint8_t source_address[16];
+    int32_t error_code;
+    int32_t error_message_length;
+    uint8_t error_message[1];
+};
+typedef struct aeron_publication_error_values_stct aeron_publication_error_values_t;
 #pragma pack(pop)
 
 typedef struct aeron_subscription_stct aeron_subscription_t;
@@ -84,6 +104,7 @@ typedef struct aeron_image_fragment_assembler_stct aeron_image_fragment_assemble
 typedef struct aeron_image_controlled_fragment_assembler_stct aeron_image_controlled_fragment_assembler_t;
 typedef struct aeron_fragment_assembler_stct aeron_fragment_assembler_t;
 typedef struct aeron_controlled_fragment_assembler_stct aeron_controlled_fragment_assembler_t;
+
 
 /**
  * Environment variables and functions used for setting values of an aeron_context_t.
@@ -131,6 +152,30 @@ const char *aeron_context_get_client_name(aeron_context_t *context);
 typedef void (*aeron_error_handler_t)(void *clientd, int errcode, const char *message);
 
 /**
+ * The error frame handler to be called when the driver notifies the client about an error frame being received.
+ * The data passed to this callback will only be valid for the lifetime of the callback. The user should use
+ * <code>aeron_publication_error_values_copy</code> if they require the data to live longer than that.
+ */
+typedef void (*aeron_publication_error_frame_handler_t)(void *clientd, aeron_publication_error_values_t *error_frame);
+
+/**
+ * Copy an existing aeron_publication_error_values_t to the supplied pointer. The caller is responsible for freeing the
+ * allocated memory using aeron_publication_error_values_delete when the copy is not longer required.
+ *
+ * @param dst to copy the values to.
+ * @param src to copy the values from.
+ * @return 0 if this is successful, -1 otherwise. Will set aeron_errcode() and aeron_errmsg() on failure.
+ */
+int aeron_publication_error_values_copy(aeron_publication_error_values_t **dst, aeron_publication_error_values_t *src);
+
+/**
+ * Delete a instance of aeron_publication_error_values_t that was created when making a copy
+ * (aeron_publication_error_values_copy). This should not be use on the pointer received via the aeron_frame_handler_t.
+ * @param to_delete to be deleted.
+ */
+void aeron_publication_error_values_delete(aeron_publication_error_values_t *to_delete);
+
+/**
  * Generalised notification callback.
  */
 typedef void (*aeron_notification_t)(void *clientd);
@@ -138,6 +183,10 @@ typedef void (*aeron_notification_t)(void *clientd);
 int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handler_t handler, void *clientd);
 aeron_error_handler_t aeron_context_get_error_handler(aeron_context_t *context);
 void *aeron_context_get_error_handler_clientd(aeron_context_t *context);
+
+int aeron_context_set_publication_error_frame_handler(aeron_context_t *context, aeron_publication_error_frame_handler_t handler, void *clientd);
+aeron_publication_error_frame_handler_t aeron_context_get_publication_error_frame_handler(aeron_context_t *context);
+void *aeron_context_get_publication_error_frame_handler_clientd(aeron_context_t *context);
 
 /**
  * Function called by aeron_client_t to deliver notification that the media driver has added an aeron_publication_t
@@ -2061,6 +2110,14 @@ int aeron_image_block_poll(
     aeron_image_t *image, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
 
 bool aeron_image_is_closed(aeron_image_t *image);
+
+/**
+ * Force the driver to disconnect this image from the remote publication.
+ *
+ * @param image to be rejected.
+ * @param reason an error message to be forwarded back to the publication.
+ */
+int aeron_image_reject(aeron_image_t *image, const char *reason);
 
 /**
  * A fragment handler that sits in a chain-of-responsibility pattern that reassembles fragmented messages

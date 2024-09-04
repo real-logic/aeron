@@ -92,6 +92,9 @@ int aeron_udp_destination_tracker_remove_destination(
 int aeron_udp_destination_tracker_remove_destination_by_id(
     aeron_udp_destination_tracker_t *tracker, int64_t destination_registration_id, aeron_uri_t **removed_uri);
 
+int64_t aeron_udp_destination_tracker_find_registration_id(
+    aeron_udp_destination_tracker_t *tracker, const uint8_t *buffer, size_t len, struct sockaddr_storage *addr);
+
 void aeron_udp_destination_tracker_check_for_re_resolution(
     aeron_udp_destination_tracker_t *tracker,
     aeron_send_channel_endpoint_t *endpoint,

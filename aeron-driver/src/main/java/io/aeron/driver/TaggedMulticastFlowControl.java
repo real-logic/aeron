@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.protocol.ErrorFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
@@ -68,6 +69,14 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
         processSendSetupTrigger(flyweight, receiverAddress, timeNs, matchesTag(flyweight));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public void onError(final ErrorFlyweight errorFlyweight, final InetSocketAddress receiverAddress, final long timeNs)
+    {
+        processError(errorFlyweight, receiverAddress, timeNs, matchesTag(errorFlyweight));
+    }
+
     @SuppressWarnings("deprecation")
     private boolean matchesTag(final StatusMessageFlyweight flyweight)
     {
@@ -96,5 +105,10 @@ public class TaggedMulticastFlowControl extends AbstractMinMulticastFlowControl
         }
 
         return result;
+    }
+
+    private boolean matchesTag(final ErrorFlyweight errorFlyweight)
+    {
+        return errorFlyweight.hasGroupTag() && errorFlyweight.groupTag() == super.groupTag();
     }
 }

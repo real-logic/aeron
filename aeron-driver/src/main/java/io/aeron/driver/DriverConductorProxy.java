@@ -247,6 +247,45 @@ public final class DriverConductorProxy
         }
     }
 
+    void onPublicationError(
+        final long registrationId,
+        final long destinationRegistrationId,
+        final int sessionId,
+        final int streamId,
+        final long receiverId,
+        final Long groupId,
+        final InetSocketAddress srcAddress,
+        final int errorCode,
+        final String errorMessage)
+    {
+        if (notConcurrent())
+        {
+            driverConductor.onPublicationError(
+                registrationId,
+                destinationRegistrationId,
+                sessionId,
+                streamId,
+                receiverId,
+                groupId,
+                srcAddress,
+                errorCode,
+                errorMessage);
+        }
+        else
+        {
+            offer(() -> driverConductor.onPublicationError(
+                registrationId,
+                destinationRegistrationId,
+                sessionId,
+                streamId,
+                receiverId,
+                groupId,
+                srcAddress,
+                errorCode,
+                errorMessage));
+        }
+    }
+
     private void offer(final Runnable cmd)
     {
         if (!commandQueue.offer(cmd))

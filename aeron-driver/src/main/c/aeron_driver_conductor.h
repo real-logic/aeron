@@ -522,6 +522,9 @@ int aeron_driver_conductor_on_client_close(aeron_driver_conductor_t *conductor, 
 int aeron_driver_conductor_on_terminate_driver(
     aeron_driver_conductor_t *conductor, aeron_terminate_driver_command_t *command);
 
+int aeron_driver_conductor_on_invalidate_image(
+    aeron_driver_conductor_t *conductor, aeron_reject_image_command_t *command);
+
 void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item);
 
 void aeron_driver_conductor_on_re_resolve_endpoint(void *clientd, void *item);
@@ -533,6 +536,8 @@ void aeron_driver_conductor_on_receive_endpoint_removed(void *clientd, void *ite
 void aeron_driver_conductor_on_response_setup(void *clientd, void *item);
 
 void aeron_driver_conductor_on_response_connected(void *clientd, void *item);
+
+void aeron_driver_conductor_on_publication_error(void *clientd, void *item);
 
 void aeron_driver_conductor_on_release_resource(void *clientd, void *item);
 

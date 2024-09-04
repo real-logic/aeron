@@ -17,6 +17,7 @@ package io.aeron.driver.media;
 
 import io.aeron.driver.Configuration;
 import io.aeron.driver.DriverConductorProxy;
+import io.aeron.protocol.ErrorFlyweight;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.ResponseSetupFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
@@ -52,6 +53,7 @@ public final class ControlTransportPoller extends UdpTransportPoller
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight(unsafeBuffer);
     private final RttMeasurementFlyweight rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
     private final ResponseSetupFlyweight responseSetup = new ResponseSetupFlyweight(unsafeBuffer);
+    private final ErrorFlyweight error = new ErrorFlyweight(unsafeBuffer);
     private final DriverConductorProxy conductorProxy;
     private final Consumer<SelectionKey> selectorPoller =
         (selectionKey) -> poll((SendChannelEndpoint)selectionKey.attachment());
@@ -184,6 +186,11 @@ public final class ControlTransportPoller extends UdpTransportPoller
                 {
                     channelEndpoint.onStatusMessage(
                         statusMessage, unsafeBuffer, bytesReceived, srcAddress, conductorProxy);
+                }
+                else if (HDR_TYPE_ERR == frameType)
+                {
+                    channelEndpoint.onError(
+                        error, unsafeBuffer, bytesReceived, srcAddress, conductorProxy);
                 }
                 else if (HDR_TYPE_RTTM == frameType)
                 {

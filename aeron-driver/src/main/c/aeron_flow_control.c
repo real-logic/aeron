@@ -110,6 +110,15 @@ int64_t aeron_max_flow_control_strategy_on_sm(
     return snd_lmt > window_edge ? snd_lmt : window_edge;
 }
 
+void aeron_max_flow_control_strategy_on_error(
+    void *state,
+    const uint8_t *error,
+    size_t length,
+    struct sockaddr_storage *recv_addr,
+    int64_t now_ns)
+{
+}
+
 size_t aeron_flow_control_calculate_retransmission_length(
     size_t resend_length,
     size_t term_buffer_length,
@@ -192,6 +201,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
     _strategy->on_idle = aeron_max_flow_control_strategy_on_idle;
     _strategy->on_status_message = aeron_max_flow_control_strategy_on_sm;
     _strategy->on_setup = aeron_max_flow_control_strategy_on_setup;
+    _strategy->on_error = aeron_max_flow_control_strategy_on_error;
     _strategy->fini = aeron_max_flow_control_strategy_fini;
     _strategy->has_required_receivers = aeron_flow_control_strategy_has_required_receivers_default;
     _strategy->on_trigger_send_setup = aeron_max_flow_control_strategy_on_trigger_send_setup;
@@ -224,6 +234,7 @@ int aeron_unicast_flow_control_strategy_supplier(
     _strategy->on_idle = aeron_max_flow_control_strategy_on_idle;
     _strategy->on_status_message = aeron_max_flow_control_strategy_on_sm;
     _strategy->on_setup = aeron_max_flow_control_strategy_on_setup;
+    _strategy->on_error = aeron_max_flow_control_strategy_on_error;
     _strategy->fini = aeron_max_flow_control_strategy_fini;
     _strategy->has_required_receivers = aeron_flow_control_strategy_has_required_receivers_default;
     _strategy->on_trigger_send_setup = aeron_max_flow_control_strategy_on_trigger_send_setup;

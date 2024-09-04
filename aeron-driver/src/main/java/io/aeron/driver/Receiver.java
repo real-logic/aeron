@@ -334,6 +334,18 @@ public final class Receiver implements Agent
         channelEndpoint.updateControlAddress(transportIndex, newAddress);
     }
 
+    void onRejectImage(final long imageCorrelationId, final long position, final String reason)
+    {
+        for (final PublicationImage image : publicationImages)
+        {
+            if (imageCorrelationId == image.correlationId())
+            {
+                image.reject(reason);
+                break;
+            }
+        }
+    }
+
     private void checkPendingSetupMessages(final long nowNs)
     {
         for (int lastIndex = pendingSetupMessages.size() - 1, i = lastIndex; i >= 0; i--)

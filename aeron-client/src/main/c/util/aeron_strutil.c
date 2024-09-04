@@ -264,3 +264,4 @@ int getopt(int argc, char *const argv[], const char *opt_string)
 
 extern uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len);
 extern bool aeron_str_length(const char *str, size_t length_bound, size_t *length);
+extern void aeron_str_null_terminate(uint8_t *text, int index);

@@ -582,6 +582,26 @@ void aeron_driver_receiver_on_resolution_change(void *clientd, void *item)
     aeron_receive_channel_endpoint_update_control_address(endpoint, destination, &cmd->new_addr);
 }
 
+void aeron_driver_receiver_on_invalidate_image(void *clientd, void *item)
+{
+    aeron_driver_receiver_t *receiver = clientd;
+    aeron_command_receiver_invalidate_image_t *cmd = item;
+    const int64_t correlation_id = cmd->image_correlation_id;
+    const int32_t reason_length = cmd->reason_length;
+    const char *reason = (const char *)cmd->reason_text;
+
+    for (size_t i = 0, size = receiver->images.length; i < size; i++)
+    {
+        aeron_publication_image_t *image = receiver->images.array[i].image;
+        // TODO: Should we pass the pointer to the image here instead of the correlation_id.
+        if (correlation_id == aeron_publication_image_registration_id(image))
+        {
+            aeron_publication_image_invalidate(image, reason_length, reason);
+            break;
+        }
+    }
+}
+
 int aeron_driver_receiver_add_pending_setup(
     aeron_driver_receiver_t *receiver,
     aeron_receive_channel_endpoint_t *endpoint,

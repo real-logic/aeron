@@ -51,7 +51,8 @@ class CmdInterceptor
         CMD_IN_REMOVE_RCV_DESTINATION,
         CMD_OUT_ON_CLIENT_TIMEOUT,
         CMD_IN_TERMINATE_DRIVER,
-        CMD_IN_REMOVE_DESTINATION_BY_ID);
+        CMD_IN_REMOVE_DESTINATION_BY_ID,
+        CMD_IN_REJECT_IMAGE);
 
     @SuppressWarnings("methodlength")
     @Advice.OnMethodEnter
@@ -157,6 +158,10 @@ class CmdInterceptor
 
             case REMOVE_DESTINATION_BY_ID:
                 LOGGER.log(CMD_IN_REMOVE_DESTINATION_BY_ID, buffer, index, length);
+                break;
+
+            case REJECT_IMAGE:
+                LOGGER.log(CMD_IN_REJECT_IMAGE, buffer, index, length);
                 break;
         }
     }

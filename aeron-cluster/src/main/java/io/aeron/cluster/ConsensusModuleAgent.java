@@ -2940,9 +2940,9 @@ final class ConsensusModuleAgent
 
                 if (0 == fragments)
                 {
+                    pollArchiveEvents();
                     if (image.isClosed())
                     {
-                        pollArchiveEvents();
                         throw new ClusterException("snapshot ended unexpectedly: " + image);
                     }
                 }

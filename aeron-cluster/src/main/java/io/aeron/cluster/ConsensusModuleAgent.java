@@ -1447,8 +1447,18 @@ final class ConsensusModuleAgent
     {
         if (null != consensusModuleExtension)
         {
+            final int remainingMessageOffset = offset + MessageHeaderDecoder.ENCODED_LENGTH;
+            final int remainingMessageLength = length - MessageHeaderDecoder.ENCODED_LENGTH;
+
             return consensusModuleExtension.onLogExtensionMessage(
-                actingBlockLength, templateId, schemaId, actingVersion, buffer, offset, length, header);
+                actingBlockLength,
+                templateId,
+                schemaId,
+                actingVersion,
+                buffer,
+                remainingMessageOffset,
+                remainingMessageLength,
+                header);
         }
 
         throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);

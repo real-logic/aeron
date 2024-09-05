@@ -1142,9 +1142,7 @@ int aeron_archive_start_replay(
 
             if (rc < 0)
             {
-                fprintf(stderr, " before append >> %s\n", aeron_errmsg());
                 AERON_APPEND_ERR("%s", "");
-                fprintf(stderr, " after append >> %s\n", aeron_errmsg());
             }
 
             fprintf(stderr, "about to return\n");

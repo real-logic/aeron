@@ -469,6 +469,59 @@ public:
         return count;
     }
 
+    inline void stopRecording(const std::string &channel, std::int32_t streamId)
+    {
+        if (aeron_archive_stop_recording_channel_and_stream(
+            m_aeron_archive_t,
+            channel.c_str(),
+            streamId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+    }
+
+    inline bool tryStopRecording(const std::string &channel, std::int32_t streamId)
+    {
+        bool stopped;
+
+        if (aeron_archive_try_stop_recording_channel_and_stream(
+            &stopped,
+            m_aeron_archive_t,
+            channel.c_str(),
+            streamId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return stopped;
+    }
+
+    inline std::int64_t extendRecording(
+        std::int64_t recordingId,
+        const std::string &channel,
+        std::int32_t streamId,
+        SourceLocation sourceLocation,
+        bool autoStop)
+    {
+        int64_t subscription_id;
+
+        if (aeron_archive_extend_recording(
+            &subscription_id,
+            m_aeron_archive_t,
+            recordingId,
+            channel.c_str(),
+            streamId,
+            sourceLocation == SourceLocation::LOCAL ?
+                AERON_ARCHIVE_SOURCE_LOCATION_LOCAL :
+                AERON_ARCHIVE_SOURCE_LOCATION_REMOTE,
+            autoStop) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return subscription_id;
+    }
+
     inline std::int64_t startReplay(
         std::int64_t recordingId,
         const std::string &replayChannel,
@@ -485,8 +538,6 @@ public:
             replayStreamId,
             replayParams.params()) < 0)
         {
-            fprintf(stderr, "returned...\n");
-            fprintf(stderr, " >> %s\n", aeron_errmsg());
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 

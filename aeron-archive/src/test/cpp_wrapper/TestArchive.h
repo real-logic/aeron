@@ -27,6 +27,9 @@ using namespace aeron::util;
 using namespace aeron::concurrent;
 using namespace aeron::archive::client;
 
+#define TERM_LENGTH AERON_LOGBUFFER_TERM_MIN_LENGTH
+#define SEGMENT_LENGTH (TERM_LENGTH * 2)
+
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
 
 #ifdef _WIN32
@@ -110,6 +113,8 @@ public:
         std::string controlChannelArg = "-Daeron.archive.control.channel=" + controlChannel;
         std::string replicationChannelArg = "-Daeron.archive.replication.channel=" + replicationChannel;
         std::string archiveIdArg = "-Daeron.archive.id=" + std::to_string(archiveId);
+        std::string segmentLength = "-Daeron.archive.segment.file.length=" + std::to_string(SEGMENT_LENGTH);
+
         const char *const argv[] =
         {
             "java",
@@ -142,6 +147,8 @@ public:
             "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
             "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
             "-Daeron.enable.experimental.features=true",
+            "-Daeron.spies.simulate.connection=true",
+            segmentLength.c_str(),
             archiveIdArg.c_str(),
             controlChannelArg.c_str(),
             replicationChannelArg.c_str(),

@@ -72,7 +72,7 @@ typedef struct recording_signal_consumer_clientd_stct
 {
     std::set<std::int32_t> signals;
 }
-    recording_signal_consumer_clientd_t;
+recording_signal_consumer_clientd_t;
 
 void recording_signal_consumer(
     aeron_archive_recording_signal_t *signal,

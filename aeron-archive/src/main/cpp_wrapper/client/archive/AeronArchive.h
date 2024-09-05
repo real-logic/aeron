@@ -721,6 +721,93 @@ public:
         return count;
     }
 
+    inline void detachSegments(std::int64_t recordingId, std::int64_t newStartPosition)
+    {
+        if (aeron_archive_detach_segments(
+            m_aeron_archive_t,
+            recordingId,
+            newStartPosition) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+    }
+
+    inline std::int64_t deleteDetachedSegments(std::int64_t recordingId)
+    {
+        int64_t count;
+
+        if (aeron_archive_delete_detached_segments(
+            &count,
+            m_aeron_archive_t,
+            recordingId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return count;
+    }
+
+    inline std::int64_t attachSegments(std::int64_t recordingId)
+    {
+        int64_t count;
+
+        if (aeron_archive_attach_segments(
+            &count,
+            m_aeron_archive_t,
+            recordingId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return count;
+    }
+
+    inline std::int64_t purgeSegments(std::int64_t recordingId, std::int64_t newStartPosition)
+    {
+        int64_t count;
+
+        if (aeron_archive_purge_segments(
+            &count,
+            m_aeron_archive_t,
+            recordingId,
+            newStartPosition) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return count;
+    }
+
+    inline std::int64_t migrateSegments(std::int64_t srcRecordingId, std::int64_t dstRecordingId)
+    {
+        int64_t count;
+
+        if (aeron_archive_migrate_segments(
+            &count,
+            m_aeron_archive_t,
+            srcRecordingId,
+            dstRecordingId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return count;
+    }
+
+    static std::int64_t segmentFileBasePosition(
+        std::int64_t startPosition,
+        std::int64_t position,
+        std::int32_t termBufferLength,
+        std::int32_t segmentFileLength)
+    {
+        return aeron_archive_segment_file_base_position(
+            startPosition,
+            position,
+            termBufferLength,
+            segmentFileLength);
+    }
+
+
 private:
     explicit AeronArchive(
         aeron_archive_t *aeron_archive,

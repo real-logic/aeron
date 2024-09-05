@@ -127,6 +127,29 @@ public:
         return counterId;
     }
 
+    static void offerMessagesToPosition(
+        Publication &publication,
+        int64_t minimumPosition,
+        const std::string &messagePrefix = "Message ",
+        std::size_t startCount = 0)
+    {
+        BufferClaim bufferClaim;
+        YieldingIdleStrategy idleStrategy;
+
+        for (std::size_t i = 0; publication.position() < minimumPosition; i++)
+        {
+            std::size_t index = i + startCount;
+            const std::string message = messagePrefix + std::to_string(index);
+            while (publication.tryClaim(static_cast<util::index_t>(message.length()), bufferClaim) < 0)
+            {
+                idleStrategy.idle();
+            }
+
+            bufferClaim.buffer().putStringWithoutLength(bufferClaim.offset(), message);
+            bufferClaim.commit();
+        }
+    }
+
     static void offerMessages(
         Publication &publication,
         std::size_t messageCount,
@@ -2231,17 +2254,181 @@ TEST_P(AeronArchiveWrapperParamTest, shouldRecordAndExtend)
     ASSERT_EQ(stopPosition, replaySubscription->imageByIndex(0)->position());
 }
 
+#define TERM_LENGTH AERON_LOGBUFFER_TERM_MIN_LENGTH
+#define SEGMENT_LENGTH (TERM_LENGTH * 2)
+#define MTU_LENGTH 1024
+
 TEST_F(AeronArchiveWrapperTest, shouldPurgeSegments)
 {
-    // TODO
+    YieldingIdleStrategy idle;
+    std::set<std::int32_t> signals;
+
+    auto signalConsumer = [&](RecordingSignal recordingSignal) -> void
+    {
+        signals.insert(recordingSignal.m_recordingSignalCode);
+    };
+
+    m_context.recordingSignalConsumer(signalConsumer);
+
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+
+    auto publicationChannel = ChannelUriStringBuilder()
+        .media("udp")
+        .endpoint("localhost:3333")
+        .termLength(TERM_LENGTH)
+        .mtu(MTU_LENGTH)
+        .build();
+
+    auto publication = aeronArchive->addRecordedPublication(publicationChannel, m_recordingStreamId);
+
+    int32_t sessionId = publication->sessionId();
+
+    CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
+    const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
+    int64_t recordingId = RecordingPos::getRecordingId(countersReader, counterId);
+
+    int64_t targetPosition = (SEGMENT_LENGTH * 3L) + 1;
+    offerMessagesToPosition(*publication, targetPosition);
+
+    int64_t stopPosition = publication->position();
+
+    while (countersReader.getCounterValue(counterId) < stopPosition)
+    {
+        idle.idle();
+    }
+
+    int64_t startPosition = 0;
+    int64_t segmentFileBasePosition = AeronArchive::segmentFileBasePosition(
+        startPosition,
+        SEGMENT_LENGTH * 2L,
+        TERM_LENGTH,
+        SEGMENT_LENGTH);
+
+    int64_t count = aeronArchive->purgeSegments(recordingId, segmentFileBasePosition);
+
+    while (0 == signals.count(aeron::archive::client::RecordingSignal::Value::DELETE))
+    {
+        aeronArchive->pollForRecordingSignals();
+        idle.idle();
+    }
+
+    ASSERT_EQ(2, count);
+
+    ASSERT_EQ(aeronArchive->getStartPosition(recordingId), segmentFileBasePosition);
 }
 
 TEST_F(AeronArchiveWrapperTest, shouldDetachAndDeleteSegments)
 {
-    // TODO
+    YieldingIdleStrategy idle;
+    std::set<std::int32_t> signals;
+
+    auto signalConsumer = [&](RecordingSignal recordingSignal) -> void
+    {
+        signals.insert(recordingSignal.m_recordingSignalCode);
+    };
+
+    m_context.recordingSignalConsumer(signalConsumer);
+
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+
+    auto publicationChannel = ChannelUriStringBuilder()
+        .media("udp")
+        .endpoint("localhost:3333")
+        .termLength(TERM_LENGTH)
+        .mtu(MTU_LENGTH)
+        .build();
+
+    auto publication = aeronArchive->addRecordedPublication(publicationChannel, m_recordingStreamId);
+
+    int32_t sessionId = publication->sessionId();
+
+    CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
+    const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
+    int64_t recordingId = RecordingPos::getRecordingId(countersReader, counterId);
+
+    int64_t targetPosition = (SEGMENT_LENGTH * 4L) + 1;
+    offerMessagesToPosition(*publication, targetPosition);
+
+    int64_t stopPosition = publication->position();
+
+    while (countersReader.getCounterValue(counterId) < stopPosition)
+    {
+        idle.idle();
+    }
+
+    int64_t startPosition = 0;
+    int64_t segmentFileBasePosition = AeronArchive::segmentFileBasePosition(
+        startPosition,
+        SEGMENT_LENGTH * 3L,
+        TERM_LENGTH,
+        SEGMENT_LENGTH);
+
+    aeronArchive->detachSegments(recordingId, segmentFileBasePosition);
+
+    int64_t count = aeronArchive->deleteDetachedSegments(recordingId);
+
+    while (0 == signals.count(aeron::archive::client::RecordingSignal::Value::DELETE))
+    {
+        aeronArchive->pollForRecordingSignals();
+        idle.idle();
+    }
+
+    ASSERT_EQ(3, count);
+
+    ASSERT_EQ(aeronArchive->getStartPosition(recordingId), segmentFileBasePosition);
 }
 
 TEST_F(AeronArchiveWrapperTest, shouldDetachAndReattachSegments)
 {
-    // TODO
+    YieldingIdleStrategy idle;
+    std::set<std::int32_t> signals;
+
+    auto signalConsumer = [&](RecordingSignal recordingSignal) -> void
+    {
+        signals.insert(recordingSignal.m_recordingSignalCode);
+    };
+
+    m_context.recordingSignalConsumer(signalConsumer);
+
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+
+    auto publicationChannel = ChannelUriStringBuilder()
+        .media("udp")
+        .endpoint("localhost:3333")
+        .termLength(TERM_LENGTH)
+        .mtu(MTU_LENGTH)
+        .build();
+
+    auto publication = aeronArchive->addRecordedPublication(publicationChannel, m_recordingStreamId);
+
+    int32_t sessionId = publication->sessionId();
+
+    CountersReader &countersReader = aeronArchive->context().aeron()->countersReader();
+    const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
+    int64_t recordingId = RecordingPos::getRecordingId(countersReader, counterId);
+
+    int64_t targetPosition = (SEGMENT_LENGTH * 5L) + 1;
+    offerMessagesToPosition(*publication, targetPosition);
+
+    int64_t stopPosition = publication->position();
+
+    while (countersReader.getCounterValue(counterId) < stopPosition)
+    {
+        idle.idle();
+    }
+
+    int64_t startPosition = 0;
+    int64_t segmentFileBasePosition = AeronArchive::segmentFileBasePosition(
+        startPosition,
+        SEGMENT_LENGTH * 4L,
+        TERM_LENGTH,
+        SEGMENT_LENGTH);
+
+    aeronArchive->detachSegments(recordingId, segmentFileBasePosition);
+
+    ASSERT_EQ(aeronArchive->getStartPosition(recordingId), segmentFileBasePosition);
+
+    ASSERT_EQ(4, aeronArchive->attachSegments(recordingId));
+
+    ASSERT_EQ(aeronArchive->getStartPosition(recordingId), 0);
 }

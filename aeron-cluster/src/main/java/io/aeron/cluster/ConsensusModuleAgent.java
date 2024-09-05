@@ -590,7 +590,11 @@ final class ConsensusModuleAgent
         final int length)
     {
         this.nextSessionId = nextSessionId;
-        pendingServiceMessageTrackers[0].loadState(nextServiceSessionId, logServiceSessionId, pendingMessageCapacity);
+        if (pendingServiceMessageTrackers.length > 0)
+        {
+            pendingServiceMessageTrackers[0].loadState(
+                nextServiceSessionId, logServiceSessionId, pendingMessageCapacity);
+        }
     }
 
     public void onLoadPendingMessageTracker(
@@ -615,8 +619,8 @@ final class ConsensusModuleAgent
     public void onLoadPendingMessage(
         final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
     {
-        final int index = PendingServiceMessageTracker.serviceId(clusterSessionId);
-        pendingServiceMessageTrackers[index].appendMessage(buffer, offset, length);
+        final int serviceTrackerIndex = PendingServiceMessageTracker.serviceId(clusterSessionId);
+        pendingServiceMessageTrackers[serviceTrackerIndex].appendMessage(buffer, offset, length);
     }
 
     public void onLoadTimer(
@@ -2929,13 +2933,13 @@ final class ConsensusModuleAgent
             while (true)
             {
                 final int fragments = adapter.poll();
+                if (adapter.isDone())
+                {
+                    break;
+                }
+
                 if (0 == fragments)
                 {
-                    if (adapter.isDone())
-                    {
-                        break;
-                    }
-
                     if (image.isClosed())
                     {
                         pollArchiveEvents();

@@ -992,13 +992,13 @@ public class ClusterTool
                 while (true)
                 {
                     final int fragments = adapter.poll();
+                    if (adapter.isDone())
+                    {
+                        break;
+                    }
+
                     if (0 == fragments)
                     {
-                        if (adapter.isDone())
-                        {
-                            break;
-                        }
-
                         if (image.isClosed())
                         {
                             throw new ClusterException("snapshot ended unexpectedly: " + image);

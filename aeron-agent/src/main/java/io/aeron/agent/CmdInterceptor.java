@@ -50,8 +50,11 @@ class CmdInterceptor
         CMD_IN_ADD_RCV_DESTINATION,
         CMD_IN_REMOVE_RCV_DESTINATION,
         CMD_OUT_ON_CLIENT_TIMEOUT,
-        CMD_IN_TERMINATE_DRIVER);
+        CMD_IN_TERMINATE_DRIVER,
+        CMD_IN_REMOVE_DESTINATION_BY_ID,
+        CMD_IN_REJECT_IMAGE);
 
+    @SuppressWarnings("methodlength")
     @Advice.OnMethodEnter
     static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
     {
@@ -151,6 +154,14 @@ class CmdInterceptor
 
             case TERMINATE_DRIVER:
                 LOGGER.log(CMD_IN_TERMINATE_DRIVER, buffer, index, length);
+                break;
+
+            case REMOVE_DESTINATION_BY_ID:
+                LOGGER.log(CMD_IN_REMOVE_DESTINATION_BY_ID, buffer, index, length);
+                break;
+
+            case REJECT_IMAGE:
+                LOGGER.log(CMD_IN_REJECT_IMAGE, buffer, index, length);
                 break;
         }
     }

@@ -79,6 +79,18 @@ typedef struct aeron_status_message_header_stct
 }
 aeron_status_message_header_t;
 
+struct aeron_error_stct
+{
+    aeron_frame_header_t frame_header;
+    int32_t session_id;
+    int32_t stream_id;
+    int64_t receiver_id;
+    int64_t group_tag;
+    int32_t error_code;
+    int32_t error_length;
+};
+typedef struct aeron_error_stct aeron_error_t;
+
 typedef struct aeron_status_message_optional_header_stct
 {
     int64_t group_tag;
@@ -198,6 +210,10 @@ int aeron_udp_protocol_group_tag(aeron_status_message_header_t *sm, int64_t *gro
 #define AERON_OPT_HDR_TYPE_ATS_GROUP_TAG (UINT16_C(0x0007))
 
 #define AERON_OPT_HDR_ALIGNMENT (4u)
+
+#define AERON_ERROR_MAX_TEXT_LENGTH (1023)
+#define AERON_ERROR_MAX_FRAME_LENGTH (sizeof(aeron_error_t) + AERON_ERROR_MAX_TEXT_LENGTH)
+#define AERON_ERROR_HAS_GROUP_TAG_FLAG (0x08)
 
 inline size_t aeron_res_header_address_length(int8_t res_type)
 {

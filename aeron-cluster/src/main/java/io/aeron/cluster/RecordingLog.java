@@ -240,8 +240,8 @@ public final class RecordingLog implements AutoCloseable
          */
         public int length()
         {
-            final int unalignedLength = (ENTRY_TYPE_STANDBY_SNAPSHOT == type) ?
-                ENDPOINT_OFFSET + SIZE_OF_INT + archiveEndpoint.length() : ENDPOINT_OFFSET;
+            final int unalignedLength = ENTRY_TYPE_STANDBY_SNAPSHOT == type ?
+                (ENDPOINT_OFFSET + SIZE_OF_INT + archiveEndpoint.length()) : ENDPOINT_OFFSET;
 
             return align(unalignedLength, RECORD_ALIGNMENT);
         }
@@ -1530,9 +1530,9 @@ public final class RecordingLog implements AutoCloseable
                 {
                     throw new ClusterException(
                         "Prior term was not committed: " + lastTerm +
-                            " and logTermBasePosition was not specified: leadershipTermId = " + leadershipTermId +
-                            ", logTermBasePosition = " + termBaseLogPosition + ", logPosition = " + logPosition +
-                            ", nowNs = " + nowNs);
+                        " and logTermBasePosition was not specified: leadershipTermId = " + leadershipTermId +
+                        ", logTermBasePosition = " + termBaseLogPosition + ", logPosition = " + logPosition +
+                        ", nowNs = " + nowNs);
                 }
                 else
                 {
@@ -1769,6 +1769,7 @@ public final class RecordingLog implements AutoCloseable
             final int type = entryType & ~ENTRY_TYPE_INVALID_FLAG;
             final boolean isValid = (entryType & ENTRY_TYPE_INVALID_FLAG) == 0;
             final int endPointOffset = consumed + ENDPOINT_OFFSET;
+
             if (ENTRY_TYPE_STANDBY_SNAPSHOT == type &&
                 (endPointOffset + SIZE_OF_INT > length ||
                 endPointOffset + SIZE_OF_INT + buffer.getInt(endPointOffset, LITTLE_ENDIAN) > length))
@@ -1863,9 +1864,7 @@ public final class RecordingLog implements AutoCloseable
             {
                 snapshotIndex = i;
             }
-            else if (-1 == logIndex &&
-                isValidTerm(entry) &&
-                NULL_VALUE != entry.recordingId)
+            else if (-1 == logIndex && isValidTerm(entry) && NULL_VALUE != entry.recordingId)
             {
                 logIndex = i;
             }

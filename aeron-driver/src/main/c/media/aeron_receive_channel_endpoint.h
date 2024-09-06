@@ -81,6 +81,7 @@ typedef struct aeron_receive_channel_endpoint_stct
 
     int64_t *short_sends_counter;
     int64_t *possible_ttl_asymmetry_counter;
+    int64_t *errors_frames_sent_counter;
 }
 aeron_receive_channel_endpoint_t;
 
@@ -146,6 +147,15 @@ int aeron_receive_channel_endpoint_send_response_setup(
     int32_t stream_id,
     int32_t session_id,
     int32_t response_session_id);
+
+int aeron_receiver_channel_endpoint_send_error_frame(
+    aeron_receive_channel_endpoint_t *channel_endpoint,
+    aeron_receive_destination_t *destination,
+    struct sockaddr_storage *control_addr,
+    int32_t session_id,
+    int32_t stream_id,
+    int32_t error_code,
+    const char *invalidation_reason);
 
 void aeron_receive_channel_endpoint_dispatch(
     aeron_udp_channel_data_paths_t *data_paths,

@@ -133,4 +133,7 @@ inline void aeron_subscription_propose_last_image_change_number(
     }
 }
 
+int aeron_subscription_reject_image(
+    aeron_subscription_t *subscription, int64_t image_correlation_id, int64_t position, const char *reason);
+
 #endif //AERON_C_SUBSCRIPTION_H

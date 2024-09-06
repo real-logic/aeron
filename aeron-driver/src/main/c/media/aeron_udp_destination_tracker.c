@@ -70,7 +70,7 @@ int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker
     return 0;
 }
 
-void aeron_udp_destination_tracker_remove_inactive_destinations(
+static void aeron_udp_destination_tracker_remove_inactive_destinations(
     aeron_udp_destination_tracker_t *tracker,
     int64_t now_ns)
 {
@@ -169,7 +169,7 @@ int aeron_udp_destination_tracker_send(
     return min_bytes_sent;
 }
 
-bool aeron_udp_destination_tracker_same_port(struct sockaddr_storage *lhs, struct sockaddr_storage *rhs)
+static bool aeron_udp_destination_tracker_same_port(struct sockaddr_storage *lhs, struct sockaddr_storage *rhs)
 {
     bool result = false;
 
@@ -191,7 +191,7 @@ bool aeron_udp_destination_tracker_same_port(struct sockaddr_storage *lhs, struc
     return result;
 }
 
-bool aeron_udp_destination_tracker_same_addr(struct sockaddr_storage *lhs, struct sockaddr_storage *rhs)
+static bool aeron_udp_destination_tracker_same_addr(struct sockaddr_storage *lhs, struct sockaddr_storage *rhs)
 {
     bool result = false;
 
@@ -211,6 +211,18 @@ bool aeron_udp_destination_tracker_same_addr(struct sockaddr_storage *lhs, struc
     }
 
     return result;
+}
+
+static bool aeron_udp_destination_tracker_is_match(
+    aeron_udp_destination_entry_t *entry,
+    int64_t receiver_id,
+    struct sockaddr_storage *addr)
+{
+    return
+        (entry->is_receiver_id_valid && receiver_id == entry->receiver_id &&
+            aeron_udp_destination_tracker_same_port(&entry->addr, addr)) ||
+        (!entry->is_receiver_id_valid && aeron_udp_destination_tracker_same_addr(&entry->addr, addr) &&
+            aeron_udp_destination_tracker_same_port(&entry->addr, addr));
 }
 
 int aeron_udp_destination_tracker_add_destination(
@@ -258,21 +270,16 @@ int aeron_udp_destination_tracker_on_status_message(
     {
         aeron_udp_destination_entry_t *entry = &tracker->destinations.array[i];
 
-        if (entry->is_receiver_id_valid && receiver_id == entry->receiver_id &&
-            aeron_udp_destination_tracker_same_port(&entry->addr, addr))
+        is_existing = aeron_udp_destination_tracker_is_match(entry, receiver_id, addr);
+        if (is_existing)
         {
+            if (!entry->is_receiver_id_valid)
+            {
+                entry->receiver_id = receiver_id;
+                entry->is_receiver_id_valid = true;
+            }
             entry->time_of_last_activity_ns = now_ns;
-            is_existing = true;
-            break;
-        }
-        else if (!entry->is_receiver_id_valid &&
-            aeron_udp_destination_tracker_same_addr(&entry->addr, addr) &&
-            aeron_udp_destination_tracker_same_port(&entry->addr, addr))
-        {
-            entry->time_of_last_activity_ns = now_ns;
-            entry->receiver_id = receiver_id;
-            entry->is_receiver_id_valid = true;
-            is_existing = true;
+
             break;
         }
     }
@@ -344,7 +351,9 @@ int aeron_udp_destination_tracker_remove_destination(
 }
 
 int aeron_udp_destination_tracker_remove_destination_by_id(
-    aeron_udp_destination_tracker_t *tracker, int64_t destination_registration_id, aeron_uri_t **removed_uri)
+    aeron_udp_destination_tracker_t *tracker,
+    int64_t destination_registration_id,
+    aeron_uri_t **removed_uri)
 {
     for (int last_index = (int)tracker->destinations.length - 1, i = last_index; i >= 0; i--)
     {
@@ -368,6 +377,27 @@ int aeron_udp_destination_tracker_remove_destination_by_id(
     aeron_counter_set_ordered(tracker->num_destinations_addr, (int64_t)tracker->destinations.length);
 
     return 0;
+}
+
+int64_t aeron_udp_destination_tracker_find_registration_id(
+    aeron_udp_destination_tracker_t *tracker,
+    const uint8_t *buffer,
+    size_t len,
+    struct sockaddr_storage *addr)
+{
+    aeron_error_t *error = (aeron_error_t *)buffer;
+    const int64_t receiver_id = error->receiver_id;
+
+    for (size_t i = 0, size = tracker->destinations.length; i < size; i++)
+    {
+        aeron_udp_destination_entry_t *entry = &tracker->destinations.array[i];
+        if (aeron_udp_destination_tracker_is_match(entry, receiver_id, addr))
+        {
+            return entry->registration_id;
+        }
+    }
+
+    return AERON_NULL_VALUE;
 }
 
 void aeron_udp_destination_tracker_check_for_re_resolution(

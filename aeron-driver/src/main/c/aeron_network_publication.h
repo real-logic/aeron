@@ -181,6 +181,14 @@ void aeron_network_publication_on_status_message(
     size_t length,
     struct sockaddr_storage *addr);
 
+void aeron_network_publication_on_error(
+    aeron_network_publication_t *publication,
+    int64_t destination_registration_id,
+    const uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *src_address,
+    aeron_driver_conductor_proxy_t *pStct);
+
 void aeron_network_publication_on_rttm(
     aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
@@ -319,6 +327,11 @@ inline bool aeron_network_publication_is_accepting_subscriptions(aeron_network_p
             aeron_driver_subscribable_has_working_positions(&publication->conductor_fields.subscribable) &&
             aeron_network_publication_producer_position(publication) >
                 aeron_counter_get_volatile(publication->snd_pos_position.value_addr));
+}
+
+inline int64_t aeron_network_publication_registration_id(aeron_network_publication_t *publication)
+{
+    return publication->log_meta_data->correlation_id;
 }
 
 #endif //AERON_NETWORK_PUBLICATION_H

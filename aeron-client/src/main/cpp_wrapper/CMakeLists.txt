@@ -64,6 +64,7 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/status/ReadablePosition.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/status/StatusIndicatorReader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/status/UnsafeBufferPosition.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/status/PublicationErrorFrame.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/BitUtil.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/CommandOption.h
     ${CMAKE_CURRENT_SOURCE_DIR}/util/CommandOptionParser.h

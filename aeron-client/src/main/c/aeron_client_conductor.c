@@ -165,6 +165,9 @@ int aeron_client_conductor_init(aeron_client_conductor_t *conductor, aeron_conte
     conductor->error_handler = context->error_handler;
     conductor->error_handler_clientd = context->error_handler_clientd;
 
+    conductor->error_frame_handler = context->error_frame_handler;
+    conductor->error_frame_handler_clientd = context->error_frame_handler_clientd;
+
     conductor->on_new_publication = context->on_new_publication;
     conductor->on_new_publication_clientd = context->on_new_publication_clientd;
 
@@ -352,6 +355,19 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
             break;
         }
 
+        case AERON_RESPONSE_ON_PUBLICATION_ERROR:
+        {
+            aeron_publication_error_t *response = (aeron_publication_error_t *)buffer;
+
+            if (length < sizeof(aeron_publication_error_t))
+            {
+                goto malformed_command;
+            }
+
+            result = aeron_client_conductor_on_error_frame(conductor, response);
+            break;
+        }
+
         case AERON_RESPONSE_ON_STATIC_COUNTER:
         {
             aeron_static_counter_response_t *response = (aeron_static_counter_response_t *)buffer;
@@ -367,7 +383,6 @@ void aeron_client_conductor_on_driver_response(int32_t type_id, uint8_t *buffer,
 
         default:
         {
-
             AERON_CLIENT_FORMAT_BUFFER(error_message, "response=%x unknown", type_id);
             conductor->error_handler(
                 conductor->error_handler_clientd, AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID, error_message);
@@ -2526,6 +2541,119 @@ int aeron_client_conductor_on_operation_success(
     return 0;
 }
 
+struct aeron_client_conductor_clientd_stct
+{
+    aeron_client_conductor_t *conductor;
+    void *clientd;
+};
+typedef struct aeron_client_conductor_clientd_stct aeron_client_conductor_clientd_t;
+
+void aeron_client_conductor_forward_error(void *clientd, int64_t key, void *value)
+{
+    aeron_client_conductor_clientd_t *conductor_clientd = (aeron_client_conductor_clientd_t *)clientd;
+    aeron_client_conductor_t *conductor = conductor_clientd->conductor;
+    aeron_publication_error_t *response = (aeron_publication_error_t *)conductor_clientd->clientd;
+    aeron_client_command_base_t *resource = (aeron_client_command_base_t *)value;
+
+    const bool is_publication = AERON_CLIENT_TYPE_PUBLICATION == resource->type &&
+        ((aeron_publication_t *)resource)->original_registration_id == response->registration_id;
+    const bool is_exclusive_publication = AERON_CLIENT_TYPE_EXCLUSIVE_PUBLICATION == resource->type &&
+        ((aeron_exclusive_publication_t *)resource)->original_registration_id == response->registration_id;
+
+    if (is_publication || is_exclusive_publication)
+    {
+        conductor->error_frame_handler(
+            conductor->error_frame_handler_clientd, (aeron_publication_error_values_t *)response);
+    }
+}
+
+#ifdef _MSC_VER
+#define _Static_assert static_assert
+#endif
+
+_Static_assert(
+    sizeof(aeron_publication_error_t) == sizeof(aeron_publication_error_values_t),
+    "sizeof(aeron_publication_error_t) must be equal to sizeof(aeron_publication_error_values_t)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, registration_id) == offsetof(aeron_publication_error_values_t, registration_id),
+    "offsetof(aeron_publication_error_t, registration_id) must match offsetof(aeron_publication_error_values_t, registration_id)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, destination_registration_id) == offsetof(aeron_publication_error_values_t, destination_registration_id),
+    "offsetof(aeron_publication_error_t, destination_registration_id) must match offsetof(aeron_publication_error_values_t, destination_registration_id)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, session_id) == offsetof(aeron_publication_error_values_t, session_id),
+    "offsetof(aeron_publication_error_t, session_id) must match offsetof(aeron_publication_error_values_t, session_id)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, stream_id) == offsetof(aeron_publication_error_values_t, stream_id),
+    "offsetof(aeron_publication_error_t, stream_id) must match offsetof(aeron_publication_error_values_t, stream_id)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, receiver_id) == offsetof(aeron_publication_error_values_t, receiver_id),
+    "offsetof(aeron_publication_error_t, receiver_id) must match offsetof(aeron_publication_error_values_t, receiver_id)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, group_tag) == offsetof(aeron_publication_error_values_t, group_tag),
+    "offsetof(aeron_publication_error_t, group_tag) must match offsetof(aeron_publication_error_values_t, group_tag)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, address_type) == offsetof(aeron_publication_error_values_t, address_type),
+    "offsetof(aeron_publication_error_t, address_type) must match offsetof(aeron_publication_error_values_t, address_type)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, source_port) == offsetof(aeron_publication_error_values_t, source_port),
+    "offsetof(aeron_publication_error_t, address_port) must match offsetof(aeron_publication_error_values_t, address_port)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, source_address) == offsetof(aeron_publication_error_values_t, source_address),
+    "offsetof(aeron_publication_error_t, source_address) must match offsetof(aeron_publication_error_values_t, source_address)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, error_code) == offsetof(aeron_publication_error_values_t, error_code),
+    "offsetof(aeron_publication_error_t, error_code) must match offsetof(aeron_publication_error_values_t, error_code)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, error_message_length) == offsetof(aeron_publication_error_values_t, error_message_length),
+    "offsetof(aeron_publication_error_t, error_message_length) must match offsetof(aeron_publication_error_values_t, error_message_length)");
+_Static_assert(
+    offsetof(aeron_publication_error_t, error_message) == offsetof(aeron_publication_error_values_t, error_message),
+    "offsetof(aeron_publication_error_t, error_message) must match offsetof(aeron_publication_error_values_t, error_message)");
+
+int aeron_client_conductor_on_error_frame(aeron_client_conductor_t *conductor, aeron_publication_error_t *response)
+{
+    aeron_client_conductor_clientd_t clientd = {
+        .conductor = conductor,
+        .clientd = response
+    };
+
+    aeron_int64_to_ptr_hash_map_for_each(
+        &conductor->resource_by_id_map, aeron_client_conductor_forward_error, (void *)&clientd);
+
+    return 0;
+}
+
+int aeron_publication_error_values_copy(aeron_publication_error_values_t **dst, aeron_publication_error_values_t *src)
+{
+    if (NULL == src)
+    {
+        AERON_SET_ERR(-1, "%s", "src must not be NULL");
+        return -1;
+    }
+
+    if (NULL == dst)
+    {
+        AERON_SET_ERR(-1, "%s", "dst must not be NULL");
+        return -1;
+    }
+
+    size_t error_values_size = sizeof(*src) + (size_t)src->error_message_length;
+    if (aeron_alloc((void **)dst, error_values_size) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    memcpy((void *)*dst, (void *)src, error_values_size);
+    return 0;
+}
+
+void aeron_publication_error_values_delete(aeron_publication_error_values_t *to_delete)
+{
+    aeron_free(to_delete);
+}
+
 aeron_subscription_t *aeron_client_conductor_find_subscription_by_id(
     aeron_client_conductor_t *conductor, int64_t registration_id)
 {
@@ -2855,6 +2983,44 @@ int aeron_client_conductor_offer_destination_command(
     {
         *correlation_id = command->correlated.correlation_id;
     }
+
+    return 0;
+}
+
+int aeron_client_conductor_reject_image(
+    aeron_client_conductor_t *conductor,
+    int64_t image_correlation_id,
+    int64_t position,
+    const char *reason,
+    int32_t command_type)
+{
+    size_t reason_length = strlen(reason);
+    const size_t command_length = sizeof(aeron_reject_image_command_t) + reason_length;
+
+    int rb_offer_fail_count = 0;
+    int32_t offset;
+    while ((offset = aeron_mpsc_rb_try_claim(&conductor->to_driver_buffer, command_type, command_length)) < 0)
+    {
+        if (++rb_offer_fail_count > AERON_CLIENT_COMMAND_RB_FAIL_THRESHOLD)
+        {
+            const char *err_buffer = "reject_image command could not be sent";
+            conductor->error_handler(conductor->error_handler_clientd, AERON_CLIENT_ERROR_BUFFER_FULL, err_buffer);
+            AERON_SET_ERR(AERON_CLIENT_ERROR_BUFFER_FULL, "%s", err_buffer);
+            return -1;
+        }
+
+        sched_yield();
+    }
+
+    uint8_t *ptr = (conductor->to_driver_buffer.buffer + offset);
+    aeron_reject_image_command_t *command = (aeron_reject_image_command_t *)ptr;
+    command->image_correlation_id = image_correlation_id;
+    command->position = position;
+    command->reason_length = (int32_t)reason_length;
+    memcpy(ptr + offsetof(aeron_reject_image_command_t, reason_text), reason, reason_length);
+    command->reason_text[reason_length] = '\0';
+
+    aeron_mpsc_rb_commit(&conductor->to_driver_buffer, offset);
 
     return 0;
 }

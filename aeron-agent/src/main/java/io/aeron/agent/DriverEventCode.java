@@ -210,7 +210,17 @@ public enum DriverEventCode implements EventCode
      * Resend data upon Nak.
      */
     RESEND(55,
-        (code, buffer, offset, builder) -> DriverEventDissector.dissectResend(buffer, offset, builder));
+        (code, buffer, offset, builder) -> DriverEventDissector.dissectResend(buffer, offset, builder)),
+
+    /**
+     * Remove destination by id
+     */
+    CMD_IN_REMOVE_DESTINATION_BY_ID(56, DriverEventDissector::dissectCommand),
+
+    /**
+     * Reject image command received by the driver.
+     */
+    CMD_IN_REJECT_IMAGE(57, DriverEventDissector::dissectCommand);
 
     static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
 

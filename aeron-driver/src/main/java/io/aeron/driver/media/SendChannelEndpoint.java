@@ -26,6 +26,7 @@ import io.aeron.driver.Sender;
 import io.aeron.driver.status.MdcDestinations;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.ErrorFlyweight;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.ResponseSetupFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
@@ -52,6 +53,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.media.SendChannelEndpoint.DESTINATION_TIMEOUT;
 import static io.aeron.driver.media.UdpChannelTransport.sendError;
+import static io.aeron.driver.status.SystemCounterDescriptor.ERROR_FRAMES_RECEIVED;
 import static io.aeron.driver.status.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
 import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
@@ -76,6 +78,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
+    private final AtomicCounter errorMessagesReceived;
     private final boolean isChannelSendTimestampEnabled;
     private final EpochNanoClock sendTimestampClock;
     private final UnsafeBuffer bufferForTimestamping = new UnsafeBuffer();
@@ -102,6 +105,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
+        errorMessagesReceived = context.systemCounters().get(ERROR_FRAMES_RECEIVED);
         this.statusIndicator = statusIndicator;
 
         MultiSndDestination multiSndDestination = null;
@@ -397,6 +401,38 @@ public class SendChannelEndpoint extends UdpChannelTransport
             {
                 publication.onStatusMessage(msg, srcAddress, conductorProxy);
             }
+        }
+    }
+
+
+    /**
+     * Callback back handler for received error messages.
+     *
+     * @param msg            flyweight over the status message.
+     * @param buffer         containing the message.
+     * @param length         of the message.
+     * @param srcAddress     of the message.
+     * @param conductorProxy to send messages back to the conductor.
+     */
+    public void onError(
+        final ErrorFlyweight msg,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress,
+        final DriverConductorProxy conductorProxy)
+    {
+        final int sessionId = msg.sessionId();
+        final int streamId = msg.streamId();
+
+        errorMessagesReceived.incrementOrdered();
+
+        final long destinationRegistrationId = (null != multiSndDestination) ?
+            multiSndDestination.findRegistrationId(msg, srcAddress) : Aeron.NULL_VALUE;
+
+        final NetworkPublication publication = publicationBySessionAndStreamId.get(compoundKey(sessionId, streamId));
+        if (null != publication)
+        {
+            publication.onError(msg, srcAddress, destinationRegistrationId, conductorProxy);
         }
     }
 
@@ -699,6 +735,11 @@ abstract class MultiSndDestination extends MultiSndDestinationRhsPadding
 
         return bytesSent;
     }
+
+    public long findRegistrationId(final ErrorFlyweight msg, final InetSocketAddress srcAddress)
+    {
+        return Aeron.NULL_VALUE;
+    }
 }
 
 class ManualSndMultiDestination extends MultiSndDestination
@@ -715,20 +756,15 @@ class ManualSndMultiDestination extends MultiSndDestination
 
         for (final Destination destination : destinations)
         {
-            if (destination.isReceiverIdValid &&
-                receiverId == destination.receiverId &&
-                address.getPort() == destination.port)
+            if (destination.isMatch(msg.receiverId(), address))
             {
+                if (!destination.isReceiverIdValid)
+                {
+                    destination.receiverId = receiverId;
+                    destination.isReceiverIdValid = true;
+                }
+
                 destination.timeOfLastActivityNs = nowNs;
-                break;
-            }
-            else if (!destination.isReceiverIdValid &&
-                address.getPort() == destination.port &&
-                address.getAddress().equals(destination.address.getAddress()))
-            {
-                destination.timeOfLastActivityNs = nowNs;
-                destination.receiverId = receiverId;
-                destination.isReceiverIdValid = true;
                 break;
             }
         }
@@ -867,6 +903,19 @@ class ManualSndMultiDestination extends MultiSndDestination
                 destination.port = newAddress.getPort();
             }
         }
+    }
+
+    public long findRegistrationId(final ErrorFlyweight msg, final InetSocketAddress address)
+    {
+        for (final Destination destination : destinations)
+        {
+            if (destination.isMatch(msg.receiverId(), address))
+            {
+                return destination.registrationId;
+            }
+        }
+
+        return Aeron.NULL_VALUE;
     }
 }
 
@@ -1061,5 +1110,13 @@ final class Destination extends DestinationRhsPadding
         this.address = address;
         this.port = address.getPort();
         this.registrationId = registrationId;
+    }
+
+    boolean isMatch(final long receiverId, final InetSocketAddress address)
+    {
+        return
+            (isReceiverIdValid && receiverId == this.receiverId && address.getPort() == this.port) ||
+            (!isReceiverIdValid &&
+                address.getPort() == this.port && address.getAddress().equals(this.address.getAddress()));
     }
 }

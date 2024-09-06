@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.protocol.ErrorFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
@@ -58,5 +59,13 @@ public class MinMulticastFlowControl extends AbstractMinMulticastFlowControl
         final long timeNs)
     {
         processSendSetupTrigger(flyweight, receiverAddress, timeNs, true);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void onError(final ErrorFlyweight errorFlyweight, final InetSocketAddress receiverAddress, final long timeNs)
+    {
+        processError(errorFlyweight, receiverAddress, timeNs, true);
     }
 }

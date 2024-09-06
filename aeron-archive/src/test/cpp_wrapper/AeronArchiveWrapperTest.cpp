@@ -17,7 +17,6 @@
 #include <chrono>
 #include <thread>
 #include <iostream>
-#include <iosfwd>
 #include <vector>
 #include <cstring>
 
@@ -32,21 +31,12 @@
 
 #include "ChannelUriStringBuilder.h"
 
-/*
-#include "client/ReplayMerge.h"
-#include "concurrent/YieldingIdleStrategy.h"
-#include "aeron_archive_client/RecordingSignal.h"
- */
-
 #include "concurrent/SleepingIdleStrategy.h"
 #include "CncFileReader.h"
 
 #if defined(__linux__) || defined(Darwin)
-#include <unistd.h>
 #include <ftw.h>
-#include <cstdio>
 #include <spawn.h>
-#include <pthread.h>
 #include <cstdint>
 #elif defined(_WIN32)
 typedef intptr_t pid_t;
@@ -57,8 +47,6 @@ typedef intptr_t pid_t;
 #include "TestArchive.h"
 
 using namespace aeron;
-//using namespace aeron::util;
-//using namespace aeron::concurrent;
 using namespace aeron::archive::client;
 
 class AeronArchiveWrapperTestBase
@@ -479,7 +467,7 @@ TEST_F(AeronArchiveWrapperTest, shouldAsyncConnectToArchiveWithPrebuiltAeron)
     aeron::Context aeronCtx;
     aeronCtx.aeronDir(m_context.aeronDirectoryName());
     auto aeron = std::make_shared<Aeron>(aeronCtx);
-    m_context.setAeron(aeron);
+    m_context.aeron(aeron);
 
     SleepingIdleStrategy idleStrategy(IDLE_SLEEP_MS_1);
     std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect(m_context);
@@ -509,7 +497,7 @@ TEST_F(AeronArchiveWrapperTest, shouldConnectToArchiveWithPrebuiltAeron)
     aeron::Context aeronCtx;
     aeronCtx.aeronDir(m_context.aeronDirectoryName());
     auto aeron = std::make_shared<Aeron>(aeronCtx);
-    m_context.setAeron(aeron);
+    m_context.aeron(aeron);
 
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 

@@ -1145,7 +1145,6 @@ int aeron_archive_start_replay(
                 AERON_APPEND_ERR("%s", "");
             }
 
-            fprintf(stderr, "about to return\n");
             return rc;
         }
     }

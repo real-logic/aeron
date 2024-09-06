@@ -16,8 +16,6 @@
 #ifndef AERON_ARCHIVE_WRAPPER_H
 #define AERON_ARCHIVE_WRAPPER_H
 
-#include <utility>
-
 #include "client/aeron_archive.h"
 
 #include "Aeron.h"
@@ -146,8 +144,7 @@ public:
         {
             if (nullptr == m_async)
             {
-                // TODO log an error?  Or throw an exception;
-                return {};
+                throw ArchiveException("AsyncConnect already complete", SOURCEINFO);
             }
 
             aeron_archive_t *aeron_archive = nullptr;
@@ -213,11 +210,6 @@ public:
         aeron_archive_close(m_aeron_archive_t);
     }
 
-    Subscription &controlResponseSubscription()
-    {
-        return *m_controlResponseSubscription;
-    }
-
     Context &context()
     {
         return m_archiveCtxW;
@@ -226,6 +218,75 @@ public:
     std::int64_t archiveId()
     {
         return aeron_archive_get_archive_id(m_aeron_archive_t);
+    }
+
+    Subscription &controlResponseSubscription()
+    {
+        return *m_controlResponseSubscription;
+    }
+
+    inline std::int32_t pollForRecordingSignals()
+    {
+        int32_t count;
+
+        if (aeron_archive_poll_for_recording_signals(&count, m_aeron_archive_t) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return count;
+    }
+
+    inline std::string pollForErrorResponse()
+    {
+        char buffer[1000];
+
+        if (aeron_archive_poll_for_error_response(m_aeron_archive_t, buffer, 1000) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return { buffer };
+    }
+
+    inline void checkForErrorResponse()
+    {
+        if (aeron_archive_check_for_error_response(m_aeron_archive_t) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+    }
+
+    inline std::shared_ptr<Publication> addRecordedPublication(const std::string &channel, std::int32_t streamId)
+    {
+        aeron_publication_t *publication;
+
+        if (aeron_archive_add_recorded_publication(
+            &publication,
+            m_aeron_archive_t,
+            channel.c_str(),
+            streamId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return std::make_shared<Publication>(m_archiveCtxW.aeron()->aeron(), publication);
+    }
+
+    inline std::shared_ptr<ExclusivePublication> addRecordedExclusivePublication(const std::string &channel, std::int32_t streamId)
+    {
+        aeron_exclusive_publication_t *exclusivePublication;
+
+        if (aeron_archive_add_recorded_exclusive_publication(
+            &exclusivePublication,
+            m_aeron_archive_t,
+            channel.c_str(),
+            streamId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return std::make_shared<ExclusivePublication>(m_archiveCtxW.aeron()->aeron(), exclusivePublication);
     }
 
     inline std::int64_t startRecording(
@@ -265,6 +326,21 @@ public:
         }
 
         return recording_position;
+    }
+
+    inline std::int64_t getStartPosition(std::int64_t recordingId)
+    {
+        int64_t startPosition;
+
+        if (aeron_archive_get_start_position(
+            &startPosition,
+            m_aeron_archive_t,
+            recordingId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return startPosition;
     }
 
     inline std::int64_t getStopPosition(std::int64_t recordingId)
@@ -322,14 +398,31 @@ public:
         return stopped;
     }
 
-    inline void stopAllReplays(std::int64_t recordingId)
+    inline void stopRecording(const std::string &channel, std::int32_t streamId)
     {
-        if (aeron_archive_stop_all_replays(
+        if (aeron_archive_stop_recording_channel_and_stream(
             m_aeron_archive_t,
-            recordingId) < 0)
+            channel.c_str(),
+            streamId) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
+    }
+
+    inline bool tryStopRecording(const std::string &channel, std::int32_t streamId)
+    {
+        bool stopped;
+
+        if (aeron_archive_try_stop_recording_channel_and_stream(
+            &stopped,
+            m_aeron_archive_t,
+            channel.c_str(),
+            streamId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return stopped;
     }
 
     inline bool tryStopRecordingByIdentity(std::int64_t recordingId)
@@ -347,7 +440,7 @@ public:
         return stopped;
     }
 
-    inline void stopRecording(const std::shared_ptr<Publication> publication)
+    inline void stopRecording(const std::shared_ptr<Publication> &publication)
     {
         if (aeron_archive_stop_recording_publication(
             m_aeron_archive_t,
@@ -357,7 +450,7 @@ public:
         }
     }
 
-    inline void stopRecording(const std::shared_ptr<ExclusivePublication> exclusivePublication)
+    inline void stopRecording(const std::shared_ptr<ExclusivePublication> &exclusivePublication)
     {
         if (aeron_archive_stop_recording_exclusive_publication(
             m_aeron_archive_t,
@@ -365,21 +458,6 @@ public:
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-    }
-
-    inline std::int64_t getStartPosition(std::int64_t recordingId)
-    {
-        int64_t startPosition;
-
-        if (aeron_archive_get_start_position(
-            &startPosition,
-            m_aeron_archive_t,
-            recordingId) < 0)
-        {
-            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
-
-        return startPosition;
     }
 
     inline std::int64_t findLastMatchingRecording(
@@ -469,59 +547,6 @@ public:
         return count;
     }
 
-    inline void stopRecording(const std::string &channel, std::int32_t streamId)
-    {
-        if (aeron_archive_stop_recording_channel_and_stream(
-            m_aeron_archive_t,
-            channel.c_str(),
-            streamId) < 0)
-        {
-            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
-    }
-
-    inline bool tryStopRecording(const std::string &channel, std::int32_t streamId)
-    {
-        bool stopped;
-
-        if (aeron_archive_try_stop_recording_channel_and_stream(
-            &stopped,
-            m_aeron_archive_t,
-            channel.c_str(),
-            streamId) < 0)
-        {
-            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
-
-        return stopped;
-    }
-
-    inline std::int64_t extendRecording(
-        std::int64_t recordingId,
-        const std::string &channel,
-        std::int32_t streamId,
-        SourceLocation sourceLocation,
-        bool autoStop)
-    {
-        int64_t subscription_id;
-
-        if (aeron_archive_extend_recording(
-            &subscription_id,
-            m_aeron_archive_t,
-            recordingId,
-            channel.c_str(),
-            streamId,
-            sourceLocation == SourceLocation::LOCAL ?
-                AERON_ARCHIVE_SOURCE_LOCATION_LOCAL :
-                AERON_ARCHIVE_SOURCE_LOCATION_REMOTE,
-            autoStop) < 0)
-        {
-            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
-
-        return subscription_id;
-    }
-
     inline std::int64_t startReplay(
         std::int64_t recordingId,
         const std::string &replayChannel,
@@ -582,38 +607,6 @@ public:
         return count;
     }
 
-    inline std::shared_ptr<Publication> addRecordedPublication(const std::string &channel, std::int32_t streamId)
-    {
-        aeron_publication_t *publication;
-
-        if (aeron_archive_add_recorded_publication(
-            &publication,
-            m_aeron_archive_t,
-            channel.c_str(),
-            streamId) < 0)
-        {
-            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
-
-        return std::make_shared<Publication>(m_archiveCtxW.aeron()->aeron(), publication);
-    }
-
-    inline std::shared_ptr<ExclusivePublication> addRecordedExclusivePublication(const std::string &channel, std::int32_t streamId)
-    {
-        aeron_exclusive_publication_t *exclusivePublication;
-
-        if (aeron_archive_add_recorded_exclusive_publication(
-            &exclusivePublication,
-            m_aeron_archive_t,
-            channel.c_str(),
-            streamId) < 0)
-        {
-            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
-
-        return std::make_shared<ExclusivePublication>(m_archiveCtxW.aeron()->aeron(), exclusivePublication);
-    }
-
     inline void stopReplay(std::int64_t replaySessionId)
     {
         if (aeron_archive_stop_replay(m_aeron_archive_t, replaySessionId) < 0)
@@ -622,28 +615,16 @@ public:
         }
     }
 
-    inline void stopReplication(std::int64_t replicationId)
+    inline void stopAllReplays(std::int64_t recordingId)
     {
-        if (aeron_archive_stop_replication(m_aeron_archive_t, replicationId) < 0)
-        {
-            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
-    }
-
-    inline bool tryStopReplication(std::int64_t replicationId)
-    {
-        bool stopped;
-
-        if (aeron_archive_try_stop_replication(
-            &stopped,
+        if (aeron_archive_stop_all_replays(
             m_aeron_archive_t,
-            replicationId) < 0)
+            recordingId) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
-
-        return stopped;
     }
+
 
     inline std::int32_t listRecordingSubscriptions(
         std::int32_t pseudoIndex,
@@ -687,6 +668,32 @@ public:
         return deletedSegmentsCount;
     }
 
+    inline std::int64_t extendRecording(
+        std::int64_t recordingId,
+        const std::string &channel,
+        std::int32_t streamId,
+        SourceLocation sourceLocation,
+        bool autoStop)
+    {
+        int64_t subscription_id;
+
+        if (aeron_archive_extend_recording(
+            &subscription_id,
+            m_aeron_archive_t,
+            recordingId,
+            channel.c_str(),
+            streamId,
+            sourceLocation == SourceLocation::LOCAL ?
+                AERON_ARCHIVE_SOURCE_LOCATION_LOCAL :
+                AERON_ARCHIVE_SOURCE_LOCATION_REMOTE,
+            autoStop) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return subscription_id;
+    }
+
     inline std::int64_t replicate(
         std::int64_t srcRecordingId,
         std::int32_t srcControlStreamId,
@@ -695,30 +702,41 @@ public:
     {
         int64_t replicationId;
 
-       if (aeron_archive_replicate(
-           &replicationId,
-           m_aeron_archive_t,
-           srcRecordingId,
-           srcControlStreamId,
-           srcControlChannel.c_str(),
-           replicationParams.params()) < 0)
-       {
-           ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-       }
-
-       return replicationId;
-    }
-
-    inline std::int32_t pollForRecordingSignals()
-    {
-        int32_t count;
-
-        if (aeron_archive_poll_for_recording_signals(&count, m_aeron_archive_t) < 0)
+        if (aeron_archive_replicate(
+            &replicationId,
+            m_aeron_archive_t,
+            srcRecordingId,
+            srcControlStreamId,
+            srcControlChannel.c_str(),
+            replicationParams.params()) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        return count;
+        return replicationId;
+    }
+
+    inline void stopReplication(std::int64_t replicationId)
+    {
+        if (aeron_archive_stop_replication(m_aeron_archive_t, replicationId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+    }
+
+    inline bool tryStopReplication(std::int64_t replicationId)
+    {
+        bool stopped;
+
+        if (aeron_archive_try_stop_replication(
+            &stopped,
+            m_aeron_archive_t,
+            replicationId) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return stopped;
     }
 
     inline void detachSegments(std::int64_t recordingId, std::int64_t newStartPosition)
@@ -747,21 +765,6 @@ public:
         return count;
     }
 
-    inline std::int64_t attachSegments(std::int64_t recordingId)
-    {
-        int64_t count;
-
-        if (aeron_archive_attach_segments(
-            &count,
-            m_aeron_archive_t,
-            recordingId) < 0)
-        {
-            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
-
-        return count;
-    }
-
     inline std::int64_t purgeSegments(std::int64_t recordingId, std::int64_t newStartPosition)
     {
         int64_t count;
@@ -771,6 +774,21 @@ public:
             m_aeron_archive_t,
             recordingId,
             newStartPosition) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return count;
+    }
+
+    inline std::int64_t attachSegments(std::int64_t recordingId)
+    {
+        int64_t count;
+
+        if (aeron_archive_attach_segments(
+            &count,
+            m_aeron_archive_t,
+            recordingId) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
@@ -807,7 +825,6 @@ public:
             segmentFileLength);
     }
 
-
 private:
     explicit AeronArchive(
         aeron_archive_t *aeron_archive,
@@ -823,7 +840,7 @@ private:
         // So use the C functions to acquire the underlying aeron_t.
         auto *aeron = aeron_archive_context_get_aeron(aeron_archive_get_archive_context(aeron_archive));
 
-        m_archiveCtxW.setAeron(nullptr == originalAeron ? std::make_shared<Aeron>(aeron) : originalAeron);
+        m_archiveCtxW.aeron(nullptr == originalAeron ? std::make_shared<Aeron>(aeron) : originalAeron);
         m_archiveCtxW.recordingSignalConsumer(recordingSignalConsumer);
 
         m_controlResponseSubscription = std::make_unique<Subscription>(

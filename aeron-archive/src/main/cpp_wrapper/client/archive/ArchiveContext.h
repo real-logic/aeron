@@ -61,7 +61,9 @@ struct RecordingSignal
     std::int32_t m_recordingSignalCode;
 };
 
-typedef  std::function<void(RecordingSignal &recordingSignal)> recording_signal_consumer_t;
+typedef std::function<void(RecordingSignal &recordingSignal)> recording_signal_consumer_t;
+
+typedef std::function<void()> delegating_invoker_t;
 
 class Context
 {
@@ -84,9 +86,32 @@ public:
         m_aeron_archive_ctx_t = nullptr;
     }
 
-    inline std::string controlRequestChannel() const
+    inline Context &aeron(std::shared_ptr<Aeron> aeron)
     {
-        return aeron_archive_context_get_control_request_channel(m_aeron_archive_ctx_t);
+        if (aeron_archive_context_set_aeron(m_aeron_archive_ctx_t,aeron->aeron()) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        m_aeronW = std::move(aeron);
+
+        return *this;
+    }
+
+    inline std::shared_ptr<Aeron> aeron() const
+    {
+        return m_aeronW;
+    }
+
+    inline Context &aeronDirectoryName(const std::string &directoryName)
+    {
+        aeron_archive_context_set_aeron_directory_name(m_aeron_archive_ctx_t, directoryName.c_str());
+        return *this;
+    }
+
+    inline std::string aeronDirectoryName() const
+    {
+        return { aeron_archive_context_get_aeron_directory_name(m_aeron_archive_ctx_t) };
     }
 
     inline Context &controlRequestChannel(const std::string &channel)
@@ -95,43 +120,59 @@ public:
         return *this;
     }
 
+    inline std::string controlRequestChannel() const
+    {
+        return aeron_archive_context_get_control_request_channel(m_aeron_archive_ctx_t);
+    }
+
+    inline Context &controlRequestStreamId(const std::int32_t streamId)
+    {
+        aeron_archive_context_set_control_request_stream_id(m_aeron_archive_ctx_t, streamId);
+        return *this;
+    }
+
+    inline std::int32_t controlRequestStreamId() const
+    {
+        return aeron_archive_context_get_control_request_stream_id(m_aeron_archive_ctx_t);
+    }
+
     inline Context &controlResponseChannel(const std::string &channel)
     {
         aeron_archive_context_set_control_response_channel(m_aeron_archive_ctx_t, channel.c_str());
         return *this;
     }
 
-    /*
-    inline on_recording_signal_t recordingSignalConsumer() const
+    inline std::string controlResponseChannel() const
     {
-        return m_onRecordingSignal;
+        return aeron_archive_context_get_control_response_channel(m_aeron_archive_ctx_t);
     }
-     */
 
-    inline Context &recordingSignalConsumer(const recording_signal_consumer_t &consumer)
+    inline Context &controlResponseStreamId(const std::int32_t streamId)
     {
-        m_recordingSignalConsumer = consumer;
+        aeron_archive_context_set_control_response_stream_id(m_aeron_archive_ctx_t, streamId);
         return *this;
     }
 
-    std::string aeronDirectoryName()
+    inline std::int32_t controlResponseStreamId() const
     {
-        return { aeron_archive_context_get_aeron_directory_name(m_aeron_archive_ctx_t) };
+        return aeron_archive_context_get_control_response_stream_id(m_aeron_archive_ctx_t);
     }
 
-    std::shared_ptr<Aeron> aeron()
+    inline Context &messageTimeoutNS(const std::int64_t messageTmoNS)
     {
-        return m_aeronW;
+        aeron_archive_context_set_message_timeout_ns(m_aeron_archive_ctx_t, messageTmoNS);
+        return *this;
     }
 
-    void setAeron(std::shared_ptr<Aeron> aeron)
+    inline std::int64_t messageTimeoutNS() const
     {
-        if (aeron_archive_context_set_aeron(m_aeron_archive_ctx_t,aeron->aeron()) < 0)
-        {
-            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
+        return aeron_archive_context_get_message_timeout_ns(m_aeron_archive_ctx_t);
+    }
 
-        m_aeronW = std::move(aeron);
+    template<typename IdleStrategy>
+    void idleStrategy(IdleStrategy &idleStrategy)
+    {
+        m_idleFunc = [&idleStrategy](int work_count){ idleStrategy.idle(work_count); };
     }
 
     void credentialsSupplier(const CredentialsSupplier &credentialsSupplier)
@@ -141,29 +182,51 @@ public:
         m_credentialsSupplier.m_onFree = credentialsSupplier.m_onFree;
     }
 
-    template<typename IdleStrategy>
-    void idleStrategy(IdleStrategy &idleStrategy)
+    inline Context &recordingSignalConsumer(const recording_signal_consumer_t &consumer)
     {
-        m_idleFunc = [&idleStrategy](int work_count){ idleStrategy.idle(work_count); };
+        m_recordingSignalConsumer = consumer;
+        return *this;
     }
 
-    inline std::int32_t controlRequestStreamId() const
+    // TODO need a test for the errorHandler
+    inline Context &errorHandler(const exception_handler_t &errorHandler)
     {
-        return aeron_archive_context_get_control_request_stream_id(m_aeron_archive_ctx_t);
+        m_errorHandler = errorHandler;
+        return *this;
+    }
+
+    inline exception_handler_t errorHandler() const
+    {
+        return m_errorHandler;
+    }
+
+    // TODO need a test for the delegating invoker
+    inline Context &delegatingInvoker(const delegating_invoker_t &delegatingInvokerFunc)
+    {
+        m_delegating_invoker = delegatingInvokerFunc;
+        return *this;
+    }
+
+    inline delegating_invoker_t &delegatingInvoker()
+    {
+        return m_delegating_invoker;
     }
 
 private:
     aeron_archive_context_t *m_aeron_archive_ctx_t = nullptr; // backing C struct
 
-    CredentialsSupplier m_credentialsSupplier;
-    aeron_archive_encoded_credentials_t m_lastEncodedCredentials = {};
+    std::shared_ptr<Aeron> m_aeronW = nullptr;
 
     std::function<void(int work_count)> m_idleFunc;
     YieldingIdleStrategy m_defaultIdleStrategy;
 
-    std::shared_ptr<Aeron> m_aeronW = nullptr;
+    CredentialsSupplier m_credentialsSupplier;
+    aeron_archive_encoded_credentials_t m_lastEncodedCredentials = {};
 
+    // TODO have a default so we don't have to check for null?
     recording_signal_consumer_t m_recordingSignalConsumer = nullptr;
+    exception_handler_t m_errorHandler = nullptr;
+    delegating_invoker_t m_delegating_invoker = nullptr;
 
     // This Context is created after connect succeeds and wraps around a context_t created in the C layer
     explicit Context(
@@ -175,19 +238,19 @@ private:
 
     void setupContext()
     {
-        if (aeron_archive_context_set_credentials_supplier(
+        if (aeron_archive_context_set_idle_strategy(
             m_aeron_archive_ctx_t,
-            encodedCredentialsFunc,
-            onChallengeFunc,
-            onFreeFunc,
+            idle,
             (void *)this) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
-        if (aeron_archive_context_set_idle_strategy(
+        if (aeron_archive_context_set_credentials_supplier(
             m_aeron_archive_ctx_t,
-            idle,
+            encodedCredentialsFunc,
+            onChallengeFunc,
+            onFreeFunc,
             (void *)this) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -201,7 +264,30 @@ private:
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
+        if (aeron_archive_context_set_error_handler(
+            m_aeron_archive_ctx_t,
+            error_handler_func,
+            (void *)this) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        if (aeron_archive_context_set_delegating_invoker(
+            m_aeron_archive_ctx_t,
+            delegating_invoker_func,
+            (void *)this) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
         this->idleStrategy(m_defaultIdleStrategy);
+    }
+
+    static void idle(void *clientd, int work_count)
+    {
+        auto ctx = (Context *)clientd;
+
+        ctx->m_idleFunc(work_count);
     }
 
     static aeron_archive_encoded_credentials_t *encodedCredentialsFunc(void *clientd)
@@ -233,13 +319,6 @@ private:
         ctx->m_credentialsSupplier.m_onFree({ credentials->data, credentials->length});
     }
 
-    static void idle(void *clientd, int work_count)
-    {
-        auto ctx = (Context *)clientd;
-
-        ctx->m_idleFunc(work_count);
-    }
-
     static void recording_signal_consumer_func(
         aeron_archive_recording_signal_t *recording_signal,
         void *clientd)
@@ -256,6 +335,33 @@ private:
                 recording_signal->recording_signal_code);
 
             ctx->m_recordingSignalConsumer(signal);
+        }
+    }
+
+    static void error_handler_func(void *clientd, int errcode, const char *message)
+    {
+        auto ctx = (Context *)clientd;
+
+        if (nullptr != ctx->m_errorHandler)
+        {
+            try
+            {
+                ARCHIVE_MAP_TO_SOURCED_EXCEPTION_AND_THROW(errcode, message);
+            }
+            catch (SourcedException &exception)
+            {
+                ctx->m_errorHandler(exception);
+            }
+        }
+    }
+
+    static void delegating_invoker_func(void *clientd)
+    {
+        auto ctx = (Context *)clientd;
+
+        if (nullptr != ctx->m_delegating_invoker)
+        {
+            ctx->m_delegating_invoker();
         }
     }
 

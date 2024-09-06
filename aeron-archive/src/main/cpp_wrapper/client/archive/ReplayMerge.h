@@ -62,6 +62,20 @@ public:
         aeron_archive_replay_merge_close(m_replay_merge_t);
     }
 
+    inline int doWork()
+    {
+        int count;
+
+        if (aeron_archive_replay_merge_do_work(
+            &count,
+            m_replay_merge_t) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
+        return count;
+    }
+
     template<typename F>
     inline int poll(F &&fragmentHandler, int fragmentLimit)
     {
@@ -106,6 +120,11 @@ public:
     inline bool hasFailed() const
     {
         return aeron_archive_replay_merge_has_failed(m_replay_merge_t);
+    }
+
+    inline bool isLiveAdded() const
+    {
+        return aeron_archive_replay_merge_is_live_added(m_replay_merge_t);
     }
 
 private:

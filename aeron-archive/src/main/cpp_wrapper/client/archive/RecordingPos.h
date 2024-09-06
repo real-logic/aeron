@@ -41,8 +41,9 @@ inline static std::int64_t getRecordingId(CountersReader &countersReader, std::i
 
 inline static std::string getSourceIdentity(CountersReader &countersReader, std::int32_t counterId)
 {
-    size_t sib_len = 1000;
-    const char source_identity_buffer[1000] = { '\0' };
+    const size_t initial_sib_len = AERON_COUNTER_MAX_LABEL_LENGTH;
+    const char source_identity_buffer[initial_sib_len] = { '\0' };
+    size_t sib_len = initial_sib_len;
 
     if (aeron_archive_recording_pos_get_source_identity(
         countersReader.countersReader(),

@@ -90,7 +90,7 @@ void recording_signal_consumer(
     auto cd = (recording_signal_consumer_clientd_t *)clientd;
     cd->signals.insert(signal->recording_signal_code);
 
-    // fprintf(stderr, "RECORDING SIGNAL CODE :: %i\n", signal->recording_signal_code);
+    //fprintf(stderr, "RECORDING SIGNAL CODE :: %i\n", signal->recording_signal_code);
 }
 
 
@@ -2505,7 +2505,9 @@ TEST_P(AeronCArchiveParamTest, shouldRecordReplicateThenStop)
         aeron_archive_context_get_control_request_channel(m_ctx),
         &replication_params));
 
-    while (0 == rsc_cd.signals.count(AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_REPLICATE))
+    while (
+        0 == rsc_cd.signals.count(AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_REPLICATE) ||
+        0 == rsc_cd.signals.count(AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_EXTEND))
     {
         aeron_archive_poll_for_recording_signals(nullptr, m_dest_archive);
 

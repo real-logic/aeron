@@ -1729,7 +1729,9 @@ TEST_P(AeronArchiveWrapperParamTest, shouldRecordReplicateThenStop)
     int64_t replicationId = dstAeronArchive->replicate(
         recordingId, m_context.controlRequestStreamId(), m_context.controlRequestChannel(), params);
 
-    while (0 == signals.count(aeron::archive::client::RecordingSignal::Value::REPLICATE))
+    while (
+        0 == signals.count(aeron::archive::client::RecordingSignal::Value::REPLICATE) ||
+        0 == signals.count(aeron::archive::client::RecordingSignal::Value::EXTEND))
     {
         dstAeronArchive->pollForRecordingSignals();
         idleStrategy.idle();

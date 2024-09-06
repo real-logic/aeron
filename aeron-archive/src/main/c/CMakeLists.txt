@@ -14,6 +14,50 @@
 # limitations under the License.
 #
 
+include(CheckSymbolExists)
+
+if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+    set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)
+    set(WSAPOLL_PROTOTYPE_EXISTS True)
+endif ()
+
+if (MSVC)
+    set(AERON_STATIC_LIB_LINK_OPTS "")
+else()
+    # Because dlsym() is used to load strategies.
+    set(AERON_STATIC_LIB_LINK_OPTS "-rdynamic")
+endif()
+
+if (WSAPOLL_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_WSAPOLL)
+endif ()
+
+if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+    set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
+    add_definitions(-D_DEFAULT_SOURCE)
+endif ()
+
+check_symbol_exists(fallocate "fcntl.h" FALLOCATE_PROTOTYPE_EXISTS)
+check_symbol_exists(posix_fallocate "fcntl.h" POSIX_FALLOCATE_PROTOTYPE_EXISTS)
+check_symbol_exists(F_PREALLOCATE "fcntl.h" F_PREALLOCATE_PROTOTYPE_EXISTS)
+
+if (FALLOCATE_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_FALLOCATE)
+endif ()
+
+if (POSIX_FALLOCATE_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_POSIX_FALLOCATE)
+endif ()
+
+if (F_PREALLOCATE_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_F_PREALLOCATE)
+endif ()
+
+if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set(BUILD_SHARED_LIBS ON)
+endif ()
+
 find_package(Java REQUIRED)
 
 set(CODEC_SCHEMA ${ARCHIVE_CODEC_SCHEMA_DIR}/aeron-archive-codecs.xml)

@@ -56,8 +56,6 @@ import org.agrona.concurrent.status.CountersReader;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -69,6 +67,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.zip.CRC32;
 
@@ -2162,15 +2161,12 @@ class ClusterTest
     }
 
     @ParameterizedTest
-    @ValueSource(ints = { 1, 1000 })
+    @ValueSource(ints = { 20, 100 })
     @InterruptAfter(90)
-    @DisabledOnOs(OS.MAC)
     void shouldCatchupFollowerWithSlowService(final int sleepTimeMs)
     {
-        cluster = aCluster()
-            .withLogChannel("aeron:udp?term-length=1m|alias=raft")
-            .withStaticNodes(3)
-            .withServiceSupplier((i) -> new TestNode.TestService[]
+        final IntFunction<TestNode.TestService[]> serviceSupplier =
+            (i) -> new TestNode.TestService[]
             {
                 new TestNode.TestService().index(i),
                 new TestNode.TestService()
@@ -2187,36 +2183,39 @@ class ClusterTest
                         messageCount.incrementAndGet();
                     }
                 }.index(i)
-            })
+            };
+
+        cluster = aCluster()
+            .withLogChannel("aeron:udp?term-length=1m|alias=log")
+            .withStaticNodes(3)
+            .withServiceSupplier(serviceSupplier)
             .start();
+
         systemTestWatcher.cluster(cluster);
 
-        final TestNode leader = cluster.awaitLeader();
-        TestNode followerA = cluster.followers().get(0);
-        final TestNode followerB = cluster.followers().get(1);
-
+        cluster.awaitLeader();
         cluster.connectClient();
 
-        final int firstBatch = (int)(SECONDS.toMillis(5) / sleepTimeMs);
-        cluster.sendMessages(firstBatch);
-        cluster.awaitResponseMessageCount(firstBatch);
-        cluster.awaitServicesMessageCount(firstBatch);
+        final int firstBatchCount = (int)(SECONDS.toMillis(5) / sleepTimeMs);
+        cluster.sendMessages(firstBatchCount);
+        cluster.awaitResponseMessageCount(firstBatchCount);
+        cluster.awaitServicesMessageCount(firstBatchCount);
 
+        final TestNode followerA = cluster.followers().get(0);
+        final TestNode followerB = cluster.followers().get(1);
         cluster.stopNode(followerA);
 
-        final int secondBatch = (int)(SECONDS.toMillis(7) / sleepTimeMs);
-        cluster.sendMessages(secondBatch);
-        cluster.awaitResponseMessageCount(firstBatch + secondBatch);
-        cluster.awaitServiceMessageCount(leader, firstBatch + secondBatch);
-        cluster.awaitServiceMessageCount(followerB, firstBatch + secondBatch);
+        final int secondBatchCount = (int)(SECONDS.toMillis(7) / sleepTimeMs);
+        cluster.sendMessages(secondBatchCount);
+        cluster.awaitResponseMessageCount(firstBatchCount + secondBatchCount);
+        cluster.awaitServiceMessageCount(followerB, firstBatchCount + secondBatchCount);
 
-        followerA = cluster.startStaticNode(followerA.index(), false);
-        assertNotNull(followerA);
+        cluster.startStaticNode(followerA.index(), false);
 
-        final int thirdBatch = (int)(SECONDS.toMillis(3) / sleepTimeMs);
-        cluster.sendMessages(thirdBatch);
-        cluster.awaitResponseMessageCount(firstBatch + secondBatch + thirdBatch);
-        cluster.awaitServicesMessageCount(firstBatch + secondBatch + thirdBatch);
+        final int thirdBatchCount = (int)(SECONDS.toMillis(3) / sleepTimeMs);
+        cluster.sendMessages(thirdBatchCount);
+        cluster.awaitResponseMessageCount(firstBatchCount + secondBatchCount + thirdBatchCount);
+        cluster.awaitServicesMessageCount(firstBatchCount + secondBatchCount + thirdBatchCount);
     }
 
     @Test

@@ -25,8 +25,10 @@
 namespace aeron { namespace archive { namespace client
 {
 
-struct RecordingSignal
+class RecordingSignal
 {
+public:
+
     enum Value
     {
         START = INT32_C(0),

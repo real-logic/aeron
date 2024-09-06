@@ -138,19 +138,21 @@ int aeron_archive_recording_pos_get_source_identity(aeron_counters_reader_t *cou
         return -1;
     }
 
+    int32_t len = 0;
+
     if (AERON_COUNTER_RECORD_ALLOCATED == state &&
         AERON_ARCHIVE_RECORDING_POSITION_TYPE_ID == type_id)
     {
+        len = (int32_t)*len_p;
+
         // use the shorter of the two
-        *len_p = key->source_identity_length < (int32_t)*len_p ? key->source_identity_length : *len_p;
+        len = key->source_identity_length < len ? key->source_identity_length : len;
 
         // the source_identity string comes right after the key definition
-        memcpy((void *)dst,((uint8_t *)key + sizeof(struct aeron_archive_recording_pos_key_defn)),*len_p);
-
-        return 0;
+        memcpy((void *)dst,((uint8_t *)key + sizeof(struct aeron_archive_recording_pos_key_defn)),len);
     }
 
-    *len_p = 0;
+    *len_p = len;
 
     return 0;
 }

@@ -369,9 +369,6 @@ public:
     }
 
 protected:
-    //const std::string m_java = JAVA_EXECUTABLE;
-    //const std::string m_aeronAllJar = AERON_ALL_JAR;
-
     std::shared_ptr<TestArchive> m_destArchive;
     AeronArchive::Context_t m_destContext;
 

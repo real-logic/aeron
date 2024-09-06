@@ -37,7 +37,7 @@ public:
         REPLICATE = INT32_C(3),
         MERGE = INT32_C(4),
         SYNC = INT32_C(5),
-        DELETE = INT32_C(6),
+        ABC_DELETE = INT32_C(6),
         REPLICATE_END = INT32_C(7),
         NULL_VALUE = INT32_MIN
     };

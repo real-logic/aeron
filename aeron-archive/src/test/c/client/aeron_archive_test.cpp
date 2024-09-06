@@ -2074,6 +2074,7 @@ TEST_F(AeronCArchiveTest, shouldFindMultipleRecordingDescriptors)
     aeron_publication_t *publication;
     int32_t session_id;
     int64_t subscription_id;
+    int64_t subscription_id2;
 
     std::set<std::int32_t> session_ids;
 
@@ -2094,10 +2095,6 @@ TEST_F(AeronCArchiveTest, shouldFindMultipleRecordingDescriptors)
 
     setupCounters(session_id);
 
-    ASSERT_EQ_ERR(0, aeron_archive_stop_recording_subscription(
-        m_archive,
-        subscription_id));
-
     const std::string recordingChannel2 = "aeron:udp?endpoint=localhost:3334";
     publication = addPublication(recordingChannel2, m_recordingStreamId);
 
@@ -2105,7 +2102,7 @@ TEST_F(AeronCArchiveTest, shouldFindMultipleRecordingDescriptors)
     session_ids.insert(session_id);
 
     ASSERT_EQ_ERR(0, aeron_archive_start_recording(
-        &subscription_id,
+        &subscription_id2,
         m_archive,
         recordingChannel2.c_str(),
         m_recordingStreamId,
@@ -2113,10 +2110,6 @@ TEST_F(AeronCArchiveTest, shouldFindMultipleRecordingDescriptors)
         false));
 
     setupCounters(session_id);
-
-    ASSERT_EQ_ERR(0, aeron_archive_stop_recording_subscription(
-        m_archive,
-        subscription_id));
 
     int32_t count = 1234;
 
@@ -2140,6 +2133,14 @@ TEST_F(AeronCArchiveTest, shouldFindMultipleRecordingDescriptors)
         recording_descriptor_consumer,
         &clientd));
     EXPECT_EQ(1, count);
+
+    ASSERT_EQ_ERR(0, aeron_archive_stop_recording_subscription(
+        m_archive,
+        subscription_id));
+
+    ASSERT_EQ_ERR(0, aeron_archive_stop_recording_subscription(
+        m_archive,
+        subscription_id2));
 }
 
 TEST_F(AeronCArchiveTest, shouldFindRecordingDescriptorForUri)
@@ -2147,6 +2148,7 @@ TEST_F(AeronCArchiveTest, shouldFindRecordingDescriptorForUri)
     aeron_publication_t *publication;
     int32_t session_id;
     int64_t subscription_id;
+    int64_t subscription_id2;
 
     std::set<std::int32_t> session_ids;
 
@@ -2167,10 +2169,6 @@ TEST_F(AeronCArchiveTest, shouldFindRecordingDescriptorForUri)
 
     setupCounters(session_id);
 
-    ASSERT_EQ_ERR(0, aeron_archive_stop_recording_subscription(
-        m_archive,
-        subscription_id));
-
     const std::string recordingChannel2 = "aeron:udp?endpoint=localhost:3334";
     publication = addPublication(recordingChannel2, m_recordingStreamId);
 
@@ -2178,7 +2176,7 @@ TEST_F(AeronCArchiveTest, shouldFindRecordingDescriptorForUri)
     session_ids.insert(session_id);
 
     ASSERT_EQ_ERR(0, aeron_archive_start_recording(
-        &subscription_id,
+        &subscription_id2,
         m_archive,
         recordingChannel2.c_str(),
         m_recordingStreamId,
@@ -2186,10 +2184,6 @@ TEST_F(AeronCArchiveTest, shouldFindRecordingDescriptorForUri)
         false));
 
     setupCounters(session_id);
-
-    ASSERT_EQ_ERR(0, aeron_archive_stop_recording_subscription(
-        m_archive,
-        subscription_id));
 
     int32_t count = 1234;
 
@@ -2234,6 +2228,14 @@ TEST_F(AeronCArchiveTest, shouldFindRecordingDescriptorForUri)
         recording_descriptor_consumer,
         &clientd));
     EXPECT_EQ(0, count);
+
+    ASSERT_EQ_ERR(0, aeron_archive_stop_recording_subscription(
+        m_archive,
+        subscription_id));
+
+    ASSERT_EQ_ERR(0, aeron_archive_stop_recording_subscription(
+        m_archive,
+        subscription_id2));
 }
 
 TEST_F(AeronCArchiveTest, shouldReadJumboRecordingDescriptor)

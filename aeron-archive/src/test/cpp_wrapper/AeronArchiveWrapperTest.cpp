@@ -1424,24 +1424,19 @@ TEST_F(AeronArchiveWrapperTest, shouldFindMultipleRecordingDescriptors)
     std::shared_ptr<Publication> publication = addPublication(
         *aeron, m_recordingChannel, m_recordingStreamId);
 
-    std::int32_t sessionId = publication->sessionId();
-    session_ids.insert(sessionId);
+    session_ids.insert(publication->sessionId());
 
     std::int64_t subscriptionId = aeronArchive->startRecording(
         m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
 
-    aeronArchive->stopRecording(subscriptionId);
-
     const std::string recordingChannel2 = "aeron:udp?endpoint=localhost:3334";
-    publication = addPublication(*aeron, recordingChannel2, m_recordingStreamId);
+    std::shared_ptr<Publication> publication2 = addPublication(
+        *aeron, recordingChannel2, m_recordingStreamId);
 
-    sessionId = publication->sessionId();
-    session_ids.insert(sessionId);
+    session_ids.insert(publication2->sessionId());
 
-    subscriptionId = aeronArchive->startRecording(
+    std::int64_t subscriptionId2 = aeronArchive->startRecording(
         recordingChannel2, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
-
-    aeronArchive->stopRecording(subscriptionId);
 
     std::set<std::int32_t> found_session_ids;
 
@@ -1460,6 +1455,9 @@ TEST_F(AeronArchiveWrapperTest, shouldFindMultipleRecordingDescriptors)
         1,
         [&](const RecordingDescriptor &recordingDescriptor){});
     EXPECT_EQ(count, 1);
+
+    aeronArchive->stopRecording(subscriptionId);
+    aeronArchive->stopRecording(subscriptionId2);
 }
 
 TEST_F(AeronArchiveWrapperTest, shouldFindRecordingDescriptorForUri)
@@ -1472,24 +1470,19 @@ TEST_F(AeronArchiveWrapperTest, shouldFindRecordingDescriptorForUri)
     std::shared_ptr<Publication> publication = addPublication(
         *aeron, m_recordingChannel, m_recordingStreamId);
 
-    std::int32_t sessionId = publication->sessionId();
-    session_ids.insert(sessionId);
+    session_ids.insert(publication->sessionId());
 
     std::int64_t subscriptionId = aeronArchive->startRecording(
         m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
 
-    aeronArchive->stopRecording(subscriptionId);
-
     const std::string recordingChannel2 = "aeron:udp?endpoint=localhost:3334";
-    publication = addPublication(*aeron, recordingChannel2, m_recordingStreamId);
+    std::shared_ptr<Publication> publication2 = addPublication(
+        *aeron, recordingChannel2, m_recordingStreamId);
 
-    sessionId = publication->sessionId();
-    session_ids.insert(sessionId);
+    session_ids.insert(publication2->sessionId());
 
-    subscriptionId = aeronArchive->startRecording(
+    std::int64_t subscriptionId2 = aeronArchive->startRecording(
         recordingChannel2, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
-
-    aeronArchive->stopRecording(subscriptionId);
 
     std::set<std::int32_t> found_session_ids;
 
@@ -1520,6 +1513,9 @@ TEST_F(AeronArchiveWrapperTest, shouldFindRecordingDescriptorForUri)
         m_recordingStreamId,
         [&](const RecordingDescriptor &recordingDescriptor){});
     EXPECT_EQ(count, 0);
+
+    aeronArchive->stopRecording(subscriptionId);
+    aeronArchive->stopRecording(subscriptionId2);
 }
 
 TEST_F(AeronArchiveWrapperTest, shouldReadJumboRecordingDescriptor)
@@ -2291,7 +2287,7 @@ TEST_F(AeronArchiveWrapperTest, shouldPurgeSegments)
 
     int64_t count = aeronArchive->purgeSegments(recordingId, segmentFileBasePosition);
 
-    while (0 == signals.count(aeron::archive::client::RecordingSignal::Value::DELETE))
+    while (0 == signals.count(aeron::archive::client::RecordingSignal::Value::ABC_DELETE))
     {
         aeronArchive->pollForRecordingSignals();
         idle.idle();
@@ -2352,7 +2348,7 @@ TEST_F(AeronArchiveWrapperTest, shouldDetachAndDeleteSegments)
 
     int64_t count = aeronArchive->deleteDetachedSegments(recordingId);
 
-    while (0 == signals.count(aeron::archive::client::RecordingSignal::Value::DELETE))
+    while (0 == signals.count(aeron::archive::client::RecordingSignal::Value::ABC_DELETE))
     {
         aeronArchive->pollForRecordingSignals();
         idle.idle();

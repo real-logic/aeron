@@ -49,7 +49,6 @@ struct aeron_archive_async_connect_stct
     aeron_archive_context_t *ctx;
     aeron_t *aeron;
     aeron_async_add_subscription_t *async_add_subscription;
-    int64_t subscription_id;
     aeron_subscription_t *subscription;
     aeron_async_add_exclusive_publication_t *async_add_exclusive_publication;
     aeron_exclusive_publication_t *exclusive_publication;
@@ -145,7 +144,6 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
 
     _async->aeron = aeron;
     _async->async_add_subscription = async_add_subscription;
-    _async->subscription_id = subscription_id;
     _async->subscription = NULL;
     _async->async_add_exclusive_publication = async_add_exclusive_publication;
     _async->exclusive_publication = NULL;

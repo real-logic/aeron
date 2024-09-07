@@ -46,12 +46,12 @@ int aeron_archive_context_init(aeron_archive_context_t **ctx)
     }
 
     _ctx->aeron = NULL;
-    aeron_default_path(_ctx->aeron_directory_name, AERON_MAX_PATH - 1);
+    aeron_default_path(_ctx->aeron_directory_name, sizeof(_ctx->aeron_directory_name));
     _ctx->owns_aeron_client = false;
 
-    snprintf(_ctx->control_request_channel, AERON_MAX_PATH - 1, "%s", AERON_ARCHIVE_CONTEXT_CONTROL_REQUEST_CHANNEL_DEFAULT);
+    aeron_archive_context_set_control_request_channel(_ctx, AERON_ARCHIVE_CONTEXT_CONTROL_REQUEST_CHANNEL_DEFAULT);
     _ctx->control_request_stream_id = AERON_ARCHIVE_CONTEXT_CONTROL_REQUEST_STREAM_ID_DEFAULT;
-    snprintf(_ctx->control_response_channel, AERON_MAX_PATH - 1, "%s", AERON_ARCHIVE_CONTEXT_CONTROL_RESPONSE_CHANNEL_DEFAULT);
+    aeron_archive_context_set_control_response_channel(_ctx, AERON_ARCHIVE_CONTEXT_CONTROL_RESPONSE_CHANNEL_DEFAULT);
     _ctx->control_response_stream_id = AERON_ARCHIVE_CONTEXT_CONTROL_RESPONSE_STREAM_ID_DEFAULT;
 
     _ctx->message_timeout_ns = AERON_ARCHIVE_CONTEXT_MESSAGE_TIMEOUT_NS_DEFAULT;

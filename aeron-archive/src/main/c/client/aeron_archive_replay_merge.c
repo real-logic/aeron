@@ -49,9 +49,9 @@ struct aeron_archive_replay_merge_stct
     aeron_archive_proxy_t *archive_proxy;
     int64_t control_session_id;
     aeron_uri_string_builder_t replay_channel_builder;
-    char replay_destination[AERON_MAX_PATH];
+    char *replay_destination;
+    char *live_destination;
     char replay_endpoint[AERON_MAX_PATH];
-    char live_destination[AERON_MAX_PATH];
     int64_t recording_id;
     int64_t start_position;
     long long epoch_clock;
@@ -170,17 +170,15 @@ int aeron_archive_replay_merge_init(
         }
     }
 
-    snprintf(
-        _replay_merge->replay_destination,
-        sizeof(_replay_merge->replay_destination),
-        "%s",
-        replay_destination);
+    size_t replay_destination_len = strlen(replay_destination);
+    aeron_alloc((void **)&_replay_merge->replay_destination, replay_destination_len + 1);
+    memcpy(_replay_merge->replay_destination, replay_destination, replay_destination_len);
+    _replay_merge->replay_destination[replay_destination_len] = '\0';
 
-    snprintf(
-        _replay_merge->live_destination,
-        sizeof(_replay_merge->live_destination),
-        "%s",
-        live_destination);
+    size_t live_destination_len = strlen(live_destination);
+    aeron_alloc((void **)&_replay_merge->live_destination, live_destination_len + 1);
+    memcpy(_replay_merge->live_destination, live_destination, live_destination_len);
+    _replay_merge->live_destination[live_destination_len] = '\0';
 
     _replay_merge->recording_id = recording_id;
     _replay_merge->start_position = start_position;
@@ -194,6 +192,8 @@ int aeron_archive_replay_merge_init(
         _replay_merge->replay_destination) < 0)
     {
         aeron_uri_string_builder_close(&_replay_merge->replay_channel_builder);
+        aeron_free(_replay_merge->replay_destination);
+        aeron_free(_replay_merge->live_destination);
         aeron_free(_replay_merge);
 
         AERON_APPEND_ERR("%s", "");
@@ -275,7 +275,8 @@ int aeron_archive_replay_merge_close(aeron_archive_replay_merge_t *replay_merge)
     }
 
     aeron_uri_string_builder_close(&replay_merge->replay_channel_builder);
-
+    aeron_free(replay_merge->replay_destination);
+    aeron_free(replay_merge->live_destination);
     aeron_free(replay_merge);
 
     return 0;

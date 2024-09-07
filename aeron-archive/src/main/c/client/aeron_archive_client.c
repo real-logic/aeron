@@ -459,15 +459,21 @@ int aeron_archive_add_recorded_publication(
         return -1;
     }
 
-    char recording_channel[AERON_MAX_PATH];
+    char *recording_channel;
+    size_t recording_channel_len = strlen(channel) + 50; // add enough space for an additional session id
+    aeron_alloc((void **)&recording_channel, recording_channel_len);
+
+    int rc = 0;
+
     if (aeron_archive_channel_with_session_id(
         recording_channel,
-        sizeof(recording_channel),
+        recording_channel_len,
         channel,
         constants.session_id) < 0)
     {
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+        goto cleanup;
     }
 
     if (aeron_archive_start_recording(
@@ -479,12 +485,15 @@ int aeron_archive_add_recorded_publication(
         false) < 0)
     {
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+        goto cleanup;
     }
 
     *publication_p = _publication;
 
-    return 0;
+cleanup:
+    aeron_free(recording_channel);
+    return rc;
 }
 
 int aeron_archive_add_recorded_exclusive_publication(
@@ -525,15 +534,21 @@ int aeron_archive_add_recorded_exclusive_publication(
     aeron_publication_constants_t constants;
     aeron_exclusive_publication_constants(_exclusive_publication, &constants);
 
-    char recording_channel[AERON_MAX_PATH];
+    char *recording_channel;
+    size_t recording_channel_len = strlen(channel) + 50; // add enough space for an additional session id
+    aeron_alloc((void **)&recording_channel, recording_channel_len);
+
+    int rc = 0;
+
     if (aeron_archive_channel_with_session_id(
         recording_channel,
-        sizeof(recording_channel),
+        recording_channel_len,
         channel,
         constants.session_id) < 0)
     {
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+        goto cleanup;
     }
 
     if (aeron_archive_start_recording(
@@ -545,12 +560,15 @@ int aeron_archive_add_recorded_exclusive_publication(
         false) < 0)
     {
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+        goto cleanup;
     }
 
     *exclusive_publication_p = _exclusive_publication;
 
-    return 0;
+cleanup:
+    aeron_free(recording_channel);
+    return rc;
 }
 
 int aeron_archive_start_recording(
@@ -565,6 +583,7 @@ int aeron_archive_start_recording(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_start_recording(
         aeron_archive->archive_proxy,
@@ -575,19 +594,19 @@ int aeron_archive_start_recording(
         correlation_id,
         aeron_archive->control_session_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            subscription_id_p,
+            aeron_archive,
+            "AeronArchive::startRecording",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        subscription_id_p,
-        aeron_archive,
-        "AeronArchive::startRecording",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -600,6 +619,7 @@ int aeron_archive_get_recording_position(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_get_recording_position(
         aeron_archive->archive_proxy,
@@ -607,19 +627,19 @@ int aeron_archive_get_recording_position(
         correlation_id,
         recording_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            recording_position_p,
+            aeron_archive,
+            "AeronArchive::getRecordingPosition",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        recording_position_p,
-        aeron_archive,
-        "AeronArchive::getRecordingPosition",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -632,6 +652,7 @@ int aeron_archive_get_start_position(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_get_start_position(
         aeron_archive->archive_proxy,
@@ -639,19 +660,19 @@ int aeron_archive_get_start_position(
         correlation_id,
         recording_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            start_position_p,
+            aeron_archive,
+            "AeronArchive::getStartPosition",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        start_position_p,
-        aeron_archive,
-        "AeronArchive::getStartPosition",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -664,6 +685,7 @@ int aeron_archive_get_stop_position(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_get_stop_position(
         aeron_archive->archive_proxy,
@@ -671,19 +693,19 @@ int aeron_archive_get_stop_position(
         correlation_id,
         recording_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            stop_position_p,
+            aeron_archive,
+            "AeronArchive::getStopPosition",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        stop_position_p,
-        aeron_archive,
-        "AeronArchive::getStopPosition",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -696,6 +718,7 @@ int aeron_archive_get_max_recorded_position(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_get_max_recorded_position(
         aeron_archive->archive_proxy,
@@ -703,19 +726,19 @@ int aeron_archive_get_max_recorded_position(
         correlation_id,
         recording_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            max_recorded_position_p,
+            aeron_archive,
+            "AeronArchive::getMaxRecordedPosition",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        max_recorded_position_p,
-        aeron_archive,
-        "AeronArchive::getMaxRecordedPosition",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -727,6 +750,7 @@ int aeron_archive_stop_recording_subscription(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_stop_recording_subscription(
         aeron_archive->archive_proxy,
@@ -734,19 +758,19 @@ int aeron_archive_stop_recording_subscription(
         correlation_id,
         subscription_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            NULL,
+            aeron_archive,
+            "AeronArchive::stopRecordingSubscription",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        NULL,
-        aeron_archive,
-        "AeronArchive::stopRecordingSubscription",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -759,6 +783,7 @@ int aeron_archive_try_stop_recording_subscription(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_stop_recording_subscription(
         aeron_archive->archive_proxy,
@@ -766,19 +791,19 @@ int aeron_archive_try_stop_recording_subscription(
         correlation_id,
         subscription_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response_allowing_error(
+            stopped_p,
+            aeron_archive,
+            "AeronArchive::tryStopRecordingSubscription",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response_allowing_error(
-        stopped_p,
-        aeron_archive,
-        "AeronArchive::tryStopRecordingSubscription",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -791,6 +816,7 @@ int aeron_archive_stop_recording_channel_and_stream(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_stop_recording(
         aeron_archive->archive_proxy,
@@ -799,19 +825,19 @@ int aeron_archive_stop_recording_channel_and_stream(
         channel,
         stream_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            NULL,
+            aeron_archive,
+            "AeronArchive::stopRecording",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        NULL,
-        aeron_archive,
-        "AeronArchive::stopRecording",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -825,6 +851,7 @@ int aeron_archive_try_stop_recording_channel_and_stream(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_stop_recording(
         aeron_archive->archive_proxy,
@@ -833,19 +860,19 @@ int aeron_archive_try_stop_recording_channel_and_stream(
         channel,
         stream_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response_allowing_error(
+            stopped_p,
+            aeron_archive,
+            "AeronArchive::tryStopRecordingChannelAndStream",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response_allowing_error(
-        stopped_p,
-        aeron_archive,
-        "AeronArchive::tryStopRecordingChannelAndStream",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -858,6 +885,7 @@ int aeron_archive_try_stop_recording_by_identity(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_stop_recording_by_identity(
         aeron_archive->archive_proxy,
@@ -865,25 +893,25 @@ int aeron_archive_try_stop_recording_by_identity(
         correlation_id,
         recording_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
     }
-
-    int64_t relevant_id;
-    int rc = aeron_archive_poll_for_response(
-        &relevant_id,
-        aeron_archive,
-        "AeronArchive::tryStopRecordingByIdentity",
-        correlation_id);
-
-    if (rc == 0)
+    else
     {
-        *stopped_p = relevant_id != 0;
+        int64_t relevant_id;
+        rc = aeron_archive_poll_for_response(
+            &relevant_id,
+            aeron_archive,
+            "AeronArchive::tryStopRecordingByIdentity",
+            correlation_id);
+
+        if (rc == 0)
+        {
+            *stopped_p = relevant_id != 0;
+        }
     }
 
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -891,21 +919,31 @@ int aeron_archive_stop_recording_publication_constants(
     aeron_archive_t *aeron_archive,
     aeron_publication_constants_t *constants)
 {
-    char recording_channel[AERON_MAX_PATH];
+    char *recording_channel;
+    size_t recording_channel_len = strlen(constants->channel) + 50; // add enough space for an additional session id
+    aeron_alloc((void **)&recording_channel, recording_channel_len);
+
+    int rc;
+
     if (aeron_archive_channel_with_session_id(
         recording_channel,
-        sizeof(recording_channel),
+        recording_channel_len,
         constants->channel,
         constants->session_id) < 0)
     {
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_stop_recording_channel_and_stream(
+            aeron_archive,
+            recording_channel,
+            constants->stream_id);
     }
 
-    return aeron_archive_stop_recording_channel_and_stream(
-        aeron_archive,
-        recording_channel,
-        constants->stream_id);
+    aeron_free(recording_channel);
+    return rc;
 }
 
 int aeron_archive_stop_recording_publication(
@@ -942,6 +980,7 @@ int aeron_archive_find_last_matching_recording(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_find_last_matching_recording(
         aeron_archive->archive_proxy,
@@ -952,19 +991,19 @@ int aeron_archive_find_last_matching_recording(
         stream_id,
         session_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            recording_id_p,
+            aeron_archive,
+            "AeronArchive::findLastMatchingRecording",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        recording_id_p,
-        aeron_archive,
-        "AeronArchive::findLastMatchingRecording",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -979,6 +1018,7 @@ int aeron_archive_list_recording(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_list_recording(
         aeron_archive->archive_proxy,
@@ -986,26 +1026,26 @@ int aeron_archive_list_recording(
         correlation_id,
         recording_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        aeron_archive->is_in_callback = true;
+
+        rc = aeron_archive_poll_for_descriptors(
+            count_p,
+            aeron_archive,
+            "AeronArchive::listRecording",
+            correlation_id,
+            1,
+            recording_descriptor_consumer,
+            recording_descriptor_consumer_clientd);
+
+        aeron_archive->is_in_callback = false;
     }
 
-    aeron_archive->is_in_callback = true;
-
-    int rc = aeron_archive_poll_for_descriptors(
-        count_p,
-        aeron_archive,
-        "AeronArchive::listRecording",
-        correlation_id,
-        1,
-        recording_descriptor_consumer,
-        recording_descriptor_consumer_clientd);
-
-    aeron_archive->is_in_callback = false;
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1021,6 +1061,7 @@ int aeron_archive_list_recordings(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_list_recordings(
         aeron_archive->archive_proxy,
@@ -1029,26 +1070,26 @@ int aeron_archive_list_recordings(
         from_recording_id,
         record_count))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        aeron_archive->is_in_callback = true;
+
+        rc = aeron_archive_poll_for_descriptors(
+            count_p,
+            aeron_archive,
+            "AeronArchive::listRecordings",
+            correlation_id,
+            record_count,
+            recording_descriptor_consumer,
+            recording_descriptor_consumer_clientd);
+
+        aeron_archive->is_in_callback = false;
     }
 
-    aeron_archive->is_in_callback = true;
-
-    int rc = aeron_archive_poll_for_descriptors(
-        count_p,
-        aeron_archive,
-        "AeronArchive::listRecordings",
-        correlation_id,
-        record_count,
-        recording_descriptor_consumer,
-        recording_descriptor_consumer_clientd);
-
-    aeron_archive->is_in_callback = false;
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1066,6 +1107,7 @@ int aeron_archive_list_recordings_for_uri(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_list_recordings_for_uri(
         aeron_archive->archive_proxy,
@@ -1076,30 +1118,31 @@ int aeron_archive_list_recordings_for_uri(
         channel_fragment,
         stream_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        aeron_archive->is_in_callback = true;
+
+        rc = aeron_archive_poll_for_descriptors(
+            count_p,
+            aeron_archive,
+            "AeronArchive::listRecordingsForUri",
+            correlation_id,
+            record_count,
+            recording_descriptor_consumer,
+            recording_descriptor_consumer_clientd);
+
+        aeron_archive->is_in_callback = false;
     }
 
-    aeron_archive->is_in_callback = true;
-
-    int rc = aeron_archive_poll_for_descriptors(
-        count_p,
-        aeron_archive,
-        "AeronArchive::listRecordingsForUri",
-        correlation_id,
-        record_count,
-        recording_descriptor_consumer,
-        recording_descriptor_consumer_clientd);
-
-    aeron_archive->is_in_callback = false;
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
-int aeron_archive_start_replay(
+// called by _start_replay with the lock already held
+static int aeron_archive_start_replay_locked(
     int64_t *replay_session_id_p,
     aeron_archive_t *aeron_archive,
     int64_t recording_id,
@@ -1107,15 +1150,11 @@ int aeron_archive_start_replay(
     int32_t replay_stream_id,
     aeron_archive_replay_params_t *params)
 {
-    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
-    aeron_mutex_lock(&aeron_archive->lock);
-
     {
         aeron_uri_string_builder_t builder;
 
         if (aeron_uri_string_builder_init_on_string(&builder, replay_channel) < 0)
         {
-            aeron_mutex_unlock(&aeron_archive->lock);
             AERON_APPEND_ERR("%s", "");
             return -1;
         }
@@ -1138,8 +1177,6 @@ int aeron_archive_start_replay(
                 replay_stream_id,
                 params);
 
-            aeron_mutex_unlock(&aeron_archive->lock);
-
             if (rc < 0)
             {
                 AERON_APPEND_ERR("%s", "");
@@ -1160,7 +1197,6 @@ int aeron_archive_start_replay(
         replay_stream_id,
         params))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
         return -1;
     }
@@ -1171,13 +1207,11 @@ int aeron_archive_start_replay(
         "AeronArchive::startReplay",
         correlation_id);
 
-    aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
-int aeron_archive_replay(
-    aeron_subscription_t **subscription_p,
+int aeron_archive_start_replay(
+    int64_t *replay_session_id_p,
     aeron_archive_t *aeron_archive,
     int64_t recording_id,
     const char *replay_channel,
@@ -1187,12 +1221,27 @@ int aeron_archive_replay(
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
     aeron_mutex_lock(&aeron_archive->lock);
 
+    int rc = aeron_archive_start_replay_locked(replay_session_id_p, aeron_archive, recording_id, replay_channel, replay_stream_id, params);
+
+    aeron_mutex_unlock(&aeron_archive->lock);
+
+    return rc;
+}
+
+// called by _replay with the lock already held
+static int aeron_archive_replay_locked(
+    aeron_subscription_t **subscription_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    const char *replay_channel,
+    int32_t replay_stream_id,
+    aeron_archive_replay_params_t *params)
+{
     {
         aeron_uri_string_builder_t builder;
 
         if (aeron_uri_string_builder_init_on_string(&builder, replay_channel) < 0)
         {
-            aeron_mutex_unlock(&aeron_archive->lock);
             AERON_APPEND_ERR("%s", "");
             return -1;
         }
@@ -1215,8 +1264,6 @@ int aeron_archive_replay(
                 replay_stream_id,
                 params);
 
-            aeron_mutex_unlock(&aeron_archive->lock);
-
             if (rc < 0)
             {
                 AERON_APPEND_ERR("%s", "");
@@ -1237,7 +1284,6 @@ int aeron_archive_replay(
         replay_stream_id,
         params))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
         return -1;
     }
@@ -1250,19 +1296,22 @@ int aeron_archive_replay(
         "AeronArchive::replay",
         correlation_id) < 0)
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
-    char replay_channel_with_sid[AERON_MAX_PATH + 1];
+    char *replay_channel_with_sid;
+    size_t replay_channel_with_sid_len = strlen(replay_channel) + 50; // add enough space for an additional session id
+    aeron_alloc((void **)&replay_channel_with_sid, replay_channel_with_sid_len);
+
+    int rc = 0;
 
     {
         aeron_uri_string_builder_t builder;
 
         aeron_uri_string_builder_init_on_string(&builder, replay_channel);
         aeron_uri_string_builder_put_int32(&builder, AERON_URI_SESSION_ID_KEY, (int32_t)replay_session_id);
-        aeron_uri_string_builder_sprint(&builder, replay_channel_with_sid, AERON_MAX_PATH + 1);
+        aeron_uri_string_builder_sprint(&builder, replay_channel_with_sid, replay_channel_with_sid_len);
         aeron_uri_string_builder_close(&builder);
     }
 
@@ -1279,16 +1328,16 @@ int aeron_archive_replay(
         NULL,
         NULL) < 0)
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+        goto cleanup;
     }
 
     if (aeron_async_add_subscription_poll(&subscription, async_add_subscription) < 0)
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+        goto cleanup;
     }
 
     while (NULL == subscription)
@@ -1297,17 +1346,35 @@ int aeron_archive_replay(
 
         if (aeron_async_add_subscription_poll(&subscription, async_add_subscription) < 0)
         {
-            aeron_mutex_unlock(&aeron_archive->lock);
             AERON_APPEND_ERR("%s", "");
-            return -1;
+            rc = -1;
+            goto cleanup;
         }
     }
 
     *subscription_p = subscription;
 
+cleanup:
+    aeron_free(replay_channel_with_sid);
+    return rc;
+}
+
+int aeron_archive_replay(
+    aeron_subscription_t **subscription_p,
+    aeron_archive_t *aeron_archive,
+    int64_t recording_id,
+    const char *replay_channel,
+    int32_t replay_stream_id,
+    aeron_archive_replay_params_t *params)
+{
+    ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);
+    aeron_mutex_lock(&aeron_archive->lock);
+
+    int rc = aeron_archive_replay_locked(subscription_p, aeron_archive, recording_id, replay_channel, replay_stream_id, params);
+
     aeron_mutex_unlock(&aeron_archive->lock);
 
-    return 0;
+    return rc;
 }
 
 int aeron_archive_truncate_recording(
@@ -1320,6 +1387,7 @@ int aeron_archive_truncate_recording(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_truncate_recording(
         aeron_archive->archive_proxy,
@@ -1328,19 +1396,19 @@ int aeron_archive_truncate_recording(
         recording_id,
         position))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            count_p,
+            aeron_archive,
+            "AeronArchive::truncateRecording",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        count_p,
-        aeron_archive,
-        "AeronArchive::truncateRecording",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1352,6 +1420,7 @@ int aeron_archive_stop_replay(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_stop_replay(
         aeron_archive->archive_proxy,
@@ -1359,19 +1428,19 @@ int aeron_archive_stop_replay(
         correlation_id,
         replay_session_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            NULL,
+            aeron_archive,
+            "AeronArchive::stopReplay",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        NULL,
-        aeron_archive,
-        "AeronArchive::stopReplay",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1383,6 +1452,7 @@ int aeron_archive_stop_all_replays(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_stop_all_replays(
         aeron_archive->archive_proxy,
@@ -1390,19 +1460,19 @@ int aeron_archive_stop_all_replays(
         correlation_id,
         recording_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            NULL,
+            aeron_archive,
+            "AeronArchive::stopAllReplays",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        NULL,
-        aeron_archive,
-        "AeronArchive::stopAllReplays",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1421,6 +1491,7 @@ int aeron_archive_list_recording_subscriptions(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_list_recording_subscriptions(
         aeron_archive->archive_proxy,
@@ -1432,26 +1503,26 @@ int aeron_archive_list_recording_subscriptions(
         stream_id,
         apply_stream_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        aeron_archive->is_in_callback = true;
+
+        rc = aeron_archive_poll_for_subscription_descriptors(
+            count_p,
+            aeron_archive,
+            "AeronArchive::listRecordingSubscriptions",
+            correlation_id,
+            subscription_count,
+            recording_subscription_descriptor_consumer,
+            recording_subscription_descriptor_consumer_clientd);
+
+        aeron_archive->is_in_callback = false;
     }
 
-    aeron_archive->is_in_callback = true;
-
-    int rc = aeron_archive_poll_for_subscription_descriptors(
-        count_p,
-        aeron_archive,
-        "AeronArchive::listRecordingSubscriptions",
-        correlation_id,
-        subscription_count,
-        recording_subscription_descriptor_consumer,
-        recording_subscription_descriptor_consumer_clientd);
-
-    aeron_archive->is_in_callback = false;
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1464,6 +1535,7 @@ int aeron_archive_purge_recording(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_purge_recording(
         aeron_archive->archive_proxy,
@@ -1471,19 +1543,19 @@ int aeron_archive_purge_recording(
         correlation_id,
         recording_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            deleted_segments_count_p,
+            aeron_archive,
+            "AeronArchive::purgeRecording",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        deleted_segments_count_p,
-        aeron_archive,
-        "AeronArchive::purgeRecording",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1500,6 +1572,7 @@ int aeron_archive_extend_recording(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_extend_recording(
         aeron_archive->archive_proxy,
@@ -1511,19 +1584,19 @@ int aeron_archive_extend_recording(
         correlation_id,
         aeron_archive->control_session_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            subscription_id_p,
+            aeron_archive,
+            "AeronArchive::extendRecording",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        subscription_id_p,
-        aeron_archive,
-        "AeronArchive::extendRecording",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1539,6 +1612,7 @@ int aeron_archive_replicate(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_replicate(
         aeron_archive->archive_proxy,
@@ -1549,19 +1623,19 @@ int aeron_archive_replicate(
         src_control_channel,
         params))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            replication_id_p,
+            aeron_archive,
+            "AeronArchive::replicate",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        replication_id_p,
-        aeron_archive,
-        "AeronArchive::replicate",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1573,6 +1647,7 @@ int aeron_archive_stop_replication(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_stop_replication(
         aeron_archive->archive_proxy,
@@ -1580,19 +1655,19 @@ int aeron_archive_stop_replication(
         correlation_id,
         replication_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            NULL,
+            aeron_archive,
+            "AeronArchive::stopReplication",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        NULL,
-        aeron_archive,
-        "AeronArchive::stopReplication",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1605,6 +1680,7 @@ int aeron_archive_try_stop_replication(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_stop_replication(
         aeron_archive->archive_proxy,
@@ -1612,19 +1688,19 @@ int aeron_archive_try_stop_replication(
         correlation_id,
         replication_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response_allowing_error(
+            stopped_p,
+            aeron_archive,
+            "AeronArchive::tryStopReplication",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response_allowing_error(
-        stopped_p,
-        aeron_archive,
-        "AeronArchive::tryStopReplication",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1637,6 +1713,7 @@ int aeron_archive_detach_segments(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_detach_segments(
         aeron_archive->archive_proxy,
@@ -1645,19 +1722,19 @@ int aeron_archive_detach_segments(
         recording_id,
         new_start_position))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            NULL,
+            aeron_archive,
+            "AeronArchive::detachSegments",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        NULL,
-        aeron_archive,
-        "AeronArchive::detachSegments",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1670,6 +1747,7 @@ int aeron_archive_delete_detached_segments(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_delete_detached_segments(
         aeron_archive->archive_proxy,
@@ -1677,19 +1755,19 @@ int aeron_archive_delete_detached_segments(
         correlation_id,
         recording_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            count_p,
+            aeron_archive,
+            "AeronArchive::deleteDetachedSegments",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        count_p,
-        aeron_archive,
-        "AeronArchive::deleteDetachedSegments",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1703,6 +1781,7 @@ int aeron_archive_purge_segments(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_purge_segments(
         aeron_archive->archive_proxy,
@@ -1711,19 +1790,19 @@ int aeron_archive_purge_segments(
         recording_id,
         new_start_position))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            count_p,
+            aeron_archive,
+            "AeronArchive::purgeSegments",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        count_p,
-        aeron_archive,
-        "AeronArchive::purgeSegments",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1736,6 +1815,7 @@ int aeron_archive_attach_segments(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_attach_segments(
         aeron_archive->archive_proxy,
@@ -1743,19 +1823,19 @@ int aeron_archive_attach_segments(
         correlation_id,
         recording_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            count_p,
+            aeron_archive,
+            "AeronArchive::attachSegments",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        count_p,
-        aeron_archive,
-        "AeronArchive::attachSegments",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -1769,6 +1849,7 @@ int aeron_archive_migrate_segments(
     aeron_mutex_lock(&aeron_archive->lock);
 
     int64_t correlation_id = aeron_archive_next_correlation_id(aeron_archive);
+    int rc;
 
     if (!aeron_archive_proxy_migrate_segments(
         aeron_archive->archive_proxy,
@@ -1777,19 +1858,19 @@ int aeron_archive_migrate_segments(
         src_recording_id,
         dst_recording_id))
     {
-        aeron_mutex_unlock(&aeron_archive->lock);
         AERON_APPEND_ERR("%s", "");
-        return -1;
+        rc = -1;
+    }
+    else
+    {
+        rc = aeron_archive_poll_for_response(
+            count_p,
+            aeron_archive,
+            "AeronArchive::migrateSegments",
+            correlation_id);
     }
 
-    int rc = aeron_archive_poll_for_response(
-        count_p,
-        aeron_archive,
-        "AeronArchive::migrateSegments",
-        correlation_id);
-
     aeron_mutex_unlock(&aeron_archive->lock);
-
     return rc;
 }
 
@@ -2290,6 +2371,7 @@ int aeron_archive_initiate_replay_via_response_channel(
     int64_t subscription_id,
     int64_t deadline_ns)
 {
+    char *control_request_channel = NULL;
     int rc = -1;
 
     // acquire a replay token, and load it up into a copy of the params
@@ -2319,7 +2401,10 @@ int aeron_archive_initiate_replay_via_response_channel(
     }
 
     // update the control request channel uri with the subscription id of the response channel
-    char control_request_channel[AERON_MAX_PATH];
+    // add enough space for an additional k/v pairs:
+    size_t control_request_channel_len = strlen(aeron_archive->ctx->control_request_channel) + 100;
+    aeron_alloc((void **)&control_request_channel, control_request_channel_len);
+
     aeron_uri_string_builder_t builder;
 
     bool failure = aeron_uri_string_builder_init_on_string(&builder, aeron_archive->ctx->control_request_channel) < 0 ||
@@ -2329,7 +2414,7 @@ int aeron_archive_initiate_replay_via_response_channel(
         aeron_uri_string_builder_put_int64(&builder, AERON_URI_RESPONSE_CORRELATION_ID_KEY, subscription_id) < 0 ||
         aeron_uri_string_builder_put(&builder, AERON_URI_TERM_LENGTH_KEY, "64k") < 0 ||
         aeron_uri_string_builder_put(&builder, AERON_URI_SPIES_SIMULATE_CONNECTION_KEY, "false") < 0 ||
-        aeron_uri_string_builder_sprint(&builder, control_request_channel, sizeof(control_request_channel)) < 0;
+        aeron_uri_string_builder_sprint(&builder, control_request_channel, control_request_channel_len) < 0;
 
     aeron_uri_string_builder_close(&builder);
 
@@ -2454,6 +2539,10 @@ cleanup_proxy:
     aeron_archive_proxy_close(&archive_proxy);
 
 cleanup:
+    if (NULL != control_request_channel)
+    {
+        aeron_free(control_request_channel);
+    }
     return rc;
 }
 

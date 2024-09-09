@@ -442,11 +442,12 @@ int aeron_archive_check_and_setup_response_channel(aeron_archive_context_t *ctx,
     if (NULL != control_mode &&
         strcmp(control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE) == 0)
     {
-        aeron_uri_string_builder_close(&builder);
+        aeron_uri_string_builder_close(&builder); // close the previous builder
 
-        if (aeron_uri_string_builder_init_on_string(&builder,ctx->control_request_channel) < 0 ||
+        if (aeron_archive_context_ensure_control_request_channel_size(ctx, strlen(ctx->control_request_channel) + strlen(AERON_URI_RESPONSE_CORRELATION_ID_KEY) + 20) < 0 ||
+            aeron_uri_string_builder_init_on_string(&builder,ctx->control_request_channel) < 0 ||
             aeron_uri_string_builder_put_int64(&builder,AERON_URI_RESPONSE_CORRELATION_ID_KEY,subscription_id) < 0 ||
-            aeron_uri_string_builder_sprint(&builder,ctx->control_request_channel,sizeof(ctx->control_request_channel)) < 0)
+            aeron_uri_string_builder_sprint(&builder,ctx->control_request_channel,ctx->control_request_channel_malloced_len) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             rc = -1;

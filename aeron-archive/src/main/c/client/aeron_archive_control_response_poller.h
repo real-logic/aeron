@@ -40,10 +40,10 @@ typedef struct aeron_archive_control_response_poller_stct
     int32_t version;
 
     char *error_message;
-    uint32_t error_message_len;
+    uint32_t error_message_malloced_len;
 
     char *encoded_challenge_buffer;
-    uint32_t encoded_challenge_buffer_len;
+    uint32_t encoded_challenge_buffer_malloced_len;
 
     aeron_archive_encoded_credentials_t encoded_challenge;
 

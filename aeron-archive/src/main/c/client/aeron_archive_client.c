@@ -282,9 +282,8 @@ int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *
             {
                 AERON_SET_ERR(
                     (int32_t)poller->relevant_id,
-                    "correlation_id=%" PRIi64 " %.*s",
+                    "correlation_id=%" PRIi64 " %s",
                     poller->correlation_id,
-                    poller->error_message_len,
                     poller->error_message);
                 rc = -1;
             }
@@ -331,7 +330,7 @@ int aeron_archive_poll_for_error_response(aeron_archive_t *aeron_archive, char *
         if (poller->is_control_response &&
             poller->is_code_error)
         {
-            snprintf(buffer, buffer_length, "%.*s", poller->error_message_len, poller->error_message);
+            snprintf(buffer, buffer_length, "%s", poller->error_message);
 
             goto cleanup;
         }
@@ -392,9 +391,8 @@ int aeron_archive_check_for_error_response(aeron_archive_t *aeron_archive)
             {
                 AERON_SET_ERR(
                     (int32_t)poller->relevant_id,
-                    "correlation_id=%" PRIi64 " %.*s",
+                    "correlation_id=%" PRIi64 " %s",
                     poller->correlation_id,
-                    poller->error_message_len,
                     poller->error_message);
                 rc = -1;
             }
@@ -2570,16 +2568,15 @@ void aeron_archive_handle_control_response_with_error_handler(aeron_archive_t *a
 
     char *error_message;
 
-    size_t len = poller->error_message_len + 50; // for the correlation id and room for some whitespace
+    size_t len = strlen(poller->error_message) + 50; // for the correlation id and room for some whitespace
 
     aeron_alloc((void **)&error_message, len);
 
     snprintf(
         error_message,
         len,
-        "correlation_id=%" PRIi64 " %.*s",
+        "correlation_id=%" PRIi64 " %s",
         poller->correlation_id,
-        poller->error_message_len,
         poller->error_message);
 
     aeron_archive->ctx->error_handler(

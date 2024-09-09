@@ -775,9 +775,8 @@ static int aeron_archive_replay_merge_poll_for_response(bool *found_response_p, 
         {
             AERON_SET_ERR(
                 (int32_t)poller->relevant_id,
-                "correlation_id=%" PRIi64 " %.*s",
+                "correlation_id=%" PRIi64 " %s",
                 poller->correlation_id,
-                poller->error_message_len,
                 poller->error_message);
             return -1;
         }

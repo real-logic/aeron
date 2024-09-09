@@ -26,9 +26,12 @@ struct aeron_archive_context_stct
     char aeron_directory_name[AERON_MAX_PATH];
     bool owns_aeron_client;
 
-    char control_request_channel[AERON_MAX_PATH]; // TODO make this dynamically sized - don't forget about _duplicate()
+    char *control_request_channel;
+    size_t control_request_channel_malloced_len;
     int32_t control_request_stream_id;
-    char control_response_channel[AERON_MAX_PATH]; // TODO make this dynamically sized - don't forget about _duplicate()
+
+    char *control_response_channel;
+    size_t control_response_channel_malloced_len;
     int32_t control_response_stream_id;
 
     int64_t message_timeout_ns;
@@ -55,5 +58,7 @@ int aeron_archive_context_conclude(aeron_archive_context_t *ctx);
 void aeron_archive_context_idle(aeron_archive_context_t *ctx);
 
 void aeron_archive_context_invoke_aeron_client(aeron_archive_context_t *ctx);
+
+int aeron_archive_context_ensure_control_request_channel_size(aeron_archive_context_t *ctx, size_t len);
 
 #endif //AERON_ARCHIVE_CLIENT_CONTEXT_H

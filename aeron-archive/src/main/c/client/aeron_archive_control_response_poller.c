@@ -59,15 +59,15 @@ int aeron_archive_control_response_poller_create(
         return -1;
     }
 
-    _poller->error_message_len = AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_INITIAL_LEN;
-    if (aeron_alloc((void **)&_poller->error_message, _poller->error_message_len) < 0)
+    _poller->error_message_malloced_len = AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ERROR_MESSAGE_INITIAL_LEN;
+    if (aeron_alloc((void **)&_poller->error_message, _poller->error_message_malloced_len) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         return -1;
     }
 
-    _poller->encoded_challenge_buffer_len = AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ENCODED_CHALLENGE_BUFFER_INITIAL_LEN;
-    if (aeron_alloc((void **)&_poller->encoded_challenge_buffer, _poller->encoded_challenge_buffer_len) < 0)
+    _poller->encoded_challenge_buffer_malloced_len = AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_ENCODED_CHALLENGE_BUFFER_INITIAL_LEN;
+    if (aeron_alloc((void **)&_poller->encoded_challenge_buffer, _poller->encoded_challenge_buffer_malloced_len) < 0)
     {
         AERON_APPEND_ERR("%s", "");
         return -1;
@@ -87,11 +87,11 @@ int aeron_archive_control_response_poller_close(aeron_archive_control_response_p
 
     aeron_free(poller->error_message);
     poller->error_message = NULL;
-    poller->error_message_len = 0;
+    poller->error_message_malloced_len = 0;
 
     aeron_free(poller->encoded_challenge_buffer);
     poller->encoded_challenge_buffer = NULL;
-    poller->encoded_challenge_buffer_len = 0;
+    poller->encoded_challenge_buffer_malloced_len = 0;
 
     aeron_free(poller);
 
@@ -126,8 +126,8 @@ void aeron_archive_control_response_poller_reset(aeron_archive_control_response_
     poller->recording_signal_code = INT32_MIN;
     poller->version = 0;
 
-    memset(poller->error_message, 0, poller->error_message_len);
-    memset(poller->encoded_challenge_buffer, 0, poller->encoded_challenge_buffer_len);
+    memset(poller->error_message, 0, poller->error_message_malloced_len);
+    memset(poller->encoded_challenge_buffer, 0, poller->encoded_challenge_buffer_malloced_len);
 
     poller->encoded_challenge.data = NULL;
     poller->encoded_challenge.length = 0;
@@ -206,14 +206,14 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
 
             uint32_t error_message_len = aeron_archive_client_controlResponse_errorMessage_length(&control_response);
             uint32_t len_with_terminator = error_message_len + 1;
-            if (len_with_terminator > poller->error_message_len)
+            if (len_with_terminator > poller->error_message_malloced_len)
             {
                 if (aeron_reallocf((void **)&poller->error_message, len_with_terminator) < 0)
                 {
                     AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate error_message");
                     return AERON_ACTION_BREAK;
                 }
-                poller->error_message_len = len_with_terminator;
+                poller->error_message_malloced_len = len_with_terminator;
             }
 
             aeron_archive_client_controlResponse_get_errorMessage(
@@ -251,14 +251,14 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
 
             uint32_t encoded_challenge_length = aeron_archive_client_challenge_encodedChallenge_length(&challenge);
             uint32_t len_with_terminator = encoded_challenge_length + 1;
-            if (len_with_terminator > poller->encoded_challenge_buffer_len)
+            if (len_with_terminator > poller->encoded_challenge_buffer_malloced_len)
             {
                 if (aeron_reallocf((void **)&poller->encoded_challenge_buffer, len_with_terminator) < 0)
                 {
                     AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate encoded_challenge_buffer");
                     return AERON_ACTION_BREAK;
                 }
-                poller->encoded_challenge_buffer_len = len_with_terminator;
+                poller->encoded_challenge_buffer_malloced_len = len_with_terminator;
             }
 
             aeron_archive_client_challenge_get_encodedChallenge(

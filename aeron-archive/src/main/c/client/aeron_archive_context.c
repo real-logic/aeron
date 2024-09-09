@@ -49,9 +49,15 @@ int aeron_archive_context_init(aeron_archive_context_t **ctx)
     aeron_default_path(_ctx->aeron_directory_name, sizeof(_ctx->aeron_directory_name));
     _ctx->owns_aeron_client = false;
 
+
+    _ctx->control_request_channel = NULL;
     aeron_archive_context_set_control_request_channel(_ctx, AERON_ARCHIVE_CONTEXT_CONTROL_REQUEST_CHANNEL_DEFAULT);
+
     _ctx->control_request_stream_id = AERON_ARCHIVE_CONTEXT_CONTROL_REQUEST_STREAM_ID_DEFAULT;
+
+    _ctx->control_response_channel = NULL;
     aeron_archive_context_set_control_response_channel(_ctx, AERON_ARCHIVE_CONTEXT_CONTROL_RESPONSE_CHANNEL_DEFAULT);
+
     _ctx->control_response_stream_id = AERON_ARCHIVE_CONTEXT_CONTROL_RESPONSE_STREAM_ID_DEFAULT;
 
     _ctx->message_timeout_ns = AERON_ARCHIVE_CONTEXT_MESSAGE_TIMEOUT_NS_DEFAULT;
@@ -75,6 +81,9 @@ int aeron_archive_context_close(aeron_archive_context_t *ctx)
             aeron_context_close(aeron_ctx);
         }
 
+        aeron_free(ctx->control_request_channel);
+        aeron_free(ctx->control_response_channel);
+
         aeron_free(ctx);
     }
 
@@ -93,6 +102,12 @@ int aeron_archive_context_duplicate(aeron_archive_context_t **dest_p, aeron_arch
 
     // TODO probably should be wiser about this, but for now, memcpy it is!!!
     memcpy(_ctx, src, sizeof(aeron_archive_context_t));
+
+    _ctx->control_request_channel = NULL;
+    aeron_archive_context_set_control_request_channel(_ctx, src->control_request_channel);
+
+    _ctx->control_response_channel = NULL;
+    aeron_archive_context_set_control_response_channel(_ctx, src->control_response_channel);
 
     *dest_p = _ctx;
 
@@ -185,11 +200,41 @@ const char *aeron_archive_context_get_aeron_directory_name(aeron_archive_context
     return ctx->aeron_directory_name;
 }
 
+int aeron_archive_context_ensure_control_request_channel_size(aeron_archive_context_t *ctx, size_t len)
+{
+    if (len > ctx->control_request_channel_malloced_len)
+    {
+        if (aeron_reallocf((void **)&ctx->control_request_channel, len) < 0)
+        {
+            AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate control_request_channel");
+            return -1;
+        }
+        ctx->control_request_channel_malloced_len = len;
+    }
+
+    return 0;
+}
+
 int aeron_archive_context_set_control_request_channel(
     aeron_archive_context_t *ctx,
     const char *control_request_channel)
 {
-    snprintf(ctx->control_request_channel, sizeof(ctx->control_request_channel), "%s", control_request_channel);
+    size_t control_request_channel_len = strlen(control_request_channel);
+    size_t len_with_terminator = control_request_channel_len + 1;
+
+    if (NULL == ctx->control_request_channel)
+    {
+        if (aeron_alloc((void **)&ctx->control_request_channel, len_with_terminator) < 0)
+        {
+            AERON_SET_ERR(ENOMEM, "%s", "unable to allocate control_request_channel");
+            return -1;
+        }
+        ctx->control_request_channel_malloced_len = len_with_terminator;
+    }
+
+    aeron_archive_context_ensure_control_request_channel_size(ctx, len_with_terminator);
+
+    snprintf(ctx->control_request_channel, ctx->control_request_channel_malloced_len, "%s", control_request_channel);
 
     return 0;
 }
@@ -215,7 +260,29 @@ int aeron_archive_context_set_control_response_channel(
     aeron_archive_context_t *ctx,
     const char *control_response_channel)
 {
-    snprintf(ctx->control_response_channel, sizeof(ctx->control_response_channel), "%s", control_response_channel);
+    size_t control_response_channel_len = strlen(control_response_channel);
+    size_t len_with_terminator = control_response_channel_len + 1;
+
+    if (NULL == ctx->control_response_channel)
+    {
+        if (aeron_alloc((void **)&ctx->control_response_channel, len_with_terminator) < 0)
+        {
+            AERON_SET_ERR(ENOMEM, "%s", "unable to allocate control_response_channel");
+            return -1;
+        }
+        ctx->control_response_channel_malloced_len = len_with_terminator;
+    }
+    else if (len_with_terminator > ctx->control_response_channel_malloced_len)
+    {
+        if (aeron_reallocf((void **)&ctx->control_response_channel, len_with_terminator) < 0)
+        {
+            AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate control_response_channel");
+            return -1;
+        }
+        ctx->control_response_channel_malloced_len = len_with_terminator;
+    }
+
+    snprintf(ctx->control_response_channel, ctx->control_response_channel_malloced_len, "%s", control_response_channel);
 
     return 0;
 }

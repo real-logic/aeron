@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.exceptions.AeronException;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
@@ -37,6 +38,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -49,6 +51,7 @@ import java.util.TreeMap;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.exceptions.AeronException.Category.FATAL;
 import static java.lang.Math.max;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
@@ -805,7 +808,7 @@ public final class RecordingLog implements AutoCloseable
             {
                 if (isMagicNumberInvalid(fileChannel))
                 {
-                    throw new IllegalStateException("Failed to migrate correctly");
+                    throw new ClusterException("Failed to migrate the recording log, the header is corrupted", FATAL);
                 }
 
                 reload();
@@ -813,7 +816,7 @@ public final class RecordingLog implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            throw new ClusterException(ex);
+            throw new ClusterException("Failed to migrate the recording log, I/O error occurred", ex, FATAL);
         }
     }
 
@@ -1865,7 +1868,7 @@ public final class RecordingLog implements AutoCloseable
 
         if (HEADER_SIZE != fileChannel.write(headerBuffer))
         {
-            throw new IOException("Failed to write full header");
+            throw new ClusterException("Failed to write full header recording log header", FATAL);
         }
     }
 
@@ -1877,7 +1880,8 @@ public final class RecordingLog implements AutoCloseable
             Files.copy(logFile.toPath(), oldMigratedFile.toPath(), COPY_ATTRIBUTES, REPLACE_EXISTING);
 
             final File newFile = new File(logFile.getParentFile(), RECORDING_LOG_NEW_FILE_NAME);
-            Files.deleteIfExists(newFile.toPath());
+            final Path newPath = newFile.toPath();
+            Files.deleteIfExists(newPath);
 
             final MutableDirectBuffer header = new UnsafeBuffer(new byte[HEADER_SIZE]);
             applyHeader(header);
@@ -1888,9 +1892,8 @@ public final class RecordingLog implements AutoCloseable
                 Files.copy(oldMigratedFile.toPath(), outputStream);
             }
 
-            Files.move(
-                newFile.toPath(), new File(logFile.getParentFile(), RECORDING_LOG_FILE_NAME).toPath(),
-                ATOMIC_MOVE, REPLACE_EXISTING);
+            final Path destinationPath = new File(logFile.getParentFile(), RECORDING_LOG_FILE_NAME).toPath();
+            Files.move(newPath, destinationPath, ATOMIC_MOVE, REPLACE_EXISTING);
         }
     }
 

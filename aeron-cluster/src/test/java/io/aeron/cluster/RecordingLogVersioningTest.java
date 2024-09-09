@@ -74,7 +74,6 @@ public class RecordingLogVersioningTest
             final int serviceId,
             final String endpoint)
         {
-
             this.entryType = entryType;
             this.recordingId = recordingId;
             this.leadershipTermId = leadershipTermId;

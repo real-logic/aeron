@@ -138,8 +138,7 @@ int aeron_archive_async_connect(aeron_archive_async_connect_t **async, aeron_arc
         return -1;
     }
 
-    // TODO need to think through this a bit more.  Make sure to properly handle
-    // all the combinations of incoming contexts (owns vs. !owns, aeron already created, etc..
+    // Now that we've copied the original context into the _async->ctx, the original ctx no longer owns the aeron client.
     aeron_archive_context_set_owns_aeron_client(ctx, false);
 
     _async->aeron = aeron;
@@ -262,12 +261,17 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
 
     if (SEND_CONNECT_REQUEST == async->state)
     {
-        char control_response_channel[AERON_MAX_PATH] = { 0 };
+        aeron_subscription_constants_t constants;
+        char *control_response_channel;
+
+        aeron_subscription_constants(async->subscription, &constants);
+        size_t control_response_channel_len = strlen(constants.channel) + AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN;
+        aeron_alloc((void **)&control_response_channel, control_response_channel_len);
 
         if (aeron_subscription_try_resolve_channel_endpoint_port(
             async->subscription,
             control_response_channel,
-            sizeof(control_response_channel)) < 0)
+            control_response_channel_len) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             goto cleanup;
@@ -275,6 +279,7 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
 
         if ('\0' == control_response_channel[0])
         {
+            aeron_free(control_response_channel);
             return 0;
         }
 
@@ -283,19 +288,24 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
 
         async->correlation_id = aeron_next_correlation_id(async->aeron);
 
-        if (!aeron_archive_proxy_try_connect(
+        bool sent = aeron_archive_proxy_try_connect(
             async->archive_proxy,
             control_response_channel,
             async->ctx->control_response_stream_id,
             encoded_credentials,
-            async->correlation_id))
-        {
-            aeron_archive_credentials_supplier_on_free(&async->ctx->credentials_supplier, encoded_credentials);
-            return 0;
-        }
+            async->correlation_id);
 
         aeron_archive_credentials_supplier_on_free(&async->ctx->credentials_supplier, encoded_credentials);
-        async->state = AWAIT_SUBSCRIPTION_CONNECTED;
+        aeron_free(control_response_channel);
+
+        if (sent)
+        {
+            async->state = AWAIT_SUBSCRIPTION_CONNECTED;
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     if (AWAIT_SUBSCRIPTION_CONNECTED == async->state)

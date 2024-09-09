@@ -51,7 +51,8 @@ struct aeron_archive_replay_merge_stct
     aeron_uri_string_builder_t replay_channel_builder;
     char *replay_destination;
     char *live_destination;
-    char replay_endpoint[AERON_MAX_PATH];
+    char *replay_endpoint;
+    size_t replay_endpoint_malloced_len;
     int64_t recording_id;
     int64_t start_position;
     long long epoch_clock;
@@ -139,23 +140,28 @@ int aeron_archive_replay_merge_init(
     aeron_uri_string_builder_put(&_replay_merge->replay_channel_builder, AERON_URI_LINGER_TIMEOUT_KEY, "0");
     aeron_uri_string_builder_put(&_replay_merge->replay_channel_builder, AERON_URI_EOS_KEY, "false");
 
+    size_t replay_endpoint_len;
     {
         aeron_uri_string_builder_t builder;
 
         aeron_uri_string_builder_init_on_string(&builder, replay_destination);
 
+        const char *replay_endpoint = aeron_uri_string_builder_get(&builder, AERON_UDP_CHANNEL_ENDPOINT_KEY);
+        replay_endpoint_len = strlen(replay_endpoint);
+        _replay_merge->replay_endpoint_malloced_len = replay_endpoint_len + 25; // +25 for terminator and possible resolved ip/port
+
+        aeron_alloc((void **)&_replay_merge->replay_endpoint, _replay_merge->replay_endpoint_malloced_len);
+
         snprintf(
             _replay_merge->replay_endpoint,
-            sizeof(_replay_merge->replay_endpoint),
+            _replay_merge->replay_endpoint_malloced_len,
             "%s",
-            aeron_uri_string_builder_get(&builder, AERON_UDP_CHANNEL_ENDPOINT_KEY));
+            replay_endpoint);
 
         aeron_uri_string_builder_close(&builder);
     }
 
     {
-        size_t replay_endpoint_len = strlen(_replay_merge->replay_endpoint);
-
         if (strncmp(":0", &_replay_merge->replay_endpoint[replay_endpoint_len - 2], 2) == 0)
         {
             _replay_merge->state = RESOLVE_REPLAY_PORT;
@@ -194,6 +200,7 @@ int aeron_archive_replay_merge_init(
         aeron_uri_string_builder_close(&_replay_merge->replay_channel_builder);
         aeron_free(_replay_merge->replay_destination);
         aeron_free(_replay_merge->live_destination);
+        aeron_free(_replay_merge->replay_endpoint);
         aeron_free(_replay_merge);
 
         AERON_APPEND_ERR("%s", "");
@@ -277,6 +284,7 @@ int aeron_archive_replay_merge_close(aeron_archive_replay_merge_t *replay_merge)
     aeron_uri_string_builder_close(&replay_merge->replay_channel_builder);
     aeron_free(replay_merge->replay_destination);
     aeron_free(replay_merge->live_destination);
+    aeron_free(replay_merge->replay_endpoint);
     aeron_free(replay_merge);
 
     return 0;
@@ -412,7 +420,7 @@ static int aeron_archive_replay_merge_resolve_replay_port(int *work_count_p, aer
         size_t dest_idx = strlen(replay_merge->replay_endpoint) - 2;
         char *dest = &replay_merge->replay_endpoint[dest_idx];
 
-        if (dest_idx + strlen(p) >= sizeof(replay_merge->replay_endpoint))
+        if (dest_idx + strlen(p) >= replay_merge->replay_endpoint_malloced_len)
         {
             AERON_SET_ERR(
                 -1,
@@ -422,7 +430,7 @@ static int aeron_archive_replay_merge_resolve_replay_port(int *work_count_p, aer
             return -1;
         }
 
-        snprintf(dest, sizeof(replay_merge->replay_endpoint) - dest_idx, "%s", p);
+        snprintf(dest, replay_merge->replay_endpoint_malloced_len - dest_idx, "%s", p);
 
         aeron_uri_string_builder_put(
             &replay_merge->replay_channel_builder,

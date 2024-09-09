@@ -205,20 +205,22 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
             poller->is_code_ok = poller->code_value == aeron_archive_client_controlResponseCode_OK;
 
             uint32_t error_message_len = aeron_archive_client_controlResponse_errorMessage_length(&control_response);
-            if (error_message_len > poller->error_message_len)
+            uint32_t len_with_terminator = error_message_len + 1;
+            if (len_with_terminator > poller->error_message_len)
             {
-                if (aeron_reallocf((void **)&poller->error_message, error_message_len) < 0)
+                if (aeron_reallocf((void **)&poller->error_message, len_with_terminator) < 0)
                 {
                     AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate error_message");
                     return AERON_ACTION_BREAK;
                 }
-                poller->error_message_len = error_message_len;
+                poller->error_message_len = len_with_terminator;
             }
 
             aeron_archive_client_controlResponse_get_errorMessage(
                 &control_response,
                 poller->error_message,
                 error_message_len);
+            poller->error_message[error_message_len] = '\0';
 
             poller->is_control_response = true;
             poller->is_poll_complete = true;
@@ -248,20 +250,22 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
             poller->is_code_ok = false;
 
             uint32_t encoded_challenge_length = aeron_archive_client_challenge_encodedChallenge_length(&challenge);
-            if (encoded_challenge_length > poller->encoded_challenge_buffer_len)
+            uint32_t len_with_terminator = encoded_challenge_length + 1;
+            if (len_with_terminator > poller->encoded_challenge_buffer_len)
             {
-                if (aeron_reallocf((void **)&poller->encoded_challenge_buffer, encoded_challenge_length) < 0)
+                if (aeron_reallocf((void **)&poller->encoded_challenge_buffer, len_with_terminator) < 0)
                 {
                     AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate encoded_challenge_buffer");
                     return AERON_ACTION_BREAK;
                 }
-                poller->encoded_challenge_buffer_len = encoded_challenge_length;
+                poller->encoded_challenge_buffer_len = len_with_terminator;
             }
 
             aeron_archive_client_challenge_get_encodedChallenge(
                 &challenge,
                 poller->encoded_challenge_buffer,
                 encoded_challenge_length);
+            poller->encoded_challenge_buffer[encoded_challenge_length] = '\0';
 
             poller->encoded_challenge.data = poller->encoded_challenge_buffer;
             poller->encoded_challenge.length = encoded_challenge_length;

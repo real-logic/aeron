@@ -252,7 +252,8 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
                 descriptor.stripped_channel_length = view.length;
                 if (aeron_alloc((void **)&descriptor.stripped_channel, descriptor.stripped_channel_length + 1) < 0)
                 {
-                    // TODO
+                    AERON_APPEND_ERR("%s", "");
+                    return AERON_ACTION_BREAK;
                 }
                 memcpy(descriptor.stripped_channel, view.data, descriptor.stripped_channel_length);
                 descriptor.stripped_channel[descriptor.stripped_channel_length] = '\0';

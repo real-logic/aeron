@@ -26,9 +26,9 @@ struct aeron_archive_context_stct
     char aeron_directory_name[AERON_MAX_PATH];
     bool owns_aeron_client;
 
-    char control_request_channel[AERON_MAX_PATH];
+    char control_request_channel[AERON_MAX_PATH]; // TODO make this dynamically sized - don't forget about _duplicate()
     int32_t control_request_stream_id;
-    char control_response_channel[AERON_MAX_PATH];
+    char control_response_channel[AERON_MAX_PATH]; // TODO make this dynamically sized - don't forget about _duplicate()
     int32_t control_response_stream_id;
 
     int64_t message_timeout_ns;

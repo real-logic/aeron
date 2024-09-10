@@ -202,7 +202,7 @@ public final class DataCollector
     {
         try
         {
-            return Files.find(p, 1, matcher);
+            return Files.find(p, 10, matcher);
         }
         catch (final NoSuchFileException ignore)
         {

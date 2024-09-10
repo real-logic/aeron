@@ -40,6 +40,7 @@ import io.aeron.cluster.codecs.SessionEventDecoder;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.Header;
+import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
@@ -55,11 +56,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.CommonContext.CONTROL_MODE_RESPONSE;
-import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
-import static io.aeron.CommonContext.MDC_CONTROL_MODE_PARAM_NAME;
-import static io.aeron.CommonContext.MDC_CONTROL_PARAM_NAME;
-import static io.aeron.CommonContext.TAGS_PARAM_NAME;
+import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
@@ -142,7 +139,8 @@ public final class ClusterBackupAgent implements Agent
     private long liveLogRecordingId = NULL_VALUE;
     private long liveLogReplaySessionId = NULL_VALUE;
     private int leaderCommitPositionCounterId = NULL_VALUE;
-    private int liveLogRecCounterId = NULL_COUNTER_ID;
+    private int liveLogRecordingCounterId = NULL_COUNTER_ID;
+    private int liveLogRecordingSessionId = NULL_VALUE;
 
     ClusterBackupAgent(final ClusterBackup.Context ctx)
     {
@@ -336,8 +334,9 @@ public final class ClusterBackupAgent implements Agent
         logSupplierMember = null;
         leaderLogEntry = null;
         leaderLastTermEntry = null;
-        liveLogRecCounterId = NULL_COUNTER_ID;
+        liveLogRecordingCounterId = NULL_COUNTER_ID;
         liveLogRecordingId = NULL_VALUE;
+        liveLogRecordingSessionId = NULL_VALUE;
 
         snapshotsToRetrieve.clear();
         snapshotsRetrieved.clear();
@@ -387,7 +386,7 @@ public final class ClusterBackupAgent implements Agent
 
     private void onUnavailableCounter(final CountersReader counters, final long registrationId, final int counterId)
     {
-        if (counterId == liveLogRecCounterId)
+        if (counterId == liveLogRecordingCounterId)
         {
             if (null != eventsListener)
             {
@@ -758,6 +757,11 @@ public final class ClusterBackupAgent implements Agent
 
         if (NULL_VALUE == liveLogRecordingSubscriptionId)
         {
+            if (NULL_VALUE == liveLogRecordingSessionId)
+            {
+                liveLogRecordingSessionId = BitUtil.generateRandomisedId();
+            }
+
             final String catchupEndpoint = ctx.catchupEndpoint();
             if (catchupEndpoint.endsWith(":0"))
             {
@@ -766,10 +770,11 @@ public final class ClusterBackupAgent implements Agent
                     final ChannelUri channelUri = ChannelUri.parse(ctx.catchupChannel());
                     channelUri.remove(ENDPOINT_PARAM_NAME);
                     channelUri.put(TAGS_PARAM_NAME, aeron.nextCorrelationId() + "," + aeron.nextCorrelationId());
+                    channelUri.put(SESSION_ID_PARAM_NAME, Integer.toString(liveLogRecordingSessionId));
                     recordingChannel = channelUri.toString();
 
-                    final String channel = recordingChannel + "|endpoint=" + catchupEndpoint;
-                    recordingSubscription = aeron.addSubscription(channel, ctx.logStreamId());
+                    channelUri.put(ENDPOINT_PARAM_NAME, catchupEndpoint);
+                    recordingSubscription = aeron.addSubscription(channelUri.toString(), ctx.logStreamId());
                     timeOfLastProgressMs = nowMs;
                     return 1;
                 }
@@ -784,6 +789,7 @@ public final class ClusterBackupAgent implements Agent
                     final ChannelUri channelUri = ChannelUri.parse(ctx.catchupChannel());
                     channelUri.put(ENDPOINT_PARAM_NAME, catchupEndpoint);
                     channelUri.replaceEndpointWildcardPort(resolvedEndpoint);
+                    channelUri.put(SESSION_ID_PARAM_NAME, Integer.toString(liveLogRecordingSessionId));
 
                     replayChannel = channelUri.toString();
                 }
@@ -792,6 +798,7 @@ public final class ClusterBackupAgent implements Agent
             {
                 final ChannelUri channelUri = ChannelUri.parse(ctx.catchupChannel());
                 channelUri.put(ENDPOINT_PARAM_NAME, catchupEndpoint);
+                channelUri.put(SESSION_ID_PARAM_NAME, Integer.toString(liveLogRecordingSessionId));
                 replayChannel = channelUri.toString();
                 recordingChannel = replayChannel;
             }
@@ -849,16 +856,16 @@ public final class ClusterBackupAgent implements Agent
                     timeOfLastProgressMs = nowMs;
                 }
             }
-            else if (NULL_COUNTER_ID == liveLogRecCounterId)
+            else if (NULL_COUNTER_ID == liveLogRecordingCounterId)
             {
                 final CountersReader countersReader = aeron.countersReader();
 
-                liveLogRecCounterId = RecordingPos.findCounterIdBySession(
+                liveLogRecordingCounterId = RecordingPos.findCounterIdBySession(
                     countersReader, (int)liveLogReplaySessionId, backupArchive.archiveId());
-                if (NULL_COUNTER_ID != liveLogRecCounterId)
+                if (NULL_COUNTER_ID != liveLogRecordingCounterId)
                 {
-                    liveLogPositionCounter.setOrdered(countersReader.getCounterValue(liveLogRecCounterId));
-                    liveLogRecordingId = RecordingPos.getRecordingId(countersReader, liveLogRecCounterId);
+                    liveLogPositionCounter.setOrdered(countersReader.getCounterValue(liveLogRecordingCounterId));
+                    liveLogRecordingId = RecordingPos.getRecordingId(countersReader, liveLogRecordingCounterId);
                     timeOfLastBackupQueryMs = nowMs;
                     timeOfLastProgressMs = nowMs;
                     state(UPDATE_RECORDING_LOG, nowMs);
@@ -959,15 +966,15 @@ public final class ClusterBackupAgent implements Agent
             workCount += 1;
         }
 
-        if (NULL_COUNTER_ID != liveLogRecCounterId)
+        if (NULL_COUNTER_ID != liveLogRecordingCounterId)
         {
-            final long liveLogPosition = aeron.countersReader().getCounterValue(liveLogRecCounterId);
+            final long liveLogPosition = aeron.countersReader().getCounterValue(liveLogRecordingCounterId);
 
             if (liveLogPositionCounter.proposeMaxOrdered(liveLogPosition))
             {
                 if (null != eventsListener)
                 {
-                    eventsListener.onLiveLogProgress(liveLogRecordingId, liveLogRecCounterId, liveLogPosition);
+                    eventsListener.onLiveLogProgress(liveLogRecordingId, liveLogRecordingCounterId, liveLogPosition);
                 }
 
                 workCount += 1;
@@ -1086,7 +1093,8 @@ public final class ClusterBackupAgent implements Agent
 
     private boolean hasProgressStalled(final long nowMs)
     {
-        return (NULL_COUNTER_ID == liveLogRecCounterId) && (nowMs > (timeOfLastProgressMs + backupProgressTimeoutMs));
+        return (NULL_COUNTER_ID == liveLogRecordingCounterId) &&
+            (nowMs > (timeOfLastProgressMs + backupProgressTimeoutMs));
     }
 
     private long replayStartPosition(final RecordingLog.Entry lastTerm)

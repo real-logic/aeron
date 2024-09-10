@@ -356,6 +356,15 @@ public final class TestCluster implements AutoCloseable
         final CredentialsSupplier credentialsSupplier,
         final ClusterBackup.SourceType sourceType)
     {
+        return startClusterBackupNode(cleanStart, credentialsSupplier, sourceType, 0);
+    }
+
+    public TestBackupNode startClusterBackupNode(
+        final boolean cleanStart,
+        final CredentialsSupplier credentialsSupplier,
+        final ClusterBackup.SourceType sourceType,
+        final int catchupEndpointPort)
+    {
         final int index = staticMemberCount;
         final String baseDirName = clusterBaseDir + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
@@ -397,17 +406,17 @@ public final class TestCluster implements AutoCloseable
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .consensusChannel(consensusChannelUri.toString())
             .clusterBackupCoolDownIntervalNs(TimeUnit.SECONDS.toNanos(1))
-            .catchupEndpoint(hostname(index) + ":0")
+            .catchupEndpoint(hostname(index) + ":" + catchupEndpointPort)
             .archiveContext(new AeronArchive.Context()
-                .aeronDirectoryName(aeronDirName)
-                .controlRequestChannel(context.archiveContext.localControlChannel())
-                .controlRequestStreamId(context.archiveContext.localControlStreamId())
-                .controlResponseChannel("aeron:ipc?alias=backup-archive-local-resp")
-                .controlResponseStreamId(9090909 + index))
+            .aeronDirectoryName(aeronDirName)
+            .controlRequestChannel(context.archiveContext.localControlChannel())
+            .controlRequestStreamId(context.archiveContext.localControlStreamId())
+            .controlResponseChannel("aeron:ipc?alias=backup-archive-local-resp")
+            .controlResponseStreamId(9090909 + index))
             .clusterArchiveContext(new AeronArchive.Context()
-                .aeronDirectoryName(aeronDirName)
-                .controlRequestChannel(context.archiveContext.controlChannel())
-                .controlResponseChannel(archiveControlResponseChannel(index)))
+            .aeronDirectoryName(aeronDirName)
+            .controlRequestChannel(context.archiveContext.controlChannel())
+            .controlResponseChannel(archiveControlResponseChannel(index)))
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .credentialsSupplier(credentialsSupplier)
             .sourceType(sourceType)

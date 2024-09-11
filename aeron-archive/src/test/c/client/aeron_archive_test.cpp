@@ -924,7 +924,7 @@ TEST_F(AeronCArchiveTest, shouldObserveErrorOnBadDataOnControlResponseChannel)
             break;
         }
 
-        usleep(500 * 1000);
+        std::this_thread::sleep_for(IDLE_SLEEP_MS_5);
     }
 
     ASSERT_FALSE(std::string(aeron_errmsg()).find("that doesn't match expected") == std::string::npos);
@@ -1060,7 +1060,7 @@ TEST_F(AeronCArchiveTest, shouldCallErrorHandlerOnError)
 
         ASSERT_STREQ("", ehc.message);
 
-        usleep(5000);
+        std::this_thread::sleep_for(IDLE_SLEEP_MS_5);
     }
 
     ASSERT_STREQ("correlation_id=9999999 fancy error message", ehc.message);

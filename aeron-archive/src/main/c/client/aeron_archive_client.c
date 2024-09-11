@@ -687,12 +687,6 @@ int aeron_archive_get_start_position(
             aeron_archive,
             "AeronArchive::getStartPosition",
             correlation_id);
-
-        // TODO remove this
-        if (rc < 0)
-        {
-            fprintf(stderr, "C err msg :: %s\n", aeron_errmsg());
-        }
     }
 
     aeron_mutex_unlock(&aeron_archive->lock);

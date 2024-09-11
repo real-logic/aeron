@@ -513,7 +513,7 @@ TEST_F(AeronArchiveWrapperTest, shouldConnectToArchiveAndCallInvoker)
     EXPECT_EQ(42, aeronArchive->archiveId());
 }
 
-TEST_F(AeronArchiveWrapperTest, DISABLED_shouldObserveErrorOnBadDataOnControlResponseChannel)
+TEST_F(AeronArchiveWrapperTest, shouldObserveErrorOnBadDataOnControlResponseChannel)
 {
     m_context.errorHandler(
         [](const std::exception &exception)
@@ -558,8 +558,6 @@ TEST_F(AeronArchiveWrapperTest, DISABLED_shouldObserveErrorOnBadDataOnControlRes
         catch (std::exception &exception)
         {
             errorMessage = std::string(exception.what());
-            fprintf(stderr, "message :: %s\n", errorMessage.c_str());
-
             if (errorMessage.find("found schema id") != std::string::npos)
             {
                 break;

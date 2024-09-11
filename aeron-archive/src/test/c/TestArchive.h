@@ -41,7 +41,7 @@ inline long long currentTimeMillis()
 }
 
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
-static const std::chrono::duration<long, std::milli> IDLE_SLEEP_S_2(2 * 1000);
+static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_5(5);
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN

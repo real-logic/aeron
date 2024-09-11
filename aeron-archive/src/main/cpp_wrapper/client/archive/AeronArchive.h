@@ -362,9 +362,6 @@ public:
             m_aeron_archive_t,
             recordingId) < 0)
         {
-            // TODO remove this
-            fprintf(stderr, "C++ err message >> %s\n", aeron_errmsg());
-
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 

@@ -61,6 +61,11 @@ do
       echo "Enabling warnings as errors for c++"
       shift
       ;;
+    --cxx-hide-deprecation-message)
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_HIDE_DEPRECATION_MESSAGE=ON"
+      echo "Hiding API deprecation message for c++"
+      shift
+      ;;
     -a|--build-archive-api)
       echo "Enabling building of Aeron Archive API is the default"
       shift

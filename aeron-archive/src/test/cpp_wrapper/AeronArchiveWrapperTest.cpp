@@ -611,7 +611,7 @@ TEST_F(AeronArchiveWrapperTest, shouldCallErrorHandlerOnError)
             '\x6D', '\x65', '\x73', '\x73', '\x61', '\x67', '\x65', '\x00'
         };
 
-        uint64_t sid = aeronArchive->controlSessionId();
+        int64_t sid = aeronArchive->controlSessionId();
         memcpy(&buffer[8], &sid, 8);
 
         BufferClaim bufferClaim;

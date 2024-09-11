@@ -28,6 +28,7 @@ extern "C"
 #include "aeron_agent.h"
 #include "aeron_counter.h"
 #include "uri/aeron_uri_string_builder.h"
+#include <inttypes.h>
 }
 
 #include "../TestArchive.h"
@@ -1011,7 +1012,7 @@ TEST_F(AeronCArchiveTest, shouldCallErrorHandlerOnError)
         bool printErrorMessageHex = false;
         if (printErrorMessageHex)
         {
-            fprintf(stderr, "session id :: %llu\n", aeron_archive_control_session_id(archive));
+            fprintf(stderr, "session id :: %" PRIi64 "\n", aeron_archive_control_session_id(archive));
 
             uint8_t controlSessionBuffer[100];
             uint64_t sid = aeron_archive_control_session_id(archive);
@@ -1022,7 +1023,7 @@ TEST_F(AeronCArchiveTest, shouldCallErrorHandlerOnError)
             }
             fprintf(stderr, "\n");
 
-            fprintf(stderr, "len == %llu\n", len);
+            fprintf(stderr, "len == %" PRIu64 "\n", len);
 
             fprintf(stderr, "char buffer[] = { ");
             for (uint64_t j = 0; j < len; j++)

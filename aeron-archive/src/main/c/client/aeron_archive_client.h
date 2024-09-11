@@ -40,8 +40,6 @@ aeron_archive_control_response_poller_t *aeron_archive_control_response_poller(a
 
 aeron_archive_proxy_t *aeron_archive_proxy(aeron_archive_t *aeron_archive);
 
-int64_t aeron_archive_control_session_id(aeron_archive_t *aeron_archive);
-
 int64_t aeron_archive_next_correlation_id(aeron_archive_t *aeron_archive);
 
 #endif //AERON_ARCHIVE_CLIENT_H

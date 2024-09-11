@@ -162,7 +162,13 @@ public:
             m_async = nullptr; // _poll() just free'd this up
 
             return std::shared_ptr<AeronArchive>(
-                new AeronArchive(aeron_archive, m_aeronW, m_recordingSignalConsumer));
+                new AeronArchive(
+                    aeron_archive,
+                    m_aeronW,
+                    m_recordingSignalConsumer,
+                    m_errorHandler,
+                    m_delegatingInvoker,
+                    m_maxErrorMessageLength));
         }
 
     private:
@@ -170,7 +176,10 @@ public:
             Context &ctx) :
             m_async(nullptr),
             m_aeronW(ctx.aeron()),
-            m_recordingSignalConsumer(ctx.m_recordingSignalConsumer)
+            m_recordingSignalConsumer(ctx.m_recordingSignalConsumer),
+            m_errorHandler(ctx.m_errorHandler),
+            m_delegatingInvoker(ctx.m_delegatingInvoker),
+            m_maxErrorMessageLength(ctx.m_maxErrorMessageLength)
         {
             // async_connect makes a copy of the underlying aeron_archive_context_t
             if (aeron_archive_async_connect(&m_async, ctx.m_aeron_archive_ctx_t) < 0)
@@ -181,7 +190,12 @@ public:
 
         aeron_archive_async_connect_t *m_async;
         std::shared_ptr<Aeron> m_aeronW;
+
         const recording_signal_consumer_t m_recordingSignalConsumer;
+        const exception_handler_t m_errorHandler;
+        const delegating_invoker_t m_delegatingInvoker;
+
+        const uint32_t m_maxErrorMessageLength;
     };
 
     static std::shared_ptr<AsyncConnect> asyncConnect(Context &ctx)
@@ -199,7 +213,13 @@ public:
         }
 
         return std::shared_ptr<AeronArchive>(
-            new AeronArchive(aeron_archive, ctx.aeron(), ctx.m_recordingSignalConsumer));
+            new AeronArchive(
+                aeron_archive,
+                ctx.aeron(),
+                ctx.m_recordingSignalConsumer,
+                ctx.m_errorHandler,
+                ctx.m_delegatingInvoker,
+                ctx.m_maxErrorMessageLength));
     }
 
     ~AeronArchive()
@@ -210,7 +230,7 @@ public:
         aeron_archive_close(m_aeron_archive_t);
     }
 
-    Context &context()
+    const Context &context()
     {
         return m_archiveCtxW;
     }
@@ -223,6 +243,11 @@ public:
     Subscription &controlResponseSubscription()
     {
         return *m_controlResponseSubscription;
+    }
+
+    inline std::int64_t controlSessionId()
+    {
+        return aeron_archive_control_session_id(m_aeron_archive_t);
     }
 
     inline std::int32_t pollForRecordingSignals()
@@ -239,9 +264,9 @@ public:
 
     inline std::string pollForErrorResponse()
     {
-        char buffer[1000];
+        char *buffer = m_errorMessageBuffer.get();
 
-        if (aeron_archive_poll_for_error_response(m_aeron_archive_t, buffer, 1000) < 0)
+        if (aeron_archive_poll_for_error_response(m_aeron_archive_t, buffer, m_archiveCtxW.maxErrorMessageLength()) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
@@ -337,6 +362,9 @@ public:
             m_aeron_archive_t,
             recordingId) < 0)
         {
+            // TODO remove this
+            fprintf(stderr, "C++ err message >> %s\n", aeron_errmsg());
+
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
 
@@ -561,7 +589,7 @@ public:
             recordingId,
             replayChannel.c_str(),
             replayStreamId,
-            replayParams.params()) < 0)
+            &replayParams.m_params) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
@@ -583,7 +611,7 @@ public:
             recordingId,
             replayChannel.c_str(),
             replayStreamId,
-            replayParams.params()) < 0)
+            &replayParams.m_params) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
@@ -708,7 +736,7 @@ public:
             srcRecordingId,
             srcControlStreamId,
             srcControlChannel.c_str(),
-            replicationParams.params()) < 0)
+            &replicationParams.m_params) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
@@ -829,7 +857,10 @@ private:
     explicit AeronArchive(
         aeron_archive_t *aeron_archive,
         const std::shared_ptr<Aeron> &originalAeron,
-        const recording_signal_consumer_t &recordingSignalConsumer) :
+        const recording_signal_consumer_t &recordingSignalConsumer,
+        const exception_handler_t &errorHandler,
+        const delegating_invoker_t &delegatingInvoker,
+        const uint32_t maxErrorMessageLength) :
         m_aeron_archive_t(aeron_archive),
         m_archiveCtxW(aeron_archive_get_and_own_archive_context(m_aeron_archive_t))
     {
@@ -840,18 +871,31 @@ private:
         // So use the C functions to acquire the underlying aeron_t.
         auto *aeron = aeron_archive_context_get_aeron(aeron_archive_get_archive_context(aeron_archive));
 
-        m_archiveCtxW.aeron(nullptr == originalAeron ? std::make_shared<Aeron>(aeron) : originalAeron);
-        m_archiveCtxW.recordingSignalConsumer(recordingSignalConsumer);
+        m_archiveCtxW
+            .aeron(nullptr == originalAeron ? std::make_shared<Aeron>(aeron) : originalAeron)
+            .recordingSignalConsumer(recordingSignalConsumer)
+            .delegatingInvoker(delegatingInvoker)
+            .maxErrorMessageLength(maxErrorMessageLength);
+
+        // If no previous errorHandler was set, then the underlying C code will use the default one, which just prints to stderr.
+        // If there WAS an errorHandler set, then go ahead and copy it into the new archive context wrapper.
+        if (nullptr != errorHandler)
+        {
+            m_archiveCtxW.errorHandler(errorHandler);
+        }
 
         m_controlResponseSubscription = std::make_unique<Subscription>(
             aeron,
             aeron_archive_get_and_own_control_response_subscription(m_aeron_archive_t),
             nullptr);
+
+        m_errorMessageBuffer = std::make_unique<char[]>(maxErrorMessageLength);
     }
 
     aeron_archive_t *m_aeron_archive_t = nullptr;
     Context m_archiveCtxW;
     std::unique_ptr<Subscription> m_controlResponseSubscription = nullptr;
+    std::unique_ptr<char[]> m_errorMessageBuffer;
 
     static void recording_descriptor_consumer_func(
         aeron_archive_recording_descriptor_t *recording_descriptor,

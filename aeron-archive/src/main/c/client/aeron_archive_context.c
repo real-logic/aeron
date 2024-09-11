@@ -100,7 +100,6 @@ int aeron_archive_context_duplicate(aeron_archive_context_t **dest_p, aeron_arch
         return -1;
     }
 
-    // TODO probably should be wiser about this, but for now, memcpy it is!!!
     memcpy(_ctx, src, sizeof(aeron_archive_context_t));
 
     _ctx->control_request_channel = NULL;
@@ -132,8 +131,11 @@ int aeron_archive_context_conclude(aeron_archive_context_t *ctx)
         ctx->owns_aeron_client = true;
     }
 
-    ctx->error_handler = aeron_context_get_error_handler(aeron_context(ctx->aeron));
-    ctx->error_handler_clientd = aeron_context_get_error_handler_clientd(aeron_context(ctx->aeron));
+    if (NULL == ctx->error_handler)
+    {
+        ctx->error_handler = aeron_context_get_error_handler(aeron_context(ctx->aeron));
+        ctx->error_handler_clientd = aeron_context_get_error_handler_clientd(aeron_context(ctx->aeron));
+    }
 
     return 0;
 

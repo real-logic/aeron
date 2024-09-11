@@ -767,8 +767,13 @@ static int aeron_archive_replay_merge_poll_for_response(bool *found_response_p, 
 {
     aeron_archive_control_response_poller_t *poller = aeron_archive_control_response_poller(replay_merge->aeron_archive);
 
-    if (aeron_archive_control_response_poller_poll(poller) > 0 &&
-        poller->is_poll_complete &&
+    if (aeron_archive_control_response_poller_poll(poller) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (poller->is_poll_complete &&
         poller->control_session_id == replay_merge->control_session_id)
     {
         if (poller->is_code_error)

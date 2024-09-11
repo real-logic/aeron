@@ -31,6 +31,7 @@ typedef struct aeron_archive_recording_subscription_descriptor_poller_stct
 
     int fragment_limit;
     aeron_controlled_fragment_assembler_t *fragment_assembler;
+    bool error_on_fragment;
 
     int64_t correlation_id;
     int32_t remaining_subscription_count;

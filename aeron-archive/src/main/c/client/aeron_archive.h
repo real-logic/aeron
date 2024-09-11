@@ -242,6 +242,9 @@ int64_t aeron_archive_get_archive_id(aeron_archive_t *aeron_archive);
 aeron_subscription_t *aeron_archive_get_control_response_subscription(aeron_archive_t *aeron_archive);
 aeron_subscription_t *aeron_archive_get_and_own_control_response_subscription(aeron_archive_t *aeron_archive);
 
+// helpful for testing... not necessarily useful otherwise
+int64_t aeron_archive_control_session_id(aeron_archive_t *aeron_archive);
+
 int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *aeron_archive);
 int aeron_archive_poll_for_error_response(aeron_archive_t *aeron_archive, char *buffer, size_t buffer_length);
 int aeron_archive_check_for_error_response(aeron_archive_t *aeron_archive);

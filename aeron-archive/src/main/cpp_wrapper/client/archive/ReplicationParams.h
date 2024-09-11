@@ -129,7 +129,6 @@ public:
         return m_encodedCredentials;
     }
 
-    // TODO what if someone calls this with 'nullptr'??  Need a way to clear the credentials_t
     ReplicationParams &encodedCredentials(std::pair<const char *, std::uint32_t> encodedCredentials)
     {
         m_encodedCredentials = encodedCredentials;
@@ -146,10 +145,6 @@ private:
     std::pair<const char *, std::uint32_t> m_encodedCredentials;
     aeron_archive_encoded_credentials_t m_encoded_credentials_t;
 
-    aeron_archive_replication_params_t *params()
-    {
-        return &m_params;
-    }
 };
 
 }}}

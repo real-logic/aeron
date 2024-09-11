@@ -105,10 +105,6 @@ public:
 private:
     aeron_archive_replay_params_t m_params;
 
-    aeron_archive_replay_params_t *params()
-    {
-        return &m_params;
-    }
 };
 
 }}}

@@ -190,9 +190,16 @@ public:
         return *this;
     }
 
-    // TODO need a test for the errorHandler
     inline Context &errorHandler(const exception_handler_t &errorHandler)
     {
+        if (aeron_archive_context_set_error_handler(
+            m_aeron_archive_ctx_t,
+            error_handler_func,
+            (void *)this) < 0)
+        {
+            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
+        }
+
         m_errorHandler = errorHandler;
         return *this;
     }
@@ -202,16 +209,26 @@ public:
         return m_errorHandler;
     }
 
-    // TODO need a test for the delegating invoker
     inline Context &delegatingInvoker(const delegating_invoker_t &delegatingInvokerFunc)
     {
-        m_delegating_invoker = delegatingInvokerFunc;
+        m_delegatingInvoker = delegatingInvokerFunc;
         return *this;
     }
 
-    inline delegating_invoker_t &delegatingInvoker()
+    inline delegating_invoker_t delegatingInvoker() const
     {
-        return m_delegating_invoker;
+        return m_delegatingInvoker;
+    }
+
+    Context &maxErrorMessageLength(const uint32_t maxErrorMessageLength)
+    {
+        m_maxErrorMessageLength = maxErrorMessageLength;
+        return *this;
+    }
+
+    uint32_t maxErrorMessageLength() const
+    {
+        return m_maxErrorMessageLength;
     }
 
 private:
@@ -225,10 +242,11 @@ private:
     CredentialsSupplier m_credentialsSupplier;
     aeron_archive_encoded_credentials_t m_lastEncodedCredentials = {};
 
-    // TODO have a default so we don't have to check for null?
     recording_signal_consumer_t m_recordingSignalConsumer = nullptr;
     exception_handler_t m_errorHandler = nullptr;
-    delegating_invoker_t m_delegating_invoker = nullptr;
+    delegating_invoker_t m_delegatingInvoker = nullptr;
+
+    uint32_t m_maxErrorMessageLength = 1000;
 
     // This Context is created after connect succeeds and wraps around a context_t created in the C layer
     explicit Context(
@@ -261,14 +279,6 @@ private:
         if (aeron_archive_context_set_recording_signal_consumer(
             m_aeron_archive_ctx_t,
             recording_signal_consumer_func,
-            (void *)this) < 0)
-        {
-            ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
-        }
-
-        if (aeron_archive_context_set_error_handler(
-            m_aeron_archive_ctx_t,
-            error_handler_func,
             (void *)this) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
@@ -361,9 +371,9 @@ private:
     {
         auto ctx = (Context *)clientd;
 
-        if (nullptr != ctx->m_delegating_invoker)
+        if (nullptr != ctx->m_delegatingInvoker)
         {
-            ctx->m_delegating_invoker();
+            ctx->m_delegatingInvoker();
         }
     }
 

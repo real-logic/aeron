@@ -272,8 +272,13 @@ int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *
 
     aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
 
-    if (aeron_archive_control_response_poller_poll(poller) != 0 &&
-        poller->is_poll_complete &&
+    if (aeron_archive_control_response_poller_poll(poller) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (poller->is_poll_complete &&
         poller->control_session_id == aeron_archive->control_session_id)
     {
         if (poller->is_control_response && poller->is_code_error)
@@ -312,6 +317,8 @@ int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *
 
 int aeron_archive_poll_for_error_response(aeron_archive_t *aeron_archive, char *buffer, size_t buffer_length)
 {
+    int rc = 0;
+
     aeron_mutex_lock(&aeron_archive->lock);
 
     if (!aeron_subscription_is_connected(aeron_archive->subscription))
@@ -323,8 +330,14 @@ int aeron_archive_poll_for_error_response(aeron_archive_t *aeron_archive, char *
 
     aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
 
-    if (aeron_archive_control_response_poller_poll(poller) != 0 &&
-        poller->is_poll_complete &&
+    if (aeron_archive_control_response_poller_poll(poller) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        rc = -1;
+        goto cleanup;
+    }
+
+    if (poller->is_poll_complete &&
         poller->control_session_id == aeron_archive->control_session_id)
     {
         if (poller->is_control_response &&
@@ -351,7 +364,7 @@ int aeron_archive_poll_for_error_response(aeron_archive_t *aeron_archive, char *
 cleanup:
     aeron_mutex_unlock(&aeron_archive->lock);
 
-    return 0;
+    return rc;
 }
 
 int aeron_archive_check_for_error_response(aeron_archive_t *aeron_archive)
@@ -380,8 +393,14 @@ int aeron_archive_check_for_error_response(aeron_archive_t *aeron_archive)
 
     aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
 
-    if (aeron_archive_control_response_poller_poll(poller) != 0 &&
-        poller->is_poll_complete &&
+    if (aeron_archive_control_response_poller_poll(poller) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        rc = -1;
+        goto cleanup;
+    }
+
+    if (poller->is_poll_complete &&
         poller->control_session_id == aeron_archive->control_session_id)
     {
         if (poller->is_control_response &&
@@ -668,6 +687,12 @@ int aeron_archive_get_start_position(
             aeron_archive,
             "AeronArchive::getStartPosition",
             correlation_id);
+
+        // TODO remove this
+        if (rc < 0)
+        {
+            fprintf(stderr, "C err msg :: %s\n", aeron_errmsg());
+        }
     }
 
     aeron_mutex_unlock(&aeron_archive->lock);
@@ -1928,6 +1953,12 @@ int aeron_archive_poll_next_response(
     {
         int fragments = aeron_archive_control_response_poller_poll(poller);
 
+        if (fragments < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+
         if (poller->is_poll_complete)
         {
             if (poller->is_recording_signal &&
@@ -2124,6 +2155,12 @@ int aeron_archive_poll_for_descriptors(
     {
         const int fragments = aeron_archive_recording_descriptor_poller_poll(poller);
 
+        if (fragments < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+
         const int32_t remaining_record_count = poller->remaining_record_count;
 
         if (poller->is_dispatch_complete)
@@ -2188,6 +2225,12 @@ int aeron_archive_poll_for_subscription_descriptors(
     while (true)
     {
         const int fragments = aeron_archive_recording_subscription_descriptor_poller_poll(poller);
+
+        if (fragments < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
 
         const int32_t remaining_subscription_count = poller->remaining_subscription_count;
 

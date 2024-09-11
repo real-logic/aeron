@@ -31,6 +31,7 @@ extern "C"
 }
 
 #include "../TestArchive.h"
+#include "aeron_archive_client/controlResponse.h"
 
 testing::AssertionResult EqualOrErrmsg(const int x, const int y) {
   if (x == y)
@@ -823,6 +824,247 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchiveWithPrebuiltAeron)
 
     ASSERT_EQ_ERR(0, aeron_close(aeron));
     ASSERT_EQ_ERR(0, aeron_context_close(aeron_ctx));
+}
+
+void invoker_func(void *clientd)
+{
+    *(bool *)clientd = true;
+}
+
+TEST_F(AeronCArchiveTest, shouldConnectToArchiveAndCallInvoker)
+{
+    aeron_archive_context_t *ctx;
+    aeron_archive_t *archive = nullptr;
+
+    ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
+        ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds_clientd));
+    bool invokerCalled = false;
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_delegating_invoker(
+        ctx,
+        invoker_func,
+        &invokerCalled));
+    ASSERT_EQ_ERR(0, aeron_archive_connect(&archive, ctx));
+    ASSERT_TRUE(invokerCalled);
+    ASSERT_EQ_ERR(0, aeron_archive_context_close(ctx));
+
+    ctx = aeron_archive_get_archive_context(archive);
+    ASSERT_TRUE(aeron_archive_context_get_owns_aeron_client(ctx));
+
+    aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
+    ASSERT_TRUE(aeron_subscription_is_connected(subscription));
+
+    ASSERT_EQ(42, aeron_archive_get_archive_id(archive));
+
+    ASSERT_EQ_ERR(0, aeron_archive_close(archive));
+}
+
+TEST_F(AeronCArchiveTest, shouldObserveErrorOnBadDataOnControlResponseChannel)
+{
+    aeron_archive_context_t *ctx;
+    aeron_archive_t *archive = nullptr;
+
+    ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
+        ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds_clientd));
+    ASSERT_EQ_ERR(0, aeron_archive_connect(&archive, ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_close(ctx));
+
+    ctx = aeron_archive_get_archive_context(archive);
+    ASSERT_TRUE(aeron_archive_context_get_owns_aeron_client(ctx));
+
+    aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
+    ASSERT_TRUE(aeron_subscription_is_connected(subscription));
+
+    char resolved_uri[1000];
+    aeron_subscription_try_resolve_channel_endpoint_port(subscription, resolved_uri, 1000);
+
+    m_aeron = aeron_archive_context_get_aeron(ctx);
+
+    aeron_publication_t *publication = addPublication(
+        resolved_uri,
+        aeron_archive_context_get_control_response_stream_id(ctx));
+
+    while (!aeron_publication_is_connected(publication))
+    {
+        idle();
+    }
+
+    {
+        char message[1000];
+        size_t len = snprintf(message, 1000, "this will hopefully cause an error");
+
+        while (aeron_publication_offer(publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
+        {
+            idle();
+        }
+    }
+
+    while (true)
+    {
+        int64_t found_start_position;
+        ASSERT_EQ_ERR(-1, aeron_archive_get_start_position(
+            &found_start_position,
+            archive,
+            1234)); // <-- should be an invalid recording id
+
+        if (std::string(aeron_errmsg()).find("found schema id") != std::string::npos)
+        {
+            break;
+        }
+
+        usleep(500 * 1000);
+    }
+
+    ASSERT_FALSE(std::string(aeron_errmsg()).find("that doesn't match expected") == std::string::npos);
+
+    ASSERT_EQ_ERR(0, aeron_archive_close(archive));
+}
+
+typedef struct error_handler_clientd_stct
+{
+    bool called;
+    char message[1000];
+}
+    error_handler_clientd_t;
+
+void error_handler(void *clientd, int errcode, const char *message)
+{
+    auto *ehc = (error_handler_clientd_t *)clientd;
+    ehc->called = true;
+    snprintf(ehc->message, sizeof(ehc->message), "%s", message);
+}
+
+TEST_F(AeronCArchiveTest, shouldCallErrorHandlerOnError)
+{
+    aeron_archive_context_t *ctx;
+    aeron_archive_t *archive = nullptr;
+    error_handler_clientd_t ehc;
+
+    ehc.called = false;
+    ehc.message[0] = '\0';
+
+    ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
+        ctx,
+        encoded_credentials_supplier,
+        nullptr,
+        nullptr,
+        &default_creds_clientd));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_error_handler(ctx, error_handler, &ehc));
+    ASSERT_EQ_ERR(0, aeron_archive_connect(&archive, ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_close(ctx));
+
+    ctx = aeron_archive_get_archive_context(archive);
+    ASSERT_TRUE(aeron_archive_context_get_owns_aeron_client(ctx));
+
+    aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
+    ASSERT_TRUE(aeron_subscription_is_connected(subscription));
+
+    char resolved_uri[1000];
+    aeron_subscription_try_resolve_channel_endpoint_port(subscription, resolved_uri, 1000);
+
+    m_aeron = aeron_archive_context_get_aeron(ctx);
+
+    aeron_publication_t *publication = addPublication(
+        resolved_uri,
+        aeron_archive_context_get_control_response_stream_id(ctx));
+
+    while (!aeron_publication_is_connected(publication))
+    {
+        idle();
+    }
+
+    {
+        struct aeron_archive_client_controlResponse controlResponse;
+        struct aeron_archive_client_messageHeader hdr;
+
+        char message[1000];
+
+        aeron_archive_client_controlResponse_wrap_and_apply_header(
+            &controlResponse,
+            message,
+            0,
+            1000,
+            &hdr);
+        aeron_archive_client_controlResponse_set_controlSessionId(&controlResponse, aeron_archive_control_session_id(archive));
+        aeron_archive_client_controlResponse_set_correlationId(&controlResponse, 9999999); // this should NOT match
+        aeron_archive_client_controlResponse_set_relevantId(&controlResponse, 1234);
+        aeron_archive_client_controlResponse_set_code(&controlResponse, aeron_archive_client_controlResponseCode_ERROR);
+        const char *err_msg = "fancy error message";
+        aeron_archive_client_controlResponse_put_errorMessage(&controlResponse, err_msg, strlen(err_msg) + 1);
+
+        uint64_t len = aeron_archive_client_messageHeader_encoded_length() + aeron_archive_client_controlResponse_encoded_length(&controlResponse);
+
+        // the following prints out the char buffer definition used by the C++ version of this test
+        bool printErrorMessageHex = false;
+        if (printErrorMessageHex)
+        {
+            fprintf(stderr, "session id :: %llu\n", aeron_archive_control_session_id(archive));
+
+            uint8_t controlSessionBuffer[100];
+            uint64_t sid = aeron_archive_control_session_id(archive);
+            memcpy(controlSessionBuffer, &sid, 8);
+            for (int i = 0; i < 8; i++)
+            {
+                fprintf(stderr, "'\\x%02X', ", controlSessionBuffer[i]);
+            }
+            fprintf(stderr, "\n");
+
+            fprintf(stderr, "len == %llu\n", len);
+
+            fprintf(stderr, "char buffer[] = { ");
+            for (uint64_t j = 0; j < len; j++)
+            {
+                fprintf(stderr, "'\\x%02X', ", (uint8_t)message[j]);
+            }
+            fprintf(stderr, "};\n");
+
+            for (uint64_t j = 0; j < len; j++)
+            {
+                fprintf(stderr, "%02X", (uint8_t)message[j]);
+            }
+            fprintf(stderr, "\n");
+        }
+
+        while (aeron_publication_offer(publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
+        {
+            idle();
+        }
+    }
+
+    while (true)
+    {
+        int64_t found_start_position;
+        ASSERT_EQ_ERR(-1, aeron_archive_get_start_position(
+            &found_start_position,
+            archive,
+            1234)); // <-- should be an invalid recording id
+
+        if (ehc.called)
+        {
+            break;
+        }
+
+        ASSERT_STREQ("", ehc.message);
+
+        usleep(5000);
+    }
+
+    ASSERT_STREQ("correlation_id=9999999 fancy error message", ehc.message);
+
+    ASSERT_EQ_ERR(0, aeron_archive_close(archive));
 }
 
 TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)

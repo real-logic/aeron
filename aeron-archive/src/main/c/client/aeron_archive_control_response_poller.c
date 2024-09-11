@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
+
 #include "aeron_archive.h"
 #include "aeron_archive_control_response_poller.h"
 
@@ -105,17 +107,31 @@ int aeron_archive_control_response_poller_poll(aeron_archive_control_response_po
         aeron_archive_control_response_poller_reset(poller);
     }
 
-    return aeron_subscription_controlled_poll(
+    int rc = aeron_subscription_controlled_poll(
         poller->subscription,
         aeron_controlled_fragment_assembler_handler,
         poller->fragment_assembler,
         poller->fragment_limit);
+
+    if (rc < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+    }
+    else if (poller->error_on_fragment)
+    {
+        AERON_APPEND_ERR("%s", "");
+        rc = -1;
+    }
+
+    return rc;
 }
 
 /* *************** */
 
 void aeron_archive_control_response_poller_reset(aeron_archive_control_response_poller_t *poller)
 {
+    poller->error_on_fragment = false;
+
     poller->control_session_id = AERON_NULL_VALUE;
     poller->correlation_id = AERON_NULL_VALUE;
     poller->relevant_id = AERON_NULL_VALUE;
@@ -161,6 +177,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
         length) == NULL)
     {
         AERON_SET_ERR(errno, "%s", "unable to wrap buffer");
+        poller->error_on_fragment = true;
         return AERON_ACTION_BREAK;
     }
 
@@ -169,6 +186,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
     if (schema_id != aeron_archive_client_messageHeader_sbe_schema_id())
     {
         AERON_SET_ERR(-1, "found schema id: %i that doesn't match expected id: %i", schema_id, aeron_archive_client_messageHeader_sbe_schema_id());
+        poller->error_on_fragment = true;
         return AERON_ACTION_BREAK;
     }
 
@@ -198,6 +216,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
                 (enum aeron_archive_client_controlResponseCode *)&poller->code_value))
             {
                 AERON_SET_ERR(-1, "%s", "unable to read control response code");
+                poller->error_on_fragment = true;
                 return AERON_ACTION_BREAK;
             }
 
@@ -211,6 +230,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
                 if (aeron_reallocf((void **)&poller->error_message, len_with_terminator) < 0)
                 {
                     AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate error_message");
+                    poller->error_on_fragment = true;
                     return AERON_ACTION_BREAK;
                 }
                 poller->error_message_malloced_len = len_with_terminator;
@@ -256,6 +276,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
                 if (aeron_reallocf((void **)&poller->encoded_challenge_buffer, len_with_terminator) < 0)
                 {
                     AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate encoded_challenge_buffer");
+                    poller->error_on_fragment = true;
                     return AERON_ACTION_BREAK;
                 }
                 poller->encoded_challenge_buffer_malloced_len = len_with_terminator;
@@ -300,6 +321,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_control_response_poller
                 (enum aeron_archive_client_recordingSignal *)&poller->recording_signal_code))
             {
                 AERON_SET_ERR(-1, "%s", "unable to read recording signal code");
+                poller->error_on_fragment = true;
                 return AERON_ACTION_BREAK;
             }
 

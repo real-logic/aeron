@@ -28,6 +28,7 @@ typedef struct aeron_archive_control_response_poller_stct
     aeron_subscription_t *subscription;
     int fragment_limit;
     aeron_controlled_fragment_assembler_t *fragment_assembler;
+    bool error_on_fragment;
 
     int64_t control_session_id;
     int64_t correlation_id;

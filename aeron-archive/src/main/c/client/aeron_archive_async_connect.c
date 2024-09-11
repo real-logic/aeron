@@ -357,7 +357,11 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
 
     if (NULL != poller)
     {
-        aeron_archive_control_response_poller_poll(poller);
+        if (aeron_archive_control_response_poller_poll(poller) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto cleanup;
+        }
 
         if (poller->is_poll_complete &&
             poller->correlation_id == async->correlation_id)

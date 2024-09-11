@@ -64,6 +64,7 @@ int aeron_archive_recording_subscription_descriptor_poller_create(
         return -1;
     }
 
+    _poller->error_on_fragment = false;
     _poller->is_dispatch_complete = false;
 
     *poller = _poller;
@@ -88,6 +89,8 @@ void aeron_archive_recording_subscription_descriptor_poller_reset(
     aeron_archive_recording_subscription_descriptor_consumer_func_t recording_subscription_descriptor_consumer,
     void *recording_subscription_descriptor_consumer_clientd)
 {
+    poller->error_on_fragment = false;
+
     poller->correlation_id = correlation_id;
     poller->remaining_subscription_count = subscription_count;
     poller->recording_subscription_descriptor_consumer = recording_subscription_descriptor_consumer;
@@ -101,15 +104,23 @@ int aeron_archive_recording_subscription_descriptor_poller_poll(aeron_archive_re
         poller->is_dispatch_complete = false;
     }
 
-    aeron_err_clear();
-
     int rc = aeron_subscription_controlled_poll(
         poller->subscription,
         aeron_controlled_fragment_assembler_handler,
         poller->fragment_assembler,
         poller->fragment_limit);
 
-    return aeron_errcode() == 0 ? rc : -1;
+    if (rc < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+    }
+    else if (poller->error_on_fragment)
+    {
+        AERON_APPEND_ERR("%s", "");
+        rc = -1;
+    }
+
+    return rc;
 }
 
 /* ************* */
@@ -133,6 +144,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
         length) == NULL)
     {
         AERON_SET_ERR(errno, "%s", "unable to wrap buffer");
+        poller->error_on_fragment = true;
         return AERON_ACTION_BREAK;
     }
 
@@ -141,6 +153,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
     if (schema_id != aeron_archive_client_messageHeader_sbe_schema_id())
     {
         AERON_SET_ERR(-1, "found schema id: %i that doesn't match expected id: %i", schema_id, aeron_archive_client_messageHeader_sbe_schema_id());
+        poller->error_on_fragment = true;
         return AERON_ACTION_BREAK;
     }
 
@@ -169,6 +182,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
                     (enum aeron_archive_client_controlResponseCode *)&code))
                 {
                     AERON_SET_ERR(-1, "%s", "unable to read control response code");
+                    poller->error_on_fragment = true;
                     return AERON_ACTION_BREAK;
                 }
 
@@ -195,6 +209,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
                             correlation_id,
                             string_view.length,
                             string_view.data);
+                        poller->error_on_fragment = true;
                         return AERON_ACTION_BREAK;
                     }
                     else if (NULL != poller->ctx->error_handler)
@@ -253,6 +268,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
                 if (aeron_alloc((void **)&descriptor.stripped_channel, descriptor.stripped_channel_length + 1) < 0)
                 {
                     AERON_APPEND_ERR("%s", "");
+                    poller->error_on_fragment = true;
                     return AERON_ACTION_BREAK;
                 }
                 memcpy(descriptor.stripped_channel, view.data, descriptor.stripped_channel_length);
@@ -285,6 +301,7 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
             if (aeron_archive_recording_signal_dispatch_buffer(poller->ctx, buffer, length) < 0)
             {
                 AERON_APPEND_ERR("%s", "");
+                poller->error_on_fragment = true;
                 return AERON_ACTION_BREAK;
             }
 

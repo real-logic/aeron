@@ -566,8 +566,7 @@ TEST_F(AeronArchiveWrapperTest, DISABLED_shouldObserveErrorOnBadDataOnControlRes
             }
         }
 
-        usleep(100 * 5000);
-        //usleep(5000);
+        std::this_thread::sleep_for(IDLE_SLEEP_MS_5);
     }
 
     ASSERT_FALSE(errorMessage.find("that doesn't match expected") == std::string::npos);
@@ -636,7 +635,7 @@ TEST_F(AeronArchiveWrapperTest, shouldCallErrorHandlerOnError)
         // assert empty error message
         ASSERT_TRUE(errorMessage.empty());
 
-        usleep(5000);
+        std::this_thread::sleep_for(IDLE_SLEEP_MS_5);
     }
 
     ASSERT_STREQ("correlation_id=9999999 fancy error message", errorMessage.c_str());

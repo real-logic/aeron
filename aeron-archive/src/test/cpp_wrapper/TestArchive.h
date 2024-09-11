@@ -31,6 +31,7 @@ using namespace aeron::archive::client;
 #define SEGMENT_LENGTH (TERM_LENGTH * 2)
 
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
+static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_5(5);
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN

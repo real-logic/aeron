@@ -24,7 +24,7 @@ plugins {
     id 'application'
     id 'base'
     id 'java-library'
-    id 'com.gradleup.shadow' version '8.3.0' apply false
+    id 'com.gradleup.shadow' version '8.3.1' apply false
     id 'biz.aQute.bnd.builder' version '7.0.0' apply false
     id 'com.github.ben-manes.versions' version '0.51.0'
 }

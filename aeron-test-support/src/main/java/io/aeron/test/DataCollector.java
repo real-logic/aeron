@@ -20,19 +20,16 @@ import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.agrona.Strings.isEmpty;
@@ -156,7 +153,7 @@ public final class DataCollector
      */
     public List<Path> cncFiles()
     {
-        return findWithRetryOnNoSuchFile(CncFileDescriptor::isCncFile);
+        return findMatchingFiles(file -> CncFileDescriptor.CNC_FILE.equals(file.getName()));
     }
 
     /**
@@ -167,7 +164,7 @@ public final class DataCollector
      */
     public List<Path> markFiles(final SystemTestWatcher.MarkFileDissector dissector)
     {
-        return findWithRetryOnNoSuchFile(dissector::isRelevantFile);
+        return findMatchingFiles(dissector::isRelevantFile);
     }
 
     /**
@@ -194,38 +191,38 @@ public final class DataCollector
         return Collections.unmodifiableList(cleanupLocations);
     }
 
-    private List<Path> findWithRetryOnNoSuchFile(final BiPredicate<Path, BasicFileAttributes> matcher)
+    private List<Path> findMatchingFiles(final FileFilter filter)
     {
-        final int retries = 5;
-        for (int i = 0; i < retries; i++)
+        final List<Path> found = new ArrayList<>();
+        for (final Path location : locations)
         {
-            try
-            {
-                return locations.stream()
-                    .flatMap((path) -> DataCollector.find(path, matcher))
-                    .collect(toList());
-            }
-            catch (final UncheckedIOException ex)
-            {
-                if (!(ex.getCause() instanceof NoSuchFileException))
-                {
-                    throw ex;
-                }
-            }
+            find(found, location.toFile(), filter);
         }
-
-        return Collections.emptyList();
+        return found;
     }
 
-    private static Stream<Path> find(final Path p, final BiPredicate<Path, BasicFileAttributes> matcher)
+    private static void find(final List<Path> found, final File file, final FileFilter filter)
     {
-        try
+        if (file.exists())
         {
-            return Files.find(p, 10, matcher);
-        }
-        catch (final IOException ex)
-        {
-            throw new UncheckedIOException(ex);
+            if (file.isFile())
+            {
+                if (filter.accept(file))
+                {
+                    found.add(file.toPath());
+                }
+            }
+            else if (file.isDirectory())
+            {
+                final File[] files = file.listFiles();
+                if (null != files)
+                {
+                    for (final File f : files)
+                    {
+                        find(found, f, filter);
+                    }
+                }
+            }
         }
     }
 
@@ -324,7 +321,7 @@ public final class DataCollector
         final LinkedHashMap<Path, Set<Path>> map = new LinkedHashMap<>();
         for (final Path p : locations)
         {
-            map.put(p, singleton(p));
+            map.put(p, Set.of(p));
         }
 
         removeNestedPaths(locations, map);

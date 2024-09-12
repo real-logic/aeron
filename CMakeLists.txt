@@ -129,6 +129,10 @@ add_definitions(-DAERON_VERSION_MINOR=${aeron_VERSION_MINOR})
 add_definitions(-DAERON_VERSION_PATCH=${aeron_VERSION_PATCH})
 add_definitions(-DAERON_VERSION_GITSHA="${AERON_VERSION_GITSHA}")
 
+if (AERON_HIDE_DEPRECATION_MESSAGE)
+    add_compile_definitions("AERON_HIDE_DEPRECATION_MESSAGE")
+endif (AERON_HIDE_DEPRECATION_MESSAGE)
+
 # all UNIX-based platform compiler flags
 if (UNIX)
     add_compile_options(-fstrict-aliasing -Wall -Wpedantic -Wextra -Wno-unused-parameter -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer)
@@ -144,10 +148,6 @@ if (UNIX)
     if (CXX_WARNINGS_AS_ERRORS)
         add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror>)
     endif (CXX_WARNINGS_AS_ERRORS)
-
-    if (AERON_HIDE_DEPRECATION_MESSAGE)
-        add_compile_definitions("AERON_HIDE_DEPRECATION_MESSAGE")
-    endif (AERON_HIDE_DEPRECATION_MESSAGE)
 
     if (SANITISE_BUILD)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fsanitize=leak -fsanitize=undefined -DAERON_SANITIZE_ENABLED")

@@ -22,7 +22,6 @@ import org.agrona.SystemUtil;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -205,36 +204,40 @@ public final class DataCollector
 
     private static void find(final List<Path> found, final File file, final FileFilter filter)
     {
-        try
+        if (existsAndIsNotSymbolicLink(file))
         {
-            if (file.exists())
+            if (file.isFile())
             {
-                final BasicFileAttributes basicFileAttributes = Files.readAttributes(
-                    file.toPath(), BasicFileAttributes.class, NOFOLLOW_LINKS);
-
-                if (file.isFile())
+                if (filter.accept(file))
                 {
-                    if (filter.accept(file))
-                    {
-                        found.add(file.toPath());
-                    }
+                    found.add(file.toPath());
                 }
-                else if (!basicFileAttributes.isSymbolicLink() && file.isDirectory())
+            }
+            else if (file.isDirectory())
+            {
+                final File[] files = file.listFiles();
+                if (null != files)
                 {
-                    final File[] files = file.listFiles();
-                    if (null != files)
+                    for (final File f : files)
                     {
-                        for (final File f : files)
-                        {
-                            find(found, f, filter);
-                        }
+                        find(found, f, filter);
                     }
                 }
             }
         }
-        catch (final IOException ex)
+    }
+
+    private static boolean existsAndIsNotSymbolicLink(final File file)
+    {
+        try
         {
-            throw new UncheckedIOException(ex);
+            final BasicFileAttributes basicFileAttributes = Files.readAttributes(
+                file.toPath(), BasicFileAttributes.class, NOFOLLOW_LINKS);
+            return !basicFileAttributes.isSymbolicLink() && file.exists();
+        }
+        catch (IOException e)
+        {
+            return false;
         }
     }
 

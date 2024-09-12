@@ -1258,6 +1258,60 @@ public final class AeronArchive implements AutoCloseable
      * Replay a length in bytes of a recording from a position and for convenience create a {@link Subscription}
      * to receive the replay. If the position is {@link #NULL_POSITION} then the stream will be replayed from the start.
      *
+     * Use in case when the replay client resides behind a proxy.
+     *
+     * @param recordingId    to be replayed.
+     * @param position       from which the replay should begin or {@link #NULL_POSITION} if from the start.
+     * @param length         of the stream to be replayed or {@link Long#MAX_VALUE} to follow a live recording.
+     * @param replayChannel  which the replay should be subscribed locally.
+     * @param replayChannelProxy to which replay channel should be sent.
+     * @param replayStreamId to which the replay should be sent.
+     * @return the {@link Subscription} for consuming the replay.
+     */
+    public Subscription replay(
+            final long recordingId,
+            final long position,
+            final long length,
+            final String replayChannel,
+            final String replayChannelProxy,
+            final int replayStreamId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+            ensureNotReentrant();
+
+            final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
+            lastCorrelationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.replay(
+                    recordingId,
+                    position,
+                    length,
+                    replayChannelProxy,
+                    replayStreamId,
+                    lastCorrelationId,
+                    controlSessionId))
+            {
+                throw new ArchiveException("failed to send replay request");
+            }
+
+            final int replaySessionId = (int)pollForResponse(lastCorrelationId);
+            replayChannelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
+
+            return aeron.addSubscription(replayChannelUri.toString(), replayStreamId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Replay a length in bytes of a recording from a position and for convenience create a {@link Subscription}
+     * to receive the replay. If the position is {@link #NULL_POSITION} then the stream will be replayed from the start.
+     *
      * @param recordingId             to be replayed.
      * @param position                from which the replay should begin or {@link #NULL_POSITION} if from the start.
      * @param length                  of the stream to be replayed or {@link Long#MAX_VALUE} to follow a live recording.
@@ -2930,6 +2984,7 @@ public final class AeronArchive implements AutoCloseable
         private String controlRequestChannel = Configuration.controlChannel();
         private int controlRequestStreamId = Configuration.controlStreamId();
         private String controlResponseChannel = Configuration.controlResponseChannel();
+        private String controlResponseChannelProxy = null;
         private int controlResponseStreamId = Configuration.controlResponseStreamId();
         private boolean controlTermBufferSparse = Configuration.controlTermBufferSparse();
         private int controlTermBufferLength = Configuration.controlTermBufferLength();
@@ -3168,6 +3223,28 @@ public final class AeronArchive implements AutoCloseable
         public String controlResponseChannel()
         {
             return controlResponseChannel;
+        }
+
+        /**
+         * Set the channel proxy parameter for the control response channel.
+         *
+         * @param channel parameter for the control response channel.
+         * @return this for a fluent API.
+         */
+        public Context controlResponseChannelProxy(final String channel)
+        {
+            controlResponseChannelProxy = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for the control response channel.
+         *
+         * @return the channel parameter for the control response channel.
+         */
+        public String controlResponseChannelProxy()
+        {
+            return controlResponseChannelProxy;
         }
 
         /**
@@ -3735,7 +3812,12 @@ public final class AeronArchive implements AutoCloseable
 
             if (State.SEND_CONNECT_REQUEST == state)
             {
-                final String responseChannel = controlResponsePoller.subscription().tryResolveChannelEndpointPort();
+                final String responseChannel;
+                if (ctx.controlResponseChannelProxy() != null) {
+                    responseChannel = ctx.controlResponseChannelProxy();
+                } else {
+                    responseChannel = controlResponsePoller.subscription().tryResolveChannelEndpointPort();
+                }
                 if (null == responseChannel)
                 {
                     return null;

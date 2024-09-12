@@ -21,6 +21,7 @@ import org.agrona.SystemUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -155,9 +156,7 @@ public final class DataCollector
      */
     public List<Path> cncFiles()
     {
-        return locations.stream()
-            .flatMap((path) -> DataCollector.find(path, CncFileDescriptor::isCncFile))
-            .collect(toList());
+        return findWithRetryOnNoSuchFile(CncFileDescriptor::isCncFile);
     }
 
     /**
@@ -168,10 +167,7 @@ public final class DataCollector
      */
     public List<Path> markFiles(final SystemTestWatcher.MarkFileDissector dissector)
     {
-        return locations.stream()
-            .flatMap((path) -> DataCollector.find(path, dissector::isRelevantFile))
-            .collect(toList());
-
+        return findWithRetryOnNoSuchFile(dissector::isRelevantFile);
     }
 
     /**
@@ -198,20 +194,36 @@ public final class DataCollector
         return Collections.unmodifiableList(cleanupLocations);
     }
 
+    private List<Path> findWithRetryOnNoSuchFile(final BiPredicate<Path, BasicFileAttributes> matcher)
+    {
+        do
+        {
+            try
+            {
+                return locations.stream()
+                    .flatMap((path) -> DataCollector.find(path, matcher))
+                    .collect(toList());
+            }
+            catch (final UncheckedIOException ex)
+            {
+                if (!(ex.getCause() instanceof NoSuchFileException))
+                {
+                    throw ex;
+                }
+            }
+        }
+        while (true);
+    }
+
     private static Stream<Path> find(final Path p, final BiPredicate<Path, BasicFileAttributes> matcher)
     {
         try
         {
             return Files.find(p, 10, matcher);
         }
-        catch (final NoSuchFileException ignore)
-        {
-            return Stream.empty();
-            // File may have already been removed...
-        }
         catch (final IOException ex)
         {
-            throw new RuntimeException(ex);
+            throw new UncheckedIOException(ex);
         }
     }
 

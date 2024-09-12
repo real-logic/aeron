@@ -22,12 +22,14 @@ import org.agrona.SystemUtil;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
+import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Objects.requireNonNull;
@@ -203,26 +205,36 @@ public final class DataCollector
 
     private static void find(final List<Path> found, final File file, final FileFilter filter)
     {
-        if (file.exists())
+        try
         {
-            if (file.isFile())
+            if (file.exists())
             {
-                if (filter.accept(file))
+                final BasicFileAttributes basicFileAttributes = Files.readAttributes(
+                    file.toPath(), BasicFileAttributes.class, NOFOLLOW_LINKS);
+
+                if (file.isFile())
                 {
-                    found.add(file.toPath());
-                }
-            }
-            else if (file.isDirectory())
-            {
-                final File[] files = file.listFiles();
-                if (null != files)
-                {
-                    for (final File f : files)
+                    if (filter.accept(file))
                     {
-                        find(found, f, filter);
+                        found.add(file.toPath());
+                    }
+                }
+                else if (!basicFileAttributes.isSymbolicLink() && file.isDirectory())
+                {
+                    final File[] files = file.listFiles();
+                    if (null != files)
+                    {
+                        for (final File f : files)
+                        {
+                            find(found, f, filter);
+                        }
                     }
                 }
             }
+        }
+        catch (final IOException ex)
+        {
+            throw new UncheckedIOException(ex);
         }
     }
 

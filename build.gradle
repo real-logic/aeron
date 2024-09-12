@@ -13,20 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-    }
-}
-
 plugins {
-    id 'application'
-    id 'base'
     id 'java-library'
-    id 'com.gradleup.shadow' version '8.3.1' apply false
-    id 'biz.aQute.bnd.builder' version '7.0.0' apply false
-    id 'com.github.ben-manes.versions' version '0.51.0'
+    alias(libs.plugins.bnd).apply(false)
+    alias(libs.plugins.shadow).apply(false)
+    alias(libs.plugins.versions)
 }
 
 defaultTasks 'clean', 'build'
@@ -52,18 +43,6 @@ def toolchainLauncher = javaToolchains.launcherFor {
 
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
-
-def agronaVersion = '1.23.0'
-def agronaVersionRange = "[${agronaVersion},2.0["
-def sbeVersion = '1.33.0'
-def checkstyleVersion = '10.18.0'
-def hamcrestVersion = '3.0'
-def junitVersion = '5.11.0'
-def mockitoVersion = '5.13.0'
-def byteBuddyVersion = '1.15.1'
-def asmVersion = '9.7'
-def findbugsAnnotationsVersion = '3.0.1'
-def hdrHistogramVersion = '2.2.2'
 def gitCommitHash = io.aeron.build.GithubUtil.currentGitHash("${projectDir}")
 
 ext {
@@ -159,14 +138,14 @@ allprojects {
         resolutionStrategy {
             failOnVersionConflict()
 
-            force "org.agrona:agrona:${agronaVersion}",
-                  "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
-                  "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}",
-                  "org.ow2.asm:asm:${asmVersion}",
-                  "org.ow2.asm:asm-analysis:${asmVersion}",
-                  "org.ow2.asm:asm-commons:${asmVersion}",
-                  "org.ow2.asm:asm-tree:${asmVersion}",
-                  "org.ow2.asm:asm-util:${asmVersion}",
+            force "org.agrona:agrona:${libs.versions.agrona.get()}",
+                  "net.bytebuddy:byte-buddy:${libs.versions.byteBuddy.get()}",
+                  "net.bytebuddy:byte-buddy-agent:${libs.versions.byteBuddy.get()}",
+                  "org.ow2.asm:asm:${libs.versions.asm.get()}",
+                  "org.ow2.asm:asm-analysis:${libs.versions.asm.get()}",
+                  "org.ow2.asm:asm-commons:${libs.versions.asm.get()}",
+                  "org.ow2.asm:asm-tree:${libs.versions.asm.get()}",
+                  "org.ow2.asm:asm-util:${libs.versions.asm.get()}",
                   // patching conflicting Checkstyle dependencies
                   "org.codehaus.plexus:plexus-utils:3.3.0",
                   "org.apache.commons:commons-lang3:3.8.1",
@@ -186,9 +165,9 @@ subprojects {
     apply plugin: 'checkstyle'
 
     dependencies {
-        testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
-        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
-        testImplementation platform("org.junit:junit-bom:${junitVersion}")
+        testImplementation libs.hamcrest
+        testImplementation libs.mockito
+        testImplementation platform("org.junit:junit-bom:${libs.versions.junit.get()}")
         testImplementation "org.junit.jupiter:junit-jupiter-params"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -204,7 +183,7 @@ subprojects {
     group = aeronGroup
     version = aeronVersion
 
-    checkstyle.toolVersion = "${checkstyleVersion}"
+    checkstyle.toolVersion = libs.versions.checkstyle.get()
 
     tasks.withType(Sign).configureEach {
         onlyIf {
@@ -341,7 +320,7 @@ subprojects {
         options.encoding = 'UTF-8'
         options.docEncoding = 'UTF-8'
         options.charSet = 'UTF-8'
-        options.links("https://www.javadoc.io/doc/org.agrona/agrona/${agronaVersion}/")
+        options.links("https://www.javadoc.io/doc/org.agrona/agrona/${libs.versions.agrona.get()}/")
 
         if (buildJavaVersion >= 23) { // early access JavaDoc location is different
             options.links("https://download.java.net/java/early_access/jdk${buildJavaVersion}/docs/api/")
@@ -437,16 +416,10 @@ project(':aeron-client') {
     apply plugin: 'biz.aQute.bnd.builder'
 
     dependencies {
-        api("org.agrona:agrona") {
-            version {
-                strictly(agronaVersionRange)
-                prefer(agronaVersion)
-            }
-        }
+        api libs.agrona
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
     jar {
@@ -553,7 +526,6 @@ project(':aeron-driver') {
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
     jar {
@@ -651,11 +623,10 @@ project(':aeron-archive') {
     dependencies {
         api project(':aeron-driver')
         api files('build/classes/java/generated')
-        codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
+        codecGeneration libs.sbe
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
         testImplementation files('build/classes/java/generatedTest')
     }
 
@@ -821,11 +792,10 @@ project(':aeron-cluster') {
     dependencies {
         api project(':aeron-archive')
         api files('build/classes/java/generated')
-        codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
+        codecGeneration libs.sbe
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     }
 
     def generatedDir = file("${layout.buildDirectory.get()}/generated-src")
@@ -953,10 +923,10 @@ project(':aeron-agent') {
 
     dependencies {
         implementation aeronClusterProject
-        implementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
-        implementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
-        compileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
-        testCompileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
+        implementation libs.byteBuddy
+        implementation libs.byteBuddy.agent
+        compileOnly libs.findbugs.annotations
+        testCompileOnly libs.findbugs.annotations
         testImplementation project(':aeron-test-support')
     }
 
@@ -1049,7 +1019,7 @@ project(':aeron-samples') {
 
     dependencies {
         api project(':aeron-cluster')
-        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
+        implementation libs.hdrHistogram
         testImplementation project(':aeron-test-support')
     }
 
@@ -1135,10 +1105,9 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-client', configuration: 'tests')
         testImplementation project(path: ':aeron-archive', configuration: 'tests')
         testImplementation project(path: ':aeron-cluster')
-        testImplementation "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}"
-        testImplementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
-        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
-        testCompileOnly "com.google.code.findbugs:findbugs-annotations:${findbugsAnnotationsVersion}"
+        testImplementation libs.byteBuddy
+        testImplementation libs.byteBuddy.agent
+        testCompileOnly libs.findbugs.annotations
         if (buildJavaVersion == 8) {
             def jdkHome = toolchainLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
             testImplementation files(jdkHome.resolve("lib/tools.jar").toFile())
@@ -1179,10 +1148,10 @@ project(':aeron-test-support') {
         implementation project(':aeron-client')
         implementation project(':aeron-cluster')
         implementation project(':aeron-samples')
-        implementation platform("org.junit:junit-bom:${junitVersion}")
+        implementation platform("org.junit:junit-bom:${libs.versions.junit.get()}")
         implementation "org.junit.jupiter:junit-jupiter-api"
         implementation "org.junit.jupiter:junit-jupiter-params"
-        implementation "org.mockito:mockito-core:${mockitoVersion}"
+        implementation libs.mockito
     }
 
     java {
@@ -1231,7 +1200,6 @@ project(':aeron-all') {
     dependencies {
         implementation aeronClusterProject
         implementation aeronSamplesProject
-        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
     shadowJar {

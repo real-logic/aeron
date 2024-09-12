@@ -196,7 +196,8 @@ public final class DataCollector
 
     private List<Path> findWithRetryOnNoSuchFile(final BiPredicate<Path, BasicFileAttributes> matcher)
     {
-        do
+        final int retries = 5;
+        for (int i = 0; i < retries; i++)
         {
             try
             {
@@ -212,7 +213,8 @@ public final class DataCollector
                 }
             }
         }
-        while (true);
+
+        return Collections.emptyList();
     }
 
     private static Stream<Path> find(final Path p, final BiPredicate<Path, BasicFileAttributes> matcher)

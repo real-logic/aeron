@@ -235,7 +235,7 @@ public final class DataCollector
                 file.toPath(), BasicFileAttributes.class, NOFOLLOW_LINKS);
             return !basicFileAttributes.isSymbolicLink() && file.exists();
         }
-        catch (IOException e)
+        catch (final IOException ex)
         {
             return false;
         }

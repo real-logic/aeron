@@ -1,28 +1,20 @@
 [versions]
-agrona = { strictly = "[1.23, 2.0[", require = "1.23.0" }
-sbe = "1.33.0"
+agrona = "1.23.0"
 byteBuddy = "1.15.1"
-findbugs = "3.0.1"
 checkstyle = "10.18.1"
-hamcrest = "3.0"
-mockito = "5.13.0"
 junit = "5.11.0"
-hdrHistogram = "2.2.2"
-asm = "9.7"
-asciidoctorj = "2.5.13"
-jgit = "6.10.0.202406032230-r"
 
 [libraries]
-agrona = { group = "org.agrona", name = "agrona", version.ref = "agrona" }
-sbe = { group = "uk.co.real-logic", name = "sbe-tool", version.ref = "sbe" }
-mockito = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
-hamcrest = { group = "org.hamcrest", name = "hamcrest", version.ref = "hamcrest" }
-findbugs-annotations = { group = "com.google.code.findbugs", name = "findbugs-annotations", version.ref = "findbugs" }
+agrona = { group = "org.agrona", name = "agrona", version = { strictly = "[1.23.0, 2.0[", require = "1.23.0" } }
+sbe = { group = "uk.co.real-logic", name = "sbe-tool", version = "1.33.0" }
+mockito = { group = "org.mockito", name = "mockito-core", version = "5.13.0" }
+hamcrest = { group = "org.hamcrest", name = "hamcrest", version = "3.0" }
+findbugs = { group = "com.google.code.findbugs", name = "findbugs-annotations", version = "3.0.1" }
 byteBuddy = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "byteBuddy" }
 byteBuddy-agent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.ref = "byteBuddy" }
-hdrHistogram = { group = "org.hdrhistogram", name = "HdrHistogram", version.ref = "hdrHistogram" }
-asciidoctorj = { group = "org.asciidoctor", name = "asciidoctorj", version.ref = "asciidoctorj" }
-jgit = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version.ref = "jgit" }
+hdrHistogram = { group = "org.hdrhistogram", name = "HdrHistogram", version = "2.2.2" }
+asciidoctorj = { group = "org.asciidoctor", name = "asciidoctorj", version = "2.5.13" }
+jgit = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version = "6.10.0.202406032230-r" }
 
 [plugins]
 versions = { id = "com.github.ben-manes.versions", version = "0.51.0" }

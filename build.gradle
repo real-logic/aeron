@@ -139,13 +139,8 @@ allprojects {
             failOnVersionConflict()
 
             force "org.agrona:agrona:${libs.versions.agrona.get()}",
-                  "net.bytebuddy:byte-buddy:${libs.versions.byteBuddy.get()}",
-                  "net.bytebuddy:byte-buddy-agent:${libs.versions.byteBuddy.get()}",
-                  "org.ow2.asm:asm:${libs.versions.asm.get()}",
-                  "org.ow2.asm:asm-analysis:${libs.versions.asm.get()}",
-                  "org.ow2.asm:asm-commons:${libs.versions.asm.get()}",
-                  "org.ow2.asm:asm-tree:${libs.versions.asm.get()}",
-                  "org.ow2.asm:asm-util:${libs.versions.asm.get()}",
+                  libs.byteBuddy,
+                  libs.byteBuddy.agent,
                   // patching conflicting Checkstyle dependencies
                   "org.codehaus.plexus:plexus-utils:3.3.0",
                   "org.apache.commons:commons-lang3:3.8.1",
@@ -925,8 +920,8 @@ project(':aeron-agent') {
         implementation aeronClusterProject
         implementation libs.byteBuddy
         implementation libs.byteBuddy.agent
-        compileOnly libs.findbugs.annotations
-        testCompileOnly libs.findbugs.annotations
+        compileOnly libs.findbugs
+        testCompileOnly libs.findbugs
         testImplementation project(':aeron-test-support')
     }
 
@@ -1107,11 +1102,7 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-cluster')
         testImplementation libs.byteBuddy
         testImplementation libs.byteBuddy.agent
-        testCompileOnly libs.findbugs.annotations
-        if (buildJavaVersion == 8) {
-            def jdkHome = toolchainLauncher.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
-            testImplementation files(jdkHome.resolve("lib/tools.jar").toFile())
-        }
+        testCompileOnly libs.findbugs
     }
 
     tasks.named('test').configure {

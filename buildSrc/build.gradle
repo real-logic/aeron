@@ -2,14 +2,6 @@ repositories {
     mavenCentral()
 }
 
-configurations.configureEach {
-    resolutionStrategy.eachDependency { details ->
-        if (details.requested.group == 'org.ow2.asm' ) {
-            details.useVersion libs.versions.asm.get()
-        }
-    }
-}
-
 dependencies {
     implementation libs.asciidoctorj
     implementation libs.jgit

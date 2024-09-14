@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Aeron;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.archive.checksum.Checksum;
@@ -306,7 +307,7 @@ public class ArchiveTool
                 out.print("WARNING: All orphaned segment files will be deleted.");
                 if (readContinueAnswer("Continue? (y/n)"))
                 {
-                    deleteOrphanedSegments(out, archiveDir, null);
+                    deleteOrphanedSegments(out, archiveDir);
                 }
             }
             else
@@ -797,18 +798,30 @@ public class ArchiveTool
     }
 
     /**
-     * Delete orphaned recording segments that have been detached, i.e. outside the start and stop recording range,
-     * but are not deleted.
+     * Delete orphaned recording segments that have been detached for all recordings, i.e. outside the start and stop
+     * recording range, but are not deleted.
      *
      * @param out        stream to print results and errors to.
      * @param archiveDir that contains {@link MarkFile}, {@link Catalog}, and recordings.
+     */
+    public static void deleteOrphanedSegments(final PrintStream out, final File archiveDir)
+    {
+        deleteOrphanedSegments(out, archiveDir, INSTANCE, NULL_RECORD_ID);
+    }
+
+    /**
+     * Delete orphaned recording segments that have been detached, i.e. outside the start and stop recording range,
+     * but are not deleted.
+     *
+     * @param out               stream to print results and errors to.
+     * @param archiveDir        that contains {@link MarkFile}, {@link Catalog}, and recordings.
      * @param targetRecordingId optional recordingId to delete orphaned segments for a specific recording.
-     *                          If null, delete orphaned segments for all recordings.
+     *                          If {@link Aeron#NULL_VALUE}, delete orphaned segments for all recordings.
      */
     public static void deleteOrphanedSegments(
         final PrintStream out,
         final File archiveDir,
-        final Long targetRecordingId)
+        final long targetRecordingId)
     {
         deleteOrphanedSegments(out, archiveDir, INSTANCE, targetRecordingId);
     }
@@ -817,30 +830,31 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final EpochClock epochClock,
-        final Long targetRecordingId)
+        final long targetRecordingId)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             final Long2ObjectHashMap<List<String>> segmentFilesByRecordingId = indexSegmentFiles(archiveDir);
 
-            final CatalogEntryProcessor processor = (recordingDescriptorOffset,
+            final MutableBoolean found = new MutableBoolean(false);
+            catalog.forEach((recordingDescriptorOffset,
                 headerEncoder,
                 headerDecoder,
                 descriptorEncoder,
                 descriptorDecoder) ->
             {
                 final long recordingId = descriptorDecoder.recordingId();
-                final List<String> files = segmentFilesByRecordingId.getOrDefault(recordingId, emptyList());
-                deleteOrphanedSegmentFiles(out, archiveDir, descriptorDecoder, files);
-            };
+                if (NULL_RECORD_ID == targetRecordingId || targetRecordingId == recordingId)
+                {
+                    found.set(true);
+                    final List<String> files = segmentFilesByRecordingId.getOrDefault(recordingId, emptyList());
+                    deleteOrphanedSegmentFiles(out, archiveDir, descriptorDecoder, files);
+                }
+            });
 
-            if (targetRecordingId != null)
+            if (NULL_RECORD_ID != targetRecordingId && !found.get())
             {
-                catalog.forEntry(targetRecordingId, processor);
-            }
-            else
-            {
-                catalog.forEach(processor);
+                throw new AeronException("no recording found with recordingId: " + targetRecordingId);
             }
         }
     }

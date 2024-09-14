@@ -1409,13 +1409,64 @@ class ArchiveToolTests
         final File file25 = createFile(segmentFileName(
             rec2, segmentFileBasePosition(1_000_000, Long.MAX_VALUE, TERM_LENGTH, SEGMENT_LENGTH)));
 
-        deleteOrphanedSegments(out, archiveDir, epochClock, null);
+        deleteOrphanedSegments(out, archiveDir);
 
         assertFileExists(file12, file13, file15, file17);
         assertFileDoesNotExist(file11, file14, file16);
 
         assertFileExists(file22, file23, file24);
         assertFileDoesNotExist(file21, file25);
+    }
+
+    @ParameterizedTest
+    @EnumSource(RecordingState.class)
+    void deleteOrphanedSegmentsDeletesSegmentFilesOfTargetRecording(final RecordingState state) throws IOException
+    {
+        final long rec1;
+        final long rec2;
+        try (Catalog catalog = new Catalog(archiveDir, epochClock, 1024, true, null, null))
+        {
+            rec1 = catalog.addNewRecording(0, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 42, 5, "some ch", "some ch", "rec1");
+
+            rec2 = catalog.addNewRecording(1_000_000, 1024 * 1024 * 1024, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch2", "ch2", "rec2");
+            assertTrue(catalog.changeState(rec2, state));
+        }
+
+        final File file11 = createFile(segmentFileName(rec1, -1));
+        final File file12 = createFile(segmentFileName(rec1, 0));
+        final File file13 = createFile(segmentFileName(rec1, Long.MAX_VALUE));
+        final File file14 = createFile(rec1 + "-will-be-deleted.rec");
+        final File file15 = createFile(rec1 + "-will-be-skipped.txt");
+        final File file16 = createFile(rec1 + "-.rec");
+        final File file17 = createFile(rec1 + "invalid_file_name.rec");
+
+        final File file21 = createFile(segmentFileName(rec2, 0));
+        final File file22 = createFile(segmentFileName(
+            rec2, segmentFileBasePosition(1_000_000, 1_000_000, TERM_LENGTH, SEGMENT_LENGTH)));
+        final File file23 = createFile(segmentFileName(
+            rec2, segmentFileBasePosition(1_000_000, 5_000_000, TERM_LENGTH, SEGMENT_LENGTH)));
+        final File file24 = createFile(segmentFileName(
+            rec2, segmentFileBasePosition(1_000_000, 1024 * 1024 * 1024, TERM_LENGTH, SEGMENT_LENGTH)));
+        final File file25 = createFile(segmentFileName(
+            rec2, segmentFileBasePosition(1_000_000, Long.MAX_VALUE, TERM_LENGTH, SEGMENT_LENGTH)));
+
+        deleteOrphanedSegments(out, archiveDir, epochClock, rec2);
+
+        assertFileExists(file12, file13, file15, file17, file11, file14, file16);
+
+        assertFileExists(file22, file23, file24);
+        assertFileDoesNotExist(file21, file25);
+    }
+
+    @Test
+    void deleteOrphanedSegmentsOfAnUnknownRecording()
+    {
+        final int recordingId = 55555555;
+        final AeronException exception =
+            assertThrowsExactly(AeronException.class, () -> deleteOrphanedSegments(out, archiveDir, recordingId));
+        assertEquals("ERROR - no recording found with recordingId: " + recordingId, exception.getMessage());
     }
 
     @Test

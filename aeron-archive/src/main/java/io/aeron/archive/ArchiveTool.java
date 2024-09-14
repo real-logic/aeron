@@ -306,13 +306,15 @@ public class ArchiveTool
                 out.print("WARNING: All orphaned segment files will be deleted.");
                 if (readContinueAnswer("Continue? (y/n)"))
                 {
-                    deleteOrphanedSegments(out, archiveDir);
+                    deleteOrphanedSegments(out, archiveDir, null);
                 }
             }
             else
             {
                 final long recordingId = Long.parseLong(args[2]);
-                out.print("WARNING: All orphaned segment files owned by the RecordingId[" + recordingId + "]  will be deleted.");
+                out.print("WARNING: All orphaned segment files owned by the RecordingId[");
+                out.print(recordingId);
+                out.println("] will be deleted.");
                 if (readContinueAnswer("Continue? (y/n)"))
                 {
                     deleteOrphanedSegments(out, archiveDir, recordingId);
@@ -800,12 +802,9 @@ public class ArchiveTool
      *
      * @param out        stream to print results and errors to.
      * @param archiveDir that contains {@link MarkFile}, {@link Catalog}, and recordings.
+     * @param targetRecordingId optional recordingId to delete orphaned segments for a specific recording.
+     *                          If null, delete orphaned segments for all recordings.
      */
-    public static void deleteOrphanedSegments(final PrintStream out, final File archiveDir)
-    {
-        deleteOrphanedSegments(out, archiveDir, INSTANCE, null);
-    }
-
     public static void deleteOrphanedSegments(final PrintStream out, final File archiveDir, final Long targetRecordingId)
     {
         deleteOrphanedSegments(out, archiveDir, INSTANCE, targetRecordingId);
@@ -1731,7 +1730,8 @@ public class ArchiveTool
             "  compact: compacts Catalog file by removing entries in non-valid state and deleting the%n" +
             "     corresponding segment files.%n%n" +
             "  count-entries: queries the number of `VALID` recording entries in the catalog.%n%n" +
-            "  delete-orphaned-segments [recordingId]: delete orphaned segments. If recordingId is specified, only delete orphaned segments for that recording,%n" +
+            "  delete-orphaned-segments [recordingId]: deletes orphaned recording segments that have been detached,%n" +
+            "     If recordingId is specified, only delete orphaned segments for that recording.%n" +
             "     i.e. outside the start and stop recording range, but are not deleted.%n%n" +
             "  describe: prints out descriptors for all valid recordings in the catalog.%n%n" +
             "  describe recordingId: prints out descriptor for the specified recording entry in the catalog.%n%n" +

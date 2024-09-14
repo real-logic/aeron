@@ -805,17 +805,19 @@ public class ArchiveTool
      * @param targetRecordingId optional recordingId to delete orphaned segments for a specific recording.
      *                          If null, delete orphaned segments for all recordings.
      */
-    public static void deleteOrphanedSegments(final PrintStream out,
-                                              final File archiveDir,
-                                              final Long targetRecordingId)
+    public static void deleteOrphanedSegments(
+        final PrintStream out,
+        final File archiveDir,
+        final Long targetRecordingId)
     {
         deleteOrphanedSegments(out, archiveDir, INSTANCE, targetRecordingId);
     }
 
-    static void deleteOrphanedSegments(final PrintStream out,
-                                       final File archiveDir,
-                                       final EpochClock epochClock,
-                                       final Long targetRecordingId)
+    static void deleteOrphanedSegments(
+        final PrintStream out,
+        final File archiveDir,
+        final EpochClock epochClock,
+        final Long targetRecordingId)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {

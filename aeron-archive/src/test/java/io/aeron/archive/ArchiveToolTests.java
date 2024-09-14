@@ -1409,7 +1409,7 @@ class ArchiveToolTests
         final File file25 = createFile(segmentFileName(
             rec2, segmentFileBasePosition(1_000_000, Long.MAX_VALUE, TERM_LENGTH, SEGMENT_LENGTH)));
 
-        deleteOrphanedSegments(out, archiveDir, epochClock);
+        deleteOrphanedSegments(out, archiveDir, epochClock, null);
 
         assertFileExists(file12, file13, file15, file17);
         assertFileDoesNotExist(file11, file14, file16);

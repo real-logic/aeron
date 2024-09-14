@@ -299,13 +299,24 @@ public class ArchiveTool
                 compact(out, archiveDir);
             }
         }
-        else if (args.length == 2 && "delete-orphaned-segments".equals(args[1]))
+        else if (args.length >= 2 && "delete-orphaned-segments".equals(args[1]))
         {
-            out.print("WARNING: All orphaned segment files will be deleted.");
-
-            if (readContinueAnswer("Continue? (y/n)"))
+            if (args.length == 2)
             {
-                deleteOrphanedSegments(out, archiveDir);
+                out.print("WARNING: All orphaned segment files will be deleted.");
+                if (readContinueAnswer("Continue? (y/n)"))
+                {
+                    deleteOrphanedSegments(out, archiveDir);
+                }
+            }
+            else
+            {
+                final long recordingId = Long.parseLong(args[2]);
+                out.print("WARNING: All orphaned segment files owned by the RecordingId[" + recordingId + "]  will be deleted.");
+                if (readContinueAnswer("Continue? (y/n)"))
+                {
+                    deleteOrphanedSegments(out, archiveDir, recordingId);
+                }
             }
         }
         else if (args.length == 3 && "mark-valid".equals(args[1]))
@@ -792,10 +803,15 @@ public class ArchiveTool
      */
     public static void deleteOrphanedSegments(final PrintStream out, final File archiveDir)
     {
-        deleteOrphanedSegments(out, archiveDir, INSTANCE);
+        deleteOrphanedSegments(out, archiveDir, INSTANCE, null);
     }
 
-    static void deleteOrphanedSegments(final PrintStream out, final File archiveDir, final EpochClock epochClock)
+    public static void deleteOrphanedSegments(final PrintStream out, final File archiveDir, final Long targetRecordingId)
+    {
+        deleteOrphanedSegments(out, archiveDir, INSTANCE, targetRecordingId);
+    }
+
+    static void deleteOrphanedSegments(final PrintStream out, final File archiveDir, final EpochClock epochClock, final Long targetRecordingId)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -805,6 +821,10 @@ public class ArchiveTool
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     final long recordingId = descriptorDecoder.recordingId();
+                    if (targetRecordingId != null && targetRecordingId != recordingId)
+                    {
+                        return;
+                    }
                     final List<String> files = segmentFilesByRecordingId.getOrDefault(recordingId, emptyList());
                     deleteOrphanedSegmentFiles(out, archiveDir, descriptorDecoder, files);
                 });
@@ -1711,7 +1731,7 @@ public class ArchiveTool
             "  compact: compacts Catalog file by removing entries in non-valid state and deleting the%n" +
             "     corresponding segment files.%n%n" +
             "  count-entries: queries the number of `VALID` recording entries in the catalog.%n%n" +
-            "  delete-orphaned-segments: deletes orphaned recording segments that have been detached,%n" +
+            "  delete-orphaned-segments [recordingId]: delete orphaned segments. If recordingId is specified, only delete orphaned segments for that recording,%n" +
             "     i.e. outside the start and stop recording range, but are not deleted.%n%n" +
             "  describe: prints out descriptors for all valid recordings in the catalog.%n%n" +
             "  describe recordingId: prints out descriptor for the specified recording entry in the catalog.%n%n" +

@@ -1553,6 +1553,7 @@ abstract class ArchiveConductor
         }
 
         final ArrayDeque<File> deleteList = new ArrayDeque<>(files.size());
+        final ArrayDeque<File> pendingDeleteList = new ArrayDeque<>(files.size());
         for (final String name : files)
         {
             final File file = new File(archiveDir, name);
@@ -1560,14 +1561,7 @@ abstract class ArchiveConductor
             {
                 if (!name.endsWith(DELETE_SUFFIX))
                 {
-                    final File toDelete = new File(archiveDir, name + DELETE_SUFFIX);
-                    if (!file.renameTo(toDelete))
-                    {
-                        final String msg = "failed to rename " + file + " to " + toDelete;
-                        controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
-                        return -1;
-                    }
-                    deleteList.addLast(toDelete);
+                    pendingDeleteList.add(file);
                 }
                 else
                 {
@@ -1584,10 +1578,17 @@ abstract class ArchiveConductor
             }
         }
 
-        final int count = deleteList.size();
+        final int count = deleteList.size() + pendingDeleteList.size();
 
         addSession(new DeleteSegmentsSession(
-            recordingId, correlationId, deleteList, controlSession, controlResponseProxy, errorHandler));
+            recordingId,
+            correlationId,
+            archiveDir,
+            deleteList,
+            pendingDeleteList,
+            controlSession,
+            controlResponseProxy,
+            errorHandler));
 
         return count;
     }

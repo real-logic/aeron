@@ -23,26 +23,35 @@ import org.agrona.ErrorHandler;
 import java.io.File;
 import java.util.ArrayDeque;
 
+
 class DeleteSegmentsSession implements Session
 {
     private final long recordingId;
     private final long correlationId;
-    private final ArrayDeque<File> files;
+    private final File archiveDir;
+    private final ArrayDeque<File> deleteList;
+    private final ArrayDeque<File> pendingDeleteList;
     private final ControlSession controlSession;
     private final ControlResponseProxy controlResponseProxy;
     private final ErrorHandler errorHandler;
+    private static final String DELETE_SUFFIX = ".del";
+    private boolean isAborted = false;
 
     DeleteSegmentsSession(
         final long recordingId,
         final long correlationId,
-        final ArrayDeque<File> files,
+        final File archiveDir,
+        final ArrayDeque<File> deleteList,
+        final ArrayDeque<File> pendingDeleteList,
         final ControlSession controlSession,
         final ControlResponseProxy controlResponseProxy,
         final ErrorHandler errorHandler)
     {
         this.recordingId = recordingId;
         this.correlationId = correlationId;
-        this.files = files;
+        this.archiveDir = archiveDir;
+        this.deleteList = deleteList;
+        this.pendingDeleteList = pendingDeleteList;
         this.controlSession = controlSession;
         this.controlResponseProxy = controlResponseProxy;
         this.errorHandler = errorHandler;
@@ -53,12 +62,15 @@ class DeleteSegmentsSession implements Session
      */
     public void close()
     {
-        while (!files.isEmpty())
+        if (pendingDeleteList.isEmpty())
         {
-            final File file = files.pollFirst();
-            if (null != file && file.exists() && !file.delete())
+            while (!deleteList.isEmpty())
             {
-                errorHandler.onError(new ArchiveEvent("segment delete failed for recording: " + recordingId));
+                final File file = deleteList.pollFirst();
+                if (null != file && file.exists() && !file.delete())
+                {
+                    errorHandler.onError(new ArchiveEvent("segment delete failed for recording: " + recordingId));
+                }
             }
         }
     }
@@ -68,6 +80,7 @@ class DeleteSegmentsSession implements Session
      */
     public void abort()
     {
+        isAborted = true;
     }
 
     /**
@@ -75,7 +88,7 @@ class DeleteSegmentsSession implements Session
      */
     public boolean isDone()
     {
-        return files.isEmpty();
+        return isAborted || (pendingDeleteList.isEmpty() && deleteList.isEmpty());
     }
 
     /**
@@ -91,24 +104,52 @@ class DeleteSegmentsSession implements Session
      */
     public int doWork()
     {
-        int workCount = 0;
-        final File file = files.pollFirst();
-        if (null != file)
+        if (isAborted)
         {
-            if (file.exists() && !file.delete())
-            {
-                final String errorMessage = "unable to delete segment file: " + file;
-                controlSession.attemptErrorResponse(correlationId, errorMessage, controlResponseProxy);
-                errorHandler.onError(new ArchiveEvent("segment delete failed for recording: " + recordingId));
-            }
+            return 0;
+        }
 
-            if (files.isEmpty())
-            {
-                controlSession.sendSignal(
-                    correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
-            }
+        int workCount = 0;
 
-            workCount += 1;
+        if (!pendingDeleteList.isEmpty())
+        {
+            final File file = pendingDeleteList.pollFirst();
+            if (null != file)
+            {
+                final File toDelete = new File(archiveDir, file.getName() + DELETE_SUFFIX);
+                if (!file.renameTo(toDelete))
+                {
+                    isAborted = true;
+                    final String msg = "failed to rename " + file + " to " + toDelete;
+                    controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+                }
+                else
+                {
+                    deleteList.add(toDelete);
+                }
+                workCount += 1;
+            }
+        }
+        else
+        {
+            final File file = deleteList.pollFirst();
+            if (null != file)
+            {
+                if (file.exists() && !file.delete())
+                {
+                    final String errorMessage = "unable to delete segment file: " + file;
+                    controlSession.attemptErrorResponse(correlationId, errorMessage, controlResponseProxy);
+                    errorHandler.onError(new ArchiveEvent("segment delete failed for recording: " + recordingId));
+                }
+
+                if (deleteList.isEmpty())
+                {
+                    controlSession.sendSignal(
+                        correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
+                }
+
+                workCount += 1;
+            }
         }
 
         return workCount;

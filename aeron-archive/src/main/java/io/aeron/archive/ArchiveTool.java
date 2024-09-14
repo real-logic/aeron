@@ -823,25 +823,24 @@ public class ArchiveTool
         {
             final Long2ObjectHashMap<List<String>> segmentFilesByRecordingId = indexSegmentFiles(archiveDir);
 
+            final CatalogEntryProcessor processor = (recordingDescriptorOffset,
+                headerEncoder,
+                headerDecoder,
+                descriptorEncoder,
+                descriptorDecoder) ->
+            {
+                final long recordingId = descriptorDecoder.recordingId();
+                final List<String> files = segmentFilesByRecordingId.getOrDefault(recordingId, emptyList());
+                deleteOrphanedSegmentFiles(out, archiveDir, descriptorDecoder, files);
+            };
+
             if (targetRecordingId != null)
             {
-                catalog.forEntry(
-                        targetRecordingId,
-                        (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                        {
-                            final List<String> files = segmentFilesByRecordingId.getOrDefault(targetRecordingId, emptyList());
-                            deleteOrphanedSegmentFiles(out, archiveDir, descriptorDecoder, files);
-                        });
+                catalog.forEntry(targetRecordingId, processor);
             }
             else
             {
-                catalog.forEach(
-                        (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                        {
-                            final long recordingId = descriptorDecoder.recordingId();
-                            final List<String> files = segmentFilesByRecordingId.getOrDefault(recordingId, emptyList());
-                            deleteOrphanedSegmentFiles(out, archiveDir, descriptorDecoder, files);
-                        });
+                catalog.forEach(processor);
             }
         }
     }

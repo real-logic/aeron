@@ -118,7 +118,7 @@ public class ClusterTool
         AERON_CLUSTER_TOOL_REPLAY_STREAM_ID,
         TIMEOUT_MS);
 
-    private static final Map<String, ClusterToolCommand> COMMANDS = new Object2ObjectHashMap<>();
+    private static final Object2ObjectHashMap<String, ClusterToolCommand> COMMANDS = new Object2ObjectHashMap<>();
 
     static
     {
@@ -594,6 +594,19 @@ public class ClusterTool
     ///////////////////////////////////////////////////////
 
     /**
+     * Cluster Tool commands map.
+     * This is to allow tools to simply extend ClusterTool
+     *
+     * Note that the map is cloned and both key and value are Java immutable objects.
+     *
+     * @return a clone of Cluster Tool commands map
+     */
+    public static Map<String, ClusterToolCommand> commands()
+    {
+        return new Object2ObjectHashMap<>(COMMANDS);
+    }
+
+    /**
      * Functional interface of an cluster tool operator action used in {@link ClusterToolCommand}
      */
     @FunctionalInterface
@@ -615,7 +628,6 @@ public class ClusterTool
      */
     public static final class ClusterToolCommand
     {
-
         /**
          * convenience method to ignore failure exit status
          *
@@ -649,13 +661,26 @@ public class ClusterTool
          */
         public static void printHelp(final Map<String, ClusterToolCommand> commands)
         {
-            System.out.format("Usage: <cluster-dir> <command> [options]%n");
+            printHelp(commands, "Usage: <cluster-dir> <command> [options]");
+        }
+
+        /**
+         * print help for a tool with the specified commands
+         *
+         * @param commands  map of commands by name
+         * @param prefix    usage description prefix
+         */
+        public static void printHelp(final Map<String, ClusterToolCommand> commands, final String prefix)
+        {
+            System.out.format("%s%n", prefix);
             final int indentValue = Collections.max(commands.keySet().stream().map(String::length).toList()) + 1;
+            final String indentSpaces = new String(new char[indentValue + 2]).replace('\0', ' ');
             for (final Map.Entry<String, ClusterToolCommand> command : commands.entrySet())
             {
                 final int indent = indentValue - command.getKey().length();
+                final String description = command.getValue().describe().replaceAll("%n", "%n" + indentSpaces);
                 System.out.printf("%" + indent + "s", " ");
-                System.out.format("%s: %s%n", command.getKey(), command.getValue().describe());
+                System.out.printf("%s: %s%n", command.getKey(), description);
             }
             System.out.flush();
         }

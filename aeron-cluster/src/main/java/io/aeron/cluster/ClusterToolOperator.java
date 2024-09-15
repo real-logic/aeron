@@ -307,9 +307,9 @@ public class ClusterToolOperator
             try (ClusterMarkFile markFile = openMarkFile(clusterDir))
             {
                 final ClusterMembership clusterMembership = new ClusterMembership();
-                final long timeoutMs = Math.max(TimeUnit.SECONDS.toMillis(1), this.timeoutMs);
+                final long timeoutMsToUse = Math.max(TimeUnit.SECONDS.toMillis(1), this.timeoutMs);
 
-                if (queryClusterMembers(markFile, timeoutMs, clusterMembership))
+                if (queryClusterMembers(markFile, timeoutMsToUse, clusterMembership))
                 {
                     out.println(
                         "currentTimeNs=" + clusterMembership.currentTimeNs +

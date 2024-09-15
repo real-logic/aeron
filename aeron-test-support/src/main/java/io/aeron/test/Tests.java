@@ -427,6 +427,20 @@ public class Tests
     }
 
     /**
+     * Await a condition with and check for thread interrupt.
+     *
+     * @param conditionSupplier     for the condition to be awaited.
+     * @param errorMessageSupplier  supplier of error message if interrupt signalled
+     */
+    public static void await(final BooleanSupplier conditionSupplier, final Supplier<String> errorMessageSupplier)
+    {
+        while (!conditionSupplier.getAsBoolean())
+        {
+            Tests.yieldingIdle(errorMessageSupplier);
+        }
+    }
+
+    /**
      * Await a condition with a timeout and also check for thread interrupt.
      *
      * @param argSupplier             argument for the condition + message.
@@ -452,6 +466,26 @@ public class Tests
 
             Tests.yield();
             arg = argSupplier.get();
+        }
+    }
+
+    /**
+     * Await a condition with and check for thread interrupt.
+     *
+     * @param argSupplier             argument for the condition + message.
+     * @param conditionsPredicate     for the condition to be awaited.
+     * @param errorMessageCreator     supplier of error message if timeout reached
+     * @param <T>                     type of argument to condition + message
+     */
+    public static <T> void await(
+        final Supplier<T> argSupplier,
+        final Predicate<T> conditionsPredicate,
+        final Function<T, String> errorMessageCreator)
+    {
+        final Supplier<String> msg = () -> errorMessageCreator.apply(argSupplier.get());
+        while (!conditionsPredicate.test(argSupplier.get()))
+        {
+            Tests.yieldingIdle(msg);
         }
     }
 

@@ -15,16 +15,14 @@
  */
 package io.aeron.cluster;
 
+import static io.aeron.cluster.ClusterToolCommand.*;
 import static io.aeron.cluster.ClusterToolOperator.*;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.util.Collections;
 import java.util.Map;
-import java.util.function.ToIntBiFunction;
-import java.util.function.ToIntFunction;
 
 import org.agrona.SystemUtil;
 import org.agrona.collections.Object2ObjectHashMap;
@@ -117,6 +115,7 @@ public class ClusterTool
         AERON_CLUSTER_TOOL_REPLAY_CHANNEL,
         AERON_CLUSTER_TOOL_REPLAY_STREAM_ID,
         TIMEOUT_MS);
+    private static final String HELP_PREFIX = "Usage: <cluster-dir> <command> [options]";
 
     private static final Object2ObjectHashMap<String, ClusterToolCommand> COMMANDS = new Object2ObjectHashMap<>();
 
@@ -128,11 +127,11 @@ public class ClusterTool
             TIMEOUT_MS);
 
         COMMANDS.put("describe", new ClusterToolCommand(
-            ClusterToolCommand.ignoreFailures(ClusterToolCommand.action(operator::describeClusterMarkFile)),
+            ignoreFailures(action(operator::describeClusterMarkFile)),
             "prints out all descriptors in the mark file."));
 
         COMMANDS.put("pid", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::pid),
+            action(operator::pid),
             "prints PID of cluster component."));
 
         COMMANDS.put("recovery-plan", new ClusterToolCommand(
@@ -140,30 +139,30 @@ public class ClusterTool
             {
                 if (args.length < 3)
                 {
-                    ClusterToolCommand.printHelp(COMMANDS);
+                    printHelp(COMMANDS, HELP_PREFIX);
                     return -1;
                 }
                 return operator.recoveryPlan(System.out, clusterDir, Integer.parseInt(args[2]));
             }, "[service count] prints recovery plan of cluster component."));
 
         COMMANDS.put("recording-log", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::recordingLog),
+            action(operator::recordingLog),
             "prints recording log of cluster component."));
 
         COMMANDS.put("sort-recording-log", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::sortRecordingLog),
+            action(operator::sortRecordingLog),
             "reorders entries in the recording log to match the order in memory."));
 
         COMMANDS.put("seed-recording-log-from-snapshot", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::seedRecordingLogFromSnapshot),
+            action(operator::seedRecordingLogFromSnapshot),
             "creates a new recording log based on the latest valid snapshot."));
 
         COMMANDS.put("errors", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::errors),
+            action(operator::errors),
             "prints Aeron and cluster component error logs."));
 
         COMMANDS.put("list-members", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::listMembers),
+            action(operator::listMembers),
             "prints leader memberId, active members and passive members lists."));
 
         COMMANDS.put("backup-query", new ClusterToolCommand((clusterDir, out, args) ->
@@ -182,35 +181,35 @@ public class ClusterTool
         }, "[delay] get, or set, time of next backup query."));
 
         COMMANDS.put("invalidate-latest-snapshot", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::invalidateLatestSnapshot),
+            action(operator::invalidateLatestSnapshot),
             "marks the latest snapshot as a invalid so the previous is loaded."));
 
         COMMANDS.put("is-leader", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::isLeader),
+            action(operator::isLeader),
             "returns zero if the cluster node is leader, non-zero if not."));
 
         COMMANDS.put("snapshot", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::snapshot),
+            action(operator::snapshot),
             "triggers a snapshot on the leader."));
 
         COMMANDS.put("suspend", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::suspend),
+            action(operator::suspend),
             "suspends appending to the log."));
 
         COMMANDS.put("resume", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::resume),
+            action(operator::resume),
             "resumes appending to the log."));
 
         COMMANDS.put("shutdown", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::shutdown),
+            action(operator::shutdown),
             "initiates an orderly stop of the cluster with a snapshot."));
 
         COMMANDS.put("abort", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::abort),
+            action(operator::abort),
             "stops the cluster without a snapshot."));
 
         COMMANDS.put("describe-latest-cm-snapshot", new ClusterToolCommand(
-            ClusterToolCommand.action(operator::describeLatestConsensusModuleSnapshot),
+            action(operator::describeLatestConsensusModuleSnapshot),
             "prints the contents of the latest valid consensus module snapshot."));
     }
 
@@ -225,7 +224,7 @@ public class ClusterTool
     {
         if (args.length < 2)
         {
-            ClusterToolCommand.printHelp(COMMANDS);
+            printHelp(COMMANDS, HELP_PREFIX);
             System.exit(-1);
         }
 
@@ -233,14 +232,14 @@ public class ClusterTool
         if (!clusterDir.exists())
         {
             System.err.println("ERR: cluster directory not found: " + clusterDir.getAbsolutePath());
-            ClusterToolCommand.printHelp(COMMANDS);
+            printHelp(COMMANDS, HELP_PREFIX);
             System.exit(-1);
         }
         final ClusterToolCommand command = COMMANDS.get(args[1]);
         if (null == command)
         {
             System.out.println("Unknown command: " + args[1]);
-            ClusterToolCommand.printHelp(COMMANDS);
+            printHelp(COMMANDS, HELP_PREFIX);
             System.exit(-1);
         }
         else
@@ -595,7 +594,7 @@ public class ClusterTool
 
     /**
      * Cluster Tool commands map.
-     * This is to allow tools to simply extend ClusterTool
+     * This is to allow other tools to simply extend ClusterTool
      *
      * Note that the map is cloned and both key and value are Java immutable objects.
      *
@@ -606,125 +605,4 @@ public class ClusterTool
         return new Object2ObjectHashMap<>(COMMANDS);
     }
 
-    /**
-     * Functional interface of an cluster tool operator action used in {@link ClusterToolCommand}
-     */
-    @FunctionalInterface
-    public interface Action
-    {
-        /**
-         * An action for an operator tool to control cluster
-         *
-         * @param clusterDir    local cluster directory
-         * @param out           Where to print the output
-         * @param args          args to tool
-         * @return exit value
-         */
-        int act(File clusterDir, PrintStream out, String[] args);
-    }
-
-    /**
-     * A command to be used by ClusterTool
-     */
-    public static final class ClusterToolCommand
-    {
-        /**
-         * convenience method to ignore failure exit status
-         *
-         * @param actual    actual action
-         * @return SUCCESS
-         */
-        public static Action ignoreFailures(final Action actual)
-        {
-            return (clusterDir, out, args) ->
-            {
-                actual.act(clusterDir, out, args);
-                return SUCCESS;
-            };
-        }
-
-        /**
-         * convenience method for actions that do not require extra args
-         *
-         * @param actual    actual action
-         * @return SUCCESS
-         */
-        public static Action action(final ToIntBiFunction<File, PrintStream> actual)
-        {
-            return (clusterDir, out, args) -> actual.applyAsInt(clusterDir, out);
-        }
-
-        /**
-         * print help for a tool with the specified commands
-         *
-         * @param commands  map of commands by name
-         */
-        public static void printHelp(final Map<String, ClusterToolCommand> commands)
-        {
-            printHelp(commands, "Usage: <cluster-dir> <command> [options]");
-        }
-
-        /**
-         * print help for a tool with the specified commands
-         *
-         * @param commands  map of commands by name
-         * @param prefix    usage description prefix
-         */
-        public static void printHelp(final Map<String, ClusterToolCommand> commands, final String prefix)
-        {
-            System.out.format("%s%n", prefix);
-            final int indentValue = Collections.max(commands.keySet().stream().map(String::length).toList()) + 1;
-            final String indentSpaces = new String(new char[indentValue + 2]).replace('\0', ' ');
-            for (final Map.Entry<String, ClusterToolCommand> command : commands.entrySet())
-            {
-                final int indent = indentValue - command.getKey().length();
-                final String description = command.getValue().describe().replaceAll("%n", "%n" + indentSpaces);
-                System.out.printf("%" + indent + "s", " ");
-                System.out.printf("%s: %s%n", command.getKey(), description);
-            }
-            System.out.flush();
-        }
-
-        private final Action action;
-        private final String description;
-
-        /**
-         * constructor
-         *
-         * @param action        action to perform for command
-         * @param description   description of command
-         */
-        public ClusterToolCommand(final Action action, final String description)
-        {
-            this.action = action;
-            this.description = description;
-        }
-
-        /**
-         * convenience method for actions that only require the cluster directory
-         *
-         * @param actual    actual action
-         * @return SUCCESS
-         */
-        public static Action action(final ToIntFunction<File> actual)
-        {
-            return (clusterDir, out, args) -> actual.applyAsInt(clusterDir);
-        }
-
-        /**
-         * @return description of command
-         */
-        public String describe()
-        {
-            return description;
-        }
-
-        /**
-         * @return the actual action to perform when given the command
-         */
-        public Action action()
-        {
-            return action;
-        }
-    }
 }

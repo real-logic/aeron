@@ -743,13 +743,30 @@ public class ClusterToolOperator
      *
      * @param clusterDir                        where the cluster is running.
      * @param out                               where to print the operation result.
-     * @param extensionSnapshotAdapterCreator   optional creator of an adapter to extension image events
+     * @return SUCCESS is the operation was successfully requested, else FAILURE
+     */
+    protected int describeLatestConsensusModuleSnapshot(
+        final File clusterDir,
+        final PrintStream out)
+    {
+        return describeLatestConsensusModuleSnapshot(
+            clusterDir,
+            out,
+            null);
+    }
+
+    /**
+     * Print out a summary of the state captured in the latest consensus module snapshot.
+     *
+     * @param clusterDir                        where the cluster is running.
+     * @param out                               where to print the operation result.
+     * @param postConsensusImageDescriber       describing of image after consensus module state
      * @return SUCCESS is the operation was successfully requested, else FAILURE
      */
     protected int describeLatestConsensusModuleSnapshot(
         final File clusterDir,
         final PrintStream out,
-        final Function<Image, ControlledFragmentHandler> extensionSnapshotAdapterCreator)
+        final BiConsumer<Image, Aeron> postConsensusImageDescriber)
     {
         final RecordingLog.Entry entry = findLatestValidSnapshot(clusterDir);
         if (null == entry)
@@ -781,7 +798,7 @@ public class ClusterToolOperator
                 }
 
                 final ConsensusModuleSnapshotAdapter adapter = new ConsensusModuleSnapshotAdapter(
-                    image, new ConsensusModuleSnapshotPrinter(out), extensionSnapshotAdapterCreator);
+                    image, new ConsensusModuleSnapshotPrinter(out));
 
                 while (true)
                 {
@@ -807,6 +824,11 @@ public class ClusterToolOperator
                     " memberId=" + properties.memberId +
                     " recordingId=" + entry.recordingId +
                     " length=" + image.position());
+
+                if (null != postConsensusImageDescriber)
+                {
+                    postConsensusImageDescriber.accept(image, aeron);
+                }
             }
         }
         return SUCCESS;

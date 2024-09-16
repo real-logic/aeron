@@ -26,8 +26,6 @@ import org.agrona.DirectBuffer;
 
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_TYPE_ID;
 
-import java.util.function.Function;
-
 class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
 {
     static final int FRAGMENT_LIMIT = 10;
@@ -46,22 +44,11 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
     private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(this);
     private final Image image;
     private final ConsensusModuleSnapshotListener listener;
-    private final ControlledFragmentHandler extensionSnapshotAdapter;
 
     ConsensusModuleSnapshotAdapter(final Image image, final ConsensusModuleSnapshotListener listener)
     {
-        this(image, listener, null);
-    }
-
-    ConsensusModuleSnapshotAdapter(
-        final Image image,
-        final ConsensusModuleSnapshotListener listener,
-        final Function<Image, ControlledFragmentHandler> extensionSnapshotAdapterCreator)
-    {
         this.image = image;
         this.listener = listener;
-        this.extensionSnapshotAdapter =
-            (null == extensionSnapshotAdapterCreator) ? null : extensionSnapshotAdapterCreator.apply(image);
     }
 
     boolean isDone()
@@ -82,15 +69,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
         final int schemaId = messageHeaderDecoder.schemaId();
         if (MessageHeaderDecoder.SCHEMA_ID != schemaId)
         {
-            if (null != extensionSnapshotAdapter)
-            {
-                return extensionSnapshotAdapter.onFragment(buffer, offset, length, header);
-            }
-            else
-            {
-                throw new ClusterException(
-                    "expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
-            }
+            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
         switch (messageHeaderDecoder.templateId())

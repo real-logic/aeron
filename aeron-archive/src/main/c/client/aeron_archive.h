@@ -1144,8 +1144,6 @@ int64_t aeron_archive_segment_file_base_position(
     int32_t term_buffer_length,
     int32_t segment_file_length);
 
-// TODO are counter ids int32_t or int64_t???
-
 /**
  * Find the active counter id for a stream based on the recording id.
  *
@@ -1169,7 +1167,7 @@ int32_t aeron_archive_recording_pos_find_counter_id_by_session_id(aeron_counters
  *
  * @param counters_reader an aeron_counters_reader_t to search within
  * @param counter_id the counter id of an active recording
- * @return the counter id if found, otherwise AERON_NULL_COUNTER_ID
+ * @return the recording id if found, otherwise AERON_NULL_COUNTER_ID
  */
 int64_t aeron_archive_recording_pos_get_recording_id(aeron_counters_reader_t *counters_reader, int32_t counter_id);
 

@@ -1621,8 +1621,8 @@ int aeron_archive_replicate(
     int64_t *replication_id_p,
     aeron_archive_t *aeron_archive,
     int64_t src_recording_id,
-    int32_t src_control_stream_id,
     const char *src_control_channel,
+    int32_t src_control_stream_id,
     aeron_archive_replication_params_t *params)
 {
     ENSURE_NOT_REENTRANT_CHECK_RETURN(aeron_archive, -1);

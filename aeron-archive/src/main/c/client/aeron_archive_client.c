@@ -323,8 +323,8 @@ int aeron_archive_poll_for_error_response(aeron_archive_t *aeron_archive, char *
 
     if (!aeron_subscription_is_connected(aeron_archive->subscription))
     {
-        snprintf(buffer, buffer_length, "not connected");
-
+        AERON_SET_ERR(-1, "%s", "subscription to archive is not connected");
+        rc = -1;
         goto cleanup;
     }
 

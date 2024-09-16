@@ -731,8 +731,8 @@ public:
             &replicationId,
             m_aeron_archive_t,
             srcRecordingId,
-            srcControlStreamId,
             srcControlChannel.c_str(),
+            srcControlStreamId,
             &replicationParams.m_params) < 0)
         {
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;

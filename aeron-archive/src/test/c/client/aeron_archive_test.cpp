@@ -2653,8 +2653,8 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateThenReplay)
         nullptr,
         m_dest_archive,
         m_recording_id_from_counter,
-        aeron_archive_context_get_control_request_stream_id(m_ctx),
         aeron_archive_context_get_control_request_channel(m_ctx),
+        aeron_archive_context_get_control_request_stream_id(m_ctx),
         &replication_params));
 
     while (0 == rsc_cd.signals.count(AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_SYNC))
@@ -2744,8 +2744,8 @@ TEST_P(AeronCArchiveParamTest, shouldRecordReplicateThenStop)
         &replication_id,
         m_dest_archive,
         m_recording_id_from_counter,
-        aeron_archive_context_get_control_request_stream_id(m_ctx),
         aeron_archive_context_get_control_request_channel(m_ctx),
+        aeron_archive_context_get_control_request_stream_id(m_ctx),
         &replication_params));
 
     while (
@@ -2904,8 +2904,8 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateTwice)
         nullptr,
         m_dest_archive,
         m_recording_id_from_counter,
-        aeron_archive_context_get_control_request_stream_id(m_ctx),
         aeron_archive_context_get_control_request_channel(m_ctx),
+        aeron_archive_context_get_control_request_stream_id(m_ctx),
         &replication_params1));
 
     while (0 == rsc_cd.signals.count(AERON_ARCHIVE_CLIENT_RECORDING_SIGNAL_REPLICATE_END))
@@ -2925,8 +2925,8 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateTwice)
         nullptr,
         m_dest_archive,
         m_recording_id_from_counter,
-        aeron_archive_context_get_control_request_stream_id(m_ctx),
         aeron_archive_context_get_control_request_channel(m_ctx),
+        aeron_archive_context_get_control_request_stream_id(m_ctx),
         &replication_params2));
 
     rsc_cd.signals.clear();

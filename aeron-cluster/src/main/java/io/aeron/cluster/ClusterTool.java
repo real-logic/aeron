@@ -108,7 +108,10 @@ public class ClusterTool
     public static final int AERON_CLUSTER_TOOL_REPLAY_STREAM_ID = Integer.getInteger(
         AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_PROP_NAME, AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_DEFAULT);
 
-    static final long TIMEOUT_MS =
+    /**
+     * timeout in milliseconds used by the tool
+     */
+    public static final long TIMEOUT_MS =
         NANOSECONDS.toMillis(getDurationInNanos(AERON_CLUSTER_TOOL_TIMEOUT_PROP_NAME, 0));
 
     private static final ClusterToolOperator BACKWARD_COMPATIBLE_OPERATIONS = new ClusterToolOperator(
@@ -209,7 +212,10 @@ public class ClusterTool
             "stops the cluster without a snapshot."));
 
         COMMANDS.put("describe-latest-cm-snapshot", new ClusterToolCommand(
-            action(operator::describeLatestConsensusModuleSnapshot),
+            action((clusterDir, listener) -> operator.describeLatestConsensusModuleSnapshot(
+            clusterDir,
+            System.out,
+            null)),
             "prints the contents of the latest valid consensus module snapshot."));
     }
 
@@ -505,7 +511,7 @@ public class ClusterTool
      */
     public static void describeLatestConsensusModuleSnapshot(final PrintStream out, final File clusterDir)
     {
-        BACKWARD_COMPATIBLE_OPERATIONS.describeLatestConsensusModuleSnapshot(clusterDir, out);
+        BACKWARD_COMPATIBLE_OPERATIONS.describeLatestConsensusModuleSnapshot(clusterDir, out, null);
     }
 
     /**

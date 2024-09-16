@@ -57,6 +57,7 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterNodeControlProperties;
 import io.aeron.cluster.service.ConsensusModuleProxy;
+import io.aeron.logbuffer.ControlledFragmentHandler;
 
 /**
  * Actions for an operator tool to control cluster.
@@ -740,11 +741,15 @@ public class ClusterToolOperator
     /**
      * Print out a summary of the state captured in the latest consensus module snapshot.
      *
-     * @param clusterDir where the cluster is running.
-     * @param out        to print the operation result.
-     * @return exist status
+     * @param clusterDir                        where the cluster is running.
+     * @param out                               where to print the operation result.
+     * @param extensionSnapshotAdapterCreator   optional creator of an adapter to extension image events
+     * @return SUCCESS is the operation was successfully requested, else FAILURE
      */
-    protected int describeLatestConsensusModuleSnapshot(final File clusterDir, final PrintStream out)
+    protected int describeLatestConsensusModuleSnapshot(
+        final File clusterDir,
+        final PrintStream out,
+        final Function<Image, ControlledFragmentHandler> extensionSnapshotAdapterCreator)
     {
         final RecordingLog.Entry entry = findLatestValidSnapshot(clusterDir);
         if (null == entry)
@@ -776,7 +781,7 @@ public class ClusterToolOperator
                 }
 
                 final ConsensusModuleSnapshotAdapter adapter = new ConsensusModuleSnapshotAdapter(
-                    image, new ConsensusModuleSnapshotPrinter(out));
+                    image, new ConsensusModuleSnapshotPrinter(out), extensionSnapshotAdapterCreator);
 
                 while (true)
                 {

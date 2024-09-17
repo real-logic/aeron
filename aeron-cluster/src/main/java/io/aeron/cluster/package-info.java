@@ -59,7 +59,7 @@
  * <h2>Protocol</h2>
  * Messages are specified using <a href="https://github.com/real-logic/simple-binary-encoding" target="_blank">SBE</a>
  * in this schema
- * <a href="https://github.com/real-logic/aeron/blob/master/aeron-cluster/src/main/resources/aeron-cluster-codecs.xml"
+ * <a href="https://github.com/real-logic/aeron/blob/master/aeron-cluster/src/main/resources/cluster/aeron-cluster-codecs.xml"
  *    target="_blank">aeron-cluster-codecs.xml</a>
  */
 package io.aeron.cluster;

@@ -269,6 +269,7 @@ class ExtendRecordingTest
         final int streamId = 42;
         final int initialTermId;
         final long recordingId;
+        final long publicationPosition;
         try (ExclusivePublication publication = aeronArchive.addRecordedExclusivePublication(channel, streamId))
         {
             final CountersReader counters = aeron.countersReader();
@@ -291,13 +292,17 @@ class ExtendRecordingTest
             }
 
             Tests.awaitPosition(counters, counterId, publication.position());
+            publicationPosition = publication.position();
         }
+
+        Tests.await(() -> publicationPosition == aeronArchive.getStopPosition(recordingId));
 
         final int truncateIndex = 1139;
         final int truncatePosition = truncateIndex * 64;
         assertEquals(3, aeronArchive.truncateRecording(recordingId, truncatePosition));
 
         final int extendMessageCount = 100;
+        final long extendPosition;
         try (ExclusivePublication publication = aeron.addExclusivePublication(
             new ChannelUriStringBuilder(channel).initialPosition(truncatePosition, initialTermId, termLength).build(),
             streamId))
@@ -322,10 +327,10 @@ class ExtendRecordingTest
             }
 
             Tests.awaitPosition(counters, counterId, publication.position());
+            extendPosition = publication.position();
         }
 
-        final long stopPosition = aeronArchive.getStopPosition(recordingId);
-        assertThat(stopPosition, CoreMatchers.is(OrderingComparison.greaterThan(truncatePosition)));
+        Tests.await(() -> extendPosition == aeronArchive.getStopPosition(recordingId));
 
         final String replayChannel = "aeron:ipc";
         final int replayStreamId = -96;
@@ -344,7 +349,7 @@ class ExtendRecordingTest
                 msgCount.increment();
             };
 
-            while (image.position() < stopPosition && 0 == subscription.poll(fragmentHandler, Integer.MAX_VALUE))
+            while (image.position() < extendPosition && 0 == subscription.poll(fragmentHandler, Integer.MAX_VALUE))
             {
                 Tests.yield();
             }

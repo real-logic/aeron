@@ -20,20 +20,30 @@ import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 
 /**
  * Counter stored in a file managed by the media driver which can be observed with AeronStat.
  */
 public final class Counter extends AtomicCounter
 {
-    private static final AtomicIntegerFieldUpdater<Counter> IS_CLOSED_UPDATER = newUpdater(Counter.class, "isClosed");
+    private static final VarHandle IS_CLOSED_VH;
+    static
+    {
+        try
+        {
+            IS_CLOSED_VH = MethodHandles.lookup().findVarHandle(Counter.class, "isClosed", boolean.class);
+        }
+        catch (final ReflectiveOperationException ex)
+        {
+            throw new ExceptionInInitializerError(ex);
+        }
+    }
 
     private final long registrationId;
     private final ClientConductor clientConductor;
-    private volatile int isClosed;
+    private volatile boolean isClosed;
 
     Counter(
         final long registrationId,
@@ -85,7 +95,7 @@ public final class Counter extends AtomicCounter
      */
     public void close()
     {
-        if (IS_CLOSED_UPDATER.compareAndSet(this, 0, 1))
+        if (IS_CLOSED_VH.compareAndSet(this, false, true))
         {
             super.close();
             if (null != clientConductor)
@@ -102,12 +112,12 @@ public final class Counter extends AtomicCounter
      */
     public boolean isClosed()
     {
-        return 1 == isClosed;
+        return isClosed;
     }
 
     void internalClose()
     {
         super.close();
-        isClosed = 1;
+        isClosed = true;
     }
 }

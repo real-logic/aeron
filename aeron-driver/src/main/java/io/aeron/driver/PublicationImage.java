@@ -41,9 +41,10 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import static io.aeron.CommonContext.UNTETHERED_RESTING_TIMEOUT_PARAM_NAME;
 import static io.aeron.CommonContext.UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME;
@@ -114,11 +115,23 @@ public final class PublicationImage
     // expected minimum number of SMs with EOS bit set sent during draining.
     private static final long SM_EOS_MULTIPLE = 5;
 
-    private static final AtomicLongFieldUpdater<PublicationImage> BEGIN_SM_CHANGE_UPDATER =
-        AtomicLongFieldUpdater.newUpdater(PublicationImage.class, "beginSmChange");
+    private static final VarHandle BEGIN_SM_CHANGE_VH;
+    private static final VarHandle END_SM_CHANGE_VH;
+    static
+    {
+        try
+        {
+            BEGIN_SM_CHANGE_VH = MethodHandles.lookup()
+                .findVarHandle(PublicationImage.class, "beginSmChange", long.class);
 
-    private static final AtomicLongFieldUpdater<PublicationImage> END_SM_CHANGE_UPDATER =
-        AtomicLongFieldUpdater.newUpdater(PublicationImage.class, "endSmChange");
+            END_SM_CHANGE_VH = MethodHandles.lookup()
+                .findVarHandle(PublicationImage.class, "endSmChange", long.class);
+        }
+        catch (final ReflectiveOperationException ex)
+        {
+            throw new ExceptionInInitializerError(ex);
+        }
+    }
 
     private volatile long beginSmChange = Aeron.NULL_VALUE;
     private volatile long endSmChange = Aeron.NULL_VALUE;
@@ -1022,10 +1035,8 @@ public final class PublicationImage
     {
         long eosPosition = 0;
 
-        for (int i = 0, length = imageConnections.length; i < length; i++)
+        for (final ImageConnection imageConnection : imageConnections)
         {
-            final ImageConnection imageConnection = imageConnections[i];
-
             if (null != imageConnection && imageConnection.eosPosition > eosPosition)
             {
                 eosPosition = imageConnection.eosPosition;
@@ -1039,13 +1050,13 @@ public final class PublicationImage
     {
         final long changeNumber = beginSmChange + 1;
 
-        BEGIN_SM_CHANGE_UPDATER.lazySet(this, changeNumber);
-        MemoryAccess.releaseFence();
+        BEGIN_SM_CHANGE_VH.setRelease(this, changeNumber);
+        VarHandle.storeStoreFence();
 
         nextSmPosition = smPosition;
         nextSmReceiverWindowLength = receiverWindowLength;
 
-        END_SM_CHANGE_UPDATER.lazySet(this, changeNumber);
+        END_SM_CHANGE_VH.setRelease(this, changeNumber);
     }
 
     private void checkUntetheredSubscriptions(final long nowNs, final DriverConductor conductor)

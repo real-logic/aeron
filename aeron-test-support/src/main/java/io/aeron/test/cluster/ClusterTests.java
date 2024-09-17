@@ -158,7 +158,7 @@ public class ClusterTests
             if (null != warning)
             {
                 System.err.println("\n*** Warning captured with error ***");
-                warning.printStackTrace();
+                warning.printStackTrace(System.err);
             }
 
             throw new RuntimeException("Cluster node received error", error);
@@ -167,7 +167,7 @@ public class ClusterTests
         if (Thread.currentThread().isInterrupted() && null != warning)
         {
             System.err.println("\n*** Warning captured with interrupt ***");
-            warning.printStackTrace();
+            warning.printStackTrace(System.err);
         }
     }
 

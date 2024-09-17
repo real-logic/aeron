@@ -173,17 +173,17 @@ public class ClusterTests
 
     private static boolean shouldDownScaleToWarning(final Throwable error)
     {
+        int depthLimit = 10;
         Throwable maybeWarning = error;
-        do
+        while (null != maybeWarning && 0 < --depthLimit)
         {
-            if (null == error || maybeWarning instanceof UnknownHostException)
+            if (maybeWarning instanceof UnknownHostException)
             {
                 return true;
             }
 
-            maybeWarning = error.getCause();
+            maybeWarning = maybeWarning.getCause();
         }
-        while (null != maybeWarning);
 
         return false;
     }

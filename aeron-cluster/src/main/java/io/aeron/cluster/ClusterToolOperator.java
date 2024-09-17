@@ -57,7 +57,6 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterNodeControlProperties;
 import io.aeron.cluster.service.ConsensusModuleProxy;
-import io.aeron.logbuffer.ControlledFragmentHandler;
 
 /**
  * Actions for an operator tool to control cluster.

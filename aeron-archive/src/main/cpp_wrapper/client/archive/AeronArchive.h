@@ -117,6 +117,9 @@ typedef std::function<void(RecordingSubscriptionDescriptor &recordingSubscriptio
 
 using namespace aeron::util;
 
+/**
+ * Client for interacting with a local or remote Aeron Archive.
+ */
 class AeronArchive
 {
 
@@ -135,11 +138,22 @@ public:
         REMOTE = 1
     };
 
+    /**
+     * Allows for the async establishment of an Aeron Archive session.
+     */
     class AsyncConnect
     {
         friend class AeronArchive;
 
     public:
+
+        /**
+         * Poll for a complete connection.
+         *
+         * @return a new AeronArchive when successfully connected, otherwise returns null
+         *
+         * @see aeron_archive_async_connect_poll
+         */
         std::shared_ptr<AeronArchive> poll()
         {
             if (nullptr == m_async)
@@ -195,14 +209,29 @@ public:
         const exception_handler_t m_errorHandler;
         const delegating_invoker_t m_delegatingInvoker;
 
-        const uint32_t m_maxErrorMessageLength;
+        const std::uint32_t m_maxErrorMessageLength;
     };
 
+    /**
+     * Initiate an asynchronous connection attempt to an Aeron Archive.
+     *
+     * @param ctx a reference to an Archive Context with relevant configuration
+     * @return the AsyncConnect object that can be polled for completion
+     *
+     * @see aeron_archive_async_connect
+     */
     static std::shared_ptr<AsyncConnect> asyncConnect(Context &ctx)
     {
         return std::shared_ptr<AsyncConnect>(new AsyncConnect(ctx));
     }
 
+    /**
+     *
+     * @param ctx a reference to an Archive Context with relevant configuration
+     * @return a new AeronArchive
+     *
+     * @see aeron_archive_connect
+     */
     static std::shared_ptr<AeronArchive> connect(Context &ctx)
     {
         aeron_archive_t *aeron_archive = nullptr;
@@ -222,6 +251,11 @@ public:
                 ctx.m_maxErrorMessageLength));
     }
 
+    /**
+     * Close the connection to the Archive.
+     *
+     * @see aeron_archive_close
+     */
     ~AeronArchive()
     {
         // make sure to clean things up in the correct order
@@ -230,29 +264,57 @@ public:
         aeron_archive_close(m_aeron_archive_t);
     }
 
+    /**
+     * Get the Context used to connect this archive client.
+     *
+     * @return the Context used to connect this archive client
+     */
     const Context &context()
     {
         return m_archiveCtxW;
     }
 
+    /**
+     * The id of the archive.
+     *
+     * @return the id of the archive to which this client is connected
+     *
+     * @see aeron_archive_get_archive_id
+     */
     std::int64_t archiveId()
     {
         return aeron_archive_get_archive_id(m_aeron_archive_t);
     }
 
+    /**
+     * Get a reference to the Subscription used to receive responses from the Archive.
+     *
+     * @return a reference to the Subscription
+     *
+     * @see aeron_archive_get_control_response_subscription
+     */
     Subscription &controlResponseSubscription()
     {
         return *m_controlResponseSubscription;
     }
 
+    // helpful for testing... not necessarily useful otherwise
     inline std::int64_t controlSessionId()
     {
         return aeron_archive_control_session_id(m_aeron_archive_t);
     }
 
+    /**
+     * Poll for recording signals, dispatching them to the configured handler.
+     *
+     * @return the number of RecordingSignals dispatched
+     *
+     * @see Context#recordingSignalConsumer
+     * @see aeron_archive_poll_for_recording_signals
+     */
     inline std::int32_t pollForRecordingSignals()
     {
-        int32_t count;
+        std::int32_t count;
 
         if (aeron_archive_poll_for_recording_signals(&count, m_aeron_archive_t) < 0)
         {
@@ -262,6 +324,13 @@ public:
         return count;
     }
 
+    /**
+     * Poll the response stream once for an error.
+     *
+     * @return an error string, which will be empty if no error was found
+     *
+     * @see aeron_archive_poll_for_error_response
+     */
     inline std::string pollForErrorResponse()
     {
         char *buffer = m_errorMessageBuffer.get();
@@ -274,6 +343,13 @@ public:
         return { buffer };
     }
 
+    /**
+     * Poll the response stream once for an error.
+     * If an error handler is specified, the error (if found) will be dispatched to the handler.
+     * If no error handler is specified, an exception will be thrown.
+     *
+     * @see aeron_archive_check_for_error_response
+     */
     inline void checkForErrorResponse()
     {
         if (aeron_archive_check_for_error_response(m_aeron_archive_t) < 0)
@@ -282,6 +358,15 @@ public:
         }
     }
 
+    /**
+     * Create a publication and set it up to be recorded.
+     *
+     * @param channel the channel for the publication
+     * @param streamId the stream id for the publication
+     * @return a Publication that's being recorded
+     *
+     * @see aeron_archive_add_recorded_publication
+     */
     inline std::shared_ptr<Publication> addRecordedPublication(const std::string &channel, std::int32_t streamId)
     {
         aeron_publication_t *publication;
@@ -298,6 +383,15 @@ public:
         return std::make_shared<Publication>(m_archiveCtxW.aeron()->aeron(), publication);
     }
 
+    /**
+     * Create an exclusive publication and set it up to be recorded.
+     *
+     * @param channel the channel for the exclusive publication
+     * @param streamId the stream id for the exclusive publication
+     * @return an ExclusivePublication that's being recorded
+     *
+     * @see aeron_archive_add_recorded_exclusive_publication
+     */
     inline std::shared_ptr<ExclusivePublication> addRecordedExclusivePublication(const std::string &channel, std::int32_t streamId)
     {
         aeron_exclusive_publication_t *exclusivePublication;
@@ -314,13 +408,28 @@ public:
         return std::make_shared<ExclusivePublication>(m_archiveCtxW.aeron()->aeron(), exclusivePublication);
     }
 
+    /**
+     * Start recording a channel/stream pairing.
+     * <p>
+     * Channels that include session id parameters are considered different than channels without session ids.
+     * If a publication matches both a session id specific channel recording and a non session id specific recording,
+     * it will be recorded twice.
+     *
+     * @param channel the channel of the publication to be recorded
+     * @param streamId the stream id of the publication to be recorded
+     * @param sourceLocation the SourceLocation of the publication to be recorded
+     * @param autoStop should the recording be automatically stopped when complete
+     * @return the recording's subscription id
+     *
+     * @see aeron_archive_start_recording
+     */
     inline std::int64_t startRecording(
         const std::string &channel,
         std::int32_t streamId,
         SourceLocation sourceLocation,
         bool autoStop = false)
     {
-        int64_t subscription_id;
+        std::int64_t subscription_id;
 
         if (aeron_archive_start_recording(
             &subscription_id,
@@ -338,9 +447,17 @@ public:
         return subscription_id;
     }
 
+    /**
+     * Fetch the position recorded for the specified recording.
+     *
+     * @param recordingId the archive recording id
+     * @return the position of the specified recording
+     *
+     * @see aeron_archive_get_recording_position
+     */
     inline std::int64_t getRecordingPosition(std::int64_t recordingId)
     {
-        int64_t recording_position;
+        std::int64_t recording_position;
 
         if (aeron_archive_get_recording_position(
             &recording_position,
@@ -353,9 +470,17 @@ public:
         return recording_position;
     }
 
+    /**
+     * Fetch the start position for the specified recording.
+     *
+     * @param recordingId the archive recording id
+     * @return the start position of the specified recording
+     *
+     * @see aeron_archive_get_start_position
+     */
     inline std::int64_t getStartPosition(std::int64_t recordingId)
     {
-        int64_t startPosition;
+        std::int64_t startPosition;
 
         if (aeron_archive_get_start_position(
             &startPosition,
@@ -368,9 +493,17 @@ public:
         return startPosition;
     }
 
+    /**
+     * Fetch the stop position for the specified recording.
+     *
+     * @param recordingId the active recording id
+     * @return the stop position of the specified recording
+     *
+     * @see aeron_archive_get_stop_position
+     */
     inline std::int64_t getStopPosition(std::int64_t recordingId)
     {
-        int64_t stop_position;
+        std::int64_t stop_position;
 
         if (aeron_archive_get_stop_position(
             &stop_position,
@@ -383,9 +516,17 @@ public:
         return stop_position;
     }
 
+    /**
+     * Fetch the stop or active position for the specified recording.
+     *
+     * @param recordingId the active recording id
+     * @return the max recorded position of the specified recording
+     *
+     * @see aeron_archive_get_max_recorded_position
+     */
     inline std::int64_t getMaxRecordedPosition(std::int64_t recordingId)
     {
-        int64_t max_recorded_position;
+        std::int64_t max_recorded_position;
 
         if (aeron_archive_get_max_recorded_position(
             &max_recorded_position,
@@ -398,6 +539,14 @@ public:
         return max_recorded_position;
     }
 
+    /**
+     * Stop recording the specified subscription id.
+     * This is the subscription id returned from startRecording or extendRecording.
+     *
+     * @param subscriptionId the subscription id for the recording in the Aeron Archive
+     *
+     * @see aeron_archive_stop_recording_subscription
+     */
     inline void stopRecording(std::int64_t subscriptionId)
     {
         if (aeron_archive_stop_recording_subscription(
@@ -408,6 +557,15 @@ public:
         }
     }
 
+    /**
+     * Try to stop a recording for the specified subscription id.
+     * This is the subscription id returned from startRecording or extendRecording.
+     *
+     * @param subscriptionId the subscription id for the recording in the Aeron Archive
+     * @return true if stopped, or false if the subscription is not currently active
+     *
+     * @see aeron_archive_try_stop_recording_subscription
+     */
     inline bool tryStopRecording(std::int64_t subscriptionId)
     {
         bool stopped;
@@ -423,6 +581,18 @@ public:
         return stopped;
     }
 
+    /**
+     * Stop recording for the specified channel and stream.
+     * <p>
+     * Channels that include session id parameters are considered different than channels without session ids.
+     * Stopping a recording on a channel without a session id parameter will not stop the recording of any
+     * session id specific recordings that use the same channel and stream id.
+     *
+     * @param channel the channel of the recording to be stopped
+     * @param streamId  the stream id of the recording to be stopped
+     *
+     * @see aeron_archive_stop_recording_channel_and_stream
+     */
     inline void stopRecording(const std::string &channel, std::int32_t streamId)
     {
         if (aeron_archive_stop_recording_channel_and_stream(
@@ -434,6 +604,17 @@ public:
         }
     }
 
+    /**
+     * Try to stop recording for the specified channel and stream.
+     * <p>
+     * Channels that include session id parameters are considered different than channels without session ids.
+     * Stopping a recording on a channel without a session id parameter will not stop the recording of any
+     * session id specific recordings that use the same channel and stream id.
+     *
+     * @param channel the channel of the recording to be stopped
+     * @param streamId  the stream id of the recording to be stopped
+     * @return true if stopped, or false if the subscription is not currently active
+     */
     inline bool tryStopRecording(const std::string &channel, std::int32_t streamId)
     {
         bool stopped;
@@ -450,6 +631,14 @@ public:
         return stopped;
     }
 
+    /**
+     * Stop recording for the specified recording id.
+     *
+     * @param recordingId the id of the recording to be stopped
+     * @return true if stopped, or false if the subscription is not currently active
+     *
+     * @see aeron_archive_try_stop_recording_by_identity
+     */
     inline bool tryStopRecordingByIdentity(std::int64_t recordingId)
     {
         bool stopped;
@@ -465,6 +654,13 @@ public:
         return stopped;
     }
 
+    /**
+     * Stop recording a session id specific recording that pertains to the given publication.
+     *
+     * @param publication the Publication to stop recording
+     *
+     * @see aeron_archive_stop_recording_publication
+     */
     inline void stopRecording(const std::shared_ptr<Publication> &publication)
     {
         if (aeron_archive_stop_recording_publication(
@@ -475,6 +671,13 @@ public:
         }
     }
 
+    /**
+     * Stop recording a session id specific recording that pertains to the given ExclusivePublication.
+     *
+     * @param exclusivePublication the ExclusivePublication to stop recording
+     *
+     * @see aeron_archive_stop_recording_exclusive_publication
+     */
     inline void stopRecording(const std::shared_ptr<ExclusivePublication> &exclusivePublication)
     {
         if (aeron_archive_stop_recording_exclusive_publication(
@@ -485,13 +688,24 @@ public:
         }
     }
 
+    /**
+     * Find the last recording that matches the given criteria.
+     *
+     * @param minRecordingId the lowest recording id to search back to
+     * @param channelFragment for a 'contains' match on the original channel stored with the Aeron Archive
+     * @param streamId the stream id of the recording
+     * @param sessionId the session id of the recording
+     * @return the recording id that matches
+     *
+     * @see aeron_archive_find_last_matching_recording
+     */
     inline std::int64_t findLastMatchingRecording(
         std::int64_t minRecordingId,
         const std::string &channelFragment,
         std::int32_t streamId,
         std::int32_t sessionId)
     {
-        int64_t recording_id;
+        std::int64_t recording_id;
 
         if (aeron_archive_find_last_matching_recording(
             &recording_id,
@@ -507,11 +721,20 @@ public:
         return recording_id;
     }
 
+    /**
+     * List a recording descriptor for a single recording id.
+     *
+     * @param recordingId the id of the recording
+     * @param consumer to be called for each descriptor
+     * @return the number of descriptors found
+     *
+     * @see aeron_archive_list_recording
+     */
     inline std::int32_t listRecording(
         std::int64_t recordingId,
         const recording_descriptor_consumer_t &consumer)
     {
-        int32_t count;
+        std::int32_t count;
 
         if (aeron_archive_list_recording(
             &count,
@@ -526,12 +749,23 @@ public:
         return count;
     }
 
+    /**
+     * List all recording descriptors starting at a particular recording id,
+     * with a limit of total descriptors delivered.
+     *
+     * @param fromRecordingId the id at which to begin the listing
+     * @param recordCount the limit of total descriptors to deliver
+     * @param consumer to be called for each descriptor
+     * @return the number of descriptors found
+     *
+     * @see aeron_archive_list_recordings
+     */
     inline std::int32_t listRecordings(
         std::int64_t fromRecordingId,
         std::int32_t recordCount,
         const recording_descriptor_consumer_t &consumer)
     {
-        int32_t count;
+        std::int32_t count;
 
         if (aeron_archive_list_recordings(
             &count,
@@ -547,6 +781,18 @@ public:
         return count;
     }
 
+    /**
+     * List all recording descriptors for a given channel fragment and stream id, starting at a particular recording id, with a limit of total descriptors delivered.
+     *
+     * @param fromRecordingId the id at which to begin the listing
+     * @param recordCount the limit of total descriptors to deliver
+     * @param channelFragment for a 'contains' match on the original channel stored with the Aeron Archive
+     * @param streamId the stream id of the recording
+     * @param consumer to be called for each descriptor
+     * @return the number of descriptors found
+     *
+     * @see aeron_archive_list_recordings_for_uri
+     */
     inline std::int32_t listRecordingsForUri(
         std::int64_t fromRecordingId,
         std::int32_t recordCount,
@@ -554,7 +800,7 @@ public:
         std::int32_t streamId,
         const recording_descriptor_consumer_t &consumer)
     {
-        int32_t count;
+        std::int32_t count;
 
         if (aeron_archive_list_recordings_for_uri(
             &count,
@@ -572,13 +818,28 @@ public:
         return count;
     }
 
+    /**
+     * Start a replay
+     * <p>
+     * The lower 32-bits of the replay session id contain the session id of the image of the received replay
+     * and can be obtained by casting the replay session id to an int32_t.
+     * All 64-bits are required to uniquely identify the replay when calling aeron_archive_stop_replay.
+     *
+     * @param recordingId the id of the recording
+     * @param replayChannel the channel to which the replay should be sent
+     * @param replayStreamId the stream id to which the replay should be sent
+     * @param replayParams the ReplayParams that control the behavior of the replay
+     * @return the replay session id
+     *
+     * @see aeron_archive_start_replay
+     */
     inline std::int64_t startReplay(
         std::int64_t recordingId,
         const std::string &replayChannel,
         std::int32_t replayStreamId,
         ReplayParams &replayParams)
     {
-        int64_t replay_session_id;
+        std::int64_t replay_session_id;
 
         if (aeron_archive_start_replay(
             &replay_session_id,
@@ -618,7 +879,7 @@ public:
 
     inline std::int64_t truncateRecording(std::int64_t recordingId, std::int64_t position)
     {
-        int64_t count;
+        std::int64_t count;
 
         if (aeron_archive_truncate_recording(
             &count,
@@ -659,7 +920,7 @@ public:
         bool applyStreamId,
         const recording_subscription_descriptor_consumer_t &consumer)
     {
-        int32_t count;
+        std::int32_t count;
 
         if (aeron_archive_list_recording_subscriptions(
             &count,
@@ -680,7 +941,7 @@ public:
 
     inline std::int64_t purgeRecording(std::int64_t recordingId)
     {
-        int64_t deletedSegmentsCount;
+        std::int64_t deletedSegmentsCount;
 
         if (aeron_archive_purge_recording(
             &deletedSegmentsCount,
@@ -700,7 +961,7 @@ public:
         SourceLocation sourceLocation,
         bool autoStop)
     {
-        int64_t subscription_id;
+        std::int64_t subscription_id;
 
         if (aeron_archive_extend_recording(
             &subscription_id,
@@ -725,7 +986,7 @@ public:
         const std::string &srcControlChannel,
         ReplicationParams &replicationParams)
     {
-        int64_t replicationId;
+        std::int64_t replicationId;
 
         if (aeron_archive_replicate(
             &replicationId,
@@ -777,7 +1038,7 @@ public:
 
     inline std::int64_t deleteDetachedSegments(std::int64_t recordingId)
     {
-        int64_t count;
+        std::int64_t count;
 
         if (aeron_archive_delete_detached_segments(
             &count,
@@ -792,7 +1053,7 @@ public:
 
     inline std::int64_t purgeSegments(std::int64_t recordingId, std::int64_t newStartPosition)
     {
-        int64_t count;
+        std::int64_t count;
 
         if (aeron_archive_purge_segments(
             &count,
@@ -808,7 +1069,7 @@ public:
 
     inline std::int64_t attachSegments(std::int64_t recordingId)
     {
-        int64_t count;
+        std::int64_t count;
 
         if (aeron_archive_attach_segments(
             &count,
@@ -823,7 +1084,7 @@ public:
 
     inline std::int64_t migrateSegments(std::int64_t srcRecordingId, std::int64_t dstRecordingId)
     {
-        int64_t count;
+        std::int64_t count;
 
         if (aeron_archive_migrate_segments(
             &count,
@@ -857,7 +1118,7 @@ private:
         const recording_signal_consumer_t &recordingSignalConsumer,
         const exception_handler_t &errorHandler,
         const delegating_invoker_t &delegatingInvoker,
-        const uint32_t maxErrorMessageLength) :
+        const std::uint32_t maxErrorMessageLength) :
         m_aeron_archive_t(aeron_archive),
         m_archiveCtxW(aeron_archive_get_and_own_archive_context(m_aeron_archive_t))
     {

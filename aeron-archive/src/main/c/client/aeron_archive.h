@@ -710,7 +710,7 @@ int aeron_archive_stop_recording_channel_and_stream(
     int32_t stream_id);
 
 /**
- * Stop recording for the specified channel and stream.
+ * Try to stop recording for the specified channel and stream.
  * <p>
  * Channels that include session id parameters are considered different than channels without session ids.
  * Stopping a recording on a channel without a session id parameter will not stop the recording of any

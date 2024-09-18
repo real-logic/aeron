@@ -172,16 +172,18 @@ public:
     }
 
     template<typename IdleStrategy>
-    void idleStrategy(IdleStrategy &idleStrategy)
+    inline Context &idleStrategy(IdleStrategy &idleStrategy)
     {
         m_idleFunc = [&idleStrategy](int work_count){ idleStrategy.idle(work_count); };
+        return *this;
     }
 
-    void credentialsSupplier(const CredentialsSupplier &credentialsSupplier)
+    inline Context &credentialsSupplier(const CredentialsSupplier &credentialsSupplier)
     {
         m_credentialsSupplier.m_encodedCredentials = credentialsSupplier.m_encodedCredentials;
         m_credentialsSupplier.m_onChallenge = credentialsSupplier.m_onChallenge;
         m_credentialsSupplier.m_onFree = credentialsSupplier.m_onFree;
+        return *this;
     }
 
     inline Context &recordingSignalConsumer(const recording_signal_consumer_t &consumer)
@@ -220,13 +222,13 @@ public:
         return m_delegatingInvoker;
     }
 
-    Context &maxErrorMessageLength(const uint32_t maxErrorMessageLength)
+    inline Context &maxErrorMessageLength(const std::uint32_t maxErrorMessageLength)
     {
         m_maxErrorMessageLength = maxErrorMessageLength;
         return *this;
     }
 
-    uint32_t maxErrorMessageLength() const
+    inline std::uint32_t maxErrorMessageLength() const
     {
         return m_maxErrorMessageLength;
     }
@@ -246,7 +248,7 @@ private:
     exception_handler_t m_errorHandler = nullptr;
     delegating_invoker_t m_delegatingInvoker = nullptr;
 
-    uint32_t m_maxErrorMessageLength = 1000;
+    std::uint32_t m_maxErrorMessageLength = 1000;
 
     // This Context is created after connect succeeds and wraps around a context_t created in the C layer
     explicit Context(

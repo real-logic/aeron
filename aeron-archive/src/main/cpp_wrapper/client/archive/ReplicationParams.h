@@ -45,12 +45,12 @@ public:
         return *this;
     }
 
-    int64_t dstRecordingId() const
+    std::int64_t dstRecordingId() const
     {
         return m_params.dst_recording_id;
     }
 
-    ReplicationParams &dstRecordingId(int64_t dstRecordingId)
+    ReplicationParams &dstRecordingId(std::int64_t dstRecordingId)
     {
         m_params.dst_recording_id = dstRecordingId;
         return *this;
@@ -80,34 +80,34 @@ public:
         return *this;
     }
 
-    int64_t channelTagId() const
+    std::int64_t channelTagId() const
     {
         return m_params.channel_tag_id;
     }
 
-    ReplicationParams &channelTagId(int64_t channelTagId)
+    ReplicationParams &channelTagId(std::int64_t channelTagId)
     {
         m_params.channel_tag_id = channelTagId;
         return *this;
     }
 
-    int64_t subscriptionTagId() const
+    std::int64_t subscriptionTagId() const
     {
         return m_params.subscription_tag_id;
     }
 
-    ReplicationParams &subscriptionTagId(int64_t subscriptionTagId)
+    ReplicationParams &subscriptionTagId(std::int64_t subscriptionTagId)
     {
         m_params.subscription_tag_id = subscriptionTagId;
         return *this;
     }
 
-    int32_t fileIoMaxLength() const
+    std::int32_t fileIoMaxLength() const
     {
         return m_params.file_io_max_length;
     }
 
-    ReplicationParams &fileIoMaxLength(int32_t fileIoMaxLength)
+    ReplicationParams &fileIoMaxLength(std::int32_t fileIoMaxLength)
     {
         m_params.file_io_max_length = fileIoMaxLength;
         return *this;

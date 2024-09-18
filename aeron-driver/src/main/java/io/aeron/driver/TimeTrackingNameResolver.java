@@ -109,6 +109,14 @@ final class TimeTrackingNameResolver implements NameResolver, AutoCloseable
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public String name()
+    {
+        return "TimeTracking(" + delegateResolver.name() + ")";
+    }
+
     static void logHostName(final long durationNs, final String hostName)
     {
     }

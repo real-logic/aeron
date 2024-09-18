@@ -158,7 +158,7 @@ public class ClusterTests
             if (null != warning)
             {
                 System.err.println("\n*** Warning captured with error ***");
-                warning.printStackTrace();
+                warning.printStackTrace(System.err);
             }
 
             throw new RuntimeException("Cluster node received error", error);
@@ -167,23 +167,23 @@ public class ClusterTests
         if (Thread.currentThread().isInterrupted() && null != warning)
         {
             System.err.println("\n*** Warning captured with interrupt ***");
-            warning.printStackTrace();
+            warning.printStackTrace(System.err);
         }
     }
 
     private static boolean shouldDownScaleToWarning(final Throwable error)
     {
+        int depthLimit = 10;
         Throwable maybeWarning = error;
-        do
+        while (null != maybeWarning && 0 < --depthLimit)
         {
-            if (null == error || maybeWarning instanceof UnknownHostException)
+            if (maybeWarning instanceof UnknownHostException)
             {
                 return true;
             }
 
-            maybeWarning = error.getCause();
+            maybeWarning = maybeWarning.getCause();
         }
-        while (null != maybeWarning);
 
         return false;
     }

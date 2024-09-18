@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Aeron;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.archive.checksum.Checksum;
@@ -299,13 +300,26 @@ public class ArchiveTool
                 compact(out, archiveDir);
             }
         }
-        else if (args.length == 2 && "delete-orphaned-segments".equals(args[1]))
+        else if (args.length >= 2 && "delete-orphaned-segments".equals(args[1]))
         {
-            out.print("WARNING: All orphaned segment files will be deleted.");
-
-            if (readContinueAnswer("Continue? (y/n)"))
+            if (args.length == 2)
             {
-                deleteOrphanedSegments(out, archiveDir);
+                out.print("WARNING: All orphaned segment files will be deleted.");
+                if (readContinueAnswer("Continue? (y/n)"))
+                {
+                    deleteOrphanedSegments(out, archiveDir);
+                }
+            }
+            else
+            {
+                final long recordingId = Long.parseLong(args[2]);
+                out.print("WARNING: All orphaned segment files owned by the RecordingId[");
+                out.print(recordingId);
+                out.print("] will be deleted.");
+                if (readContinueAnswer("Continue? (y/n)"))
+                {
+                    deleteOrphanedSegments(out, archiveDir, recordingId);
+                }
             }
         }
         else if (args.length == 3 && "mark-valid".equals(args[1]))
@@ -784,30 +798,64 @@ public class ArchiveTool
     }
 
     /**
-     * Delete orphaned recording segments that have been detached, i.e. outside the start and stop recording range,
-     * but are not deleted.
+     * Delete orphaned recording segments that have been detached for all recordings, i.e. outside the start and stop
+     * recording range, but are not deleted.
      *
      * @param out        stream to print results and errors to.
      * @param archiveDir that contains {@link MarkFile}, {@link Catalog}, and recordings.
      */
     public static void deleteOrphanedSegments(final PrintStream out, final File archiveDir)
     {
-        deleteOrphanedSegments(out, archiveDir, INSTANCE);
+        deleteOrphanedSegments(out, archiveDir, INSTANCE, NULL_RECORD_ID);
     }
 
-    static void deleteOrphanedSegments(final PrintStream out, final File archiveDir, final EpochClock epochClock)
+    /**
+     * Delete orphaned recording segments that have been detached, i.e. outside the start and stop recording range,
+     * but are not deleted.
+     *
+     * @param out               stream to print results and errors to.
+     * @param archiveDir        that contains {@link MarkFile}, {@link Catalog}, and recordings.
+     * @param targetRecordingId optional recordingId to delete orphaned segments for a specific recording.
+     *                          If {@link Aeron#NULL_VALUE}, delete orphaned segments for all recordings.
+     */
+    public static void deleteOrphanedSegments(
+        final PrintStream out,
+        final File archiveDir,
+        final long targetRecordingId)
+    {
+        deleteOrphanedSegments(out, archiveDir, INSTANCE, targetRecordingId);
+    }
+
+    static void deleteOrphanedSegments(
+        final PrintStream out,
+        final File archiveDir,
+        final EpochClock epochClock,
+        final long targetRecordingId)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             final Long2ObjectHashMap<List<String>> segmentFilesByRecordingId = indexSegmentFiles(archiveDir);
 
-            catalog.forEach(
-                (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+            final MutableBoolean found = new MutableBoolean(false);
+            catalog.forEach((recordingDescriptorOffset,
+                headerEncoder,
+                headerDecoder,
+                descriptorEncoder,
+                descriptorDecoder) ->
+            {
+                final long recordingId = descriptorDecoder.recordingId();
+                if (NULL_RECORD_ID == targetRecordingId || targetRecordingId == recordingId)
                 {
-                    final long recordingId = descriptorDecoder.recordingId();
+                    found.set(true);
                     final List<String> files = segmentFilesByRecordingId.getOrDefault(recordingId, emptyList());
                     deleteOrphanedSegmentFiles(out, archiveDir, descriptorDecoder, files);
-                });
+                }
+            });
+
+            if (NULL_RECORD_ID != targetRecordingId && !found.get())
+            {
+                throw new AeronException("no recording found with recordingId: " + targetRecordingId);
+            }
         }
     }
 
@@ -1711,7 +1759,8 @@ public class ArchiveTool
             "  compact: compacts Catalog file by removing entries in non-valid state and deleting the%n" +
             "     corresponding segment files.%n%n" +
             "  count-entries: queries the number of `VALID` recording entries in the catalog.%n%n" +
-            "  delete-orphaned-segments: deletes orphaned recording segments that have been detached,%n" +
+            "  delete-orphaned-segments [recordingId]: deletes orphaned recording segments that have been detached,%n" +
+            "     If recordingId is specified, only delete orphaned segments for that recording.%n" +
             "     i.e. outside the start and stop recording range, but are not deleted.%n%n" +
             "  describe: prints out descriptors for all valid recordings in the catalog.%n%n" +
             "  describe recordingId: prints out descriptor for the specified recording entry in the catalog.%n%n" +

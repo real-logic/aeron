@@ -20,18 +20,17 @@ import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
+import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.agrona.Strings.isEmpty;
@@ -155,9 +154,7 @@ public final class DataCollector
      */
     public List<Path> cncFiles()
     {
-        return locations.stream()
-            .flatMap((path) -> DataCollector.find(path, CncFileDescriptor::isCncFile))
-            .collect(toList());
+        return findMatchingFiles(file -> CncFileDescriptor.CNC_FILE.equals(file.getName()));
     }
 
     /**
@@ -168,10 +165,7 @@ public final class DataCollector
      */
     public List<Path> markFiles(final SystemTestWatcher.MarkFileDissector dissector)
     {
-        return locations.stream()
-            .flatMap((path) -> DataCollector.find(path, dissector::isRelevantFile))
-            .collect(toList());
-
+        return findMatchingFiles(dissector::isRelevantFile);
     }
 
     /**
@@ -198,20 +192,52 @@ public final class DataCollector
         return Collections.unmodifiableList(cleanupLocations);
     }
 
-    private static Stream<Path> find(final Path p, final BiPredicate<Path, BasicFileAttributes> matcher)
+    private List<Path> findMatchingFiles(final FileFilter filter)
+    {
+        final List<Path> found = new ArrayList<>();
+        for (final Path location : locations)
+        {
+            find(found, location.toFile(), filter);
+        }
+        return found;
+    }
+
+    private static void find(final List<Path> found, final File file, final FileFilter filter)
+    {
+        if (existsAndIsNotSymbolicLink(file))
+        {
+            if (file.isFile())
+            {
+                if (filter.accept(file))
+                {
+                    found.add(file.toPath());
+                }
+            }
+            else if (file.isDirectory())
+            {
+                final File[] files = file.listFiles();
+                if (null != files)
+                {
+                    for (final File f : files)
+                    {
+                        find(found, f, filter);
+                    }
+                }
+            }
+        }
+    }
+
+    private static boolean existsAndIsNotSymbolicLink(final File file)
     {
         try
         {
-            return Files.find(p, 1, matcher);
-        }
-        catch (final NoSuchFileException ignore)
-        {
-            return Stream.empty();
-            // File may have already been removed...
+            final BasicFileAttributes basicFileAttributes = Files.readAttributes(
+                file.toPath(), BasicFileAttributes.class, NOFOLLOW_LINKS);
+            return !basicFileAttributes.isSymbolicLink() && file.exists();
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(ex);
+            return false;
         }
     }
 
@@ -310,7 +336,7 @@ public final class DataCollector
         final LinkedHashMap<Path, Set<Path>> map = new LinkedHashMap<>();
         for (final Path p : locations)
         {
-            map.put(p, singleton(p));
+            map.put(p, Set.of(p));
         }
 
         removeNestedPaths(locations, map);

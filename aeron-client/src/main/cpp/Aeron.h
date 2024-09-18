@@ -23,6 +23,10 @@
 #include "concurrent/AgentInvoker.h"
 #include "util/Export.h"
 
+#if !defined(AERON_HIDE_DEPRECATION_MESSAGE)
+#pragma message ( "The C++ API is deprecated, please move to using the C++ Wrapper" )
+#endif
+
 /// Top namespace for Aeron C++ API
 namespace aeron
 {

@@ -50,6 +50,7 @@ option(C_WARNINGS_AS_ERRORS "Enable warnings as errors for C" OFF)
 option(CXX_WARNINGS_AS_ERRORS "Enable warnings as errors for C++" OFF)
 option(SANITISE_BUILD "Enable sanitise options" OFF)
 option(COVERAGE_BUILD "Enable code coverage" OFF)
+option(AERON_HIDE_DEPRECATION_MESSAGE "Hide C++ deprecation message" OFF)
 option(AERON_TESTS "Enable tests" ${STANDALONE_BUILD})
 option(AERON_UNIT_TESTS "Enable unit tests" ${STANDALONE_BUILD})
 option(AERON_SYSTEM_TESTS "Enable system tests" ${STANDALONE_BUILD})
@@ -127,6 +128,10 @@ add_definitions(-DAERON_VERSION_MAJOR=${aeron_VERSION_MAJOR})
 add_definitions(-DAERON_VERSION_MINOR=${aeron_VERSION_MINOR})
 add_definitions(-DAERON_VERSION_PATCH=${aeron_VERSION_PATCH})
 add_definitions(-DAERON_VERSION_GITSHA="${AERON_VERSION_GITSHA}")
+
+if (AERON_HIDE_DEPRECATION_MESSAGE)
+    add_compile_definitions("AERON_HIDE_DEPRECATION_MESSAGE")
+endif (AERON_HIDE_DEPRECATION_MESSAGE)
 
 # all UNIX-based platform compiler flags
 if (UNIX)

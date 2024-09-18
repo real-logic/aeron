@@ -144,7 +144,9 @@ public final class MediaDriver implements AutoCloseable
             {
                 case INVOKER:
                     sharedInvoker = new AgentInvoker(
-                        errorHandler, errorCounter, new CompositeAgent(sender, receiver, conductor));
+                        errorHandler,
+                        errorCounter,
+                        new NamedCompositeAgent(ctx.aeronDirectoryName(), sender, receiver, conductor));
                     sharedRunner = null;
                     sharedNetworkRunner = null;
                     conductorRunner = null;
@@ -157,7 +159,7 @@ public final class MediaDriver implements AutoCloseable
                         ctx.sharedIdleStrategy(),
                         errorHandler,
                         errorCounter,
-                        new CompositeAgent(sender, receiver, conductor));
+                        new NamedCompositeAgent(ctx.aeronDirectoryName(), sender, receiver, conductor));
                     sharedNetworkRunner = null;
                     conductorRunner = null;
                     receiverRunner = null;
@@ -170,7 +172,7 @@ public final class MediaDriver implements AutoCloseable
                         ctx.sharedNetworkIdleStrategy(),
                         errorHandler,
                         errorCounter,
-                        new CompositeAgent(sender, receiver));
+                        new NamedCompositeAgent(ctx.aeronDirectoryName(), sender, receiver));
                     conductorRunner = new AgentRunner(
                         ctx.conductorIdleStrategy(), errorHandler, errorCounter, conductor);
                     sharedRunner = null;

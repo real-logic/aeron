@@ -47,6 +47,7 @@ import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -391,17 +392,17 @@ class CounterTest
         final RegistrationException registrationException = assertThrowsExactly(
             RegistrationException.class,
             () -> clientA.addStaticCounter(
-            COUNTER_TYPE_ID,
-            keyBuffer,
-            0,
-            keyBuffer.capacity(),
-            labelBuffer,
-            0,
-            COUNTER_LABEL.length(),
-            counter.registrationId()));
+                COUNTER_TYPE_ID,
+                keyBuffer,
+                0,
+                keyBuffer.capacity(),
+                labelBuffer,
+                0,
+                COUNTER_LABEL.length(),
+                counter.registrationId()));
         assertThat(registrationException.getMessage(), allOf(
             containsString("cannot add static counter, because a non-static counter exists (counterId=" +
-            counter.id() + ") for typeId=" + COUNTER_TYPE_ID + " and registrationId=" + counter.registrationId()),
+                counter.id() + ") for typeId=" + COUNTER_TYPE_ID + " and registrationId=" + counter.registrationId()),
             containsString("errorCodeValue=11")));
     }
 
@@ -444,13 +445,13 @@ class CounterTest
     {
         final AvailableCounterHandler availableCounterHandler = mock(AvailableCounterHandler.class);
         final UnavailableCounterHandler unavailableCounterHandler = mock(UnavailableCounterHandler.class);
-        final ErrorHandler errorHandler = mock(ErrorHandler.class);
+        final AtomicReference<Throwable> error = new AtomicReference<>();
         try (Aeron aeron = Aeron.connect(new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())
             .useConductorAgentInvoker(true)
             .availableCounterHandler(availableCounterHandler)
             .unavailableCounterHandler(unavailableCounterHandler)
-            .errorHandler(errorHandler)))
+            .errorHandler(error::set)))
         {
             final AgentInvoker conductorAgentInvoker = aeron.conductorAgentInvoker();
             assertNotNull(conductorAgentInvoker);
@@ -468,10 +469,12 @@ class CounterTest
 
             Tests.await(() -> 1 == countersReader.getCounterValue(SystemCounterDescriptor.CLIENT_TIMEOUTS.id()));
 
-            conductorAgentInvoker.invoke();
-            final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
-            verify(errorHandler, timeout(5000L)).onError(captor.capture());
-            final Throwable timeoutException = captor.getValue();
+            while (null == error.get())
+            {
+                conductorAgentInvoker.invoke();
+                Thread.yield();
+            }
+            final Throwable timeoutException = error.get();
             if (timeoutException instanceof ClientTimeoutException)
             {
                 assertEquals("FATAL - client timeout from driver", timeoutException.getMessage());

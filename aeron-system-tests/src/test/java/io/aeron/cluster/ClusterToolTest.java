@@ -22,6 +22,8 @@ import io.aeron.test.SlowTest;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.cluster.TestNode;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -38,6 +40,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -220,7 +223,12 @@ class ClusterToolTest
         final boolean result = ClusterTool.sortRecordingLog(clusterDir);
 
         assertFalse(result);
-        assertArrayEquals(new byte[0], Files.readAllBytes(logFile));
+
+        final MutableDirectBuffer header = new UnsafeBuffer(new byte[RecordingLog.HEADER_SIZE]);
+        header.putLong(0, RecordingLog.MAGIC_NUMBER, LITTLE_ENDIAN);
+        header.putInt(8, RecordingLog.SEMANTIC_VERSION, LITTLE_ENDIAN);
+
+        assertArrayEquals(header.byteArray(), Files.readAllBytes(logFile));
     }
 
     @Test

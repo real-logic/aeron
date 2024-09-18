@@ -22,8 +22,6 @@ import io.aeron.cluster.client.ClusterException;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.SemanticVersion;
 import org.agrona.Strings;
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.Long2LongHashMap;
@@ -32,12 +30,9 @@ import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -50,14 +45,14 @@ import java.util.TreeMap;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.exceptions.AeronException.Category.FATAL;
 import static java.lang.Math.max;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
-import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static java.nio.file.StandardOpenOption.*;
-import static org.agrona.BitUtil.*;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.align;
 
 /**
  * A log of recordings which make up the history of a Raft log across leadership terms. Entries are in order.
@@ -69,25 +64,11 @@ import static org.agrona.BitUtil.*;
  * that a snapshot is taken midterm and therefore the latest state is the snapshot plus the log of messages which
  * got appended to the log after the snapshot was taken.
  * <p>
- * Recording log header as follows:
+ * Record layout as follows:
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                        0xFFA3F010 (Magic Number)              |
- *  |                        0x00000000                             |
- *  +---------------------------------------------------------------+
- *  |                          Version                              |
- *  +---------------------------------------------------------------+
- *  |                      Reserved (52 bytes)                    ...
- *  ...                                                             |
- *  +---------------------------------------------------------------+
- * </pre>
- * Recording log entry as follows:
- * <pre>
- *   0                   1                   2                   3
- *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- *  +---------------------------------------------------------------+
  *  |                        Recording ID                           |
  *  |                                                               |
  *  +---------------------------------------------------------------+
@@ -121,19 +102,10 @@ import static org.agrona.BitUtil.*;
  * </pre>
  * <p>The reserved bit on the entry type indicates whether the entry was marked invalid.</p>
  */
-public final class RecordingLog implements AutoCloseable
+public final class UnversionedRecordingLog implements AutoCloseable
 {
-    static final long MAGIC_NUMBER = 0xFFA3F010_00000000L;
-    static final int HEADER_SIZE = 64;
-    static final int MAJOR_VERSION = 0;
-    static final int MINOR_VERSION = 1;
-    static final int PATCH_VERSION = 0;
-    static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
-    private static final int MAGIC_NUMBER_OFFSET = 0;
-    private static final int VERSION_OFFSET = MAGIC_NUMBER_OFFSET + SIZE_OF_LONG;
-
     /**
-     * Representation of the entry in the {@link RecordingLog}.
+     * Representation of the entry in the {@link UnversionedRecordingLog}.
      */
     public static final class Entry
     {
@@ -201,7 +173,7 @@ public final class RecordingLog implements AutoCloseable
          * @param type                of the entry as a log of a term or a snapshot.
          * @param archiveEndpoint     archive where the snapshot is located, if
          *                            <code>entryType == ENTRY_TYPE_STANDBY_SNAPSHOT</code>.
-         * @param isValid             indicates if the entry is valid, {@link RecordingLog#invalidateEntry(long, int)}
+         * @param isValid             indicates if the entry is valid, {@link UnversionedRecordingLog#invalidateEntry(long, int)}
          *                            marks it invalid.
          * @param position            of the entry on disk.
          * @param entryIndex          of the entry on disk.
@@ -272,8 +244,8 @@ public final class RecordingLog implements AutoCloseable
          */
         public int length()
         {
-            final int unalignedLength = ENTRY_TYPE_STANDBY_SNAPSHOT == type ?
-                (ENDPOINT_OFFSET + SIZE_OF_INT + archiveEndpoint.length()) : ENDPOINT_OFFSET;
+            final int unalignedLength = (ENTRY_TYPE_STANDBY_SNAPSHOT == type) ?
+                ENDPOINT_OFFSET + SIZE_OF_INT + archiveEndpoint.length() : ENDPOINT_OFFSET;
 
             return align(unalignedLength, RECORD_ALIGNMENT);
         }
@@ -390,7 +362,7 @@ public final class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Representation of a snapshot entry in the {@link RecordingLog}.
+     * Representation of a snapshot entry in the {@link UnversionedRecordingLog}.
      */
     public static final class Snapshot
     {
@@ -425,7 +397,7 @@ public final class RecordingLog implements AutoCloseable
         public final int serviceId;
 
         /**
-         * A snapshot entry in the {@link RecordingLog}.
+         * A snapshot entry in the {@link UnversionedRecordingLog}.
          *
          * @param recordingId         of the entry in an archive.
          * @param leadershipTermId    in which the snapshot was taken.
@@ -467,7 +439,7 @@ public final class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Representation of a log entry in the {@link RecordingLog}.
+     * Representation of a log entry in the {@link UnversionedRecordingLog}.
      */
     public static final class Log
     {
@@ -522,7 +494,7 @@ public final class RecordingLog implements AutoCloseable
         public final int sessionId;
 
         /**
-         * Construct a representation of a log entry in the {@link RecordingLog}.
+         * Construct a representation of a log entry in the {@link UnversionedRecordingLog}.
          *
          * @param recordingId         for the recording in an archive.
          * @param leadershipTermId    identity for the leadership term.
@@ -659,9 +631,6 @@ public final class RecordingLog implements AutoCloseable
      */
     public static final String RECORDING_LOG_FILE_NAME = "recording.log";
 
-    static final String RECORDING_LOG_MIGRATED_FILE_NAME = RECORDING_LOG_FILE_NAME + ".migrated";
-    static final String RECORDING_LOG_NEW_FILE_NAME = RECORDING_LOG_FILE_NAME + ".new";
-
     /**
      * The log entry is for a recording of messages within a leadership term to the log.
      */
@@ -778,7 +747,7 @@ public final class RecordingLog implements AutoCloseable
      * @param parentDir in which the log will be created.
      * @param createNew create a new recording log if one does not exist.
      */
-    public RecordingLog(final File parentDir, final boolean createNew)
+    public UnversionedRecordingLog(final File parentDir, final boolean createNew)
     {
         final File logFile = new File(parentDir, RECORDING_LOG_FILE_NAME);
         final boolean isNewFile = !logFile.exists();
@@ -791,31 +760,20 @@ public final class RecordingLog implements AutoCloseable
 
         try
         {
-            if (!isNewFile)
-            {
-                checkForVersionAndMigrate(logFile);
-            }
-
             fileChannel = FileChannel.open(logFile.toPath(), openOptions);
 
             if (isNewFile)
             {
                 syncDirectory(parentDir);
-                writeHeader(fileChannel);
             }
             else
             {
-                if (isMagicNumberInvalid(fileChannel))
-                {
-                    throw new ClusterException("Failed to migrate the recording log, the header is corrupted", FATAL);
-                }
-
                 reload();
             }
         }
         catch (final IOException ex)
         {
-            throw new ClusterException("Failed to migrate the recording log, I/O error occurred", ex, FATAL);
+            throw new ClusterException(ex);
         }
     }
 
@@ -882,8 +840,8 @@ public final class RecordingLog implements AutoCloseable
 
         try
         {
-            long filePosition = HEADER_SIZE;
-            long consumePosition = filePosition;
+            long filePosition = 0;
+            long consumePosition = 0;
 
             while (true)
             {
@@ -1072,7 +1030,7 @@ public final class RecordingLog implements AutoCloseable
      * Get the {@link Entry#timestamp} for a term.
      *
      * @param leadershipTermId to get {@link Entry#timestamp} for.
-     * @return the timestamp or {@link io.aeron.Aeron#NULL_VALUE} if not found.
+     * @return the timestamp or {@link Aeron#NULL_VALUE} if not found.
      */
     public long getTermTimestamp(final long leadershipTermId)
     {
@@ -1141,7 +1099,7 @@ public final class RecordingLog implements AutoCloseable
      * @param snapshots to construct plan from.
      * @return a new {@link RecoveryPlan} for the cluster.
      */
-    public static RecoveryPlan createRecoveryPlan(final ArrayList<RecordingLog.Snapshot> snapshots)
+    public static RecoveryPlan createRecoveryPlan(final ArrayList<UnversionedRecordingLog.Snapshot> snapshots)
     {
         long lastLeadershipTermId = NULL_VALUE;
         long lastTermBaseLogPosition = 0;
@@ -1576,9 +1534,9 @@ public final class RecordingLog implements AutoCloseable
                 {
                     throw new ClusterException(
                         "Prior term was not committed: " + lastTerm +
-                        " and logTermBasePosition was not specified: leadershipTermId = " + leadershipTermId +
-                        ", logTermBasePosition = " + termBaseLogPosition + ", logPosition = " + logPosition +
-                        ", nowNs = " + nowNs);
+                            " and logTermBasePosition was not specified: leadershipTermId = " + leadershipTermId +
+                            ", logTermBasePosition = " + termBaseLogPosition + ", logPosition = " + logPosition +
+                            ", nowNs = " + nowNs);
                 }
                 else
                 {
@@ -1815,7 +1773,6 @@ public final class RecordingLog implements AutoCloseable
             final int type = entryType & ~ENTRY_TYPE_INVALID_FLAG;
             final boolean isValid = (entryType & ENTRY_TYPE_INVALID_FLAG) == 0;
             final int endPointOffset = consumed + ENDPOINT_OFFSET;
-
             if (ENTRY_TYPE_STANDBY_SNAPSHOT == type &&
                 (endPointOffset + SIZE_OF_INT > length ||
                 endPointOffset + SIZE_OF_INT + buffer.getInt(endPointOffset, LITTLE_ENDIAN) > length))
@@ -1852,73 +1809,6 @@ public final class RecordingLog implements AutoCloseable
 
         byteBuffer.position(consumed);
         return consumed;
-    }
-
-    private void applyHeader(final MutableDirectBuffer header)
-    {
-        header.putLong(MAGIC_NUMBER_OFFSET, MAGIC_NUMBER, LITTLE_ENDIAN);
-        header.putInt(VERSION_OFFSET, SEMANTIC_VERSION, LITTLE_ENDIAN);
-    }
-
-    private void writeHeader(final FileChannel fileChannel) throws IOException
-    {
-        final ByteBuffer headerBuffer = ByteBuffer.allocateDirect(HEADER_SIZE);
-        final MutableDirectBuffer header = new UnsafeBuffer(headerBuffer);
-        applyHeader(header);
-
-        if (HEADER_SIZE != fileChannel.write(headerBuffer))
-        {
-            throw new ClusterException("Failed to write full header recording log header", FATAL);
-        }
-    }
-
-    private void checkForVersionAndMigrate(final File logFile) throws IOException
-    {
-        if (requiresMigration(logFile))
-        {
-            final File oldMigratedFile = new File(logFile.getParentFile(), RECORDING_LOG_MIGRATED_FILE_NAME);
-            Files.copy(logFile.toPath(), oldMigratedFile.toPath(), COPY_ATTRIBUTES, REPLACE_EXISTING);
-
-            final File newFile = new File(logFile.getParentFile(), RECORDING_LOG_NEW_FILE_NAME);
-            final Path newPath = newFile.toPath();
-            Files.deleteIfExists(newPath);
-
-            final MutableDirectBuffer header = new UnsafeBuffer(new byte[HEADER_SIZE]);
-            applyHeader(header);
-
-            try (FileOutputStream outputStream = new FileOutputStream(newFile, false))
-            {
-                outputStream.write(header.byteArray());
-                Files.copy(oldMigratedFile.toPath(), outputStream);
-            }
-
-            final Path destinationPath = new File(logFile.getParentFile(), RECORDING_LOG_FILE_NAME).toPath();
-            Files.move(newPath, destinationPath, ATOMIC_MOVE, REPLACE_EXISTING);
-        }
-    }
-
-    private boolean requiresMigration(final File logFile) throws IOException
-    {
-        if (logFile.length() < HEADER_SIZE)
-        {
-            return true;
-        }
-
-        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), READ))
-        {
-            return isMagicNumberInvalid(fileChannel);
-        }
-    }
-
-    private static boolean isMagicNumberInvalid(final FileChannel fileChannel) throws IOException
-    {
-        final DirectBuffer header = new UnsafeBuffer(ByteBuffer.allocateDirect(HEADER_SIZE));
-        if (HEADER_SIZE != fileChannel.read(header.byteBuffer()))
-        {
-            throw new IOException("Unable to read header");
-        }
-        final long magicNumber = header.getLong(0, LITTLE_ENDIAN);
-        return magicNumber != MAGIC_NUMBER;
     }
 
     private static void syncDirectory(final File dir)
@@ -1977,7 +1867,9 @@ public final class RecordingLog implements AutoCloseable
             {
                 snapshotIndex = i;
             }
-            else if (-1 == logIndex && isValidTerm(entry) && NULL_VALUE != entry.recordingId)
+            else if (-1 == logIndex &&
+                isValidTerm(entry) &&
+                NULL_VALUE != entry.recordingId)
             {
                 logIndex = i;
             }

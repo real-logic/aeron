@@ -781,8 +781,8 @@ final class ConsensusModuleAgent
                 return;
             }
 
-
-            if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.APPOINT_LEADER, appointedLeaderId))
+            final long timestamp = clusterClock.time();
+            if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.APPOINT_LEADER, timestamp, appointedLeaderId))
             {
                 egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.OK, "");
                 this.onAppointLeader(appointedLeaderId);

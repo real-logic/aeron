@@ -508,10 +508,11 @@ public class ClusterTool
      *
      * @param out        to print the operation result.
      * @param clusterDir where the cluster is running.
+     * @return <code>true</code> if the snapshot was successfully described <code>false</code> otherwise.
      */
-    public static void describeLatestConsensusModuleSnapshot(final PrintStream out, final File clusterDir)
+    public static boolean describeLatestConsensusModuleSnapshot(final PrintStream out, final File clusterDir)
     {
-        BACKWARD_COMPATIBLE_OPERATIONS.describeLatestConsensusModuleSnapshot(clusterDir, out, null);
+        return BACKWARD_COMPATIBLE_OPERATIONS.describeLatestConsensusModuleSnapshot(clusterDir, out, null) == SUCCESS;
     }
 
     /**

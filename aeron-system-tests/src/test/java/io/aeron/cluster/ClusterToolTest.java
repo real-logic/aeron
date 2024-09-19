@@ -103,9 +103,9 @@ class ClusterToolTest
             leader.consensusModule().context().clusterDir(),
             capturingPrintStream.resetAndGetPrintStream()));
 
-        ClusterTool.describeLatestConsensusModuleSnapshot(
+        assertTrue(ClusterTool.describeLatestConsensusModuleSnapshot(
             capturingPrintStream.resetAndGetPrintStream(),
-            leader.consensusModule().context().clusterDir());
+            leader.consensusModule().context().clusterDir()));
 
         assertThat(
             capturingPrintStream.flushAndGetContent(),

@@ -60,7 +60,6 @@ import static io.aeron.AeronCounters.*;
 import static io.aeron.CommonContext.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
-import static io.aeron.cluster.ConsensusModule.Configuration.COMMIT_POSITION_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 import static org.agrona.SystemUtil.*;
@@ -320,6 +319,7 @@ public final class ConsensusModule implements AutoCloseable
     /**
      * {@inheritDoc}
      */
+    @Override
     public void close()
     {
         CloseHelper.closeAll(conductorRunner, conductorInvoker);
@@ -1452,7 +1452,8 @@ public final class ConsensusModule implements AutoCloseable
          * @return timeout in nanoseconds to wait for canvass request
          * @see #SESSION_TIMEOUT_PROP_NAME
          */
-        public static long appointedLeaderTimeoutNs() {
+        public static long appointedLeaderTimeoutNs()
+        {
             return getDurationInNanos(APPOINTED_LEADER_TIMEOUT_PROP_NAME, APPOINTED_LEADER_TIMEOUT_DEFAULT_NS);
         }
 
@@ -1492,6 +1493,7 @@ public final class ConsensusModule implements AutoCloseable
     public static final class Context implements Cloneable
     {
         private static final VarHandle IS_CONCLUDED_VH;
+
         static
         {
             try
@@ -1611,6 +1613,7 @@ public final class ConsensusModule implements AutoCloseable
          *
          * @return a shallow copy of the object.
          */
+        @Override
         public Context clone()
         {
             try
@@ -4322,7 +4325,8 @@ public final class ConsensusModule implements AutoCloseable
          * @see Configuration#APPOINTED_LEADER_TIMEOUT_PROP_NAME
          * @see Configuration#APPOINTED_LEADER_TIMEOUT_DEFAULT_NS
          */
-        public Context appointedLeaderTimeoutNs(final long appointedLeaderTimeoutNs) {
+        public Context appointedLeaderTimeoutNs(final long appointedLeaderTimeoutNs)
+        {
             this.appointedLeaderTimeoutNs = appointedLeaderTimeoutNs;
             return this;
         }
@@ -4334,7 +4338,8 @@ public final class ConsensusModule implements AutoCloseable
          * @see Configuration#APPOINTED_LEADER_TIMEOUT_PROP_NAME
          * @see Configuration#APPOINTED_LEADER_TIMEOUT_DEFAULT_NS
          */
-        public long appointedLeaderTimeoutNs() {
+        public long appointedLeaderTimeoutNs()
+        {
             return appointedLeaderTimeoutNs;
         }
 
@@ -4497,6 +4502,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * {@inheritDoc}
          */
+        @Override
         public String toString()
         {
             return "ConsensusModule.Context" +
@@ -4590,6 +4596,7 @@ public final class ConsensusModule implements AutoCloseable
     /**
      * {@inheritDoc}
      */
+    @Override
     public String toString()
     {
         return "ConsensusModule{" +

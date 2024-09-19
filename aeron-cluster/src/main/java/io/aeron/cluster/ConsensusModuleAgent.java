@@ -765,7 +765,7 @@ final class ConsensusModuleAgent
             }
 
             boolean illegal = true;
-            for (ClusterMember activeMember : activeMembers)
+            for (final ClusterMember activeMember : activeMembers)
             {
                 if (activeMember.id() == appointedLeaderId)
                 {
@@ -782,7 +782,8 @@ final class ConsensusModuleAgent
             }
 
             final long timestamp = clusterClock.time();
-            if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.APPOINT_LEADER, timestamp, appointedLeaderId))
+            if (ConsensusModule.State.ACTIVE == state
+                && appendAction(ClusterAction.APPOINT_LEADER, timestamp, appointedLeaderId))
             {
                 egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.OK, "");
                 this.onAppointLeader(appointedLeaderId);

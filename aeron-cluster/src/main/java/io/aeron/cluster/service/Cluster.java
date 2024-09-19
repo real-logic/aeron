@@ -207,7 +207,7 @@ public interface Cluster
 
     /**
      * Schedule a timer for a given deadline and provide a correlation id to identify the timer when it expires or
-     * for cancellation. This action is asynchronous and will race with the timer expiring.
+     * for cancellation. This action is asynchronous, when rescheduling it will race with the timer expiring.
      * <p>
      * If the correlationId is for an existing scheduled timer then it will be rescheduled to the new deadline. However,
      * it is best to generate correlationIds in a monotonic fashion and be aware of potential clashes with other
@@ -220,7 +220,7 @@ public interface Cluster
      * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)}.
      * If applied to other events then they are not guaranteed to be reliable.
      * <p>
-     * Callers of this method should loop until the method succeeds.
+     * Callers of this method must loop until the method succeeds.
      *
      * <pre>{@code
      * private Cluster cluster;
@@ -238,7 +238,7 @@ public interface Cluster
      *
      * @param correlationId to identify the timer when it expires. {@link Long#MAX_VALUE} not supported.
      * @param deadline      time after which the timer will fire. {@link Long#MAX_VALUE} not supported.
-     * @return true if the event to schedule a timer request has been sent or false if back-pressure is applied.
+     * @return true if the request to schedule a timer has been sent or false if back-pressure is applied.
      * @see #cancelTimer(long)
      */
     boolean scheduleTimer(long correlationId, long deadline);
@@ -253,11 +253,11 @@ public interface Cluster
      * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)}.
      * If applied to other events then they are not guaranteed to be reliable.
      * <p>
-     * Callers of this method should loop until the method succeeds, see {@link
+     * Callers of this method must loop until the method succeeds, see {@link
      * io.aeron.cluster.service.Cluster#scheduleTimer(long, long)} for an example.
      *
      * @param correlationId for the timer provided when it was scheduled. {@link Long#MAX_VALUE} not supported.
-     * @return true if the event to cancel request has been sent or false if back-pressure is applied.
+     * @return true if the request to cancel a timer has been sent or false if back-pressure is applied.
      * @see #scheduleTimer(long, long)
      */
     boolean cancelTimer(long correlationId);
